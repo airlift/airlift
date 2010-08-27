@@ -73,4 +73,9 @@ public class Logger
             logger.error(String.format(message, args));
         }
     }
+
+    public boolean isDebugEnabled()
+    {
+        return logger.isDebugEnabled();
+    }
 }
