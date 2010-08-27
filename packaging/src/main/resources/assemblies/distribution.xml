@@ -29,7 +29,7 @@
             <unpack>true</unpack>
             <outputDirectory>/</outputDirectory>
             <includes>
-                <include>com.proofpoint:launcher</include>
+                <include>com.proofpoint.platform:launcher</include>
             </includes>
         </dependencySet>
     </dependencySets>
