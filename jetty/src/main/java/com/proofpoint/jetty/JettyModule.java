@@ -3,6 +3,7 @@ package com.proofpoint.jetty;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
+import com.proofpoint.configuration.ConfigurationModule;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.security.UserRealm;
 
@@ -39,6 +40,6 @@ public class JettyModule
         binder.bind(UserRealm.class)
                 .toProvider(HashUserRealmProvider.class);
 
-//        ConfigurationModule.bindConfig(binder, JettyConfig.class);
+        ConfigurationModule.bindConfig(binder, JettyConfig.class);
     }
 }
