@@ -29,6 +29,16 @@
             <groupId>com.sun.jersey.contribs</groupId>
             <artifactId>jersey-guice</artifactId>
             <version>1.1.4</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.guiceyfruit</groupId>
+                    <artifactId>guice-all</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.guiceyfruit</groupId>
+                    <artifactId>guice-servlet</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
