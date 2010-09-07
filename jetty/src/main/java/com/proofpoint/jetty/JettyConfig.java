@@ -1,55 +1,78 @@
 package com.proofpoint.jetty;
 
 import com.proofpoint.configuration.Config;
-import com.proofpoint.configuration.Default;
 
-public interface JettyConfig
+public class JettyConfig
 {
     @Config("jetty.ip")
-    @Default("")
-    String getServerIp();
+    public String getServerIp()
+    {
+        return null;
+    }
 
     @Config("jetty.http.port")
-    @Default("8080")
-    int getHttpPort();
+    int getHttpPort()
+    {
+        return 8080;
+    }
 
     @Config("jetty.https.enabled")
-    @Default("false")
-     boolean isHttpsEnabled();
+    boolean isHttpsEnabled()
+    {
+        return false;
+    }
 
     @Config("jetty.https.port")
-    @Default("8443")
-    int getHttpsPort();
+    int getHttpsPort()
+    {
+        return 8443;
+    }
 
     @Config("jetty.https.keystore.path")
-    @Default("")
-    String getKeystorePath();
+    String getKeystorePath()
+    {
+        return null;
+    }
 
     @Config("jetty.https.keystore.password")
-    @Default("")
-    String getKeystorePassword();
+    String getKeystorePassword()
+    {
+        return null;
+    }
 
     @Config("jetty.log.path")
-    @Default("var/log/jetty.log")
-    String getLogPath();
+    String getLogPath()
+    {
+        return "var/log/jetty.log";
+    }
 
     @Config("jetty.threads.max")
-    @Default("200")
-    int getMaxThreads();
+    int getMaxThreads()
+    {
+        return 200;
+    }
 
     @Config("jetty.threads.min")
-    @Default("2")
-    int getMinThreads();
+    int getMinThreads()
+    {
+        return 2;
+    }
 
     @Config("jetty.threads.max-idle-time-ms")
-    @Default("60000")
-    int getThreadMaxIdleTime();
+    int getThreadMaxIdleTime()
+    {
+        return 60000;
+    }
 
     @Config("jetty.log.retain-days")
-    @Default("90")
-    int getLogRetainDays();
+    int getLogRetainDays()
+    {
+        return 90;
+    }
 
     @Config("jetty.auth.users-file")
-    @Default("")
-    String getUserAuthPath();
+    String getUserAuthPath()
+    {
+        return null;
+    }
 }
