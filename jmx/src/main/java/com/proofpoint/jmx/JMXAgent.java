@@ -20,27 +20,36 @@ public class JMXAgent
 {
     private final String host;
     private final int registryPort;
+    private final int serverPort;
     private JMXConnectorServer connectorServer;
 
     private static Logger log = Logger.get(JMXAgent.class);
     private JMXServiceURL url;
 
     @Inject
-    public JMXAgent(MBeanServer server, String host, Integer registryPort, Integer serverPort)
+    public JMXAgent(MBeanServer server, JMXConfig config)
             throws IOException
     {
-        if (host == null) {
+        if (config.getRmiServerHostname() == null) {
             host = InetAddress.getLocalHost().getHostAddress();
         }
-        if (registryPort == null) {
-            registryPort = NetUtils.findUnusedPort();
-        }
-        if (serverPort == null) {
-            serverPort = NetUtils.findUnusedPort();
+        else {
+            host = config.getRmiServerHostname();
         }
 
-        this.host = host;
-        this.registryPort = registryPort;
+        if (config.getRmiRegistryPort() == null) {
+            registryPort = NetUtils.findUnusedPort();
+        }
+        else {
+            registryPort = config.getRmiRegistryPort();
+        }
+
+        if (config.getRmiServerPort() == null) {
+            serverPort = NetUtils.findUnusedPort();
+        }
+        else {
+            serverPort = config.getRmiServerPort();
+        }
 
         try {
             url = new JMXServiceURL(String.format("service:jmx:rmi://%s:%d/jndi/rmi://%s:%d/jmxrmi",

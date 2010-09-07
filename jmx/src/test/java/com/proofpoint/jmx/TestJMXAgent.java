@@ -10,6 +10,7 @@ import javax.management.remote.JMXConnectorFactory;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.Inet4Address;
+import java.net.UnknownHostException;
 
 import static org.testng.Assert.assertTrue;
 
@@ -20,7 +21,7 @@ public class TestJMXAgent
             throws IOException
     {
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        JMXAgent agent = new JMXAgent(server, null, null, null);
+        JMXAgent agent = new JMXAgent(server, new JMXConfig());
         agent.start();
 
         JMXConnector connector = JMXConnectorFactory.connect(agent.getURL());
@@ -34,10 +35,16 @@ public class TestJMXAgent
     public void testSpecificHost()
             throws IOException
     {
-        String host = Inet4Address.getLocalHost().getCanonicalHostName();
+        final String host = Inet4Address.getLocalHost().getCanonicalHostName();
 
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        JMXAgent agent = new JMXAgent(server, host, null, null);
+        JMXAgent agent = new JMXAgent(server, new JMXConfig() {
+            @Override
+            public String getRmiServerHostname()
+            {
+                return host;
+            }
+        });
         agent.start();
 
         JMXConnector connector = JMXConnectorFactory.connect(agent.getURL());
@@ -51,11 +58,23 @@ public class TestJMXAgent
     public void testSpecificHostAndPort()
             throws IOException
     {
-        String host = Inet4Address.getLocalHost().getCanonicalHostName();
-        int port = NetUtils.findUnusedPort();
+        final String host = Inet4Address.getLocalHost().getCanonicalHostName();
+        final int port = NetUtils.findUnusedPort();
 
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        JMXAgent agent = new JMXAgent(server, host, port, null);
+        JMXAgent agent = new JMXAgent(server, new JMXConfig() {
+            @Override
+            public Integer getRmiRegistryPort()
+            {
+                return port;
+            }
+
+            @Override
+            public String getRmiServerHostname()
+            {
+                return host;
+            }
+        });
         agent.start();
 
         JMXConnector connector = JMXConnectorFactory.connect(agent.getURL());

@@ -21,6 +21,12 @@
             <version>5.12.1</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>configuration</artifactId>
+            <version>0.1-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 </project>
 
