@@ -19,6 +19,7 @@
         <module>log</module>
         <module>jetty</module>
         <module>jmx</module>
+        <module>configuration</module>
     </modules>
 </project>
 
