@@ -18,6 +18,7 @@
         <module>packaging</module>
         <module>log</module>
         <module>jetty</module>
+        <module>jersey</module>
         <module>jmx</module>
         <module>configuration</module>
     </modules>
