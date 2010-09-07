@@ -1,5 +1,6 @@
 package com.proofpoint.configuration;
 
+import com.google.common.collect.Maps;
 import com.google.inject.Binder;
 import com.google.inject.CreationException;
 import com.google.inject.Guice;
@@ -7,6 +8,8 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import org.testng.annotations.Test;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Properties;
 
 import static org.testng.Assert.assertEquals;
@@ -18,11 +21,11 @@ public class TestConfig
     public void testFoo()
             throws Exception
     {
-        Properties c = new Properties();
-        c.put("hello", "world");
-        c.put("thevalue", "value");
+        Map<String, String> config = Maps.newHashMap();
+        config.put("hello", "world");
+        config.put("thevalue", "value");
 
-        Injector injector = createInjector(c, Thing.class);
+        Injector injector = createInjector(config, Thing.class);
 
         Thing t = injector.getInstance(Thing.class);
         assertEquals(t.getName(), "world");
@@ -32,8 +35,8 @@ public class TestConfig
     public void testDefaultValue()
             throws Exception
     {
-        Properties c = new Properties();
-        Injector injector = createInjector(c, Thing.class);
+        Map<String, String> config = Maps.newHashMap();
+        Injector injector = createInjector(config, Thing.class);
         Thing t = injector.getInstance(Thing.class);
         assertEquals(t.getName(), "woof");
     }
@@ -42,7 +45,7 @@ public class TestConfig
     public void testDefaultViaImpl()
             throws Exception
     {
-        Injector injector = createInjector(new Properties(), Config2.class);
+        Injector injector = createInjector(Collections.<String, String>emptyMap(), Config2.class);
         Config2 config = injector.getInstance(Config2.class);
         assertEquals(config.getOption(), "default");
     }
@@ -51,13 +54,13 @@ public class TestConfig
     public void testProvidedOverridesDefault()
             throws Exception
     {
-        Properties properties = new Properties();
+        Map<String, String> properties = Maps.newHashMap();
         properties.put("option", "provided");
 
         Injector injector = createInjector(properties, Config2.class);
-        Config2 config = injector.getInstance(Config2.class);
-        
-        assertEquals(config.getOption(), "provided");
+        Config2 instance = injector.getInstance(Config2.class);
+
+        assertEquals(instance.getOption(), "provided");
     }
 
     @Test
@@ -65,7 +68,8 @@ public class TestConfig
             throws Exception
     {
         try {
-            createInjector(new Properties(), Config3.class).getInstance(Config3.class);
+            createInjector(Collections.<String, String>emptyMap(), Config3.class)
+                    .getInstance(Config3.class);
             fail("Expected exception due to missing value");
         }
         catch (Exception e) {
@@ -77,7 +81,8 @@ public class TestConfig
             throws Exception
     {
         try {
-            createInjector(new Properties(), Config4.class).getInstance(Config4.class);
+            createInjector(Collections.<String, String>emptyMap(), Config4.class)
+                    .getInstance(Config4.class);
             fail("Expected exception due to abstract method without @Config annotation");
         }
         catch (CreationException e) {
@@ -87,26 +92,24 @@ public class TestConfig
     @Test
     public void testTypes()
     {
-        Properties c = new Properties()
-        {{
-                setProperty("stringOption", "a string");
-                setProperty("booleanOption", "true");
-                setProperty("boxedBooleanOption", "true");
-                setProperty("byteOption", Byte.toString(Byte.MAX_VALUE));
-                setProperty("boxedByteOption", Byte.toString(Byte.MAX_VALUE));
-                setProperty("shortOption", Short.toString(Short.MAX_VALUE));
-                setProperty("boxedShortOption", Short.toString(Short.MAX_VALUE));
-                setProperty("integerOption", Integer.toString(Integer.MAX_VALUE));
-                setProperty("boxedIntegerOption", Integer.toString(Integer.MAX_VALUE));
-                setProperty("longOption", Long.toString(Long.MAX_VALUE));
-                setProperty("boxedLongOption", Long.toString(Long.MAX_VALUE));
-                setProperty("floatOption", Float.toString(Float.MAX_VALUE));
-                setProperty("boxedFloatOption", Float.toString(Float.MAX_VALUE));
-                setProperty("doubleOption", Double.toString(Double.MAX_VALUE));
-                setProperty("boxedDoubleOption", Double.toString(Double.MAX_VALUE));
-            }};
+        Map<String, String> properties = Maps.newHashMap();
+        properties.put("stringOption", "a string");
+        properties.put("booleanOption", "true");
+        properties.put("boxedBooleanOption", "true");
+        properties.put("byteOption", Byte.toString(Byte.MAX_VALUE));
+        properties.put("boxedByteOption", Byte.toString(Byte.MAX_VALUE));
+        properties.put("shortOption", Short.toString(Short.MAX_VALUE));
+        properties.put("boxedShortOption", Short.toString(Short.MAX_VALUE));
+        properties.put("integerOption", Integer.toString(Integer.MAX_VALUE));
+        properties.put("boxedIntegerOption", Integer.toString(Integer.MAX_VALUE));
+        properties.put("longOption", Long.toString(Long.MAX_VALUE));
+        properties.put("boxedLongOption", Long.toString(Long.MAX_VALUE));
+        properties.put("floatOption", Float.toString(Float.MAX_VALUE));
+        properties.put("boxedFloatOption", Float.toString(Float.MAX_VALUE));
+        properties.put("doubleOption", Double.toString(Double.MAX_VALUE));
+        properties.put("boxedDoubleOption", Double.toString(Double.MAX_VALUE));
 
-        Injector injector = createInjector(c, Config1.class);
+        Injector injector = createInjector(properties, Config1.class);
         Config1 config = injector.getInstance(Config1.class);
         assertEquals("a string", config.getStringOption());
         assertEquals(true, config.getBooleanOption());
@@ -125,9 +128,9 @@ public class TestConfig
         assertEquals(Double.valueOf(Double.MAX_VALUE), config.getBoxedDoubleOption());
     }
 
-    private Injector createInjector(Properties c, final Class<?>... configClasses)
+    private Injector createInjector(Map<String, String> properties, final Class<?>... configClasses)
     {
-        Injector injector = Guice.createInjector(new ConfigurationModule(c, new Module()
+        Injector injector = Guice.createInjector(new ConfigurationModule(properties, new Module()
         {
             public void configure(Binder binder)
             {

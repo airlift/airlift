@@ -23,9 +23,9 @@ public class ConfigurationModule
 
     private final List<ConfigBinding> configBindings = new ArrayList<ConfigBinding>();
     private final Module baseModule;
-    private final Properties properties;
+    private final Map<String, String> properties;
 
-    public ConfigurationModule(Properties properties, Module... modules)
+    public ConfigurationModule(Map<String, String> properties, Module... modules)
     {
         this.properties = properties;
         final List<Element> newElements = new ArrayList<Element>();
