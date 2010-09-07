@@ -8,6 +8,10 @@
     <version>0.1-SNAPSHOT</version>
     <name>jersey</name>
 
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    
     <dependencies>
         <dependency>
             <groupId>com.google.inject</groupId>
