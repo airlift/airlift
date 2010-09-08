@@ -61,9 +61,6 @@ public class JettyProvider
     public Server get()
     {
         String ip = config.getServerIp();
-        if (StringUtils.equals(ip, "")) {
-            ip = null;
-        }
         
         Server server = new Server();
 
