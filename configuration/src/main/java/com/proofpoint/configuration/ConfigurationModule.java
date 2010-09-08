@@ -16,6 +16,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * TODO: add mechanism for dumping current config
+ */
 public class ConfigurationModule
         implements Module
 {
