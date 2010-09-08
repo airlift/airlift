@@ -21,6 +21,7 @@
         <module>jersey</module>
         <module>jmx</module>
         <module>configuration</module>
+        <module>bootstrap</module>
     </modules>
 </project>
 
