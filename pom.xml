@@ -22,6 +22,7 @@
         <module>jmx</module>
         <module>configuration</module>
         <module>bootstrap</module>
+        <module>sample-server-archetype</module>
     </modules>
 </project>
 
