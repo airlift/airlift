@@ -6,9 +6,6 @@ package com.proofpoint.testing;
  * Licensed under Apache License, Version 2.0
  */
 
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Strings;
-
 import java.util.Collection;
 import java.util.List;
 

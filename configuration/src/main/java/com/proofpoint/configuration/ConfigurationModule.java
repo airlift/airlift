@@ -1,5 +1,6 @@
 package com.proofpoint.configuration;
 
+import com.google.common.collect.Lists;
 import com.google.inject.Binder;
 import com.google.inject.Binding;
 import com.google.inject.Key;
