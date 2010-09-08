@@ -9,7 +9,6 @@
     <name>bootstrap</name>
 
     <properties>
-        <main-class>Main</main-class>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     
