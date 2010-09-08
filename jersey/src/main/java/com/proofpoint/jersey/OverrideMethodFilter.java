@@ -23,7 +23,8 @@ public class OverrideMethodFilter
 
     public ContainerRequest filter(ContainerRequest request)
     {
-        if (request.getMethod().equalsIgnoreCase("POST") || request.getMethod().equalsIgnoreCase("GET")) {
+        // TODO: should force a 400 Bad Request if _method or header is present on a non-POST?
+        if (request.getMethod().equalsIgnoreCase("POST")) {
             String method = request.getRequestHeaders().getFirst(HEADER);
             if (method == null || method.equals("")) {
                 method = request.getQueryParameters().getFirst(METHOD_PARAM);
