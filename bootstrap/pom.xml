@@ -95,7 +95,6 @@
                 <version>2.4</version>
                 <configuration>
                     <formats>
-                        <format>html</format>
                         <format>xml</format>
                     </formats>
                 </configuration>
