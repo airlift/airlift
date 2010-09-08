@@ -35,7 +35,7 @@ public class ConfigurationFactory
                 slots.put(method, count++);
 
                 String propertyName = annotation.value();
-                String value = (String) properties.get(propertyName);
+                String value = properties.get(propertyName);
 
                 if (value == null && method.isAnnotationPresent(Default.class)) {
                     value = method.getAnnotation(Default.class).value();
