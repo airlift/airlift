@@ -3,30 +3,31 @@ package com.proofpoint.jetty;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.servlet.GuiceFilter;
-import org.apache.commons.lang.StringUtils;
-import org.mortbay.jetty.Handler;
-import org.mortbay.jetty.RequestLog;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.handler.HandlerCollection;
-import org.mortbay.jetty.handler.RequestLogHandler;
-import org.mortbay.jetty.handler.StatisticsHandler;
-import org.mortbay.jetty.nio.SelectChannelConnector;
-import org.mortbay.jetty.security.BasicAuthenticator;
-import org.mortbay.jetty.security.Constraint;
-import org.mortbay.jetty.security.ConstraintMapping;
-import org.mortbay.jetty.security.SecurityHandler;
-import org.mortbay.jetty.security.SslSelectChannelConnector;
-import org.mortbay.jetty.security.UserRealm;
-import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.DefaultServlet;
-import org.mortbay.management.MBeanContainer;
-import org.mortbay.servlet.GzipFilter;
-import org.mortbay.thread.QueuedThreadPool;
+import org.eclipse.jetty.http.security.Constraint;
+import org.eclipse.jetty.jmx.MBeanContainer;
+import org.eclipse.jetty.security.ConstraintMapping;
+import org.eclipse.jetty.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.server.RequestLog;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.server.handler.StatisticsHandler;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
+import org.eclipse.jetty.servlet.DefaultServlet;
+import org.eclipse.jetty.servlet.FilterMapping;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlets.GzipFilter;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 import javax.annotation.Nullable;
 import javax.management.MBeanServer;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Provides an instance of a Jetty server ready to be configured with
@@ -37,7 +38,7 @@ public class JettyProvider
 {
     private MBeanServer mbeanServer;
     private JettyConfig config;
-    private UserRealm realm;
+    private LoginService loginService;
 
     @Inject
     public JettyProvider(JettyConfig config)
@@ -52,9 +53,9 @@ public class JettyProvider
     }
 
     @Inject(optional = true)
-    public void setUserRealms(@Nullable UserRealm realm)
+    public void setLoginService(@Nullable LoginService loginService)
     {
-        this.realm = realm;
+        this.loginService = loginService;
     }
 
     public Server get()
@@ -117,22 +118,22 @@ public class JettyProvider
         handlers.addHandler(getContextHandler());
         handlers.addHandler(getLogHandler());
 
-        StatisticsHandler handler = new StatisticsHandler();
-        handler.addHandler(handlers);
-        server.addHandler(handler);
+        StatisticsHandler statsHandler = new StatisticsHandler();
+        statsHandler.setHandler(handlers);
+        server.setHandler(statsHandler);
 
         return server;
     }
 
-    private Context getContextHandler()
+    private ServletContextHandler getContextHandler()
     {
-        Context context = new Context(Context.DEFAULT);
-        context.addFilter(GzipFilter.class, "/*", Handler.DEFAULT);
-        context.addFilter(GZipRequestFilter.class, "/*", Handler.DEFAULT);
-        context.addFilter(GuiceFilter.class, "/*", Handler.DEFAULT);
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
+        context.addFilter(GzipFilter.class, "/*", FilterMapping.DEFAULT);
+        context.addFilter(GZipRequestFilter.class, "/*", FilterMapping.DEFAULT);
+        context.addFilter(GuiceFilter.class, "/*", FilterMapping.DEFAULT);
         context.addServlet(DefaultServlet.class, "/");
 
-        if (realm != null) {
+        if (loginService != null) {
             context.setSecurityHandler(getSecurityHandler());
         }
 
@@ -148,12 +149,12 @@ public class JettyProvider
         constraintMapping.setConstraint(constraint);
         constraintMapping.setPathSpec("/*");
 
-        SecurityHandler securityHandler = new SecurityHandler();
-        securityHandler.setUserRealm(realm);
+        ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
+        securityHandler.setLoginService(loginService);
 
         // TODO: support for other auth schemes (digest, etc)
         securityHandler.setAuthenticator(new BasicAuthenticator());
-        securityHandler.setConstraintMappings(new ConstraintMapping[]{constraintMapping});
+        securityHandler.setConstraintMappings(Arrays.asList(constraintMapping));
         return securityHandler;
     }
 

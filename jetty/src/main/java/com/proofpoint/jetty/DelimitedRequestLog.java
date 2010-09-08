@@ -1,12 +1,12 @@
 package com.proofpoint.jetty;
 
+import org.eclipse.jetty.server.RequestLog;
+import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
 import org.joda.time.format.ISODateTimeFormat;
-import org.mortbay.jetty.Request;
-import org.mortbay.jetty.RequestLog;
-import org.mortbay.jetty.Response;
-import org.mortbay.util.RolloverFileOutputStream;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
