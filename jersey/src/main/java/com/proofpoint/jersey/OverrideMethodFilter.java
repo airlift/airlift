@@ -11,19 +11,22 @@ import com.sun.jersey.spi.container.ContainerRequestFilter;
 public class OverrideMethodFilter
         implements ContainerRequestFilter
 {
-    private static final String HEADER = "X-HTTP-Method-Override";
+    /**
+     * The name of HTTP request header that overrides the HTTP method.
+     */
+    public static final String HEADER = "X-HTTP-Method-Override";
 
     /**
-     * The name of the form or query parameter that overrides the HTTP method.
+     * The name of uri query parameter that overrides the HTTP method.
      */
-    public static final String METHOD = "_method";
+    public static final String METHOD_PARAM = "_method";
 
     public ContainerRequest filter(ContainerRequest request)
     {
         if (request.getMethod().equalsIgnoreCase("POST") || request.getMethod().equalsIgnoreCase("GET")) {
             String method = request.getRequestHeaders().getFirst(HEADER);
             if (method == null || method.equals("")) {
-                method = request.getQueryParameters().getFirst(METHOD);
+                method = request.getQueryParameters().getFirst(METHOD_PARAM);
             }
 
             if (method != null && !method.equals("")) {
