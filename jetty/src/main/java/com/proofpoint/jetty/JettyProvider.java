@@ -113,7 +113,12 @@ public class JettyProvider
          */
         HandlerCollection handlers = new HandlerCollection();
         handlers.addHandler(getContextHandler());
-        handlers.addHandler(getLogHandler());
+        try {
+            handlers.addHandler(getLogHandler());
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
         StatisticsHandler statsHandler = new StatisticsHandler();
         statsHandler.setHandler(handlers);
@@ -156,22 +161,18 @@ public class JettyProvider
     }
 
     private RequestLogHandler getLogHandler()
+            throws IOException
     {
         // TODO: use custom (more easily-parseable) format
         // TODO: make retention & rotation configurable
         RequestLogHandler logHandler = new RequestLogHandler();
 
         File logPath = new File(config.getLogPath()).getParentFile();
-        logPath.mkdirs();
+        if (!logPath.mkdirs() && (!logPath.exists() || logPath.exists() && !logPath.isDirectory())) {
+            throw new IOException(String.format("Cannot create %s or path exists but is not a directory", logPath.getAbsolutePath()));
+        }
 
-        RequestLog requestLog;
-        try {
-            requestLog = new DelimitedRequestLog(config.getLogPath(), config.getLogRetainDays());
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        
+        RequestLog requestLog = new DelimitedRequestLog(config.getLogPath(), config.getLogRetainDays());
         logHandler.setRequestLog(requestLog);
 
         return logHandler;

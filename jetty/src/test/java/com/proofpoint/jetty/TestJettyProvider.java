@@ -140,6 +140,11 @@ public class TestJettyProvider
         // TODO
     }
 
+    public void testLogPathIsNotDirectory()
+    {
+        // TODO
+    }
+
     private void createServer(final JettyConfig config)
     {
         server = Guice.createInjector(new ServletModule()
