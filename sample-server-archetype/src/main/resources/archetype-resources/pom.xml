@@ -9,31 +9,32 @@
     <properties>
         <main-class>Main</main-class>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <platform-version>0.1</platform-version>
     </properties>
     
     <dependencies>
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>bootstrap</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>${platform-version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>jetty</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>${platform-version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>jersey</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>${platform-version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>jmx</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>${platform-version}</version>
         </dependency>
 
 
@@ -41,7 +42,7 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>launcher</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>${platform-version}</version>
             <classifier>bin</classifier>
             <type>tar.gz</type>
         </dependency>
@@ -119,7 +120,7 @@
                     <dependency>
                         <groupId>com.proofpoint.platform</groupId>
                         <artifactId>packaging</artifactId>
-                        <version>0.1-SNAPSHOT</version>
+                        <version>${platform-version}</version>
                     </dependency>
                 </dependencies>
 
