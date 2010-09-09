@@ -8,7 +8,7 @@ import com.proofpoint.jersey.JerseyModule;
 import com.proofpoint.jetty.JettyModule;
 import com.proofpoint.jmx.JMXAgent;
 import com.proofpoint.jmx.JMXModule;
-import org.mortbay.jetty.Server;
+import org.eclipse.jetty.server.Server;
 
 public class Main
 {
