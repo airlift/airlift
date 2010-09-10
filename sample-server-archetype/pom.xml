@@ -5,14 +5,14 @@
 
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>sample-server-archetype</artifactId>
-    <version>0.2-SNAPSHOT</version>
+    <version>0.2</version>
     <packaging>maven-archetype</packaging>
     <name>sample-server-archetype</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.2-SNAPSHOT</version>
+        <version>0.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 

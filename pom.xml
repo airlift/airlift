@@ -5,7 +5,7 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>platform</artifactId>
     <packaging>pom</packaging>
-    <version>0.2-SNAPSHOT</version>
+    <version>0.2</version>
     <name>platform</name>
 
     <properties>
