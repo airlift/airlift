@@ -1,5 +1,6 @@
 package com.proofpoint.jetty;
 
+import com.google.common.io.Files;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Key;
@@ -13,7 +14,9 @@ import com.ning.http.client.Response;
 import com.ning.http.util.Base64;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Server;
+import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.servlet.ServletException;
@@ -32,7 +35,16 @@ import static org.testng.Assert.assertEquals;
 public class TestJettyProvider
 {
     private Server server;
+    private File tempDir;
 
+    @BeforeMethod
+    public void setup()
+            throws IOException
+    {
+        tempDir = Files.createTempDir()
+                .getCanonicalFile(); // getCanonicalFile needed to get around Issue 365 (http://code.google.com/p/guava-libraries/issues/detail?id=365)
+    }
+    
     @AfterMethod
     public void teardown()
             throws Exception
@@ -40,6 +52,8 @@ public class TestJettyProvider
         if (server != null) {
             server.stop();
         }
+
+        Files.deleteRecursively(tempDir);
     }
 
     @Test
@@ -58,6 +72,12 @@ public class TestJettyProvider
             public int getHttpPort()
             {
                 return port;
+            }
+
+            @Override
+            public String getLogPath()
+            {
+                return new File(tempDir, "jetty.log").getAbsolutePath();
             }
         };
 
@@ -87,10 +107,14 @@ public class TestJettyProvider
         final int port = socket.getLocalPort();
         socket.close();
 
-        final File file = File.createTempFile("auth", ".properties");
+        final File file = File.createTempFile("auth", ".properties", tempDir);
         PrintStream out = new PrintStream(new FileOutputStream(file));
-        out.print("user: password");
-        out.close();
+        try {
+            out.print("user: password");
+        }
+        catch (Exception e) {
+            out.close();
+        }
 
         final JettyConfig config = new JettyConfig()
         {
@@ -140,7 +164,12 @@ public class TestJettyProvider
         // TODO
     }
 
-    public void testLogPathIsNotDirectory()
+    public void testLogPathIsNotFile()
+    {
+        // TODO
+    }
+
+    public void testLogPathParentCannotbeCreated()
     {
         // TODO
     }
