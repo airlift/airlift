@@ -29,6 +29,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
+import static java.lang.String.format;
+
 /**
  * Provides an instance of a Jetty server ready to be configured with
  * com.google.inject.servlet.ServletModule
@@ -167,10 +169,16 @@ public class JettyProvider
         // TODO: make retention & rotation configurable
         RequestLogHandler logHandler = new RequestLogHandler();
 
-        File logPath = new File(config.getLogPath()).getParentFile();
-        if (!logPath.mkdirs() && (!logPath.exists() || logPath.exists() && !logPath.isDirectory())) {
-            throw new IOException(String.format("Cannot create %s or path exists but is not a directory", logPath.getAbsolutePath()));
+        File logFile = new File(config.getLogPath());
+        if (logFile.exists() && !logFile.isFile()) {
+            throw new IOException(format("Log path %s exists but is not a file", logFile.getAbsolutePath()));
         }
+
+        File logPath = logFile.getParentFile();
+        if (!logPath.mkdirs() && !logPath.exists()) {
+            throw new IOException(format("Cannot create %s and path does not already exist", logPath.getAbsolutePath()));
+        }
+
 
         RequestLog requestLog = new DelimitedRequestLog(config.getLogPath(), config.getLogRetainDays());
         logHandler.setRequestLog(requestLog);
