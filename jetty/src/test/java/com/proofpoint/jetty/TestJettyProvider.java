@@ -125,6 +125,12 @@ public class TestJettyProvider
             }
 
             @Override
+            public String getLogPath()
+            {
+                return new File(tempDir, "jetty.log").getAbsolutePath();
+            }
+
+            @Override
             public String getUserAuthPath()
             {
                 return file.getAbsolutePath();
