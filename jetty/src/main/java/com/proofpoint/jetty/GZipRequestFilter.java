@@ -1,7 +1,5 @@
 package com.proofpoint.jetty;
 
-import org.apache.commons.lang.StringUtils;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
