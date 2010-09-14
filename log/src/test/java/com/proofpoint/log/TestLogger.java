@@ -84,11 +84,7 @@ public class TestLogger
         Logger logger = new Logger(mockLogger);
         logger.debug("hello");
 
-        verify(mockLogger, never()).debug(any(String.class));
-        verify(mockLogger, never()).debug(any(String.class), any(Object.class));
-        verify(mockLogger, never()).debug(any(String.class), any(Object.class), any(Object.class));
-        verify(mockLogger, never()).debug(any(String.class), any(Object[].class));
-        verify(mockLogger, never()).debug(any(String.class), any(Throwable.class));
+        verifyNoCalls(mockLogger);
     }
 
     @Test
@@ -101,11 +97,7 @@ public class TestLogger
         Logger logger = new Logger(mockLogger);
         logger.info("hello");
 
-        verify(mockLogger, never()).info(any(String.class));
-        verify(mockLogger, never()).info(any(String.class), any(Object.class));
-        verify(mockLogger, never()).info(any(String.class), any(Object.class), any(Object.class));
-        verify(mockLogger, never()).info(any(String.class), any(Object[].class));
-        verify(mockLogger, never()).info(any(String.class), any(Throwable.class));
+        verifyNoCalls(mockLogger);
     }
 
     @Test
@@ -118,11 +110,7 @@ public class TestLogger
         Logger logger = new Logger(mockLogger);
         logger.warn("hello");
 
-        verify(mockLogger, never()).warn(any(String.class));
-        verify(mockLogger, never()).warn(any(String.class), any(Object.class));
-        verify(mockLogger, never()).warn(any(String.class), any(Object.class), any(Object.class));
-        verify(mockLogger, never()).warn(any(String.class), any(Object[].class));
-        verify(mockLogger, never()).warn(any(String.class), any(Throwable.class));
+        verifyNoCalls(mockLogger);
     }
 
     @Test
@@ -134,6 +122,29 @@ public class TestLogger
 
         Logger logger = new Logger(mockLogger);
         logger.warn("hello");
+
+        verifyNoCalls(mockLogger);
+    }
+
+    private void verifyNoCalls(org.slf4j.Logger mockLogger)
+    {
+        verify(mockLogger, never()).debug(any(String.class));
+        verify(mockLogger, never()).debug(any(String.class), any(Object.class));
+        verify(mockLogger, never()).debug(any(String.class), any(Object.class), any(Object.class));
+        verify(mockLogger, never()).debug(any(String.class), any(Object[].class));
+        verify(mockLogger, never()).debug(any(String.class), any(Throwable.class));
+        
+        verify(mockLogger, never()).info(any(String.class));
+        verify(mockLogger, never()).info(any(String.class), any(Object.class));
+        verify(mockLogger, never()).info(any(String.class), any(Object.class), any(Object.class));
+        verify(mockLogger, never()).info(any(String.class), any(Object[].class));
+        verify(mockLogger, never()).info(any(String.class), any(Throwable.class));
+
+        verify(mockLogger, never()).warn(any(String.class));
+        verify(mockLogger, never()).warn(any(String.class), any(Object.class));
+        verify(mockLogger, never()).warn(any(String.class), any(Object.class), any(Object.class));
+        verify(mockLogger, never()).warn(any(String.class), any(Object[].class));
+        verify(mockLogger, never()).warn(any(String.class), any(Throwable.class));
 
         verify(mockLogger, never()).error(any(String.class));
         verify(mockLogger, never()).error(any(String.class), any(Object.class));
