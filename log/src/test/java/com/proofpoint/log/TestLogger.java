@@ -7,12 +7,24 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertTrue;
 
 /**
  * TODO: test Throwable variations
  */
 public class TestLogger
 {
+    @Test
+    public void testIsDebugEnabled()
+    {
+        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
+        when(mockLogger.isDebugEnabled()).thenReturn(true);
+
+        Logger logger = new Logger(mockLogger);
+
+        assertTrue(logger.isDebugEnabled());
+    }
+
     @Test
     public void testDebugFormat()
     {
