@@ -7,7 +7,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 
 @Path("/")
-@Produces("text/plain")
 public class HelloResource
 {
     private final HelloConfig config;
@@ -19,7 +18,8 @@ public class HelloResource
     }
 
     @GET
-    public String get()
+    @Produces("text/plain")
+    public String getPlainText()
     {
         if ("es".equals(config.getLanguage())) {
             return "hola mundo";
@@ -30,8 +30,9 @@ public class HelloResource
     }
 
     @GET
-    public String get()
+    @Produces("application/json")
+    public String getJson()
     {
-        return "hello world";
+        return "{\"message\": \"hello world\"}";
     }
 }
