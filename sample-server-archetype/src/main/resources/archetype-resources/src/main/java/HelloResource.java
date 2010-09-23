@@ -10,6 +10,25 @@ import javax.ws.rs.Produces;
 @Produces("text/plain")
 public class HelloResource
 {
+    private final HelloConfig config;
+
+    @Inject
+    public HelloResource(HelloConfig config)
+    {
+        this.config = config;
+    }
+
+    @GET
+    public String get()
+    {
+        if ("es".equals(config.getLanguage())) {
+            return "hola mundo";
+        }
+        else {
+            return "hello world";
+        }
+    }
+
     @GET
     public String get()
     {
