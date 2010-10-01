@@ -5,13 +5,13 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>launcher</artifactId>
     <packaging>jar</packaging>
-    <version>0.3</version>
+    <version>0.4-SNAPSHOT</version>
     <name>laucher</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.3</version>
+        <version>0.4-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     
