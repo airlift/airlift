@@ -31,6 +31,7 @@ public class Bootstrap
 
         Thread.currentThread().setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler()
         {
+            @Override
             public void uncaughtException(Thread t, Throwable e)
             {
                 log.error(e, "Uncaught exception in thread %s", t.getName());
