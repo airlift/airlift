@@ -6,34 +6,48 @@ import java.util.concurrent.CountDownLatch;
 
 public class ExecutedInstance extends Executed
 {
-    private final CountDownLatch        latch = new CountDownLatch(1);
+    private final CountDownLatch        startLatch = new CountDownLatch(1);
+    private final CountDownLatch        endLatch = new CountDownLatch(1);
 
     @Inject
     public ExecutedInstance()
     {
     }
 
-    public void     waitForRun() throws InterruptedException
+    public void     waitForStart() throws InterruptedException
     {
-        latch.await();
+        startLatch.await();
+    }
+
+    public void     waitForEnd() throws InterruptedException
+    {
+        endLatch.await();
     }
 
     @Override
     public void run()
     {
         TestLifeCycleManager.note("Starting");
-        latch.countDown();
-        if ( !Thread.interrupted() )
+        startLatch.countDown();
+
+        try
         {
-            try
+            if ( !Thread.interrupted() )
             {
-                Thread.sleep(Integer.MAX_VALUE);
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.currentThread().interrupt();
+                try
+                {
+                    Thread.sleep(Integer.MAX_VALUE);
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
-        TestLifeCycleManager.note("Done");
+        finally
+        {
+            TestLifeCycleManager.note("Done");
+            endLatch.countDown();
+        }
     }
 }

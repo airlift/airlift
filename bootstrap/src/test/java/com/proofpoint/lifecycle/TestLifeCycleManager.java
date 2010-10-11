@@ -1,6 +1,5 @@
 package com.proofpoint.lifecycle;
 
-import com.google.common.collect.Lists;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -12,10 +11,11 @@ import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class TestLifeCycleManager
 {
-    private final static List<String>      stateLog = Lists.newArrayList();
+    private final static List<String>      stateLog = new CopyOnWriteArrayList<String>();
 
     @BeforeMethod
     public void     setup()
@@ -23,7 +23,7 @@ public class TestLifeCycleManager
         stateLog.clear();
     }
 
-    public synchronized static void      note(String str)
+    public static void      note(String str)
     {
         // I'm assuming that tests are run serially
         stateLog.add(str);
@@ -37,8 +37,9 @@ public class TestLifeCycleManager
 
         LifeCycleManager    lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         lifeCycleManager.start();
-        instance.waitForRun();
+        instance.waitForStart();
         lifeCycleManager.stop();
+        instance.waitForEnd();
 
         Assert.assertEquals(stateLog, Arrays.asList("Starting", "Done"));
     }
