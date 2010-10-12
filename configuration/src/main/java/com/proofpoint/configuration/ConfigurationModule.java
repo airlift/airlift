@@ -1,6 +1,5 @@
 package com.proofpoint.configuration;
 
-import com.google.common.collect.Lists;
 import com.google.inject.Binder;
 import com.google.inject.Binding;
 import com.google.inject.Key;
@@ -30,10 +29,13 @@ public class ConfigurationModule
 
     public ConfigurationModule(Map<String, String> properties, Module... modules)
     {
+        this(properties, Elements.getElements(modules));
+    }
+    
+    public ConfigurationModule(Map<String, String> properties, List<Element> elements)
+    {
         this.properties = properties;
         final List<Element> newElements = new ArrayList<Element>();
-
-        List<Element> elements = Elements.getElements(modules);
 
         for (final Element element : elements) {
             element.acceptVisitor(new DefaultElementVisitor<Void>()

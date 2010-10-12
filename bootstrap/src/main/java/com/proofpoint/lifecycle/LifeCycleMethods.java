@@ -1,6 +1,6 @@
 package com.proofpoint.lifecycle;
 
-import org.testng.collections.Maps;
+import com.google.common.collect.Maps;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;

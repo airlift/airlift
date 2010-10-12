@@ -37,7 +37,12 @@ public class LifeCycleModule implements Module
      */
     public LifeCycleModule(Module... modules)
     {
-        for (final Element element : Elements.getElements(modules) )
+        this(Elements.getElements(modules));
+    }
+
+    public LifeCycleModule(List<Element> elements)
+    {
+        for (final Element element : elements )
         {
             element.acceptVisitor
             (
