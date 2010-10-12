@@ -40,6 +40,11 @@ public class LifeCycleModule implements Module
         this(Elements.getElements(modules));
     }
 
+    /**
+     * Pass in a list of binding elements for analysis
+     *
+     * @param elements binding elements from a set of modules 
+     */
     public LifeCycleModule(List<Element> elements)
     {
         for (final Element element : elements )
