@@ -1,7 +1,6 @@
 package com.proofpoint.lifecycle;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.google.inject.Binder;
 import com.google.inject.Binding;
 import com.google.inject.Injector;
@@ -21,7 +20,6 @@ import com.google.inject.spi.TypeListener;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.List;
-import java.util.Set;
 
 import static com.google.inject.matcher.Matchers.any;
 
@@ -30,7 +28,7 @@ import static com.google.inject.matcher.Matchers.any;
  */
 public class LifeCycleModule implements Module
 {
-    private final Set<Key<?>>       injectedKeys = Sets.newHashSet();
+    private final List<Key<?>>      injectedKeys = Lists.newArrayList();
     private final List<Object>      injectedInstances = Lists.newArrayList();
 
     /**
