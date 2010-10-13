@@ -8,8 +8,9 @@ import com.google.inject.name.Names;
 import com.google.inject.spi.DefaultBindingTargetVisitor;
 import com.google.inject.spi.DefaultElementVisitor;
 import com.google.inject.spi.Element;
-import com.google.inject.spi.Elements;
 import com.google.inject.spi.InstanceBinding;
+import com.google.inject.spi.PrivateElements;
+import com.proofpoint.guice.BootstrapElements;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,22 +25,28 @@ public class ConfigurationModule
     private static int index = 0;
 
     private final List<ConfigBinding> configBindings = new ArrayList<ConfigBinding>();
-    private final Module baseModule;
     private final Map<String, String> properties;
 
-    public ConfigurationModule(Map<String, String> properties, Module... modules)
-    {
-        this(properties, Elements.getElements(modules));
-    }
-    
-    public ConfigurationModule(Map<String, String> properties, List<Element> elements)
+    public ConfigurationModule(Map<String, String> properties, final BootstrapElements elements)
     {
         this.properties = properties;
         final List<Element> newElements = new ArrayList<Element>();
 
-        for (final Element element : elements) {
+        for ( final Element element : elements ) {
             element.acceptVisitor(new DefaultElementVisitor<Void>()
             {
+                @Override
+                public Void visit(PrivateElements privateElements)
+                {
+                    for ( Key<?> key : privateElements.getExposedKeys() )
+                    {
+                        if (ConfigBinding.class.isAssignableFrom(key.getTypeLiteral().getRawType())) {
+                            System.out.println("");
+                        }
+                    }
+                    return null;
+                }
+
                 public <T> Void visit(Binding<T> binding)
                 {
                     Key<?> key = binding.getKey();
@@ -54,6 +61,7 @@ public class ConfigurationModule
                                 return null;
                             }
                         });
+                        elements.unbindElement(element);
                     }
                     else {
                         visitOther(element);
@@ -70,14 +78,10 @@ public class ConfigurationModule
                 }
             });
         }
-
-        baseModule = Elements.getModule(newElements);
     }
 
     public void configure(Binder binder)
     {
-        binder.install(baseModule);
-
         ConfigurationFactory factory = new ConfigurationFactory(properties);
 
         for (ConfigBinding binding : configBindings) {

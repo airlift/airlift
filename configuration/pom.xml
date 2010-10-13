@@ -37,6 +37,12 @@
             <artifactId>cglib-nodep</artifactId>
             <version>2.2</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>common</artifactId>
+            <version>0.4-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <build>

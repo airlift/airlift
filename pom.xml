@@ -66,6 +66,7 @@
 
     <modules>
         <module>testing</module>
+        <module>common</module>
         <module>launcher</module>
         <module>packaging</module>
         <module>log</module>

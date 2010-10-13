@@ -4,18 +4,16 @@ import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
-import com.google.inject.spi.Element;
-import com.google.inject.spi.Elements;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationLoader;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.guice.BootstrapElements;
 import com.proofpoint.lifecycle.LifeCycleModule;
 import com.proofpoint.log.Logger;
 import com.proofpoint.log.Logging;
 import com.proofpoint.log.LoggingConfiguration;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 public class Bootstrap
@@ -53,23 +51,26 @@ public class Bootstrap
         LoggingConfiguration configuration = factory.build(LoggingConfiguration.class);
         logging.initialize(configuration);
 
-        List<Element>           elementList = Elements.getElements(modules);
+        BootstrapElements       bootstrapElements = new BootstrapElements(modules);
 
-        final LifeCycleModule   lifeCycleModule = new LifeCycleModule(modules);
+        LifeCycleModule         lifeCycleModule = new LifeCycleModule(bootstrapElements);
 
         // load & configure guice modules
-        ConfigurationModule config = new ConfigurationModule(properties, elementList)
-        {
-            @Override
-            public void configure(Binder binder)
+        ConfigurationModule     config = new ConfigurationModule(properties, bootstrapElements);
+
+        return Guice.createInjector
+        (
+            lifeCycleModule,
+            config,
+            bootstrapElements,  // must come after config
+            new Module()
             {
-                binder.install(lifeCycleModule);
-                binder.bind(ConfigurationFactory.class).toInstance(factory);
-
-                super.configure(binder);
+                @Override
+                public void configure(Binder binder)
+                {
+                    binder.bind(ConfigurationFactory.class).toInstance(factory);
+                }
             }
-        };
-
-        return Guice.createInjector(config);
+        );
     }
 }

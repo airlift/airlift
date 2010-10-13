@@ -6,11 +6,11 @@ import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.proofpoint.guice.BootstrapElements;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.Properties;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
@@ -73,6 +73,7 @@ public class TestConfig
             fail("Expected exception due to missing value");
         }
         catch (Exception e) {
+            // do nothing
         }
     }
 
@@ -86,6 +87,7 @@ public class TestConfig
             fail("Expected exception due to abstract method without @Config annotation");
         }
         catch (CreationException e) {
+            // do nothing
         }
     }
 
@@ -123,24 +125,23 @@ public class TestConfig
         assertEquals(Long.MAX_VALUE, config.getLongOption());
         assertEquals(Long.valueOf(Long.MAX_VALUE), config.getBoxedLongOption());
         assertEquals(Float.MAX_VALUE, config.getFloatOption(), 0);
-        assertEquals(Float.valueOf(Float.MAX_VALUE), config.getBoxedFloatOption());
+        assertEquals(Float.MAX_VALUE, config.getBoxedFloatOption());
         assertEquals(Double.MAX_VALUE, config.getDoubleOption(), 0);
-        assertEquals(Double.valueOf(Double.MAX_VALUE), config.getBoxedDoubleOption());
+        assertEquals(Double.MAX_VALUE, config.getBoxedDoubleOption());
     }
 
     private Injector createInjector(Map<String, String> properties, final Class<?>... configClasses)
     {
-        Injector injector = Guice.createInjector(new ConfigurationModule(properties, new Module()
-        {
+        Module modules = new Module() {
+            @Override
             public void configure(Binder binder)
             {
-                for (Class<?> configClass : configClasses) {
+                for ( Class<?> configClass : configClasses ) {
                     ConfigurationModule.bindConfig(binder, configClass);
                 }
             }
-        }));
-
-        return injector;
+        };
+        return Guice.createInjector(new ConfigurationModule(properties, new BootstrapElements(modules)));
     }
     
     public abstract static class Thing

@@ -49,7 +49,7 @@ public class LifeCycleManager
         {
             throw new Exception("System already starting");
         }
-        log.debug("Life cycle starting...");
+        log.info("Life cycle starting...");
 
         for ( Object obj : managedInstances )
         {
@@ -83,7 +83,7 @@ public class LifeCycleManager
         );
 
         state.set(State.STARTED);
-        log.debug("Life cycle startup complete. System ready.");
+        log.info("Life cycle startup complete. System ready.");
     }
 
     /**
@@ -98,7 +98,7 @@ public class LifeCycleManager
             return;
         }
         
-        log.debug("Life cycle stopping...");
+        log.info("Life cycle stopping...");
 
         List<Object>        reversedInstances = Lists.newArrayList(managedInstances);
         Collections.reverse(reversedInstances);
@@ -116,6 +116,6 @@ public class LifeCycleManager
         }
 
         state.set(State.STOPPED);
-        log.debug("Life cycle stopped.");
+        log.info("Life cycle stopped.");
     }
 }
