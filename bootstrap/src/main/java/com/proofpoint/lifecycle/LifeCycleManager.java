@@ -48,6 +48,16 @@ public class LifeCycleManager
     }
 
     /**
+     * Returns the number of managed instances
+     *
+     * @return qty
+     */
+    public int      size()
+    {
+        return managedInstances.size();
+    }
+
+    /**
      * Start the life cycle - all instances will have their {@link javax.annotation.PostConstruct} method(s) called
      *
      * @throws Exception errors

@@ -9,6 +9,7 @@ import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationLoader;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.guice.BootstrapElements;
+import com.proofpoint.lifecycle.LifeCycleManager;
 import com.proofpoint.lifecycle.LifeCycleModule;
 import com.proofpoint.log.Logger;
 import com.proofpoint.log.Logging;
@@ -29,7 +30,7 @@ public class Bootstrap
     }
 
     public Injector initialize()
-            throws IOException
+            throws Exception
     {
         Logging logging = new Logging();
 
@@ -59,7 +60,7 @@ public class Bootstrap
         // load & configure guice modules
         ConfigurationModule     config = new ConfigurationModule(properties, bootstrapElements);
 
-        return Guice.createInjector
+        Injector                injector = Guice.createInjector
         (
             Stage.PRODUCTION,
             lifeCycleModule,
@@ -74,5 +75,12 @@ public class Bootstrap
                 }
             }
         );
+        LifeCycleManager        lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+        if ( lifeCycleManager.size() > 0 )
+        {
+            lifeCycleManager.start();
+        }
+
+        return injector;
     }
 }
