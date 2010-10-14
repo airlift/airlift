@@ -38,6 +38,11 @@ public class LifeCycleManager
         this.managedInstances = Lists.newArrayList(managedInstances);
     }
 
+    public LifeCycleManager(Object... managedInstances)
+    {
+        this.managedInstances = Lists.newArrayList(managedInstances);
+    }
+
     /**
      * Start the life cycle - all instances will have their {@link javax.annotation.PostConstruct} method(s) called
      *
