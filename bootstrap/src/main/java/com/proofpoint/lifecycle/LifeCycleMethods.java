@@ -31,6 +31,12 @@ class LifeCycleMethods
 
         for ( Method method : clazz.getDeclaredMethods() )
         {
+            if ( method.isSynthetic() || method.isBridge() ) 
+            {
+                continue;
+            }
+
+
             if ( method.isAnnotationPresent(PostConstruct.class) )
             {
                 methodMap.put(PostConstruct.class, method);

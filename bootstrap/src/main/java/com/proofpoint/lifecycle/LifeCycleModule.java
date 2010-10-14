@@ -28,8 +28,9 @@ import static com.google.inject.matcher.Matchers.any;
  */
 public class LifeCycleModule implements Module
 {
-    private final List<Key<?>>      injectedKeys = Lists.newArrayList();
-    private final List<Object>      injectedInstances = Lists.newArrayList();
+    private final List<Key<?>>          injectedKeys = Lists.newArrayList();
+    private final List<Object>          injectedInstances = Lists.newArrayList();
+    private final LifeCycleMethodsMap   lifeCycleMethodsMap = new LifeCycleMethodsMap();
 
     /**
      * @param elements Set of elements from Guice
@@ -122,7 +123,7 @@ public class LifeCycleModule implements Module
             injector.getInstance(key);
         }
 
-        return new LifeCycleManager(injectedInstances);
+        return new LifeCycleManager(injectedInstances, lifeCycleMethodsMap);
     }
 
     private <T> void checkKey(Key<T> key)
@@ -133,9 +134,9 @@ public class LifeCycleModule implements Module
         }
     }
 
-    private static boolean isLifeCycleClass(Class<?> clazz)
+    private boolean isLifeCycleClass(Class<?> clazz)
     {
-        LifeCycleMethods        methods = new LifeCycleMethods(clazz);
+        LifeCycleMethods        methods = lifeCycleMethodsMap.get(clazz);
         return (methods.methodFor(PostConstruct.class) != null) || (methods.methodFor(PreDestroy.class) != null);
     }
 }

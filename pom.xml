@@ -66,15 +66,15 @@
 
     <modules>
         <module>testing</module>
-        <module>common</module>
+        <module>guice</module>
         <module>launcher</module>
         <module>packaging</module>
         <module>log</module>
         <module>jetty</module>
         <module>jersey</module>
         <module>jmx</module>
-        <module>configuration</module>
         <module>bootstrap</module>
+        <module>configuration</module>
         <module>sample-server-archetype</module>
     </modules>
 </project>

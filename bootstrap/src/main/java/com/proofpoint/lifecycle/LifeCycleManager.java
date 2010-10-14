@@ -19,6 +19,7 @@ public class LifeCycleManager
     private final Logger                    log = Logger.get(getClass());
     private final AtomicReference<State>    state = new AtomicReference<State>(State.LATENT);
     private final List<Object>              managedInstances;
+    private final LifeCycleMethodsMap       methodsMap;
 
     private enum State
     {
@@ -31,16 +32,19 @@ public class LifeCycleManager
 
     /**
      * @param managedInstances list of objects that have life cycle annotations
+     * @param methodsMap existing or new methods map
      */
     @Inject
-    public LifeCycleManager(List<Object> managedInstances)
+    public LifeCycleManager(List<Object> managedInstances, LifeCycleMethodsMap methodsMap)
     {
+        this.methodsMap = methodsMap;
         this.managedInstances = Lists.newArrayList(managedInstances);
     }
 
     public LifeCycleManager(Object... managedInstances)
     {
         this.managedInstances = Lists.newArrayList(managedInstances);
+        methodsMap = new LifeCycleMethodsMap();
     }
 
     /**
@@ -59,7 +63,7 @@ public class LifeCycleManager
         for ( Object obj : managedInstances )
         {
             log.debug("Starting %s", obj.getClass().getName());
-            LifeCycleMethods        methods = new LifeCycleMethods(obj.getClass());
+            LifeCycleMethods        methods = methodsMap.get(obj.getClass());
             Method                  postConstruct = methods.methodFor(PostConstruct.class);
             if ( postConstruct != null )
             {
@@ -111,7 +115,7 @@ public class LifeCycleManager
         for ( Object obj : reversedInstances )
         {
             log.debug("Stopping %s", obj.getClass().getName());
-            LifeCycleMethods        methods = new LifeCycleMethods(obj.getClass());
+            LifeCycleMethods        methods = methodsMap.get(obj.getClass());
             Method                  preDestroy = methods.methodFor(PreDestroy.class);
             if ( preDestroy != null )
             {
