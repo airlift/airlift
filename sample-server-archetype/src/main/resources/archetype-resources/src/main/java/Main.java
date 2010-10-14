@@ -21,30 +21,5 @@ public class Main
                                       new MainModule());
 
         Injector injector = app.initialize();
-
-        final Server server = injector.getInstance(Server.class);
-        final JMXAgent jmxAgent = injector.getInstance(JMXAgent.class);
-
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable()
-        {
-            public void run()
-            {
-                try {
-                    jmxAgent.stop();
-                    server.stop();
-                }
-                catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }));
-
-        try {
-            jmxAgent.start();
-            server.start();
-        }
-        catch (Exception e) {
-            server.stop();
-        }
     }
 }
