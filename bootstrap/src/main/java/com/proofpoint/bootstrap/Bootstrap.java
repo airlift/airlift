@@ -4,6 +4,7 @@ import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.inject.Stage;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationLoader;
 import com.proofpoint.configuration.ConfigurationModule;
@@ -60,6 +61,7 @@ public class Bootstrap
 
         return Guice.createInjector
         (
+            Stage.PRODUCTION,
             lifeCycleModule,
             config,
             bootstrapElements,  // must come after config
