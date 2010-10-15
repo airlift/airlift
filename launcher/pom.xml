@@ -6,7 +6,7 @@
     <artifactId>launcher</artifactId>
     <packaging>jar</packaging>
     <version>0.4-SNAPSHOT</version>
-    <name>laucher</name>
+    <name>launcher</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
