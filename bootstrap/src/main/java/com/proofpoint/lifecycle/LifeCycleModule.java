@@ -137,6 +137,6 @@ public class LifeCycleModule implements Module
     private boolean isLifeCycleClass(Class<?> clazz)
     {
         LifeCycleMethods        methods = lifeCycleMethodsMap.get(clazz);
-        return (methods.methodFor(PostConstruct.class) != null) || (methods.methodFor(PreDestroy.class) != null);
+        return methods.hasFor(PostConstruct.class) || methods.hasFor(PreDestroy.class);
     }
 }

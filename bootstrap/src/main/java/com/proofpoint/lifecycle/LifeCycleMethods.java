@@ -1,25 +1,34 @@
 package com.proofpoint.lifecycle;
 
-import com.google.common.collect.Maps;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.Map;
+import java.util.Collection;
 
 class LifeCycleMethods
 {
-    private final Map<Class<? extends Annotation>, Method>      methodMap = Maps.newHashMap();
+    private final Multimap<Class<? extends Annotation>, Method> methodMap = ArrayListMultimap.create();
 
     LifeCycleMethods(Class<?> clazz)
     {
         addLifeCycleMethods(clazz);
     }
 
-    Method      methodFor(Class<? extends Annotation> annotation)
+    boolean      hasFor(Class<? extends Annotation> annotation)
     {
-        return methodMap.get(annotation);
+        Collection<Method> methods = methodMap.get(annotation);
+        return (methods != null) && (methods.size() > 0);
+    }
+
+    Collection<Method>      methodsFor(Class<? extends Annotation> annotation)
+    {
+        Collection<Method> methods = methodMap.get(annotation);
+        return (methods != null) ? methods : Lists.<Method>newArrayList();
     }
 
     private void addLifeCycleMethods(Class<?> clazz)

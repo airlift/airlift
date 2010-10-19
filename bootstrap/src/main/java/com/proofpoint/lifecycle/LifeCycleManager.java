@@ -74,8 +74,7 @@ public class LifeCycleManager
         {
             log.debug("Starting %s", obj.getClass().getName());
             LifeCycleMethods        methods = methodsMap.get(obj.getClass());
-            Method                  postConstruct = methods.methodFor(PostConstruct.class);
-            if ( postConstruct != null )
+            for ( Method postConstruct : methods.methodsFor(PostConstruct.class) )
             {
                 log.debug("\t%s()", postConstruct.getName());
                 postConstruct.invoke(obj);     // TODO - support optional arguments?
@@ -126,8 +125,7 @@ public class LifeCycleManager
         {
             log.debug("Stopping %s", obj.getClass().getName());
             LifeCycleMethods        methods = methodsMap.get(obj.getClass());
-            Method                  preDestroy = methods.methodFor(PreDestroy.class);
-            if ( preDestroy != null )
+            for ( Method preDestroy : methods.methodsFor(PreDestroy.class) )
             {
                 log.debug("\t%s()", preDestroy.getName());
                 preDestroy.invoke(obj);     // TODO - support optional arguments?
