@@ -138,6 +138,30 @@ public class TestLifeCycleManager
     }
 
     @Test
+    public void testDuplicateMethodNames() throws Exception
+    {
+        Injector            injector = Guice.createInjector
+        (
+            Stage.PRODUCTION,
+            new Module()
+            {
+                @Override
+                public void configure(Binder binder)
+                {
+                    binder.bind(FooTestInstance.class).in(Scopes.SINGLETON);
+                }
+            },
+            new LifeCycleModule()
+        );
+
+        LifeCycleManager    lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+        lifeCycleManager.start();
+        lifeCycleManager.stop();
+
+        Assert.assertEquals(stateLog, Arrays.asList("foo"));
+    }
+
+    @Test
     public void testJITInjection() throws Exception
     {
         Injector            injector = Guice.createInjector

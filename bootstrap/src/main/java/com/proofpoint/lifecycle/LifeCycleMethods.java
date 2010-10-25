@@ -9,6 +9,8 @@ import javax.annotation.PreDestroy;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 class LifeCycleMethods
 {
@@ -16,7 +18,7 @@ class LifeCycleMethods
 
     LifeCycleMethods(Class<?> clazz)
     {
-        addLifeCycleMethods(clazz);
+        addLifeCycleMethods(clazz, new HashSet<String>(), new HashSet<String>());
     }
 
     boolean      hasFor(Class<? extends Annotation> annotation)
@@ -31,7 +33,7 @@ class LifeCycleMethods
         return (methods != null) ? methods : Lists.<Method>newArrayList();
     }
 
-    private void addLifeCycleMethods(Class<?> clazz)
+    private void addLifeCycleMethods(Class<?> clazz, Set<String> usedConstructNames, Set<String> usedDestroyNames)
     {
         if ( clazz == null )
         {
@@ -40,26 +42,33 @@ class LifeCycleMethods
 
         for ( Method method : clazz.getDeclaredMethods() )
         {
-            if ( method.isSynthetic() || method.isBridge() ) 
+            if ( method.isSynthetic() || method.isBridge() )
             {
                 continue;
             }
 
-
             if ( method.isAnnotationPresent(PostConstruct.class) )
             {
-                methodMap.put(PostConstruct.class, method);
+                if ( !usedConstructNames.contains(method.getName()) )
+                {
+                    usedConstructNames.add(method.getName());
+                    methodMap.put(PostConstruct.class, method);
+                }
             }
             if ( method.isAnnotationPresent(PreDestroy.class) )
             {
-                methodMap.put(PreDestroy.class, method);
+                if ( !usedDestroyNames.contains(method.getName()) )
+                {
+                    usedDestroyNames.add(method.getName());
+                    methodMap.put(PreDestroy.class, method);
+                }
             }
         }
 
-        addLifeCycleMethods(clazz.getSuperclass());
+        addLifeCycleMethods(clazz.getSuperclass(), usedConstructNames, usedDestroyNames);
         for ( Class<?> face : clazz.getInterfaces() )
         {
-            addLifeCycleMethods(face);
+            addLifeCycleMethods(face, usedConstructNames, usedDestroyNames);
         }
     }
 }
