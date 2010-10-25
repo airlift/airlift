@@ -55,7 +55,7 @@ public class Bootstrap
 
         BootstrapElements       bootstrapElements = new BootstrapElements(modules);
 
-        LifeCycleModule         lifeCycleModule = new LifeCycleModule(bootstrapElements);
+        LifeCycleModule         lifeCycleModule = new LifeCycleModule();
 
         // load & configure guice modules
         ConfigurationModule     config = new ConfigurationModule(properties, bootstrapElements);

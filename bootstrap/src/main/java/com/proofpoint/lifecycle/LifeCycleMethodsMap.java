@@ -8,7 +8,7 @@ class LifeCycleMethodsMap
 {
     private final Map<Class<?>, LifeCycleMethods>     map = Maps.newHashMap();
 
-    LifeCycleMethods        get(Class<?> clazz)
+    synchronized LifeCycleMethods        get(Class<?> clazz)
     {
         LifeCycleMethods methods = map.get(clazz);
         if ( methods == null )

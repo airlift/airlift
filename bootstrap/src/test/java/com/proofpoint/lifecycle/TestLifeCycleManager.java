@@ -7,13 +7,11 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.PrivateModule;
 import com.google.inject.Scopes;
-import com.google.inject.spi.Element;
-import com.google.inject.spi.Elements;
+import com.google.inject.Stage;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -48,15 +46,20 @@ public class TestLifeCycleManager
                     @Override
                     protected void configure()
                     {
-                        binder().bind(SimpleBase.class).to(SimpleBaseImpl.class);
-                        binder().expose(SimpleBaseImpl.class);
+                        binder().bind(SimpleBase.class).to(SimpleBaseImpl.class).in(Scopes.SINGLETON);
+                        binder().expose(SimpleBase.class);
                     }
                 };
                 binder.install(privateModule);
             }
         };
 
-        Injector            injector = Guice.createInjector(new LifeCycleModule(Elements.getElements(module)));
+        Injector            injector = Guice.createInjector
+        (
+            Stage.PRODUCTION,
+            new LifeCycleModule(),
+            module
+        );
         LifeCycleManager    lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         lifeCycleManager.start();
         lifeCycleManager.stop();
@@ -72,10 +75,15 @@ public class TestLifeCycleManager
             @Override
             public void configure(Binder binder)
             {
-                binder.bind(SimpleBase.class).to(SimpleBaseImpl.class);
+                binder.bind(SimpleBase.class).to(SimpleBaseImpl.class).in(Scopes.SINGLETON);
             }
         };
-        Injector            injector = Guice.createInjector(new LifeCycleModule(Elements.getElements(module)));
+        Injector            injector = Guice.createInjector
+        (
+            Stage.PRODUCTION,
+            new LifeCycleModule(),
+            module
+        );
         LifeCycleManager    lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         lifeCycleManager.start();
         lifeCycleManager.stop();
@@ -86,7 +94,11 @@ public class TestLifeCycleManager
     @Test
     public void testExecuted() throws Exception
     {
-        Injector            injector = Guice.createInjector(new LifeCycleModule(new ArrayList<Element>()));
+        Injector            injector = Guice.createInjector
+        (
+            Stage.PRODUCTION,
+            new LifeCycleModule()
+        );
         ExecutedInstance    instance = injector.getInstance(ExecutedInstance.class);
 
         LifeCycleManager    lifeCycleManager = injector.getInstance(LifeCycleManager.class);
@@ -109,7 +121,12 @@ public class TestLifeCycleManager
                 binder.bind(AnotherInstance.class).in(Scopes.SINGLETON);
             }
         };
-        Injector            injector = Guice.createInjector(new LifeCycleModule(Elements.getElements(module)), module);
+        Injector            injector = Guice.createInjector
+        (
+            Stage.PRODUCTION,
+            new LifeCycleModule(),
+            module
+        );
 
         injector.getInstance(AnotherInstance.class);
 
@@ -123,7 +140,11 @@ public class TestLifeCycleManager
     @Test
     public void testJITInjection() throws Exception
     {
-        Injector            injector = Guice.createInjector(new LifeCycleModule(new ArrayList<Element>()));
+        Injector            injector = Guice.createInjector
+        (
+            Stage.PRODUCTION,
+            new LifeCycleModule()
+        );
         injector.getInstance(AnInstance.class);
 
         LifeCycleManager    lifeCycleManager = injector.getInstance(LifeCycleManager.class);
@@ -131,6 +152,32 @@ public class TestLifeCycleManager
         lifeCycleManager.stop();
 
         Assert.assertEquals(stateLog, Arrays.asList("postDependentInstance", "preDependentInstance"));
+    }
+
+    @Test
+    public void testNoPreDestroy() throws Exception
+    {
+        Injector            injector = Guice.createInjector
+        (
+            Stage.PRODUCTION,
+            new LifeCycleModule(),
+            new Module()
+            {
+                @Override
+                public void configure(Binder binder)
+                {
+                    binder.bind(PostConstructOnly.class).in(Scopes.SINGLETON);
+                    binder.bind(PreDestroyOnly.class).in(Scopes.SINGLETON);
+                }
+            }
+        );
+        injector.getInstance(PostConstructOnly.class);
+
+        LifeCycleManager    lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+        lifeCycleManager.start();
+        lifeCycleManager.stop();
+
+        Assert.assertEquals(stateLog, Arrays.asList("makeMe", "unmakeMe"));
     }
 
     @Test
@@ -147,7 +194,12 @@ public class TestLifeCycleManager
                 binder.bind(InstanceTwo.class).in(Scopes.SINGLETON);
             }
         };
-        Injector            injector = Guice.createInjector(new LifeCycleModule(Elements.getElements(module)), module);
+        Injector            injector = Guice.createInjector
+        (
+            Stage.PRODUCTION,
+            new LifeCycleModule(),
+            module
+        );
 
         LifeCycleManager    lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         lifeCycleManager.start();
