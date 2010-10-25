@@ -63,8 +63,9 @@ public class TestLifeCycleManager
         );
         LifeCycleManager    lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         lifeCycleManager.start();
-        lifeCycleManager.stop();
+        Assert.assertEquals(stateLog, Arrays.asList("postSimpleBaseImpl"));
 
+        lifeCycleManager.stop();
         Assert.assertEquals(stateLog, Arrays.asList("postSimpleBaseImpl", "preSimpleBaseImpl"));
     }
 
@@ -87,6 +88,8 @@ public class TestLifeCycleManager
         );
         LifeCycleManager    lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         lifeCycleManager.start();
+        Assert.assertEquals(stateLog, Arrays.asList("postSimpleBaseImpl"));
+
         lifeCycleManager.stop();
 
         Assert.assertEquals(stateLog, Arrays.asList("postSimpleBaseImpl", "preSimpleBaseImpl"));
@@ -105,6 +108,8 @@ public class TestLifeCycleManager
         LifeCycleManager    lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         lifeCycleManager.start();
         instance.waitForStart();
+        Assert.assertEquals(stateLog, Arrays.asList("Starting"));
+
         lifeCycleManager.stop();
         instance.waitForEnd();
 
@@ -133,8 +138,9 @@ public class TestLifeCycleManager
 
         LifeCycleManager    lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         lifeCycleManager.start();
-        lifeCycleManager.stop();
+        Assert.assertEquals(stateLog, Arrays.asList("postDependentInstance"));
 
+        lifeCycleManager.stop();
         Assert.assertEquals(stateLog, Arrays.asList("postDependentInstance", "preDependentInstance"));
     }
 
@@ -226,8 +232,9 @@ public class TestLifeCycleManager
 
         LifeCycleManager    lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         lifeCycleManager.start();
-        lifeCycleManager.stop();
+        Assert.assertEquals(stateLog, Arrays.asList("makeMe"));
 
+        lifeCycleManager.stop();
         Assert.assertEquals(stateLog, Arrays.asList("makeMe", "unmakeMe"));
     }
 

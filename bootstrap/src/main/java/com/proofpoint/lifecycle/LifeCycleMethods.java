@@ -70,7 +70,7 @@ class LifeCycleMethods
                 }
 
                 usedSet.add(method.getName());
-                methodMap.put(PostConstruct.class, method);
+                methodMap.put(annotationClass, method);
             }
         }
     }
