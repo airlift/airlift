@@ -131,7 +131,7 @@ public class LifeCycleManager
             for ( Method preDestroy : methods.methodsFor(PreDestroy.class) )
             {
                 log.debug("\t%s()", preDestroy.getName());
-                preDestroy.invoke(obj);     // TODO - support optional arguments?
+                preDestroy.invoke(obj);
             }
         }
 
