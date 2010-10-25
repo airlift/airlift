@@ -78,4 +78,9 @@ public class Logger
     {
         return logger.isDebugEnabled();
     }
+
+    public boolean isInfoEnabled()
+    {
+        return logger.isInfoEnabled();
+    }
 }

@@ -10,7 +10,7 @@ import com.google.inject.spi.DefaultElementVisitor;
 import com.google.inject.spi.Element;
 import com.google.inject.spi.InstanceBinding;
 import com.google.inject.spi.PrivateElements;
-import com.proofpoint.guice.BootstrapElements;
+import com.proofpoint.guice.ElementsIterator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,12 +27,12 @@ public class ConfigurationModule
     private final List<ConfigBinding> configBindings = new ArrayList<ConfigBinding>();
     private final Map<String, String> properties;
 
-    public ConfigurationModule(Map<String, String> properties, final BootstrapElements elements)
+    public ConfigurationModule(Map<String, String> properties, final ElementsIterator elementsIterator)
     {
         this.properties = properties;
         final List<Element> newElements = new ArrayList<Element>();
 
-        for ( final Element element : elements ) {
+        for ( final Element element : elementsIterator ) {
             element.acceptVisitor(new DefaultElementVisitor<Void>()
             {
                 @Override
@@ -61,7 +61,7 @@ public class ConfigurationModule
                                 return null;
                             }
                         });
-                        elements.unbindElement(element);
+                        elementsIterator.unbindElement(element);
                     }
                     else {
                         visitOther(element);

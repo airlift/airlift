@@ -6,7 +6,7 @@ import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
-import com.proofpoint.guice.BootstrapElements;
+import com.proofpoint.guice.ElementsIterator;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
@@ -141,7 +141,7 @@ public class TestConfig
                 }
             }
         };
-        return Guice.createInjector(new ConfigurationModule(properties, new BootstrapElements(modules)));
+        return Guice.createInjector(new ConfigurationModule(properties, new ElementsIterator(modules)));
     }
     
     public abstract static class Thing

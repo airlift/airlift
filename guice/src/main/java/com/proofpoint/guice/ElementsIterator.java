@@ -13,7 +13,7 @@ import java.util.List;
  * Utility for getting Guice Elements set. Instances of this _must_ be
  * added to your Guice injector creation.
  */
-public class BootstrapElements implements Module, Iterable<Element>
+public class ElementsIterator implements Module, Iterable<Element>
 {
     private final List<Element>         boundElements;
     private final List<Element>         elements;
@@ -23,7 +23,7 @@ public class BootstrapElements implements Module, Iterable<Element>
      *
      * @param modules the modules
      */
-    public BootstrapElements(Module... modules)
+    public ElementsIterator(Module... modules)
     {
         elements = Elements.getElements(modules);
         boundElements = Lists.newArrayList(elements);

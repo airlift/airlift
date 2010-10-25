@@ -8,14 +8,17 @@ import com.google.inject.Stage;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationLoader;
 import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.guice.BootstrapElements;
+import com.proofpoint.configuration.inspector.ConfigurationInspector;
+import com.proofpoint.guice.ElementsIterator;
 import com.proofpoint.lifecycle.LifeCycleManager;
 import com.proofpoint.lifecycle.LifeCycleModule;
 import com.proofpoint.log.Logger;
 import com.proofpoint.log.Logging;
 import com.proofpoint.log.LoggingConfiguration;
+import com.proofpoint.log.LoggingWriter;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Map;
 
 public class Bootstrap
@@ -53,19 +56,19 @@ public class Bootstrap
         LoggingConfiguration configuration = factory.build(LoggingConfiguration.class);
         logging.initialize(configuration);
 
-        BootstrapElements       bootstrapElements = new BootstrapElements(modules);
+        ElementsIterator elementsIterator = new ElementsIterator(modules);
 
         LifeCycleModule         lifeCycleModule = new LifeCycleModule();
 
         // load & configure guice modules
-        ConfigurationModule     config = new ConfigurationModule(properties, bootstrapElements);
+        ConfigurationModule     config = new ConfigurationModule(properties, elementsIterator);
 
         Injector                injector = Guice.createInjector
         (
             Stage.PRODUCTION,
             lifeCycleModule,
             config,
-            bootstrapElements,  // must come after config
+            elementsIterator,  // must come after config
             new Module()
             {
                 @Override
@@ -76,6 +79,9 @@ public class Bootstrap
             }
         );
         LifeCycleManager        lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+        ConfigurationInspector  configurationInspector = injector.getInstance(ConfigurationInspector.class);
+        configurationInspector.print(new PrintWriter(new LoggingWriter(log, LoggingWriter.Type.DEBUG)));
+
         if ( lifeCycleManager.size() > 0 )
         {
             lifeCycleManager.start();
