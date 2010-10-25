@@ -47,24 +47,8 @@ class LifeCycleMethods
                 continue;
             }
 
-            if ( method.isAnnotationPresent(PostConstruct.class) )
-            {
-                if ( !usedConstructNames.contains(method.getName()) )
-                {
-                    validateMethod(method);
-                    usedConstructNames.add(method.getName());
-                    methodMap.put(PostConstruct.class, method);
-                }
-            }
-            if ( method.isAnnotationPresent(PreDestroy.class) )
-            {
-                if ( !usedDestroyNames.contains(method.getName()) )
-                {
-                    validateMethod(method);
-                    usedDestroyNames.add(method.getName());
-                    methodMap.put(PreDestroy.class, method);
-                }
-            }
+            procesMethod(method, PostConstruct.class, usedConstructNames);
+            procesMethod(method, PreDestroy.class, usedDestroyNames);
         }
 
         addLifeCycleMethods(clazz.getSuperclass(), usedConstructNames, usedDestroyNames);
@@ -74,11 +58,20 @@ class LifeCycleMethods
         }
     }
 
-    private void        validateMethod(Method m)
+    private void procesMethod(Method method, Class<? extends Annotation> annotationClass, Set<String> usedSet)
     {
-        if ( m.getParameterTypes().length != 0 )
+        if ( method.isAnnotationPresent(annotationClass) )
         {
-            throw new UnsupportedOperationException(String.format("@PostConstruct/@PreDestroy methods cannot have arguments: %s", m.getDeclaringClass().getName() + "." + m.getName() + "(...)"));
+            if ( !usedSet.contains(method.getName()) )
+            {
+                if ( method.getParameterTypes().length != 0 )
+                {
+                    throw new UnsupportedOperationException(String.format("@PostConstruct/@PreDestroy methods cannot have arguments: %s", method.getDeclaringClass().getName() + "." + method.getName() + "(...)"));
+                }
+
+                usedSet.add(method.getName());
+                methodMap.put(PostConstruct.class, method);
+            }
         }
     }
 }
