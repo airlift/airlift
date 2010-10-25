@@ -2,6 +2,7 @@ package com.proofpoint.lifecycle;
 
 import com.google.common.collect.Sets;
 import com.google.inject.Binder;
+import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
@@ -135,6 +136,32 @@ public class TestLifeCycleManager
         lifeCycleManager.stop();
 
         Assert.assertEquals(stateLog, Arrays.asList("postDependentInstance", "preDependentInstance"));
+    }
+
+    @Test
+    public void testIllegalMethods() throws Exception
+    {
+        try
+        {
+            Guice.createInjector
+            (
+                Stage.PRODUCTION,
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        binder.bind(IllegalInstance.class).in(Scopes.SINGLETON);
+                    }
+                },
+                new LifeCycleModule()
+            );
+            Assert.fail();
+        }
+        catch ( CreationException dummy )
+        {
+            // correct behavior
+        }
     }
 
     @Test

@@ -51,6 +51,7 @@ class LifeCycleMethods
             {
                 if ( !usedConstructNames.contains(method.getName()) )
                 {
+                    validateMethod(method);
                     usedConstructNames.add(method.getName());
                     methodMap.put(PostConstruct.class, method);
                 }
@@ -59,6 +60,7 @@ class LifeCycleMethods
             {
                 if ( !usedDestroyNames.contains(method.getName()) )
                 {
+                    validateMethod(method);
                     usedDestroyNames.add(method.getName());
                     methodMap.put(PreDestroy.class, method);
                 }
@@ -69,6 +71,14 @@ class LifeCycleMethods
         for ( Class<?> face : clazz.getInterfaces() )
         {
             addLifeCycleMethods(face, usedConstructNames, usedDestroyNames);
+        }
+    }
+
+    private void        validateMethod(Method m)
+    {
+        if ( m.getParameterTypes().length != 0 )
+        {
+            throw new UnsupportedOperationException(String.format("@PostConstruct/@PreDestroy methods cannot have arguments: %s", m.getDeclaringClass().getName() + "." + m.getName() + "(...)"));
         }
     }
 }
