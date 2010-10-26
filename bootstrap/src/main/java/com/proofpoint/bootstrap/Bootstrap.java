@@ -10,6 +10,7 @@ import com.proofpoint.configuration.ConfigurationLoader;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.configuration.ConfigurationInspector;
 import com.proofpoint.guice.ElementsIterator;
+import com.proofpoint.jmx.JMXInspector;
 import com.proofpoint.lifecycle.LifeCycleManager;
 import com.proofpoint.lifecycle.LifeCycleModule;
 import com.proofpoint.log.Logger;
@@ -79,8 +80,12 @@ public class Bootstrap
             }
         );
         LifeCycleManager        lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+
         ConfigurationInspector  configurationInspector = injector.getInstance(ConfigurationInspector.class);
         configurationInspector.print(new PrintWriter(new LoggingWriter(log, LoggingWriter.Type.DEBUG)));
+
+        JMXInspector            jmxInspector = injector.getInstance(JMXInspector.class);
+        jmxInspector.print(new PrintWriter(new LoggingWriter(log, LoggingWriter.Type.DEBUG)));
 
         if ( lifeCycleManager.size() > 0 )
         {
