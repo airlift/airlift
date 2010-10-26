@@ -1,4 +1,4 @@
-package com.proofpoint.configuration.inspector;
+package com.proofpoint.formatting;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.mutable.MutableInt;
@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * A utility for outputting columnar text
  */
-class ColumnPrinter
+public class ColumnPrinter
 {
     private final List<List<String>>    data = Lists.newArrayList();
     private final List<String>          columnNames = Lists.newArrayList();

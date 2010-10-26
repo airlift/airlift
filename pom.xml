@@ -74,6 +74,7 @@
         <module>jersey</module>
         <module>jmx</module>
         <module>bootstrap</module>
+        <module>formatting</module>
         <module>configuration</module>
         <module>sample-server-archetype</module>
     </modules>

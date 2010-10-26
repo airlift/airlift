@@ -8,7 +8,7 @@ import com.google.inject.Stage;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationLoader;
 import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.configuration.inspector.ConfigurationInspector;
+import com.proofpoint.configuration.ConfigurationInspector;
 import com.proofpoint.guice.ElementsIterator;
 import com.proofpoint.lifecycle.LifeCycleManager;
 import com.proofpoint.lifecycle.LifeCycleModule;

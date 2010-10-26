@@ -1,12 +1,9 @@
-package com.proofpoint.configuration.inspector;
+package com.proofpoint.configuration;
 
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.proofpoint.configuration.Config;
-import com.proofpoint.configuration.ConfigDescription;
-import com.proofpoint.configuration.ConfigurationFactory;
-import com.proofpoint.configuration.Default;
+import com.proofpoint.formatting.ColumnPrinter;
 import com.proofpoint.guice.GuiceInjectorIterator;
 
 import java.io.PrintWriter;
