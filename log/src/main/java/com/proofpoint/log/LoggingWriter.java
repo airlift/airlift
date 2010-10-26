@@ -76,7 +76,6 @@ public class LoggingWriter extends StringWriter
 
     public void printMessage(String message, Object... args) throws IOException
     {
-        String      formatted = String.format(message, args) + "\n";
-        write(formatted.toCharArray());
+        write(String.format(message, args) + "\n");
     }
 }
