@@ -25,6 +25,8 @@ public class DefaultZookeeperClientCreator implements ZookeeperClientCreator
     private final AtomicBoolean connectionSucceeded = new AtomicBoolean(false);
     private final RetryPolicy retryPolicy;
 
+    private Watcher waitingWatcher = null;  // protected by synchronized(events)
+
     @Inject
     public DefaultZookeeperClientCreator(ZookeeperClientConfig config)
     {
@@ -43,20 +45,19 @@ public class DefaultZookeeperClientCreator implements ZookeeperClientCreator
     }
 
     @Override
-    public List<WatchedEvent> getPendingEvents()
-    {
-        synchronized(events)
-        {
-            ArrayList<WatchedEvent> copyEvents = new ArrayList<WatchedEvent>(events);
-            events.clear();
-            return copyEvents;
-        }
-    }
-
-    @Override
     public ZooKeeper create() throws Exception
     {
-        return new ZooKeeper(config.getConnectionString(), config.getSessionTimeoutInMs(), new Watcher()
+        return new ZooKeeper(config.getConnectionString(), config.getSessionTimeoutInMs(), newWatcher());
+    }
+
+    /**
+     * Made public for testing purposes
+     *
+     * @return return a watcher for testing
+     */
+    public Watcher newWatcher()
+    {
+        return new Watcher()
         {
             @Override
             public void process(WatchedEvent event)
@@ -76,18 +77,25 @@ public class DefaultZookeeperClientCreator implements ZookeeperClientCreator
                         }
                         latch.countDown();
                     }
+                }
 
-                    synchronized(events)
+                synchronized(events)
+                {
+                    if ( waitingWatcher != null )
+                    {
+                        waitingWatcher.process(event);
+                    }
+                    else
                     {
                         events.add(event);
                     }
                 }
             }
-        });
+        };
     }
 
     @Override
-    public ConnectionStatus waitForStart() throws InterruptedException
+    public ConnectionStatus waitForStart(ZooKeeper client, Watcher watcher) throws InterruptedException
     {
         CountDownLatch      latch = startupLatchRef.get();
         if ( latch != null )
@@ -102,6 +110,21 @@ public class DefaultZookeeperClientCreator implements ZookeeperClientCreator
             }
         }
 
-        return connectionSucceeded.get() ? ConnectionStatus.SUCCESS : ConnectionStatus.FAILED;
+        boolean success = connectionSucceeded.get();
+        if ( success )
+        {
+            synchronized(events)
+            {
+                waitingWatcher = watcher;
+                
+                for ( WatchedEvent event : events )
+                {
+                    watcher.process(event);
+                }
+                events.clear();
+                client.register(watcher);
+            }
+        }
+        return success ? ConnectionStatus.SUCCESS : ConnectionStatus.FAILED;
     }
 }

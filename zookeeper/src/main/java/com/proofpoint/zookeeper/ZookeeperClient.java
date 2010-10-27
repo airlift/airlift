@@ -717,31 +717,24 @@ public class ZookeeperClient implements ZookeeperClientHelper
 
         try
         {
-            if ( creator.waitForStart() == ZookeeperClientCreator.ConnectionStatus.SUCCESS )
+            Watcher watcher = new Watcher()
             {
-                if ( stateRef.compareAndSet(State.WAITING_FOR_STARTUP, State.STARTUP_SUCCEEDED) )
+                @Override
+                public void process(WatchedEvent event)
                 {
-                    Watcher watcher = new Watcher()
+                    if ( (event.getState() == Event.KeeperState.Disconnected) || (event.getState() == Event.KeeperState.Expired) )
                     {
-                        @Override
-                        public void process(WatchedEvent event)
-                        {
-                            if ( (event.getState() == Event.KeeperState.Disconnected) || (event.getState() == Event.KeeperState.Expired) )
-                            {
-                                errorConnectionLost();
-                            }
-                            else
-                            {
-                                eventQueue.postEvent(new ZookeeperEvent(getTypeFromWatched(event), 0, event.getPath(), null, null, null, null, null, null));
-                            }
-                        }
-                    };
-                    client.register(watcher);
-                    for ( WatchedEvent event : creator.getPendingEvents() )
+                        errorConnectionLost();
+                    }
+                    else
                     {
-                        watcher.process(event);
+                        eventQueue.postEvent(new ZookeeperEvent(getTypeFromWatched(event), 0, event.getPath(), null, null, null, null, null, null));
                     }
                 }
+            };
+            if ( creator.waitForStart(client, watcher) == ZookeeperClientCreator.ConnectionStatus.SUCCESS )
+            {
+                stateRef.compareAndSet(State.WAITING_FOR_STARTUP, State.STARTUP_SUCCEEDED);
             }
             else
             {

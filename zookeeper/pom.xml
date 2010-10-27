@@ -49,5 +49,11 @@
             <artifactId>hadoop-core</artifactId>
             <version>0.20.2-320</version>
         </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>1.8.5</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

@@ -1,18 +1,29 @@
 package com.proofpoint.zookeeper;
 
 import com.google.common.base.Predicate;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.proofpoint.concurrent.events.EventQueue;
 import com.proofpoint.configuration.ConfigurationFactory;
 import org.apache.hadoop.io.retry.RetryPolicy;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.mockito.Mockito.mock;
+import static org.testng.Assert.assertEquals;
 
 public class TestZookeeperClient
 {
@@ -49,6 +60,84 @@ public class TestZookeeperClient
         client.closeForShutdown();
 
         testServer2.close();
+    }
+
+    @Test
+    public void     testPostCreationEvents() throws Exception
+    {
+        final ZooKeeper                 mockedClient = mock(ZooKeeper.class);
+        DefaultZookeeperClientCreator   clientCreator = new DefaultZookeeperClientCreator(mock(ZookeeperClientConfig.class));
+        final Watcher                   watcher = clientCreator.newWatcher();
+        final WatchedEvent              connectEvent = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.SyncConnected, "/");
+        final WatchedEvent              nodeEvent = new WatchedEvent(Watcher.Event.EventType.NodeCreated, Watcher.Event.KeeperState.SyncConnected, "/");
+        final WatchedEvent              postCreationEvent = new WatchedEvent(Watcher.Event.EventType.NodeDeleted, Watcher.Event.KeeperState.SyncConnected, "/");
+
+        final CountDownLatch            callableStartLatch = new CountDownLatch(1);
+        final CountDownLatch            waitingForPostCreationLatch = new CountDownLatch(1);
+        final CountDownLatch            postCreationEventProcessedLatch = new CountDownLatch(1);
+        Executors.newSingleThreadExecutor().submit
+        (
+            new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
+                {
+                    callableStartLatch.await();
+
+                    watcher.process(connectEvent);
+                    watcher.process(nodeEvent);
+
+                    waitingForPostCreationLatch.await();
+                    watcher.process(postCreationEvent);
+                    postCreationEventProcessedLatch.countDown();
+
+                    return null;
+                }
+            }
+        );
+
+        final List<WatchedEvent>        processedEvents = Lists.newArrayList();
+        Watcher                         newWatcher = new Watcher()
+        {
+            @Override
+            public void process(WatchedEvent event)
+            {
+                processedEvents.add(event);
+            }
+        };
+
+        callableStartLatch.countDown();
+        assertEquals(clientCreator.waitForStart(mockedClient, newWatcher), ZookeeperClientCreator.ConnectionStatus.SUCCESS);
+
+        waitingForPostCreationLatch.countDown();
+        postCreationEventProcessedLatch.await();
+        
+        assertEquals(Arrays.asList(connectEvent, nodeEvent, postCreationEvent), processedEvents);
+    }
+
+    @Test
+    public void     testCreationEvents() throws Exception
+    {
+        ZooKeeper                       mockedClient = mock(ZooKeeper.class);
+        DefaultZookeeperClientCreator   clientCreator = new DefaultZookeeperClientCreator(mock(ZookeeperClientConfig.class));
+        Watcher                         watcher = clientCreator.newWatcher();
+        WatchedEvent                    connectEvent = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.SyncConnected, "/");
+        WatchedEvent                    nodeEvent = new WatchedEvent(Watcher.Event.EventType.NodeCreated, Watcher.Event.KeeperState.SyncConnected, "/");
+        watcher.process(connectEvent);
+        watcher.process(nodeEvent);
+
+        final List<WatchedEvent>        processedEvents = Lists.newArrayList();
+        Watcher                         newWatcher = new Watcher()
+        {
+            @Override
+            public void process(WatchedEvent event)
+            {
+                processedEvents.add(event);
+            }
+        };
+
+        assertEquals(clientCreator.waitForStart(mockedClient, newWatcher), ZookeeperClientCreator.ConnectionStatus.SUCCESS);
+        assertEquals(Arrays.asList(connectEvent, nodeEvent), processedEvents);
     }
 
     @Test
@@ -91,7 +180,7 @@ public class TestZookeeperClient
         {
             // correct
         }
-        Assert.assertEquals(retryCount.get(), 2);
+        assertEquals(retryCount.get(), 2);
 
         // now try with a background call
 
@@ -107,7 +196,7 @@ public class TestZookeeperClient
         retryCount.set(0);
         client.inBackground("").exists("/");
         Assert.assertTrue(latch.await(1, TimeUnit.MINUTES));
-        Assert.assertEquals(retryCount.get(), 2);
+        assertEquals(retryCount.get(), 2);
 
         client.closeForShutdown();
     }
@@ -158,7 +247,7 @@ public class TestZookeeperClient
                 {
                     if ( event.getType() == ZookeeperEvent.Type.CREATE )
                     {
-                        Assert.assertEquals(event.getPath(), path);
+                        assertEquals(event.getPath(), path);
                         latch.countDown();
                     }
                 }
@@ -178,7 +267,7 @@ public class TestZookeeperClient
         client.inBackground(null).create(path, new byte[0]);
 
         latch.await(5, TimeUnit.SECONDS);
-        Assert.assertEquals(latch.getCount(), 0);
+        assertEquals(latch.getCount(), 0);
 
         client.closeForShutdown();
 
@@ -207,7 +296,7 @@ public class TestZookeeperClient
                 {
                     if ( event.getType() == ZookeeperEvent.Type.EXISTS)
                     {
-                        Assert.assertEquals(event.getPath(), path);
+                        assertEquals(event.getPath(), path);
                         latch.countDown();
                     }
                 }
@@ -229,7 +318,7 @@ public class TestZookeeperClient
         client1.create(path, new byte[0]);
 
         latch.await(5, TimeUnit.SECONDS);
-        Assert.assertEquals(latch.getCount(), 0);
+        assertEquals(latch.getCount(), 0);
 
         client1.closeForShutdown();
         client2.closeForShutdown();
