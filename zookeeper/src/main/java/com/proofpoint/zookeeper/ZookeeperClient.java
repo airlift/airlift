@@ -710,11 +710,35 @@ public class ZookeeperClient implements ZookeeperClientHelper
 
     private boolean waitForStart() throws Exception
     {
-        if ( stateRef.get() == State.ZOMBIE_MODE )
+        boolean     result;
+        switch ( stateRef.get() )
         {
-            return false;
+            default:
+            case WAITING_FOR_STARTUP:
+            {
+                result = internalWaitForStart();
+                break;
+            }
+
+            case STARTUP_FAILED:
+            case ZOMBIE_MODE:
+            {
+                result = false;
+                break;
+            }
+
+            case STARTUP_SUCCEEDED:
+            {
+                result = true;
+                break;
+            }
         }
 
+        return result;
+    }
+
+    private boolean internalWaitForStart()
+    {
         try
         {
             Watcher watcher = new Watcher()
@@ -748,7 +772,7 @@ public class ZookeeperClient implements ZookeeperClientHelper
             stateRef.set(State.STARTUP_FAILED);
         }
 
-        return true;
+        return stateRef.get() == State.STARTUP_SUCCEEDED;
     }
 
     private<T> T withRetry(Callable<T> proc) throws Exception
