@@ -266,7 +266,7 @@ public class TestZookeeperClient
 
         client.inBackground(null).create(path, new byte[0]);
 
-        latch.await(5, TimeUnit.SECONDS);
+        latch.await(30, TimeUnit.SECONDS);
         assertEquals(latch.getCount(), 0);
 
         client.closeForShutdown();
@@ -317,7 +317,7 @@ public class TestZookeeperClient
         client2.inBackground(null).exists(path);
         client1.create(path, new byte[0]);
 
-        latch.await(5, TimeUnit.SECONDS);
+        latch.await(30, TimeUnit.SECONDS);
         assertEquals(latch.getCount(), 0);
 
         client1.closeForShutdown();
