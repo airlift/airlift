@@ -37,6 +37,8 @@ public class JettyModule
                 .toProvider(JettyProvider.class)
                 .in(Scopes.SINGLETON);
 
+        binder.bind(JettyServer.class).in(Scopes.SINGLETON);
+
         binder.bind(LoginService.class)
                 .toProvider(HashLoginServiceProvider.class);
 

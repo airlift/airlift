@@ -21,9 +21,5 @@ public class Main
                 new MainModule());
 
         Injector injector = app.initialize();
-
-        // Start Jetty Server
-        Server server = injector.getInstance(Server.class);
-        server.start();
     }
 }
