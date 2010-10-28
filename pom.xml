@@ -80,6 +80,7 @@
         <module>zookeeper</module>
         <module>concurrent</module>
         <module>io</module>
+        <module>collections</module>
     </modules>
 </project>
 
