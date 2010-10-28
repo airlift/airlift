@@ -5,13 +5,13 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>configuration</artifactId>
     <packaging>jar</packaging>
-    <version>0.5-SNAPSHOT</version>
+    <version>0.5</version>
     <name>configuration</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.5-SNAPSHOT</version>
+        <version>0.5</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     
@@ -41,13 +41,13 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>guice</artifactId>
-            <version>0.5-SNAPSHOT</version>
+            <version>0.5</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>formatting</artifactId>
-            <version>0.5-SNAPSHOT</version>
+            <version>0.5</version>
         </dependency>
     </dependencies>
 
