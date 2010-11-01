@@ -32,7 +32,7 @@ class DelimitedRequestLog
         writer = new OutputStreamWriter(out);
 
         isoFormatter = new DateTimeFormatterBuilder()
-                .append(ISODateTimeFormat.dateHourMinute())
+                .append(ISODateTimeFormat.dateHourMinuteSecondFraction())
                 .appendTimeZoneOffset("Z", true, 2, 2)
                 .toFormatter();
     }
