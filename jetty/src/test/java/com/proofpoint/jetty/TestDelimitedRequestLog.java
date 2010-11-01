@@ -31,7 +31,7 @@ public class TestDelimitedRequestLog
         file = File.createTempFile(getClass().getName(), ".log");
 
         isoFormatter = new DateTimeFormatterBuilder()
-                 .append(ISODateTimeFormat.dateHourMinute())
+                 .append(ISODateTimeFormat.dateHourMinuteSecondFraction())
                  .appendTimeZoneOffset("Z", true, 2, 2)
                  .toFormatter();
     }
