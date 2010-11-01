@@ -73,14 +73,16 @@ public class JettyProvider
         }
 
         // set up NIO-based HTTP connector
-        SelectChannelConnector connector = new SelectChannelConnector();
-        connector.setPort(config.getHttpPort());
-        connector.setStatsOn(true);
-        if (ip != null) {
-            connector.setHost(ip);
+        if (config.isHttpEnabled()) {
+            SelectChannelConnector connector = new SelectChannelConnector();
+            connector.setPort(config.getHttpPort());
+            connector.setStatsOn(true);
+            if (ip != null) {
+                connector.setHost(ip);
+            }
+
+            server.addConnector(connector);
         }
-        
-        server.addConnector(connector);
 
         if (config.isHttpsEnabled()) {
             SslSelectChannelConnector sslConnector = new SslSelectChannelConnector();

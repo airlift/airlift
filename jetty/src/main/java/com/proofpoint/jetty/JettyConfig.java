@@ -10,6 +10,12 @@ public class JettyConfig
         return null;
     }
 
+    @Config("jetty.http.enabled")
+    public boolean isHttpEnabled()
+    {
+        return true;
+    }
+
     @Config("jetty.http.port")
     public int getHttpPort()
     {
