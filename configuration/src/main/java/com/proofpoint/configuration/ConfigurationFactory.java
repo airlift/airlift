@@ -12,13 +12,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableMap;
+
 public class ConfigurationFactory
 {
     private final Map<String, String> properties;
 
     public ConfigurationFactory(Map<String, String> properties)
     {
-        this.properties = properties;
+        this.properties = ImmutableMap.copyOf(properties);
+    }
+
+    public Map<String, String> getProperties() {
+        return properties;
     }
 
     public <T> T build(Class<T> configClass)
