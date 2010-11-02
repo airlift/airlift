@@ -85,6 +85,6 @@ public class JettyConfig
     @Config("jetty.net.max-idle-time-ms")
     public int getNetworkMaxIdleTime()
     {
-        return 2 * 60 * 1000; // 2 minutes in ms
+        return 200 * 1000; // 200 seconds in ms
     }
 }
