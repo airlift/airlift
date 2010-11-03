@@ -13,7 +13,7 @@ import java.util.List;
  */
 public class ZookeeperEvent implements EventQueue.Event<ZookeeperEvent>
 {
-    private final Type type;
+    private final Type                  type;
     private final Object                context;
     private final KeeperException.Code  resultCode;
     private final byte[]                data;
@@ -168,6 +168,19 @@ public class ZookeeperEvent implements EventQueue.Event<ZookeeperEvent>
     public String getName()
     {
         return name;
+    }
+
+    @Override
+    public String toString()
+    {
+        return
+            "type: " + type + "; " +
+            "context: " + context + "; " +
+            "resultCode: " + resultCode + "; " +
+            "stat: " + stat + "; " +
+            "path: " + path + "; " +
+            "name: " + name + "; "
+            ;
     }
 
     @Override
