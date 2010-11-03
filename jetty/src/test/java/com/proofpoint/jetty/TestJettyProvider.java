@@ -3,18 +3,14 @@ package com.proofpoint.jetty;
 import com.google.common.io.Files;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
-import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.servlet.ServletModule;
 import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.RequestBuilder;
-import com.ning.http.client.RequestType;
 import com.ning.http.client.Response;
 import com.ning.http.util.Base64;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Server;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -27,10 +23,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.util.concurrent.ExecutionException;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 public class TestJettyProvider
 {
@@ -90,6 +90,55 @@ public class TestJettyProvider
                 .get();
 
         assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+    }
+
+    @Test
+    public void testHttpIsDisabled()
+            throws Exception
+    {
+        // TODO: replace with NetUtils.findUnusedPort()
+        ServerSocket socket = new ServerSocket();
+        socket.bind(new InetSocketAddress(0));
+        final int port = socket.getLocalPort();
+        socket.close();
+
+        final JettyConfig config = new JettyConfig()
+        {
+            @Override
+            public int getHttpPort()
+            {
+                return port;
+            }
+
+            @Override
+            public String getLogPath()
+            {
+                return new File(tempDir, "jetty.log").getAbsolutePath();
+            }
+
+            @Override
+            public boolean isHttpEnabled()
+            {
+                return false;
+            }
+        };
+
+        createServer(config);
+        server.start();
+
+        AsyncHttpClient client = new AsyncHttpClient();
+        try {
+            Response response = client.prepareGet("http://localhost:" + port + "/")
+                    .execute()
+                    .get();
+
+            if (response != null) { // TODO: this is a workaround for a bug in AHC (some race condition)
+                fail("Expected connection refused, got response code: " + response.getStatusCode());
+            }
+        }
+        catch (ExecutionException e) {
+            assertTrue(e.getCause() instanceof ConnectException);
+        }
     }
 
     public void testHttps()
