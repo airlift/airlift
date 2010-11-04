@@ -167,7 +167,14 @@ public class ChildDataWatcher implements EventQueue.EventListener<ZookeeperEvent
                 @Override
                 public void run()
                 {
-                    listener.added(child, bytes);
+                    try
+                    {
+                        listener.added(child, bytes);
+                    }
+                    catch ( Exception e )
+                    {
+                        log.error(e, "From added() listener");
+                    }
                 }
             });
         }
@@ -183,7 +190,14 @@ public class ChildDataWatcher implements EventQueue.EventListener<ZookeeperEvent
                 @Override
                 public void run()
                 {
-                    listener.updated(child, bytes);
+                    try
+                    {
+                        listener.updated(child, bytes);
+                    }
+                    catch ( Exception e )
+                    {
+                        log.error(e, "From updated() listener");
+                    }
                 }
             });
         }
@@ -199,7 +213,14 @@ public class ChildDataWatcher implements EventQueue.EventListener<ZookeeperEvent
                 @Override
                 public void run()
                 {
-                    listener.removed(child);
+                    try
+                    {
+                        listener.removed(child);
+                    }
+                    catch ( Exception e )
+                    {
+                        log.error(e, "From removed() listener");
+                    }
                 }
             });
         }

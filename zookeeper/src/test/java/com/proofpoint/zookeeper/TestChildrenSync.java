@@ -1,5 +1,8 @@
 package com.proofpoint.zookeeper;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.proofpoint.configuration.ConfigurationFactory;
 import org.testng.Assert;
@@ -9,6 +12,7 @@ import org.testng.annotations.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -34,6 +38,57 @@ public class TestChildrenSync
     {
         client.closeForShutdown();
         server.close();
+    }
+
+    @Test
+    public void testView() throws Exception
+    {
+        client.mkdirs("/view");
+
+        NodeView        nodeView = new NodeView(client, "/view");
+        try
+        {
+            nodeView.start();
+
+            NodeView.View   view1 = nodeView.getView();
+            client.create("/view/test", "one".getBytes());
+            nodeView.waitForUpdate(view1.version());
+            NodeView.View   view2 = nodeView.getView();
+            client.setData("/view/test", "two".getBytes());
+            nodeView.waitForUpdate(view2.version());
+            NodeView.View   view3 = nodeView.getView();
+
+            Assert.assertEquals(view1.entries().size(), 0);
+            Assert.assertEquals(view2.entries().size(), 1);
+            Assert.assertEquals(new String(view2.entries().get(0).getValue()), "one");
+            Assert.assertEquals(view3.entries().size(), 1);
+            Assert.assertEquals(new String(view3.entries().get(0).getValue()), "two");
+
+            client.create("/view/more", "more".getBytes());
+            nodeView.waitForUpdate(view3.version());
+            NodeView.View   view4 = nodeView.getView();
+            Assert.assertEquals(view4.entries().size(), 2);
+
+            Set<String>     view4set = Sets.newHashSet(Iterables.transform(view4.entries(), new Function<Map.Entry<String, byte[]>, String>()
+            {
+                @Override
+                public String apply(Map.Entry<String, byte[]> from)
+                {
+                    return new String(from.getValue());
+                }
+            }));
+            Assert.assertEquals(view4set, Sets.<Object>newHashSet("two", "more"));
+
+            client.delete("/view/more");
+            nodeView.waitForUpdate(view4.version());
+            NodeView.View   view5 = nodeView.getView();
+            Assert.assertEquals(view5.entries().size(), 1);
+            Assert.assertEquals(new String(view5.entries().get(0).getValue()), "two");
+        }
+        finally
+        {
+            nodeView.stop();
+        }
     }
 
     @Test
