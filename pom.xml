@@ -12,6 +12,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+   <scm>
+   	<connection>scm:git:git@yorktown.us.proofpoint.com:platform.git</connection>
+   	<developerConnection>scm:git:git@yorktown.us.proofpoint.com:platform.git</developerConnection>
+   </scm>
+
     <distributionManagement>
         <repository>
             <id>proofpoint</id>
