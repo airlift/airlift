@@ -13,8 +13,8 @@
     </properties>
 
    <scm>
-   	<connection>scm:git:git@yorktown.us.proofpoint.com:platform.git</connection>
-   	<developerConnection>scm:git:git@yorktown.us.proofpoint.com:platform.git</developerConnection>
+   	<connection>scm:git:git://yorktown.us.proofpoint.com/platform.git</connection>
+   	<developerConnection>scm:git:ssh://git@yorktown.us.proofpoint.com/platform.git</developerConnection>
    </scm>
 
     <distributionManagement>
