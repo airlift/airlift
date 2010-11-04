@@ -110,7 +110,7 @@ public class ChildDataWatcher implements EventQueue.EventListener<ZookeeperEvent
                 notifyAdded(child, event.getData());
             }
             else {
-                notifyUpdated(child, event.getData());
+                notifyUpdated(child, event.getData(), event.getStat().getVersion());
             }
         }
     }
@@ -180,9 +180,9 @@ public class ChildDataWatcher implements EventQueue.EventListener<ZookeeperEvent
         }
     }
 
-    private void notifyUpdated(final String child, final byte[] bytes)
+    private void notifyUpdated(final String child, final byte[] bytes, final int version)
     {
-        log.debug("Notify updated: %s", child);
+        log.debug("Notify updated: %s (version %d)", child, version);
         if ( isStarted.get() )
         {
             executor.execute(new Runnable()
@@ -192,7 +192,7 @@ public class ChildDataWatcher implements EventQueue.EventListener<ZookeeperEvent
                 {
                     try
                     {
-                        listener.updated(child, bytes);
+                        listener.updated(child, bytes, version);
                     }
                     catch ( Exception e )
                     {
