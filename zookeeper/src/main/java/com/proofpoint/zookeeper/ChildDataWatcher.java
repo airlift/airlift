@@ -93,6 +93,19 @@ public class ChildDataWatcher implements EventQueue.EventListener<ZookeeperEvent
         }
     }
 
+    /**
+     * If a node is removed locally, the ChildDataWatcher will not get notified via ZooKeeper, thus
+     * creating a memory leak. Call this method to remove the node.
+     *
+     * @param child node to remove
+     */
+    public void removeLocal(String child)
+    {
+        synchronized(elements) {
+            elements.remove(child);
+        }
+    }
+
     private void processGetData(ZookeeperEvent event) throws Exception
     {
         log.debug("ChildDataCallback: [rc = %d] %s, %s", event.getResultCode().intValue(), path, event.getStat());
