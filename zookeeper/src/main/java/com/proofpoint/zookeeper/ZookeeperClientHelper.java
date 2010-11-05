@@ -48,9 +48,10 @@ public interface ZookeeperClientHelper
      *
      * @param path the path
      * @param data data to set
+     * @return the stat for the node
      * @throws Exception ZooKeeper errors or timeouts, etc.
      */
-    public void setData(String path, byte data[]) throws Exception;
+    public Stat setData(String path, byte data[]) throws Exception;
 
     /**
      * Analog for {@link org.apache.zookeeper.ZooKeeper#delete(String, int)}
@@ -68,6 +69,22 @@ public interface ZookeeperClientHelper
      * @return the data
      */
     public byte[] getData(String path) throws Exception;
+
+    public interface DataAndStat
+    {
+        public Stat     getStat();
+
+        public byte[]   getData();
+    }
+
+    /**
+     * Analog for {@link org.apache.zookeeper.ZooKeeper#getData(String, boolean, org.apache.zookeeper.data.Stat)}
+     *
+     * @param path the path
+     * @throws Exception ZooKeeper errors or timeouts, etc.
+     * @return the data
+     */
+    public DataAndStat getDataAndStat(String path) throws Exception;
 
     /**
      * Builder-style method that returns a view of the client with the given create mode. The

@@ -6,9 +6,11 @@ import com.google.common.collect.Maps;
 import com.proofpoint.concurrent.events.EventQueue;
 import com.proofpoint.configuration.ConfigurationFactory;
 import org.apache.hadoop.io.retry.RetryPolicy;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.data.Stat;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -24,6 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotSame;
+import static org.testng.Assert.fail;
 
 public class TestZookeeperClient
 {
@@ -48,7 +52,7 @@ public class TestZookeeperClient
             }
             catch ( Exception e )
             {
-                Assert.fail("Connection Failed", e);
+                fail("Connection Failed", e);
             }
 
             if ( i == 0 )
@@ -174,7 +178,7 @@ public class TestZookeeperClient
         try
         {
             client.exists("/");
-            Assert.fail();
+            fail();
         }
         catch ( Exception e )
         {
@@ -218,7 +222,7 @@ public class TestZookeeperClient
         }
         catch ( Exception e )
         {
-            Assert.fail("Connection Failed", e);
+            fail("Connection Failed", e);
         }
 
         client.closeForShutdown();
@@ -322,6 +326,45 @@ public class TestZookeeperClient
 
         client1.closeForShutdown();
         client2.closeForShutdown();
+
+        testServer.close();
+    }
+
+    @Test
+    public void     testVersionMismatch() throws Exception
+    {
+        ZookeeperTestServerInstance     testServer = new ZookeeperTestServerInstance();
+
+        Map<String, String>             props = Maps.newHashMap();
+        props.put("zookeeper.connection-string", testServer.getConnectString());
+        ConfigurationFactory            factory = new ConfigurationFactory(props);
+        ZookeeperClient                 client = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class)));
+
+        final String                    path = "/one";
+
+        client.start();
+
+        client.create(path, new byte[0]);
+        Stat        preChangeStat = client.exists(path);
+        assertEquals(preChangeStat.getVersion(), 0);
+        client.setData(path, "test".getBytes());
+        Stat        postChangeStat = client.exists(path);
+        assertNotSame(preChangeStat.getVersion(), postChangeStat.getVersion());
+        try
+        {
+            client.dataVersion(preChangeStat.getVersion()).setData(path, "something".getBytes());
+            fail();
+        }
+        catch ( KeeperException.BadVersionException e )
+        {
+            // sucess
+        }
+        catch ( Exception e )
+        {
+            fail("", e);
+        }
+
+        client.closeForShutdown();
 
         testServer.close();
     }

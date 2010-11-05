@@ -292,7 +292,7 @@ public class ZookeeperClient implements ZookeeperClientHelper
     }
 
     @Override
-    public byte[] getData(final String path) throws Exception
+    public DataAndStat getDataAndStat(final String path) throws Exception
     {
         if ( !waitForStart() )
         {
@@ -318,14 +318,36 @@ public class ZookeeperClient implements ZookeeperClientHelper
             return null;
         }
 
-        return withRetry(new Callable<byte[]>()
+        return withRetry(new Callable<DataAndStat>()
         {
             @Override
-            public byte[] call() throws Exception
+            public DataAndStat call() throws Exception
             {
-                return client.getData(path, watched, new Stat());
+                final Stat stat = new Stat();
+                final byte[] data = client.getData(path, watched, stat);
+                return new DataAndStat()
+                {
+                    @Override
+                    public Stat getStat()
+                    {
+                        return stat;
+                    }
+
+                    @Override
+                    public byte[] getData()
+                    {
+                        return data;
+                    }
+                };
             }
         });
+    }
+
+    @Override
+    public byte[] getData(final String path) throws Exception
+    {
+        DataAndStat dataAndStat = getDataAndStat(path);
+        return (dataAndStat != null) ? dataAndStat.getData() : null;
     }
 
     @Override
@@ -467,11 +489,11 @@ public class ZookeeperClient implements ZookeeperClientHelper
     }
 
     @Override
-    public void setData(final String path, final byte data[]) throws Exception
+    public Stat setData(final String path, final byte data[]) throws Exception
     {
         if ( !waitForStart() )
         {
-            return;
+            return null;
         }
 
         if ( inBackground )
@@ -502,19 +524,17 @@ public class ZookeeperClient implements ZookeeperClientHelper
                 }
             };
             BackgroundRetryHandler.makeAndStart(this, creator.getRetryPolicy(), backgroundCall);
+            return null;
         }
-        else
+
+        return withRetry(new Callable<Stat>()
         {
-            withRetry(new Callable<Object>()
+            @Override
+            public Stat call() throws Exception
             {
-                @Override
-                public Object call() throws Exception
-                {
-                    client.setData(path, data, dataVersion);
-                    return null;
-                }
-            });
-        }
+                return client.setData(path, data, dataVersion);
+            }
+        });
     }
 
     @Override
