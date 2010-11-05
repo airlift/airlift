@@ -69,8 +69,12 @@ public class TestZookeeperClient
     @Test
     public void     testPostCreationEvents() throws Exception
     {
+        HashMap<String, String>         properties = new HashMap<String, String>();
+        properties.put("zookeeper.connection-string", "foo");
+        ConfigurationFactory            configurationFactory = new ConfigurationFactory(properties);
+
         final ZooKeeper                 mockedClient = mock(ZooKeeper.class);
-        DefaultZookeeperClientCreator   clientCreator = new DefaultZookeeperClientCreator(mock(ZookeeperClientConfig.class));
+        DefaultZookeeperClientCreator   clientCreator = new DefaultZookeeperClientCreator(configurationFactory.build(ZookeeperClientConfig.class));
         final Watcher                   watcher = clientCreator.newWatcher();
         final WatchedEvent              connectEvent = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.SyncConnected, "/");
         final WatchedEvent              nodeEvent = new WatchedEvent(Watcher.Event.EventType.NodeCreated, Watcher.Event.KeeperState.SyncConnected, "/");
