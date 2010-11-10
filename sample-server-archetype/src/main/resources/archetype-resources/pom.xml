@@ -115,6 +115,9 @@
                             <mainClass>${main-class}</mainClass>
                             <addClasspath>true</addClasspath>
                         </manifest>
+                        <manifestEntries>
+                            <Implementation-Version>${project.version}</Implementation-Version>
+                        </manifestEntries>
                     </archive>
                 </configuration>
             </plugin>
