@@ -4,13 +4,13 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>zookeeper</artifactId>
     <packaging>jar</packaging>
-    <version>0.14-SNAPSHOT</version>
+    <version>0.14</version>
     <name>zookeeper</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.14-SNAPSHOT</version>
+        <version>0.14</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -18,17 +18,17 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>log</artifactId>
-            <version>0.14-SNAPSHOT</version>
+            <version>0.14</version>
         </dependency>
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>concurrent</artifactId>
-            <version>0.14-SNAPSHOT</version>
+            <version>0.14</version>
         </dependency>
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>io</artifactId>
-            <version>0.14-SNAPSHOT</version>
+            <version>0.14</version>
         </dependency>
 
         <dependency>
