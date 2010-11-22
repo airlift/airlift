@@ -108,6 +108,7 @@
         <module>concurrent</module>
         <module>io</module>
         <module>collections</module>
+        <module>dbpool</module>
     </modules>
 </project>
 
