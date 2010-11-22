@@ -22,16 +22,20 @@ import static org.testng.Assert.assertTrue;
  * relation</a> (reflexive, symmetric and transitive). It also verifies that equality between two objects implies hash
  * code equality, as required by the {@link #hashCode()} contract.
  */
-public class EquivalenceTester
+public final class EquivalenceTester
 {
+    private EquivalenceTester()
+    {
+    }
 
+    @SuppressWarnings({"ObjectEqualsNull"})
     public static void check(Collection<?>... equivalenceClasses)
     {
         List<List<Object>> ec =
                 newArrayListWithExpectedSize(equivalenceClasses.length);
 
         // nothing can be equal to null
-        for (Collection<? extends Object> congruenceClass : equivalenceClasses) {
+        for (Collection<?> congruenceClass : equivalenceClasses) {
             for (Object element : congruenceClass) {
                 try {
                     assertFalse(element.equals(null),
@@ -46,7 +50,7 @@ public class EquivalenceTester
         }
 
         // reflexivity
-        for (Collection<? extends Object> congruenceClass : equivalenceClasses) {
+        for (Collection<?> congruenceClass : equivalenceClasses) {
             List<Object> c = newArrayList();
             ec.add(c);
             for (Object element : congruenceClass) {
@@ -89,6 +93,29 @@ public class EquivalenceTester
         }
     }
 
+    public static <T extends Comparable<T>> void checkComparison(Collection<T>... equivalenceClasses)
+    {
+        check(equivalenceClasses);
+
+        for (int i = 0; i < equivalenceClasses.length; i++) {
+            Collection<T> lesserBag = equivalenceClasses[i];
+            for (int j = i + 1; j < equivalenceClasses.length; j++) {
+                Collection<T> greaterBag = equivalenceClasses[j];
+                checkComparison(lesserBag, greaterBag);
+            }
+        }
+        
+    }
+
+    private static <T extends Comparable<T>> void checkComparison(Collection<T> lesserBag, Collection<T> greaterBag) {
+        for (T lesser : lesserBag) {
+            for (T greater : greaterBag) {
+                Assertions.assertLessThan(lesser, greater);
+                Assertions.assertGreaterThan(greater, lesser);
+            }
+        }
+    }
+    
     @SuppressWarnings("unchecked")
     private static void compareShouldReturn0(Object e1, Object e2)
     {

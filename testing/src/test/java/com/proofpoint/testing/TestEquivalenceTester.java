@@ -11,6 +11,9 @@ import org.testng.annotations.Test;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.testng.FileAssert.fail;
+import org.testng.Assert;
+
+import java.util.Collection;
 
 
 public class TestEquivalenceTester
@@ -54,13 +57,38 @@ public class TestEquivalenceTester
         }
     }
 
-//    @Test
-//    public void comparableAndNotComparable()
-//    {
-//        EquivalenceTester.check(
-//                newArrayList(new NotComparable()),
-//                newArrayList("Hello"));
-//    }
+    @Test(expectedExceptions = ClassCastException.class)
+    public void comparableAndNotComparable()
+    {
+        EquivalenceTester.check(
+                newArrayList(new NotComparable()),
+                newArrayList("Hello"));
+    }
+
+    @Test
+    public void testCheckCompare()
+    {
+        passCheckComparison(newArrayList(-1), newArrayList(0), newArrayList(1));
+        passCheckComparison(newArrayList("alice"), newArrayList("bob"), newArrayList("charlie"));
+        failCheckComparison(newArrayList(1), newArrayList(0), newArrayList(-1));
+        failCheckComparison(newArrayList("charlie"), newArrayList("bob"), newArrayList("alice"));
+    }
+
+    private <T extends Comparable<T>> void passCheckComparison(Collection<T>... equivalenceClasses)
+    {
+        EquivalenceTester.checkComparison(equivalenceClasses);
+    }
+
+    private <T extends Comparable<T>> void failCheckComparison(Collection<T>... equivalenceClasses)
+    {
+        try {
+            EquivalenceTester.checkComparison(equivalenceClasses);
+            Assert.fail("Expected AssertionError");
+        }
+        catch (AssertionError e) {
+            // ok
+        }
+    }
 
     WeirdClass weird(int shift, int value)
     {
