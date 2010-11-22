@@ -52,9 +52,20 @@
             <version>0.14-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
+    <!-- Temporarily add proofpoint-snapshot repo to get snapshot of jmxutils-1.8-flatten-SNAPSHOT -->
+    <repositories>
+        <repository>
+            <id>proofpoint-snapshots</id>
+            <name>Proofpoint Snapshots</name>
+            <url>http://maven-tmphost.app.proofpoint.com:8082/nexus/content/repositories/proofpoint-eng-snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+    
     <build>
         <plugins>
             <plugin>
