@@ -4,3 +4,4 @@
 target/
 /var
 pom.xml.versionsBackup
+test-output/
