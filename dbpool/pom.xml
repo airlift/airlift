@@ -30,7 +30,7 @@
         <dependency>
             <groupId>org.weakref</groupId>
             <artifactId>jmxutils</artifactId>
-            <version>1.8-SNAPSHOT</version>
+            <version>1.8-flatten-SNAPSHOT</version>
         </dependency>
 
         <dependency>
