@@ -72,6 +72,14 @@ public class TestEquivalenceTester
         passCheckComparison(newArrayList("alice"), newArrayList("bob"), newArrayList("charlie"));
         failCheckComparison(newArrayList(1), newArrayList(0), newArrayList(-1));
         failCheckComparison(newArrayList("charlie"), newArrayList("bob"), newArrayList("alice"));
+
+        passCheckComparison(newArrayList(-1, -1, -1), newArrayList(0, 0), newArrayList(1));
+        passCheckComparison(newArrayList("alice"), newArrayList("bob", "bob"), newArrayList("charlie", "charlie", "charlie"));
+        failCheckComparison(newArrayList(1), newArrayList(0, 0), newArrayList(-1, -1, -1));
+        failCheckComparison(newArrayList("charlie"), newArrayList("bob", "bob"), newArrayList("alice", "alice", "alice"));
+
+        failCheckComparison(newArrayList(-1,0), newArrayList(1));
+        failCheckComparison(newArrayList(-1), newArrayList(0,1));
     }
 
     private <T extends Comparable<T>> void passCheckComparison(Collection<T>... equivalenceClasses)

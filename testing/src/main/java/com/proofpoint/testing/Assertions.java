@@ -1,8 +1,7 @@
 package com.proofpoint.testing;
 
 import static org.testng.Assert.assertNotNull;
-
-import static java.lang.String.format;
+import org.testng.Assert;
 
 public final class Assertions
 {
@@ -21,7 +20,7 @@ public final class Assertions
             // ok
             return;
         }
-        throw new AssertionError(format("%sexpected:<%s> to equal ignoring case <%s>", toMessageString(message), actual, expected));
+        fail("%sexpected:<%s> to equal ignoring case <%s>", toMessageString(message), actual, expected);
     }
 
     public static <T extends Comparable<T>> void assertGreaterThan(T actual, T expected) {
@@ -32,18 +31,59 @@ public final class Assertions
         assertNotNull(actual, "actual is null");
         try {
             if (actual.compareTo(expected) > 0) {
+                if (!(expected.compareTo(actual) < 0)) {
+                    fail("%scomparison symmetry: <%s> is greater than <%s>, but <%s> is not less than <%s>",
+                            toMessageString(message),
+                            actual,
+                            expected,
+                            expected,
+                            actual);
+                }
                 // ok
                 return;
             }
         }
         catch (ClassCastException e) {
-            String foo = format("%sexpected:<%s> to be greater than <%s>, but %s is not comparable %s", toMessageString(message), actual, expected, actual.getClass().getName(), expected.getClass().getName());
-            AssertionError error = new AssertionError(foo);
-            error.initCause(e);
-            throw error;
+            fail(e, "%sexpected:<%s> to be greater than <%s>, but %s is not comparable %s",
+                    toMessageString(message),
+                    actual,
+                    expected,
+                    actual.getClass().getName(),
+                    expected.getClass().getName());
         }
-        String foo = format("%sexpected:<%s> to be greater than <%s>", toMessageString(message), actual, expected);
-        throw new AssertionError(foo);
+        fail("%sexpected:<%s> to be greater than <%s>", toMessageString(message), actual, expected);
+    }
+
+    public static <T extends Comparable<T>> void assertGreaterThanOrEqual(T actual, T expected) {
+        assertGreaterThanOrEqual(actual, expected, null);
+    }
+
+    public static <T extends Comparable<T>> void assertGreaterThanOrEqual(T actual, T expected, String message) {
+        assertNotNull(actual, "actual is null");
+        try {
+            if (actual.compareTo(expected) >= 0) {
+                if (!(expected.compareTo(actual) <= 0)) {
+                    fail("%scomparison symmetry: <%s> is greater than or equal to <%s>, but <%s> is not less than or equal to<%s>",
+                            toMessageString(message),
+                            actual,
+                            expected,
+                            expected,
+                            actual);
+                }
+                // ok
+                return;
+            }
+        }
+        catch (ClassCastException e) {
+            fail(e, "%sexpected:<%s> to be greater than or equal to <%s>, but %s is not comparable %s",
+                    toMessageString(message),
+                    actual,
+                    expected,
+                    actual.getClass().getName(),
+                    expected.getClass().getName());
+        }
+
+        fail("%sexpected:<%s> to be greater than or equal to <%s>", toMessageString(message), actual, expected);
     }
 
     public static <T extends Comparable<T>> void assertLessThan(T actual, T expected) {
@@ -54,17 +94,58 @@ public final class Assertions
         assertNotNull(actual, "actual is null");
         try {
             if (actual.compareTo(expected) < 0) {
+                if (!(expected.compareTo(actual) > 0)) {
+                    fail("%scomparison symmetry: <%s> is less than <%s>, but <%s> is not greater than <%s>",
+                            toMessageString(message),
+                            actual,
+                            expected,
+                            expected,
+                            actual);
+                }
                 // ok
                 return;
             }
         }
         catch (ClassCastException e) {
-            String foo = format("%sexpected:<%s> to be less than <%s>, but %s is not comparable %s", toMessageString(message), actual, expected, actual.getClass().getName(), expected.getClass().getName());
-            AssertionError error = new AssertionError(foo);
-            error.initCause(e);
-            throw error;
+            fail(e, "%sexpected:<%s> to be less than <%s>, but %s is not comparable %s",
+                    toMessageString(message),
+                    actual,
+                    expected,
+                    actual.getClass().getName(),
+                    expected.getClass().getName());
         }
-        throw new AssertionError(format("%sexpected:<%s> to be less than <%s>", toMessageString(message), actual, expected));
+        fail("%sexpected:<%s> to be less than <%s>", toMessageString(message), actual, expected);
+    }
+
+    public static <T extends Comparable<T>> void assertLessThanOrEqual(T actual, T expected) {
+        assertLessThanOrEqual(actual, expected, null);
+    }
+
+    public static <T extends Comparable<T>> void assertLessThanOrEqual(T actual, T expected, String message) {
+        assertNotNull(actual, "actual is null");
+        try {
+            if (actual.compareTo(expected) <= 0) {
+                if (!(expected.compareTo(actual) >= 0)) {
+                    fail("%scomparison symmetry: <%s> is less than or equal to <%s>, but <%s> is not greater than or equal to <%s>",
+                            toMessageString(message),
+                            actual,
+                            expected,
+                            expected,
+                            actual);
+                }
+                // ok
+                return;
+            }
+        }
+        catch (ClassCastException e) {
+            fail(e, "%sexpected:<%s> to be less than or equal to <%s>, but %s is not comparable %s",
+                    toMessageString(message),
+                    actual,
+                    expected,
+                    actual.getClass().getName(),
+                    expected.getClass().getName());
+        }
+        fail("%sexpected:<%s> to be less than or equal to <%s>", toMessageString(message), actual, expected);
     }
 
     public static <T extends Comparable<T>> void assertBetweenInclusive(T actual, T lowerBound, T upperBound) {
@@ -80,7 +161,7 @@ public final class Assertions
             }
         }
         catch (ClassCastException e) {
-            String foo = format("%sexpected:<%s> to be between <%s> and <%s> inclusive, but %s is not comparable with %s or %s",
+            fail(e, "%sexpected:<%s> to be between <%s> and <%s> inclusive, but %s is not comparable with %s or %s",
                     toMessageString(message),
                     actual,
                     lowerBound,
@@ -88,11 +169,8 @@ public final class Assertions
                     actual.getClass().getName(),
                     lowerBound.getClass().getName(), 
                     upperBound.getClass().getName());
-            AssertionError error = new AssertionError(foo);
-            error.initCause(e);
-            throw error;
         }
-        throw new AssertionError(format("%sexpected:<%s> to be between <%s> and <%s> inclusive", toMessageString(message), actual, lowerBound, upperBound));
+        fail("%sexpected:<%s> to be between <%s> and <%s> inclusive", toMessageString(message), actual, lowerBound, upperBound);
     }
 
     public static <T extends Comparable<T>> void assertBetweenExclusive(T actual, T lowerBound, T upperBound) {
@@ -108,7 +186,7 @@ public final class Assertions
             }
         }
         catch (ClassCastException e) {
-            String foo = format("%sexpected:<%s> to be between <%s> and <%s> exclusive, but %s is not comparable with %s or %s",
+            fail(e, "%sexpected:<%s> to be between <%s> and <%s> exclusive, but %s is not comparable with %s or %s",
                     toMessageString(message),
                     actual,
                     lowerBound,
@@ -116,11 +194,8 @@ public final class Assertions
                     actual.getClass().getName(),
                     lowerBound.getClass().getName(),
                     upperBound.getClass().getName());
-            AssertionError error = new AssertionError(foo);
-            error.initCause(e);
-            throw error;
         }
-        throw new AssertionError(format("%sexpected:<%s> to be between <%s> and <%s> exclusive", toMessageString(message), actual, lowerBound, upperBound));
+        fail("%sexpected:<%s> to be between <%s> and <%s> exclusive", toMessageString(message), actual, lowerBound, upperBound);
     }
 
     public static void assertInstanceof(Object actual, Class<?> expectedType)
@@ -136,11 +211,24 @@ public final class Assertions
             // ok
             return;
         }
-        throw new AssertionError(format("%sexpected:<%s> to be an instance of <%s>", toMessageString(message), actual, expectedType.getName()));
+        fail("%sexpected:<%s> to be an instance of <%s>", toMessageString(message), actual, expectedType.getName());
     }
 
     private static String toMessageString(String message)
     {
         return message == null ? "" : message + " ";
+    }
+
+    private static void fail(String format, Object... args)
+    {
+        String message = String.format(format, args);
+        Assert.fail(message);
+
+    }
+
+    private static void fail(Throwable e, String format, Object... args)
+    {
+        String message = String.format(format, args);
+        Assert.fail(message, e);
     }
 }
