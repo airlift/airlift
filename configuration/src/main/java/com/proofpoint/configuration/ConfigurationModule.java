@@ -9,7 +9,6 @@ import com.google.inject.spi.DefaultBindingTargetVisitor;
 import com.google.inject.spi.DefaultElementVisitor;
 import com.google.inject.spi.Element;
 import com.google.inject.spi.InstanceBinding;
-import com.google.inject.spi.PrivateElements;
 import com.proofpoint.guice.ElementsIterator;
 
 import java.util.ArrayList;
@@ -27,23 +26,10 @@ public class ConfigurationModule
     public ConfigurationModule(Map<String, String> properties, final ElementsIterator elementsIterator)
     {
         this.properties = properties;
-        final List<Element> newElements = new ArrayList<Element>();
 
         for ( final Element element : elementsIterator ) {
             element.acceptVisitor(new DefaultElementVisitor<Void>()
             {
-                @Override
-                public Void visit(PrivateElements privateElements)
-                {
-                    for ( Key<?> key : privateElements.getExposedKeys() )
-                    {
-                        if (ConfigBinding.class.isAssignableFrom(key.getTypeLiteral().getRawType())) {
-                            System.out.println("");
-                        }
-                    }
-                    return null;
-                }
-
                 public <T> Void visit(Binding<T> binding)
                 {
                     Key<?> key = binding.getKey();
@@ -64,13 +50,6 @@ public class ConfigurationModule
                         visitOther(element);
                     }
 
-                    return null;
-                }
-
-                @Override
-                protected Void visitOther(Element element)
-                {
-                    newElements.add(element);
                     return null;
                 }
             });
@@ -101,25 +80,42 @@ public class ConfigurationModule
 
     public static void bindConfig(Binder binder, Class<?> clazz)
     {
+        bindConfig(binder, clazz, null);
+    }
+
+    public static void bindConfig(Binder binder, Class<?> clazz, final String prefix)
+    {
         index++;
 
         binder.bind(ConfigBinding.class)
                 .annotatedWith(Names.named(Integer.toString(index)))
-                .toInstance(new ConfigBinding(clazz));
+                .toInstance(new ConfigBinding(clazz, prefix));
     }
 
     private static class ConfigBinding
     {
         private final Class<?> clazz;
+        private final String prefix;
 
         public ConfigBinding(Class<?> clazz)
         {
+            this(clazz, null);
+        }
+
+        private ConfigBinding(Class<?> clazz, String prefix)
+        {
             this.clazz = clazz;
+            this.prefix = prefix;
         }
 
         public Class<?> getConfigClass()
         {
             return clazz;
+        }
+
+        public String getPrefix()
+        {
+            return prefix;
         }
     }
 }

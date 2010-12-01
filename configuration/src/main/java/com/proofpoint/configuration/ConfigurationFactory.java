@@ -8,6 +8,7 @@ import net.sf.cglib.proxy.NoOp;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +30,22 @@ public class ConfigurationFactory
 
     public <T> T build(Class<T> configClass)
     {
+        return build(configClass, "");
+    }
+
+    public <T> T build(Class<T> configClass, String prefix)
+    {
+        if (configClass == null) {
+            throw new NullPointerException("configClass is null");
+        }
+        if (prefix == null) {
+            throw new NullPointerException("prefix is null");
+        }
+
+        if (!prefix.isEmpty()) {
+            prefix = prefix + ".";
+        }
+
         Errors<T> errors = new Errors<T>();
 
         ArrayList<Callback> callbacks = new ArrayList<Callback>();
@@ -41,7 +58,7 @@ public class ConfigurationFactory
                 slots.put(method, count++);
 
                 String propertyName = annotation.value();
-                String value = properties.get(propertyName);
+                String value = properties.get(prefix + propertyName);
 
                 if (value == null && method.isAnnotationPresent(Default.class)) {
                     value = method.getAnnotation(Default.class).value();
@@ -94,7 +111,7 @@ public class ConfigurationFactory
         return result;
     }
 
-    private Object coerce(Class<?> type, String value)
+    private static Object coerce(Class<?> type, String value)
     {
         if (String.class.isAssignableFrom(type)) {
             return value;
@@ -119,6 +136,24 @@ public class ConfigurationFactory
         }
         else if (Double.class.isAssignableFrom(type) || Double.TYPE.isAssignableFrom(type)) {
             return Double.valueOf(value);
+        }
+
+        // Look for a static valueOf(String) method
+        try {
+            Method valueOf = type.getMethod("valueOf", String.class);
+            if (valueOf.getReturnType().isAssignableFrom(type)) {
+                return valueOf.invoke(null, value);
+            }
+        }
+        catch (Throwable ignored) {
+        }
+
+        // Look for a constructor taking a string
+        try {
+            Constructor<?> constructor = type.getConstructor(String.class);
+            return constructor.newInstance(value);
+        }
+        catch (Throwable ignored) {
         }
 
         return value;
