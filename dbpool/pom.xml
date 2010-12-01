@@ -40,6 +40,13 @@
         </dependency>
 
         <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.13</version>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <version>5.14</version>
@@ -52,6 +59,7 @@
             <version>0.15-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 
     <!-- Temporarily add proofpoint-snapshot repo to get snapshot of jmxutils-1.8-flatten-SNAPSHOT -->

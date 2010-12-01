@@ -14,6 +14,7 @@ import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import static java.lang.Math.ceil;
 
 import static com.proofpoint.dbpool.Duration.nanosSince;
 
@@ -24,10 +25,11 @@ public class ManagedDataSource implements DataSource
     private final AtomicInteger maxConnectionWaitMillis = new AtomicInteger(100);
     private final ManagedDataSourceStats stats = new ManagedDataSourceStats();
 
-    public ManagedDataSource(ConnectionPoolDataSource dataSource, int maxConnections)
+    public ManagedDataSource(ConnectionPoolDataSource dataSource, int maxConnections, Duration maxConnectionWait)
     {
         this.dataSource = dataSource;
         semaphore = new ManagedSemaphore(maxConnections);
+        maxConnectionWaitMillis.set((int) ceil(maxConnectionWait.toMillis()));
     }
 
     @Override
@@ -97,13 +99,18 @@ public class ManagedDataSource implements DataSource
     }
 
     @Managed
-    public void setMaxConnectionWaitMillis(int maxConnectionWaitMillis)
+    public void setMaxConnectionWaitMillis(Duration maxConnectionWait)
             throws IllegalArgumentException
     {
-        if (maxConnectionWaitMillis < 1) {
-            throw new IllegalArgumentException("maxConnectionWaitMillis must be greater than 0");
+        if (maxConnectionWait == null) {
+            throw new NullPointerException("maxConnectionWait is null");
         }
-        this.maxConnectionWaitMillis.set(maxConnectionWaitMillis);
+        
+        int millis = (int) ceil(maxConnectionWait.toMillis());
+        if (millis < 1) {
+            throw new IllegalArgumentException("maxConnectionWait must be greater than 1 millisecond");
+        }
+        this.maxConnectionWaitMillis.set(millis);
     }
 
     @Managed
@@ -201,12 +208,12 @@ public class ManagedDataSource implements DataSource
         int timeout = maxConnectionWaitMillis.get();
         try {
             if (!semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS)) {
-                throw new SQLException("Could not acquire a connection within " + timeout + " msec");
+                throw new SqlTimeoutException("Could not acquire a connection within " + timeout + " msec");
             }
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new SQLException("Interrupted while waiting for connection", e);
+            throw new SqlTimeoutException("Interrupted while waiting for connection", e);
         }
     }
 
