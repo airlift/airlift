@@ -1,7 +1,5 @@
 package com.proofpoint.dbpool;
 
-import org.apache.commons.lang.StringUtils;
-
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -31,7 +29,7 @@ public final class Duration implements Comparable<Duration>
             throw new NullPointerException("timeUnit is null");
         }
 
-        double conversionFactor = getConversionFactor(timeUnit);
+        double conversionFactor = millisPerTimeUnit(timeUnit);
         millis = value * conversionFactor;
     }
 
@@ -48,10 +46,10 @@ public final class Duration implements Comparable<Duration>
         return convertTo(millis, timeUnit);
     }
 
-    private static double convertTo(double value, TimeUnit timeUnit)
+    private static double convertTo(double millis, TimeUnit timeUnit)
     {
-        double conversionFactor = getConversionFactor(timeUnit);
-        return value / conversionFactor;
+        double conversionFactor = millisPerTimeUnit(timeUnit);
+        return millis / conversionFactor;
     }
 
     @Override
@@ -116,7 +114,7 @@ public final class Duration implements Comparable<Duration>
         return String.format("%.2f %s", magnitude, timeUnitAbbreviation);
     }
 
-    private static double getConversionFactor(TimeUnit timeUnit)
+    private static double millisPerTimeUnit(TimeUnit timeUnit)
     {
         double conversionFactor;
         switch (timeUnit) {
