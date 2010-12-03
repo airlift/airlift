@@ -28,6 +28,8 @@ import javax.servlet.Servlet;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.Collections;
 
 import static java.lang.String.format;
 
@@ -42,12 +44,19 @@ public class JettyProvider
     private JettyConfig config;
     private final Servlet theServlet;
     private LoginService loginService;
+    private Map<String, String> servletInitParameters = Collections.emptyMap();
 
     @Inject
     public JettyProvider(JettyConfig config, @TheServlet Servlet theServlet)
     {
         this.config = config;
         this.theServlet = theServlet;
+    }
+
+    @Inject(optional = true)
+    public void setServletInitParameters(@TheServlet Map<String, String> parameters)
+    {
+        this.servletInitParameters = parameters;
     }
 
     @Inject(optional = true)
@@ -140,7 +149,10 @@ public class JettyProvider
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         context.addFilter(GzipFilter.class, "/*", FilterMapping.DEFAULT);
         context.addFilter(GZipRequestFilter.class, "/*", FilterMapping.DEFAULT);
-        context.addServlet(new ServletHolder(theServlet), "/*");
+
+        ServletHolder servletHolder = new ServletHolder(theServlet);
+        servletHolder.setInitParameters(servletInitParameters);
+        context.addServlet(servletHolder, "/*");
 
         if (loginService != null) {
             context.setSecurityHandler(getSecurityHandler());
