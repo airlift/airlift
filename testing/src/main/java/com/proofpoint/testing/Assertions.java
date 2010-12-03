@@ -61,8 +61,10 @@ public final class Assertions
     public static <T extends Comparable<T>> void assertGreaterThanOrEqual(T actual, T expected, String message) {
         assertNotNull(actual, "actual is null");
         try {
-            if (actual.compareTo(expected) >= 0) {
-                if (!(expected.compareTo(actual) <= 0)) {
+            int compareValue = actual.compareTo(expected);
+            if (compareValue >= 0) {
+                int reverseCompareValue = expected.compareTo(actual);
+                if (!(reverseCompareValue <= 0 && (compareValue != 0 || reverseCompareValue == 0))) {
                     fail("%scomparison symmetry: <%s> is greater than or equal to <%s>, but <%s> is not less than or equal to<%s>",
                             toMessageString(message),
                             actual,
@@ -124,8 +126,10 @@ public final class Assertions
     public static <T extends Comparable<T>> void assertLessThanOrEqual(T actual, T expected, String message) {
         assertNotNull(actual, "actual is null");
         try {
-            if (actual.compareTo(expected) <= 0) {
-                if (!(expected.compareTo(actual) >= 0)) {
+            int compareValue = actual.compareTo(expected);
+            if (compareValue <= 0) {
+                int reverseCompareValue = expected.compareTo(actual);
+                if (!(reverseCompareValue >= 0 && (compareValue != 0 || reverseCompareValue == 0))) {
                     fail("%scomparison symmetry: <%s> is less than or equal to <%s>, but <%s> is not greater than or equal to <%s>",
                             toMessageString(message),
                             actual,
