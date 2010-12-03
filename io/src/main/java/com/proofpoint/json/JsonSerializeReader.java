@@ -23,12 +23,6 @@ public class JsonSerializeReader
     {
         ObjectMapper        mapper = new ObjectMapper();
         jsonNode = mapper.readTree(new ByteArrayInputStream(data));
-
-        int                 dataVersion = getVersion(JsonSerializeRegistry.SERIALIZATION_VERSION_FIELD_NAME);
-        if ( dataVersion != JsonSerializeRegistry.SERIALIZATION_VERSION )
-        {
-            throw new IOException("Bad data version: " + dataVersion);
-        }
     }
 
     /**
@@ -98,13 +92,6 @@ public class JsonSerializeReader
     private <T> T internalReadObject(Class<T> clazz) throws Exception
     {
         JsonSerializer<T> serializer = JsonSerializeRegistry.instanceFor(clazz);
-        int                dataVersion = getVersion(JsonSerializeRegistry.OBJECT_VERSION_FIELD_NAME);
-        return serializer.readObject(this, jsonNode, dataVersion);
-    }
-
-    private int getVersion(String versionFieldName)
-    {
-        JsonNode node = jsonNode.get(versionFieldName);
-        return (node != null) ? node.getIntValue() : JsonSerializeRegistry.DEFAULT_SERIALIZATION_VERSION;
+        return serializer.readObject(this, jsonNode);
     }
 }

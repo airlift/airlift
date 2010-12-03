@@ -12,6 +12,15 @@ import static org.testng.Assert.fail;
 public class TestJsonSerializer
 {
     @Test
+    public void testAutoRegisteredTypes() throws Exception
+    {
+        String          testValue = "A is A";
+        byte[]          bytes = new JsonSerializeWriter(JsonSerializeWriter.Mode.SIMPLE).writeObject(testValue).close();
+        String          resultValue = new JsonSerializeReader(bytes).readObject(String.class);
+        assertEquals(testValue, resultValue);
+    }
+
+    @Test
     public void testUnregistered() throws Exception
     {
         JsonSerializeWriter     writer = new JsonSerializeWriter();

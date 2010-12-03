@@ -15,18 +15,30 @@ public class JsonSerializeWriter
 {
     private final ByteArrayOutputStream   out;
     private final JsonGenerator           generator;
+    private final Mode                    mode;
+
+    public enum Mode
+    {
+        SIMPLE,
+        STRUCTURED
+    }
 
     public JsonSerializeWriter() throws IOException
     {
+        this(Mode.STRUCTURED);
+    }
+
+    public JsonSerializeWriter(Mode mode) throws IOException
+    {
+        this.mode = mode;
+
         out = new ByteArrayOutputStream();
         JsonFactory jsonFactory = new JsonFactory();
         generator = jsonFactory.createJsonGenerator(out, JsonEncoding.UTF8);
 
-        generator.writeStartObject();
-        //noinspection ConstantConditions
-        if ( JsonSerializeRegistry.SERIALIZATION_VERSION != JsonSerializeRegistry.DEFAULT_SERIALIZATION_VERSION )
+        if ( mode == Mode.STRUCTURED )
         {
-            generator.writeNumberField(JsonSerializeRegistry.SERIALIZATION_VERSION_FIELD_NAME, JsonSerializeRegistry.SERIALIZATION_VERSION);
+            generator.writeStartObject();
         }
     }
 
@@ -58,11 +70,6 @@ public class JsonSerializeWriter
         }
 
         JsonSerializer<T> serializer = JsonSerializeRegistry.instanceFor(obj.getClass());
-        if ( serializer.getVersion() != JsonSerializeRegistry.DEFAULT_SERIALIZATION_VERSION )
-        {
-            generator.writeNumberField(JsonSerializeRegistry.OBJECT_VERSION_FIELD_NAME, serializer.getVersion());
-        }
-
         serializer.writeObject(this, generator, obj);
 
         if ( fieldName != null )
@@ -103,7 +110,10 @@ public class JsonSerializeWriter
      */
     public byte[] close() throws IOException
     {
-        generator.writeEndObject();
+        if ( mode == Mode.STRUCTURED )
+        {
+            generator.writeEndObject();
+        }
         generator.flush();
 
         return out.toByteArray();

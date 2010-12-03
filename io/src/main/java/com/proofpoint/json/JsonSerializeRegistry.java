@@ -1,5 +1,8 @@
 package com.proofpoint.json;
 
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.JsonNode;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -8,12 +11,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class JsonSerializeRegistry
 {
-    static final int        SERIALIZATION_VERSION = 1;
-    static final int        DEFAULT_SERIALIZATION_VERSION = 1;
-
-    static final String     OBJECT_VERSION_FIELD_NAME = "__object_version__";
-    static final String     SERIALIZATION_VERSION_FIELD_NAME = "__file_version__";
-
     private static final Map<Class<?>, Class<? extends JsonSerializer<?>>>  serializerMap = new ConcurrentHashMap<Class<?>, Class<? extends JsonSerializer<?>>>();
 
     /**
@@ -47,5 +44,73 @@ public class JsonSerializeRegistry
 
     private JsonSerializeRegistry()
     {
+    }
+
+    public static class IntSerializer implements JsonSerializer<Integer>
+    {
+        @Override
+        public void writeObject(JsonSerializeWriter writer, JsonGenerator generator, Integer object) throws Exception
+        {
+            generator.writeNumber(object.intValue());
+        }
+
+        @Override
+        public Integer readObject(JsonSerializeReader reader, JsonNode node) throws Exception
+        {
+            return node.getIntValue();
+        }
+    }
+
+    public static class LongSerializer implements JsonSerializer<Long>
+    {
+        @Override
+        public void writeObject(JsonSerializeWriter writer, JsonGenerator generator, Long object) throws Exception
+        {
+            generator.writeNumber(object.longValue());
+        }
+
+        @Override
+        public Long readObject(JsonSerializeReader reader, JsonNode node) throws Exception
+        {
+            return node.getLongValue();
+        }
+    }
+
+    public static class DoubleSerializer implements JsonSerializer<Double>
+    {
+        @Override
+        public void writeObject(JsonSerializeWriter writer, JsonGenerator generator, Double object) throws Exception
+        {
+            generator.writeNumber(object);
+        }
+
+        @Override
+        public Double readObject(JsonSerializeReader reader, JsonNode node) throws Exception
+        {
+            return node.getDoubleValue();
+        }
+    }
+
+    public static class StringSerializer implements JsonSerializer<String>
+    {
+        @Override
+        public void writeObject(JsonSerializeWriter writer, JsonGenerator generator, String object) throws Exception
+        {
+            generator.writeString(object);
+        }
+
+        @Override
+        public String readObject(JsonSerializeReader reader, JsonNode node) throws Exception
+        {
+            return node.getTextValue();
+        }
+    }
+
+    static
+    {
+        register(Integer.class, IntSerializer.class);
+        register(Double.class, DoubleSerializer.class);
+        register(Long.class, LongSerializer.class);
+        register(String.class, StringSerializer.class);
     }
 }

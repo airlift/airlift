@@ -6,12 +6,6 @@ import org.codehaus.jackson.JsonNode;
 public class MyContainmentSerializer implements JsonSerializer<MyContainment>
 {
     @Override
-    public int getVersion()
-    {
-        return 0;
-    }
-
-    @Override
     public void writeObject(JsonSerializeWriter writer, JsonGenerator generator, MyContainment object) throws Exception
     {
         writer.writeObject(FieldNames.POJO, object.getP());
@@ -19,7 +13,7 @@ public class MyContainmentSerializer implements JsonSerializer<MyContainment>
     }
 
     @Override
-    public MyContainment readObject(JsonSerializeReader reader, JsonNode node, int dataVersion) throws Exception
+    public MyContainment readObject(JsonSerializeReader reader, JsonNode node) throws Exception
     {
         return new MyContainment
         (
