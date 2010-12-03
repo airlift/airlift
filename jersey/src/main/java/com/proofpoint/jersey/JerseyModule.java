@@ -1,20 +1,17 @@
 package com.proofpoint.jersey;
 
-import com.google.inject.servlet.ServletModule;
+import com.proofpoint.jetty.TheServlet;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
+import com.google.inject.Module;
+import com.google.inject.Binder;
 
-import java.util.HashMap;
-import java.util.Map;
+import javax.servlet.Servlet;
 
-public class JerseyModule
-    extends ServletModule
+public class JerseyModule implements Module
 {
     @Override
-    protected void configureServlets()
+    public void configure(Binder binder)
     {
-        Map<String, String> params = new HashMap<String, String>();
-        params.put("com.sun.jersey.spi.container.ContainerRequestFilters", OverrideMethodFilter.class.getName());
-
-        serve("/*").with(GuiceContainer.class, params);
+        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(GuiceContainer.class);
     }
 }

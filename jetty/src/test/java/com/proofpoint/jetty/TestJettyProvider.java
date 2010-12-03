@@ -16,6 +16,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.servlet.ServletException;
+import javax.servlet.Servlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -231,19 +232,12 @@ public class TestJettyProvider
 
     private void createServer(final JettyConfig config)
     {
-        server = Guice.createInjector(new ServletModule()
-        {
-            @Override
-            protected void configureServlets()
-            {
-                serve("/*").with(DummyServlet.class);
-            }
-        }, new Module()
+        server = Guice.createInjector(new Module()
         {
             @Override
             public void configure(Binder binder)
             {
-                binder.bind(DummyServlet.class).in(Scopes.SINGLETON);
+                binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class).in(Scopes.SINGLETON);
                 binder.bind(Server.class).toProvider(JettyProvider.class);
                 binder.bind(JettyConfig.class).toInstance(config);
                 binder.bind(LoginService.class).toProvider(HashLoginServiceProvider.class);

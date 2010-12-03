@@ -2,7 +2,6 @@ package com.proofpoint.jetty;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.google.inject.servlet.GuiceFilter;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.ConstraintMapping;
@@ -17,14 +16,15 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
-import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.GzipFilter;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 import javax.annotation.Nullable;
 import javax.management.MBeanServer;
+import javax.servlet.Servlet;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -40,12 +40,14 @@ public class JettyProvider
 {
     private MBeanServer mbeanServer;
     private JettyConfig config;
+    private final Servlet theServlet;
     private LoginService loginService;
 
     @Inject
-    public JettyProvider(JettyConfig config)
+    public JettyProvider(JettyConfig config, @TheServlet Servlet theServlet)
     {
         this.config = config;
+        this.theServlet = theServlet;
     }
 
     @Inject(optional = true)
@@ -138,8 +140,7 @@ public class JettyProvider
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         context.addFilter(GzipFilter.class, "/*", FilterMapping.DEFAULT);
         context.addFilter(GZipRequestFilter.class, "/*", FilterMapping.DEFAULT);
-        context.addFilter(GuiceFilter.class, "/*", FilterMapping.DEFAULT);
-        context.addServlet(DefaultServlet.class, "/");
+        context.addServlet(new ServletHolder(theServlet), "/*");
 
         if (loginService != null) {
             context.setSecurityHandler(getSecurityHandler());
