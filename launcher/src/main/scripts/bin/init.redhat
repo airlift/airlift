@@ -9,7 +9,7 @@
 target=`readlink -f $0`
 bin_dir=`dirname $target`
 launcher=$bin_dir/launcher
-install_path=`readlink -m $target/../..`
+install_path=`readlink -f $bin_dir/..`
 name=`basename $install_path`
 
 # find owner for launcher script
