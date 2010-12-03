@@ -1,6 +1,6 @@
 package com.proofpoint.configuration;
 
-interface Config3
+interface LegacyConfig3
 {
     // required
     @Config("option")

@@ -1,6 +1,6 @@
 package com.proofpoint.configuration;
 
-class Config2
+public class LegacyConfig2
 {
     // optional w/ default value
     @Config("option")

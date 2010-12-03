@@ -1,121 +1,57 @@
 package com.proofpoint.configuration;
 
 import com.google.inject.Binder;
-import com.google.inject.Binding;
-import com.google.inject.Key;
 import com.google.inject.Module;
-import com.google.inject.name.Names;
-import com.google.inject.spi.DefaultBindingTargetVisitor;
-import com.google.inject.spi.DefaultElementVisitor;
-import com.google.inject.spi.Element;
-import com.google.inject.spi.InstanceBinding;
-import com.proofpoint.guice.ElementsIterator;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 public class ConfigurationModule
         implements Module
 {
-    private static int index = 0;
+    private final ConfigurationFactory configurationFactory;
 
-    private final List<ConfigBinding> configBindings = new ArrayList<ConfigBinding>();
-    private final Map<String, String> properties;
-
-    public ConfigurationModule(Map<String, String> properties, final ElementsIterator elementsIterator)
+    public ConfigurationModule(ConfigurationFactory configurationFactory)
     {
-        this.properties = properties;
-
-        for ( final Element element : elementsIterator ) {
-            element.acceptVisitor(new DefaultElementVisitor<Void>()
-            {
-                public <T> Void visit(Binding<T> binding)
-                {
-                    Key<?> key = binding.getKey();
-                    if (ConfigBinding.class.isAssignableFrom(key.getTypeLiteral().getRawType())) {
-                        Binding<ConfigBinding> b = (Binding<ConfigBinding>) binding;
-
-                        b.acceptTargetVisitor(new DefaultBindingTargetVisitor<ConfigBinding, Void>()
-                        {
-                            public Void visit(InstanceBinding<? extends ConfigBinding> instanceBinding)
-                            {
-                                configBindings.add(instanceBinding.getInstance());
-                                return null;
-                            }
-                        });
-                        elementsIterator.unbindElement(element);
-                    }
-                    else {
-                        visitOther(element);
-                    }
-
-                    return null;
-                }
-            });
-        }
+        this.configurationFactory = configurationFactory;
     }
 
+    @Override
     public void configure(Binder binder)
     {
-        ConfigurationFactory factory = new ConfigurationFactory(properties);
-
-        for (ConfigBinding binding : configBindings) {
-            Class<Object> configClass = (Class<Object>) binding.getConfigClass();
-
-            Object instance;
-            try {
-                instance = factory.build(configClass);
-            }
-            catch (ConfigurationException e) {
-                instance = e.getPartial();
-                for (String error : e.getErrors()) {
-                    binder.addError(error);
-                }
-            }
-
-            binder.bind(Key.get(configClass)).toInstance(instance);
-        }
+        binder.bind(ConfigurationFactory.class).toInstance(configurationFactory);
     }
 
-    public static void bindConfig(Binder binder, Class<?> clazz)
+    public static <T> void bindConfig(Binder binder, Class<T> clazz)
     {
         bindConfig(binder, clazz, null);
     }
 
-    public static void bindConfig(Binder binder, Class<?> clazz, final String prefix)
+    public static <T> void bindConfig(Binder binder, Class<T> clazz, final String prefix)
     {
-        index++;
+        StackTraceElement source = getCaller();
 
-        binder.bind(ConfigBinding.class)
-                .annotatedWith(Names.named(Integer.toString(index)))
-                .toInstance(new ConfigBinding(clazz, prefix));
+        if (source != null) {
+            binder = binder.withSource(source);
+        }
+        binder.bind(clazz).toProvider(new ConfigurationProvider<T>(clazz, prefix));
     }
 
-    private static class ConfigBinding
+    private static StackTraceElement getCaller()
     {
-        private final Class<?> clazz;
-        private final String prefix;
+        // find the caller of this class to report source
+        StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+        boolean foundThisClass = false;
+        for (StackTraceElement element : stack) {
+            if (!foundThisClass) {
+                if (element.getClassName().equals(ConfigurationModule.class.getName())){
+                    foundThisClass = true;
+                }
+            }
+            else {
+                if (!element.getClassName().equals(ConfigurationModule.class.getName())){
+                    return element;
+                }
 
-        public ConfigBinding(Class<?> clazz)
-        {
-            this(clazz, null);
+            }
         }
-
-        private ConfigBinding(Class<?> clazz, String prefix)
-        {
-            this.clazz = clazz;
-            this.prefix = prefix;
-        }
-
-        public Class<?> getConfigClass()
-        {
-            return clazz;
-        }
-
-        public String getPrefix()
-        {
-            return prefix;
-        }
+        return null;
     }
 }

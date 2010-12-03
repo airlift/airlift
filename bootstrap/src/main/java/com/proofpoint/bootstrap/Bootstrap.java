@@ -1,15 +1,18 @@
 package com.proofpoint.bootstrap;
 
-import com.google.inject.Binder;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Stage;
+import com.google.inject.spi.Message;
 import com.proofpoint.configuration.ConfigurationFactory;
+import com.proofpoint.configuration.ConfigurationInspector;
 import com.proofpoint.configuration.ConfigurationLoader;
 import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.configuration.ConfigurationInspector;
-import com.proofpoint.guice.ElementsIterator;
+import com.proofpoint.configuration.ConfigurationValidator;
+import com.proofpoint.configuration.ValidationErrorModule;
 import com.proofpoint.jmx.JMXInspector;
 import com.proofpoint.lifecycle.LifeCycleManager;
 import com.proofpoint.lifecycle.LifeCycleModule;
@@ -20,11 +23,12 @@ import com.proofpoint.log.LoggingWriter;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.List;
 import java.util.Map;
 
 public class Bootstrap
 {
-    private final Logger log =  Logger.get(Bootstrap.class);
+    private final Logger log = Logger.get(Bootstrap.class);
     private final Module[] modules;
 
     public Bootstrap(Module... modules)
@@ -47,51 +51,50 @@ public class Bootstrap
             }
         });
 
+        // initialize configuration
         log.info("Loading configuration");
         ConfigurationLoader loader = new ConfigurationLoader();
         Map<String, String> properties = loader.loadProperties();
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
 
-        // set up logging
+        // initialize logging
         log.info("Initializing logging");
-        final ConfigurationFactory          factory = new ConfigurationFactory(properties);
-        LoggingConfiguration configuration = factory.build(LoggingConfiguration.class);
+        LoggingConfiguration configuration = configurationFactory.build(LoggingConfiguration.class);
         logging.initialize(configuration);
 
-        ElementsIterator elementsIterator = new ElementsIterator(modules);
+        // Validate configuration
+        ConfigurationValidator configurationValidator = new ConfigurationValidator(configurationFactory);
+        List<Message> messages = configurationValidator.validate(modules);
 
-        LifeCycleModule         lifeCycleModule = new LifeCycleModule();
+        // system modules
+        Builder<Module> moduleList = ImmutableList.builder();
+        moduleList.add(new LifeCycleModule());
+        moduleList.add(new ConfigurationModule(configurationFactory));
+        if (!messages.isEmpty()) {
+            moduleList.add(new ValidationErrorModule(messages));
+        }
+        moduleList.add(modules);
 
-        // load & configure guice modules
-        ConfigurationModule     config = new ConfigurationModule(properties, elementsIterator);
+        // create the injector
+        Injector injector = Guice.createInjector(Stage.PRODUCTION, moduleList.build());
 
-        Injector                injector = Guice.createInjector
-        (
-            Stage.PRODUCTION,
-            lifeCycleModule,
-            config,
-            elementsIterator,  // must come after config
-            new Module()
-            {
-                @Override
-                public void configure(Binder binder)
-                {
-                    binder.bind(ConfigurationFactory.class).toInstance(factory);
-                }
-            }
-        );
-        LifeCycleManager        lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+        // Create the life-cycle manager
+        LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
 
-        ConfigurationInspector  configurationInspector = injector.getInstance(ConfigurationInspector.class);
+        // Log effective configuration
+        ConfigurationInspector configurationInspector = injector.getInstance(ConfigurationInspector.class);
         configurationInspector.print(new PrintWriter(new LoggingWriter(log, LoggingWriter.Type.DEBUG)));
 
-        JMXInspector            jmxInspector = injector.getInstance(JMXInspector.class);
+        // Log managed objects
+        JMXInspector jmxInspector = injector.getInstance(JMXInspector.class);
         jmxInspector.print(new PrintWriter(new LoggingWriter(log, LoggingWriter.Type.DEBUG)));
 
-        if ( lifeCycleManager.size() > 0 )
-        {
+        // Start services
+        if (lifeCycleManager.size() > 0) {
             lifeCycleManager.start();
         }
 
         return injector;
     }
+
 }

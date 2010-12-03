@@ -1,6 +1,6 @@
 package com.proofpoint.configuration;
 
-interface Config4
+interface LegacyConfig4
 {
     String getOption();
 }

@@ -6,11 +6,13 @@ import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
-import com.proofpoint.guice.ElementsIterator;
+import com.google.inject.spi.Message;
+import com.proofpoint.configuration.MyEnum;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.List;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
@@ -45,8 +47,8 @@ public class TestConfig
     public void testDefaultViaImpl()
             throws Exception
     {
-        Injector injector = createInjector(Collections.<String, String>emptyMap(), Config2.class);
-        Config2 config = injector.getInstance(Config2.class);
+        Injector injector = createInjector(Collections.<String, String>emptyMap(), LegacyConfig2.class);
+        LegacyConfig2 config = injector.getInstance(LegacyConfig2.class);
         assertEquals(config.getOption(), "default");
     }
 
@@ -57,8 +59,8 @@ public class TestConfig
         Map<String, String> properties = Maps.newHashMap();
         properties.put("option", "provided");
 
-        Injector injector = createInjector(properties, Config2.class);
-        Config2 instance = injector.getInstance(Config2.class);
+        Injector injector = createInjector(properties, LegacyConfig2.class);
+        LegacyConfig2 instance = injector.getInstance(LegacyConfig2.class);
 
         assertEquals(instance.getOption(), "provided");
     }
@@ -68,8 +70,8 @@ public class TestConfig
             throws Exception
     {
         try {
-            createInjector(Collections.<String, String>emptyMap(), Config3.class)
-                    .getInstance(Config3.class);
+            createInjector(Collections.<String, String>emptyMap(), LegacyConfig3.class)
+                    .getInstance(LegacyConfig3.class);
             fail("Expected exception due to missing value");
         }
         catch (Exception e) {
@@ -82,8 +84,8 @@ public class TestConfig
             throws Exception
     {
         try {
-            createInjector(Collections.<String, String>emptyMap(), Config4.class)
-                    .getInstance(Config4.class);
+            Injector injector = createInjector(Collections.<String, String>emptyMap(), LegacyConfig4.class);
+            injector.getInstance(LegacyConfig4.class);
             fail("Expected exception due to abstract method without @Config annotation");
         }
         catch (CreationException e) {
@@ -110,8 +112,30 @@ public class TestConfig
         properties.put("boxedFloatOption", Float.toString(Float.MAX_VALUE));
         properties.put("doubleOption", Double.toString(Double.MAX_VALUE));
         properties.put("boxedDoubleOption", Double.toString(Double.MAX_VALUE));
+        properties.put("myEnumOption", MyEnum.FOO.toString());
+        properties.put("valueClassOption", "a value class");
 
-        Injector injector = createInjector(properties, Config1.class);
+        Injector injector = createInjector(properties, LegacyConfig1.class);
+        LegacyConfig1 legacyConfig = injector.getInstance(LegacyConfig1.class);
+        assertEquals("a string", legacyConfig.getStringOption());
+        assertEquals(true, legacyConfig.getBooleanOption());
+        assertEquals(Boolean.TRUE, legacyConfig.getBoxedBooleanOption());
+        assertEquals(Byte.MAX_VALUE, legacyConfig.getByteOption());
+        assertEquals(Byte.valueOf(Byte.MAX_VALUE), legacyConfig.getBoxedByteOption());
+        assertEquals(Short.MAX_VALUE, legacyConfig.getShortOption());
+        assertEquals(Short.valueOf(Short.MAX_VALUE), legacyConfig.getBoxedShortOption());
+        assertEquals(Integer.MAX_VALUE, legacyConfig.getIntegerOption());
+        assertEquals(Integer.valueOf(Integer.MAX_VALUE), legacyConfig.getBoxedIntegerOption());
+        assertEquals(Long.MAX_VALUE, legacyConfig.getLongOption());
+        assertEquals(Long.valueOf(Long.MAX_VALUE), legacyConfig.getBoxedLongOption());
+        assertEquals(Float.MAX_VALUE, legacyConfig.getFloatOption(), 0);
+        assertEquals(Float.MAX_VALUE, legacyConfig.getBoxedFloatOption());
+        assertEquals(Double.MAX_VALUE, legacyConfig.getDoubleOption(), 0);
+        assertEquals(Double.MAX_VALUE, legacyConfig.getBoxedDoubleOption());
+        assertEquals(MyEnum.FOO, legacyConfig.getMyEnumOption());
+        assertEquals(legacyConfig.getValueClassOption().getValue(), "a value class");
+
+        injector = createInjector(properties, Config1.class);
         Config1 config = injector.getInstance(Config1.class);
         assertEquals("a string", config.getStringOption());
         assertEquals(true, config.getBooleanOption());
@@ -128,11 +152,13 @@ public class TestConfig
         assertEquals(Float.MAX_VALUE, config.getBoxedFloatOption());
         assertEquals(Double.MAX_VALUE, config.getDoubleOption(), 0);
         assertEquals(Double.MAX_VALUE, config.getBoxedDoubleOption());
+        assertEquals(MyEnum.FOO, config.getMyEnumOption());
+        assertEquals(config.getValueClassOption().getValue(), "a value class");
     }
 
     private Injector createInjector(Map<String, String> properties, final Class<?>... configClasses)
     {
-        Module modules = new Module() {
+        Module module = new Module() {
             @Override
             public void configure(Binder binder)
             {
@@ -141,7 +167,9 @@ public class TestConfig
                 }
             }
         };
-        return Guice.createInjector(new ConfigurationModule(properties, new ElementsIterator(modules)));
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
+        List<Message> messages = new ConfigurationValidator(configurationFactory).validate(module);
+        return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
     }
     
     public abstract static class Thing
