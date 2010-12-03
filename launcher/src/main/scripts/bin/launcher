@@ -42,8 +42,12 @@
 function getParentDirPath() {
     pushd "$PWD" > /dev/null
     dir=`dirname $0`
-    [ $dir == "." ] && cd ..
-    path=$PWD
+    if [ $dir == "." ]; then 
+        cd ..
+        path=$PWD
+    else
+        path=`dirname $dir`
+    fi
     popd > /dev/null
     PARENT_DIR=$path
 }
