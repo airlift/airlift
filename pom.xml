@@ -4,7 +4,7 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>platform</artifactId>
     <packaging>pom</packaging>
-    <version>0.17</version>
+    <version>0.18-SNAPSHOT</version>
     <name>platform</name>
 
     <properties>
