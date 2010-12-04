@@ -21,6 +21,13 @@ import java.util.Properties;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
 
+/**
+ * Initializes the logging subsystem.
+ *
+ * java.util.Logging, System.out & System.err are tunneled through the logging system.
+ *
+ * System.out and System.err are assigned to loggers named "stdout" and "stderr", respectively.  
+ */
 public class Logging
 {
     private final String PATTERN = "%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}\\t%5p\\t%t\\t%c\\t%m%n";
@@ -30,6 +37,12 @@ public class Logging
     private OutputStreamAppender<ILoggingEvent> consoleAppender;
     private RollingFileAppender<ILoggingEvent> fileAppender;
 
+    /**
+     * Sets up default logging:
+     *
+     * - INFO level
+     * - Log entries are written to stderr
+     */
     public Logging()
     {
         // initialize root logger
