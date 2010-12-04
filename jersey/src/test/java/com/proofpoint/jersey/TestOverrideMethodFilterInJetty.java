@@ -238,15 +238,15 @@ public class TestOverrideMethodFilterInJetty
     private Server createServer(final JettyConfig config, final TestResource resource)
     {
         return Guice.createInjector(new JerseyModule(),
-                             new Module()
-        {
-            @Override
-            public void configure(Binder binder)
-            {
-                binder.bind(Server.class).toProvider(JettyProvider.class);
-                binder.bind(JettyConfig.class).toInstance(config);
-                binder.bind(TestResource.class).toInstance(resource);
-            }
-        }).getInstance(Server.class);
+                                    new Module()
+                                    {
+                                        @Override
+                                        public void configure(Binder binder)
+                                        {
+                                            binder.bind(Server.class).toProvider(JettyProvider.class);
+                                            binder.bind(JettyConfig.class).toInstance(config);
+                                            binder.bind(TestResource.class).toInstance(resource);
+                                        }
+                                    }).getInstance(Server.class);
     }
 }
