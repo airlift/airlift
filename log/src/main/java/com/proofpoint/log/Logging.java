@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
 import java.util.Map;
@@ -39,9 +40,18 @@ public class Logging
         context.reset();
         root.setLevel(Level.INFO);
 
-        redirectSlf4jToConsole();
-        redirectStdStreamsToSlf4j();
+        rewireStdStreams();
         redirectJULToSLF4j();
+    }
+
+    private void rewireStdStreams()
+    {
+        OutputStream out = System.err;
+
+        redirectSlf4jTo(out);
+        log.info("Logging to stderr");
+
+        redirectStdStreamsToSlf4j();
     }
 
     private void redirectStdStreamsToSlf4j()
@@ -50,7 +60,7 @@ public class Logging
         System.setErr(new PrintStream(new LoggingOutputStream(LoggerFactory.getLogger("stderr"))));
     }
 
-    private void redirectSlf4jToConsole()
+    private void redirectSlf4jTo(OutputStream stream)
     {
         PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setPattern(PATTERN);
@@ -60,11 +70,9 @@ public class Logging
         consoleAppender = new OutputStreamAppender<ILoggingEvent>();
         consoleAppender.setContext(context);
         consoleAppender.setEncoder(encoder);
-        consoleAppender.setOutputStream(System.err); // needs to happen after setEncoder()
+        consoleAppender.setOutputStream(stream); // needs to happen after setEncoder()
         consoleAppender.start();
         root.addAppender(consoleAppender);
-
-        log.info("Logging to stderr");
     }
 
     public void disableConsole()
