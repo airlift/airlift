@@ -177,15 +177,13 @@ public class Logging
             logToFile(config.getLogPath(), config.getMaxHistory(), config.getMaxSegmentSizeInBytes());
         }
 
-        boolean hasErrors = false;
         for (Status status : root.getLoggerContext().getStatusManager().getCopyOfStatusList()) {
             if (status.getLevel() == Status.ERROR) {
                 log.error(status.getMessage());
-                hasErrors = true;
             }
         }
 
-        if (hasErrors) {
+        if (root.getLoggerContext().getStatusManager().getLevel() == Status.ERROR) {
             throw new RuntimeException("Error initializing logger, aborting");
         }
 
