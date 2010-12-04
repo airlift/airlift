@@ -8,6 +8,7 @@ import ch.qos.logback.core.OutputStreamAppender;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
+import ch.qos.logback.core.status.Status;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
@@ -168,9 +169,26 @@ public class Logging
     public void initialize(LoggingConfiguration config)
             throws IOException
     {
+        if (config.getLogPath() == null && !config.isConsoleEnabled()) {
+            throw new IllegalArgumentException("No log file is configured (log.output-file) and logging to console is disabled (log.enable-console)");
+        }
+
         if (config.getLogPath() != null) {
             logToFile(config.getLogPath(), config.getMaxHistory(), config.getMaxSegmentSizeInBytes());
         }
+
+        boolean hasErrors = false;
+        for (Status status : root.getLoggerContext().getStatusManager().getCopyOfStatusList()) {
+            if (status.getLevel() == Status.ERROR) {
+                log.error(status.getMessage());
+                hasErrors = true;
+            }
+        }
+
+        if (hasErrors) {
+            throw new RuntimeException("Error initializing logger, aborting");
+        }
+
         if (!config.isConsoleEnabled()) {
             disableConsole();
         }
