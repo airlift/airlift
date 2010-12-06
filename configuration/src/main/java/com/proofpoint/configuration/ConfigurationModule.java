@@ -3,6 +3,8 @@ package com.proofpoint.configuration;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 
+import java.lang.annotation.Annotation;
+
 public class ConfigurationModule
         implements Module
 {
@@ -19,19 +21,9 @@ public class ConfigurationModule
         binder.bind(ConfigurationFactory.class).toInstance(configurationFactory);
     }
 
-    public static <T> void bindConfig(Binder binder, Class<T> clazz)
+    public static <T> void bindConfig(Binder binder, Class<T> configClass)
     {
-        bindConfig(binder, clazz, null);
-    }
-
-    public static <T> void bindConfig(Binder binder, Class<T> clazz, final String prefix)
-    {
-        StackTraceElement source = getCaller();
-
-        if (source != null) {
-            binder = binder.withSource(source);
-        }
-        binder.bind(clazz).toProvider(new ConfigurationProvider<T>(clazz, prefix));
+        bindConfig(binder).to(configClass);
     }
 
     private static StackTraceElement getCaller()
@@ -53,5 +45,61 @@ public class ConfigurationModule
             }
         }
         return null;
+    }
+
+    public static AnnotatedBindingBuilder bindConfig(Binder binder) {
+        return new AnnotatedBindingBuilder(binder.withSource(getCaller()));
+    }
+
+    public static class AnnotatedBindingBuilder extends PrefixBindingBuilder {
+        public AnnotatedBindingBuilder(Binder binder)
+        {
+            super(binder, null, null);
+        }
+
+        public PrefixBindingBuilder annotatedWith(Class<? extends Annotation> annotationType) {
+            return new PrefixBindingBuilder(binder, annotationType, null);
+        }
+
+        public PrefixBindingBuilder annotatedWith(Annotation annotation) {
+            return new PrefixBindingBuilder(binder, null, annotation);
+        }
+    }
+
+    public static class PrefixBindingBuilder extends ConfigBindingBuilder {
+        public PrefixBindingBuilder(Binder binder, Class<? extends Annotation> annotationType, Annotation annotation)
+        {
+            super(binder, annotationType, annotation, null);
+        }
+
+        public ConfigBindingBuilder prefixedWith(String prefix) {
+            return new ConfigBindingBuilder(binder, annotationType, annotation,  prefix);
+        }
+    }
+
+    public static class ConfigBindingBuilder {
+        protected final Binder binder;
+        protected final Class<? extends Annotation> annotationType;
+        protected final Annotation annotation;
+        protected final String prefix;
+
+        public ConfigBindingBuilder(Binder binder, Class<? extends Annotation> annotationType, Annotation annotation, String prefix)
+        {
+            this.binder = binder;
+            this.annotationType = annotationType;
+            this.annotation = annotation;
+            this.prefix = prefix;
+        }
+
+        public <T> void to(Class<T> configClass) {
+            if (annotationType != null) {
+                binder.bind(configClass).annotatedWith(annotationType).toProvider(new ConfigurationProvider<T>(configClass, prefix));
+            } else if(annotation != null) {
+                binder.bind(configClass).annotatedWith(annotation).toProvider(new ConfigurationProvider<T>(configClass, prefix));
+            } else {
+                binder.bind(configClass).toProvider(new ConfigurationProvider<T>(configClass, prefix));
+            }
+
+        }
     }
 }
