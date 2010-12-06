@@ -1,12 +1,14 @@
 package com.proofpoint.dbpool;
 
-import com.proofpoint.configuration.ConfigurationModule;
+import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import com.google.inject.Provider;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.inject.Scopes;
 import org.weakref.jmx.guice.MBeanModule;
 
+import javax.sql.DataSource;
 import java.lang.annotation.Annotation;
 
 public class MySqlDataSourceModule extends MBeanModule
@@ -30,11 +32,11 @@ public class MySqlDataSourceModule extends MBeanModule
     public void configureMBeans()
     {
         // bind the configuration
-        ConfigurationModule.bindConfig(binder(), MySqlDataSourceConfig.class, propertyPrefix);  // todo need a way to bind to annotation
+        bindConfig(binder()).annotatedWith(annotation).prefixedWith(propertyPrefix).to(MySqlDataSourceConfig.class); 
 
         // Bind the datasource
-        bind(MySqlDataSource.class).annotatedWith(annotation).toProvider(new MySqlDataSourceProvider(annotation));
-        export(MySqlDataSource.class).annotatedWith(annotation).withGeneratedName();
+        bind(DataSource.class).annotatedWith(annotation).toProvider(new MySqlDataSourceProvider(annotation)).in(Scopes.SINGLETON);
+        export(DataSource.class).annotatedWith(annotation).withGeneratedName();
     }
 
     private static class MySqlDataSourceProvider implements Provider<MySqlDataSource>
