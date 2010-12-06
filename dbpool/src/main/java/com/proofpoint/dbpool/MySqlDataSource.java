@@ -17,11 +17,12 @@ public class MySqlDataSource extends ManagedDataSource
     private static MysqlConnectionPoolDataSource createMySQLConnectionPoolDataSource(MySqlDataSourceConfig config) {
         MysqlConnectionPoolDataSource dataSource = new MysqlConnectionPoolDataSource();
         dataSource.setServerName(config.getHost());
+        dataSource.setUser(config.getUsername());
+        dataSource.setPassword(config.getPassword());
         dataSource.setPort(config.getPort());
         dataSource.setDatabaseName(config.getDatabaseName());
         dataSource.setConnectTimeout((int) ceil(config.getMaxConnectionWait().convertTo(SECONDS)));
         dataSource.setInitialTimeout((int) ceil(config.getMaxConnectionWait().convertTo(SECONDS)));
-        dataSource.setSocketTimeout((int) ceil(config.getMaxConnectionWait().toMillis()));
         dataSource.setDefaultFetchSize(config.getDefaultFetchSize());
         dataSource.setUseSSL(config.getUseSsl());
         return dataSource;
