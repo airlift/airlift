@@ -24,7 +24,7 @@ public class MySqlDataSourceConfig
         return host;
     }
 
-    @Config("host")
+    @Config("db.host")
     public void setHost(String host)
     {
         this.host = host;
@@ -35,7 +35,7 @@ public class MySqlDataSourceConfig
         return port;
     }
 
-    @Config("port")
+    @Config("db.port")
     public void setPort(int port)
     {
         this.port = port;
@@ -46,7 +46,7 @@ public class MySqlDataSourceConfig
         return databaseName;
     }
 
-    @Config("database")
+    @Config("db.database")
     public void setDatabaseName(String databaseName)
     {
         this.databaseName = databaseName;
@@ -57,7 +57,7 @@ public class MySqlDataSourceConfig
         return username;
     }
 
-    @Config("username")
+    @Config("db.username")
     public void setUsername(String username)
     {
         this.username = username;
@@ -68,7 +68,7 @@ public class MySqlDataSourceConfig
         return password;
     }
 
-    @Config("password")
+    @Config("db.password")
     public void setPassword(String password)
     {
         this.password = password;
@@ -93,7 +93,7 @@ public class MySqlDataSourceConfig
      * connections than the current cap.  When the cap is lowered the extra
      * connections will be pruned as they are closed.
      */
-    @Config("connections.max")
+    @Config("db.connections.max")
     public void setMaxConnections(int maxConnections)
     {
         this.maxConnections = maxConnections;
@@ -114,7 +114,7 @@ public class MySqlDataSourceConfig
      * If a connection can not be obtained within the limit, a
      * {@link SqlTimeoutException} is thrown.
      */
-    @Config("connections.wait")
+    @Config("db.connections.wait")
     public void setMaxConnectionWait(Duration maxConnectionWait)
     {
         this.maxConnectionWait = maxConnectionWait;
@@ -131,7 +131,7 @@ public class MySqlDataSourceConfig
     /**
      * Sets the default fetch size for all connection.
      */
-    @Config("fetch-size")
+    @Config("db.fetch-size")
     public void setDefaultFetchSize(int defaultFetchSize)
     {
         this.defaultFetchSize = defaultFetchSize;
@@ -142,7 +142,7 @@ public class MySqlDataSourceConfig
         return useSsl;
     }
 
-    @Config("ssl.enabled")
+    @Config("db.ssl.enabled")
     public void setUseSsl(boolean useSsl)
     {
         this.useSsl = useSsl;
