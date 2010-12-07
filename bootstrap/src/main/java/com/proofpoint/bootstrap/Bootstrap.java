@@ -26,6 +26,15 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Entry point for an application built using the platform codebase.
+ *
+ * This class will
+ * - load, validate and bind configurations
+ * - initialize logging
+ * - set up lifecycle management
+ * - create an Guice injector
+ */
 public class Bootstrap
 {
     private final Logger log = Logger.get(Bootstrap.class);
