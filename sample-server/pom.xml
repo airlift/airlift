@@ -2,18 +2,24 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>${groupId}</groupId>
-    <artifactId>${artifactId}</artifactId>
-    <version>${version}</version>
+    <groupId>com.proofpoint.platform</groupId>
+    <artifactId>sample-server</artifactId>
+    <version>0.18-SNAPSHOT</version>
     <name>sample-server</name>
 
     <properties>
-        <main-class>Main</main-class>
+        <main-class>com.proofpoint.sample.Main</main-class>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <platform-version>0.15-SNAPSHOT</platform-version>
+        <platform-version>0.18-SNAPSHOT</platform-version>
     </properties>
-    
+
     <dependencies>
+        <dependency>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
+            <version>2.0</version>
+        </dependency>
+
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>bootstrap</artifactId>
@@ -59,7 +65,7 @@
             <type>tar.gz</type>
         </dependency>
 
-        
+
         <!-- for testing -->
         <dependency>
             <groupId>org.testng</groupId>
@@ -91,6 +97,71 @@
                         <goals>
                             <goal>jar-no-fork</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-archetype-plugin</artifactId>
+                <version>2.0</version>
+                <executions>
+                    <execution>
+                        <id>create-archetype</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>create-from-project</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-invoker-plugin</artifactId>
+                <version>1.5</version>
+                <configuration>
+                    <debug>true</debug>
+                    <pomIncludes>
+                        <pomInclude>archetype/pom.xml</pomInclude>
+                    </pomIncludes>
+                    <projectsDirectory>${project.build.directory}/generated-sources</projectsDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>package-archetype</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <goals>
+                                <goal>package</goal>
+                            </goals>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-archetype</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <goals>
+                                <goal>install</goal>
+                            </goals>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>deploy-archetype</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <goals>
+                                <goal>deploy</goal>
+                            </goals>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

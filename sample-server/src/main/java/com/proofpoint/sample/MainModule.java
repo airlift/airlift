@@ -1,11 +1,12 @@
-#set( $symbol_pound = '#' )
-#set( $symbol_dollar = '$' )
-#set( $symbol_escape = '\' )
-package ${package};        
+package com.proofpoint.sample;
+
+import com.proofpoint.sample.HelloConfig;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.Scopes;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.sample.HelloResource;
 import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
 
 public class MainModule

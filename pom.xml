@@ -148,12 +148,12 @@
         <module>bootstrap</module>
         <module>formatting</module>
         <module>configuration</module>
-        <module>sample-server-archetype</module>
         <module>zookeeper</module>
         <module>concurrent</module>
         <module>io</module>
         <module>collections</module>
         <module>dbpool</module>
+        <module>sample-server</module>
     </modules>
 </project>
 

@@ -1,7 +1,4 @@
-#set( $symbol_pound = '#' )
-#set( $symbol_dollar = '$' )
-#set( $symbol_escape = '\' )
-package ${package};
+package com.proofpoint.sample;
 
 import com.google.inject.Injector;
 import com.proofpoint.bootstrap.Bootstrap;
