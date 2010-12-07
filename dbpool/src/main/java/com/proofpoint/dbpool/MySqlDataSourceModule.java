@@ -6,17 +6,21 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
+import com.google.common.collect.ImmutableList;
 import org.weakref.jmx.guice.MBeanModule;
 
 import javax.sql.DataSource;
 import java.lang.annotation.Annotation;
+import java.util.List;
+import java.util.Collections;
 
 public class MySqlDataSourceModule extends MBeanModule
 {
     private final Class<? extends Annotation> annotation;
+    private final List<Class<? extends Annotation>> aliases;
     private final String propertyPrefix;
 
-    public MySqlDataSourceModule(Class<? extends Annotation> annotation, String propertyPrefix)
+    public MySqlDataSourceModule(String propertyPrefix, Class<? extends Annotation> annotation, Class<? extends Annotation>... aliases)
     {
         if (annotation == null) {
             throw new NullPointerException("annotation is null");
@@ -26,6 +30,11 @@ public class MySqlDataSourceModule extends MBeanModule
         }
         this.annotation = annotation;
         this.propertyPrefix = propertyPrefix;
+        if (aliases != null) {
+            this.aliases = ImmutableList.copyOf(aliases);
+        } else {
+            this.aliases = Collections.emptyList();
+        }
     }
 
     @Override
@@ -37,6 +46,12 @@ public class MySqlDataSourceModule extends MBeanModule
         // Bind the datasource
         bind(DataSource.class).annotatedWith(annotation).toProvider(new MySqlDataSourceProvider(annotation)).in(Scopes.SINGLETON);
         export(DataSource.class).annotatedWith(annotation).withGeneratedName();
+
+        // Bind aliases
+        Key<DataSource> key = Key.get(DataSource.class, annotation);
+        for (Class<? extends Annotation> alise : aliases) {
+            bind(DataSource.class).annotatedWith(alise).to(key);
+        }
     }
 
     private static class MySqlDataSourceProvider implements Provider<MySqlDataSource>
