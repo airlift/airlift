@@ -106,6 +106,9 @@
                   archetype-metadata.xml with a custom one.
                 - rewrite the POM so that it doesn't contain all the archetype-related logic
             -->
+
+
+            <!-- =========== ONLY FOR ARCHETYPE - remove from generated project ============== -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-archetype-plugin</artifactId>
@@ -175,6 +178,8 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- ========================================================== --> 
+
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
