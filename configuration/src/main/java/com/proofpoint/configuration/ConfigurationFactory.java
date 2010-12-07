@@ -103,7 +103,7 @@ public class ConfigurationFactory
             }
         }
         catch (Exception e) {
-            errors.add("Configuration class %s does not have a public no-arg consturctor", configClass.getName());
+            errors.add("Configuration class %s does not have a public no-arg constructor", configClass.getName());
             return null;
         }
 
