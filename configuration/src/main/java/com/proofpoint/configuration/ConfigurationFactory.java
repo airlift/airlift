@@ -45,7 +45,7 @@ public class ConfigurationFactory
             prefix = prefix + ".";
         }
 
-        Errors<T> errors = new Errors<T>();
+        Errors errors = new Errors();
         T result ;
         if (!isLegacyConfigurationClass(configClass)) {
             result = createFromConcreteConfig(configClass, prefix, errors);
@@ -73,7 +73,7 @@ public class ConfigurationFactory
         return false;
     }
 
-    private <T> T createFromConcreteConfig(Class<T> configClass, String prefix, Errors<T> errors)
+    private <T> T createFromConcreteConfig(Class<T> configClass, String prefix, Errors errors)
     {
         T instance = null;
         for (Method method : configClass.getMethods()) {
@@ -91,7 +91,7 @@ public class ConfigurationFactory
         return instance;
     }
 
-    private <T> T newInstance(Class<T> configClass, Errors<T> errors)
+    private <T> T newInstance(Class<T> configClass, Errors errors)
     {
         // verify there is a public no-arg constructor
         Constructor<T> constructor;
@@ -119,7 +119,7 @@ public class ConfigurationFactory
         return null;
     }
 
-    private <T> void setConfigProperty(T instance, Method method, String prefix, Errors<T> errors)
+    private <T> void setConfigProperty(T instance, Method method, String prefix, Errors errors)
     {
         // verify configuration method
         boolean valid = true;
@@ -153,7 +153,7 @@ public class ConfigurationFactory
         }
     }
 
-    private <T> Object getPropertyValue(Method method, String prefix, Errors<T> errors, boolean isLegacy)
+    private <T> Object getPropertyValue(Method method, String prefix, Errors errors, boolean isLegacy)
     {
         Config annotation = method.getAnnotation(Config.class);
 
@@ -195,7 +195,7 @@ public class ConfigurationFactory
         return null;
     }
 
-    private <T> T createFromAbstractConfig(Class<T> configClass, String prefix, Errors<T> errors)
+    private <T> T createFromAbstractConfig(Class<T> configClass, String prefix, Errors errors)
     {
         // cglib callbacks
         ArrayList<Callback> callbacks = new ArrayList<Callback>();

@@ -8,7 +8,7 @@ import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import java.util.List;
 
-class Errors<T>
+class Errors
 {
     private final List<Message> errors = Lists.newArrayList();
 
