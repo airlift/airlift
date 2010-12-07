@@ -5,3 +5,4 @@ target/
 /var
 pom.xml.versionsBackup
 test-output/
+/atlassian-ide-plugin.xml
