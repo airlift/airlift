@@ -2,7 +2,21 @@ package com.proofpoint.dbpool;
 
 import com.proofpoint.configuration.Config;
 
-public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig
+/**
+ * Cofiguration for (@see H2EmbeddedDataSource}.
+ * </p>
+ * The configuration options can be chained as follows:<br>
+ * {@code
+ *     H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
+ *             .setUsername("username")
+ *             .setPassword("password")
+ *             .setMaxConnections(20)
+ *             .setMaxConnectionWait(new Duration(20, TimeUnit.MILLISECONDS)),
+ *             .setFilename(fileName)
+ *             .setInitScript("src/test/db/h2.ddl");
+ * }
+ */
+public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2EmbeddedDataSourceConfig>
 {
     private String filename;
     private String initScript;
@@ -121,35 +135,6 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig
     public H2EmbeddedDataSourceConfig setMaxMemoryRows(long maxMemoryRows)
     {
         this.maxMemoryRows = maxMemoryRows;
-        return this;
-    }
-
-
-    @Override
-    public H2EmbeddedDataSourceConfig setUsername(String username)
-    {
-        super.setUsername(username);
-        return this;
-    }
-
-    @Override
-    public H2EmbeddedDataSourceConfig setPassword(String password)
-    {
-        super.setPassword(password);
-        return this;
-    }
-
-    @Override
-    public H2EmbeddedDataSourceConfig setMaxConnections(int maxConnections)
-    {
-        super.setMaxConnections(maxConnections);
-        return this;
-    }
-
-    @Override
-    public H2EmbeddedDataSourceConfig setMaxConnectionWait(Duration maxConnectionWait)
-    {
-        super.setMaxConnectionWait(maxConnectionWait);
         return this;
     }
 }

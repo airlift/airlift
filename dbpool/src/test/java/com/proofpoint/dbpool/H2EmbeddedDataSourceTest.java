@@ -11,22 +11,11 @@ public class H2EmbeddedDataSourceTest
     public void test()
             throws Exception
     {
+        String fileName = File.createTempFile("h2db-", ".db").getAbsolutePath();
+
         H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
-        {
-            private final String fileName = File.createTempFile("h2db-", ".db").getAbsolutePath();
-
-            @Override
-            public String getFilename()
-            {
-                return fileName;
-            }
-
-            @Override
-            public String getInitScript()
-            {
-                return "src/test/db/h2.ddl";
-            }
-        };
+                .setFilename(fileName)
+                .setInitScript("src/test/db/h2.ddl");
 
         try {
             H2EmbeddedDataSource dataSource = new H2EmbeddedDataSource(config);

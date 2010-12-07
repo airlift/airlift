@@ -5,7 +5,7 @@ import com.proofpoint.configuration.Config;
 /**
  * see <a href="http://dev.mysql.com/doc/refman/5.0/en/connector-j-reference-configuration-properties.html">http://dev.mysql.com/doc/refman/5.0/en/connector-j-reference-configuration-properties.html</a>
  */
-public class MySqlDataSourceConfig extends ManagedDataSourceConfig
+public class MySqlDataSourceConfig extends ManagedDataSourceConfig<MySqlDataSourceConfig>
 {
     private String host;
     private int port = 3306;
@@ -76,34 +76,6 @@ public class MySqlDataSourceConfig extends ManagedDataSourceConfig
     public MySqlDataSourceConfig setUseSsl(boolean useSsl)
     {
         this.useSsl = useSsl;
-        return this;
-    }
-
-    @Override
-    public MySqlDataSourceConfig setUsername(String username)
-    {
-        super.setUsername(username);
-        return this;
-    }
-
-    @Override
-    public MySqlDataSourceConfig setPassword(String password)
-    {
-        super.setPassword(password);
-        return this;
-    }
-
-    @Override
-    public MySqlDataSourceConfig setMaxConnections(int maxConnections)
-    {
-        super.setMaxConnections(maxConnections);
-        return this;
-    }
-
-    @Override
-    public MySqlDataSourceConfig setMaxConnectionWait(Duration maxConnectionWait)
-    {
-        super.setMaxConnectionWait(maxConnectionWait);
         return this;
     }
 }

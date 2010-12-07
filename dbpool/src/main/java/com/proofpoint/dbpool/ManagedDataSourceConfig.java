@@ -4,7 +4,26 @@ import com.proofpoint.configuration.Config;
 
 import java.util.concurrent.TimeUnit;
 
-public class ManagedDataSourceConfig
+/**
+ * Basic configuration for {@see ManagedDataSource}.
+ * </p>
+ * The configuration options can be chained as follows:<br>
+ * {@code
+ *     ManagedDataSourceConfig config = new ManagedDataSourceConfig()
+ *             .setUsername("username")
+ *             .setPassword("password")
+ *             .setMaxConnections(20)
+ *             .setMaxConnectionWait(new Duration(20, TimeUnit.MILLISECONDS));
+ * }
+ *
+ * @param <T> The type current class or subclass, which is used for method chaining
+ *
+ * Implementation Note:</br>
+ * The generic type T is used for method chaining.  A sub class should declare
+ * the Class as follows:</br>
+ * {@code MyDataSourceConfig extends ManagedDataSourceConfig<MyDataSourceConfig>}
+ */
+public class ManagedDataSourceConfig<T extends ManagedDataSourceConfig<T>>
 {
     private String username;
     private String password;
@@ -17,10 +36,10 @@ public class ManagedDataSourceConfig
     }
 
     @Config("db.username")
-    public ManagedDataSourceConfig setUsername(String username)
+    public T setUsername(String username)
     {
         this.username = username;
-        return this;
+        return (T) this;
     }
 
     public String getPassword()
@@ -29,10 +48,10 @@ public class ManagedDataSourceConfig
     }
 
     @Config("db.password")
-    public ManagedDataSourceConfig setPassword(String password)
+    public T setPassword(String password)
     {
         this.password = password;
-        return this;
+        return (T) this;
     }
 
     /**
@@ -55,10 +74,11 @@ public class ManagedDataSourceConfig
      * be pruned as they are closed.
      */
     @Config("db.connections.max")
-    public ManagedDataSourceConfig setMaxConnections(int maxConnections)
+    public T setMaxConnections(int maxConnections)
     {
         this.maxConnections = maxConnections;
-        return this;
+        return (T) this;
+
     }
 
     /**
@@ -77,9 +97,10 @@ public class ManagedDataSourceConfig
      * SqlTimeoutException} is thrown.
      */
     @Config("db.connections.wait")
-    public ManagedDataSourceConfig setMaxConnectionWait(Duration maxConnectionWait)
+    public T setMaxConnectionWait(Duration maxConnectionWait)
     {
         this.maxConnectionWait = maxConnectionWait;
-        return this;
+        return (T) this;
+
     }
 }
