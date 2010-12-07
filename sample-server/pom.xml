@@ -101,6 +101,11 @@
                 </executions>
             </plugin>
 
+            <!-- TODO:
+                - exclude unwanted files (e.g., *.iml) from archetype. We may need to replace the generated
+                  archetype-metadata.xml with a custom one.
+                - rewrite the POM so that it doesn't contain all the archetype-related logic
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-archetype-plugin</artifactId>
