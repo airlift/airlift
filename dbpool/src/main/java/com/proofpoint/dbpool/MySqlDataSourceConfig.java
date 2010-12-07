@@ -25,9 +25,10 @@ public class MySqlDataSourceConfig
     }
 
     @Config("db.host")
-    public void setHost(String host)
+    public MySqlDataSourceConfig setHost(String host)
     {
         this.host = host;
+        return this;
     }
 
     public int getPort()
@@ -36,9 +37,10 @@ public class MySqlDataSourceConfig
     }
 
     @Config("db.port")
-    public void setPort(int port)
+    public MySqlDataSourceConfig setPort(int port)
     {
         this.port = port;
+        return this;
     }
 
     public String getDatabaseName()
@@ -47,9 +49,10 @@ public class MySqlDataSourceConfig
     }
 
     @Config("db.database")
-    public void setDatabaseName(String databaseName)
+    public MySqlDataSourceConfig setDatabaseName(String databaseName)
     {
         this.databaseName = databaseName;
+        return this;
     }
 
     public String getUsername()
@@ -58,9 +61,10 @@ public class MySqlDataSourceConfig
     }
 
     @Config("db.username")
-    public void setUsername(String username)
+    public MySqlDataSourceConfig setUsername(String username)
     {
         this.username = username;
+        return this;
     }
 
     public String getPassword()
@@ -69,9 +73,10 @@ public class MySqlDataSourceConfig
     }
 
     @Config("db.password")
-    public void setPassword(String password)
+    public MySqlDataSourceConfig setPassword(String password)
     {
         this.password = password;
+        return this;
     }
 
     /**
@@ -94,9 +99,10 @@ public class MySqlDataSourceConfig
      * connections will be pruned as they are closed.
      */
     @Config("db.connections.max")
-    public void setMaxConnections(int maxConnections)
+    public MySqlDataSourceConfig setMaxConnections(int maxConnections)
     {
         this.maxConnections = maxConnections;
+        return this;
     }
 
     /**
@@ -115,9 +121,10 @@ public class MySqlDataSourceConfig
      * {@link SqlTimeoutException} is thrown.
      */
     @Config("db.connections.wait")
-    public void setMaxConnectionWait(Duration maxConnectionWait)
+    public MySqlDataSourceConfig setMaxConnectionWait(Duration maxConnectionWait)
     {
         this.maxConnectionWait = maxConnectionWait;
+        return this;
     }
 
     /**
@@ -132,9 +139,10 @@ public class MySqlDataSourceConfig
      * Sets the default fetch size for all connection.
      */
     @Config("db.fetch-size")
-    public void setDefaultFetchSize(int defaultFetchSize)
+    public MySqlDataSourceConfig setDefaultFetchSize(int defaultFetchSize)
     {
         this.defaultFetchSize = defaultFetchSize;
+        return this;
     }
 
     public boolean getUseSsl()
@@ -143,8 +151,9 @@ public class MySqlDataSourceConfig
     }
 
     @Config("db.ssl.enabled")
-    public void setUseSsl(boolean useSsl)
+    public MySqlDataSourceConfig setUseSsl(boolean useSsl)
     {
         this.useSsl = useSsl;
+        return this;
     }
 }
