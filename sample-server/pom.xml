@@ -164,18 +164,6 @@
                             </goals>
                         </configuration>
                     </execution>
-                    <execution>
-                        <id>deploy-archetype</id>
-                        <phase>deploy</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <goals>
-                                <goal>deploy</goal>
-                            </goals>
-                        </configuration>
-                    </execution>
                 </executions>
             </plugin>
             <!-- ========================================================== --> 
