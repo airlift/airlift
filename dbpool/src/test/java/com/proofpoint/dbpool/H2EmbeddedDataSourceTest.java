@@ -21,9 +21,8 @@ public class H2EmbeddedDataSourceTest
             H2EmbeddedDataSource dataSource = new H2EmbeddedDataSource(config);
             dataSource.getConnection().createStatement().executeQuery("select * from message");
         }
-        catch (SQLException e) {
+        finally {
             new File(config.getFilename()).delete();
-            throw e;
         }
     }
 }
