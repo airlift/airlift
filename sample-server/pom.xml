@@ -13,6 +13,19 @@
         <platform-version>0.18-SNAPSHOT</platform-version>
     </properties>
 
+    <distributionManagement>
+        <repository>
+            <id>proofpoint</id>
+            <name>Proofpoint Releases</name>
+            <url>http://maven-tmphost.app.proofpoint.com:8082/nexus/content/repositories/proofpoint-eng</url>
+        </repository>
+        <snapshotRepository>
+            <id>proofpoint-snapshots</id>
+            <name>Proofpoint Snapshots</name>
+            <url>http://maven-tmphost.app.proofpoint.com:8082/nexus/content/repositories/proofpoint-eng-snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <dependencies>
         <dependency>
             <groupId>com.google.inject</groupId>
@@ -166,7 +179,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- ========================================================== --> 
+            <!-- ========================================================== -->
 
 
             <plugin>
