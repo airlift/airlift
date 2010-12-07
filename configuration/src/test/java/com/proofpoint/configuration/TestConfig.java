@@ -156,6 +156,19 @@ public class TestConfig
         assertEquals(config.getValueClassOption().getValue(), "a value class");
     }
 
+    @Test
+    public void testDetectsNoConfigAnnotations()
+    {
+        try {
+            Injector injector = createInjector(Collections.<String, String>emptyMap(), ConfigWithNoAnnotations.class);
+            injector.getInstance(ConfigWithNoAnnotations.class);
+            fail("Expected exception due to missing @Config annotations");
+        }
+        catch (CreationException e) {
+            // do nothing
+        }
+    }
+
     private Injector createInjector(Map<String, String> properties, final Class<?>... configClasses)
     {
         Module module = new Module() {

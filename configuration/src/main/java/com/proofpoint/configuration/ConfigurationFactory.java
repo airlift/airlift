@@ -16,6 +16,8 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
 
+import static com.proofpoint.configuration.Errors.exceptionFor;
+
 public class ConfigurationFactory
 {
     private final Map<String, String> properties;
@@ -45,15 +47,13 @@ public class ConfigurationFactory
             prefix = prefix + ".";
         }
 
-        Errors errors = new Errors();
         T result ;
         if (!isLegacyConfigurationClass(configClass)) {
-            result = createFromConcreteConfig(configClass, prefix, errors);
-        } else {
-            result = createFromAbstractConfig(configClass, prefix, errors);
-
+            result = createFromConcreteConfig(configClass, prefix);
         }
-        errors.throwIfHasErrors();
+        else {
+            result = createFromAbstractConfig(configClass, prefix);
+        }
 
         return result;
     }
@@ -73,38 +73,48 @@ public class ConfigurationFactory
         return false;
     }
 
-    private <T> T createFromConcreteConfig(Class<T> configClass, String prefix, Errors errors)
+    private <T> T createFromConcreteConfig(Class<T> configClass, String prefix)
     {
-        T instance = null;
+        if (!isConfigClass(configClass)) {
+            throw exceptionFor("Configuration class %s does not have any @Config annotations", configClass.getName());
+        }
+
+        T instance = newInstance(configClass);
+
+        Errors errors = new Errors();
         for (Method method : configClass.getMethods()) {
             if (method.isAnnotationPresent(Config.class)) {
-                // Make sure we have an instance
-                if (instance == null) {
-                    instance = newInstance(configClass, errors);
-                    if (instance == null) return null;
-                }
-
-                // Method must take a single parameter
                 setConfigProperty(instance, method, prefix, errors);
             }
         }
+        errors.throwIfHasErrors();
+        
         return instance;
     }
 
-    private <T> T newInstance(Class<T> configClass, Errors errors)
+    private <T> boolean isConfigClass(Class<T> configClass)
+    {
+        for (Method method : configClass.getMethods()) {
+            if (method.isAnnotationPresent(Config.class)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    
+    private <T> T newInstance(Class<T> configClass)
     {
         // verify there is a public no-arg constructor
         Constructor<T> constructor;
         try {
             constructor = configClass.getDeclaredConstructor();
             if (!Modifier.isPublic(constructor.getModifiers())) {
-                errors.add("Constructor %s is not public", constructor.toGenericString());
-                return null;
+                throw exceptionFor("Constructor %s is not public", constructor.toGenericString());
             }
         }
         catch (Exception e) {
-            errors.add("Configuration class %s does not have a public no-arg constructor", configClass.getName());
-            return null;
+            throw exceptionFor("Configuration class %s does not have a public no-arg constructor", configClass.getName());
         }
 
         try {
@@ -114,9 +124,8 @@ public class ConfigurationFactory
             if (e instanceof InvocationTargetException && e.getCause() != null) {
                 e = e.getCause();
             }
-            errors.add(e, "Error creating instance of configuration class [%s]", configClass.getName());
+            throw exceptionFor(e, "Error creating instance of configuration class [%s]", configClass.getName());
         }
-        return null;
     }
 
     private <T> void setConfigProperty(T instance, Method method, String prefix, Errors errors)
@@ -195,8 +204,10 @@ public class ConfigurationFactory
         return null;
     }
 
-    private <T> T createFromAbstractConfig(Class<T> configClass, String prefix, Errors errors)
+    private <T> T createFromAbstractConfig(Class<T> configClass, String prefix)
     {
+        Errors errors = new Errors();
+        
         // cglib callbacks
         ArrayList<Callback> callbacks = new ArrayList<Callback>();
         callbacks.add(NoOp.INSTANCE);
@@ -226,6 +237,7 @@ public class ConfigurationFactory
             }
         }
 
+        T result = null;
         try {
             Enhancer e = new Enhancer();
             e.setSuperclass(configClass);
@@ -237,12 +249,14 @@ public class ConfigurationFactory
                 }
             });
             e.setCallbacks(callbacks.toArray(new Callback[callbacks.size()]));
-            return (T) e.create();
+            result = (T) e.create();
         }
         catch (Exception e) {
             errors.add(e, "Error creating instance of configuration class [%s]", configClass.getName());
-            return null;
         }
+
+        errors.throwIfHasErrors();
+        return result;
     }
 
     private static Object coerce(Class<?> type, String value)

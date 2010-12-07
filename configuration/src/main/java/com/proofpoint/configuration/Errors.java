@@ -15,7 +15,7 @@ class Errors
     public void throwIfHasErrors()
     {
         if (!errors.isEmpty()) {
-            throw new ConfigurationException(errors);
+            throw getException();
         }
     }
 
@@ -27,5 +27,24 @@ class Errors
     public void add(Throwable e, String format, Object... params)
     {
         errors.add(new Message(emptyList(), format(format, params), e));
+    }
+
+    private ConfigurationException getException()
+    {
+        return new ConfigurationException(errors);
+    }
+
+    public static ConfigurationException exceptionFor(String format, Object... params)
+    {
+        Errors errors = new Errors();
+        errors.add(format, params);
+        return errors.getException();
+    }
+
+    public static ConfigurationException exceptionFor(Throwable e, String format, Object... params)
+    {
+        Errors errors = new Errors();
+        errors.add(e, format, params);
+        return errors.getException();
     }
 }
