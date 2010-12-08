@@ -5,6 +5,11 @@ import org.h2.jdbcx.JdbcDataSource;
 import org.h2.util.ScriptReader;
 
 import java.io.FileReader;
+import java.io.File;
+import java.io.Reader;
+import java.io.InputStreamReader;
+import java.io.InputStream;
+import java.io.FileNotFoundException;
 import static java.lang.Math.ceil;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -25,8 +30,17 @@ public class H2EmbeddedDataSource extends ManagedDataSource
         Connection connection = getConnection();
         try {
             setConfig(connection, "CACHE_SIZE", config.getCacheSize());
-
-            FileReader fileReader = new FileReader(config.getInitScript());
+            Reader fileReader;
+            String fileName = config.getInitScript();
+            if (new File(fileName).exists()) {
+                fileReader = new FileReader(fileName);
+            } else {
+                InputStream stream = getClass().getClassLoader().getResourceAsStream(fileName);
+                if (stream == null) {
+                    throw new FileNotFoundException(fileName);
+                }
+                fileReader = new InputStreamReader(stream);
+            }
             ScriptReader scriptReader = new ScriptReader(fileReader);
             for (String statement = scriptReader.readStatement(); statement != null; statement = scriptReader.readStatement()) {
                 executeCommand(connection, statement);

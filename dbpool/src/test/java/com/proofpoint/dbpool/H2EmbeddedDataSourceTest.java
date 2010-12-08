@@ -15,7 +15,7 @@ public class H2EmbeddedDataSourceTest
 
         H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
                 .setFilename(fileName)
-                .setInitScript("src/test/db/h2.ddl");
+                .setInitScript("com/proofpoint/dbpool/h2.ddl");
 
         try {
             H2EmbeddedDataSource dataSource = new H2EmbeddedDataSource(config);
