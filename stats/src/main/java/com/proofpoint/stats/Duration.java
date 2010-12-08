@@ -146,7 +146,7 @@ public final class Duration implements Comparable<Duration>
     }
 
 
-    private static final Pattern DURATION_PATTERN = Pattern.compile("^\\s*(\\d+\\.\\d+)\\s*(s|m|h|d|ms)\\s*$");
+    private static final Pattern DURATION_PATTERN = Pattern.compile("^\\s*(\\d+(?:\\.\\d+)?)\\s*(s|m|h|d|ms)\\s*$");
     public static Duration valueOf(String duration)
             throws IllegalArgumentException
     {

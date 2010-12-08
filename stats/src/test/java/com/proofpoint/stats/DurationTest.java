@@ -54,6 +54,12 @@ public class DurationTest
     @Test
     public void testValueOf()
     {
+        Assert.assertEquals(Duration.valueOf("1 ms"), new Duration(1, MILLISECONDS));
+        Assert.assertEquals(Duration.valueOf("1 s"), new Duration(1, SECONDS));
+        Assert.assertEquals(Duration.valueOf("1 m"), new Duration(1, MINUTES));
+        Assert.assertEquals(Duration.valueOf("1 h"), new Duration(1, HOURS));
+        Assert.assertEquals(Duration.valueOf("1 d"), new Duration(1, DAYS));
+
         Assert.assertEquals(Duration.valueOf("1.234 ms"), new Duration(1.234, MILLISECONDS));
         Assert.assertEquals(Duration.valueOf("1.234 s"), new Duration(1.234, SECONDS));
         Assert.assertEquals(Duration.valueOf("1.234 m"), new Duration(1.234, MINUTES));
@@ -86,6 +92,14 @@ public class DurationTest
 
         try {
             Duration.valueOf("1.x34 ms");
+            fail("Expected IllegalArgumentException");
+        }
+        catch (IllegalArgumentException e) {
+            // ok
+        }
+
+        try {
+            Duration.valueOf("1. ms");
             fail("Expected IllegalArgumentException");
         }
         catch (IllegalArgumentException e) {
