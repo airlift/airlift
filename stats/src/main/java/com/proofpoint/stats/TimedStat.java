@@ -1,4 +1,4 @@
-package com.proofpoint.dbpool;
+package com.proofpoint.stats;
 
 import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math.stat.descriptive.SynchronizedDescriptiveStatistics;

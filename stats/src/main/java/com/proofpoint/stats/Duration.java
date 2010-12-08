@@ -1,4 +1,4 @@
-package com.proofpoint.dbpool;
+package com.proofpoint.stats;
 
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;

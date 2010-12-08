@@ -5,6 +5,9 @@ import org.weakref.jmx.Nested;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.proofpoint.stats.Duration;
+import com.proofpoint.stats.TimedStat;
+
 public final class ManagedDataSourceStats
 {
     private final TimedStat checkout = new TimedStat();

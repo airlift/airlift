@@ -1,9 +1,10 @@
 package com.proofpoint.dbpool;
 
-import static com.proofpoint.dbpool.Duration.nanosSince;
 import com.proofpoint.dbpool.MockConnectionPoolDataSource.MockConnection;
 import static com.proofpoint.testing.Assertions.assertGreaterThan;
 import static com.proofpoint.testing.Assertions.assertInstanceof;
+import com.proofpoint.stats.Duration;
+import static com.proofpoint.stats.Duration.nanosSince;
 import org.testng.Assert;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;

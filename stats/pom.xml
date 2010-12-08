@@ -2,10 +2,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.proofpoint.platform</groupId>
-    <artifactId>dbpool</artifactId>
+    <artifactId>stats</artifactId>
     <packaging>jar</packaging>
     <version>0.18-SNAPSHOT</version>
-    <name>dbpool</name>
+    <name>stats</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
@@ -16,24 +16,6 @@
     
     <dependencies>
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
-            <artifactId>log</artifactId>
-            <version>0.18-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.proofpoint.platform</groupId>
-            <artifactId>configuration</artifactId>
-            <version>0.18-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.proofpoint.platform</groupId>
-            <artifactId>stats</artifactId>
-            <version>0.18-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.weakref</groupId>
             <artifactId>jmxutils</artifactId>
             <version>1.8</version>
@@ -43,20 +25,6 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math</artifactId>
             <version>2.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.13</version>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>1.2.126</version>
-            <optional>true</optional>
         </dependency>
 
         <dependency>
@@ -75,18 +43,6 @@
 
     </dependencies>
 
-    <!-- Temporarily add proofpoint-snapshot repo to get snapshot of jmxutils-1.8-flatten-SNAPSHOT -->
-    <repositories>
-        <repository>
-            <id>proofpoint-snapshots</id>
-            <name>Proofpoint Snapshots</name>
-            <url>http://maven-tmphost.app.proofpoint.com:8082/nexus/content/repositories/proofpoint-eng-snapshots</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-    
     <build>
         <plugins>
             <plugin>

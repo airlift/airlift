@@ -152,6 +152,7 @@
         <module>concurrent</module>
         <module>io</module>
         <module>collections</module>
+        <module>stats</module>
         <module>dbpool</module>
         <module>sample-server</module>
     </modules>

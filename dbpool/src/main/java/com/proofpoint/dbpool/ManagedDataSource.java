@@ -16,7 +16,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import static java.lang.Math.ceil;
 
-import static com.proofpoint.dbpool.Duration.nanosSince;
+import com.proofpoint.stats.Duration;
+import static com.proofpoint.stats.Duration.*;
 
 public class ManagedDataSource implements DataSource
 {

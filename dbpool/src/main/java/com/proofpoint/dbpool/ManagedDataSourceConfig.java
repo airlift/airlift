@@ -1,6 +1,7 @@
 package com.proofpoint.dbpool;
 
 import com.proofpoint.configuration.Config;
+import com.proofpoint.stats.Duration;
 
 import java.util.concurrent.TimeUnit;
 

@@ -1,4 +1,4 @@
-package com.proofpoint.dbpool;
+package com.proofpoint.stats;
 
 import org.testng.Assert;
 import static org.testng.Assert.fail;

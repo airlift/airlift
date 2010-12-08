@@ -1,5 +1,7 @@
 package com.proofpoint.dbpool;
 
+import com.proofpoint.stats.Duration;
+
 import javax.sql.ConnectionPoolDataSource;
 import javax.sql.PooledConnection;
 import java.sql.Connection;

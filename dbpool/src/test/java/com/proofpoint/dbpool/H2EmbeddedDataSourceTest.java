@@ -3,7 +3,6 @@ package com.proofpoint.dbpool;
 import org.testng.annotations.Test;
 
 import java.io.File;
-import java.sql.SQLException;
 
 public class H2EmbeddedDataSourceTest
 {

@@ -1,4 +1,4 @@
-package com.proofpoint.dbpool;
+package com.proofpoint.stats;
 
 import static com.proofpoint.testing.Assertions.assertGreaterThan;
 import static org.testng.Assert.assertEquals;
