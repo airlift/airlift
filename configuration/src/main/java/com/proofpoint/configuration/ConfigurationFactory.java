@@ -1,5 +1,6 @@
 package com.proofpoint.configuration;
 
+import com.google.common.collect.ImmutableList;
 import net.sf.cglib.proxy.Callback;
 import net.sf.cglib.proxy.CallbackFilter;
 import net.sf.cglib.proxy.Enhancer;
@@ -12,6 +13,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
@@ -47,15 +49,11 @@ public class ConfigurationFactory
             prefix = prefix + ".";
         }
 
-        T result ;
-        if (!isLegacyConfigurationClass(configClass)) {
-            result = createFromConcreteConfig(configClass, prefix);
-        }
-        else {
-            result = createFromAbstractConfig(configClass, prefix);
+        if (isLegacyConfigurationClass(configClass)) {
+            return createFromAbstractConfig(configClass, prefix);
         }
 
-        return result;
+        return createFromConcreteConfig(configClass, prefix);
     }
 
     private boolean isLegacyConfigurationClass(Class<?> configClass)
@@ -75,32 +73,34 @@ public class ConfigurationFactory
 
     private <T> T createFromConcreteConfig(Class<T> configClass, String prefix)
     {
-        if (!isConfigClass(configClass)) {
+        List<Method> methods = getAnnotatedMethods(configClass);
+
+        if (methods.isEmpty()) {
             throw exceptionFor("Configuration class %s does not have any @Config annotations", configClass.getName());
         }
 
         T instance = newInstance(configClass);
 
         Errors errors = new Errors();
-        for (Method method : configClass.getMethods()) {
-            if (method.isAnnotationPresent(Config.class)) {
-                setConfigProperty(instance, method, prefix, errors);
-            }
+        for (Method method : methods) {
+            setConfigProperty(instance, method, prefix, errors);
         }
         errors.throwIfHasErrors();
         
         return instance;
     }
 
-    private <T> boolean isConfigClass(Class<T> configClass)
+    private List<Method> getAnnotatedMethods(Class<?> configClass)
     {
+        // TODO: https://jira.proofpoint.com/browse/PLATFORM-10
+        ImmutableList.Builder<Method> builder = ImmutableList.builder();
         for (Method method : configClass.getMethods()) {
             if (method.isAnnotationPresent(Config.class)) {
-                return true;
+                builder.add(method);
             }
         }
 
-        return false;
+        return builder.build();
     }
     
     private <T> T newInstance(Class<T> configClass)
