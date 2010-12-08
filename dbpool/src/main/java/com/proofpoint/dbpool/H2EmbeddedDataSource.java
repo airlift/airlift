@@ -30,6 +30,8 @@ public class H2EmbeddedDataSource extends ManagedDataSource
         Connection connection = getConnection();
         try {
             setConfig(connection, "CACHE_SIZE", config.getCacheSize());
+            setConfig(connection, "COMPRESS_LOB", config.getCompressLob());
+
             Reader fileReader;
             String fileName = config.getInitScript();
             if (new File(fileName).exists()) {

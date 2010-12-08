@@ -21,6 +21,7 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2Embedd
     private String filename;
     private String initScript;
     private String allowLiterals = "ALL";
+    private String compressLob = "LZF";
     private int cacheSize = 16384;
     private long maxLengthInplaceLob = 1024;
     private long maxMemoryRows = 10000;
@@ -82,6 +83,24 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2Embedd
     {
         this.allowLiterals = allowLiterals;
         return this;
+    }
+
+    /**
+     * Sets the compression algorithm for BLOB and CLOB data. Compression is
+     * usually slower, but needs less disk space. LZF is faster but uses more space.
+     * </p>
+     * Allowed values are "NO", "LZF" and "DEFLATE"
+     */
+    // todo this should be an enum
+    public String getCompressLob()
+    {
+        return compressLob;
+    }
+
+    @Config("db.compress-lob")
+    public void setCompressLob(String compressLob)
+    {
+        this.compressLob = compressLob;
     }
 
     /**
