@@ -1,5 +1,6 @@
 package com.proofpoint.sample;
 
+import com.google.common.collect.Maps;
 import com.proofpoint.sample.HelloConfig;
 
 import com.google.inject.Inject;
@@ -7,6 +8,7 @@ import com.google.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import java.util.Map;
 
 @Path("/")
 public class HelloResource
@@ -33,8 +35,10 @@ public class HelloResource
 
     @GET
     @Produces("application/json")
-    public String getJson()
+    public Map<String, String> getJson()
     {
-        return "{\"message\": \"hello world\"}";
+        Map<String, String> result = Maps.newHashMap();
+        result.put("message", "hello world");
+        return result;
     }
 }
