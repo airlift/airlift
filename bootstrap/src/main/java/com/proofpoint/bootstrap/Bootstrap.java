@@ -68,7 +68,7 @@ public class Bootstrap
 
         // initialize logging
         log.info("Initializing logging");
-        LoggingConfiguration configuration = configurationFactory.build(LoggingConfiguration.class);
+        LoggingConfiguration configuration = configurationFactory.createLegacyConfig(LoggingConfiguration.class);
         logging.initialize(configuration);
 
         // Validate configuration

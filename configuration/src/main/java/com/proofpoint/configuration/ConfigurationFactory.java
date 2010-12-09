@@ -43,36 +43,13 @@ public class ConfigurationFactory
         if (configClass == null) {
             throw new NullPointerException("configClass is null");
         }
+
         if (prefix == null) {
             prefix = "";
         } else if (!prefix.isEmpty()) {
             prefix = prefix + ".";
         }
 
-        if (instance == null && isLegacyConfigurationClass(configClass)) {
-            return createFromAbstractConfig(configClass, prefix);
-        }
-
-        return createFromConcreteConfig(configClass, prefix, instance);
-    }
-
-    private boolean isLegacyConfigurationClass(Class<?> configClass)
-    {
-        if (Modifier.isAbstract(configClass.getModifiers())) {
-            return true;
-        }
-
-        for (Method method : configClass.getMethods()) {
-            if (method.isAnnotationPresent(Config.class) && method.getParameterTypes().length == 0) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private <T> T createFromConcreteConfig(Class<T> configClass, String prefix, T instance)
-    {
         List<Method> methods = getAnnotatedMethods(configClass);
 
         if (methods.isEmpty()) {
@@ -206,7 +183,8 @@ public class ConfigurationFactory
         return null;
     }
 
-    private <T> T createFromAbstractConfig(Class<T> configClass, String prefix)
+    @Deprecated
+    public <T> T createLegacyConfig(Class<T> configClass)
     {
         Errors errors = new Errors();
         
@@ -221,7 +199,7 @@ public class ConfigurationFactory
         for (Method method : configClass.getMethods()) {
             if (method.isAnnotationPresent(Config.class)) {
 
-                final Object finalValue = getPropertyValue(method, prefix, errors, true);
+                final Object finalValue = getPropertyValue(method, "", errors, true);
 
                 if (finalValue != null) {
                     slots.put(method, count++);

@@ -12,6 +12,7 @@ public class ConfigurationProvider<T> implements Provider<T>
     private T defaults;
     private T instance;
     private ConfigurationFactory configurationFactory;
+    private boolean legacy;
 
     public ConfigurationProvider(Class<T> configClass) {
 
@@ -56,8 +57,18 @@ public class ConfigurationProvider<T> implements Provider<T>
         }
         
         if (instance == null) {
-            instance = configurationFactory.build(configClass, prefix, defaults);
+            if (!legacy) {
+                instance = configurationFactory.build(configClass, prefix, defaults);
+            } else {
+                instance = configurationFactory.createLegacyConfig(configClass);
+            }
         }
         return instance;
+    }
+
+    static <T> ConfigurationProvider<T> createLegacyConfigurationProvider(Class<T> configClass) {
+        ConfigurationProvider<T> provider = new ConfigurationProvider<T>(configClass);
+        provider.legacy = true;
+        return provider;
     }
 }

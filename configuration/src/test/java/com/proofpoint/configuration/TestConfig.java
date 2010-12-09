@@ -32,7 +32,7 @@ public class TestConfig
         config.put("hello", "world");
         config.put("thevalue", "value");
 
-        Injector injector = createInjector(config, Thing.class, null, null);
+        Injector injector = createInjector(config, createLegacyModule(Thing.class));
 
         Thing t = injector.getInstance(Thing.class);
         assertEquals(t.getName(), "world");
@@ -43,7 +43,7 @@ public class TestConfig
             throws Exception
     {
         Map<String, String> config = Maps.newHashMap();
-        Injector injector = createInjector(config, Thing.class, null, null);
+        Injector injector = createInjector(config, createLegacyModule(Thing.class));
         Thing t = injector.getInstance(Thing.class);
         assertEquals(t.getName(), "woof");
     }
@@ -52,7 +52,7 @@ public class TestConfig
     public void testDefaultViaImpl()
             throws Exception
     {
-        Injector injector = createInjector(Collections.<String, String>emptyMap(), LegacyConfig2.class, null, null);
+        Injector injector = createInjector(Collections.<String, String>emptyMap(), createLegacyModule(LegacyConfig2.class));
         LegacyConfig2 config = injector.getInstance(LegacyConfig2.class);
         assertEquals(config.getOption(), "default");
     }
@@ -64,7 +64,7 @@ public class TestConfig
         Map<String, String> properties = Maps.newHashMap();
         properties.put("option", "provided");
 
-        Injector injector = createInjector(properties, LegacyConfig2.class, null, null);
+        Injector injector = createInjector(properties, createLegacyModule(LegacyConfig2.class));
         LegacyConfig2 instance = injector.getInstance(LegacyConfig2.class);
 
         assertEquals(instance.getOption(), "provided");
@@ -75,7 +75,7 @@ public class TestConfig
             throws Exception
     {
         try {
-            createInjector(Collections.<String, String>emptyMap(), LegacyConfig3.class, null, null)
+            createInjector(Collections.<String, String>emptyMap(), createLegacyModule(LegacyConfig3.class))
                     .getInstance(LegacyConfig3.class);
             fail("Expected exception due to missing value");
         }
@@ -89,7 +89,7 @@ public class TestConfig
             throws Exception
     {
         try {
-            Injector injector = createInjector(Collections.<String, String>emptyMap(), LegacyConfig4.class, null, null);
+            Injector injector = createInjector(Collections.<String, String>emptyMap(), createLegacyModule(LegacyConfig4.class));
             injector.getInstance(LegacyConfig4.class);
             fail("Expected exception due to abstract method without @Config annotation");
         }
@@ -101,7 +101,7 @@ public class TestConfig
     @Test
     public void testLegacyConfigTypes()
     {
-        Injector injector = createInjector(properties, LegacyConfig1.class, null, null);
+        Injector injector = createInjector(properties, createLegacyModule(LegacyConfig1.class));
         LegacyConfig1 legacyConfig = injector.getInstance(LegacyConfig1.class);
         assertEquals("a string", legacyConfig.getStringOption());
         assertEquals(true, legacyConfig.getBooleanOption());
@@ -125,14 +125,14 @@ public class TestConfig
     @Test
     public void testConfig()
     {
-        Injector injector = createInjector(properties, Config1.class, null, null);
+        Injector injector = createInjector(properties, createModule(Config1.class, null, null));
         verifyConfig(injector.getInstance(Config1.class));
     }
 
     @Test
     public void testPrefixConfigTypes()
     {
-        Injector injector = createInjector(prefix("prefix", properties), Config1.class, "prefix", null);
+        Injector injector = createInjector(prefix("prefix", properties), createModule(Config1.class, "prefix", null));
         verifyConfig(injector.getInstance(Config1.class));
     }
 
@@ -144,12 +144,12 @@ public class TestConfig
         assertEquals(defaults.getStringOption(), "default value");
 
         // verify defaults passed through
-        Injector injector = createInjector(Collections.<String, String>emptyMap(), Config1.class, null, defaults);
+        Injector injector = createInjector(Collections.<String, String>emptyMap(), createModule(Config1.class, null, defaults));
         Config1 config = injector.getInstance(Config1.class);
         assertEquals(config.getStringOption(), "default value");
 
         // verify defaults can be overridden
-        injector = createInjector(properties, Config1.class, null, defaults);
+        injector = createInjector(properties, createModule(Config1.class, null, defaults));
         verifyConfig(injector.getInstance(Config1.class));
     }
 
@@ -178,7 +178,7 @@ public class TestConfig
     public void testDetectsNoConfigAnnotations()
     {
         try {
-            Injector injector = createInjector(Collections.<String, String>emptyMap(), ConfigWithNoAnnotations.class, null, null);
+            Injector injector = createInjector(Collections.<String, String>emptyMap(), createModule(ConfigWithNoAnnotations.class, null, null));
             injector.getInstance(ConfigWithNoAnnotations.class);
             fail("Expected exception due to missing @Config annotations");
         }
@@ -187,22 +187,35 @@ public class TestConfig
         }
     }
 
-    private <T> Injector createInjector(Map<String, String> properties, final Class<T> configClass, final String prefix, final T defaults)
+    private Injector createInjector(Map<String, String> properties, Module module)
+    {
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
+        List<Message> messages = new ConfigurationValidator(configurationFactory).validate(module);
+        return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
+    }
+
+    private <T> Module createLegacyModule(final Class<T> configClass)
     {
         Module module = new Module() {
             @Override
             public void configure(Binder binder)
             {
-                if (prefix == null && defaults == null) {
-                    ConfigurationModule.bindConfig(binder, configClass);
-                } else {
-                    ConfigurationModule.bindConfig(binder).prefixedWith(prefix).to(configClass).withDefaults(defaults);
-                }
+                ConfigurationModule.bindConfig(binder, configClass);
             }
         };
-        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
-        List<Message> messages = new ConfigurationValidator(configurationFactory).validate(module);
-        return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
+        return module;
+    }
+
+    private <T> Module createModule(final Class<T> configClass, final String prefix, final T defaults)
+    {
+        Module module = new Module() {
+            @Override
+            public void configure(Binder binder)
+            {
+                ConfigurationModule.bindConfig(binder).prefixedWith(prefix).to(configClass).withDefaults(defaults);
+            }
+        };
+        return module;
     }
 
     @BeforeMethod

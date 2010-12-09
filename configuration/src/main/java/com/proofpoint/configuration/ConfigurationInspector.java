@@ -3,13 +3,17 @@ package com.proofpoint.configuration;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.Key;
+import com.google.inject.Binding;
+import com.google.inject.Provider;
+import com.google.inject.spi.ProviderInstanceBinding;
 import com.proofpoint.formatting.ColumnPrinter;
-import com.proofpoint.guice.GuiceInjectorIterator;
 
 import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Set;
+import java.util.Map.Entry;
 
 /**
  * Utility to output all the Configuration properties used in an Injection instance.
@@ -82,13 +86,19 @@ public class ConfigurationInspector
     }
 
     @Inject
-    public ConfigurationInspector(Injector injector, ConfigurationFactory factory) throws InvocationTargetException, IllegalAccessException
+    public ConfigurationInspector(Injector injector) throws InvocationTargetException, IllegalAccessException
     {
         ImmutableSortedSet.Builder<ConfigRecord>    builder = ImmutableSortedSet.naturalOrder();
-        GuiceInjectorIterator                       injectorIterator = new GuiceInjectorIterator(injector);
-        for ( Class<?> clazz : injectorIterator )
-        {
-            addConfig(factory, clazz, builder);
+        for (Entry<Key<?>, Binding<?>> entry : injector.getBindings().entrySet()) {
+            Binding<?> binding = entry.getValue();
+            if (binding instanceof ProviderInstanceBinding) {
+                ProviderInstanceBinding<?> providerInstanceBinding = (ProviderInstanceBinding<?>) binding;
+                Provider<?> provider = providerInstanceBinding.getProviderInstance();
+                if (provider instanceof ConfigurationProvider) {
+                    ConfigurationProvider<?> configurationProvider = (ConfigurationProvider<?>) provider;
+                    addConfig(configurationProvider, builder);
+                }
+            }
         }
 
         configs = builder.build();
@@ -125,20 +135,14 @@ public class ConfigurationInspector
         return columnPrinter;
     }
 
-    private void addConfig(ConfigurationFactory factory, Class clazz, ImmutableSortedSet.Builder<ConfigRecord> builder) throws InvocationTargetException, IllegalAccessException
+    private void addConfig(ConfigurationProvider<?> configurationProvider, ImmutableSortedSet.Builder<ConfigRecord> builder) throws InvocationTargetException, IllegalAccessException
     {
-        Object      instance = null;
-        for ( Method method : clazz.getMethods() )
+        Object instance = configurationProvider.get();
+        for ( Method method : instance.getClass().getMethods() )
         {
             Config configAnnotation = method.getAnnotation(Config.class);
             if ( configAnnotation != null )
             {
-                if ( instance == null )
-                {
-                    //noinspection unchecked
-                    instance = factory.build(clazz);
-                }
-
                 ConfigDescription   descriptionAnnotation = method.getAnnotation(ConfigDescription.class);
                 Default             defaultAnnotation = method.getAnnotation(Default.class);
 

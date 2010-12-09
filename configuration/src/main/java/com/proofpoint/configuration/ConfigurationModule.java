@@ -2,6 +2,7 @@ package com.proofpoint.configuration;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import static com.proofpoint.configuration.ConfigurationProvider.createLegacyConfigurationProvider;
 
 import java.lang.annotation.Annotation;
 
@@ -21,9 +22,11 @@ public class ConfigurationModule
         binder.bind(ConfigurationFactory.class).toInstance(configurationFactory);
     }
 
+    @Deprecated
     public static <T> void bindConfig(Binder binder, Class<T> configClass)
     {
-        bindConfig(binder).to(configClass);
+        ConfigurationProvider<T> configurationProvider = createLegacyConfigurationProvider(configClass);
+        binder.bind(configClass).toProvider(configurationProvider);
     }
 
     private static StackTraceElement getCaller()
