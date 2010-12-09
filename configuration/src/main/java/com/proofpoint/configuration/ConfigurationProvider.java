@@ -9,6 +9,7 @@ public class ConfigurationProvider<T> implements Provider<T>
 {
     private final Class<T> configClass;
     private final String prefix;
+    private T defaults;
     private T instance;
     private ConfigurationFactory configurationFactory;
 
@@ -36,6 +37,11 @@ public class ConfigurationProvider<T> implements Provider<T>
         }
     }
 
+    public void setDefaults(T defaults)
+    {
+        this.defaults = defaults;
+    }
+
     @Inject
     public void setConfigurationFactory(ConfigurationFactory configurationFactory)
     {
@@ -50,7 +56,7 @@ public class ConfigurationProvider<T> implements Provider<T>
         }
         
         if (instance == null) {
-            instance = configurationFactory.build(configClass, prefix);
+            instance = configurationFactory.build(configClass, prefix, defaults);
         }
         return instance;
     }

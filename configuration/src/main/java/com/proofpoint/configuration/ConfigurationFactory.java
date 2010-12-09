@@ -35,10 +35,10 @@ public class ConfigurationFactory
 
     public <T> T build(Class<T> configClass)
     {
-        return build(configClass, "");
+        return build(configClass, "", null);
     }
 
-    public <T> T build(Class<T> configClass, String prefix)
+    public <T> T build(Class<T> configClass, String prefix, T instance)
     {
         if (configClass == null) {
             throw new NullPointerException("configClass is null");
@@ -49,11 +49,11 @@ public class ConfigurationFactory
             prefix = prefix + ".";
         }
 
-        if (isLegacyConfigurationClass(configClass)) {
+        if (instance == null && isLegacyConfigurationClass(configClass)) {
             return createFromAbstractConfig(configClass, prefix);
         }
 
-        return createFromConcreteConfig(configClass, prefix);
+        return createFromConcreteConfig(configClass, prefix, instance);
     }
 
     private boolean isLegacyConfigurationClass(Class<?> configClass)
@@ -71,7 +71,7 @@ public class ConfigurationFactory
         return false;
     }
 
-    private <T> T createFromConcreteConfig(Class<T> configClass, String prefix)
+    private <T> T createFromConcreteConfig(Class<T> configClass, String prefix, T instance)
     {
         List<Method> methods = getAnnotatedMethods(configClass);
 
@@ -79,7 +79,9 @@ public class ConfigurationFactory
             throw exceptionFor("Configuration class %s does not have any @Config annotations", configClass.getName());
         }
 
-        T instance = newInstance(configClass);
+        if (instance == null) {
+            instance = newInstance(configClass);
+        }
 
         Errors errors = new Errors();
         for (Method method : methods) {
@@ -162,7 +164,7 @@ public class ConfigurationFactory
         }
     }
 
-    private <T> Object getPropertyValue(Method method, String prefix, Errors errors, boolean isLegacy)
+    private Object getPropertyValue(Method method, String prefix, Errors errors, boolean isLegacy)
     {
         Config annotation = method.getAnnotation(Config.class);
 

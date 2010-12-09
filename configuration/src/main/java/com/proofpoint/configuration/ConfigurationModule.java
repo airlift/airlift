@@ -91,15 +91,30 @@ public class ConfigurationModule
             this.prefix = prefix;
         }
 
-        public <T> void to(Class<T> configClass) {
+        public <T> DefaultsBindingBuilder<T> to(Class<T> configClass) {
+            ConfigurationProvider<T> configurationProvider = new ConfigurationProvider<T>(configClass, prefix);
             if (annotationType != null) {
-                binder.bind(configClass).annotatedWith(annotationType).toProvider(new ConfigurationProvider<T>(configClass, prefix));
+                binder.bind(configClass).annotatedWith(annotationType).toProvider(configurationProvider);
             } else if(annotation != null) {
-                binder.bind(configClass).annotatedWith(annotation).toProvider(new ConfigurationProvider<T>(configClass, prefix));
+                binder.bind(configClass).annotatedWith(annotation).toProvider(configurationProvider);
             } else {
-                binder.bind(configClass).toProvider(new ConfigurationProvider<T>(configClass, prefix));
+                binder.bind(configClass).toProvider(configurationProvider);
             }
+            return new DefaultsBindingBuilder<T>(configurationProvider);
+        }
+    }
 
+    public static class DefaultsBindingBuilder<T> {
+        protected final ConfigurationProvider<T> configurationProvider;
+
+        public DefaultsBindingBuilder(ConfigurationProvider<T> configurationProvider)
+        {
+            this.configurationProvider = configurationProvider;
+        }
+
+        public void withDefaults(T defaults)
+        {
+            configurationProvider.setDefaults(defaults);
         }
     }
 }

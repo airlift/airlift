@@ -6,19 +6,24 @@ import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.inject.internal.ImmutableMap;
+import com.google.inject.internal.ImmutableMap.Builder;
 import com.google.inject.spi.Message;
-import com.proofpoint.configuration.MyEnum;
 import org.testng.annotations.Test;
+import org.testng.annotations.BeforeMethod;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.List;
+import java.util.Map.Entry;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
 public class TestConfig
 {
+    private ImmutableMap<String,String> properties;
+
     @Test
     public void testFoo()
             throws Exception
@@ -27,7 +32,7 @@ public class TestConfig
         config.put("hello", "world");
         config.put("thevalue", "value");
 
-        Injector injector = createInjector(config, Thing.class);
+        Injector injector = createInjector(config, Thing.class, null, null);
 
         Thing t = injector.getInstance(Thing.class);
         assertEquals(t.getName(), "world");
@@ -38,7 +43,7 @@ public class TestConfig
             throws Exception
     {
         Map<String, String> config = Maps.newHashMap();
-        Injector injector = createInjector(config, Thing.class);
+        Injector injector = createInjector(config, Thing.class, null, null);
         Thing t = injector.getInstance(Thing.class);
         assertEquals(t.getName(), "woof");
     }
@@ -47,7 +52,7 @@ public class TestConfig
     public void testDefaultViaImpl()
             throws Exception
     {
-        Injector injector = createInjector(Collections.<String, String>emptyMap(), LegacyConfig2.class);
+        Injector injector = createInjector(Collections.<String, String>emptyMap(), LegacyConfig2.class, null, null);
         LegacyConfig2 config = injector.getInstance(LegacyConfig2.class);
         assertEquals(config.getOption(), "default");
     }
@@ -59,7 +64,7 @@ public class TestConfig
         Map<String, String> properties = Maps.newHashMap();
         properties.put("option", "provided");
 
-        Injector injector = createInjector(properties, LegacyConfig2.class);
+        Injector injector = createInjector(properties, LegacyConfig2.class, null, null);
         LegacyConfig2 instance = injector.getInstance(LegacyConfig2.class);
 
         assertEquals(instance.getOption(), "provided");
@@ -70,7 +75,7 @@ public class TestConfig
             throws Exception
     {
         try {
-            createInjector(Collections.<String, String>emptyMap(), LegacyConfig3.class)
+            createInjector(Collections.<String, String>emptyMap(), LegacyConfig3.class, null, null)
                     .getInstance(LegacyConfig3.class);
             fail("Expected exception due to missing value");
         }
@@ -84,7 +89,7 @@ public class TestConfig
             throws Exception
     {
         try {
-            Injector injector = createInjector(Collections.<String, String>emptyMap(), LegacyConfig4.class);
+            Injector injector = createInjector(Collections.<String, String>emptyMap(), LegacyConfig4.class, null, null);
             injector.getInstance(LegacyConfig4.class);
             fail("Expected exception due to abstract method without @Config annotation");
         }
@@ -94,28 +99,9 @@ public class TestConfig
     }
 
     @Test
-    public void testTypes()
+    public void testLegacyConfigTypes()
     {
-        Map<String, String> properties = Maps.newHashMap();
-        properties.put("stringOption", "a string");
-        properties.put("booleanOption", "true");
-        properties.put("boxedBooleanOption", "true");
-        properties.put("byteOption", Byte.toString(Byte.MAX_VALUE));
-        properties.put("boxedByteOption", Byte.toString(Byte.MAX_VALUE));
-        properties.put("shortOption", Short.toString(Short.MAX_VALUE));
-        properties.put("boxedShortOption", Short.toString(Short.MAX_VALUE));
-        properties.put("integerOption", Integer.toString(Integer.MAX_VALUE));
-        properties.put("boxedIntegerOption", Integer.toString(Integer.MAX_VALUE));
-        properties.put("longOption", Long.toString(Long.MAX_VALUE));
-        properties.put("boxedLongOption", Long.toString(Long.MAX_VALUE));
-        properties.put("floatOption", Float.toString(Float.MAX_VALUE));
-        properties.put("boxedFloatOption", Float.toString(Float.MAX_VALUE));
-        properties.put("doubleOption", Double.toString(Double.MAX_VALUE));
-        properties.put("boxedDoubleOption", Double.toString(Double.MAX_VALUE));
-        properties.put("myEnumOption", MyEnum.FOO.toString());
-        properties.put("valueClassOption", "a value class");
-
-        Injector injector = createInjector(properties, LegacyConfig1.class);
+        Injector injector = createInjector(properties, LegacyConfig1.class, null, null);
         LegacyConfig1 legacyConfig = injector.getInstance(LegacyConfig1.class);
         assertEquals("a string", legacyConfig.getStringOption());
         assertEquals(true, legacyConfig.getBooleanOption());
@@ -134,9 +120,41 @@ public class TestConfig
         assertEquals(Double.MAX_VALUE, legacyConfig.getBoxedDoubleOption());
         assertEquals(MyEnum.FOO, legacyConfig.getMyEnumOption());
         assertEquals(legacyConfig.getValueClassOption().getValue(), "a value class");
+    }
 
-        injector = createInjector(properties, Config1.class);
+    @Test
+    public void testConfig()
+    {
+        Injector injector = createInjector(properties, Config1.class, null, null);
+        verifyConfig(injector.getInstance(Config1.class));
+    }
+
+    @Test
+    public void testPrefixConfigTypes()
+    {
+        Injector injector = createInjector(prefix("prefix", properties), Config1.class, "prefix", null);
+        verifyConfig(injector.getInstance(Config1.class));
+    }
+
+    @Test
+    public void testDefaults()
+    {
+        Config1 defaults = new Config1();
+        defaults.setStringOption("default value");
+        assertEquals(defaults.getStringOption(), "default value");
+
+        // verify defaults passed through
+        Injector injector = createInjector(Collections.<String, String>emptyMap(), Config1.class, null, defaults);
         Config1 config = injector.getInstance(Config1.class);
+        assertEquals(config.getStringOption(), "default value");
+
+        // verify defaults can be overridden
+        injector = createInjector(properties, Config1.class, null, defaults);
+        verifyConfig(injector.getInstance(Config1.class));
+    }
+
+    private void verifyConfig(Config1 config)
+    {
         assertEquals("a string", config.getStringOption());
         assertEquals(true, config.getBooleanOption());
         assertEquals(Boolean.TRUE, config.getBoxedBooleanOption());
@@ -160,7 +178,7 @@ public class TestConfig
     public void testDetectsNoConfigAnnotations()
     {
         try {
-            Injector injector = createInjector(Collections.<String, String>emptyMap(), ConfigWithNoAnnotations.class);
+            Injector injector = createInjector(Collections.<String, String>emptyMap(), ConfigWithNoAnnotations.class, null, null);
             injector.getInstance(ConfigWithNoAnnotations.class);
             fail("Expected exception due to missing @Config annotations");
         }
@@ -169,14 +187,16 @@ public class TestConfig
         }
     }
 
-    private Injector createInjector(Map<String, String> properties, final Class<?>... configClasses)
+    private <T> Injector createInjector(Map<String, String> properties, final Class<T> configClass, final String prefix, final T defaults)
     {
         Module module = new Module() {
             @Override
             public void configure(Binder binder)
             {
-                for ( Class<?> configClass : configClasses ) {
+                if (prefix == null && defaults == null) {
                     ConfigurationModule.bindConfig(binder, configClass);
+                } else {
+                    ConfigurationModule.bindConfig(binder).prefixedWith(prefix).to(configClass).withDefaults(defaults);
                 }
             }
         };
@@ -184,7 +204,41 @@ public class TestConfig
         List<Message> messages = new ConfigurationValidator(configurationFactory).validate(module);
         return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
     }
-    
+
+    @BeforeMethod
+    protected void setUp()
+            throws Exception
+    {
+        Builder<String, String> builder = ImmutableMap.builder();
+        builder.put("stringOption", "a string");
+        builder.put("booleanOption", "true");
+        builder.put("boxedBooleanOption", "true");
+        builder.put("byteOption", Byte.toString(Byte.MAX_VALUE));
+        builder.put("boxedByteOption", Byte.toString(Byte.MAX_VALUE));
+        builder.put("shortOption", Short.toString(Short.MAX_VALUE));
+        builder.put("boxedShortOption", Short.toString(Short.MAX_VALUE));
+        builder.put("integerOption", Integer.toString(Integer.MAX_VALUE));
+        builder.put("boxedIntegerOption", Integer.toString(Integer.MAX_VALUE));
+        builder.put("longOption", Long.toString(Long.MAX_VALUE));
+        builder.put("boxedLongOption", Long.toString(Long.MAX_VALUE));
+        builder.put("floatOption", Float.toString(Float.MAX_VALUE));
+        builder.put("boxedFloatOption", Float.toString(Float.MAX_VALUE));
+        builder.put("doubleOption", Double.toString(Double.MAX_VALUE));
+        builder.put("boxedDoubleOption", Double.toString(Double.MAX_VALUE));
+        builder.put("myEnumOption", MyEnum.FOO.toString());
+        builder.put("valueClassOption", "a value class");
+        properties = builder.build();
+    }
+
+    private Map<String, String> prefix(String prefix, Map<String, String> properties)
+    {
+        Builder<String, String> builder = ImmutableMap.builder();
+        for (Entry<String, String> entry : properties.entrySet()) {
+            builder.put(prefix + "." + entry.getKey(), entry.getValue());
+        }
+        return builder.build();
+    }
+
     public abstract static class Thing
     {
         @Config("hello")
