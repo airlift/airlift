@@ -1,4 +1,4 @@
-package com.proofpoint.dbpool;
+package com.proofpoint.concurrent;
 
 import org.testng.annotations.Test;
 import static org.testng.AssertJUnit.*;

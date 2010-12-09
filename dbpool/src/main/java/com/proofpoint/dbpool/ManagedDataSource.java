@@ -18,6 +18,7 @@ import static java.lang.Math.ceil;
 
 import com.proofpoint.stats.Duration;
 import static com.proofpoint.stats.Duration.*;
+import com.proofpoint.concurrent.ManagedSemaphore;
 
 public class ManagedDataSource implements DataSource
 {

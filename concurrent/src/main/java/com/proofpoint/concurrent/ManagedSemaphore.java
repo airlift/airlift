@@ -1,4 +1,4 @@
-package com.proofpoint.dbpool;
+package com.proofpoint.concurrent;
 
 import org.weakref.jmx.Managed;
 
