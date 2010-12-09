@@ -29,7 +29,7 @@ public class ManagedDataSourceConfig<T extends ManagedDataSourceConfig<T>>
     private String username;
     private String password;
     private int maxConnections = 10;
-    private Duration maxConnectionWait = new Duration(30, TimeUnit.MILLISECONDS);
+    private Duration maxConnectionWait = new Duration(500, TimeUnit.MILLISECONDS);
 
     public String getUsername()
     {
