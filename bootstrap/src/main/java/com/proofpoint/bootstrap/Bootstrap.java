@@ -29,11 +29,13 @@ import java.util.Map;
 /**
  * Entry point for an application built using the platform codebase.
  *
- * This class will
- * - load, validate and bind configurations
- * - initialize logging
- * - set up lifecycle management
- * - create an Guice injector
+ * This class will:
+ * <ul>
+ *  <li>load, validate and bind configurations</li>
+ *  <li>initialize logging</li>
+ *  <li>set up lifecycle management</li>
+ *  <li>create an Guice injector</li>
+ * </ul>
  */
 public class Bootstrap
 {
