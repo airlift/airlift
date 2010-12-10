@@ -31,6 +31,7 @@ public class H2EmbeddedDataSource extends ManagedDataSource
         try {
             setConfig(connection, "CACHE_SIZE", config.getCacheSize());
             setConfig(connection, "COMPRESS_LOB", config.getCompressLob());
+            setConfig(connection, "DB_CLOSE_DELAY ", "-1");
 
             Reader fileReader;
             String fileName = config.getInitScript();
