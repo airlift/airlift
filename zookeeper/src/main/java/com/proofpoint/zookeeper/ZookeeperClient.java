@@ -21,8 +21,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Condition;
 
 /**
  * A wrapper around ZooKeeper that makes SK more manageable and adds some higher level features
@@ -650,7 +652,7 @@ public class ZookeeperClient implements ZookeeperClientHelper
         return new CrossProcessLock()
         {
             @Override
-            public void lock() throws Exception
+            public void lock()
             {
                 getLock().lock();
             }
@@ -662,25 +664,50 @@ public class ZookeeperClient implements ZookeeperClientHelper
             }
 
             @Override
-            public boolean tryLock() throws Exception
+            public boolean tryLock()
             {
                 return getLock().tryLock();
             }
 
             @Override
-            public void unlock() throws Exception
+            public void unlock()
             {
                 getLock().unlock();
             }
 
-            private synchronized CrossProcessLock getLock() throws Exception
+            @Override
+            public void lockInterruptibly() throws InterruptedException
             {
-                waitForStart();
-                if ( lock == null )
+                getLock().lockInterruptibly();
+            }
+
+            @Override
+            public boolean tryLock(long time, TimeUnit unit) throws InterruptedException
+            {
+                return getLock().tryLock(time, unit);
+            }
+
+            @Override
+            public Condition newCondition()
+            {
+                return getLock().newCondition();
+            }
+
+            private synchronized CrossProcessLock getLock()
+            {
+                try
                 {
-                    lock = new CrossProcessLockImp(client, path);
+                    waitForStart();
+                    if ( lock == null )
+                    {
+                        lock = new CrossProcessLockImp(client, path);
+                    }
+                    return lock;
                 }
-                return lock;
+                catch ( Exception e )
+                {
+                    throw new RuntimeException(e);
+                }
             }
 
             private CrossProcessLock lock = null;

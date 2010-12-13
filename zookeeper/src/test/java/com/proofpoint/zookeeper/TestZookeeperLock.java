@@ -11,6 +11,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.testng.Assert.assertEquals;
@@ -33,6 +34,78 @@ public class TestZookeeperLock
             throws InterruptedException
     {
         instance.close();
+    }
+
+    @Test
+    public void testTimedLock()
+        throws Exception
+    {
+        String lockPath = "/a/b";
+        ZookeeperClientConfig config = new ZookeeperClientConfig()
+        {
+            @Override
+            public String getConnectionString()
+            {
+                return instance.getConnectString();
+            }
+
+            @Override
+            public int getMaxConnectionLossRetries()
+            {
+                return 1;
+            }
+
+            @Override
+            public int getConnectionLossSleepInMs()
+            {
+                return 1000;
+            }
+
+            @Override
+            public int getConnectionTimeoutInMs()
+            {
+                return 10000;
+            }
+
+            @Override
+            public int getSessionTimeoutInMs()
+            {
+                return 60000;
+            }
+        };
+        ZookeeperClient client1 = new ZookeeperClient(new DefaultZookeeperClientCreator(config));
+        ZookeeperClient client2 = new ZookeeperClient(new DefaultZookeeperClientCreator(config));
+        client1.start();
+        client2.start();
+
+        final CrossProcessLock lock1 = client1.newLock(lockPath);
+        final CrossProcessLock lock2 = client2.newLock(lockPath);
+
+        Assert.assertTrue(lock1.tryLock());
+        Thread  t = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    Thread.sleep(2000);
+                    lock1.unlock();
+                }
+                catch ( InterruptedException e )
+                {
+                    interrupt();
+                }
+            }
+        };
+        t.start();
+        Assert.assertFalse(lock2.tryLock());
+        Assert.assertTrue(lock2.tryLock(1, TimeUnit.MINUTES));
+        Assert.assertFalse(lock1.tryLock());
+        lock2.unlock();
+
+        client1.closeForShutdown();
+        client2.closeForShutdown();
     }
 
     @Test

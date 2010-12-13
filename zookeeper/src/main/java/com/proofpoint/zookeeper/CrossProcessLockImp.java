@@ -10,6 +10,8 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
 
 /**
  * Implements a cross-process lock/mutex using Zookeeper
@@ -50,15 +52,73 @@ class CrossProcessLockImp implements CrossProcessLock
     }
 
     @Override
-    public synchronized void lock() throws Exception
+    public void lockInterruptibly() throws InterruptedException
     {
-        internalLock(true);
+        try
+        {
+            internalLock(true, -1, null);
+        }
+        catch ( InterruptedException e )
+        {
+            throw e;
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public synchronized boolean tryLock() throws Exception
+    public Condition newCondition()
     {
-        internalLock(false);
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * NOTE: this lock is actually interruptible. I can't think of a reason for it not to be.
+     */
+    @Override
+    public synchronized void lock()
+    {
+        try
+        {
+            internalLock(true, -1, null);
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public boolean tryLock(long time, TimeUnit unit) throws InterruptedException
+    {
+        try
+        {
+            internalLock(true, time, unit);
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException(e);
+        }
+        return lockPath != null;
+    }
+
+    @Override
+    public synchronized boolean tryLock()
+    {
+        try
+        {
+            internalLock(false, -1, null);
+        }
+        catch ( InterruptedException e )
+        {
+            throw new RuntimeException(e);
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException(e);
+        }
         return lockPath != null;
     }
 
@@ -69,32 +129,44 @@ class CrossProcessLockImp implements CrossProcessLock
     }
 
     @Override
-    public synchronized void unlock() throws Exception
+    public synchronized void unlock()
     {
         if ( lockPath == null )
         {
             throw new Error("You do not own the lock: " + basePath);
         }
 
-        zookeeper.delete(lockPath, -1);
-        lockPath = null;
-
-        // attempt to delete the parent node so that sequence numbers get reset
         try
         {
-            Stat        stat = zookeeper.exists(path, false);
-            if ( (stat != null) && (stat.getNumChildren() == 0) )
+            zookeeper.delete(lockPath, -1);
+            lockPath = null;
+
+            // attempt to delete the parent node so that sequence numbers get reset
+            try
             {
-                zookeeper.delete(basePath, -1);
+                Stat        stat = zookeeper.exists(path, false);
+                if ( (stat != null) && (stat.getNumChildren() == 0) )
+                {
+                    zookeeper.delete(basePath, -1);
+                }
+            }
+            catch ( KeeperException.BadVersionException ignore )
+            {
+                // ignore - another thread/process got the lock
+            }
+            catch ( KeeperException.NotEmptyException ignore )
+            {
+                // ignore - other threads/processes are waiting
             }
         }
-        catch ( KeeperException.BadVersionException ignore )
+        catch ( InterruptedException e )
         {
-            // ignore - another thread/process got the lock
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);  // TODO - is this correct or should it just return?
         }
-        catch ( KeeperException.NotEmptyException ignore )
+        catch ( KeeperException e )
         {
-            // ignore - other threads/processes are waiting
+            throw new RuntimeException(e);
         }
     }
 
@@ -103,13 +175,16 @@ class CrossProcessLockImp implements CrossProcessLock
         notifyAll();
     }
 
-    private void internalLock(boolean blocking) throws Exception
+    private void internalLock(boolean blocking, long time, TimeUnit unit) throws Exception
     {
         if ( lockPath != null )
         {
             // already has the lock
             return;
         }
+
+        long        startMillis = System.currentTimeMillis();
+        Long        millisToWait = (unit != null) ? TimeUnit.MILLISECONDS.convert(time, unit) : null;
 
         ZookeeperUtils.mkdirs(zookeeper, basePath);
         String      ourPath = zookeeper.create(path, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
@@ -139,7 +214,21 @@ class CrossProcessLockImp implements CrossProcessLock
                         Stat    stat = zookeeper.exists(previousSequencePath, watcher);
                         if ( stat != null )
                         {
-                            wait();
+                            if ( millisToWait != null )
+                            {
+                                millisToWait -= (System.currentTimeMillis() - startMillis);
+                                startMillis = System.currentTimeMillis();
+                                if ( millisToWait <= 0 )
+                                {
+                                    break;
+                                }
+
+                                wait(millisToWait);
+                            }
+                            else
+                            {
+                                wait();
+                            }
                         }
                         // else it may have been deleted (i.e. lock released). Try to acquire again
                     }
