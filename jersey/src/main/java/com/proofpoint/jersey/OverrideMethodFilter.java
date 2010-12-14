@@ -1,5 +1,6 @@
 package com.proofpoint.jersey;
 
+import com.google.common.base.Strings;
 import com.sun.jersey.spi.container.ContainerRequest;
 import com.sun.jersey.spi.container.ContainerRequestFilter;
 
@@ -27,11 +28,11 @@ public class OverrideMethodFilter
     public ContainerRequest filter(ContainerRequest request)
     {
         String method = request.getRequestHeaders().getFirst(HEADER);
-        if (method == null || method.equals("")) {
+        if (Strings.isNullOrEmpty(method)) {
             method = request.getQueryParameters().getFirst(METHOD_PARAM);
         }
 
-        if (method != null && !method.equals("")) {
+        if (!Strings.isNullOrEmpty(method)) {
             if (request.getMethod().equalsIgnoreCase("POST")) {
                 request.setMethod(method);
             }
