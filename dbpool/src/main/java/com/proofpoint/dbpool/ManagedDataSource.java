@@ -29,6 +29,15 @@ public class ManagedDataSource implements DataSource
 
     public ManagedDataSource(ConnectionPoolDataSource dataSource, int maxConnections, Duration maxConnectionWait)
     {
+        if (dataSource == null) {
+            throw new NullPointerException("dataSource is null");
+        }
+        if (maxConnections < 1) {
+            throw new IllegalArgumentException("maxConnections must be at least 1: maxConnections=" + maxConnections);
+        }
+        if (maxConnectionWait == null) {
+            throw new NullPointerException("maxConnectionWait is null");
+        }
         this.dataSource = dataSource;
         semaphore = new ManagedSemaphore(maxConnections);
         maxConnectionWaitMillis.set((int) ceil(maxConnectionWait.toMillis()));
@@ -62,13 +71,23 @@ public class ManagedDataSource implements DataSource
     protected Connection createConnection()
             throws SQLException
     {
-        // todo do not create on caller's thread
-        long start = System.nanoTime();
-        PooledConnection pooledConnection = dataSource.getPooledConnection();
-        Connection connection = prepareConnection(pooledConnection);
-        stats.connectionCreated(nanosSince(start));
+        boolean success = false;
+        try {
+            // todo do not create on caller's thread
+            long start = System.nanoTime();
+            PooledConnection pooledConnection = dataSource.getPooledConnection();
+            Connection connection = prepareConnection(pooledConnection);
+            stats.connectionCreated(nanosSince(start));
 
-        return connection;
+            success = true;
+
+            return connection;
+        }
+        finally {
+            if (!success){
+                stats.creationErrorOccurred();
+            }
+        }
     }
 
     protected Connection prepareConnection(PooledConnection pooledConnection)
@@ -130,6 +149,9 @@ public class ManagedDataSource implements DataSource
     @Managed
     public void setMaxConnections(int maxConnections)
     {
+        if (maxConnections < 1) {
+            throw new IllegalArgumentException("maxConnections must be at least 1: maxConnections=" + maxConnections);
+        }
         semaphore.setPermits(maxConnections);
     }
 
@@ -232,13 +254,20 @@ public class ManagedDataSource implements DataSource
                 return;
             }
 
-            PooledConnection pooledConnection = (PooledConnection) event.getSource();
-            pooledConnection.removeConnectionEventListener(this);
+            PooledConnection pooledConnection = null;
+            try {
+                pooledConnection = (PooledConnection) event.getSource();
+                pooledConnection.removeConnectionEventListener(this);
 
-            stats.connectionReturned(nanosSince(checkoutTime));
-            semaphore.release();
-
-            connectionReturned(pooledConnection, checkoutTime);
+                stats.connectionReturned(nanosSince(checkoutTime));
+            }
+            finally {
+                semaphore.release();
+                
+                if (pooledConnection != null) {
+                    connectionReturned(pooledConnection, checkoutTime);
+                }
+            }
         }
 
         @Override
@@ -249,13 +278,20 @@ public class ManagedDataSource implements DataSource
                 return;
             }
 
-            PooledConnection pooledConnection = (PooledConnection) event.getSource();
-            pooledConnection.removeConnectionEventListener(this);
+            PooledConnection pooledConnection = null;
+            try {
+                pooledConnection = (PooledConnection) event.getSource();
+                pooledConnection.removeConnectionEventListener(this);
 
-            stats.connectionErrorOccurred();
-            semaphore.release();
+                stats.connectionErrorOccurred();
+            }
+            finally {
+                semaphore.release();
 
-            connectionDestroyed(pooledConnection, checkoutTime);
+                if (pooledConnection != null) {
+                    connectionDestroyed(pooledConnection, checkoutTime);
+                }
+            }
         }
     }
 
