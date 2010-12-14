@@ -177,6 +177,11 @@ public class Logging
             logToFile(config.getLogPath(), config.getMaxHistory(), config.getMaxSegmentSizeInBytes());
         }
 
+        // logback keeps a internal list of errors that it encounters as the logging system is being
+        // initialized. Here we check if any errors have happened so far -- especially important before we turn
+        // off console logging, as file logging may be broken due to invalid paths or missing config.
+        // If any errors have occurred, log them (to the console, which is guaranteed to be properly set up)
+        // and bail out with an exception
         for (Status status : root.getLoggerContext().getStatusManager().getCopyOfStatusList()) {
             if (status.getLevel() == Status.ERROR) {
                 log.error(status.getMessage());
