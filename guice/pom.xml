@@ -4,13 +4,13 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>guice</artifactId>
     <packaging>jar</packaging>
-    <version>0.18-SNAPSHOT</version>
+    <version>0.18</version>
     <name>guice</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.18-SNAPSHOT</version>
+        <version>0.18</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
