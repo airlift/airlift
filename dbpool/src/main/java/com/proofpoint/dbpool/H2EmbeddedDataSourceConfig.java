@@ -18,10 +18,13 @@ import com.proofpoint.configuration.Config;
  */
 public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2EmbeddedDataSourceConfig>
 {
+    public static enum AllowLiterals { NONE, NUMBERS, ALL }
+    public static enum CompressLob { NO, LZF, DEFLATE }
+
     private String filename;
     private String initScript;
-    private String allowLiterals = "ALL";
-    private String compressLob = "LZF";
+    private AllowLiterals allowLiterals = AllowLiterals.ALL;
+    private CompressLob compressLob = CompressLob.LZF;
     private int cacheSize = 16384;
     private long maxLengthInplaceLob = 1024;
     private long maxMemoryRows = 10000;
@@ -72,14 +75,13 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2Embedd
      * constants are allowed. NUMBERS mean only numerical and boolean literals
      * are allowed. ALL means all literals are allowed (default).
      */
-    // todo this should be an enum
-    public String getAllowLiterals()
+    public AllowLiterals getAllowLiterals()
     {
         return allowLiterals;
     }
 
     @Config("db.allow-literals")
-    public H2EmbeddedDataSourceConfig setAllowLiterals(String allowLiterals)
+    public H2EmbeddedDataSourceConfig setAllowLiterals(AllowLiterals allowLiterals)
     {
         this.allowLiterals = allowLiterals;
         return this;
@@ -91,16 +93,16 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2Embedd
      * </p>
      * Allowed values are "NO", "LZF" and "DEFLATE"
      */
-    // todo this should be an enum
-    public String getCompressLob()
+    public CompressLob getCompressLob()
     {
         return compressLob;
     }
 
     @Config("db.compress-lob")
-    public void setCompressLob(String compressLob)
+    public H2EmbeddedDataSourceConfig setCompressLob(CompressLob compressLob)
     {
         this.compressLob = compressLob;
+        return this;
     }
 
     /**
