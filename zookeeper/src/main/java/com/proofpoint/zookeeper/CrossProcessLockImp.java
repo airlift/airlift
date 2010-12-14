@@ -179,8 +179,7 @@ class CrossProcessLockImp implements CrossProcessLock
     {
         if ( lockPath != null )
         {
-            // already has the lock
-            return;
+            throw new IllegalStateException("Thread already owns the lock");
         }
 
         long        startMillis = System.currentTimeMillis();
