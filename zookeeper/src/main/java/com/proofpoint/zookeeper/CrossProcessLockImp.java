@@ -101,7 +101,7 @@ class CrossProcessLockImp implements CrossProcessLock
         {
             throw new RuntimeException(e);
         }
-        return lockPath != null;
+        return isLocked();
     }
 
     @Override
@@ -119,7 +119,7 @@ class CrossProcessLockImp implements CrossProcessLock
         {
             throw new RuntimeException(e);
         }
-        return lockPath != null;
+        return isLocked();
     }
 
     @Override
@@ -177,7 +177,7 @@ class CrossProcessLockImp implements CrossProcessLock
 
     private void internalLock(boolean blocking, long time, TimeUnit unit) throws Exception
     {
-        if ( lockPath != null )
+        if ( isLocked() )
         {
             throw new IllegalStateException("Thread already owns the lock");
         }
