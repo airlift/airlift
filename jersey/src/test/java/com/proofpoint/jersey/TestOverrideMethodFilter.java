@@ -5,67 +5,71 @@ import com.sun.jersey.spi.container.ContainerRequest;
 import com.sun.jersey.spi.container.WebApplication;
 import org.testng.annotations.Test;
 
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
 
 import static com.proofpoint.testing.Assertions.assertEqualsIgnoreCase;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.fail;
 
 public class TestOverrideMethodFilter
 {
     @Test
     public void testQueryParamOnPOST()
     {
-        testQueryParam("POST", "POST", "POST");
-        testQueryParam("POST", "GET", "GET");
-        testQueryParam("POST", "DELETE", "DELETE");
-        testQueryParam("POST", "PUT", "PUT");
+        assertQueryParamOverridesMethod("POST", "POST");
+        assertQueryParamOverridesMethod("POST", "GET");
+        assertQueryParamOverridesMethod("POST", "DELETE");
+        assertQueryParamOverridesMethod("POST", "PUT");
     }
 
     @Test
     public void testQueryParamDoesNotOverrideOnGET()
     {
-        testQueryParam("GET", "POST", "GET");
-        testQueryParam("GET", "GET", "GET");
-        testQueryParam("GET", "DELETE", "GET");
-        testQueryParam("GET", "PUT", "GET");
+        assertQueryParamThrowsException("GET", "POST");
+        assertQueryParamThrowsException("GET", "GET");
+        assertQueryParamThrowsException("GET", "DELETE");
+        assertQueryParamThrowsException("GET", "PUT");
     }
 
     @Test
     public void testQueryParamDoesNotOverrideOnDELETE()
     {
-        testQueryParam("DELETE", "POST", "DELETE");
-        testQueryParam("DELETE", "GET", "DELETE");
-        testQueryParam("DELETE", "DELETE", "DELETE");
-        testQueryParam("DELETE", "PUT", "DELETE");
+        assertQueryParamThrowsException("DELETE", "POST");
+        assertQueryParamThrowsException("DELETE", "GET");
+        assertQueryParamThrowsException("DELETE", "DELETE");
+        assertQueryParamThrowsException("DELETE", "PUT");
     }
 
     @Test
     public void testHeaderParamOnPOST()
     {
-        testHeader("POST", "POST", "POST");
-        testHeader("POST", "GET", "GET");
-        testHeader("POST", "DELETE", "DELETE");
-        testHeader("POST", "PUT", "PUT");
+        assertHeaderOverridesMethod("POST", "POST");
+        assertHeaderOverridesMethod("POST", "GET");
+        assertHeaderOverridesMethod("POST", "DELETE");
+        assertHeaderOverridesMethod("POST", "PUT");
     }
 
     @Test
     public void testHeaderDoesNotOverrideOnGET()
     {
-        testHeader("GET", "POST", "GET");
-        testHeader("GET", "GET", "GET");
-        testHeader("GET", "DELETE", "GET");
-        testHeader("GET", "PUT", "GET");
+        assertHeaderThrowsException("GET", "POST");
+        assertHeaderThrowsException("GET", "GET");
+        assertHeaderThrowsException("GET", "DELETE");
+        assertHeaderThrowsException("GET", "PUT");
     }
 
     @Test
     public void testHeaderDoesNotOverrideOnDELETE()
     {
-        testHeader("DELETE", "POST", "DELETE");
-        testHeader("DELETE", "GET", "DELETE");
-        testHeader("DELETE", "DELETE", "DELETE");
-        testHeader("DELETE", "PUT", "DELETE");
+        assertHeaderThrowsException("DELETE", "POST");
+        assertHeaderThrowsException("DELETE", "GET");
+        assertHeaderThrowsException("DELETE", "DELETE");
+        assertHeaderThrowsException("DELETE", "PUT");
     }
 
     @Test
@@ -88,7 +92,7 @@ public class TestOverrideMethodFilter
 
     }
     
-    public void testQueryParam(String requestMethod, String override, String expected)
+    public String testQueryParam(String requestMethod, String override)
     {
         OverrideMethodFilter filter = new OverrideMethodFilter();
 
@@ -100,11 +104,44 @@ public class TestOverrideMethodFilter
                                                         new InBoundHeaders(),
                                                         new ByteArrayInputStream(new byte[0]));
 
-        ContainerRequest result = filter.filter(request);
-        assertEqualsIgnoreCase(result.getMethod(), expected);
+        return filter.filter(request).getMethod();
     }
 
-    public void testHeader(String requestMethod, String override, String expected)
+    private void assertHeaderThrowsException(String requestMethod, String override)
+    {
+        try {
+            testHeader(requestMethod, override);
+            fail("Expected WebApplicationException to be thrown");
+        }
+        catch (WebApplicationException e) {
+            assertEquals(e.getResponse().getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
+        }
+    }
+
+    private void assertHeaderOverridesMethod(String requestMethod, String override)
+    {
+        String resultMethod = testHeader(requestMethod, override);
+        assertEqualsIgnoreCase(resultMethod, override);
+    }
+
+    private void assertQueryParamThrowsException(String requestMethod, String override)
+    {
+        try {
+            testQueryParam(requestMethod, override);
+            fail("Expected WebApplicationException to be thrown");
+        }
+        catch (WebApplicationException e) {
+            assertEquals(e.getResponse().getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
+        }
+    }
+
+    private void assertQueryParamOverridesMethod(String requestMethod, String override)
+    {
+        String resultMethod = testQueryParam(requestMethod, override);
+        assertEqualsIgnoreCase(resultMethod, override);
+    }
+
+    private String testHeader(String requestMethod, String override)
     {
         OverrideMethodFilter filter = new OverrideMethodFilter();
 
@@ -118,7 +155,6 @@ public class TestOverrideMethodFilter
                                                         headers,
                                                         new ByteArrayInputStream(new byte[0]));
 
-        ContainerRequest result = filter.filter(request);
-        assertEqualsIgnoreCase(result.getMethod(), expected);
+        return filter.filter(request).getMethod();
     }
 }
