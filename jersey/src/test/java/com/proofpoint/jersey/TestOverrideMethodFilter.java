@@ -3,6 +3,7 @@ package com.proofpoint.jersey;
 import com.sun.jersey.core.header.InBoundHeaders;
 import com.sun.jersey.spi.container.ContainerRequest;
 import com.sun.jersey.spi.container.WebApplication;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.WebApplicationException;
@@ -18,58 +19,58 @@ import static org.testng.Assert.fail;
 
 public class TestOverrideMethodFilter
 {
-    @Test
-    public void testQueryParamOnPOST()
+    @DataProvider(name = "methods")
+    private Object[][] getMethods()
     {
-        assertQueryParamOverridesMethod("POST", "POST");
-        assertQueryParamOverridesMethod("POST", "GET");
-        assertQueryParamOverridesMethod("POST", "DELETE");
-        assertQueryParamOverridesMethod("POST", "PUT");
+        return new Object[][] {
+                { "GET" },
+                { "POST"},
+                { "PUT" },
+                { "DELETE" },
+                { "HEAD" }
+        };
+    }
+    
+    @Test(dataProvider = "methods")
+    public void testQueryParamOnPOST(String method)
+    {
+        assertQueryParamOverridesMethod("POST", method.toUpperCase());
+        assertQueryParamOverridesMethod("POST", method.toLowerCase());
     }
 
-    @Test
-    public void testQueryParamDoesNotOverrideOnGET()
+    @Test(dataProvider = "methods")
+    public void testQueryParamDoesNotOverrideOnGET(String method)
     {
-        assertQueryParamThrowsException("GET", "POST");
-        assertQueryParamThrowsException("GET", "GET");
-        assertQueryParamThrowsException("GET", "DELETE");
-        assertQueryParamThrowsException("GET", "PUT");
+        assertQueryParamThrowsException("GET", method.toUpperCase());
+        assertQueryParamThrowsException("GET", method.toLowerCase());
     }
 
-    @Test
-    public void testQueryParamDoesNotOverrideOnDELETE()
+    @Test(dataProvider = "methods")
+    public void testQueryParamDoesNotOverrideOnDELETE(String method)
     {
-        assertQueryParamThrowsException("DELETE", "POST");
-        assertQueryParamThrowsException("DELETE", "GET");
-        assertQueryParamThrowsException("DELETE", "DELETE");
-        assertQueryParamThrowsException("DELETE", "PUT");
+        assertQueryParamThrowsException("DELETE", method.toUpperCase());
+        assertQueryParamThrowsException("DELETE", method.toLowerCase());
     }
 
-    @Test
-    public void testHeaderParamOnPOST()
+    @Test(dataProvider = "methods")
+    public void testHeaderParamOnPOST(String method)
     {
-        assertHeaderOverridesMethod("POST", "POST");
-        assertHeaderOverridesMethod("POST", "GET");
-        assertHeaderOverridesMethod("POST", "DELETE");
-        assertHeaderOverridesMethod("POST", "PUT");
+        assertHeaderOverridesMethod("POST", method.toUpperCase());
+        assertHeaderOverridesMethod("POST", method.toLowerCase());
     }
 
-    @Test
-    public void testHeaderDoesNotOverrideOnGET()
+    @Test(dataProvider = "methods")
+    public void testHeaderDoesNotOverrideOnGET(String method)
     {
-        assertHeaderThrowsException("GET", "POST");
-        assertHeaderThrowsException("GET", "GET");
-        assertHeaderThrowsException("GET", "DELETE");
-        assertHeaderThrowsException("GET", "PUT");
+        assertHeaderThrowsException("GET", method.toUpperCase());
+        assertHeaderThrowsException("GET", method.toLowerCase());
     }
 
-    @Test
-    public void testHeaderDoesNotOverrideOnDELETE()
+    @Test(dataProvider = "methods")
+    public void testHeaderDoesNotOverrideOnDELETE(String method)
     {
-        assertHeaderThrowsException("DELETE", "POST");
-        assertHeaderThrowsException("DELETE", "GET");
-        assertHeaderThrowsException("DELETE", "DELETE");
-        assertHeaderThrowsException("DELETE", "PUT");
+        assertHeaderThrowsException("DELETE", method.toUpperCase());
+        assertHeaderThrowsException("DELETE", method.toLowerCase());
     }
 
     @Test

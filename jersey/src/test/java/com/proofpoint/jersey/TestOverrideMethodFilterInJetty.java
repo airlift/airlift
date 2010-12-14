@@ -5,6 +5,10 @@ import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Module;
 import com.ning.http.client.AsyncHttpClient;
+import com.ning.http.client.Request;
+import com.ning.http.client.RequestBuilder;
+import com.ning.http.client.RequestType;
+import com.ning.http.client.Response;
 import com.proofpoint.jetty.JettyConfig;
 import com.proofpoint.jetty.JettyProvider;
 import org.eclipse.jetty.server.Server;
@@ -21,10 +25,14 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.util.concurrent.ExecutionException;
 
+import static com.ning.http.client.RequestType.*;
 import static java.lang.String.format;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
+import javax.ws.rs.core.Response.Status;
 
 public class TestOverrideMethodFilterInJetty
 {
@@ -72,7 +80,7 @@ public class TestOverrideMethodFilterInJetty
     public void testDeleteViaQueryParam()
             throws Exception
     {
-        client.preparePost(format("http://localhost:%d/?_method=DELETE", config.getHttpPort()))
+        client.prepareRequest(buildRequestWithQueryParam(POST, DELETE))
                 .execute()
                 .get();
 
@@ -86,7 +94,7 @@ public class TestOverrideMethodFilterInJetty
     public void testPutViaQueryParam()
             throws Exception
     {
-        client.preparePost(format("http://localhost:%d/?_method=PUT", config.getHttpPort()))
+        client.prepareRequest(buildRequestWithQueryParam(POST, PUT))
                 .execute()
                 .get();
 
@@ -101,7 +109,7 @@ public class TestOverrideMethodFilterInJetty
     public void testPostViaQueryParam()
             throws Exception
     {
-        client.preparePost(format("http://localhost:%d/?_method=POST", config.getHttpPort()))
+        client.prepareRequest(buildRequestWithQueryParam(POST, POST))
                 .execute()
                 .get();
 
@@ -115,8 +123,7 @@ public class TestOverrideMethodFilterInJetty
     public void testDeleteViaHeader()
             throws Exception
     {
-        client.preparePost(format("http://localhost:%d/", config.getHttpPort()))
-                .addHeader("X-HTTP-Method-Override", "DELETE")
+        client.prepareRequest(buildRequestWithHeader(POST, DELETE))
                 .execute()
                 .get();
 
@@ -130,8 +137,7 @@ public class TestOverrideMethodFilterInJetty
     public void testPutViaHeader()
             throws Exception
     {
-        client.preparePost(format("http://localhost:%d/", config.getHttpPort()))
-                .addHeader("X-HTTP-Method-Override", "PUT")
+        client.prepareRequest(buildRequestWithHeader(POST, PUT))
                 .execute()
                 .get();
 
@@ -146,8 +152,7 @@ public class TestOverrideMethodFilterInJetty
     public void testPostViaHeader()
             throws Exception
     {
-        client.preparePost(format("http://localhost:%d/?_method=POST", config.getHttpPort()))
-                .addHeader("X-HTTP-Method-Override", "POST")
+        client.prepareRequest(buildRequestWithHeader(POST, POST))
                 .execute()
                 .get();
 
@@ -158,7 +163,68 @@ public class TestOverrideMethodFilterInJetty
     }
 
 
+    private void assertNonOverridableMethod(Request request)
+            throws IOException, ExecutionException, InterruptedException
+    {
+        Response response = client.prepareRequest(request)
+                .execute()
+                .get();
 
+        assertEquals(response.getStatusCode(), Status.BAD_REQUEST.getStatusCode());
+        assertFalse(resource.postCalled(), "POST");
+        assertFalse(resource.deleteCalled(), "DELETE");
+        assertFalse(resource.putCalled(), "PUT");
+        assertFalse(resource.getCalled(), "GET");
+    }
+
+    private Request buildRequestWithHeader(RequestType type, RequestType override)
+    {
+        return new RequestBuilder(type)
+                .setUrl(format("http://localhost:%d/", config.getHttpPort()))
+                .addHeader("X-HTTP-Method-Override", override.name())
+                .build();
+    }
+
+    private Request buildRequestWithQueryParam(RequestType type, RequestType override)
+    {
+        return new RequestBuilder(type)
+                .setUrl(format("http://localhost:%d/?_method=%s", config.getHttpPort(), override.name()))
+                .build();
+    }
+
+    @Test
+    public void testNonOverridableMethodsWithHeader()
+            throws IOException, ExecutionException, InterruptedException
+    {
+        assertNonOverridableMethod(buildRequestWithHeader(GET, POST));
+        assertNonOverridableMethod(buildRequestWithHeader(GET, DELETE));
+        assertNonOverridableMethod(buildRequestWithHeader(GET, PUT));
+
+        assertNonOverridableMethod(buildRequestWithHeader(DELETE, POST));
+        assertNonOverridableMethod(buildRequestWithHeader(DELETE, GET));
+        assertNonOverridableMethod(buildRequestWithHeader(DELETE, PUT));
+
+        assertNonOverridableMethod(buildRequestWithHeader(PUT, POST));
+        assertNonOverridableMethod(buildRequestWithHeader(PUT, DELETE));
+        assertNonOverridableMethod(buildRequestWithHeader(PUT, GET));
+    }
+
+    @Test
+    public void testNonOverridableMethodsWithQueryParam()
+            throws IOException, ExecutionException, InterruptedException
+    {
+        assertNonOverridableMethod(buildRequestWithQueryParam(GET, POST));
+        assertNonOverridableMethod(buildRequestWithQueryParam(GET, DELETE));
+        assertNonOverridableMethod(buildRequestWithQueryParam(GET, PUT));
+
+        assertNonOverridableMethod(buildRequestWithQueryParam(DELETE, POST));
+        assertNonOverridableMethod(buildRequestWithQueryParam(DELETE, GET));
+        assertNonOverridableMethod(buildRequestWithQueryParam(DELETE, PUT));
+
+        assertNonOverridableMethod(buildRequestWithQueryParam(PUT, POST));
+        assertNonOverridableMethod(buildRequestWithQueryParam(PUT, DELETE));
+        assertNonOverridableMethod(buildRequestWithQueryParam(PUT, GET));
+    }
 
     private JettyConfig makeJettyConfig(final File tempDir)
             throws IOException
