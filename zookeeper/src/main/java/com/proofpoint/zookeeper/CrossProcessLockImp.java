@@ -32,13 +32,13 @@ class CrossProcessLockImp implements CrossProcessLock
      * path in this JVM or other JVMs connected to the same Zookeeper cluster
      *
      * @param zookeeper the zookeeper client
-     * @param path lock path
+     * @param name lock path
      */
-    CrossProcessLockImp(ZooKeeper zookeeper, String path)
+    CrossProcessLockImp(ZooKeeper zookeeper, String name)
     {
         this.zookeeper = zookeeper;
-        basePath = path;
-        this.path = makePath(path);
+        basePath = name;
+        this.path = makePath(name);
         watcher = new Watcher()
         {
             @Override

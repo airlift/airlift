@@ -22,17 +22,17 @@ public class LeadershipNominatorImp implements LeadershipNominator
     private final String                    groupName;
 
     /**
+     *
      * @param lockFactory zookeeper instance
-     * @param lockPath path in zookeeper for locks
      * @param groupName name of the leadership group. There will be one leader per group
      * @throws Exception errors
      */
-    public LeadershipNominatorImp(CrossProcessLockFactory lockFactory, String lockPath, String groupName) throws Exception
+    public LeadershipNominatorImp(CrossProcessLockFactory lockFactory, String groupName) throws Exception
     {
         this.notifier = new AtomicReference<LeadershipNominatorNotifier>(null);
         this.groupName = groupName;
         
-        lock = lockFactory.newLock(lockFactory.makePath(lockPath, groupName));
+        lock = lockFactory.newLock(groupName);
 
         ThreadFactory factory = new ThreadFactoryBuilder()
                 .setDaemon(true)

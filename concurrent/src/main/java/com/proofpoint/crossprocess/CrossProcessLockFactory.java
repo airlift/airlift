@@ -3,20 +3,11 @@ package com.proofpoint.crossprocess;
 public interface CrossProcessLockFactory
 {
     /**
-     * Allocate a new lock at the given path.
+     * Allocate a new lock with the given name.
      *
-     * @param path lock path - the meaning of the path is implementation dependent
+     * @param name lock name
      * @return the lock
      * @throws Exception errors
      */
-    public CrossProcessLock newLock(String path) throws Exception;
-
-    /**
-     * Create a new path based on parent child
-     *
-     * @param parent the parent path
-     * @param child the child name
-     * @return new path
-     */
-    public String makePath(String parent, String child);
+    public CrossProcessLock newLock(String name) throws Exception;
 }
