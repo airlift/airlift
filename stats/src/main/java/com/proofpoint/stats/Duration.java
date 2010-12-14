@@ -111,7 +111,7 @@ public final class Duration implements Comparable<Duration>
             default:
                 throw new IllegalArgumentException("Unsupported time unit " + timeUnit);
         }
-        return String.format("%.2f %s", magnitude, timeUnitAbbreviation);
+        return String.format("%.2f%s", magnitude, timeUnitAbbreviation);
     }
 
     private static double millisPerTimeUnit(TimeUnit timeUnit)

@@ -14,6 +14,7 @@ public final class ManagedDataSourceStats
     private final TimedStat create = new TimedStat();
     private final TimedStat held = new TimedStat();
     private final AtomicLong connectionErrorCount = new AtomicLong();
+    private final AtomicLong creationErrorCount = new AtomicLong();
 
     @Managed
     @Nested
@@ -42,6 +43,12 @@ public final class ManagedDataSourceStats
         return connectionErrorCount.get();
     }
 
+    @Managed
+    public long getCreationErrorCount()
+    {
+        return creationErrorCount.get();
+    }
+
     void connectionCheckedOut(Duration elapsedTime)
     {
         checkout.addValue(elapsedTime);
@@ -55,6 +62,11 @@ public final class ManagedDataSourceStats
     void connectionReturned(Duration elapsedTime)
     {
         held.addValue(elapsedTime);
+    }
+
+    void creationErrorOccurred()
+    {
+        creationErrorCount.incrementAndGet();
     }
 
     void connectionErrorOccurred()

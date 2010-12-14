@@ -1,6 +1,6 @@
 package com.proofpoint.stats;
 
-import static com.proofpoint.testing.Assertions.assertGreaterThan;
+import static com.proofpoint.testing.Assertions.assertGreaterThanOrEqual;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 import static org.testng.AssertJUnit.assertTrue;
@@ -78,7 +78,7 @@ public class TimedStatTest
 
         assertEquals(stat.getCount(), 1);
         assertEquals(stat.getMin(), stat.getMax());
-        assertGreaterThan(stat.getMax(), 10.0);
+        assertGreaterThanOrEqual(stat.getMax(), 10.0);
     }
 
     @Test

@@ -22,6 +22,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -273,13 +276,30 @@ public class ManagedDataSourceTest
     public void testIdempotentClose()
             throws Exception
     {
-        ManagedDataSource dataSource = new ManagedDataSource(new MockConnectionPoolDataSource(), 1, new Duration(10, MILLISECONDS));
-        MockConnection connection = (MockConnection) dataSource.getConnection();
-        Assert.assertNotNull(connection);
-        assertEquals(dataSource.getConnectionsActive(), 1);
+        ManagedDataSource dataSource = new ManagedDataSource(new MockConnectionPoolDataSource(), 10, new Duration(10, MILLISECONDS));
+        List<MockConnection> connections = new ArrayList<MockConnection>();
+        for(int i = 0; i < 10; i++) {
+            MockConnection connection = (MockConnection) dataSource.getConnection();
+            Assert.assertNotNull(connection);
+            connections.add(connection);
+        }
+
+        assertEquals(dataSource.getConnectionsActive(), 10);
+
+        Random random = new Random();
         for (int i = 0; i < 10; i++) {
-            connection.close();
-            assertEquals(dataSource.getConnectionsActive(), 0);
+            MockConnection connection;
+            if (connections.size() > 1) {
+                connection = connections.remove(random.nextInt(connections.size()));
+            }
+            else {
+                connection = connections.remove(0);
+            }
+
+            for (int j = 0; j < 7; j++) {
+                connection.close();
+                assertEquals(dataSource.getConnectionsActive(), 9 - i);
+            }
         }
     }
 

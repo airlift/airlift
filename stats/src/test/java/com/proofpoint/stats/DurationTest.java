@@ -43,12 +43,12 @@ public class DurationTest
     @Test
     public void testToString()
     {
-        Assert.assertEquals(new Duration(2.125, MILLISECONDS).toString(), "2.13 ms");
-        Assert.assertEquals(new Duration(2.125, MILLISECONDS).toString(MILLISECONDS), "2.13 ms");
-        Assert.assertEquals(new Duration(2.125, SECONDS).toString(SECONDS), "2.13 s");
-        Assert.assertEquals(new Duration(2.125, MINUTES).toString(MINUTES), "2.13 m");
-        Assert.assertEquals(new Duration(2.125, HOURS).toString(HOURS), "2.13 h");
-        Assert.assertEquals(new Duration(2.125, DAYS).toString(DAYS), "2.13 d");
+        Assert.assertEquals(new Duration(2.125, MILLISECONDS).toString(), "2.13ms");
+        Assert.assertEquals(new Duration(2.125, MILLISECONDS).toString(MILLISECONDS), "2.13ms");
+        Assert.assertEquals(new Duration(2.125, SECONDS).toString(SECONDS), "2.13s");
+        Assert.assertEquals(new Duration(2.125, MINUTES).toString(MINUTES), "2.13m");
+        Assert.assertEquals(new Duration(2.125, HOURS).toString(HOURS), "2.13h");
+        Assert.assertEquals(new Duration(2.125, DAYS).toString(DAYS), "2.13d");
     }
 
     @Test
