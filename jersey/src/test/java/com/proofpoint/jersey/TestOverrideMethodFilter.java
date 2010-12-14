@@ -73,6 +73,23 @@ public class TestOverrideMethodFilter
         assertHeaderThrowsException("DELETE", method.toLowerCase());
     }
 
+    @Test(dataProvider = "methods")
+    public void testRequestUnmodifiedWithNoOverride(String method)
+    {
+        OverrideMethodFilter filter = new OverrideMethodFilter();
+
+        WebApplication webApp = mock(WebApplication.class, RETURNS_MOCKS);
+        ContainerRequest request = new ContainerRequest(webApp,
+                                                        method,
+                                                        URI.create("http://www.example.com/"),
+                                                        URI.create("http://www.example.com/"),
+                                                        new InBoundHeaders(),
+                                                        new ByteArrayInputStream(new byte[0]));
+
+        ContainerRequest result = filter.filter(request);
+        assertEqualsIgnoreCase(result.getMethod(), method);
+    }
+
     @Test
     public void testHeaderHasPrecedenceOverQueryParam()
     {
