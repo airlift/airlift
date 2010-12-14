@@ -54,15 +54,18 @@ public class TestOverrideMethodFilterInJetty
     public void teardown()
             throws Exception
     {
-        if (server != null) {
-            server.stop();
-        }
+        try {
+            if (server != null) {
+                server.stop();
+            }
 
-        if (client != null) {
-            client.close();
+            if (client != null) {
+                client.close();
+            }
         }
-
-        Files.deleteRecursively(tempDir);
+        finally {
+            Files.deleteRecursively(tempDir);
+        }
     }
 
     @Test
