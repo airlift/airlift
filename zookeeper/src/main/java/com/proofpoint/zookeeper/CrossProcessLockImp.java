@@ -78,7 +78,7 @@ class CrossProcessLockImp implements CrossProcessLock
      * NOTE: this lock is actually interruptible. I can't think of a reason for it not to be.
      */
     @Override
-    public synchronized void lock()
+    public void lock()
     {
         try
         {
@@ -105,7 +105,7 @@ class CrossProcessLockImp implements CrossProcessLock
     }
 
     @Override
-    public synchronized boolean tryLock()
+    public boolean tryLock()
     {
         try
         {
@@ -123,13 +123,13 @@ class CrossProcessLockImp implements CrossProcessLock
     }
 
     @Override
-    public synchronized boolean isLocked()
+    public boolean isLocked()
     {
         return lockPath != null;
     }
 
     @Override
-    public synchronized void unlock()
+    public void unlock()
     {
         if ( lockPath == null )
         {
@@ -179,11 +179,11 @@ class CrossProcessLockImp implements CrossProcessLock
     {
         if ( isLocked() )
         {
-            throw new IllegalStateException("Thread already owns the lock");
+            throw new IllegalStateException("This lock is already owned and is not re-entrant: " + basePath);
         }
 
         long        startMillis = System.currentTimeMillis();
-        Long        millisToWait = (unit != null) ? TimeUnit.MILLISECONDS.convert(time, unit) : null;
+        Long        millisToWait = (unit != null) ? unit.toMillis(time) : null;
 
         ZookeeperUtils.mkdirs(zookeeper, basePath);
         String      ourPath = zookeeper.create(path, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
