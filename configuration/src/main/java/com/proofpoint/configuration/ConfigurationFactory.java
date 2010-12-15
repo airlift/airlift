@@ -1,22 +1,21 @@
 package com.proofpoint.configuration;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import net.sf.cglib.proxy.Callback;
 import net.sf.cglib.proxy.CallbackFilter;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.FixedValue;
 import net.sf.cglib.proxy.NoOp;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.google.common.collect.ImmutableMap;
 
 import static com.proofpoint.configuration.Errors.exceptionFor;
 
@@ -27,6 +26,31 @@ public class ConfigurationFactory
     public ConfigurationFactory(Map<String, String> properties)
     {
         this.properties = ImmutableMap.copyOf(properties);
+    }
+
+    /**
+     * Temporary method - returns an bridge factory that calls {@link #createLegacyConfig(Class)}
+     * instead of {@link #build(Class)}
+     *
+     * @return bridged factory
+     */
+    @Deprecated
+    public ConfigurationFactory createLegacyFactory()
+    {
+        return new ConfigurationFactory(properties)
+        {
+            @Override
+            public <T> T build(Class<T> configClass)
+            {
+                return createLegacyConfig(configClass);
+            }
+
+            @Override
+            public <T> T build(Class<T> configClass, String prefix, T instance)
+            {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 
     public Map<String, String> getProperties() {

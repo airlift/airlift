@@ -2,6 +2,7 @@ package com.proofpoint.configuration;
 
 import com.google.common.collect.Maps;
 import com.google.inject.Binder;
+import com.google.inject.ConfigurationException;
 import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -9,20 +10,38 @@ import com.google.inject.Module;
 import com.google.inject.internal.ImmutableMap;
 import com.google.inject.internal.ImmutableMap.Builder;
 import com.google.inject.spi.Message;
-import org.testng.annotations.Test;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.Collections;
-import java.util.Map;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
 
+@SuppressWarnings( { "UnnecessaryLocalVariable", "deprecation" })
 public class TestConfig
 {
     private ImmutableMap<String,String> properties;
+
+    @Test
+    public void testLegacy()
+    {
+        try
+        {
+            ConfigurationFactory            factory = new ConfigurationFactory(new HashMap<String, String>()).createLegacyFactory();
+            LegacyPathConfig                config = factory.build(LegacyPathConfig.class);
+            assertNotNull(config);
+        }
+        catch ( ConfigurationException e )
+        {
+            fail("Legacy issue", e);
+        }
+    }
 
     @Test
     public void testFoo()
