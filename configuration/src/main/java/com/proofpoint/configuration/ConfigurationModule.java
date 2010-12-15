@@ -22,6 +22,9 @@ public class ConfigurationModule
         binder.bind(ConfigurationFactory.class).toInstance(configurationFactory);
     }
 
+    /**
+     * @deprecated Keep using this for now, but be aware that a new configuration format is in the works.
+     */
     @Deprecated
     public static <T> void bindConfig(Binder binder, Class<T> configClass)
     {

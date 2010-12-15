@@ -24,7 +24,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Random;
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -286,19 +286,15 @@ public class ManagedDataSourceTest
 
         assertEquals(dataSource.getConnectionsActive(), 10);
 
-        Random random = new Random();
-        for (int i = 0; i < 10; i++) {
-            MockConnection connection;
-            if (connections.size() > 1) {
-                connection = connections.remove(random.nextInt(connections.size()));
-            }
-            else {
-                connection = connections.remove(0);
-            }
+        // close connections in a random order
+        Collections.shuffle(connections);
 
+        int closedCount = 0;
+        for (MockConnection connection : connections) {
+            closedCount++;
             for (int j = 0; j < 7; j++) {
                 connection.close();
-                assertEquals(dataSource.getConnectionsActive(), 9 - i);
+                assertEquals(dataSource.getConnectionsActive(), 10 - closedCount);
             }
         }
     }

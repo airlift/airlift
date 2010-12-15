@@ -1,6 +1,7 @@
 package com.proofpoint.dbpool;
 
 import com.google.inject.Inject;
+import com.proofpoint.dbpool.H2EmbeddedDataSourceConfig.Cipher;
 import org.h2.jdbcx.JdbcDataSource;
 import org.h2.util.ScriptReader;
 
@@ -22,7 +23,7 @@ public class H2EmbeddedDataSource extends ManagedDataSource
     public H2EmbeddedDataSource(H2EmbeddedDataSourceConfig config)
             throws Exception
     {
-        super(createMySQLConnectionPoolDataSource(config),
+        super(createH2EmbeddedConnectionPoolDataSource(config),
                 config.getMaxConnections(),
                 config.getMaxConnectionWait());
 
@@ -57,20 +58,30 @@ public class H2EmbeddedDataSource extends ManagedDataSource
         }
     }
 
-    private static JdbcDataSource createMySQLConnectionPoolDataSource(H2EmbeddedDataSourceConfig config)
+    private static JdbcDataSource createH2EmbeddedConnectionPoolDataSource(H2EmbeddedDataSourceConfig config)
             throws Exception
     {
 
-        String url = new StringBuilder()
+        StringBuilder urlBuilder = new StringBuilder()
                 .append("jdbc:h2:").append(config.getFilename())
                 .append(";ALLOW_LITERALS=").append(config.getAllowLiterals())
-                .append(";CACHE_SIZE=").append(config.getCacheSize())
-                .toString();
+                .append(";CACHE_SIZE=").append(config.getCacheSize());
+
+        if (config.getCipher() != Cipher.NONE) {
+            urlBuilder.append(";CIPHER=").append(config.getCipher());
+        }
+
+        String url = urlBuilder.toString();
 
         JdbcDataSource dataSource = new JdbcDataSource();
         dataSource.setURL(url);
         dataSource.setUser(config.getUsername());
-        dataSource.setPassword(config.getPassword());
+        if (config.getCipher() != Cipher.NONE) {
+            dataSource.setPassword(config.getFilePassword() + " " + config.getPassword());
+        }
+        else {
+            dataSource.setPassword(config.getPassword());
+        }
         dataSource.setLoginTimeout((int) ceil(config.getMaxConnectionWait().convertTo(SECONDS)));
 
         return dataSource;
