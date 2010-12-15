@@ -20,11 +20,14 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2Embedd
 {
     public static enum AllowLiterals { NONE, NUMBERS, ALL }
     public static enum CompressLob { NO, LZF, DEFLATE }
+    public static enum Cipher { NONE, AES, XTEA }
 
     private String filename;
+    private String filePassword;
     private String initScript;
     private AllowLiterals allowLiterals = AllowLiterals.ALL;
     private CompressLob compressLob = CompressLob.LZF;
+    private Cipher cipher = Cipher.NONE;
     private int cacheSize = 16384;
     private long maxLengthInplaceLob = 1024;
     private long maxMemoryRows = 10000;
@@ -47,6 +50,21 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2Embedd
     public H2EmbeddedDataSourceConfig setFilename(String filename)
     {
         this.filename = filename;
+        return this;
+    }
+
+    /**
+     * Password for the encrypted database file
+     */
+    public String getFilePassword()
+    {
+        return filePassword;
+    }
+
+    @Config("db.file-password")
+    public H2EmbeddedDataSourceConfig setFilePassword(String filePassword)
+    {
+        this.filePassword = filePassword;
         return this;
     }
 
@@ -83,6 +101,9 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2Embedd
     @Config("db.allow-literals")
     public H2EmbeddedDataSourceConfig setAllowLiterals(AllowLiterals allowLiterals)
     {
+        if (allowLiterals == null) {
+            throw new NullPointerException("allowLiterals is null");
+        }
         this.allowLiterals = allowLiterals;
         return this;
     }
@@ -101,8 +122,29 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2Embedd
     @Config("db.compress-lob")
     public H2EmbeddedDataSourceConfig setCompressLob(CompressLob compressLob)
     {
+        if (compressLob == null) {
+            throw new NullPointerException("compressLob is null");
+        }
         this.compressLob = compressLob;
         return this;
+    }
+
+    /**
+     * Sets the cipher algorithm to encrypt the database file.
+     */
+    public Cipher getCipher()
+    {
+        return cipher;
+    }
+
+    @Config("db.cipher")
+    public H2EmbeddedDataSourceConfig setCipher(Cipher cipher)
+    {
+        if (cipher == null) {
+            throw new NullPointerException("cipher is null");
+        }
+        this.cipher = cipher;
+        return this;        
     }
 
     /**
