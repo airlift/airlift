@@ -4,13 +4,13 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>log</artifactId>
     <packaging>jar</packaging>
-    <version>0.19</version>
+    <version>0.20-SNAPSHOT</version>
     <name>log</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.19</version>
+        <version>0.20-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
      
@@ -18,7 +18,7 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>configuration</artifactId>
-            <version>0.19</version>
+            <version>0.20-SNAPSHOT</version>
         </dependency>
         
         <dependency>
