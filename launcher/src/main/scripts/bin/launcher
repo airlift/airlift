@@ -193,6 +193,7 @@ function start() {
     else
 
         build_java_cmd
+        cd $HOME_DIR
         nohup $JAVA_CMD > $LOG_DIR/stdout.log 2> $LOG_DIR/stderr.log &
         setPid $!
 
@@ -212,7 +213,7 @@ function run() {
     if [ $isAlive -eq 0 ]; then
         log_info "Already running as $PID"
     else
-
+        cd $HOME_DIR
         build_java_cmd "no_log_file"
         $JAVA_CMD
     fi
