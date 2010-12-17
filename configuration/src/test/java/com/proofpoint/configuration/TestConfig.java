@@ -241,25 +241,25 @@ public class TestConfig
     protected void setUp()
             throws Exception
     {
-        Builder<String, String> builder = ImmutableMap.builder();
-        builder.put("stringOption", "a string");
-        builder.put("booleanOption", "true");
-        builder.put("boxedBooleanOption", "true");
-        builder.put("byteOption", Byte.toString(Byte.MAX_VALUE));
-        builder.put("boxedByteOption", Byte.toString(Byte.MAX_VALUE));
-        builder.put("shortOption", Short.toString(Short.MAX_VALUE));
-        builder.put("boxedShortOption", Short.toString(Short.MAX_VALUE));
-        builder.put("integerOption", Integer.toString(Integer.MAX_VALUE));
-        builder.put("boxedIntegerOption", Integer.toString(Integer.MAX_VALUE));
-        builder.put("longOption", Long.toString(Long.MAX_VALUE));
-        builder.put("boxedLongOption", Long.toString(Long.MAX_VALUE));
-        builder.put("floatOption", Float.toString(Float.MAX_VALUE));
-        builder.put("boxedFloatOption", Float.toString(Float.MAX_VALUE));
-        builder.put("doubleOption", Double.toString(Double.MAX_VALUE));
-        builder.put("boxedDoubleOption", Double.toString(Double.MAX_VALUE));
-        builder.put("myEnumOption", MyEnum.FOO.toString());
-        builder.put("valueClassOption", "a value class");
-        properties = builder.build();
+        properties = ImmutableMap.<String, String>builder()
+            .put("stringOption", "a string")
+            .put("booleanOption", "true")
+            .put("boxedBooleanOption", "true")
+            .put("byteOption", Byte.toString(Byte.MAX_VALUE))
+            .put("boxedByteOption", Byte.toString(Byte.MAX_VALUE))
+            .put("shortOption", Short.toString(Short.MAX_VALUE))
+            .put("boxedShortOption", Short.toString(Short.MAX_VALUE))
+            .put("integerOption", Integer.toString(Integer.MAX_VALUE))
+            .put("boxedIntegerOption", Integer.toString(Integer.MAX_VALUE))
+            .put("longOption", Long.toString(Long.MAX_VALUE))
+            .put("boxedLongOption", Long.toString(Long.MAX_VALUE))
+            .put("floatOption", Float.toString(Float.MAX_VALUE))
+            .put("boxedFloatOption", Float.toString(Float.MAX_VALUE))
+            .put("doubleOption", Double.toString(Double.MAX_VALUE))
+            .put("boxedDoubleOption", Double.toString(Double.MAX_VALUE))
+            .put("myEnumOption", MyEnum.FOO.toString())
+            .put("valueClassOption", "a value class")
+            .build();
     }
 
     private Map<String, String> prefix(String prefix, Map<String, String> properties)
