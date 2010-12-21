@@ -20,11 +20,7 @@
             <artifactId>guava</artifactId>
             <version>r07</version>
         </dependency>
-        <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <version>5.14</version>
-        </dependency>
+
         <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
@@ -47,6 +43,20 @@
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>formatting</artifactId>
             <version>0.20-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>testing</artifactId>
+            <version>0.19-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>5.14</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

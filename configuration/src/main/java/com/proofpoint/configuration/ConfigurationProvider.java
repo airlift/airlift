@@ -38,15 +38,30 @@ public class ConfigurationProvider<T> implements Provider<T>
         }
     }
 
-    public void setDefaults(T defaults)
-    {
-        this.defaults = defaults;
-    }
-
     @Inject
     public void setConfigurationFactory(ConfigurationFactory configurationFactory)
     {
         this.configurationFactory = configurationFactory;
+    }
+
+    public Class<T> getConfigClass()
+    {
+        return configClass;
+    }
+
+    public String getPrefix()
+    {
+        return prefix;
+    }
+
+    public T getDefaults()
+    {
+        return defaults;
+    }
+
+    public void setDefaults(T defaults)
+    {
+        this.defaults = defaults;
     }
 
     @Override

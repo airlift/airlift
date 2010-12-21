@@ -8,6 +8,7 @@ import com.google.inject.Binding;
 import com.google.inject.Provider;
 import com.google.inject.spi.ProviderInstanceBinding;
 import com.proofpoint.formatting.ColumnPrinter;
+import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
 
 import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
@@ -137,21 +138,41 @@ public class ConfigurationInspector
 
     private void addConfig(ConfigurationProvider<?> configurationProvider, ImmutableSortedSet.Builder<ConfigRecord> builder) throws InvocationTargetException, IllegalAccessException
     {
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getValidConfigurationMetadata(configurationProvider.getConfigClass());
+
         Object instance = configurationProvider.get();
-        for ( Method method : instance.getClass().getMethods() )
-        {
-            Config configAnnotation = method.getAnnotation(Config.class);
-            if ( configAnnotation != null )
-            {
-                ConfigDescription   descriptionAnnotation = method.getAnnotation(ConfigDescription.class);
-                Default             defaultAnnotation = method.getAnnotation(Default.class);
+        Object defaults = configurationProvider.getDefaults();
 
-                String      defaultValue = (defaultAnnotation != null) ? ("\"" + defaultAnnotation.value() + "\"") : "-- none --";
-                String      currentValue = (method.getParameterTypes().length == 0) ? ("\"" + String.valueOf(method.invoke(instance)) + "\"") : "-- n/a --";
-                String      description = (descriptionAnnotation != null) ? descriptionAnnotation.value() : "";
+        String prefix = configurationProvider.getPrefix();
+        prefix = prefix == null ? "" : (prefix + ".");
 
-                builder.add(new ConfigRecord(configAnnotation.value(), defaultValue, currentValue, description));
+        for (AttributeMetadata attribute : metadata.getAttributes().values()) {
+            String propertyName = prefix + attribute.getPropertyName();
+            Method getter = attribute.getGetter();
+
+            String defaultValue = getValue(getter, defaults, "-- none --");
+            String currentValue = getValue(getter, instance, "-- n/a --");
+            String description = null;
+
+            builder.add(new ConfigRecord(propertyName, defaultValue, currentValue, description));
+
+        }
+    }
+
+    private String getValue(Method getter, Object instance, String defaultValue) {
+        if (getter == null) {
+            return defaultValue;
+        }
+
+        try {
+            Object value = getter.invoke(instance);
+            if (value == null) {
+                return "null";
             }
+            return value.toString();
+        }
+        catch (Throwable e) {
+            return "-- ERROR --";
         }
     }
 }

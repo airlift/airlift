@@ -1,22 +1,29 @@
 package com.proofpoint.configuration;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.ConfigurationException;
 import com.google.inject.spi.Message;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import java.util.List;
+import java.util.Collection;
 
 class Errors
 {
     private final List<Message> errors = Lists.newArrayList();
 
-    public void throwIfHasErrors()
+    public void throwIfHasErrors() throws ConfigurationException
     {
         if (!errors.isEmpty()) {
             throw getException();
         }
+    }
+
+    public List<Message> getErrors()
+    {
+        return ImmutableList.copyOf(errors);
     }
 
     public void add(String format, Object... params)

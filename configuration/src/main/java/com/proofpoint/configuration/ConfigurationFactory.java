@@ -1,7 +1,7 @@
 package com.proofpoint.configuration;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
 import net.sf.cglib.proxy.Callback;
 import net.sf.cglib.proxy.CallbackFilter;
 import net.sf.cglib.proxy.Enhancer;
@@ -14,7 +14,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static com.proofpoint.configuration.Errors.exceptionFor;
@@ -39,6 +38,7 @@ public class ConfigurationFactory
     {
         return new ConfigurationFactory(properties)
         {
+            @SuppressWarnings({"deprecation"})
             @Override
             public <T> T build(Class<T> configClass)
             {
@@ -74,80 +74,42 @@ public class ConfigurationFactory
             prefix = prefix + ".";
         }
 
-        List<Method> methods = getAnnotatedMethods(configClass);
-
-        if (methods.isEmpty()) {
-            throw exceptionFor("Configuration class %s does not have any @Config annotations", configClass.getName());
-        }
+        ConfigurationMetadata<T> configurationMetadata = ConfigurationMetadata.getValidConfigurationMetadata(configClass);
 
         if (instance == null) {
-            instance = newInstance(configClass);
+            instance = newInstance(configurationMetadata);
         }
 
         Errors errors = new Errors();
-        for (Method method : methods) {
-            setConfigProperty(instance, method, prefix, errors);
+        for (AttributeMetadata attribute : configurationMetadata.getAttributes().values()) {
+            setConfigProperty(instance,attribute, prefix, errors);
         }
         errors.throwIfHasErrors();
         
         return instance;
     }
 
-    private List<Method> getAnnotatedMethods(Class<?> configClass)
+    private <T> T newInstance(ConfigurationMetadata<T> configurationMetadata)
     {
-        // TODO: https://jira.proofpoint.com/browse/PLATFORM-10
-        ImmutableList.Builder<Method> builder = ImmutableList.builder();
-        for (Method method : configClass.getMethods()) {
-            if (method.isAnnotationPresent(Config.class)) {
-                builder.add(method);
-            }
-        }
-
-        return builder.build();
-    }
-    
-    private <T> T newInstance(Class<T> configClass)
-    {
-        // verify there is a public no-arg constructor
-        Constructor<T> constructor;
         try {
-            constructor = configClass.getDeclaredConstructor();
-            if (!Modifier.isPublic(constructor.getModifiers())) {
-                throw exceptionFor("Constructor %s is not public", constructor.toGenericString());
-            }
-        }
-        catch (Exception e) {
-            throw exceptionFor("Configuration class %s does not have a public no-arg constructor", configClass.getName());
-        }
-
-        try {
-            return constructor.newInstance();
+            return configurationMetadata.getConstructor().newInstance();
         }
         catch (Throwable e) {
             if (e instanceof InvocationTargetException && e.getCause() != null) {
                 e = e.getCause();
             }
-            throw exceptionFor(e, "Error creating instance of configuration class [%s]", configClass.getName());
+            throw exceptionFor(e, "Error creating instance of configuration class [%s]", configurationMetadata.getConfigClass().getName());
         }
     }
 
-    private <T> void setConfigProperty(T instance, Method method, String prefix, Errors errors)
+    private <T> void setConfigProperty(T instance, AttributeMetadata attribute, String prefix, Errors errors)
     {
         // verify configuration method
         boolean valid = true;
-        if (method.getParameterTypes().length != 1) {
-            errors.add("@Config method [%s] must take only one parameter", method.toGenericString());
-            valid = false;
-        }
-
-        if (!Modifier.isPublic(method.getModifiers())) {
-            errors.add("@Config method [%s] is not public", method.toGenericString());
-            valid = false;
-        }
 
         // Get property value
         // Even if not valid still try to get the property value so we recored the errors
-        Object value = getPropertyValue(method, prefix, errors, false);
+        Object value = getPropertyValue(attribute, prefix, errors, false);
 
         // At this point, return if not valid
         if (!valid || value == null) {
@@ -155,38 +117,37 @@ public class ConfigurationFactory
         }
 
         try {
-            method.invoke(instance, value);
+            attribute.getSetter().invoke(instance, value);
         }
         catch (Throwable e) {
             if (e instanceof InvocationTargetException && e.getCause() != null) {
                 e = e.getCause();
             }
-            errors.add(e, "Error invoking configuration method [%s]", method.toGenericString());
+            errors.add(e, "Error invoking configuration method [%s]", attribute.getSetter().toGenericString());
         }
     }
 
-    private Object getPropertyValue(Method method, String prefix, Errors errors, boolean isLegacy)
+    private Object getPropertyValue(AttributeMetadata attribute, String prefix, Errors errors, boolean isLegacy)
     {
-        Config annotation = method.getAnnotation(Config.class);
-
         // Get the property value
-        String propertyName = prefix + annotation.value();
+        String propertyName = prefix + attribute.getPropertyName();
         String value = properties.get(propertyName);
 
         // For legacy configuration objects...
         // If no value specified, check for @Default
-        if (isLegacy && value == null && method.isAnnotationPresent(Default.class)) {
-            value = method.getAnnotation(Default.class).value();
+        // todo remove this when legacy is removed
+        if (isLegacy && value == null && attribute.getGetter().isAnnotationPresent(Default.class)) {
+            value =  attribute.getGetter().getAnnotation(Default.class).value();
         }
 
         // coerce the property value to the final type
         if (value != null) {
             Class<?> propertyType;
             if (isLegacy) {
-                propertyType = method.getReturnType();
+                propertyType = attribute.getGetter().getReturnType();
             }
             else {
-                propertyType = method.getParameterTypes()[0];
+                propertyType = attribute.getSetter().getParameterTypes()[0];
             }
 
             Object finalValue = coerce(propertyType, value);
@@ -194,14 +155,9 @@ public class ConfigurationFactory
                 errors.add("Could not coerce value '%s' to %s for property '%s' in [%s]",
                         value,
                         propertyType.getName(),
-                        propertyName, method.toGenericString());                
+                        propertyName, attribute.getSetter().toGenericString());
             }
             return finalValue;
-        }
-
-        if (Modifier.isAbstract(method.getModifiers())) {
-            // no default (via impl or @Default) and no configured value
-            errors.add("No value present for '%s' in [%s]", propertyName, method.toGenericString());
         }
 
         return null;
@@ -221,9 +177,11 @@ public class ConfigurationFactory
         // normal injections
 
         for (Method method : configClass.getMethods()) {
-            if (method.isAnnotationPresent(Config.class)) {
+            Config config = method.getAnnotation(Config.class);
+            if (config != null) {
 
-                final Object finalValue = getPropertyValue(method, "", errors, true);
+                AttributeMetadata attributeMetadata = new AttributeMetadata(configClass, method.getName(), null, config.value(), method, null);
+                final Object finalValue = getPropertyValue(attributeMetadata, "", errors, true);
 
                 if (finalValue != null) {
                     slots.put(method, count++);
