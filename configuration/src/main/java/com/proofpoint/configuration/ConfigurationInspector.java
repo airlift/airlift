@@ -156,6 +156,9 @@ public class ConfigurationInspector
         Object defaults = null;
         if (!configurationProvider.isLegacy()) {
             defaults = configurationProvider.getDefaults();
+            if (defaults == null) {
+                defaults = newDefaultInstance(configurationProvider);
+            }
         }
 
         String prefix = configurationProvider.getPrefix();
@@ -183,6 +186,16 @@ public class ConfigurationInspector
 
             builder.add(new ConfigRecord(propertyName, defaultValue, currentValue, description));
 
+        }
+    }
+
+    private Object newDefaultInstance(ConfigurationProvider<?> configurationProvider)
+    {
+        try {
+            return configurationProvider.getConfigurationMetadata().getConstructor().newInstance();
+        }
+        catch (Throwable ignored) {
+            return null;
         }
     }
 
