@@ -64,18 +64,10 @@ public class ConfigurationModule
         }
 
         public PrefixBindingBuilder annotatedWith(Class<? extends Annotation> annotationType) {
-            if (annotationType == null) {
-                throw new NullPointerException("annotationType is null");
-            }
-
             return new PrefixBindingBuilder(binder, annotationType, null);
         }
 
         public PrefixBindingBuilder annotatedWith(Annotation annotation) {
-            if (annotation == null) {
-                throw new NullPointerException("annotation is null");
-            }
-
             return new PrefixBindingBuilder(binder, null, annotation);
         }
     }
@@ -87,10 +79,6 @@ public class ConfigurationModule
         }
 
         public ConfigBindingBuilder prefixedWith(String prefix) {
-            if (prefix == null) {
-                throw new NullPointerException("prefix is null");
-            }
-
             return new ConfigBindingBuilder(binder, annotationType, annotation,  prefix);
         }
     }
@@ -109,11 +97,7 @@ public class ConfigurationModule
             this.prefix = prefix;
         }
 
-        public <T> void to(Class<T> configClass) {
-            if (configClass == null) {
-                throw new NullPointerException("configClass is null");
-            }
-
+        public <T> DefaultsBindingBuilder<T> to(Class<T> configClass) {
             ConfigurationProvider<T> configurationProvider = new ConfigurationProvider<T>(configClass, prefix);
             if (annotationType != null) {
                 binder.bind(configClass).annotatedWith(annotationType).toProvider(configurationProvider);
@@ -122,21 +106,21 @@ public class ConfigurationModule
             } else {
                 binder.bind(configClass).toProvider(configurationProvider);
             }
+            return new DefaultsBindingBuilder<T>(configurationProvider);
+        }
+    }
+
+    public static class DefaultsBindingBuilder<T> {
+        protected final ConfigurationProvider<T> configurationProvider;
+
+        public DefaultsBindingBuilder(ConfigurationProvider<T> configurationProvider)
+        {
+            this.configurationProvider = configurationProvider;
         }
 
-        public <T> void to(T defaultInstance) {
-            if (defaultInstance == null) {
-                throw new NullPointerException("defaultInstance is null");
-            }
-
-            ConfigurationProvider<T> configurationProvider = new ConfigurationProvider<T>(defaultInstance, prefix);
-            if (annotationType != null) {
-                binder.bind(configurationProvider.getConfigClass()).annotatedWith(annotationType).toProvider(configurationProvider);
-            } else if(annotation != null) {
-                binder.bind(configurationProvider.getConfigClass()).annotatedWith(annotation).toProvider(configurationProvider);
-            } else {
-                binder.bind(configurationProvider.getConfigClass()).toProvider(configurationProvider);
-            }
+        public void withDefaults(T defaults)
+        {
+            configurationProvider.setDefaults(defaults);
         }
     }
 }

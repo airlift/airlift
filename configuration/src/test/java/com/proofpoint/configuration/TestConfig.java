@@ -144,14 +144,14 @@ public class TestConfig
     @Test
     public void testConfig()
     {
-        Injector injector = createInjector(properties, createModule(Config1.class));
+        Injector injector = createInjector(properties, createModule(Config1.class, null, null));
         verifyConfig(injector.getInstance(Config1.class));
     }
 
     @Test
     public void testPrefixConfigTypes()
     {
-        Injector injector = createInjector(prefix("prefix", properties), createModule(Config1.class, "prefix"));
+        Injector injector = createInjector(prefix("prefix", properties), createModule(Config1.class, "prefix", null));
         verifyConfig(injector.getInstance(Config1.class));
     }
 
@@ -163,12 +163,12 @@ public class TestConfig
         assertEquals(defaults.getStringOption(), "default value");
 
         // verify defaults passed through
-        Injector injector = createInjector(Collections.<String, String>emptyMap(), createModule(defaults));
+        Injector injector = createInjector(Collections.<String, String>emptyMap(), createModule(Config1.class, null, defaults));
         Config1 config = injector.getInstance(Config1.class);
         assertEquals(config.getStringOption(), "default value");
 
         // verify defaults can be overridden
-        injector = createInjector(properties, createModule(defaults));
+        injector = createInjector(properties, createModule(Config1.class, null, defaults));
         verifyConfig(injector.getInstance(Config1.class));
     }
 
@@ -197,7 +197,7 @@ public class TestConfig
     public void testDetectsNoConfigAnnotations()
     {
         try {
-            Injector injector = createInjector(Collections.<String, String>emptyMap(), createModule(ConfigWithNoAnnotations.class));
+            Injector injector = createInjector(Collections.<String, String>emptyMap(), createModule(ConfigWithNoAnnotations.class, null, null));
             injector.getInstance(ConfigWithNoAnnotations.class);
             fail("Expected exception due to missing @Config annotations");
         }
@@ -225,37 +225,13 @@ public class TestConfig
         return module;
     }
 
-    private <T> Module createModule(final Class<T> configClass)
+    private <T> Module createModule(final Class<T> configClass, final String prefix, final T defaults)
     {
         Module module = new Module() {
             @Override
             public void configure(Binder binder)
             {
-                ConfigurationModule.bindConfig(binder).to(configClass);
-            }
-        };
-        return module;
-    }
-
-    private <T> Module createModule(final Class<T> configClass, final String prefix)
-    {
-        Module module = new Module() {
-            @Override
-            public void configure(Binder binder)
-            {
-                ConfigurationModule.bindConfig(binder).prefixedWith(prefix).to(configClass);
-            }
-        };
-        return module;
-    }
-
-    private <T> Module createModule(final T defaults)
-    {
-        Module module = new Module() {
-            @Override
-            public void configure(Binder binder)
-            {
-                ConfigurationModule.bindConfig(binder).to(defaults);
+                ConfigurationModule.bindConfig(binder).prefixedWith(prefix).to(configClass).withDefaults(defaults);
             }
         };
         return module;

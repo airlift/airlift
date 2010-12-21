@@ -38,31 +38,6 @@ public class ConfigurationProvider<T> implements Provider<T>
         }
     }
 
-    public ConfigurationProvider(T defaults) {
-
-        this(defaults, null, null);
-    }
-
-    public ConfigurationProvider(T defaults, String prefix)
-    {
-        this(defaults, prefix, null);
-    }
-
-    public ConfigurationProvider(T defaults, Map<String, String> properties)
-    {
-        this(defaults, null, properties);
-    }
-
-    public ConfigurationProvider(T defaults, String prefix, Map<String, String> properties)
-    {
-        this.defaults = defaults;
-        this.configClass = (Class<T>) defaults.getClass();
-        this.prefix = prefix;
-        if (properties != null) {
-            configurationFactory = new ConfigurationFactory(properties);
-        }
-    }
-
     @Inject
     public void setConfigurationFactory(ConfigurationFactory configurationFactory)
     {
