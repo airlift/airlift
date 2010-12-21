@@ -9,6 +9,21 @@ public final class Assertions
     {
     }
 
+    public static void assertContains(String actual, String expectedPart) {
+        assertContains(actual, expectedPart, null);
+    }
+
+    public static void assertContains(String actual, String expectedPart, String message)
+    {
+        assertNotNull(actual, "actual is null");
+        assertNotNull(expectedPart, "expectedPart is null");
+        if (actual.contains(expectedPart)) {
+            // ok
+            return;
+        }
+        fail("%sexpected:<%s> to contain <%s>", toMessageString(message), actual, expectedPart);
+    }
+
     public static void assertEqualsIgnoreCase(String actual, String expected) {
         assertEqualsIgnoreCase(actual, expected, null);
     }

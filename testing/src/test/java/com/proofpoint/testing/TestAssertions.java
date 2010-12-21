@@ -13,6 +13,42 @@ public class TestAssertions
     private static final String MESSAGE = "@message@";
 
     @Test
+    public void testAssertContains()
+    {
+        passContains("hello", "hello");
+        passContains("XXX hello XXXX", "hello");
+
+        failContains("hello", "bye");
+        failContains("XXX hello XXX", "HELLO");
+    }
+
+    private void passContains(String actual, String expected)
+    {
+        Assertions.assertContains(actual, expected);
+        Assertions.assertContains(actual, expected, MESSAGE);
+    }
+
+    private void failContains(String actual, String expected)
+    {
+        try {
+            Assertions.assertContains(actual, expected);
+            Assert.fail("Expected AssertionError");
+        }
+        catch (AssertionError e) {
+            verifyExceptionMessage(e, null, actual, expected);
+        }
+
+        try {
+            Assertions.assertContains(actual, expected, MESSAGE);
+            Assert.fail("Expected AssertionError");
+        }
+        catch (AssertionError e) {
+            // success
+            verifyExceptionMessage(e, MESSAGE, actual, expected);
+        }
+    }
+
+    @Test
     public void testAssertEqualsIgnoreCase()
     {
         passEqualsIgnoreCase("hello", "hello");
