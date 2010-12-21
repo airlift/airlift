@@ -24,7 +24,20 @@ public class ConfigurationMetadata<T>
 
     public static <T> ConfigurationMetadata<T> getConfigurationMetadata(Class<T> configClass)
     {
-        ConfigurationMetadata<T> metadata = new ConfigurationMetadata<T>(configClass);
+        ConfigurationMetadata<T> metadata = new ConfigurationMetadata<T>(configClass, false);
+        return metadata;
+    }
+
+    public static <T> ConfigurationMetadata<T> getValidLegacyConfigurationMetadata(Class<T> configClass) throws ConfigurationException
+    {
+        ConfigurationMetadata<T> metadata = getLegacyConfigurationMetadata(configClass);
+        metadata.getErrors().throwIfHasErrors();
+        return metadata;
+    }
+
+    public static <T> ConfigurationMetadata<T> getLegacyConfigurationMetadata(Class<T> configClass)
+    {
+        ConfigurationMetadata<T> metadata = new ConfigurationMetadata<T>(configClass, true);
         return metadata;
     }
 
@@ -34,14 +47,14 @@ public class ConfigurationMetadata<T>
     private final Map<String,AttributeMetadata> attributes;
 
 
-    private ConfigurationMetadata(Class<T> configClass)
+    private ConfigurationMetadata(Class<T> configClass, boolean legacy)
     {
         if (configClass == null) {
             throw new NullPointerException("configClass is null");
         }
 
         this.configClass = configClass;
-        if (Modifier.isAbstract(configClass.getModifiers())) {
+        if (!legacy && Modifier.isAbstract(configClass.getModifiers())) {
             errors.add("Config class [%s] is abstract", configClass.getName());
         }
         if (!Modifier.isPublic(configClass.getModifiers())) {
@@ -65,7 +78,7 @@ public class ConfigurationMetadata<T>
         Map<String, AttributeMetadata> attributes = Maps.newTreeMap();
         for (Method configMethod : findConfigMethods(configClass)) {
             Config config = configMethod.getAnnotation(Config.class);
-            AttributeMetadata attribute = buildAttributeMetadata(configClass, config, configMethod);
+            AttributeMetadata attribute = buildAttributeMetadata(configClass, config, configMethod, legacy);
             if (attribute != null) {
                 if (attributes.containsKey(attribute.getName())) {
                     errors.add("Configuration class [%s] Multiple methods are annotated for @Config attribute [%s]", configClass.getName(), attribute.getName());
@@ -114,7 +127,7 @@ public class ConfigurationMetadata<T>
         return errors;
     }
 
-    private AttributeMetadata buildAttributeMetadata(Class<?> configClass, Config config, Method configMethod)
+    private AttributeMetadata buildAttributeMetadata(Class<?> configClass, Config config, Method configMethod, boolean legacy)
     {
         if (config.value() == null || config.value().isEmpty()) {
             errors.add("@Config method [%s] annotation has an empty value", configMethod.toGenericString());
@@ -162,9 +175,12 @@ public class ConfigurationMetadata<T>
             }
 
             // find the setter
-            Method setter = findSetter(configClass, configMethod, attributeName);
-            if (setter == null) {
-                return null;
+            Method setter = null;
+            if (!legacy) {
+                setter = findSetter(configClass, configMethod, attributeName);
+                if (setter == null) {
+                    return null;
+                }
             }
             return new AttributeMetadata(configClass, attributeName, description, config.value(), configMethod, setter);
         } else if (attributeName.startsWith("is")) {

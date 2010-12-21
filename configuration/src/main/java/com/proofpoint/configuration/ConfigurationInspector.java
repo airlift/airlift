@@ -1,20 +1,20 @@
 package com.proofpoint.configuration;
 
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.inject.Binding;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.google.inject.Binding;
 import com.google.inject.Provider;
 import com.google.inject.spi.ProviderInstanceBinding;
-import com.proofpoint.formatting.ColumnPrinter;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
+import com.proofpoint.formatting.ColumnPrinter;
 
 import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  * Utility to output all the Configuration properties used in an Injection instance.
@@ -37,10 +37,10 @@ public class ConfigurationInspector
 
     private static class ConfigRecord implements Comparable<ConfigRecord>
     {
-        final String        propertyName;
-        final String        defaultValue;
+        final String propertyName;
+        final String defaultValue;
         final String currentValue;
-        final String        description;
+        final String description;
 
         @Override
         public int compareTo(ConfigRecord rhs)
@@ -79,6 +79,18 @@ public class ConfigurationInspector
 
         private ConfigRecord(String propertyName, String defaultValue, String currentValue, String description)
         {
+            if (propertyName == null) {
+                throw new NullPointerException("propertyName is null");
+            }
+            if (defaultValue == null) {
+                throw new NullPointerException("defaultValue is null");
+            }
+            if (currentValue == null) {
+                throw new NullPointerException("currentValue is null");
+            }
+            if (description == null) {
+                throw new NullPointerException("description is null");
+            }
             this.propertyName = propertyName;
             this.defaultValue = defaultValue;
             this.currentValue = currentValue;
@@ -138,10 +150,13 @@ public class ConfigurationInspector
 
     private void addConfig(ConfigurationProvider<?> configurationProvider, ImmutableSortedSet.Builder<ConfigRecord> builder) throws InvocationTargetException, IllegalAccessException
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getValidConfigurationMetadata(configurationProvider.getConfigClass());
+        ConfigurationMetadata<?> metadata = configurationProvider.getConfigurationMetadata();
 
         Object instance = configurationProvider.get();
-        Object defaults = configurationProvider.getDefaults();
+        Object defaults = null;
+        if (!configurationProvider.isLegacy()) {
+            defaults = configurationProvider.getDefaults();
+        }
 
         String prefix = configurationProvider.getPrefix();
         prefix = prefix == null ? "" : (prefix + ".");
@@ -150,9 +165,21 @@ public class ConfigurationInspector
             String propertyName = prefix + attribute.getPropertyName();
             Method getter = attribute.getGetter();
 
-            String defaultValue = getValue(getter, defaults, "-- none --");
+            String defaultValue;
+            if (!configurationProvider.isLegacy()) {
+                defaultValue = getValue(getter, defaults, "-- none --");
+            } else {
+                Default annotation = getter.getAnnotation(Default.class);
+                if (annotation != null) {
+                    defaultValue = annotation.value();
+                } else {
+                    defaultValue = "-- none --";
+                }
+
+            }
             String currentValue = getValue(getter, instance, "-- n/a --");
-            String description = null;
+            String description = attribute.getDescription();
+            if (description == null) description = "";
 
             builder.add(new ConfigRecord(propertyName, defaultValue, currentValue, description));
 
@@ -160,7 +187,7 @@ public class ConfigurationInspector
     }
 
     private String getValue(Method getter, Object instance, String defaultValue) {
-        if (getter == null) {
+        if (getter == null || instance == null) {
             return defaultValue;
         }
 

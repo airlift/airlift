@@ -31,6 +31,9 @@ public class ConfigurationProvider<T> implements Provider<T>
 
     public ConfigurationProvider(Class<T> configClass, String prefix, Map<String, String> properties)
     {
+        if (configClass == null) {
+            throw new NullPointerException("configClass is null");
+        }
         this.configClass = configClass;
         this.prefix = prefix;
         if (properties != null) {
@@ -54,6 +57,11 @@ public class ConfigurationProvider<T> implements Provider<T>
         return prefix;
     }
 
+    protected boolean isLegacy()
+    {
+        return legacy;
+    }
+
     public T getDefaults()
     {
         return defaults;
@@ -62,6 +70,14 @@ public class ConfigurationProvider<T> implements Provider<T>
     public void setDefaults(T defaults)
     {
         this.defaults = defaults;
+    }
+
+    public ConfigurationMetadata<T> getConfigurationMetadata() {
+        if (!legacy) {
+            return ConfigurationMetadata.getConfigurationMetadata(configClass);
+        } else {
+            return ConfigurationMetadata.getLegacyConfigurationMetadata(configClass);
+        }
     }
 
     @Override
