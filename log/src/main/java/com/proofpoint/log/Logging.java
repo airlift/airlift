@@ -32,11 +32,10 @@ import java.util.logging.LogManager;
 public class Logging
 {
     private final String PATTERN = "%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}\\t%5p\\t%t\\t%c\\t%m%n";
-    private LoggerContext context;
-    private ch.qos.logback.classic.Logger root;
-    private Logger log = Logger.get(Logging.class);
+    private final LoggerContext context;
+    private final ch.qos.logback.classic.Logger root;
+    private final Logger log = Logger.get(Logging.class);
     private OutputStreamAppender<ILoggingEvent> consoleAppender;
-    private RollingFileAppender<ILoggingEvent> fileAppender;
 
     /**
      * Sets up default logging:
@@ -104,8 +103,8 @@ public class Logging
         encoder.setPattern(PATTERN);
         encoder.setContext(context);
         encoder.start();
-        
-        fileAppender = new RollingFileAppender<ILoggingEvent>();
+
+        RollingFileAppender<ILoggingEvent> fileAppender = new RollingFileAppender<ILoggingEvent>();
         TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<ILoggingEvent>();
         SizeAndTimeBasedFNATP<ILoggingEvent> triggeringPolicy = new SizeAndTimeBasedFNATP<ILoggingEvent>();
 
