@@ -89,7 +89,7 @@ public class ConfigurationMetadata<T>
         this.attributes = ImmutableSortedMap.copyOf(attributes);
 
         // find invalid config methods not skipped by findConfigMethods()
-        for (Class<?> clazz = configClass; !clazz.equals(Object.class); clazz = clazz.getSuperclass()) {
+        for (Class<?> clazz = configClass; (clazz != null) && !clazz.equals(Object.class); clazz = clazz.getSuperclass()) {
             for (Method method : clazz.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(Config.class)) {
                     if (!Modifier.isPublic(method.getModifiers())) {
@@ -394,7 +394,7 @@ public class ConfigurationMetadata<T>
         // find the setter
         String setterName = "set" + attributeName;
         List<Method> setters = new ArrayList<Method>();
-        for (Class<?> clazz = configClass; !clazz.equals(Object.class); clazz = clazz.getSuperclass()) {
+        for (Class<?> clazz = configClass; (clazz != null) && !clazz.equals(Object.class); clazz = clazz.getSuperclass()) {
             for (Method method : clazz.getDeclaredMethods()) {
                 if (method.getName().equals(setterName) && method.getParameterTypes().length == 1) {
                     if (!method.isSynthetic() && !method.isBridge() && !Modifier.isStatic(method.getModifiers()) && Modifier.isPublic(method.getModifiers())) {
