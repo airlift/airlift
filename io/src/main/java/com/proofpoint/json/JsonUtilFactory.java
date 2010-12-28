@@ -158,6 +158,20 @@ public class JsonUtilFactory
         return deserialize(type, node.toString().getBytes());
     }
 
+    /**
+     * Convenience method for de-serializers. De-serialize the colleciton of objects at the given
+     * node.
+     *
+     * @param type object type
+     * @param node node for the object
+     * @return the object
+     * @throws IOException errors
+     */
+    public<T> Collection<T> deserializeContainedCollection(Class<T> type, JsonNode node) throws IOException
+    {
+        return deserializeCollection(type, node.toString().getBytes());
+    }
+
     private JsonDeserializer wrapDeserializer(final JsonSerializerHelper serializer)
     {
         return new JsonDeserializer()
