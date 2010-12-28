@@ -1,6 +1,7 @@
 package com.proofpoint.json;
 
 import com.google.inject.Inject;
+import com.proofpoint.log.Logger;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
@@ -28,6 +29,8 @@ import java.util.Set;
  */
 public class JsonUtilFactory
 {
+    private static final Logger     log = Logger.get(JsonUtilFactory.class);
+
     private final CustomSerializerFactory customSerializerFactory;
     private final CustomDeserializerFactory customDeserializerFactory;
 
@@ -103,9 +106,17 @@ public class JsonUtilFactory
      */
     public<T> T deserialize(Class<T> type, byte[] bytes) throws IOException
     {
-        ObjectMapper                mapper = new ObjectMapper();
-        mapper.setDeserializerProvider(new StdDeserializerProvider(customDeserializerFactory));
-        return mapper.readValue(new ByteArrayInputStream(bytes), type);
+        try
+        {
+            ObjectMapper                mapper = new ObjectMapper();
+            mapper.setDeserializerProvider(new StdDeserializerProvider(customDeserializerFactory));
+            return mapper.readValue(new ByteArrayInputStream(bytes), type);
+        }
+        catch ( IOException e )
+        {
+            log.error(e, "Could not deserialize type [%s] from JSON: %s", type.getName(), new String(bytes));
+            throw e;
+        }
     }
 
     /**
@@ -119,16 +130,24 @@ public class JsonUtilFactory
      */
     public<T> Collection<T> deserializeCollection(Class<T> type, byte[] bytes) throws IOException
     {
-        ObjectMapper                mapper = new ObjectMapper();
-        mapper.setDeserializerProvider(new StdDeserializerProvider(customDeserializerFactory));
-        JsonNode                    nodes = mapper.readTree(new ByteArrayInputStream(bytes));
-
-        List<T>                     list = new ArrayList<T>();
-        for ( JsonNode n : nodes )
+        try
         {
-            list.add(deserializeContained(type, n));
+            ObjectMapper                mapper = new ObjectMapper();
+            mapper.setDeserializerProvider(new StdDeserializerProvider(customDeserializerFactory));
+            JsonNode                    nodes = mapper.readTree(new ByteArrayInputStream(bytes));
+
+            List<T>                     list = new ArrayList<T>();
+            for ( JsonNode n : nodes )
+            {
+                list.add(deserializeContained(type, n));
+            }
+            return list;
         }
-        return list;
+        catch ( IOException e )
+        {
+            log.error(e, "Could not deserialize collection of type [%s] from JSON: %s", type.getName(), new String(bytes));
+            throw e;
+        }
     }
 
     /**
