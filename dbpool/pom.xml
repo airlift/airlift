@@ -4,13 +4,13 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>dbpool</artifactId>
     <packaging>jar</packaging>
-    <version>0.20-SNAPSHOT</version>
+    <version>0.20</version>
     <name>dbpool</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.20-SNAPSHOT</version>
+        <version>0.20</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     
@@ -18,25 +18,25 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>log</artifactId>
-            <version>0.20-SNAPSHOT</version>
+            <version>0.20</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>configuration</artifactId>
-            <version>0.20-SNAPSHOT</version>
+            <version>0.20</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>concurrent</artifactId>
-            <version>0.20-SNAPSHOT</version>
+            <version>0.20</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>stats</artifactId>
-            <version>0.20-SNAPSHOT</version>
+            <version>0.20</version>
         </dependency>
 
         <dependency>
@@ -75,7 +75,7 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>testing</artifactId>
-            <version>0.20-SNAPSHOT</version>
+            <version>0.20</version>
             <scope>test</scope>
         </dependency>
 
