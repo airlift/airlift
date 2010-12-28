@@ -4,13 +4,13 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>bootstrap</artifactId>
     <packaging>jar</packaging>
-    <version>0.20</version>
+    <version>0.21-SNAPSHOT</version>
     <name>bootstrap</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.20</version>
+        <version>0.21-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -18,31 +18,31 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>log</artifactId>
-            <version>0.20</version>
+            <version>0.21-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>configuration</artifactId>
-            <version>0.20</version>
+            <version>0.21-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>guice</artifactId>
-            <version>0.20</version>
+            <version>0.21-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>formatting</artifactId>
-            <version>0.20</version>
+            <version>0.21-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>jmx</artifactId>
-            <version>0.20</version>
+            <version>0.21-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
