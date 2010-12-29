@@ -41,7 +41,7 @@ public class TestZookeeperClient
         Map<String, String>             props = new HashMap<String, String>();
         props.put("zookeeper.connection-string", connectionString);
         ConfigurationFactory            factory = new ConfigurationFactory(props);
-        ZookeeperClient                 client = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.createLegacyConfig(ZookeeperClientConfig.class)));
+        ZookeeperClient                 client = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class)));
         client.start();
 
         for ( int i = 0; i < 2; ++i )
@@ -74,7 +74,7 @@ public class TestZookeeperClient
         ConfigurationFactory            configurationFactory = new ConfigurationFactory(properties);
 
         final ZooKeeper                 mockedClient = mock(ZooKeeper.class);
-        DefaultZookeeperClientCreator   clientCreator = new DefaultZookeeperClientCreator(configurationFactory.createLegacyConfig(ZookeeperClientConfig.class));
+        DefaultZookeeperClientCreator   clientCreator = new DefaultZookeeperClientCreator(configurationFactory.build(ZookeeperClientConfig.class));
         final Watcher                   watcher = clientCreator.newWatcher();
         final WatchedEvent              connectEvent = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.SyncConnected, "/");
         final WatchedEvent              nodeEvent = new WatchedEvent(Watcher.Event.EventType.NodeCreated, Watcher.Event.KeeperState.SyncConnected, "/");
@@ -157,7 +157,7 @@ public class TestZookeeperClient
         Map<String, String>             props = Maps.newHashMap();
         props.put("zookeeper.connection-string", testServer.getConnectString());
         ConfigurationFactory            factory = new ConfigurationFactory(props);
-        DefaultZookeeperClientCreator   clientCreator = new DefaultZookeeperClientCreator(factory.createLegacyConfig(ZookeeperClientConfig.class))
+        DefaultZookeeperClientCreator   clientCreator = new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class))
         {
             @Override
             public RetryPolicy getRetryPolicy()
@@ -217,7 +217,7 @@ public class TestZookeeperClient
         Map<String, String>             props = Maps.newHashMap();
         props.put("zookeeper.connection-string", testServer.getConnectString());
         ConfigurationFactory            factory = new ConfigurationFactory(props);
-        ZookeeperClient                 client = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.createLegacyConfig(ZookeeperClientConfig.class)));
+        ZookeeperClient                 client = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class)));
         client.start();
 
         try
@@ -242,7 +242,7 @@ public class TestZookeeperClient
         Map<String, String>             props = Maps.newHashMap();
         props.put("zookeeper.connection-string", testServer.getConnectString());
         ConfigurationFactory            factory = new ConfigurationFactory(props);
-        ZookeeperClient                 client = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.createLegacyConfig(ZookeeperClientConfig.class)));
+        ZookeeperClient                 client = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class)));
 
         final String                    path = "/one";
         final CountDownLatch            latch = new CountDownLatch(1);
@@ -290,8 +290,8 @@ public class TestZookeeperClient
         Map<String, String>             props = Maps.newHashMap();
         props.put("zookeeper.connection-string", testServer.getConnectString());
         ConfigurationFactory            factory = new ConfigurationFactory(props);
-        ZookeeperClient                 client1 = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.createLegacyConfig(ZookeeperClientConfig.class)));
-        ZookeeperClient                 client2 = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.createLegacyConfig(ZookeeperClientConfig.class)));
+        ZookeeperClient                 client1 = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class)));
+        ZookeeperClient                 client2 = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class)));
 
         final String                    path = "/one";
         final CountDownLatch            latch = new CountDownLatch(1);
@@ -342,7 +342,7 @@ public class TestZookeeperClient
         Map<String, String>             props = Maps.newHashMap();
         props.put("zookeeper.connection-string", testServer.getConnectString());
         ConfigurationFactory            factory = new ConfigurationFactory(props);
-        ZookeeperClient                 client = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.createLegacyConfig(ZookeeperClientConfig.class)));
+        ZookeeperClient                 client = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class)));
 
         final String                    path = "/one";
 
