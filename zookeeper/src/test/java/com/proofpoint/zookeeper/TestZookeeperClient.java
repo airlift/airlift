@@ -67,6 +67,21 @@ public class TestZookeeperClient
     }
 
     @Test
+    public void     testMissingStart() throws Exception
+    {
+        ZookeeperClient     client = new ZookeeperClient(new DefaultZookeeperClientCreator(new ZookeeperClientConfig()));
+        try
+        {
+            client.delete("/foo");
+            fail();
+        }
+        catch ( Exception e )
+        {
+            // correct behavior
+        }
+    }
+
+    @Test
     public void     testPostCreationEvents() throws Exception
     {
         HashMap<String, String>         properties = new HashMap<String, String>();

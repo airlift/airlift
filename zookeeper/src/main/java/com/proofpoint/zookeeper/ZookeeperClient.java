@@ -757,6 +757,10 @@ public class ZookeeperClient implements ZookeeperClientHelper
 
     private boolean waitForStart() throws Exception
     {
+        if ( !started.get() ) {
+            throw new IllegalStateException("start() must be called before other APIs are available");
+        }
+
         boolean     result;
         switch ( stateRef.get() )
         {
