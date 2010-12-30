@@ -4,13 +4,13 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>jersey</artifactId>
     <packaging>jar</packaging>
-    <version>0.21-SNAPSHOT</version>
+    <version>0.21</version>
     <name>jersey</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.21-SNAPSHOT</version>
+        <version>0.21</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -18,7 +18,7 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>jetty</artifactId>
-            <version>0.21-SNAPSHOT</version>
+            <version>0.21</version>
         </dependency>
 
         <dependency>
@@ -55,7 +55,7 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>testing</artifactId>
-            <version>0.21-SNAPSHOT</version>
+            <version>0.21</version>
             <scope>test</scope>
         </dependency>
 
