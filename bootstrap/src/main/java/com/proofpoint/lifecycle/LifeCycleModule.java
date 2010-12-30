@@ -25,6 +25,17 @@ public class LifeCycleModule implements Module
     private final List<Object>                      injectedInstances = Lists.newArrayList();
     private final LifeCycleMethodsMap               lifeCycleMethodsMap = new LifeCycleMethodsMap();
     private final AtomicReference<LifeCycleManager> lifeCycleManagerRef = new AtomicReference<LifeCycleManager>(null);
+    private final LifeCycleManager.Mode             mode;
+
+    public LifeCycleModule()
+    {
+        this(LifeCycleManager.Mode.START_INSTANCES_IMMEDIATELY);
+    }
+
+    public LifeCycleModule(LifeCycleManager.Mode mode)
+    {
+        this.mode = mode;
+    }
 
     @Override
     public void configure(Binder binder)
@@ -68,7 +79,7 @@ public class LifeCycleModule implements Module
     @Singleton
     public LifeCycleManager     getServerManager()
     {
-        LifeCycleManager lifeCycleManager = new LifeCycleManager(injectedInstances, lifeCycleMethodsMap);
+        LifeCycleManager lifeCycleManager = new LifeCycleManager(injectedInstances, lifeCycleMethodsMap, mode);
         lifeCycleManagerRef.set(lifeCycleManager);
         return lifeCycleManager;
     }

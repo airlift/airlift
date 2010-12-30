@@ -1,7 +1,6 @@
 package com.proofpoint.lifecycle;
 
 import com.google.common.collect.Lists;
-import com.google.inject.Inject;
 import com.proofpoint.log.Logger;
 
 import javax.annotation.PostConstruct;
@@ -23,6 +22,7 @@ public class LifeCycleManager
     private final AtomicReference<State>    state = new AtomicReference<State>(State.LATENT);
     private final Queue<Object>             managedInstances = new ConcurrentLinkedQueue<Object>();
     private final LifeCycleMethodsMap       methodsMap;
+    private final LifeCycleManager.Mode     mode;
 
     private enum State
     {
@@ -33,21 +33,29 @@ public class LifeCycleManager
         STOPPED
     }
 
+    public enum Mode
+    {
+        /**
+         * Start instances as they are added to {@link LifeCycleManager#addInstance(Object)}
+         */
+        START_INSTANCES_IMMEDIATELY,
+
+        /**
+         * Start instances all at once when {@link com.proofpoint.lifecycle.LifeCycleManager#start()} is called
+         */
+        START_INSTANCES_ALL_AT_ONCE
+    }
+
     /**
      * @param managedInstances list of objects that have life cycle annotations
      * @param methodsMap existing or new methods map
+     * @param mode run mode
      */
-    @Inject
-    public LifeCycleManager(List<Object> managedInstances, LifeCycleMethodsMap methodsMap)
+    public LifeCycleManager(List<Object> managedInstances, LifeCycleMethodsMap methodsMap, Mode mode)
     {
+        this.mode = mode;
         this.managedInstances.addAll(managedInstances);
         this.methodsMap = methodsMap;
-    }
-
-    public LifeCycleManager(Object... managedInstances)
-    {
-        this.managedInstances.addAll(Lists.newArrayList(managedInstances));
-        this.methodsMap = new LifeCycleMethodsMap();
     }
 
     /**
@@ -75,7 +83,10 @@ public class LifeCycleManager
 
         for ( Object obj : managedInstances )
         {
-            startInstance(obj);
+            if ( mode == Mode.START_INSTANCES_ALL_AT_ONCE )
+            {
+                startInstance(obj);
+            }
 
             LifeCycleMethods methods = methodsMap.get(obj.getClass());
             if ( !methods.hasFor(PreDestroy.class) )
@@ -152,7 +163,7 @@ public class LifeCycleManager
         {
             throw new IllegalStateException();
         }
-        else if ( (currentState == State.STARTED) || (currentState == State.STARTING) )
+        else if ( (currentState == State.STARTED) || (currentState == State.STARTING) || (mode == Mode.START_INSTANCES_IMMEDIATELY) )
         {
             startInstance(instance);
             if ( methodsMap.get(instance.getClass()).hasFor(PreDestroy.class) )
