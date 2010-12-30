@@ -50,12 +50,17 @@ public class LifeCycleManager
      * @param managedInstances list of objects that have life cycle annotations
      * @param methodsMap existing or new methods map
      * @param mode run mode
+     * @throws Exception exceptions starting instances (depending on mode)
      */
     public LifeCycleManager(List<Object> managedInstances, LifeCycleMethodsMap methodsMap, Mode mode)
+            throws Exception
     {
         this.mode = mode;
-        this.managedInstances.addAll(managedInstances);
-        this.methodsMap = methodsMap;
+        this.methodsMap = (methodsMap != null) ? methodsMap : new LifeCycleMethodsMap();
+        for ( Object instance : managedInstances )
+        {
+            addInstance(instance);
+        }
     }
 
     /**
