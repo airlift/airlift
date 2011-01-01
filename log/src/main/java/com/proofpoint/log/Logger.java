@@ -63,7 +63,7 @@ public class Logger
                 logger.debug(format(format, args));
             }
             catch (IllegalFormatException e) {
-                logInvalidFormat(Level.DEBUG, format, args);
+                logInvalidFormat(Level.DEBUG, e, format, args);
             }
         }
     }
@@ -88,7 +88,7 @@ public class Logger
                 logger.info(format(format, args));
             }
             catch (IllegalFormatException e) {
-                logInvalidFormat(Level.INFO, format, args);
+                logInvalidFormat(Level.INFO, e, format, args);
             }
         }
     }
@@ -114,7 +114,7 @@ public class Logger
                 logger.warn(format(format, args), exception);
             }
             catch (IllegalFormatException e) {
-                logInvalidFormat(Level.WARN, exception, format, args);
+                logInvalidFormat(Level.WARN, e, format, args);
             }
         }
     }
@@ -158,7 +158,7 @@ public class Logger
                 logger.error(format(format, args), exception);
             }
             catch (IllegalFormatException e) {
-                logInvalidFormat(Level.ERROR, exception, format, args);
+                logInvalidFormat(Level.ERROR, e, format, args);
             }
         }
     }
@@ -210,13 +210,8 @@ public class Logger
         return logger.isInfoEnabled();
     }
 
-    private void logInvalidFormat(Level level, Throwable t, String message, Object... args)
+    private void logInvalidFormat(Level level, IllegalFormatException exception, String message, Object... args)
     {
-        logger.error(format("Invalid format string while trying to log: %s '%s' %s", level, message, asList(args)), t);
-    }
-
-    private void logInvalidFormat(Level level, String message, Object... args)
-    {
-        logInvalidFormat(level, null, message, args);
+        logger.error(format("Invalid format string while trying to log: %s '%s' %s", level, message, asList(args)), exception);
     }
 }

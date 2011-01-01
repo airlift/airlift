@@ -4,6 +4,9 @@ import org.hamcrest.core.IsNull;
 import org.mockito.ArgumentMatcher;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
+import java.util.IllegalFormatException;
+
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -79,7 +82,7 @@ public class TestLogger
         Logger logger = new Logger(mockLogger);
         logger.error("hello, %s", "you");
 
-        verify(mockLogger).error("hello, you");
+        verify(mockLogger).error("hello, you", (Throwable) null);
 
         // throwable with message
         @SuppressWarnings({ "ThrowableInstanceNeverThrown" })
@@ -210,7 +213,7 @@ public class TestLogger
         logger.debug(format, param);
 
         verify(mockLogger).error(stringThatContains("Invalid format", "DEBUG", format, param),
-                                 argThatIsNull(Throwable.class));
+                                 any(IllegalFormatException.class));
     }
 
     @Test
@@ -226,7 +229,7 @@ public class TestLogger
         logger.info(format, param);
 
         verify(mockLogger).error(stringThatContains("Invalid format", "INFO", format, param),
-                                 argThatIsNull(Throwable.class));
+                                 any(IllegalFormatException.class));
     }
 
     @Test
@@ -242,7 +245,7 @@ public class TestLogger
         logger.warn(format, param);
 
         verify(mockLogger).error(stringThatContains("Invalid format", "WARN", format, param),
-                                 argThatIsNull(Throwable.class));
+                                 any(IllegalFormatException.class));
     }
 
     @Test
@@ -258,7 +261,7 @@ public class TestLogger
         logger.error(format, param);
 
         verify(mockLogger).error(stringThatContains("Invalid format", "ERROR", format, param),
-                                 argThatIsNull(Throwable.class));
+                                 any(IllegalFormatException.class));
     }
 
     private void verifyNoCalls(org.slf4j.Logger mockLogger)
@@ -315,19 +318,5 @@ public class TestLogger
                 return true;
             }
         });
-    }
-
-    /**
-     * A mockito-compatible matcher that matches a typed object with a null value
-     *
-     * This is needed because the built-in Matchers.isNull() gets confused when multiple overloads
-     * of a given method are available.
-     *
-     * @param clazz the class of the argument
-     * @return a mockito mock argument
-     */
-    private static <T> T argThatIsNull(Class<T> clazz)
-    {
-        return argThat(new IsNull<T>());
     }
 }
