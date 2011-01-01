@@ -1,8 +1,11 @@
 package com.proofpoint.log;
 
+import org.hamcrest.core.IsNull;
+import org.mockito.ArgumentMatcher;
 import org.testng.annotations.Test;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -56,7 +59,7 @@ public class TestLogger
         Logger logger = new Logger(mockLogger);
         logger.warn("hello, %s", "you");
 
-        verify(mockLogger).warn("hello, you");
+        verify(mockLogger).warn("hello, you", (Throwable) null);
 
         // throwable with message
         @SuppressWarnings({ "ThrowableInstanceNeverThrown" })
@@ -194,6 +197,70 @@ public class TestLogger
     }
 
 
+    @Test
+    public void testInsufficientArgsLogsErrorForDebug()
+    {
+        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
+        Logger logger = new Logger(mockLogger);
+
+        when(mockLogger.isDebugEnabled()).thenReturn(true);
+
+        String format = "some message: %s, %d";
+        String param = "blah";
+        logger.debug(format, param);
+
+        verify(mockLogger).error(stringThatContains("Invalid format", "DEBUG", format, param),
+                                 argThatIsNull(Throwable.class));
+    }
+
+    @Test
+    public void testInsufficientArgsLogsErrorForInfo()
+    {
+        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
+        Logger logger = new Logger(mockLogger);
+
+        when(mockLogger.isInfoEnabled()).thenReturn(true);
+
+        String format = "some message: %s, %d";
+        String param = "blah";
+        logger.info(format, param);
+
+        verify(mockLogger).error(stringThatContains("Invalid format", "INFO", format, param),
+                                 argThatIsNull(Throwable.class));
+    }
+
+    @Test
+    public void testInsufficientArgsLogsErrorForWarn()
+    {
+        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
+        Logger logger = new Logger(mockLogger);
+
+        when(mockLogger.isWarnEnabled()).thenReturn(true);
+
+        String format = "some message: %s, %d";
+        String param = "blah";
+        logger.warn(format, param);
+
+        verify(mockLogger).error(stringThatContains("Invalid format", "WARN", format, param),
+                                 argThatIsNull(Throwable.class));
+    }
+
+    @Test
+    public void testInsufficientArgsLogsErrorForError()
+    {
+        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
+        Logger logger = new Logger(mockLogger);
+
+        when(mockLogger.isErrorEnabled()).thenReturn(true);
+
+        String format = "some message: %s, %d";
+        String param = "blah";
+        logger.error(format, param);
+
+        verify(mockLogger).error(stringThatContains("Invalid format", "ERROR", format, param),
+                                 argThatIsNull(Throwable.class));
+    }
+
     private void verifyNoCalls(org.slf4j.Logger mockLogger)
     {
         verify(mockLogger, never()).debug(any(String.class));
@@ -221,4 +288,46 @@ public class TestLogger
         verify(mockLogger, never()).error(any(String.class), any(Throwable.class));
     }
 
+    /**
+     * A mockito-compatible matcher that matches a string argument that contains all the provided substrings
+     *
+     * @param substrings the substrings to test for
+     * @return a mockito mock argument
+     */
+    private static String stringThatContains(final String... substrings)
+    {
+        return argThat(new ArgumentMatcher<String>()
+        {
+            @Override
+            public boolean matches(Object argument)
+            {
+                if (!(argument instanceof String)) {
+                    return false;
+                }
+
+                String stringArgument = (String) argument;
+                for (String str : substrings) {
+                    if (!stringArgument.contains(str)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        });
+    }
+
+    /**
+     * A mockito-compatible matcher that matches a typed object with a null value
+     *
+     * This is needed because the built-in Matchers.isNull() gets confused when multiple overloads
+     * of a given method are available.
+     *
+     * @param clazz the class of the argument
+     * @return a mockito mock argument
+     */
+    private static <T> T argThatIsNull(Class<T> clazz)
+    {
+        return argThat(new IsNull<T>());
+    }
 }

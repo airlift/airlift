@@ -1,7 +1,13 @@
 package com.proofpoint.log;
 
+import ch.qos.logback.classic.Level;
 import com.google.inject.Inject;
 import org.slf4j.LoggerFactory;
+
+import java.util.IllegalFormatException;
+
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
 
 public class Logger
 {
@@ -13,65 +19,185 @@ public class Logger
         this.logger = logger;
     }
 
+    /**
+     * Gets a logger named after a class' fully qualified name.
+     *
+     * @param clazz the class
+     * @return the named logger
+     */
     public static Logger get(Class<?> clazz)
     {
         org.slf4j.Logger logger = LoggerFactory.getLogger(clazz);
         return new Logger(logger);
     }
 
+    /**
+     * Gets a named logger
+     *
+     * @param name the name of the logger
+     * @return the named logger
+     */
     public static Logger get(String name)
     {
         org.slf4j.Logger logger = LoggerFactory.getLogger(name);
         return new Logger(logger);
     }
 
-    public void debug(String message, Object... args)
+    /**
+     * Logs a message at DEBUG level.
+     * <br/>
+     * Usage example:
+     * <pre>
+     *    logger.debug("value is %s (%d ms)", value, time);
+     * </pre>
+     * If the format string is invalid or the arguments are insufficient, an error will be logged and execution
+     * will continue.
+     *
+     * @param format a format string compatible with String.format()
+     * @param args arguments for the format string
+     */
+    public void debug(String format, Object... args)
     {
         if (logger.isDebugEnabled()) {
-            logger.debug(String.format(message, args));
+            try {
+                logger.debug(format(format, args));
+            }
+            catch (IllegalFormatException e) {
+                logInvalidFormat(Level.DEBUG, format, args);
+            }
         }
     }
 
-    public void info(String message, Object... args)
+    /**
+     * Logs a message at INFO level.
+     * <br/>
+     * Usage example:
+     * <pre>
+     *    logger.info("value is %s (%d ms)", value, time);
+     * </pre>
+     * If the format string is invalid or the arguments are insufficient, an error will be logged and execution
+     * will continue.
+     *
+     * @param format a format string compatible with String.format()
+     * @param args arguments for the format string
+     */
+    public void info(String format, Object... args)
     {
         if (logger.isInfoEnabled()) {
-            logger.info(String.format(message, args));
+            try {
+                logger.info(format(format, args));
+            }
+            catch (IllegalFormatException e) {
+                logInvalidFormat(Level.INFO, format, args);
+            }
         }
     }
 
-    public void warn(Throwable t, String message, Object... args)
+    /**
+     * Logs a message at WARN level.
+     * <br/>
+     * Usage example:
+     * <pre>
+     *    logger.warn(e, "something bad happened when connecting to %s:%d", host, port);
+     * </pre>
+     * If the format string is invalid or the arguments are insufficient, an error will be logged and execution
+     * will continue.
+     *
+     * @param exception an exception associated with the warning being logged
+     * @param format a format string compatible with String.format()
+     * @param args arguments for the format string
+     */
+    public void warn(Throwable exception, String format, Object... args)
     {
         if (logger.isWarnEnabled()) {
-            logger.warn(String.format(message, args), t);
+            try {
+                logger.warn(format(format, args), exception);
+            }
+            catch (IllegalFormatException e) {
+                logInvalidFormat(Level.WARN, exception, format, args);
+            }
         }
     }
 
-    public void warn(String message, Object... args)
+    /**
+     * Logs a message at WARN level.
+     * <br/>
+     * Usage example:
+     * <pre>
+     *    logger.warn("something bad happened when connecting to %s:%d", host, port);
+     * </pre>
+     * If the format string is invalid or the arguments are insufficient, an error will be logged and execution
+     * will continue.
+     *
+     * @param format a format string compatible with String.format()
+     * @param args arguments for the format string
+     */
+    public void warn(String format, Object... args)
     {
-        if (logger.isWarnEnabled()) {
-            logger.warn(String.format(message, args));
-        }
+        warn(null, format, args);
     }
 
-    public void error(Throwable t, String message, Object... args)
+    /**
+     * Logs a message at ERROR level.
+     * <br/>
+     * Usage example:
+     * <pre>
+     *    logger.error(e, "something really bad happened when connecting to %s:%d", host, port);
+     * </pre>
+     * If the format string is invalid or the arguments are insufficient, an error will be logged and execution
+     * will continue.
+     *
+     * @param exception an exception associated with the error being logged
+     * @param format a format string compatible with String.format()
+     * @param args arguments for the format string
+     */
+    public void error(Throwable exception, String format, Object... args)
     {
         if (logger.isErrorEnabled()) {
-            logger.error(String.format(message, args), t);
+            try {
+                logger.error(format(format, args), exception);
+            }
+            catch (IllegalFormatException e) {
+                logInvalidFormat(Level.ERROR, exception, format, args);
+            }
         }
     }
 
-    public void error(Throwable t)
+    /**
+     * Logs a message at ERROR level. The value of {@code exception.getMessage()} will be used as the log message.
+     * <br/>
+     * Usage example:
+     * <pre>
+     *    logger.error(e);
+     * </pre>
+     * If the format string is invalid or the arguments are insufficient, an error will be logged and execution
+     * will continue.
+     *
+     * @param exception an exception associated with the error being logged
+     */
+    public void error(Throwable exception)
     {
         if (logger.isErrorEnabled()) {
-            logger.error(t.getMessage(), t);
+            logger.error(exception.getMessage(), exception);
         }
     }
 
-    public void error(String message, Object... args)
+    /**
+     * Logs a message at ERROR level.
+     * <br/>
+     * Usage example:
+     * <pre>
+     *    logger.error(e, "something really bad happened when connecting to %s:%d", host, port);
+     * </pre>
+     * If the format string is invalid or the arguments are insufficient, an error will be logged and execution
+     * will continue.
+     *
+     * @param format a format string compatible with String.format()
+     * @param args arguments for the format string
+     */
+    public void error(String format, Object... args)
     {
-        if (logger.isErrorEnabled()) {
-            logger.error(String.format(message, args));
-        }
+        error(null, format, args);
     }
 
     public boolean isDebugEnabled()
@@ -82,5 +208,15 @@ public class Logger
     public boolean isInfoEnabled()
     {
         return logger.isInfoEnabled();
+    }
+
+    private void logInvalidFormat(Level level, Throwable t, String message, Object... args)
+    {
+        logger.error(format("Invalid format string while trying to log: %s '%s' %s", level, message, asList(args)), t);
+    }
+
+    private void logInvalidFormat(Level level, String message, Object... args)
+    {
+        logInvalidFormat(level, null, message, args);
     }
 }
