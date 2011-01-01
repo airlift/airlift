@@ -115,6 +115,10 @@ public class Logger
             }
             catch (IllegalFormatException e) {
                 logInvalidFormat(Level.WARN, e, format, args);
+                if (exception != null) {
+                    // log the original exception, too
+                    logger.warn(exception.getMessage(), exception);
+                }
             }
         }
     }
@@ -159,6 +163,10 @@ public class Logger
             }
             catch (IllegalFormatException e) {
                 logInvalidFormat(Level.ERROR, e, format, args);
+                if (exception != null) {
+                    // log the original exception, too
+                    logger.error(exception.getMessage(), exception);
+                }
             }
         }
     }

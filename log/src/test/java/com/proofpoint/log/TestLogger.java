@@ -1,14 +1,14 @@
 package com.proofpoint.log;
 
-import org.hamcrest.core.IsNull;
 import org.mockito.ArgumentMatcher;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.util.IllegalFormatException;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.matches;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -262,6 +262,44 @@ public class TestLogger
 
         verify(mockLogger).error(stringThatContains("Invalid format", "ERROR", format, param),
                                  any(IllegalFormatException.class));
+    }
+
+    @Test
+    public void testInsufficientArgsLogsOriginalExceptionForWarn()
+    {
+        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
+        Logger logger = new Logger(mockLogger);
+
+        when(mockLogger.isWarnEnabled()).thenReturn(true);
+
+        Throwable exception = new Throwable("foo");
+        String format = "some message: %s, %d";
+        String param = "blah";
+        logger.warn(exception, format, param);
+
+        verify(mockLogger).error(stringThatContains("Invalid format", "WARN", format, param),
+                                 any(IllegalFormatException.class));
+
+        verify(mockLogger).warn(matches(exception.getMessage()), eq(exception));
+    }
+
+    @Test
+    public void testInsufficientArgsLogsOriginalExceptionForError()
+    {
+        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
+        Logger logger = new Logger(mockLogger);
+
+        when(mockLogger.isErrorEnabled()).thenReturn(true);
+
+        Throwable exception = new Throwable("foo");
+        String format = "some message: %s, %d";
+        String param = "blah";
+        logger.error(exception, format, param);
+
+        verify(mockLogger).error(stringThatContains("Invalid format", "ERROR", format, param),
+                                 any(IllegalFormatException.class));
+
+        verify(mockLogger).error(matches(exception.getMessage()), eq(exception));
     }
 
     private void verifyNoCalls(org.slf4j.Logger mockLogger)
