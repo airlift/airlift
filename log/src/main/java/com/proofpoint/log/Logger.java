@@ -193,7 +193,7 @@ public class Logger
      * <br/>
      * Usage example:
      * <pre>
-     *    logger.error(e, "something really bad happened when connecting to %s:%d", host, port);
+     *    logger.error("something really bad happened when connecting to %s:%d", host, port);
      * </pre>
      * If the format string is invalid or the arguments are insufficient, an error will be logged and execution
      * will continue.
