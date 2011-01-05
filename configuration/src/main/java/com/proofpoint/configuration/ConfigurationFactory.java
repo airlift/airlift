@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.proofpoint.configuration.Errors.exceptionFor;
+import static java.lang.String.format;
 
 public class ConfigurationFactory
 {
@@ -82,7 +83,12 @@ public class ConfigurationFactory
 
         Errors errors = new Errors();
         for (AttributeMetadata attribute : configurationMetadata.getAttributes().values()) {
-            setConfigProperty(instance,attribute, prefix, errors);
+            try {
+                setConfigProperty(instance,attribute, prefix);
+            }
+            catch (InvalidConfigurationException e) {
+                errors.add(e.getCause(), e.getMessage());
+            }
         }
         errors.throwIfHasErrors();
         
@@ -102,17 +108,14 @@ public class ConfigurationFactory
         }
     }
 
-    private <T> void setConfigProperty(T instance, AttributeMetadata attribute, String prefix, Errors errors)
+    private <T> void setConfigProperty(T instance, AttributeMetadata attribute, String prefix)
+            throws InvalidConfigurationException
     {
-        // verify configuration method
-        boolean valid = true;
-
         // Get property value
-        // Even if not valid still try to get the property value so we recored the errors
-        Object value = getPropertyValue(attribute, prefix, errors, false);
+        Object value = getPropertyValue(attribute, prefix, false);
 
-        // At this point, return if not valid
-        if (!valid || value == null) {
+        // If we did not get a value, do not call the setter
+        if (value == null) {
             return;
         }
 
@@ -123,11 +126,12 @@ public class ConfigurationFactory
             if (e instanceof InvocationTargetException && e.getCause() != null) {
                 e = e.getCause();
             }
-            errors.add(e, "Error invoking configuration method [%s]", attribute.getSetter().toGenericString());
+            throw new InvalidConfigurationException(e, "Error invoking configuration method [%s]", attribute.getSetter().toGenericString());
         }
     }
 
-    private Object getPropertyValue(AttributeMetadata attribute, String prefix, Errors errors, boolean isLegacy)
+    private Object getPropertyValue(AttributeMetadata attribute, String prefix, boolean isLegacy)
+            throws InvalidConfigurationException
     {
         // Get the property value
         String propertyName = prefix + attribute.getPropertyName();
@@ -140,27 +144,27 @@ public class ConfigurationFactory
             value =  attribute.getGetter().getAnnotation(Default.class).value();
         }
 
-        // coerce the property value to the final type
-        if (value != null) {
-            Class<?> propertyType;
-            if (isLegacy) {
-                propertyType = attribute.getGetter().getReturnType();
-            }
-            else {
-                propertyType = attribute.getSetter().getParameterTypes()[0];
-            }
-
-            Object finalValue = coerce(propertyType, value);
-            if (finalValue == null) {
-                errors.add("Could not coerce value '%s' to %s for property '%s' in [%s]",
-                        value,
-                        propertyType.getName(),
-                        propertyName, attribute.getSetter().toGenericString());
-            }
-            return finalValue;
+        if (value == null) {
+            return null;
         }
 
-        return null;
+        // coerce the property value to the final type
+        Class<?> propertyType;
+        if (isLegacy) {
+            propertyType = attribute.getGetter().getReturnType();
+        }
+        else {
+            propertyType = attribute.getSetter().getParameterTypes()[0];
+        }
+
+        Object finalValue = coerce(propertyType, value);
+        if (finalValue == null) {
+            throw new InvalidConfigurationException(format("Could not coerce value '%s' to %s for property '%s' in [%s]",
+                    value,
+                    propertyType.getName(),
+                    propertyName, attribute.getSetter().toGenericString()));
+        }
+        return finalValue;
     }
 
     @Deprecated
@@ -181,17 +185,17 @@ public class ConfigurationFactory
             if (config != null) {
 
                 AttributeMetadata attributeMetadata = new AttributeMetadata(configClass, method.getName(), null, config.value(), method, null);
-                final Object finalValue = getPropertyValue(attributeMetadata, "", errors, true);
+                Object value = null;
+                try {
+                    value = getPropertyValue(attributeMetadata, "", true);
+                }
+                catch (InvalidConfigurationException e) {
+                    errors.add(e.getCause(), e.getMessage());
+                }
 
-                if (finalValue != null) {
+                if (value != null) {
                     slots.put(method, count++);
-                    callbacks.add(new FixedValue()
-                    {
-                        public Object loadObject() throws Exception
-                        {
-                            return finalValue;
-                        }
-                    });
+                    callbacks.add(new ConstantValue(value));
                 }
             }
             else if (Modifier.isAbstract(method.getModifiers())) {
@@ -279,4 +283,18 @@ public class ConfigurationFactory
         return null;
     }
 
+    private static final class ConstantValue implements FixedValue
+    {
+        private final Object value;
+
+        private ConstantValue(Object value)
+        {
+            this.value = value;
+        }
+
+        public Object loadObject()
+        {
+            return value;
+        }
+    }
 }
