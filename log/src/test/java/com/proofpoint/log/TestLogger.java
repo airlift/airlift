@@ -8,7 +8,6 @@ import java.util.IllegalFormatException;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.matches;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -280,7 +279,7 @@ public class TestLogger
         verify(mockLogger).error(stringThatContains("Invalid format", "WARN", format, param),
                                  any(IllegalFormatException.class));
 
-        verify(mockLogger).warn(matches(exception.getMessage()), eq(exception));
+        verify(mockLogger).warn(stringThatContains(format, param), eq(exception));
     }
 
     @Test
@@ -299,7 +298,7 @@ public class TestLogger
         verify(mockLogger).error(stringThatContains("Invalid format", "ERROR", format, param),
                                  any(IllegalFormatException.class));
 
-        verify(mockLogger).error(matches(exception.getMessage()), eq(exception));
+        verify(mockLogger).error(stringThatContains(format, param), eq(exception));
     }
 
     private void verifyNoCalls(org.slf4j.Logger mockLogger)

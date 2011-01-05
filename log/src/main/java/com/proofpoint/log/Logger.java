@@ -59,12 +59,15 @@ public class Logger
     public void debug(String format, Object... args)
     {
         if (logger.isDebugEnabled()) {
+            String message;
             try {
-                logger.debug(format(format, args));
+                message = format(format, args);
             }
             catch (IllegalFormatException e) {
-                logInvalidFormat(Level.DEBUG, e, format, args);
+                logger.error(illegalFormatMessageFor(Level.DEBUG, format, args), e);
+                message = rawMessageFor(format, args);
             }
+            logger.debug(message);
         }
     }
 
@@ -84,12 +87,15 @@ public class Logger
     public void info(String format, Object... args)
     {
         if (logger.isInfoEnabled()) {
+            String message;
             try {
-                logger.info(format(format, args));
+                message = format(format, args);
             }
             catch (IllegalFormatException e) {
-                logInvalidFormat(Level.INFO, e, format, args);
+                logger.error(illegalFormatMessageFor(Level.INFO, format, args), e);
+                message = rawMessageFor(format, args);
             }
+            logger.info(message);
         }
     }
 
@@ -110,16 +116,15 @@ public class Logger
     public void warn(Throwable exception, String format, Object... args)
     {
         if (logger.isWarnEnabled()) {
+            String message;
             try {
-                logger.warn(format(format, args), exception);
+                message = format(format, args);
             }
             catch (IllegalFormatException e) {
-                logInvalidFormat(Level.WARN, e, format, args);
-                if (exception != null) {
-                    // log the original exception, too
-                    logger.warn(exception.getMessage(), exception);
-                }
+                logger.error(illegalFormatMessageFor(Level.WARN, format, args), e);
+                message = rawMessageFor(format, args);
             }
+            logger.warn(message, exception);
         }
     }
 
@@ -158,16 +163,15 @@ public class Logger
     public void error(Throwable exception, String format, Object... args)
     {
         if (logger.isErrorEnabled()) {
+            String message;
             try {
-                logger.error(format(format, args), exception);
+                message = format(format, args);
             }
             catch (IllegalFormatException e) {
-                logInvalidFormat(Level.ERROR, e, format, args);
-                if (exception != null) {
-                    // log the original exception, too
-                    logger.error(exception.getMessage(), exception);
-                }
+                logger.error(illegalFormatMessageFor(Level.ERROR, format, args), e);
+                message = rawMessageFor(format, args);
             }
+            logger.error(message, exception);
         }
     }
 
@@ -216,8 +220,13 @@ public class Logger
         return logger.isInfoEnabled();
     }
 
-    private void logInvalidFormat(Level level, IllegalFormatException exception, String message, Object... args)
+    private String illegalFormatMessageFor(Level level, String message, Object... args)
     {
-        logger.error(format("Invalid format string while trying to log: %s '%s' %s", level, message, asList(args)), exception);
+        return format("Invalid format string while trying to log: %s '%s' %s", level, message, asList(args));
+    }
+
+    private String rawMessageFor(String format, Object... args)
+    {
+        return format("'%s' %s", format, asList(args));
     }
 }
