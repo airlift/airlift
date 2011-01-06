@@ -3,7 +3,7 @@ package com.proofpoint.dbpool;
 import com.proofpoint.configuration.Config;
 
 /**
- * Cofiguration for (@see H2EmbeddedDataSource}.
+ * Configuration for (@see H2EmbeddedDataSource}.
  * </p>
  * The configuration options can be chained as follows:<br>
  * {@code
@@ -39,7 +39,7 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2Embedd
     }
 
     /**
-     * Databse filename
+     * Database filename
      */
     public String getFilename()
     {
