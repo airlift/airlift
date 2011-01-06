@@ -6,19 +6,19 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.inject.ProvisionException;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import org.testng.annotations.Test;
-import org.testng.internal.annotations.ParametersAnnotation;
 
 import javax.management.MBeanServer;
 import javax.sql.DataSource;
 import java.io.File;
+import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
@@ -92,7 +92,7 @@ public class TestH2EmbeddedDataSourceModule
 
     @Test
     public void testObjectBindingFromInjector()
-            throws Exception
+            throws IOException
     {
         String fileName = File.createTempFile("h2db-", ".db").getAbsolutePath();
 
@@ -114,7 +114,7 @@ public class TestH2EmbeddedDataSourceModule
 
     @Test
     public void testBoundObjectIsASingleton()
-        throws Exception
+        throws IOException
     {
         String fileName = File.createTempFile("h2db-", ".db").getAbsolutePath();
 
@@ -141,7 +141,7 @@ public class TestH2EmbeddedDataSourceModule
 
     @Test
     public void testAliasedBindingBindsCorrectly()
-        throws Exception
+        throws IOException
     {
         String fileName = File.createTempFile("h2db-", ".db").getAbsolutePath();
 
