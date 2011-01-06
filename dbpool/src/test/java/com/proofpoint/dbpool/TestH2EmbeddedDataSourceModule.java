@@ -168,6 +168,57 @@ public class TestH2EmbeddedDataSourceModule
         }
     }
 
+    @Test
+    public void testCorrectConfigurationPrefix()
+            throws IOException
+    {
+        final String prefix = "testPrefix";
+
+        String fileName = File.createTempFile("h2db-", ".db").getAbsolutePath();
+
+        Map<String,String> properties = createDefaultConfigurationPropertiesWithPrefix(prefix, fileName);
+
+        try
+        {
+            Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule(prefix, MainBinding.class), properties);
+
+            // If the prefixing doesn't work, the constructor will be unable to find necessary configuration values, and will blow up.
+            // See testIncorrectConfigurationPrefixThrows. Merely testing construction is sufficient.
+            ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
+
+            assert objectHolder.dataSource instanceof H2EmbeddedDataSource : "Expected H2EmbeddedDataSource to be injected";
+        }
+        finally
+        {
+            new File(fileName).delete();
+        }
+    }
+
+    @Test (expectedExceptions = ProvisionException.class)
+    public void testIncorrectConfigurationPrefixThrows()
+            throws IOException
+    {
+        final String configurationPrefix = "configuration";
+        final String constructionPrefix = "differentFromConfiguration";
+
+        String fileName = File.createTempFile("h2db-", ".db").getAbsolutePath();
+
+        Map<String,String> properties = createDefaultConfigurationPropertiesWithPrefix(configurationPrefix, fileName);
+
+        try
+        {
+            Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule(constructionPrefix, MainBinding.class), properties);
+
+            // Will throw com.google.inject.ProvisionException because construction will fail due to the incorrect prefixing.
+            ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
+        }
+        finally
+        {
+            new File(fileName).delete();
+        }
+
+    }
+
     private static Injector createModuleInjectorWithProperties(H2EmbeddedDataSourceModule module, Map<String, String> properties)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
@@ -194,6 +245,10 @@ public class TestH2EmbeddedDataSourceModule
     private static Map<String, String> createDefaultConfigurationPropertiesWithPrefix(String prefix, String filename)
     {
         Map<String, String> properties = new HashMap<String, String>();
+
+        if (prefix.length() > 0 && prefix.charAt(prefix.length()-1) != '.') {
+            prefix = prefix + ".";
+        }
 
         properties.put(prefix+"db.filename", filename);
         properties.put(prefix+"db.init-script", "com/proofpoint/dbpool/h2.ddl");
