@@ -9,7 +9,7 @@
     <properties>
         <main-class>com.proofpoint.sample.Main</main-class>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <platform-version>0.18</platform-version>
+        <platform-version>0.22-SNAPSHOT</platform-version>
     </properties>
 
     <distributionManagement>
