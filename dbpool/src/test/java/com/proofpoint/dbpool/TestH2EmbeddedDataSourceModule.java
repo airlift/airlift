@@ -72,13 +72,13 @@ public class TestH2EmbeddedDataSourceModule
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullPrefixInConstructionThrows()
     {
-        Injector injector = Guice.createInjector(new H2EmbeddedDataSourceModule(null, MainBinding.class));
+        H2EmbeddedDataSourceModule notActuallyConstructed = new H2EmbeddedDataSourceModule(null, MainBinding.class);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullAnnotationInConstructionThrows()
     {
-        Injector injector = Guice.createInjector(new H2EmbeddedDataSourceModule("test", null));
+        H2EmbeddedDataSourceModule notActuallyConstructed = new H2EmbeddedDataSourceModule("test", null);
     }
 
     @Test
@@ -96,10 +96,10 @@ public class TestH2EmbeddedDataSourceModule
     {
         String fileName = File.createTempFile("h2db-", ".db").getAbsolutePath();
 
-        Map<String,String> properties = createDefaultConfigurationProperties(fileName);
-
         try
         {
+            Map<String,String> properties = createDefaultConfigurationProperties(fileName);
+
             Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule("", MainBinding.class), properties);
 
             ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
@@ -118,10 +118,10 @@ public class TestH2EmbeddedDataSourceModule
     {
         String fileName = File.createTempFile("h2db-", ".db").getAbsolutePath();
 
-        Map<String,String> properties = createDefaultConfigurationProperties(fileName);
-
         try
         {
+            Map<String,String> properties = createDefaultConfigurationProperties(fileName);
+
             Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule("", MainBinding.class), properties);
 
             ObjectHolder objectHolder1 = injector.getInstance(ObjectHolder.class);
@@ -145,10 +145,10 @@ public class TestH2EmbeddedDataSourceModule
     {
         String fileName = File.createTempFile("h2db-", ".db").getAbsolutePath();
 
-        Map<String,String> properties = createDefaultConfigurationProperties(fileName);
-
         try
         {
+            Map<String,String> properties = createDefaultConfigurationProperties(fileName);
+
             Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule("", MainBinding.class, AliasBinding.class), properties);
 
             ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
@@ -203,10 +203,10 @@ public class TestH2EmbeddedDataSourceModule
 
         String fileName = File.createTempFile("h2db-", ".db").getAbsolutePath();
 
-        Map<String,String> properties = createDefaultConfigurationPropertiesWithPrefix(configurationPrefix, fileName);
-
         try
         {
+            Map<String,String> properties = createDefaultConfigurationPropertiesWithPrefix(configurationPrefix, fileName);
+
             Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule(constructionPrefix, MainBinding.class), properties);
 
             // Will throw com.google.inject.ProvisionException because construction will fail due to the incorrect prefixing.
