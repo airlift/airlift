@@ -112,6 +112,7 @@ public class TestH2EmbeddedDataSourceModule
         }
     }
 
+    @Test
     public void testBoundObjectIsASingleton()
         throws Exception
     {
@@ -138,6 +139,7 @@ public class TestH2EmbeddedDataSourceModule
         }
     }
 
+    @Test
     public void testAliasedBindingBindsCorrectly()
         throws Exception
     {
