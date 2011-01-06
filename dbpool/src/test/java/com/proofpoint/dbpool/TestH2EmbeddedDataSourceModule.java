@@ -25,6 +25,7 @@ import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.mockito.Mockito.mock;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.AssertJUnit.assertSame;
 
@@ -172,21 +173,33 @@ public class TestH2EmbeddedDataSourceModule
     public void testCorrectConfigurationPrefix()
             throws IOException
     {
-        final String prefix = "testPrefix";
+        final String expectedPrefix = "expected";
+        final String otherPrefix = "additional";
+
+        final String propertySuffixToTest = ".db.connections.max";
+        final int expectedValue = 1234;
 
         String fileName = File.createTempFile("h2db-", ".db").getAbsolutePath();
 
-        Map<String,String> properties = createDefaultConfigurationPropertiesWithPrefix(prefix, fileName);
-
         try
         {
-            Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule(prefix, MainBinding.class), properties);
+            // Required properties for construction
+            Map<String,String> properties = createDefaultConfigurationPropertiesWithPrefix(expectedPrefix, fileName);
 
-            // If the prefixing doesn't work, the constructor will be unable to find necessary configuration values, and will blow up.
-            // See testIncorrectConfigurationPrefixThrows. Merely testing construction is sufficient.
+            // Optional property added with two different prefixes, two different values
+            properties.put(otherPrefix+propertySuffixToTest, Integer.toString(expectedValue+5678));
+            properties.put(expectedPrefix+propertySuffixToTest, Integer.toString(expectedValue));
+
+            Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule(expectedPrefix, MainBinding.class), properties);
+
             ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
 
+            // Make sure we picked up the value with the expected prefix
             assert objectHolder.dataSource instanceof H2EmbeddedDataSource : "Expected H2EmbeddedDataSource to be injected";
+
+            H2EmbeddedDataSource created = (H2EmbeddedDataSource) objectHolder.dataSource;
+
+            assertEquals(created.getMaxConnections(), expectedValue, "Property value not loaded from correct prefix");
         }
         finally
         {
