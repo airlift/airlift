@@ -5,7 +5,6 @@ import com.proofpoint.bootstrap.Bootstrap;
 import com.proofpoint.jersey.JerseyModule;
 import com.proofpoint.jetty.JettyModule;
 import com.proofpoint.jmx.JMXModule;
-import org.eclipse.jetty.server.Server;
 
 public class Main
 {
