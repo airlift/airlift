@@ -9,6 +9,9 @@ import com.google.inject.Module;
 import com.google.inject.ProvisionException;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.testing.Assertions;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.management.MBeanServer;
@@ -91,64 +94,38 @@ public class TestH2EmbeddedDataSourceModule
         Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule("test", MainBinding.class), properties);
     }
 
-    @Test
+    @Test(groups = "requiresTempFile")
     public void testObjectBindingFromInjector()
-            throws IOException
     {
-        String fileName = File.createTempFile("h2db-", ".db").getAbsolutePath();
-
-        try
-        {
-            Map<String,String> properties = createDefaultConfigurationProperties(fileName);
+        Map<String, String> properties = createDefaultConfigurationProperties(temporaryFile.getAbsolutePath());
 
             Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule("", MainBinding.class), properties);
 
             ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
 
-            assert objectHolder.dataSource instanceof H2EmbeddedDataSource : "Expected H2EmbeddedDataSource to be injected";
-        }
-        finally
-        {
-            new File(fileName).delete();
-        }
+        Assertions.assertInstanceof(objectHolder.dataSource, H2EmbeddedDataSource.class);
     }
 
-    @Test
+    @Test(groups = "requiresTempFile")
     public void testBoundObjectIsASingleton()
-        throws IOException
     {
-        String fileName = File.createTempFile("h2db-", ".db").getAbsolutePath();
+        Map<String, String> properties = createDefaultConfigurationProperties(temporaryFile.getAbsolutePath());
 
-        try
-        {
-            Map<String,String> properties = createDefaultConfigurationProperties(fileName);
+        Injector injector = createInjector(new H2EmbeddedDataSourceModule("", MainBinding.class), properties);
 
             Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule("", MainBinding.class), properties);
 
             ObjectHolder objectHolder1 = injector.getInstance(ObjectHolder.class);
             ObjectHolder objectHolder2 = injector.getInstance(ObjectHolder.class);
 
-            // Holding objects should be different
-            assertNotSame(objectHolder1, objectHolder2, "Expected holding objects to be different");
-
-            // But held data source objects should be the same
-            assertSame(objectHolder1.dataSource, objectHolder2.dataSource);
-        }
-        finally
-        {
-            new File(fileName).delete();
-        }
+        // But held data source objects should be the same
+        assertSame(objectHolder1.dataSource, objectHolder2.dataSource);
     }
 
-    @Test
+    @Test(groups = "requiresTempFile")
     public void testAliasedBindingBindsCorrectly()
-        throws IOException
     {
-        String fileName = File.createTempFile("h2db-", ".db").getAbsolutePath();
-
-        try
-        {
-            Map<String,String> properties = createDefaultConfigurationProperties(fileName);
+        Map<String, String> properties = createDefaultConfigurationProperties(temporaryFile.getAbsolutePath());
 
             Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule("", MainBinding.class, AliasBinding.class), properties);
 
@@ -159,19 +136,13 @@ public class TestH2EmbeddedDataSourceModule
             assert twoObjectsHolder.mainDataSource instanceof H2EmbeddedDataSource;
             assert twoObjectsHolder.aliasedDataSource instanceof H2EmbeddedDataSource;
 
-            // And should all be references to the same object
-            assertSame(objectHolder.dataSource, twoObjectsHolder.mainDataSource);
-            assertSame(objectHolder.dataSource, twoObjectsHolder.aliasedDataSource);
-        }
-        finally
-        {
-            new File(fileName).delete();
-        }
+        // And should all be references to the same object
+        assertSame(objectHolder.dataSource, twoObjectsHolder.mainDataSource);
+        assertSame(objectHolder.dataSource, twoObjectsHolder.aliasedDataSource);
     }
 
-    @Test
+    @Test(groups = "requiresTempFile")
     public void testCorrectConfigurationPrefix()
-            throws IOException
     {
         final String expectedPrefix = "expected";
         final String otherPrefix = "additional";
@@ -179,16 +150,12 @@ public class TestH2EmbeddedDataSourceModule
         final String propertySuffixToTest = ".db.connections.max";
         final int expectedValue = 1234;
 
-        String fileName = File.createTempFile("h2db-", ".db").getAbsolutePath();
+        // Required properties for construction
+        Map<String, String> properties = createDefaultConfigurationPropertiesWithPrefix(expectedPrefix, temporaryFile.getAbsolutePath());
 
-        try
-        {
-            // Required properties for construction
-            Map<String,String> properties = createDefaultConfigurationPropertiesWithPrefix(expectedPrefix, fileName);
-
-            // Optional property added with two different prefixes, two different values
-            properties.put(otherPrefix+propertySuffixToTest, Integer.toString(expectedValue+5678));
-            properties.put(expectedPrefix+propertySuffixToTest, Integer.toString(expectedValue));
+        // Optional property added with two different prefixes, two different values
+        properties.put(otherPrefix + propertySuffixToTest, Integer.toString(expectedValue + 5678));
+        properties.put(expectedPrefix + propertySuffixToTest, Integer.toString(expectedValue));
 
             Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule(expectedPrefix, MainBinding.class), properties);
 
@@ -199,36 +166,18 @@ public class TestH2EmbeddedDataSourceModule
 
             H2EmbeddedDataSource created = (H2EmbeddedDataSource) objectHolder.dataSource;
 
-            assertEquals(created.getMaxConnections(), expectedValue, "Property value not loaded from correct prefix");
-        }
-        finally
-        {
-            new File(fileName).delete();
-        }
+        assertEquals(created.getMaxConnections(), expectedValue, "Property value not loaded from correct prefix");
     }
 
-    @Test (expectedExceptions = ProvisionException.class)
+    @Test(groups = "requiresTempFile", expectedExceptions = ProvisionException.class)
     public void testIncorrectConfigurationPrefixThrows()
-            throws IOException
     {
         final String configurationPrefix = "configuration";
         final String constructionPrefix = "differentFromConfiguration";
 
-        String fileName = File.createTempFile("h2db-", ".db").getAbsolutePath();
+        Map<String, String> properties = createDefaultConfigurationPropertiesWithPrefix(configurationPrefix, temporaryFile.getAbsolutePath());
 
-        try
-        {
-            Map<String,String> properties = createDefaultConfigurationPropertiesWithPrefix(configurationPrefix, fileName);
-
-            Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule(constructionPrefix, MainBinding.class), properties);
-
-            // Will throw com.google.inject.ProvisionException because construction will fail due to the incorrect prefixing.
-            ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
-        }
-        finally
-        {
-            new File(fileName).delete();
-        }
+        Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule(constructionPrefix, MainBinding.class), properties);
 
     }
 
@@ -250,23 +199,35 @@ public class TestH2EmbeddedDataSourceModule
     }
 
 
-    private static Map<String, String> createDefaultConfigurationProperties (String filename)
-    {
+    // Any test that actually instantiates an H2EmbeddedDataSource requires a temporary file to use for the database
+    private File temporaryFile;
+
+    @BeforeMethod(groups = "requiresTempFile")
+    private void createTempFile()
+            throws IOException {
+        this.temporaryFile = File.createTempFile("h2db-", ".db");
+    }
+
+    @AfterMethod(groups = "requiresTempFile")
+    private void deleteTempFile() {
+        this.temporaryFile.delete();
+    }
+
+    private static Map<String, String> createDefaultConfigurationProperties(String filename) {
         return createDefaultConfigurationPropertiesWithPrefix("", filename);
     }
 
-    private static Map<String, String> createDefaultConfigurationPropertiesWithPrefix(String prefix, String filename)
-    {
+    private static Map<String, String> createDefaultConfigurationPropertiesWithPrefix(String prefix, String filename) {
         Map<String, String> properties = new HashMap<String, String>();
 
-        if (prefix.length() > 0 && prefix.charAt(prefix.length()-1) != '.') {
+        if (prefix.length() > 0 && prefix.charAt(prefix.length() - 1) != '.') {
             prefix = prefix + ".";
         }
 
-        properties.put(prefix+"db.filename", filename);
-        properties.put(prefix+"db.init-script", "com/proofpoint/dbpool/h2.ddl");
-        properties.put(prefix+"db.cipher", "AES");
-        properties.put(prefix+"db.file-password", "filePassword");
+        properties.put(prefix + "db.filename", filename);
+        properties.put(prefix + "db.init-script", "com/proofpoint/dbpool/h2.ddl");
+        properties.put(prefix + "db.cipher", "AES");
+        properties.put(prefix + "db.file-password", "filePassword");
         return properties;
     }
 }
