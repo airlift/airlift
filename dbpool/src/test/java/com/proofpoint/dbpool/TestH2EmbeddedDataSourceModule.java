@@ -51,7 +51,7 @@ public class TestH2EmbeddedDataSourceModule
         public final DataSource dataSource;
 
         @Inject
-        public ObjectHolder (@MainBinding DataSource dataSource)
+        public ObjectHolder(@MainBinding DataSource dataSource)
         {
             this.dataSource = dataSource;
         }
@@ -63,7 +63,7 @@ public class TestH2EmbeddedDataSourceModule
         public final DataSource aliasedDataSource;
 
         @Inject
-        public TwoObjectsHolder (@MainBinding DataSource mainDataSource, @AliasBinding DataSource aliasedDataSource)
+        public TwoObjectsHolder(@MainBinding DataSource mainDataSource, @AliasBinding DataSource aliasedDataSource)
         {
             this.mainDataSource = mainDataSource;
             this.aliasedDataSource = aliasedDataSource;
