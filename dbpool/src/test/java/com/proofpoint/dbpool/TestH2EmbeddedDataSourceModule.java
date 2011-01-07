@@ -85,21 +85,19 @@ public class TestH2EmbeddedDataSourceModule
         H2EmbeddedDataSourceModule notActuallyConstructed = new H2EmbeddedDataSourceModule("test", null);
     }
 
-    @Test
-    public void testInjectorConstruction()
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testEmptyPrefixStringInConstructionThrows()
     {
-        Map<String, String> properties = new HashMap<String, String>();
-
-        // Properties aren't actually used until we try to instantiate an H2EmbeddedDataSource
-        Injector injector = createInjector(new H2EmbeddedDataSourceModule("test", MainBinding.class), properties);
+        H2EmbeddedDataSourceModule notActuallyConstructed = new H2EmbeddedDataSourceModule("", MainBinding.class);
     }
 
     @Test(groups = "requiresTempFile")
     public void testObjectBindingFromInjector()
     {
-        Map<String, String> properties = createDefaultConfigurationProperties(temporaryFile.getAbsolutePath());
+        final String prefix = "test";
+        Map<String, String> properties = createDefaultConfigurationProperties(prefix, temporaryFile.getAbsolutePath());
 
-        Injector injector = createInjector(new H2EmbeddedDataSourceModule("", MainBinding.class), properties);
+        Injector injector = createInjector(new H2EmbeddedDataSourceModule(prefix, MainBinding.class), properties);
 
         ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
 
@@ -109,9 +107,10 @@ public class TestH2EmbeddedDataSourceModule
     @Test(groups = "requiresTempFile")
     public void testBoundObjectIsASingleton()
     {
-        Map<String, String> properties = createDefaultConfigurationProperties(temporaryFile.getAbsolutePath());
+        final String prefix = "test";
+        Map<String, String> properties = createDefaultConfigurationProperties(prefix, temporaryFile.getAbsolutePath());
 
-        Injector injector = createInjector(new H2EmbeddedDataSourceModule("", MainBinding.class), properties);
+        Injector injector = createInjector(new H2EmbeddedDataSourceModule(prefix, MainBinding.class), properties);
 
         ObjectHolder objectHolder1 = injector.getInstance(ObjectHolder.class);
         ObjectHolder objectHolder2 = injector.getInstance(ObjectHolder.class);
@@ -126,9 +125,10 @@ public class TestH2EmbeddedDataSourceModule
     @Test(groups = "requiresTempFile")
     public void testAliasedBindingBindsCorrectly()
     {
-        Map<String, String> properties = createDefaultConfigurationProperties(temporaryFile.getAbsolutePath());
+        final String prefix = "test";
+        Map<String, String> properties = createDefaultConfigurationProperties(prefix, temporaryFile.getAbsolutePath());
 
-        Injector injector = createInjector(new H2EmbeddedDataSourceModule("", MainBinding.class, AliasBinding.class), properties);
+        Injector injector = createInjector(new H2EmbeddedDataSourceModule(prefix, MainBinding.class, AliasBinding.class), properties);
 
         ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
         TwoObjectsHolder twoObjectsHolder = injector.getInstance(TwoObjectsHolder.class);
@@ -152,7 +152,7 @@ public class TestH2EmbeddedDataSourceModule
         final int expectedValue = 1234;
 
         // Required properties for construction
-        Map<String, String> properties = createDefaultConfigurationPropertiesWithPrefix(expectedPrefix, temporaryFile.getAbsolutePath());
+        Map<String, String> properties = createDefaultConfigurationProperties(expectedPrefix, temporaryFile.getAbsolutePath());
 
         // Optional property added with two different prefixes, two different values
         properties.put(otherPrefix + propertySuffixToTest, Integer.toString(expectedValue + 5678));
@@ -176,7 +176,7 @@ public class TestH2EmbeddedDataSourceModule
         final String configurationPrefix = "configuration";
         final String constructionPrefix = "differentFromConfiguration";
 
-        Map<String, String> properties = createDefaultConfigurationPropertiesWithPrefix(configurationPrefix, temporaryFile.getAbsolutePath());
+        Map<String, String> properties = createDefaultConfigurationProperties(configurationPrefix, temporaryFile.getAbsolutePath());
 
         Injector injector = createInjector(new H2EmbeddedDataSourceModule(constructionPrefix, MainBinding.class), properties);
 
@@ -216,11 +216,7 @@ public class TestH2EmbeddedDataSourceModule
         this.temporaryFile.delete();
     }
 
-    private static Map<String, String> createDefaultConfigurationProperties(String filename) {
-        return createDefaultConfigurationPropertiesWithPrefix("", filename);
-    }
-
-    private static Map<String, String> createDefaultConfigurationPropertiesWithPrefix(String prefix, String filename) {
+    private static Map<String, String> createDefaultConfigurationProperties(String prefix, String filename) {
         Map<String, String> properties = new HashMap<String, String>();
 
         if (prefix.length() > 0 && prefix.charAt(prefix.length() - 1) != '.') {

@@ -29,6 +29,9 @@ public class H2EmbeddedDataSourceModule extends MBeanModule
         if (propertyPrefix == null) {
             throw new NullPointerException("propertyPrefix is null");
         }
+        if (propertyPrefix.isEmpty()) {
+            throw new IllegalArgumentException("propertyPrefix is empty");
+        }
         this.annotation = annotation;
         this.propertyPrefix = propertyPrefix;
         if (aliases != null) {
