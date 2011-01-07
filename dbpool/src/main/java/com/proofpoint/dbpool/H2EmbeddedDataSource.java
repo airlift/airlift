@@ -50,9 +50,14 @@ public class H2EmbeddedDataSource extends ManagedDataSource
                 }
                 fileReader = new InputStreamReader(stream);
             }
-            ScriptReader scriptReader = new ScriptReader(fileReader);
-            for (String statement = scriptReader.readStatement(); statement != null; statement = scriptReader.readStatement()) {
-                executeCommand(connection, statement);
+            try {
+                ScriptReader scriptReader = new ScriptReader(fileReader);
+                for (String statement = scriptReader.readStatement(); statement != null; statement = scriptReader.readStatement()) {
+                    executeCommand(connection, statement);
+                }
+            }
+            finally {
+                fileReader.close();
             }
 
             // run last so script can contain literals
