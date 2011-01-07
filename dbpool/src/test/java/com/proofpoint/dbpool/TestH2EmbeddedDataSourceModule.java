@@ -91,7 +91,7 @@ public class TestH2EmbeddedDataSourceModule
         Map<String, String> properties = new HashMap<String, String>();
 
         // Properties aren't actually used until we try to instantiate an H2EmbeddedDataSource
-        Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule("test", MainBinding.class), properties);
+        Injector injector = createInjector(new H2EmbeddedDataSourceModule("test", MainBinding.class), properties);
     }
 
     @Test(groups = "requiresTempFile")
@@ -99,9 +99,9 @@ public class TestH2EmbeddedDataSourceModule
     {
         Map<String, String> properties = createDefaultConfigurationProperties(temporaryFile.getAbsolutePath());
 
-            Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule("", MainBinding.class), properties);
+        Injector injector = createInjector(new H2EmbeddedDataSourceModule("", MainBinding.class), properties);
 
-            ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
+        ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
 
         Assertions.assertInstanceof(objectHolder.dataSource, H2EmbeddedDataSource.class);
     }
@@ -113,10 +113,11 @@ public class TestH2EmbeddedDataSourceModule
 
         Injector injector = createInjector(new H2EmbeddedDataSourceModule("", MainBinding.class), properties);
 
-            Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule("", MainBinding.class), properties);
+        ObjectHolder objectHolder1 = injector.getInstance(ObjectHolder.class);
+        ObjectHolder objectHolder2 = injector.getInstance(ObjectHolder.class);
 
-            ObjectHolder objectHolder1 = injector.getInstance(ObjectHolder.class);
-            ObjectHolder objectHolder2 = injector.getInstance(ObjectHolder.class);
+        // Holding objects should be different
+        assertNotSame(objectHolder1, objectHolder2, "Expected holding objects to be different");
 
         // But held data source objects should be the same
         assertSame(objectHolder1.dataSource, objectHolder2.dataSource);
@@ -127,14 +128,14 @@ public class TestH2EmbeddedDataSourceModule
     {
         Map<String, String> properties = createDefaultConfigurationProperties(temporaryFile.getAbsolutePath());
 
-            Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule("", MainBinding.class, AliasBinding.class), properties);
+        Injector injector = createInjector(new H2EmbeddedDataSourceModule("", MainBinding.class, AliasBinding.class), properties);
 
-            ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
-            TwoObjectsHolder twoObjectsHolder = injector.getInstance(TwoObjectsHolder.class);
+        ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
+        TwoObjectsHolder twoObjectsHolder = injector.getInstance(TwoObjectsHolder.class);
 
-            // Held data source objects should all be of the correct type
-            assert twoObjectsHolder.mainDataSource instanceof H2EmbeddedDataSource;
-            assert twoObjectsHolder.aliasedDataSource instanceof H2EmbeddedDataSource;
+        // Held data source objects should all be of the correct type
+        Assertions.assertInstanceof(twoObjectsHolder.mainDataSource, H2EmbeddedDataSource.class);
+        Assertions.assertInstanceof(twoObjectsHolder.aliasedDataSource, H2EmbeddedDataSource.class);
 
         // And should all be references to the same object
         assertSame(objectHolder.dataSource, twoObjectsHolder.mainDataSource);
@@ -157,14 +158,14 @@ public class TestH2EmbeddedDataSourceModule
         properties.put(otherPrefix + propertySuffixToTest, Integer.toString(expectedValue + 5678));
         properties.put(expectedPrefix + propertySuffixToTest, Integer.toString(expectedValue));
 
-            Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule(expectedPrefix, MainBinding.class), properties);
+        Injector injector = createInjector(new H2EmbeddedDataSourceModule(expectedPrefix, MainBinding.class), properties);
 
-            ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
+        ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
 
-            // Make sure we picked up the value with the expected prefix
-            assert objectHolder.dataSource instanceof H2EmbeddedDataSource : "Expected H2EmbeddedDataSource to be injected";
+        // Make sure we picked up the value with the expected prefix
+        Assertions.assertInstanceof(objectHolder.dataSource, H2EmbeddedDataSource.class);
 
-            H2EmbeddedDataSource created = (H2EmbeddedDataSource) objectHolder.dataSource;
+        H2EmbeddedDataSource created = (H2EmbeddedDataSource) objectHolder.dataSource;
 
         assertEquals(created.getMaxConnections(), expectedValue, "Property value not loaded from correct prefix");
     }
@@ -177,11 +178,13 @@ public class TestH2EmbeddedDataSourceModule
 
         Map<String, String> properties = createDefaultConfigurationPropertiesWithPrefix(configurationPrefix, temporaryFile.getAbsolutePath());
 
-        Injector injector = createModuleInjectorWithProperties(new H2EmbeddedDataSourceModule(constructionPrefix, MainBinding.class), properties);
+        Injector injector = createInjector(new H2EmbeddedDataSourceModule(constructionPrefix, MainBinding.class), properties);
 
+        // Will throw com.google.inject.ProvisionException because construction will fail due to the incorrect prefixing.
+        ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
     }
 
-    private static Injector createModuleInjectorWithProperties(H2EmbeddedDataSourceModule module, Map<String, String> properties)
+    private static Injector createInjector(H2EmbeddedDataSourceModule module, Map<String, String> properties)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
 
