@@ -30,8 +30,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotSame;
-import static org.testng.AssertJUnit.assertSame;
-
+import static org.testng.Assert.assertSame;
 
 public class TestH2EmbeddedDataSourceModule
 {
