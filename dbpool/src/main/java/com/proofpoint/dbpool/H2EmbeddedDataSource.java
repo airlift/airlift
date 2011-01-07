@@ -1,18 +1,19 @@
 package com.proofpoint.dbpool;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
+import com.google.common.io.Resources;
 import com.google.inject.Inject;
 import com.proofpoint.dbpool.H2EmbeddedDataSourceConfig.Cipher;
 import org.h2.jdbcx.JdbcDataSource;
 import org.h2.util.ScriptReader;
 
-import java.io.FileReader;
 import java.io.File;
 import java.io.Reader;
-import java.io.InputStreamReader;
-import java.io.InputStream;
 import java.io.FileNotFoundException;
 import static java.lang.Math.ceil;
+
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -39,25 +40,30 @@ public class H2EmbeddedDataSource extends ManagedDataSource
             setConfig(connection, "COMPRESS_LOB", config.getCompressLob());
             setConfig(connection, "DB_CLOSE_DELAY ", "-1");
 
-            Reader fileReader;
             String fileName = config.getInitScript();
-            if (new File(fileName).exists()) {
-                fileReader = new FileReader(fileName);
-            } else {
-                InputStream stream = getClass().getClassLoader().getResourceAsStream(fileName);
-                if (stream == null) {
-                    throw new FileNotFoundException(fileName);
-                }
-                fileReader = new InputStreamReader(stream);
+
+            File file = new File(fileName);
+            URL url;
+            if (file.exists()) {
+                url = file.toURI().toURL();
             }
+            else {
+                url = Resources.getResource(fileName);
+            }
+
+            if (url == null) {
+                throw new FileNotFoundException(fileName);
+            }
+
+            Reader reader = Resources.newReaderSupplier(url, Charsets.UTF_8).getInput();
             try {
-                ScriptReader scriptReader = new ScriptReader(fileReader);
+                ScriptReader scriptReader = new ScriptReader(reader);
                 for (String statement = scriptReader.readStatement(); statement != null; statement = scriptReader.readStatement()) {
                     executeCommand(connection, statement);
                 }
             }
             finally {
-                fileReader.close();
+                reader.close();
             }
 
             // run last so script can contain literals
