@@ -9,14 +9,14 @@ import org.h2.jdbcx.JdbcDataSource;
 import org.h2.util.ScriptReader;
 
 import java.io.File;
-import java.io.Reader;
 import java.io.FileNotFoundException;
-import static java.lang.Math.ceil;
-
+import java.io.Reader;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+
+import static java.lang.Math.ceil;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class H2EmbeddedDataSource extends ManagedDataSource
