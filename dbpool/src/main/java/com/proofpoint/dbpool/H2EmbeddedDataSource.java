@@ -1,5 +1,6 @@
 package com.proofpoint.dbpool;
 
+import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.proofpoint.dbpool.H2EmbeddedDataSourceConfig.Cipher;
 import org.h2.jdbcx.JdbcDataSource;
@@ -27,6 +28,10 @@ public class H2EmbeddedDataSource extends ManagedDataSource
                 config.getMaxConnections(),
                 config.getMaxConnectionWait());
 
+        Preconditions.checkNotNull(config.getFilename());
+        if (config.getFilename().isEmpty()) {
+            throw new IllegalArgumentException("filename is empty");
+        }
 
         Connection connection = getConnection();
         try {
