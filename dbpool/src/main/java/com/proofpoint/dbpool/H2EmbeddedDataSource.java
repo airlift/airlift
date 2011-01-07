@@ -48,7 +48,7 @@ public class H2EmbeddedDataSource extends ManagedDataSource
                 url = file.toURI().toURL();
             }
             else {
-                url = Resources.getResource(fileName);
+                url = getClass().getClassLoader().getResource(fileName);
             }
 
             if (url == null) {

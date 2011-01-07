@@ -7,6 +7,7 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.sql.SQLException;
 
 import com.proofpoint.dbpool.H2EmbeddedDataSourceConfig.Cipher;
 
@@ -39,5 +40,20 @@ public class H2EmbeddedDataSourceTest
 
         H2EmbeddedDataSource dataSource = new H2EmbeddedDataSource(config);
         dataSource.getConnection().createStatement().executeQuery("select * from message");
+    }
+
+    @Test(expectedExceptions = FileNotFoundException.class)
+    public void testCantFindInitScript()
+            throws Exception
+    {
+        H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
+                .setFilename(file.getAbsolutePath())
+                .setInitScript("foo")
+                .setCipher(Cipher.AES)
+                .setFilePassword("filePassword");
+
+        H2EmbeddedDataSource dataSource = new H2EmbeddedDataSource(config);
+        dataSource.getConnection().createStatement().executeQuery("select * from message");
+
     }
 }
