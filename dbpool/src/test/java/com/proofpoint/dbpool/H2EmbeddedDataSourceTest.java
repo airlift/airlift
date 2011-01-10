@@ -85,7 +85,7 @@ public class H2EmbeddedDataSourceTest
                 .setCipher(Cipher.AES)
                 .setFilePassword("filePassword");
 
-        H2EmbeddedDataSource notConstructed = new H2EmbeddedDataSource(config);
+        new H2EmbeddedDataSource(config);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
@@ -98,7 +98,7 @@ public class H2EmbeddedDataSourceTest
                 .setCipher(Cipher.AES)
                 .setFilePassword("filePassword");
 
-        H2EmbeddedDataSource notConstructed = new H2EmbeddedDataSource(config);
+        new H2EmbeddedDataSource(config);
     }
 
     @Test(expectedExceptions = FileNotFoundException.class)
@@ -111,6 +111,6 @@ public class H2EmbeddedDataSourceTest
                 .setCipher(Cipher.AES)
                 .setFilePassword("filePassword");
 
-        H2EmbeddedDataSource notConstructed = new H2EmbeddedDataSource(config);
+        new H2EmbeddedDataSource(config);
     }
 }
