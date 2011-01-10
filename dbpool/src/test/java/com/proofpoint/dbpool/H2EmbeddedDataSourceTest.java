@@ -16,7 +16,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 import com.proofpoint.dbpool.H2EmbeddedDataSourceConfig.Cipher;
 
@@ -41,14 +44,26 @@ public class H2EmbeddedDataSourceTest
     public void testInitFromResource()
             throws Exception
     {
-        H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
-                .setFilename(file.getAbsolutePath())
-                .setInitScript("com/proofpoint/dbpool/h2.ddl")
-                .setCipher(Cipher.AES)
-                .setFilePassword("filePassword");
+        Connection connection = null;
+        Statement statement = null;
+        ResultSet resultSet = null;
+        try {
+            H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
+                    .setFilename(file.getAbsolutePath())
+                    .setInitScript("com/proofpoint/dbpool/h2.ddl")
+                    .setCipher(Cipher.AES)
+                    .setFilePassword("filePassword");
 
-        H2EmbeddedDataSource dataSource = new H2EmbeddedDataSource(config);
-        dataSource.getConnection().createStatement().executeQuery("select * from message");
+            H2EmbeddedDataSource dataSource = new H2EmbeddedDataSource(config);
+            connection = dataSource.getConnection();
+            statement = connection.createStatement();
+            resultSet = statement.executeQuery("select * from message");
+        }
+        finally {
+            closeQuietly(resultSet);
+            closeQuietly(statement);
+            closeQuietly(connection);
+        }
     }
 
     @Test
@@ -56,6 +71,9 @@ public class H2EmbeddedDataSourceTest
         throws Exception
     {
         File initScript = File.createTempFile("initscript",".ddl");
+        Connection connection = null;
+        Statement statement = null;
+        ResultSet resultSet = null;
         try {
             URL url = Resources.getResource("com/proofpoint/dbpool/h2.ddl");
             Files.copy(Resources.newReaderSupplier(url, Charsets.UTF_8), initScript, Charsets.UTF_8);
@@ -67,10 +85,15 @@ public class H2EmbeddedDataSourceTest
                     .setFilePassword("filePassword");
 
             H2EmbeddedDataSource dataSource = new H2EmbeddedDataSource(config);
-            dataSource.getConnection().createStatement().executeQuery("select * from message");
+            connection = dataSource.getConnection();
+            statement = connection.createStatement();
+            resultSet = statement.executeQuery("select * from message");
         }
         finally {
             initScript.delete();
+            closeQuietly(resultSet);
+            closeQuietly(statement);
+            closeQuietly(connection);
         }
     }
 
@@ -133,5 +156,35 @@ public class H2EmbeddedDataSourceTest
                 .setFilePassword("filePassword");
 
         new H2EmbeddedDataSource(config);
+    }
+
+    private static void closeQuietly(ResultSet resultSet)
+    {
+        try {
+            if (resultSet != null)
+                resultSet.close();
+        }
+        catch (SQLException ignored) {
+        }
+    }
+
+    private static void closeQuietly(Statement statement)
+    {
+        try {
+            if (statement != null)
+                statement.close();
+        }
+        catch (SQLException ignored) {
+        }
+    }
+
+    private static void closeQuietly(Connection connection)
+    {
+        try {
+            if (connection != null)
+                connection.close();
+        }
+        catch (SQLException ignored) {
+        }
     }
 }
