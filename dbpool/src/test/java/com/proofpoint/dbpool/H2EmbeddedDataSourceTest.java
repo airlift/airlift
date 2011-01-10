@@ -161,30 +161,33 @@ public class H2EmbeddedDataSourceTest
     private static void closeQuietly(ResultSet resultSet)
     {
         try {
-            if (resultSet != null)
+            if (resultSet != null) {
                 resultSet.close();
+            }
         }
-        catch (SQLException ignored) {
+        catch (Throwable ignored) {
         }
     }
 
     private static void closeQuietly(Statement statement)
     {
         try {
-            if (statement != null)
+            if (statement != null) {
                 statement.close();
+            }
         }
-        catch (SQLException ignored) {
+        catch (Throwable ignored) {
         }
     }
 
     private static void closeQuietly(Connection connection)
     {
         try {
-            if (connection != null)
+            if (connection != null) {
                 connection.close();
+            }
         }
-        catch (SQLException ignored) {
+        catch (Throwable ignored) {
         }
     }
 }
