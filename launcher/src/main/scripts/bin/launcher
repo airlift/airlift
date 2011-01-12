@@ -194,7 +194,7 @@ function start() {
 
         build_java_cmd
         cd $HOME_DIR
-        nohup $JAVA_CMD > $LOG_DIR/stdout.log 2> $LOG_DIR/stderr.log &
+        nohup $JAVA_CMD &> /dev/null &
         setPid $!
 
         if [ -n "$PID" ]; then
