@@ -25,7 +25,7 @@
 # --config to override config file
 # --jvm-config to override jvm config file
 # --pid-file to override PID file
-# --log-level to override log file
+# --log-file to override log file
 # --log-levels-file to override logging configuration
 #
 # Logs to var/log/launcher.log when run as daemon
@@ -293,7 +293,7 @@ function show_help() {
     echo "        --jvm-config FILE       Defaults to INSTALL_PATH/etc/jvm.config"
     echo "        --config FILE           Defaults to INSTALL_PATH/etc/config.properties"
     echo "        --pid-file FILE         Defaults to INSTALL_PATH/var/run/launcher.pid"
-    echo "        --log-level FILE        Defaults to INSTALL_PATH/var/log/launcher.log (daemon only)"
+    echo "        --log-file FILE         Defaults to INSTALL_PATH/var/log/launcher.log (daemon only)"
     echo "        --log-levels-file FILE  Defaults to INSTALL_PATH/etc/log.config"
     echo "    -h, --help                  Display this screen"
 }
@@ -315,7 +315,7 @@ do
        --jvm-config)		jvm_config="$2";shift;;
        --config)		config="$2";shift;;
        --pid-file)		pid_file="$2";shift;;
-       --log-level)        	log_file="$2";shift;;
+       --log-file)        	log_file="$2";shift;;
        --log-levels-file)	log_levels_file="$2";shift;;
        --)        		shift;break;;
        -*)        		show_help;exit 0;;
