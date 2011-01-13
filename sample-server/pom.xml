@@ -3,13 +3,13 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>sample-server</artifactId>
-    <version>0.22-SNAPSHOT</version>
+    <version>0.22</version>
     <name>sample-server</name>
 
     <properties>
         <main-class>com.proofpoint.sample.Main</main-class>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <platform-version>0.22-SNAPSHOT</platform-version>
+        <platform-version>0.22</platform-version>
     </properties>
 
     <distributionManagement>
