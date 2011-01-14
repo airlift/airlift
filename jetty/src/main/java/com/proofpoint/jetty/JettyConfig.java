@@ -20,8 +20,8 @@ public final class JettyConfig
     private String logPath = "var/log/jetty.log";
     private Duration logRetentionTime = new Duration(90, TimeUnit.DAYS);
 
-    private int minThreads;
-    private int maxThreads;
+    private int minThreads = 2;
+    private int maxThreads = 200;
     private Duration threadMaxIdleTime = new Duration(1, TimeUnit.MINUTES);
     private Duration networkMaxIdleTime = new Duration(200, TimeUnit.SECONDS);
 
