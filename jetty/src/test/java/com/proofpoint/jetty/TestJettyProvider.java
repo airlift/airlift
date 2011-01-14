@@ -49,11 +49,14 @@ public class TestJettyProvider
     public void teardown()
             throws Exception
     {
-        if (server != null) {
-            server.stop();
+        try {
+            if (server != null) {
+                server.stop();
+            }
         }
-
-        Files.deleteRecursively(tempDir);
+        finally {
+            Files.deleteRecursively(tempDir);
+        }
     }
 
     @Test
