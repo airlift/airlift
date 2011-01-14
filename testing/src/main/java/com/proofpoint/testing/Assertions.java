@@ -13,6 +13,15 @@ public final class Assertions
         assertContains(actual, expectedPart, null);
     }
 
+    public static void assertContainsAllOf(String actual, String... expectedParts)
+    {
+        // todo improve naive implementation
+        for (String expected : expectedParts)
+        {
+            assertContains(actual, expected, null);
+        }
+    }
+
     public static void assertContains(String actual, String expectedPart, String message)
     {
         assertNotNull(actual, "actual is null");

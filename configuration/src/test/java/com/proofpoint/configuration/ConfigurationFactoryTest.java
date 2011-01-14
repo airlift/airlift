@@ -112,21 +112,26 @@ public class ConfigurationFactoryTest
         Assert.assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
     }
 
-    @Test(expectedExceptions = CreationException.class)
+    @Test
     public void testConfigurationWithConflictingDeprecatedConfigThrows()
     {
         Map<String, String> properties = new TreeMap<String, String>();
         properties.put("string-value", "this is the old value");
         properties.put("string-a", "this is a");
         properties.put("string-b", "this is b");
-        Injector injector = createInjector(properties, new Module()
-        {
-            public void configure(Binder binder)
+        try {
+            createInjector(properties, new Module()
             {
-                ConfigurationModule.bindConfig(binder).to(DeprecatedConfigPresent.class);
-            }
-        });
-        injector.getInstance(DeprecatedConfigPresent.class);
+                public void configure(Binder binder)
+                {
+                    ConfigurationModule.bindConfig(binder).to(DeprecatedConfigPresent.class);
+                }
+            });
+
+            Assert.fail("Expected an exception in object creation due to conflicting configuration");
+        } catch (CreationException e) {
+            Assertions.assertContainsAllOf(e.getMessage(), "string-value", "conflicts with property", "string-a") ;
+        }
     }
 
     private Injector createInjector(Map<String, String> properties, Module module)
