@@ -180,17 +180,10 @@ public class TestJettyProvider
 
     private void createServer(final JettyConfig config)
     {
-        server = Guice.createInjector(new Module()
-        {
-            @Override
-            public void configure(Binder binder)
-            {
-                binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class).in(Scopes.SINGLETON);
-                binder.bind(Server.class).toProvider(JettyProvider.class);
-                binder.bind(JettyConfig.class).toInstance(config);
-                binder.bind(LoginService.class).toProvider(HashLoginServiceProvider.class);
-            }
-        }).getInstance(Server.class);
+        HashLoginServiceProvider loginServiceProvider = new HashLoginServiceProvider(config);
+        JettyProvider provider = new JettyProvider(config, new DummyServlet());
+        provider.setLoginService(loginServiceProvider.get());
+        server = provider.get();
     }
 
 }
