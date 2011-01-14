@@ -1,5 +1,6 @@
 package com.proofpoint.jetty;
 
+import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
@@ -133,13 +134,7 @@ public class TestJettyProvider
         socket.close();
 
         final File file = File.createTempFile("auth", ".properties", tempDir);
-        PrintStream out = new PrintStream(new FileOutputStream(file));
-        try {
-            out.print("user: password");
-        }
-        catch (Exception e) {
-            out.close();
-        }
+        Files.write("user: password", file, Charsets.UTF_8);
 
         final JettyConfig config = new JettyConfig()
             .setHttpPort(port)
