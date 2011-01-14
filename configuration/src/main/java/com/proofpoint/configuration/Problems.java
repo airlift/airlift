@@ -12,6 +12,7 @@ import java.util.List;
 class Problems
 {
     private final List<Message> errors = Lists.newArrayList();
+    private final List<Message> warnings = Lists.newArrayList();
 
     public void throwIfHasErrors() throws ConfigurationException
     {
@@ -27,17 +28,33 @@ class Problems
 
     public void addError(String format, Object... params)
     {
-        errors.add(new Message(format(format, params)));
+        errors.add(new Message("Error: " + format(format, params)));
     }
 
     public void addError(Throwable e, String format, Object... params)
     {
-        errors.add(new Message(emptyList(), format(format, params), e));
+        errors.add(new Message(emptyList(), "Error: " + format(format, params), e));
+    }
+
+    public List<Message> getWarnings()
+    {
+        return ImmutableList.copyOf(warnings);
+    }
+
+    public void addWarning(String format, Object... params)
+    {
+        warnings.add(new Message("Warning: " + format(format, params)));
     }
 
     private ConfigurationException getException()
     {
-        return new ConfigurationException(errors);
+        ImmutableList<Message> messages
+                = new ImmutableList.Builder<Message>()
+                        .addAll(errors)
+                        .addAll(warnings)
+                        .build();
+
+        return new ConfigurationException(messages);
     }
 
     public static ConfigurationException exceptionFor(String format, Object... params)
