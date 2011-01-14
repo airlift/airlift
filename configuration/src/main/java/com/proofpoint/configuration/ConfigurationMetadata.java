@@ -1,5 +1,6 @@
 package com.proofpoint.configuration;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Maps;
 import com.google.inject.ConfigurationException;
@@ -77,8 +78,8 @@ public class ConfigurationMetadata<T>
         // Create attribute metadata
         Map<String, AttributeMetadata> attributes = Maps.newTreeMap();
         for (Method configMethod : findConfigMethods(configClass)) {
-            Config config = configMethod.getAnnotation(Config.class);
-            AttributeMetadata attribute = buildAttributeMetadata(configClass, config, configMethod, legacy);
+            AttributeMetadata attribute = buildAttributeMetadata(configClass, configMethod, legacy);
+
             if (attribute != null) {
                 if (attributes.containsKey(attribute.getName())) {
                     errors.add("Configuration class [%s] Multiple methods are annotated for @Config attribute [%s]", configClass.getName(), attribute.getName());
@@ -127,18 +128,73 @@ public class ConfigurationMetadata<T>
         return errors;
     }
 
-    private AttributeMetadata buildAttributeMetadata(Class<?> configClass, Config config, Method configMethod, boolean legacy)
+    private boolean hasAValue(Config config)
     {
-        if (config.value() == null || config.value().isEmpty()) {
+        return config != null && config.value() != null;
+    }
+
+    private boolean hasAValue(DeprecatedConfig deprecatedConfig)
+    {
+        return deprecatedConfig != null && deprecatedConfig.value() != null;
+    }
+
+    private boolean annotationsAreValid(Method configMethod)
+    {
+        Config config = configMethod.getAnnotation(Config.class);
+        DeprecatedConfig deprecatedConfig = configMethod.getAnnotation(DeprecatedConfig.class);
+
+        if (!hasAValue(config) && !hasAValue(deprecatedConfig)) {
+            errors.add("Method [%s] has neither @Config nor @DeprecatedConfig annotations", configMethod.toGenericString());
+            return false;
+        }
+
+        boolean isValid = true;
+
+        if (hasAValue(config) && config.value().isEmpty()) {
             errors.add("@Config method [%s] annotation has an empty value", configMethod.toGenericString());
+            isValid = false;
+        }
+
+        if (hasAValue(deprecatedConfig)) {
+            if (deprecatedConfig.value().length == 0) {
+                errors.add("@DeprecatedConfig method [%s] annotation has an empty list", configMethod.toGenericString());
+                isValid = false;
+            }
+
+            for (String s : deprecatedConfig.value()) {
+                if (s == null || s.isEmpty()) {
+                    errors.add("Found null or empty string in @DeprecatedConfig method [%s] annotation", configMethod.toGenericString());
+                    isValid = false;
+                } else if (config != null && s.equals(config.value())) {
+                    errors.add("@DeprecatedConfig method [%s] annotation contains the @Config value", configMethod.toGenericString());
+                    isValid = false;
+                }
+            }
+        }
+
+        return isValid;
+    }
+
+    private AttributeMetadata buildAttributeMetadata(Class<?> configClass, Method configMethod, boolean legacy)
+    {
+        if (!annotationsAreValid(configMethod)) {
             return null;
+        }
+
+        String propertyName = null;
+        if (configMethod.isAnnotationPresent(Config.class)) {
+            propertyName = configMethod.getAnnotation(Config.class).value();
+        }
+
+        String[] deprecatedNames = null;
+        if (configMethod.isAnnotationPresent(DeprecatedConfig.class)) {
+            deprecatedNames = configMethod.getAnnotation(DeprecatedConfig.class).value();
         }
 
         String description = null;
         if (configMethod.isAnnotationPresent(ConfigDescription.class)) {
             description = configMethod.getAnnotation(ConfigDescription.class).value();
         }
-
 
         // determine the attribute name
         String attributeName = configMethod.getName();
@@ -159,7 +215,7 @@ public class ConfigurationMetadata<T>
             catch (Exception ignored) {
                 // it is ok to have a write only attribute
             }
-            return new AttributeMetadata(configClass, attributeName, description, config.value(), getter, configMethod);
+            return new AttributeMetadata(configClass, attributeName, description, propertyName, deprecatedNames, getter, configMethod);
         } else if (attributeName.startsWith("get")) {
             // annotated getter
             attributeName = attributeName.substring(3);
@@ -182,7 +238,7 @@ public class ConfigurationMetadata<T>
                     return null;
                 }
             }
-            return new AttributeMetadata(configClass, attributeName, description, config.value(), configMethod, setter);
+            return new AttributeMetadata(configClass, attributeName, description, propertyName, deprecatedNames, configMethod, setter);
         } else if (attributeName.startsWith("is")) {
             // annotated is method
             attributeName = attributeName.substring(2);
@@ -201,7 +257,7 @@ public class ConfigurationMetadata<T>
             if (setter == null) {
                 return null;
             }
-            return new AttributeMetadata(configClass, attributeName, description, config.value(), configMethod, setter);
+            return new AttributeMetadata(configClass, attributeName, description, propertyName, deprecatedNames, configMethod, setter);
         } else {
             errors.add("@Config method [%s] is not a valid getter or setter", configMethod.toGenericString());
             return null;
@@ -244,8 +300,9 @@ public class ConfigurationMetadata<T>
         private final Method getter;
         private final Method setter;
         private final String propertyName;
+        private final ImmutableList<String> deprecatedNames;
 
-        public AttributeMetadata(Class<?> configClass, String name, String description, String propertyName, Method getter, Method setter)
+        public AttributeMetadata(Class<?> configClass, String name, String description, String propertyName, String [] deprecatedNames, Method getter, Method setter)
         {
             if (configClass == null) {
                 throw new NullPointerException("configClass is null");
@@ -253,8 +310,8 @@ public class ConfigurationMetadata<T>
             if (name == null) {
                 throw new NullPointerException("name is null");
             }
-            if (propertyName == null) {
-                throw new NullPointerException("propertyName is null");
+            if (propertyName == null && deprecatedNames == null) {
+                throw new NullPointerException("both propertyName and deprecatedNames are null");
             }
             // todo add back when legacy config support is removed
 //            if (setter == null) {
@@ -264,6 +321,7 @@ public class ConfigurationMetadata<T>
             this.name = name;
             this.description = description;
             this.propertyName = propertyName;
+            this.deprecatedNames = deprecatedNames == null ? ImmutableList.<String>of() : ImmutableList.copyOf(deprecatedNames);
             this.getter = getter;
             this.setter = setter;
         }
@@ -286,6 +344,11 @@ public class ConfigurationMetadata<T>
         public String getPropertyName()
         {
             return propertyName;
+        }
+
+        public ImmutableList<String> getDeprecatedNames()
+        {
+            return deprecatedNames;
         }
 
         public Method getGetter()
@@ -364,7 +427,7 @@ public class ConfigurationMetadata<T>
     {
         try {
             Method method = configClass.getDeclaredMethod(methodName, paramTypes);
-            if (method.isAnnotationPresent(Config.class)) {
+            if (isConfigMethod(method)) {
                 return method;
             }
         }
@@ -387,6 +450,14 @@ public class ConfigurationMetadata<T>
         }
 
         return null;
+    }
+
+    private static boolean isConfigMethod(Method method)
+    {
+        if (method == null) {
+            return false;
+        }
+        return method.isAnnotationPresent(Config.class) || method.isAnnotationPresent(DeprecatedConfig.class);
     }
 
     private Method findSetter(Class<?> configClass, Method configMethod, String attributeName)

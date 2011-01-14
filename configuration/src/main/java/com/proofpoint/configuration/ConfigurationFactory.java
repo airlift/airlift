@@ -1,6 +1,7 @@
 package com.proofpoint.configuration;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.ConfigurationException;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
 import net.sf.cglib.proxy.Callback;
 import net.sf.cglib.proxy.CallbackFilter;
@@ -14,7 +15,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.proofpoint.configuration.Errors.exceptionFor;
 import static java.lang.String.format;
@@ -130,12 +134,39 @@ public class ConfigurationFactory
         }
     }
 
+    private String findOperativeProperty(AttributeMetadata attribute, String prefix)
+        throws ConfigurationException
+    {
+        String operativeName = attribute.getPropertyName() == null ? null : prefix + attribute.getPropertyName();
+        String operativeValue = operativeName == null ? null : properties.get(operativeName);
+
+        Errors errors = new Errors();
+
+        for (String deprecatedName : attribute.getDeprecatedNames()) {
+            String fullName = prefix + deprecatedName;
+            String value = properties.get(fullName);
+            if (value != null) {
+                // todo add something to deal with the presence of deprecated config
+
+                if (operativeValue == null) {
+                    operativeValue = value;
+                    operativeName = fullName;
+                } else if (value != operativeValue) {
+                    errors.add("Value for property '%s' (=%s) conflicts with property '%s' (=%s)", fullName, value, operativeName, operativeValue);
+                }
+            }
+        }
+
+        errors.throwIfHasErrors();
+        return operativeName;
+    }
+
     private Object getPropertyValue(AttributeMetadata attribute, String prefix, boolean isLegacy)
             throws InvalidConfigurationException
     {
         // Get the property value
-        String propertyName = prefix + attribute.getPropertyName();
-        String value = properties.get(propertyName);
+        String propertyName = findOperativeProperty(attribute, prefix);
+        String value = propertyName == null ? null : properties.get(propertyName);
 
         // For legacy configuration objects...
         // If no value specified, check for @Default
@@ -159,10 +190,12 @@ public class ConfigurationFactory
 
         Object finalValue = coerce(propertyType, value);
         if (finalValue == null) {
-            throw new InvalidConfigurationException(format("Could not coerce value '%s' to %s for property '%s' in [%s]",
+            throw new InvalidConfigurationException(format("Could not coerce value '%s' to %s for attribute '%s' (property '%s') in [%s]",
                     value,
                     propertyType.getName(),
-                    propertyName, attribute.getSetter().toGenericString()));
+                    attribute.getName(),
+                    propertyName,
+                    attribute.getSetter().toGenericString()));
         }
         return finalValue;
     }
@@ -184,7 +217,7 @@ public class ConfigurationFactory
             Config config = method.getAnnotation(Config.class);
             if (config != null) {
 
-                AttributeMetadata attributeMetadata = new AttributeMetadata(configClass, method.getName(), null, config.value(), method, null);
+                AttributeMetadata attributeMetadata = new AttributeMetadata(configClass, method.getName(), null, config.value(), null, method, null);
                 Object value = null;
                 try {
                     value = getPropertyValue(attributeMetadata, "", true);

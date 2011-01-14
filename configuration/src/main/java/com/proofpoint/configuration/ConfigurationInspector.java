@@ -41,6 +41,7 @@ public class ConfigurationInspector
         final String defaultValue;
         final String currentValue;
         final String description;
+        // todo this class needs to be updated to include the concept of deprecated property names
 
         @Override
         public int compareTo(ConfigRecord rhs)

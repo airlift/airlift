@@ -1,6 +1,7 @@
 package com.proofpoint.configuration;
 
 import com.google.inject.Binder;
+import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.proofpoint.testing.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -51,6 +53,81 @@ public class ConfigurationFactoryTest
         Assert.assertNotNull(AnnotatedSetter);
         Assert.assertEquals(AnnotatedSetter.getStringValue(), "some value");
         Assert.assertEquals(AnnotatedSetter.isBooleanValue(), true);
+    }
+
+    @Test
+    public void testConfigurationDespiteDeprecatedConfig()
+    {
+        Map<String, String> properties = new TreeMap<String, String>();
+        properties.put("string-a", "this is a");
+        properties.put("string-b", "this is b");
+        Injector injector = createInjector(properties, new Module()
+        {
+            public void configure(Binder binder)
+            {
+                ConfigurationModule.bindConfig(binder).to(DeprecatedConfigPresent.class);
+            }
+        });
+        DeprecatedConfigPresent DeprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
+        Assert.assertNotNull(DeprecatedConfigPresent);
+        Assert.assertEquals(DeprecatedConfigPresent.getStringA(), "this is a");
+        Assert.assertEquals(DeprecatedConfigPresent.getStringB(), "this is b");
+    }
+
+    @Test
+    public void testConfigurationThroughDeprecatedConfig()
+    {
+        Map<String, String> properties = new TreeMap<String, String>();
+        properties.put("string-value", "this is a");
+        properties.put("string-b", "this is b");
+        Injector injector = createInjector(properties, new Module()
+        {
+            public void configure(Binder binder)
+            {
+                ConfigurationModule.bindConfig(binder).to(DeprecatedConfigPresent.class);
+            }
+        });
+        DeprecatedConfigPresent DeprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
+        Assert.assertNotNull(DeprecatedConfigPresent);
+        Assert.assertEquals(DeprecatedConfigPresent.getStringA(), "this is a");
+        Assert.assertEquals(DeprecatedConfigPresent.getStringB(), "this is b");
+    }
+
+    @Test
+    public void testConfigurationWithRedundantDeprecatedConfig()
+    {
+        Map<String, String> properties = new TreeMap<String, String>();
+        properties.put("string-value", "this is a");
+        properties.put("string-a", "this is a");
+        properties.put("string-b", "this is b");
+        Injector injector = createInjector(properties, new Module()
+        {
+            public void configure(Binder binder)
+            {
+                ConfigurationModule.bindConfig(binder).to(DeprecatedConfigPresent.class);
+            }
+        });
+        DeprecatedConfigPresent DeprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
+        Assert.assertNotNull(DeprecatedConfigPresent);
+        Assert.assertEquals(DeprecatedConfigPresent.getStringA(), "this is a");
+        Assert.assertEquals(DeprecatedConfigPresent.getStringB(), "this is b");
+    }
+
+    @Test(expectedExceptions = CreationException.class)
+    public void testConfigurationWithConflictingDeprecatedConfigThrows()
+    {
+        Map<String, String> properties = new TreeMap<String, String>();
+        properties.put("string-value", "this is the old value");
+        properties.put("string-a", "this is a");
+        properties.put("string-b", "this is b");
+        Injector injector = createInjector(properties, new Module()
+        {
+            public void configure(Binder binder)
+            {
+                ConfigurationModule.bindConfig(binder).to(DeprecatedConfigPresent.class);
+            }
+        });
+        injector.getInstance(DeprecatedConfigPresent.class);
     }
 
     private Injector createInjector(Map<String, String> properties, Module module)
@@ -112,6 +189,41 @@ public class ConfigurationFactoryTest
         public void setBooleanValue(boolean booleanValue)
         {
             this.booleanValue = booleanValue;
+        }
+    }
+
+    public static class DeprecatedConfigPresent
+    {
+        private String stringA;
+        private String stringB;
+
+        public String getStringA()
+        {
+            return stringA;
+        }
+
+        public DeprecatedConfigPresent()
+        {
+            this.stringA = "defaultA";
+            this.stringB = "defaultB";
+        }
+
+        @Config("string-a")
+        @DeprecatedConfig("string-value")
+        public void setStringA(String stringValue)
+        {
+            this.stringA = stringValue;
+        }
+
+        public String getStringB()
+        {
+            return stringB;
+        }
+
+        @Config("string-b")
+        public void setStringB(String stringValue)
+        {
+            this.stringB = stringValue;
         }
     }
 }

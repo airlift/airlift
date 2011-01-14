@@ -349,6 +349,86 @@ public class ConfigurationMetadataTest
         verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), "putValue", String.class).toGenericString() + "]");
     }
 
+    @Test
+    public void testCurrentAndDeprecatedConfigOnGetterClass()
+        throws Exception
+    {
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(CurrentAndDeprecatedConfigOnGetterClass.class);
+        verifyMetaData(metadata, CurrentAndDeprecatedConfigOnGetterClass.class, "value", ImmutableList.of("deprecatedValue"), true, true, true, "description");
+        Errors errors = metadata.getErrors();
+        Assert.assertEquals(errors.getErrors().size(), 0);
+    }
+
+    @Test
+    public void testCurrentAndDeprecatedConfigOnSetterClass()
+        throws Exception
+    {
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(CurrentAndDeprecatedConfigOnSetterClass.class);
+        verifyMetaData(metadata, CurrentAndDeprecatedConfigOnSetterClass.class, "value", ImmutableList.of("deprecatedValue"), true, true, true, "description");
+        Errors errors = metadata.getErrors();
+        Assert.assertEquals(errors.getErrors().size(), 0);
+    }
+
+    @Test
+    public void testDeprecatedConfigOnGetterClass()
+        throws Exception
+    {
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DeprecatedConfigOnGetterClass.class);
+        verifyMetaData(metadata, DeprecatedConfigOnGetterClass.class, null, ImmutableList.of("deprecatedValue"), true, true, true, null);
+        Errors errors = metadata.getErrors();
+        Assert.assertEquals(errors.getErrors().size(), 0);
+    }
+
+    @Test
+    public void testDeprecatedConfigOnSetterClass()
+        throws Exception
+    {
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DeprecatedConfigOnSetterClass.class);
+        verifyMetaData(metadata, DeprecatedConfigOnSetterClass.class, null, ImmutableList.of("deprecatedValue"), true, true, true, null);
+        Errors errors = metadata.getErrors();
+        Assert.assertEquals(errors.getErrors().size(), 0);
+    }
+
+    @Test
+    public void testMultipleDeprecatedConfigClass()
+        throws Exception
+    {
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(MultipleDeprecatedConfigClass.class);
+        verifyMetaData(metadata, MultipleDeprecatedConfigClass.class, "value", ImmutableList.of("deprecated1", "deprecated2"), true, true, true, "description");
+        Errors errors = metadata.getErrors();
+        Assert.assertEquals(errors.getErrors().size(), 0);
+    }
+
+    @Test
+    public void testEmptyStringDeprecatedConfigClass()
+            throws Exception
+    {
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(EmptyStringDeprecatedConfigClass.class);
+        verifyMetaData(metadata, EmptyStringDeprecatedConfigClass.class, true, false, false, null);
+        Errors errors = metadata.getErrors();
+        verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+    }
+
+    @Test
+    public void testEmptyArrayDeprecatedConfigClass()
+            throws Exception
+    {
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(EmptyArrayDeprecatedConfigClass.class);
+        verifyMetaData(metadata, EmptyArrayDeprecatedConfigClass.class, true, false, false, null);
+        Errors errors = metadata.getErrors();
+        verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+    }
+
+    @Test
+    public void testDeprecatedConfigDuplicatesConfigClass()
+            throws Exception
+    {
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DeprecatedConfigDuplicatesConfigClass.class);
+        verifyMetaData(metadata, DeprecatedConfigDuplicatesConfigClass.class, true, false, false, null);
+        Errors errors = metadata.getErrors();
+        verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+    }
+
     private void verifyErrors(Errors errors, String expectedMessage)
     {
         if (errors.getErrors().size() > 1) {
@@ -362,6 +442,12 @@ public class ConfigurationMetadataTest
     private void verifyMetaData(ConfigurationMetadata<?> metadata, Class<?> configClass, boolean hasConstructor, boolean hasGetter, boolean hasSetter, String description)
             throws Exception
     {
+         verifyMetaData(metadata, configClass, "value", ImmutableList.<String>of(), hasConstructor, hasGetter, hasSetter, description);
+    }
+
+    private void verifyMetaData(ConfigurationMetadata<?> metadata, Class<?> configClass, String propertyName, ImmutableList<String> deprecatedNames, boolean hasConstructor, boolean hasGetter, boolean hasSetter, String description)
+            throws Exception
+    {
         Assert.assertEquals(metadata.getConfigClass(), configClass);
         if (hasConstructor) {
             Assert.assertEquals(metadata.getConstructor(), configClass.getDeclaredConstructor());
@@ -370,8 +456,9 @@ public class ConfigurationMetadataTest
             Assert.assertEquals(metadata.getAttributes().size(), 1);
             AttributeMetadata attribute = metadata.getAttributes().get("Value");
             Assert.assertEquals(attribute.getConfigClass(), configClass);
+            Assert.assertEquals(attribute.getDeprecatedNames(), deprecatedNames);
             Assert.assertEquals(attribute.getName(), "Value");
-            Assert.assertEquals(attribute.getPropertyName(), "value");
+            Assert.assertEquals(attribute.getPropertyName(), propertyName);
             if (hasGetter) {
                 Assert.assertEquals(attribute.getGetter(), findMethod(configClass, "getValue"));
             }
@@ -771,6 +858,141 @@ public class ConfigurationMetadataTest
 
         @Config("value")
         public void putValue(String value)
+        {
+            this.value = value;
+        }
+    }
+
+    public static class CurrentAndDeprecatedConfigOnGetterClass
+    {
+        private String value;
+
+        @Config("value")
+        @DeprecatedConfig("deprecatedValue")
+        @ConfigDescription("description")
+        public String getValue()
+        {
+            return value;
+        }
+
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+    }
+
+    public static class CurrentAndDeprecatedConfigOnSetterClass
+    {
+        private String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        @DeprecatedConfig("deprecatedValue")
+        @ConfigDescription("description")
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+    }
+
+    public static class DeprecatedConfigOnGetterClass
+    {
+        private String value;
+
+        @DeprecatedConfig("deprecatedValue")
+        public String getValue()
+        {
+            return value;
+        }
+
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+    }
+
+    public static class DeprecatedConfigOnSetterClass
+    {
+        private String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @DeprecatedConfig("deprecatedValue")
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+    }
+
+    public static class MultipleDeprecatedConfigClass
+    {
+        private String value;
+
+        @Config("value")
+        @DeprecatedConfig({"deprecated1", "deprecated2"})
+        @ConfigDescription("description")
+        public String getValue()
+        {
+            return value;
+        }
+
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+    }
+
+    public static class EmptyStringDeprecatedConfigClass
+    {
+        private String value;
+
+        @DeprecatedConfig("")
+        public String getValue()
+        {
+            return value;
+        }
+
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+    }
+
+    public static class EmptyArrayDeprecatedConfigClass
+    {
+        private String value;
+
+        @DeprecatedConfig({})
+        public String getValue()
+        {
+            return value;
+        }
+
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+    }
+
+    public static class DeprecatedConfigDuplicatesConfigClass
+    {
+        private String value;
+
+        @Config("value")
+        @DeprecatedConfig("value")
+        public String getValue()
+        {
+            return value;
+        }
+
+        public void setValue(String value)
         {
             this.value = value;
         }
