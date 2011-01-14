@@ -10,7 +10,6 @@ import javax.management.remote.JMXConnectorFactory;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.Inet4Address;
-import java.net.UnknownHostException;
 
 import static org.testng.Assert.assertTrue;
 
