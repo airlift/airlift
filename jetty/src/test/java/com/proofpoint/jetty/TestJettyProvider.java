@@ -58,21 +58,13 @@ public class TestJettyProvider
     public void testHttp()
             throws Exception
     {
-        // TODO: replace with NetUtils.findUnusedPort()
-        ServerSocket socket = new ServerSocket();
-        socket.bind(new InetSocketAddress(0));
-        final int port = socket.getLocalPort();
-        socket.close();
-
-        final JettyConfig config = new JettyConfig()
-            .setHttpPort(port)
-            .setLogPath(new File(tempDir, "jetty.log").getAbsolutePath());
+        final JettyConfig config = makeBaseConfig();
 
         createServer(config);
         server.start();
 
         AsyncHttpClient client = new AsyncHttpClient();
-        Response response = client.prepareGet("http://localhost:" + port + "/")
+        Response response = client.prepareGet("http://localhost:" + config.getHttpPort() + "/")
                 .execute()
                 .get();
 
@@ -83,23 +75,15 @@ public class TestJettyProvider
     public void testHttpIsDisabled()
             throws Exception
     {
-        // TODO: replace with NetUtils.findUnusedPort()
-        ServerSocket socket = new ServerSocket();
-        socket.bind(new InetSocketAddress(0));
-        final int port = socket.getLocalPort();
-        socket.close();
-
-        final JettyConfig config = new JettyConfig()
-            .setHttpPort(port)
-            .setLogPath(new File(tempDir, "jetty.log").getAbsolutePath())
-            .setHttpEnabled(false);
+        final JettyConfig config = makeBaseConfig()
+                .setHttpEnabled(false);
 
         createServer(config);
         server.start();
 
         AsyncHttpClient client = new AsyncHttpClient();
         try {
-            Response response = client.prepareGet("http://localhost:" + port + "/")
+            Response response = client.prepareGet("http://localhost:" + config.getHttpPort() + "/")
                     .execute()
                     .get();
 
@@ -121,25 +105,17 @@ public class TestJettyProvider
     public void testAuth()
             throws Exception
     {
-        // TODO: replace with NetUtils.findUnusedPort()
-        ServerSocket socket = new ServerSocket();
-        socket.bind(new InetSocketAddress(0));
-        final int port = socket.getLocalPort();
-        socket.close();
-
         final File file = File.createTempFile("auth", ".properties", tempDir);
         Files.write("user: password", file, Charsets.UTF_8);
 
-        final JettyConfig config = new JettyConfig()
-            .setHttpPort(port)
-            .setLogPath(new File(tempDir, "jetty.log").getAbsolutePath())
+        final JettyConfig config = makeBaseConfig()
             .setUserAuthFile(file.getAbsolutePath());
 
         createServer(config);
         server.start();
 
         AsyncHttpClient client = new AsyncHttpClient();
-        Response response = client.prepareGet("http://localhost:" + port + "/")
+        Response response = client.prepareGet("http://localhost:" + config.getHttpPort() + "/")
                 .addHeader("Authorization", "Basic " + Base64.encode("user:password".getBytes()))
                 .execute()
                 .get();
@@ -186,4 +162,21 @@ public class TestJettyProvider
         server = provider.get();
     }
 
+    private JettyConfig makeBaseConfig()
+            throws IOException
+    {
+        // TODO: replace with NetUtils.findUnusedPort()
+        ServerSocket socket = new ServerSocket();
+        try {
+            socket.bind(new InetSocketAddress(0));
+            final int port = socket.getLocalPort();
+
+            return new JettyConfig()
+                .setHttpPort(port)
+                .setLogPath(new File(tempDir, "jetty.log").getAbsolutePath());
+        }
+        finally {
+            socket.close();
+        }
+    }
 }
