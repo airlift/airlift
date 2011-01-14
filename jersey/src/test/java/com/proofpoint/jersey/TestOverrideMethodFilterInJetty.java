@@ -265,9 +265,10 @@ public class TestOverrideMethodFilterInJetty
         }
 
         @GET
-        public void get()
+        public boolean get()
         {
             get = true;
+            return true;
         }
 
         @DELETE
