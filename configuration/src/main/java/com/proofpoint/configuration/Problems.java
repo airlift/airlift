@@ -8,9 +8,8 @@ import com.google.inject.spi.Message;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import java.util.List;
-import java.util.Collection;
 
-class Errors
+class Problems
 {
     private final List<Message> errors = Lists.newArrayList();
 
@@ -43,15 +42,15 @@ class Errors
 
     public static ConfigurationException exceptionFor(String format, Object... params)
     {
-        Errors errors = new Errors();
-        errors.add(format, params);
-        return errors.getException();
+        Problems problems = new Problems();
+        problems.add(format, params);
+        return problems.getException();
     }
 
     public static ConfigurationException exceptionFor(Throwable e, String format, Object... params)
     {
-        Errors errors = new Errors();
-        errors.add(e, format, params);
-        return errors.getException();
+        Problems problems = new Problems();
+        problems.add(e, format, params);
+        return problems.getException();
     }
 }

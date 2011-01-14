@@ -48,8 +48,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterConfigClass.class);
         verifyMetaData(metadata, GetterConfigClass.class, true, true, true, "description");
-        Errors errors = metadata.getErrors();
-        Assert.assertEquals(errors.getErrors().size(), 0);
+        Problems problems = metadata.getProblems();
+        Assert.assertEquals(problems.getErrors().size(), 0);
     }
 
     @Test
@@ -58,8 +58,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getValidConfigurationMetadata(GetterConfigClass.class);
         verifyMetaData(metadata, GetterConfigClass.class, true, true, true, "description");
-        Errors errors = metadata.getErrors();
-        Assert.assertEquals(errors.getErrors().size(), 0);
+        Problems problems = metadata.getProblems();
+        Assert.assertEquals(problems.getErrors().size(), 0);
     }
 
     @Test
@@ -68,8 +68,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(SetterConfigClass.class);
         verifyMetaData(metadata, SetterConfigClass.class, true, true, true, "description");
-        Errors errors = metadata.getErrors();
-        Assert.assertEquals(errors.getErrors().size(), 0);
+        Problems problems = metadata.getProblems();
+        Assert.assertEquals(problems.getErrors().size(), 0);
     }
 
     @Test
@@ -78,8 +78,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterSubConfigClass.class);
         verifyMetaData(metadata, GetterSubConfigClass.class, true, true, true, "description");
-        Errors errors = metadata.getErrors();
-        Assert.assertEquals(errors.getErrors().size(), 0);
+        Problems problems = metadata.getProblems();
+        Assert.assertEquals(problems.getErrors().size(), 0);
     }
 
     @Test
@@ -88,8 +88,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterInterfaceImpl.class);
         verifyMetaData(metadata, GetterInterfaceImpl.class, true, true, true, "description");
-        Errors errors = metadata.getErrors();
-        Assert.assertEquals(errors.getErrors().size(), 0);
+        Problems problems = metadata.getProblems();
+        Assert.assertEquals(problems.getErrors().size(), 0);
     }
 
     @Test
@@ -98,8 +98,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(SetterNoGetterConfigClass.class);
         verifyMetaData(metadata, SetterNoGetterConfigClass.class, true, false, true, null);
-        Errors errors = metadata.getErrors();
-        Assert.assertEquals(errors.getErrors().size(), 0);
+        Problems problems = metadata.getProblems();
+        Assert.assertEquals(problems.getErrors().size(), 0);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -113,9 +113,9 @@ public class ConfigurationMetadataTest
             throws Exception
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(AbstractClass.class);
-        Errors errors = metadata.getErrors();
-        Assert.assertEquals(errors.getErrors().size(), 1);
-        Message message = errors.getErrors().get(0);
+        Problems problems = metadata.getProblems();
+        Assert.assertEquals(problems.getErrors().size(), 1);
+        Message message = problems.getErrors().get(0);
         Assert.assertTrue(message.getMessage().contains("[" + metadata.getConfigClass().getName() + "]"));
         Assert.assertTrue(message.getMessage().contains("abstract"));
     }
@@ -143,9 +143,9 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(NotPublicClass.class);
         verifyMetaData(metadata, NotPublicClass.class, true, true, true, null);
-        Errors errors = metadata.getErrors();
-        Assert.assertEquals(errors.getErrors().size(), 1);
-        Message message = errors.getErrors().get(0);
+        Problems problems = metadata.getProblems();
+        Assert.assertEquals(problems.getErrors().size(), 1);
+        Message message = problems.getErrors().get(0);
         Assert.assertTrue(message.getMessage().contains("[" + metadata.getConfigClass().getName() + "]"));
         Assert.assertTrue(message.getMessage().contains("not public"));
 
@@ -157,9 +157,9 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(NotPublicConstructorClass.class);
         verifyMetaData(metadata, NotPublicConstructorClass.class, true, true, true, null);
-        Errors errors = metadata.getErrors();
-        Assert.assertEquals(errors.getErrors().size(), 1);
-        Message message = errors.getErrors().get(0);
+        Problems problems = metadata.getProblems();
+        Assert.assertEquals(problems.getErrors().size(), 1);
+        Message message = problems.getErrors().get(0);
         Assert.assertTrue(message.getMessage().contains("[" + metadata.getConfigClass().getName() + "()]"));
         Assert.assertTrue(message.getMessage().contains("not public"));
     }
@@ -170,8 +170,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(NoNoArgConstructorClass.class);
         verifyMetaData(metadata, NoNoArgConstructorClass.class, false, true, true, null);
-        Errors errors = metadata.getErrors();
-        verifyErrors(errors, "[" + metadata.getConfigClass().getName() + "]");
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + metadata.getConfigClass().getName() + "]");
     }
 
     @Test
@@ -180,8 +180,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(NoConfigMethodsClass.class);
         verifyMetaData(metadata, NoConfigMethodsClass.class, true, false, false, null);
-        Errors errors = metadata.getErrors();
-        verifyErrors(errors, "[" + metadata.getConfigClass().getName() + "]");
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + metadata.getConfigClass().getName() + "]");
     }
 
     @Test
@@ -190,8 +190,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterAndSetterAnnotatedClass.class);
         verifyMetaData(metadata, GetterAndSetterAnnotatedClass.class, true, true, true, null);
-        Errors errors = metadata.getErrors();
-        verifyErrors(errors, "[" + metadata.getConfigClass().getName() + "]");
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + metadata.getConfigClass().getName() + "]");
     }
 
     @Test
@@ -200,8 +200,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(EmptyPropertyNameClass.class);
         verifyMetaData(metadata, EmptyPropertyNameClass.class, true, false, false, null);
-        Errors errors = metadata.getErrors();
-        verifyErrors(errors, "[" + metadata.getConfigClass().getMethod("getValue").toGenericString() + "]");
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + metadata.getConfigClass().getMethod("getValue").toGenericString() + "]");
     }
 
     @Test
@@ -210,9 +210,9 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(NotPublicAttributeClass.class);
         verifyMetaData(metadata, NotPublicAttributeClass.class, true, false, false, null);
-        Errors errors = metadata.getErrors();
+        Problems problems = metadata.getProblems();
         String name = "getValue";
-        verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), name).toGenericString() + "]");
+        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), name).toGenericString() + "]");
     }
 
     @Test
@@ -221,8 +221,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(StaticAttributeClass.class);
         verifyMetaData(metadata, StaticAttributeClass.class, true, false, false, null);
-        Errors errors = metadata.getErrors();
-        verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
     }
 
     @Test
@@ -231,11 +231,11 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterWithParameterClass.class);
         verifyMetaData(metadata, GetterWithParameterClass.class, true, false, false, null);
-        Errors errors = metadata.getErrors();
+        Problems problems = metadata.getProblems();
         Class<?> configClass = metadata.getConfigClass();
         String name = "getValue";
         Class<?> parameterTypes = String.class;
-        verifyErrors(errors, "[" + findMethod(configClass, name, parameterTypes).toGenericString() + "]");
+        verifyErrors(problems, "[" + findMethod(configClass, name, parameterTypes).toGenericString() + "]");
     }
 
     @Test
@@ -244,8 +244,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterNoReturnClass.class);
         verifyMetaData(metadata, GetterNoReturnClass.class, true, false, false, null);
-        Errors errors = metadata.getErrors();
-        verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
     }
 
     @Test
@@ -254,8 +254,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterNoSetterClass.class);
         verifyMetaData(metadata, GetterNoSetterClass.class, true, false, false, null);
-        Errors errors = metadata.getErrors();
-        verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
     }
 
     @Test
@@ -264,8 +264,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterMultipleSettersClass.class);
         verifyMetaData(metadata, GetterMultipleSettersClass.class, true, false, false, null);
-        Errors errors = metadata.getErrors();
-        verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
     }
 
     @Test
@@ -274,8 +274,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterPrivateSetterClass.class);
         verifyMetaData(metadata, GetterPrivateSetterClass.class, true, false, false, null);
-        Errors errors = metadata.getErrors();
-        verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
     }
 
 
@@ -285,8 +285,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(IsMethodWithParameterClass.class);
         verifyMetaData(metadata, IsMethodWithParameterClass.class, true, false, false, null);
-        Errors errors = metadata.getErrors();
-        verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), "isValue", boolean.class).toGenericString() + "]");
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "isValue", boolean.class).toGenericString() + "]");
     }
 
     @Test
@@ -295,8 +295,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(IsMethodNoReturnClass.class);
         verifyMetaData(metadata, IsMethodNoReturnClass.class, true, false, false, null);
-        Errors errors = metadata.getErrors();
-        verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), "isValue").toGenericString() + "]");
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "isValue").toGenericString() + "]");
     }
 
     @Test
@@ -305,8 +305,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(IsMethodNoSetterClass.class);
         verifyMetaData(metadata, IsMethodNoSetterClass.class, true, false, false, null);
-        Errors errors = metadata.getErrors();
-        verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), "isValue").toGenericString() + "]");
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "isValue").toGenericString() + "]");
     }
 
     @Test
@@ -315,8 +315,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(IsMethodMultipleSettersClass.class);
         verifyMetaData(metadata, IsMethodMultipleSettersClass.class, true, false, false, null);
-        Errors errors = metadata.getErrors();
-        verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), "isValue").toGenericString() + "]");
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "isValue").toGenericString() + "]");
     }
 
     @Test
@@ -325,8 +325,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(IsMethodPrivateSetterClass.class);
         verifyMetaData(metadata, IsMethodPrivateSetterClass.class, true, false, false, null);
-        Errors errors = metadata.getErrors();
-        verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), "isValue").toGenericString() + "]");
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "isValue").toGenericString() + "]");
     }
 
     @Test
@@ -335,8 +335,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(SetterWithNoParameterClass.class);
         verifyMetaData(metadata, SetterWithNoParameterClass.class, true, false, false, null);
-        Errors errors = metadata.getErrors();
-        verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), "setValue").toGenericString() + "]");
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "setValue").toGenericString() + "]");
     }
 
     @Test
@@ -345,8 +345,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(NotJavaBeanClass.class);
         verifyMetaData(metadata, NotJavaBeanClass.class, true, false, false, null);
-        Errors errors = metadata.getErrors();
-        verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), "putValue", String.class).toGenericString() + "]");
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "putValue", String.class).toGenericString() + "]");
     }
 
     @Test
@@ -355,8 +355,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(CurrentAndDeprecatedConfigOnGetterClass.class);
         verifyMetaData(metadata, CurrentAndDeprecatedConfigOnGetterClass.class, "value", ImmutableList.of("deprecatedValue"), true, true, true, "description");
-        Errors errors = metadata.getErrors();
-        Assert.assertEquals(errors.getErrors().size(), 0);
+        Problems problems = metadata.getProblems();
+        Assert.assertEquals(problems.getErrors().size(), 0);
     }
 
     @Test
@@ -365,8 +365,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(CurrentAndDeprecatedConfigOnSetterClass.class);
         verifyMetaData(metadata, CurrentAndDeprecatedConfigOnSetterClass.class, "value", ImmutableList.of("deprecatedValue"), true, true, true, "description");
-        Errors errors = metadata.getErrors();
-        Assert.assertEquals(errors.getErrors().size(), 0);
+        Problems problems = metadata.getProblems();
+        Assert.assertEquals(problems.getErrors().size(), 0);
     }
 
     @Test
@@ -375,8 +375,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DeprecatedConfigOnGetterClass.class);
         verifyMetaData(metadata, DeprecatedConfigOnGetterClass.class, null, ImmutableList.of("deprecatedValue"), true, true, true, null);
-        Errors errors = metadata.getErrors();
-        Assert.assertEquals(errors.getErrors().size(), 0);
+        Problems problems = metadata.getProblems();
+        Assert.assertEquals(problems.getErrors().size(), 0);
     }
 
     @Test
@@ -385,8 +385,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DeprecatedConfigOnSetterClass.class);
         verifyMetaData(metadata, DeprecatedConfigOnSetterClass.class, null, ImmutableList.of("deprecatedValue"), true, true, true, null);
-        Errors errors = metadata.getErrors();
-        Assert.assertEquals(errors.getErrors().size(), 0);
+        Problems problems = metadata.getProblems();
+        Assert.assertEquals(problems.getErrors().size(), 0);
     }
 
     @Test
@@ -395,8 +395,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(MultipleDeprecatedConfigClass.class);
         verifyMetaData(metadata, MultipleDeprecatedConfigClass.class, "value", ImmutableList.of("deprecated1", "deprecated2"), true, true, true, "description");
-        Errors errors = metadata.getErrors();
-        Assert.assertEquals(errors.getErrors().size(), 0);
+        Problems problems = metadata.getProblems();
+        Assert.assertEquals(problems.getErrors().size(), 0);
     }
 
     @Test
@@ -405,8 +405,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(EmptyStringDeprecatedConfigClass.class);
         verifyMetaData(metadata, EmptyStringDeprecatedConfigClass.class, true, false, false, null);
-        Errors errors = metadata.getErrors();
-        verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
     }
 
     @Test
@@ -415,8 +415,8 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(EmptyArrayDeprecatedConfigClass.class);
         verifyMetaData(metadata, EmptyArrayDeprecatedConfigClass.class, true, false, false, null);
-        Errors errors = metadata.getErrors();
-        verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
     }
 
     @Test
@@ -425,17 +425,17 @@ public class ConfigurationMetadataTest
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DeprecatedConfigDuplicatesConfigClass.class);
         verifyMetaData(metadata, DeprecatedConfigDuplicatesConfigClass.class, true, false, false, null);
-        Errors errors = metadata.getErrors();
-        verifyErrors(errors, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
     }
 
-    private void verifyErrors(Errors errors, String expectedMessage)
+    private void verifyErrors(Problems problems, String expectedMessage)
     {
-        if (errors.getErrors().size() > 1) {
-            System.out.println(errors.getErrors());
+        if (problems.getErrors().size() > 1) {
+            System.out.println(problems.getErrors());
         }
-        Assert.assertEquals(errors.getErrors().size(), 1);
-        Message message = errors.getErrors().get(0);
+        Assert.assertEquals(problems.getErrors().size(), 1);
+        Message message = problems.getErrors().get(0);
         Assertions.assertContains(message.getMessage(), expectedMessage);
     }
 
