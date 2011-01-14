@@ -235,19 +235,8 @@ public class TestOverrideMethodFilterInJetty
         socket.close();
 
         return new JettyConfig()
-        {
-            @Override
-            public int getHttpPort()
-            {
-                return port;
-            }
-
-            @Override
-            public String getLogPath()
-            {
-                return new File(tempDir, "jetty.log").getAbsolutePath();
-            }
-        };
+            .setHttpPort(port)
+            .setLogPath(new File(tempDir, "jetty.log").getAbsolutePath());
     }
 
     @Path("/")

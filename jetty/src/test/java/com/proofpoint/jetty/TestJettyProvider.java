@@ -70,19 +70,8 @@ public class TestJettyProvider
         socket.close();
 
         final JettyConfig config = new JettyConfig()
-        {
-            @Override
-            public int getHttpPort()
-            {
-                return port;
-            }
-
-            @Override
-            public String getLogPath()
-            {
-                return new File(tempDir, "jetty.log").getAbsolutePath();
-            }
-        };
+            .setHttpPort(port)
+            .setLogPath(new File(tempDir, "jetty.log").getAbsolutePath());
 
         createServer(config);
         server.start();
@@ -106,25 +95,9 @@ public class TestJettyProvider
         socket.close();
 
         final JettyConfig config = new JettyConfig()
-        {
-            @Override
-            public int getHttpPort()
-            {
-                return port;
-            }
-
-            @Override
-            public String getLogPath()
-            {
-                return new File(tempDir, "jetty.log").getAbsolutePath();
-            }
-
-            @Override
-            public boolean isHttpEnabled()
-            {
-                return false;
-            }
-        };
+            .setHttpPort(port)
+            .setLogPath(new File(tempDir, "jetty.log").getAbsolutePath())
+            .setHttpEnabled(false);
 
         createServer(config);
         server.start();
@@ -169,25 +142,9 @@ public class TestJettyProvider
         }
 
         final JettyConfig config = new JettyConfig()
-        {
-            @Override
-            public int getHttpPort()
-            {
-                return port;
-            }
-
-            @Override
-            public String getLogPath()
-            {
-                return new File(tempDir, "jetty.log").getAbsolutePath();
-            }
-
-            @Override
-            public String getUserAuthPath()
-            {
-                return file.getAbsolutePath();
-            }
-        };
+            .setHttpPort(port)
+            .setLogPath(new File(tempDir, "jetty.log").getAbsolutePath())
+            .setUserAuthFile(file.getAbsolutePath());
 
         createServer(config);
         server.start();

@@ -23,7 +23,7 @@ public class HashLoginServiceProvider
 
     public HashLoginService get()
     {
-        String authConfig = config.getUserAuthPath();
+        String authConfig = config.getUserAuthFile();
         try {
             if (!StringUtils.isEmpty(authConfig)) {
                 HashLoginService service = new HashLoginService(JettyModule.REALM_NAME, authConfig);
