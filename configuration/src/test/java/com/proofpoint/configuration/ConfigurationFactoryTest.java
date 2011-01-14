@@ -6,14 +6,13 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.spi.Message;
+import com.proofpoint.testing.Assertions;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
-import com.proofpoint.testing.Assertions;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 
 public class ConfigurationFactoryTest
 {
