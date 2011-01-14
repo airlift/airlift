@@ -49,10 +49,10 @@ public class ConfigurationFactoryTest
                 ConfigurationModule.bindConfig(binder).to(AnnotatedSetter.class);
             }
         });
-        AnnotatedSetter AnnotatedSetter = injector.getInstance(AnnotatedSetter.class);
-        Assert.assertNotNull(AnnotatedSetter);
-        Assert.assertEquals(AnnotatedSetter.getStringValue(), "some value");
-        Assert.assertEquals(AnnotatedSetter.isBooleanValue(), true);
+        AnnotatedSetter annotatedSetter = injector.getInstance(AnnotatedSetter.class);
+        Assert.assertNotNull(annotatedSetter);
+        Assert.assertEquals(annotatedSetter.getStringValue(), "some value");
+        Assert.assertEquals(annotatedSetter.isBooleanValue(), true);
     }
 
     @Test
@@ -68,10 +68,10 @@ public class ConfigurationFactoryTest
                 ConfigurationModule.bindConfig(binder).to(DeprecatedConfigPresent.class);
             }
         });
-        DeprecatedConfigPresent DeprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
-        Assert.assertNotNull(DeprecatedConfigPresent);
-        Assert.assertEquals(DeprecatedConfigPresent.getStringA(), "this is a");
-        Assert.assertEquals(DeprecatedConfigPresent.getStringB(), "this is b");
+        DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
+        Assert.assertNotNull(deprecatedConfigPresent);
+        Assert.assertEquals(deprecatedConfigPresent.getStringA(), "this is a");
+        Assert.assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
     }
 
     @Test
@@ -87,10 +87,10 @@ public class ConfigurationFactoryTest
                 ConfigurationModule.bindConfig(binder).to(DeprecatedConfigPresent.class);
             }
         });
-        DeprecatedConfigPresent DeprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
-        Assert.assertNotNull(DeprecatedConfigPresent);
-        Assert.assertEquals(DeprecatedConfigPresent.getStringA(), "this is a");
-        Assert.assertEquals(DeprecatedConfigPresent.getStringB(), "this is b");
+        DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
+        Assert.assertNotNull(deprecatedConfigPresent);
+        Assert.assertEquals(deprecatedConfigPresent.getStringA(), "this is a");
+        Assert.assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
     }
 
     @Test
@@ -107,10 +107,10 @@ public class ConfigurationFactoryTest
                 ConfigurationModule.bindConfig(binder).to(DeprecatedConfigPresent.class);
             }
         });
-        DeprecatedConfigPresent DeprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
-        Assert.assertNotNull(DeprecatedConfigPresent);
-        Assert.assertEquals(DeprecatedConfigPresent.getStringA(), "this is a");
-        Assert.assertEquals(DeprecatedConfigPresent.getStringB(), "this is b");
+        DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
+        Assert.assertNotNull(deprecatedConfigPresent);
+        Assert.assertEquals(deprecatedConfigPresent.getStringA(), "this is a");
+        Assert.assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
     }
 
     @Test(expectedExceptions = CreationException.class)
