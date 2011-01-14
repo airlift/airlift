@@ -18,7 +18,7 @@ public class JMXModule
     {
         binder.bind(MBeanServer.class).toInstance(ManagementFactory.getPlatformMBeanServer());
         binder.bind(JMXAgent.class).in(Scopes.SINGLETON);
-        ConfigurationModule.bindConfig(binder, JMXConfig.class);
+        ConfigurationModule.bindConfig(binder).to(JMXConfig.class);
 
         ExportBuilder builder = MBeanModule.newExporter(binder);
         builder.export(StackTraceMBean.class).withGeneratedName();        
