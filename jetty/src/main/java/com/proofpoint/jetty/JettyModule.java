@@ -42,6 +42,6 @@ public class JettyModule
         binder.bind(LoginService.class)
                 .toProvider(HashLoginServiceProvider.class);
 
-        ConfigurationModule.bindConfig(binder, JettyConfig.class);
+        ConfigurationModule.bindConfig(binder).to(JettyConfig.class);
     }
 }
