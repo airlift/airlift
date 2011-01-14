@@ -46,8 +46,7 @@ public class TestOverrideMethodFilterInJetty
     public void setup()
             throws Exception
     {
-        tempDir = Files.createTempDir()
-                .getCanonicalFile(); // getCanonicalFile needed to get around Issue 365 (http://code.google.com/p/guava-libraries/issues/detail?id=365)
+        tempDir = Files.createTempDir().getCanonicalFile(); // getCanonicalFile needed to get around Issue 365 (http://code.google.com/p/guava-libraries/issues/detail?id=365)
         config = makeJettyConfig(tempDir);
 
         resource = new TestResource();
