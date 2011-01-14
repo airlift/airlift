@@ -22,7 +22,6 @@ public class LifeCycleManager
     private final AtomicReference<State>    state = new AtomicReference<State>(State.LATENT);
     private final Queue<Object>             managedInstances = new ConcurrentLinkedQueue<Object>();
     private final LifeCycleMethodsMap       methodsMap;
-    private final LifeCycleManager.Mode     mode;
 
     private enum State
     {
@@ -33,29 +32,14 @@ public class LifeCycleManager
         STOPPED
     }
 
-    public enum Mode
-    {
-        /**
-         * Start instances as they are added to {@link LifeCycleManager#addInstance(Object)}
-         */
-        START_INSTANCES_IMMEDIATELY,
-
-        /**
-         * Start instances all at once when {@link com.proofpoint.lifecycle.LifeCycleManager#start()} is called
-         */
-        START_INSTANCES_ALL_AT_ONCE
-    }
-
     /**
      * @param managedInstances list of objects that have life cycle annotations
      * @param methodsMap existing or new methods map
-     * @param mode run mode
      * @throws Exception exceptions starting instances (depending on mode)
      */
-    public LifeCycleManager(List<Object> managedInstances, LifeCycleMethodsMap methodsMap, Mode mode)
+    public LifeCycleManager(List<Object> managedInstances, LifeCycleMethodsMap methodsMap)
             throws Exception
     {
-        this.mode = mode;
         this.methodsMap = (methodsMap != null) ? methodsMap : new LifeCycleMethodsMap();
         for ( Object instance : managedInstances )
         {
@@ -88,11 +72,6 @@ public class LifeCycleManager
 
         for ( Object obj : managedInstances )
         {
-            if ( mode == Mode.START_INSTANCES_ALL_AT_ONCE )
-            {
-                startInstance(obj);
-            }
-
             LifeCycleMethods methods = methodsMap.get(obj.getClass());
             if ( !methods.hasFor(PreDestroy.class) )
             {
@@ -168,17 +147,13 @@ public class LifeCycleManager
         {
             throw new IllegalStateException();
         }
-        else if ( (currentState == State.STARTED) || (currentState == State.STARTING) || (mode == Mode.START_INSTANCES_IMMEDIATELY) )
+        else
         {
             startInstance(instance);
             if ( methodsMap.get(instance.getClass()).hasFor(PreDestroy.class) )
             {
                 managedInstances.add(instance);
             }
-        }
-        else
-        {
-            managedInstances.add(instance);
         }
     }
 

@@ -18,8 +18,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static org.testng.Assert.fail;
-
 public class TestLifeCycleManager
 {
     private final static List<String>      stateLog = new CopyOnWriteArrayList<String>();
@@ -39,57 +37,26 @@ public class TestLifeCycleManager
     @Test
     public void     testImmediateStarts() throws Exception
     {
-        for ( LifeCycleManager.Mode mode : LifeCycleManager.Mode.values() )
+        Module      module = new Module()
         {
-            try
+            @Override
+            public void configure(Binder binder)
             {
-                Module      module = new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.bind(InstanceThatUsesInstanceThatRequiresStart.class).in(Scopes.SINGLETON);
-                    }
-                };
-
-                Injector            injector = Guice.createInjector
-                (
-                    Stage.PRODUCTION,
-                    new LifeCycleModule(mode),
-                    module
-                );
-
-                LifeCycleManager    lifeCycleManager = injector.getInstance(LifeCycleManager.class);
-                lifeCycleManager.start();
-
-                if ( mode == LifeCycleManager.Mode.START_INSTANCES_ALL_AT_ONCE )
-                {
-                    fail();
-                }
-                else
-                {
-                    Assert.assertEquals(stateLog, Arrays.asList("InstanceThatUsesInstanceThatRequiresStart:OK"));
-                }
+                binder.bind(InstanceThatUsesInstanceThatRequiresStart.class).in(Scopes.SINGLETON);
             }
-            catch ( CreationException e )
-            {
-                if ( mode == LifeCycleManager.Mode.START_INSTANCES_ALL_AT_ONCE )
-                {
-                    if ( e.getCause() instanceof IllegalStateException )
-                    {
-                        // correct ignore it
-                    }
-                    else
-                    {
-                        throw e;
-                    }
-                }
-                else
-                {
-                    throw e;
-                }
-            }
-        }
+        };
+
+        Injector            injector = Guice.createInjector
+        (
+            Stage.PRODUCTION,
+            new LifeCycleModule(),
+            module
+        );
+
+        LifeCycleManager    lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+        lifeCycleManager.start();
+
+        Assert.assertEquals(stateLog, Arrays.asList("InstanceThatUsesInstanceThatRequiresStart:OK"));
     }
 
     @Test
@@ -242,7 +209,7 @@ public class TestLifeCycleManager
                     binder.bind(FooTestInstance.class).in(Scopes.SINGLETON);
                 }
             },
-            new LifeCycleModule(LifeCycleManager.Mode.START_INSTANCES_ALL_AT_ONCE)
+            new LifeCycleModule()
         );
 
         LifeCycleManager    lifeCycleManager = injector.getInstance(LifeCycleManager.class);
