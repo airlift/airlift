@@ -25,12 +25,12 @@ class Problems
         return ImmutableList.copyOf(errors);
     }
 
-    public void add(String format, Object... params)
+    public void addError(String format, Object... params)
     {
         errors.add(new Message(format(format, params)));
     }
 
-    public void add(Throwable e, String format, Object... params)
+    public void addError(Throwable e, String format, Object... params)
     {
         errors.add(new Message(emptyList(), format(format, params), e));
     }
@@ -43,14 +43,14 @@ class Problems
     public static ConfigurationException exceptionFor(String format, Object... params)
     {
         Problems problems = new Problems();
-        problems.add(format, params);
+        problems.addError(format, params);
         return problems.getException();
     }
 
     public static ConfigurationException exceptionFor(Throwable e, String format, Object... params)
     {
         Problems problems = new Problems();
-        problems.add(e, format, params);
+        problems.addError(e, format, params);
         return problems.getException();
     }
 }

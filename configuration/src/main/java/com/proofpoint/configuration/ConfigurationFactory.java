@@ -88,7 +88,7 @@ public class ConfigurationFactory
                 setConfigProperty(instance,attribute, prefix);
             }
             catch (InvalidConfigurationException e) {
-                problems.add(e.getCause(), e.getMessage());
+                problems.addError(e.getCause(), e.getMessage());
             }
         }
         problems.throwIfHasErrors();
@@ -149,7 +149,7 @@ public class ConfigurationFactory
                     operativeValue = value;
                     operativeName = fullName;
                 } else if (value != operativeValue) {
-                    problems.add("Value for property '%s' (=%s) conflicts with property '%s' (=%s)", fullName, value, operativeName, operativeValue);
+                    problems.addError("Value for property '%s' (=%s) conflicts with property '%s' (=%s)", fullName, value, operativeName, operativeValue);
                 }
             }
         }
@@ -220,7 +220,7 @@ public class ConfigurationFactory
                     value = getPropertyValue(attributeMetadata, "", true);
                 }
                 catch (InvalidConfigurationException e) {
-                    problems.add(e.getCause(), e.getMessage());
+                    problems.addError(e.getCause(), e.getMessage());
                 }
 
                 if (value != null) {
@@ -229,7 +229,7 @@ public class ConfigurationFactory
                 }
             }
             else if (Modifier.isAbstract(method.getModifiers())) {
-                problems.add("Method [%s] is abstract but does not have an @Config annotation", method.toGenericString());
+                problems.addError("Method [%s] is abstract but does not have an @Config annotation", method.toGenericString());
             }
         }
 
@@ -248,7 +248,7 @@ public class ConfigurationFactory
             result = (T) e.create();
         }
         catch (Exception e) {
-            problems.add(e, "Error creating instance of configuration class [%s]", configClass.getName());
+            problems.addError(e, "Error creating instance of configuration class [%s]", configClass.getName());
         }
 
         problems.throwIfHasErrors();
