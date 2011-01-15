@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
 
@@ -73,7 +74,7 @@ public class JettyProvider
 
     public Server get()
     {
-        String ip = config.getServerIp();
+        String ip = config.getIp();
         
         Server server = new Server();
 
@@ -87,7 +88,7 @@ public class JettyProvider
         if (config.isHttpEnabled()) {
             SelectChannelConnector connector = new SelectChannelConnector();
             connector.setPort(config.getHttpPort());
-            connector.setMaxIdleTime(config.getNetworkMaxIdleTime());
+            connector.setMaxIdleTime((int) config.getNetworkMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
             connector.setStatsOn(true);
             if (ip != null) {
                 connector.setHost(ip);
@@ -102,7 +103,7 @@ public class JettyProvider
             sslConnector.setStatsOn(true);
             sslConnector.setKeystore(config.getKeystorePath());
             sslConnector.setPassword(config.getKeystorePassword());
-            sslConnector.setMaxIdleTime(config.getNetworkMaxIdleTime());
+            sslConnector.setMaxIdleTime((int) config.getNetworkMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
             if (ip != null) {
                 sslConnector.setHost(ip);
             }
@@ -112,7 +113,7 @@ public class JettyProvider
 
         QueuedThreadPool threadpool = new QueuedThreadPool(config.getMaxThreads());
         threadpool.setMinThreads(config.getMinThreads());
-        threadpool.setMaxIdleTimeMs(config.getThreadMaxIdleTime());
+        threadpool.setMaxIdleTimeMs((int) config.getThreadMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
         server.setThreadPool(threadpool);
 
         /**
@@ -197,7 +198,7 @@ public class JettyProvider
         }
 
 
-        RequestLog requestLog = new DelimitedRequestLog(config.getLogPath(), config.getLogRetainDays());
+        RequestLog requestLog = new DelimitedRequestLog(config.getLogPath(), (int) config.getLogRetentionTime().convertTo(TimeUnit.DAYS));
         logHandler.setRequestLog(requestLog);
 
         return logHandler;

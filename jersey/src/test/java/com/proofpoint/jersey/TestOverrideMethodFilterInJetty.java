@@ -46,8 +46,7 @@ public class TestOverrideMethodFilterInJetty
     public void setup()
             throws Exception
     {
-        tempDir = Files.createTempDir()
-                .getCanonicalFile(); // getCanonicalFile needed to get around Issue 365 (http://code.google.com/p/guava-libraries/issues/detail?id=365)
+        tempDir = Files.createTempDir().getCanonicalFile(); // getCanonicalFile needed to get around Issue 365 (http://code.google.com/p/guava-libraries/issues/detail?id=365)
         config = makeJettyConfig(tempDir);
 
         resource = new TestResource();
@@ -236,19 +235,8 @@ public class TestOverrideMethodFilterInJetty
         socket.close();
 
         return new JettyConfig()
-        {
-            @Override
-            public int getHttpPort()
-            {
-                return port;
-            }
-
-            @Override
-            public String getLogPath()
-            {
-                return new File(tempDir, "jetty.log").getAbsolutePath();
-            }
-        };
+            .setHttpPort(port)
+            .setLogPath(new File(tempDir, "jetty.log").getAbsolutePath());
     }
 
     @Path("/")
@@ -266,9 +254,10 @@ public class TestOverrideMethodFilterInJetty
         }
 
         @GET
-        public void get()
+        public boolean get()
         {
             get = true;
+            return true;
         }
 
         @DELETE

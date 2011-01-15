@@ -30,11 +30,11 @@ public class JMXAgent
     public JMXAgent(MBeanServer server, JMXConfig config)
             throws IOException
     {
-        if (config.getRmiServerHostname() == null) {
+        if (config.getHostname() == null) {
             host = InetAddress.getLocalHost().getHostAddress();
         }
         else {
-            host = config.getRmiServerHostname();
+            host = config.getHostname();
         }
 
         if (config.getRmiRegistryPort() == null) {

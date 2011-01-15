@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.proofpoint.configuration.Errors.exceptionFor;
+import static com.proofpoint.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
 
 public class ConfigurationFactory
@@ -82,16 +82,16 @@ public class ConfigurationFactory
             instance = newInstance(configurationMetadata);
         }
 
-        Errors errors = new Errors();
+        Problems problems = new Problems();
         for (AttributeMetadata attribute : configurationMetadata.getAttributes().values()) {
             try {
                 setConfigProperty(instance,attribute, prefix);
             }
             catch (InvalidConfigurationException e) {
-                errors.add(e.getCause(), e.getMessage());
+                problems.addError(e.getCause(), e.getMessage());
             }
         }
-        errors.throwIfHasErrors();
+        problems.throwIfHasErrors();
         
         return instance;
     }
@@ -137,7 +137,7 @@ public class ConfigurationFactory
         String operativeName = attribute.getPropertyName() == null ? null : prefix + attribute.getPropertyName();
         String operativeValue = operativeName == null ? null : properties.get(operativeName);
 
-        Errors errors = new Errors();
+        Problems problems = new Problems();
 
         for (String deprecatedName : attribute.getDeprecatedNames()) {
             String fullName = prefix + deprecatedName;
@@ -149,12 +149,12 @@ public class ConfigurationFactory
                     operativeValue = value;
                     operativeName = fullName;
                 } else if (value != operativeValue) {
-                    errors.add("Value for property '%s' (=%s) conflicts with property '%s' (=%s)", fullName, value, operativeName, operativeValue);
+                    problems.addError("Value for property '%s' (=%s) conflicts with property '%s' (=%s)", fullName, value, operativeName, operativeValue);
                 }
             }
         }
 
-        errors.throwIfHasErrors();
+        problems.throwIfHasErrors();
         return operativeName;
     }
 
@@ -200,7 +200,7 @@ public class ConfigurationFactory
     @Deprecated
     public <T> T createLegacyConfig(Class<T> configClass)
     {
-        Errors errors = new Errors();
+        Problems problems = new Problems();
         
         // cglib callbacks
         ArrayList<Callback> callbacks = new ArrayList<Callback>();
@@ -220,7 +220,7 @@ public class ConfigurationFactory
                     value = getPropertyValue(attributeMetadata, "", true);
                 }
                 catch (InvalidConfigurationException e) {
-                    errors.add(e.getCause(), e.getMessage());
+                    problems.addError(e.getCause(), e.getMessage());
                 }
 
                 if (value != null) {
@@ -229,7 +229,7 @@ public class ConfigurationFactory
                 }
             }
             else if (Modifier.isAbstract(method.getModifiers())) {
-                errors.add("Method [%s] is abstract but does not have an @Config annotation", method.toGenericString());
+                problems.addError("Method [%s] is abstract but does not have an @Config annotation", method.toGenericString());
             }
         }
 
@@ -248,10 +248,10 @@ public class ConfigurationFactory
             result = (T) e.create();
         }
         catch (Exception e) {
-            errors.add(e, "Error creating instance of configuration class [%s]", configClass.getName());
+            problems.addError(e, "Error creating instance of configuration class [%s]", configClass.getName());
         }
 
-        errors.throwIfHasErrors();
+        problems.throwIfHasErrors();
         return result;
     }
 

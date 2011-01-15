@@ -19,7 +19,7 @@ public class ConfigurationMetadata<T>
     public static <T> ConfigurationMetadata<T> getValidConfigurationMetadata(Class<T> configClass) throws ConfigurationException
     {
         ConfigurationMetadata<T> metadata = getConfigurationMetadata(configClass);
-        metadata.getErrors().throwIfHasErrors();
+        metadata.getProblems().throwIfHasErrors();
         return metadata;
     }
 
@@ -32,7 +32,7 @@ public class ConfigurationMetadata<T>
     public static <T> ConfigurationMetadata<T> getValidLegacyConfigurationMetadata(Class<T> configClass) throws ConfigurationException
     {
         ConfigurationMetadata<T> metadata = getLegacyConfigurationMetadata(configClass);
-        metadata.getErrors().throwIfHasErrors();
+        metadata.getProblems().throwIfHasErrors();
         return metadata;
     }
 
@@ -43,7 +43,7 @@ public class ConfigurationMetadata<T>
     }
 
     private final Class<T> configClass;
-    private final Errors errors = new Errors();
+    private final Problems problems = new Problems();
     private final Constructor<T> constructor;
     private final Map<String,AttributeMetadata> attributes;
 
@@ -56,10 +56,10 @@ public class ConfigurationMetadata<T>
 
         this.configClass = configClass;
         if (!legacy && Modifier.isAbstract(configClass.getModifiers())) {
-            errors.add("Config class [%s] is abstract", configClass.getName());
+            problems.addError("Config class [%s] is abstract", configClass.getName());
         }
         if (!Modifier.isPublic(configClass.getModifiers())) {
-            errors.add("Config class [%s] is not public", configClass.getName());
+            problems.addError("Config class [%s] is not public", configClass.getName());
         }
 
         // verify there is a public no-arg constructor
@@ -67,11 +67,11 @@ public class ConfigurationMetadata<T>
         try {
             constructor = configClass.getDeclaredConstructor();
             if (!Modifier.isPublic(constructor.getModifiers())) {
-                errors.add("Constructor [%s] is not public", constructor.toGenericString());
+                problems.addError("Constructor [%s] is not public", constructor.toGenericString());
             }
         }
         catch (Exception e) {
-            errors.add("Configuration class [%s] does not have a public no-arg constructor", configClass.getName());
+            problems.addError("Configuration class [%s] does not have a public no-arg constructor", configClass.getName());
         }
         this.constructor = constructor;
 
@@ -82,7 +82,7 @@ public class ConfigurationMetadata<T>
 
             if (attribute != null) {
                 if (attributes.containsKey(attribute.getName())) {
-                    errors.add("Configuration class [%s] Multiple methods are annotated for @Config attribute [%s]", configClass.getName(), attribute.getName());
+                    problems.addError("Configuration class [%s] Multiple methods are annotated for @Config attribute [%s]", configClass.getName(), attribute.getName());
                 }
                 attributes.put(attribute.getName(), attribute);
             }
@@ -94,17 +94,17 @@ public class ConfigurationMetadata<T>
             for (Method method : clazz.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(Config.class)) {
                     if (!Modifier.isPublic(method.getModifiers())) {
-                        errors.add("@Config method [%s] is not public", method.toGenericString());
+                        problems.addError("@Config method [%s] is not public", method.toGenericString());
                     }
                     if (Modifier.isStatic(method.getModifiers())) {
-                        errors.add("@Config method [%s] is static", method.toGenericString());
+                        problems.addError("@Config method [%s] is static", method.toGenericString());
                     }
                 }
             }
         }
 
-        if (errors.getErrors().isEmpty() && this.attributes.isEmpty()) {
-            errors.add("Configuration class [%s] does not have any @Config annotations", configClass.getName());
+        if (problems.getErrors().isEmpty() && this.attributes.isEmpty()) {
+            problems.addError("Configuration class [%s] does not have any @Config annotations", configClass.getName());
         }
     }
 
@@ -123,9 +123,9 @@ public class ConfigurationMetadata<T>
         return attributes;
     }
 
-    public Errors getErrors()
+    public Problems getProblems()
     {
-        return errors;
+        return problems;
     }
 
     private boolean hasAValue(Config config)
@@ -144,29 +144,29 @@ public class ConfigurationMetadata<T>
         DeprecatedConfig deprecatedConfig = configMethod.getAnnotation(DeprecatedConfig.class);
 
         if (!hasAValue(config) && !hasAValue(deprecatedConfig)) {
-            errors.add("Method [%s] has neither @Config nor @DeprecatedConfig annotations", configMethod.toGenericString());
+            problems.addError("Method [%s] has neither @Config nor @DeprecatedConfig annotations", configMethod.toGenericString());
             return false;
         }
 
         boolean isValid = true;
 
         if (hasAValue(config) && config.value().isEmpty()) {
-            errors.add("@Config method [%s] annotation has an empty value", configMethod.toGenericString());
+            problems.addError("@Config method [%s] annotation has an empty value", configMethod.toGenericString());
             isValid = false;
         }
 
         if (hasAValue(deprecatedConfig)) {
             if (deprecatedConfig.value().length == 0) {
-                errors.add("@DeprecatedConfig method [%s] annotation has an empty list", configMethod.toGenericString());
+                problems.addError("@DeprecatedConfig method [%s] annotation has an empty list", configMethod.toGenericString());
                 isValid = false;
             }
 
             for (String s : deprecatedConfig.value()) {
                 if (s == null || s.isEmpty()) {
-                    errors.add("Found null or empty string in @DeprecatedConfig method [%s] annotation", configMethod.toGenericString());
+                    problems.addError("Found null or empty string in @DeprecatedConfig method [%s] annotation", configMethod.toGenericString());
                     isValid = false;
                 } else if (config != null && s.equals(config.value())) {
-                    errors.add("@DeprecatedConfig method [%s] annotation contains the @Config value", configMethod.toGenericString());
+                    problems.addError("@DeprecatedConfig method [%s] annotation contains the @Config value", configMethod.toGenericString());
                     isValid = false;
                 }
             }
@@ -204,7 +204,7 @@ public class ConfigurationMetadata<T>
 
             // verify parameters
             if (configMethod.getParameterTypes().length != 1) {
-                errors.add("@Config setter [%s] does not have exactly one parameter", configMethod.toGenericString());
+                problems.addError("@Config setter [%s] does not have exactly one parameter", configMethod.toGenericString());
             }
 
             // find the getter
@@ -222,12 +222,12 @@ public class ConfigurationMetadata<T>
 
             // verify parameters
             if (configMethod.getParameterTypes().length != 0) {
-                errors.add("@Config getter [%s] is has parameters", configMethod.toGenericString());
+                problems.addError("@Config getter [%s] is has parameters", configMethod.toGenericString());
             }
 
             // method must return something
             if (configMethod.getReturnType() == Void.TYPE) {
-                errors.add("@Config getter [%s] does not return anything", configMethod.toGenericString());
+                problems.addError("@Config getter [%s] does not return anything", configMethod.toGenericString());
             }
 
             // find the setter
@@ -245,11 +245,11 @@ public class ConfigurationMetadata<T>
 
             // verify parameters
             if (configMethod.getParameterTypes().length != 0) {
-                errors.add("@Config is method [%s] is has parameters", configMethod.toGenericString());
+                problems.addError("@Config is method [%s] is has parameters", configMethod.toGenericString());
             }
             // is method must return boolean or Boolean
             if (!configMethod.getReturnType().equals(boolean.class) && !configMethod.getReturnType().equals(Boolean.class)) {
-                errors.add("@Config is method [%s] does not return boolean or Boolean", configMethod.toGenericString());
+                problems.addError("@Config is method [%s] does not return boolean or Boolean", configMethod.toGenericString());
             }
 
             // find the setter
@@ -259,7 +259,7 @@ public class ConfigurationMetadata<T>
             }
             return new AttributeMetadata(configClass, attributeName, description, propertyName, deprecatedNames, configMethod, setter);
         } else {
-            errors.add("@Config method [%s] is not a valid getter or setter", configMethod.toGenericString());
+            problems.addError("@Config method [%s] is not a valid getter or setter", configMethod.toGenericString());
             return null;
         }
     }
@@ -478,14 +478,14 @@ public class ConfigurationMetadata<T>
         // too small
         if (setters.isEmpty()) {
             // look for setter with no parameters
-            errors.add("No setter for @Config method [%s]", configMethod.toGenericString());
+            problems.addError("No setter for @Config method [%s]", configMethod.toGenericString());
             return null;
         }
 
         // too big
         if (setters.size() > 1) {
             // To many setters, annotate setter instead of getter
-            errors.add("Multiple setters found for @Config getter [%s]; Move annotation to setter instead: %s", configMethod.toGenericString(), setters);
+            problems.addError("Multiple setters found for @Config getter [%s]; Move annotation to setter instead: %s", configMethod.toGenericString(), setters);
             return null;
         }
 

@@ -10,7 +10,6 @@ import javax.management.remote.JMXConnectorFactory;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.Inet4Address;
-import java.net.UnknownHostException;
 
 import static org.testng.Assert.assertTrue;
 
@@ -38,13 +37,7 @@ public class TestJMXAgent
         final String host = Inet4Address.getLocalHost().getCanonicalHostName();
 
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        JMXAgent agent = new JMXAgent(server, new JMXConfig() {
-            @Override
-            public String getRmiServerHostname()
-            {
-                return host;
-            }
-        });
+        JMXAgent agent = new JMXAgent(server, new JMXConfig().setHostname(host));
         agent.start();
 
         JMXConnector connector = JMXConnectorFactory.connect(agent.getURL());
@@ -62,19 +55,11 @@ public class TestJMXAgent
         final int port = NetUtils.findUnusedPort();
 
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        JMXAgent agent = new JMXAgent(server, new JMXConfig() {
-            @Override
-            public Integer getRmiRegistryPort()
-            {
-                return port;
-            }
+        JMXConfig config = new JMXConfig()
+            .setRmiRegistryPort(port)
+            .setHostname(host);
 
-            @Override
-            public String getRmiServerHostname()
-            {
-                return host;
-            }
-        });
+        JMXAgent agent = new JMXAgent(server, config);
         agent.start();
 
         JMXConnector connector = JMXConnectorFactory.connect(agent.getURL());
