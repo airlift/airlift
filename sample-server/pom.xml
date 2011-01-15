@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>sample-server</artifactId>
-    <version>0.23-SNAPSHOT</version>
+    <version>0.23</version>
     <name>sample-server</name>
 
     <properties>

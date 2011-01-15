@@ -4,13 +4,13 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>stats</artifactId>
     <packaging>jar</packaging>
-    <version>0.23-SNAPSHOT</version>
+    <version>0.23</version>
     <name>stats</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.23-SNAPSHOT</version>
+        <version>0.23</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     
@@ -37,7 +37,7 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>testing</artifactId>
-            <version>0.23-SNAPSHOT</version>
+            <version>0.23</version>
             <scope>test</scope>
         </dependency>
 
