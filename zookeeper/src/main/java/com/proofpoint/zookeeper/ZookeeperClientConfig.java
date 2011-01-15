@@ -10,6 +10,19 @@ public class ZookeeperClientConfig
     private int     connectionTimeoutInMs = 10000;
     private int     maxConnectionLossRetries = 2;
     private int     connectionLossSleepInMs = 1000;
+    private String  sessionStorePath;
+
+    @Config("zookeeper.session-id-local-path")
+    @ConfigDescription("File to store the Zookeeper session ID in. This is optional - specify only if session re-use is needed.")
+    public String getSessionStorePath()
+    {
+        return sessionStorePath;
+    }
+
+    public void setSessionStorePath(String sessionStorePath)
+    {
+        this.sessionStorePath = sessionStorePath;
+    }
 
     @Config("zookeeper.connection-string")
     @ConfigDescription("Zookeeper connection string")

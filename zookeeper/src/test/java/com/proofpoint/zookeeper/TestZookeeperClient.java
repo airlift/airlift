@@ -67,6 +67,69 @@ public class TestZookeeperClient
     }
 
     @Test
+    public void     testNewSessionFromSaved() throws Exception
+    {
+        ZookeeperTestServerInstance     server = new ZookeeperTestServerInstance();
+        try
+        {
+            ZookeeperClientConfig   config = new ZookeeperClientConfig();
+            config.setSessionStorePath(server.getTempDirectory().newFile().getPath());
+            config.setConnectionString(server.getConnectString());
+
+            ZookeeperClient         client1 = new ZookeeperClient(new DefaultZookeeperClientCreator(config));
+            client1.start();
+            ZookeeperSessionID      initialSession = client1.getSessionInfo();
+            client1.closeForShutdown();
+
+            ZookeeperClient         client2 = new ZookeeperClient(new DefaultZookeeperClientCreator(config));    // should resume session
+            client2.start();
+            ZookeeperSessionID      nextSession = client2.getSessionInfo();
+            client2.closeForShutdown();
+
+            Assert.assertNotSame(initialSession, nextSession);
+        }
+        finally
+        {
+            server.close();
+        }
+    }
+
+    @Test
+    public void     testRestartSession() throws Exception
+    {
+        ZookeeperClient                 client1 = null;
+        ZookeeperClient                 client2 = null;
+        ZookeeperTestServerInstance     server = new ZookeeperTestServerInstance();
+        try
+        {
+            ZookeeperClientConfig   config = new ZookeeperClientConfig();
+            config.setSessionStorePath(server.getTempDirectory().newFile().getPath());
+            config.setConnectionString(server.getConnectString());
+
+            client1 = new ZookeeperClient(new DefaultZookeeperClientCreator(config));
+            client1.start();
+            ZookeeperSessionID      initialSession = client1.getSessionInfo();
+
+            client2 = new ZookeeperClient(new DefaultZookeeperClientCreator(config));    // should resume session
+            client2.start();
+            ZookeeperSessionID      nextSession = client2.getSessionInfo();
+
+            Assert.assertEquals(initialSession, nextSession);
+        }
+        finally
+        {
+            if ( client1 != null ) {
+                client1.closeForShutdown();
+            }
+            if ( client2 != null ) {
+                client2.closeForShutdown();
+            }
+
+            server.close();
+        }
+    }
+
+    @Test
     public void     testMissingStart() throws Exception
     {
         ZookeeperClient     client = new ZookeeperClient(new DefaultZookeeperClientCreator(new ZookeeperClientConfig()));

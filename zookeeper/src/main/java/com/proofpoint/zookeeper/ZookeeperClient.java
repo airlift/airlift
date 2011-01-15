@@ -86,6 +86,23 @@ public class ZookeeperClient implements ZookeeperClientHelper
         this.errorHandler.set(errorHandler);
     }
 
+    /**
+     * Returns a copy of the ZK session info
+     * @return session info
+     * @throws Exception errors
+     */
+    public ZookeeperSessionID   getSessionInfo()
+            throws Exception
+    {
+        ZookeeperSessionID sessionID = new ZookeeperSessionID();
+        if ( waitForStart() )
+        {
+            sessionID.setPassword(client.getSessionPasswd());
+            sessionID.setSessionId(client.getSessionId());
+        }
+        return sessionID;
+    }
+
     private ZookeeperClient
         (
             AtomicBoolean started,
@@ -789,6 +806,7 @@ public class ZookeeperClient implements ZookeeperClientHelper
     }
 
     private boolean internalWaitForStart()
+            throws Exception
     {
         try
         {
@@ -807,15 +825,38 @@ public class ZookeeperClient implements ZookeeperClientHelper
                     }
                 }
             };
-            if ( creator.waitForStart(client, watcher) == ZookeeperClientCreator.ConnectionStatus.SUCCESS )
-            {
-                stateRef.compareAndSet(State.WAITING_FOR_STARTUP, State.STARTUP_SUCCEEDED);
-            }
-            else
-            {
-                stateRef.set(State.STARTUP_FAILED);
-                errorConnectionLost();
-            }
+
+            int         invalidSessionCount = 0;
+            boolean     done;
+            do {
+                done = true;
+                switch ( creator.waitForStart(client, watcher) )
+                {
+                    case SUCCESS: {
+                        stateRef.compareAndSet(State.WAITING_FOR_STARTUP, State.STARTUP_SUCCEEDED);
+                        break;
+                    }
+
+                    case INVALID_SESSION: {
+                        if ( invalidSessionCount > 0 ) {
+                            stateRef.set(State.STARTUP_FAILED);
+                            errorConnectionLost();
+                        }
+                        else {
+                            ++invalidSessionCount;
+                            client = creator.recreateWithNewSession();
+                            done = false;
+                        }
+                        break;
+                    }
+
+                    case FAILED: {
+                        stateRef.set(State.STARTUP_FAILED);
+                        errorConnectionLost();
+                        break;
+                    }
+                }
+            } while ( !done );
         }
         catch ( InterruptedException e )
         {
