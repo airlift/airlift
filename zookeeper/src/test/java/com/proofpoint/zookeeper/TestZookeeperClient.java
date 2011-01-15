@@ -81,7 +81,7 @@ public class TestZookeeperClient
             ZookeeperSessionID      initialSession = client1.getSessionInfo();
             client1.closeForShutdown();
 
-            ZookeeperClient         client2 = new ZookeeperClient(new DefaultZookeeperClientCreator(config));    // should resume session
+            ZookeeperClient         client2 = new ZookeeperClient(new DefaultZookeeperClientCreator(config));
             client2.start();
             ZookeeperSessionID      nextSession = client2.getSessionInfo();
             client2.closeForShutdown();
