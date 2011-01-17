@@ -2,6 +2,7 @@ package com.proofpoint.configuration;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.ConfigurationException;
+import com.google.inject.spi.Message;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
 import net.sf.cglib.proxy.Callback;
 import net.sf.cglib.proxy.CallbackFilter;
@@ -23,10 +24,17 @@ import static java.lang.String.format;
 public class ConfigurationFactory
 {
     private final Map<String, String> properties;
+    private final Problems.Monitor monitor;
+
+    public ConfigurationFactory(Map<String, String> properties, Problems.Monitor monitor)
+    {
+        this.monitor = monitor;
+        this.properties = ImmutableMap.copyOf(properties);
+    }
 
     public ConfigurationFactory(Map<String, String> properties)
     {
-        this.properties = ImmutableMap.copyOf(properties);
+        this(properties, Problems.NULL_MONITOR);
     }
 
     /**
@@ -82,7 +90,7 @@ public class ConfigurationFactory
             instance = newInstance(configurationMetadata);
         }
 
-        Problems problems = new Problems();
+        Problems problems = new Problems(monitor);
         for (AttributeMetadata attribute : configurationMetadata.getAttributes().values()) {
             try {
                 setConfigProperty(instance,attribute, prefix);
@@ -91,6 +99,7 @@ public class ConfigurationFactory
                 problems.addError(e.getCause(), e.getMessage());
             }
         }
+
         problems.throwIfHasErrors();
         
         return instance;
@@ -137,13 +146,15 @@ public class ConfigurationFactory
         String operativeName = attribute.getPropertyName() == null ? null : prefix + attribute.getPropertyName();
         String operativeValue = operativeName == null ? null : properties.get(operativeName);
 
-        Problems problems = new Problems();
+        Problems problems = new Problems(monitor);
 
         for (String deprecatedName : attribute.getDeprecatedNames()) {
             String fullName = prefix + deprecatedName;
             String value = properties.get(fullName);
             if (value != null) {
-                // todo add something to deal with the presence of deprecated config
+                String deprecatedReplacement
+                        = attribute.getPropertyName() == null ? "There is no replacement." : format("Use '%s' instead.", prefix+attribute.getPropertyName());
+                problems.addWarning("Configuration property '%s' has been deprecated. " + deprecatedReplacement, fullName);
 
                 if (operativeValue == null) {
                     operativeValue = value;

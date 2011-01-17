@@ -18,14 +18,24 @@ public class ConfigurationMetadata<T>
 
     public static <T> ConfigurationMetadata<T> getValidConfigurationMetadata(Class<T> configClass) throws ConfigurationException
     {
-        ConfigurationMetadata<T> metadata = getConfigurationMetadata(configClass);
+        return getValidConfigurationMetadata(configClass, Problems.NULL_MONITOR);
+    }
+
+    public static <T> ConfigurationMetadata<T> getValidConfigurationMetadata(Class<T> configClass, Problems.Monitor monitor) throws ConfigurationException
+    {
+        ConfigurationMetadata<T> metadata = getConfigurationMetadata(configClass, monitor);
         metadata.getProblems().throwIfHasErrors();
         return metadata;
     }
 
     public static <T> ConfigurationMetadata<T> getConfigurationMetadata(Class<T> configClass)
     {
-        ConfigurationMetadata<T> metadata = new ConfigurationMetadata<T>(configClass, false);
+        return getConfigurationMetadata(configClass, Problems.NULL_MONITOR);
+    }
+
+    public static <T> ConfigurationMetadata<T> getConfigurationMetadata(Class<T> configClass, Problems.Monitor monitor)
+    {
+        ConfigurationMetadata<T> metadata = new ConfigurationMetadata<T>(configClass, monitor, false);
         return metadata;
     }
 
@@ -38,21 +48,22 @@ public class ConfigurationMetadata<T>
 
     public static <T> ConfigurationMetadata<T> getLegacyConfigurationMetadata(Class<T> configClass)
     {
-        ConfigurationMetadata<T> metadata = new ConfigurationMetadata<T>(configClass, true);
+        ConfigurationMetadata<T> metadata = new ConfigurationMetadata<T>(configClass, Problems.NULL_MONITOR, true);
         return metadata;
     }
 
     private final Class<T> configClass;
-    private final Problems problems = new Problems();
+    private final Problems problems;
     private final Constructor<T> constructor;
     private final Map<String,AttributeMetadata> attributes;
 
-
-    private ConfigurationMetadata(Class<T> configClass, boolean legacy)
+    private ConfigurationMetadata(Class<T> configClass, Problems.Monitor monitor, boolean legacy)
     {
         if (configClass == null) {
             throw new NullPointerException("configClass is null");
         }
+
+        this.problems = new Problems(monitor);
 
         this.configClass = configClass;
         if (!legacy && Modifier.isAbstract(configClass.getModifiers())) {
