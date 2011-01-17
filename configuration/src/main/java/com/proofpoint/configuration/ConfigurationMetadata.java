@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Maps;
 import com.google.inject.ConfigurationException;
+import com.proofpoint.configuration.Problems.Monitor;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -35,20 +36,7 @@ public class ConfigurationMetadata<T>
 
     public static <T> ConfigurationMetadata<T> getConfigurationMetadata(Class<T> configClass, Problems.Monitor monitor)
     {
-        ConfigurationMetadata<T> metadata = new ConfigurationMetadata<T>(configClass, monitor, false);
-        return metadata;
-    }
-
-    public static <T> ConfigurationMetadata<T> getValidLegacyConfigurationMetadata(Class<T> configClass) throws ConfigurationException
-    {
-        ConfigurationMetadata<T> metadata = getLegacyConfigurationMetadata(configClass);
-        metadata.getProblems().throwIfHasErrors();
-        return metadata;
-    }
-
-    public static <T> ConfigurationMetadata<T> getLegacyConfigurationMetadata(Class<T> configClass)
-    {
-        ConfigurationMetadata<T> metadata = new ConfigurationMetadata<T>(configClass, Problems.NULL_MONITOR, true);
+        ConfigurationMetadata<T> metadata = new ConfigurationMetadata<T>(configClass, monitor);
         return metadata;
     }
 
@@ -57,7 +45,7 @@ public class ConfigurationMetadata<T>
     private final Constructor<T> constructor;
     private final Map<String,AttributeMetadata> attributes;
 
-    private ConfigurationMetadata(Class<T> configClass, Problems.Monitor monitor, boolean legacy)
+    private ConfigurationMetadata(Class<T> configClass, Monitor monitor)
     {
         if (configClass == null) {
             throw new NullPointerException("configClass is null");
@@ -66,7 +54,7 @@ public class ConfigurationMetadata<T>
         this.problems = new Problems(monitor);
 
         this.configClass = configClass;
-        if (!legacy && Modifier.isAbstract(configClass.getModifiers())) {
+        if (Modifier.isAbstract(configClass.getModifiers())) {
             problems.addError("Config class [%s] is abstract", configClass.getName());
         }
         if (!Modifier.isPublic(configClass.getModifiers())) {
@@ -89,7 +77,7 @@ public class ConfigurationMetadata<T>
         // Create attribute metadata
         Map<String, AttributeMetadata> attributes = Maps.newTreeMap();
         for (Method configMethod : findConfigMethods(configClass)) {
-            AttributeMetadata attribute = buildAttributeMetadata(configClass, configMethod, legacy);
+            AttributeMetadata attribute = buildAttributeMetadata(configClass, configMethod);
 
             if (attribute != null) {
                 if (attributes.containsKey(attribute.getName())) {
@@ -186,7 +174,7 @@ public class ConfigurationMetadata<T>
         return isValid;
     }
 
-    private AttributeMetadata buildAttributeMetadata(Class<?> configClass, Method configMethod, boolean legacy)
+    private AttributeMetadata buildAttributeMetadata(Class<?> configClass, Method configMethod)
     {
         if (!annotationsAreValid(configMethod)) {
             return null;
@@ -242,12 +230,9 @@ public class ConfigurationMetadata<T>
             }
 
             // find the setter
-            Method setter = null;
-            if (!legacy) {
-                setter = findSetter(configClass, configMethod, attributeName);
-                if (setter == null) {
-                    return null;
-                }
+            Method setter = findSetter(configClass, configMethod, attributeName);
+            if (setter == null) {
+                return null;
             }
             return new AttributeMetadata(configClass, attributeName, description, propertyName, deprecatedNames, configMethod, setter);
         } else if (attributeName.startsWith("is")) {
@@ -324,10 +309,9 @@ public class ConfigurationMetadata<T>
             if (propertyName == null && deprecatedNames == null) {
                 throw new NullPointerException("both propertyName and deprecatedNames are null");
             }
-            // todo add back when legacy config support is removed
-//            if (setter == null) {
-//                throw new NullPointerException("setter is null");
-//            }
+            if (setter == null) {
+                throw new NullPointerException("setter is null");
+            }
             this.configClass = configClass;
             this.name = name;
             this.description = description;
@@ -465,10 +449,7 @@ public class ConfigurationMetadata<T>
 
     private static boolean isConfigMethod(Method method)
     {
-        if (method == null) {
-            return false;
-        }
-        return method.isAnnotationPresent(Config.class) || method.isAnnotationPresent(DeprecatedConfig.class);
+        return method != null && (method.isAnnotationPresent(Config.class) || method.isAnnotationPresent(DeprecatedConfig.class));
     }
 
     private Method findSetter(Class<?> configClass, Method configMethod, String attributeName)

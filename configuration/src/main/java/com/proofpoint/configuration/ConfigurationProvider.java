@@ -12,7 +12,6 @@ public class ConfigurationProvider<T> implements Provider<T>
     private T defaults;
     private T instance;
     private ConfigurationFactory configurationFactory;
-    private boolean legacy;
 
     public ConfigurationProvider(Class<T> configClass) {
 
@@ -57,11 +56,6 @@ public class ConfigurationProvider<T> implements Provider<T>
         return prefix;
     }
 
-    protected boolean isLegacy()
-    {
-        return legacy;
-    }
-
     public T getDefaults()
     {
         return defaults;
@@ -73,11 +67,7 @@ public class ConfigurationProvider<T> implements Provider<T>
     }
 
     public ConfigurationMetadata<T> getConfigurationMetadata() {
-        if (!legacy) {
-            return ConfigurationMetadata.getConfigurationMetadata(configClass);
-        } else {
-            return ConfigurationMetadata.getLegacyConfigurationMetadata(configClass);
-        }
+        return ConfigurationMetadata.getConfigurationMetadata(configClass);
     }
 
     @Override
@@ -88,18 +78,9 @@ public class ConfigurationProvider<T> implements Provider<T>
         }
         
         if (instance == null) {
-            if (!legacy) {
-                instance = configurationFactory.build(configClass, prefix, defaults);
-            } else {
-                instance = configurationFactory.createLegacyConfig(configClass);
-            }
+            instance = configurationFactory.build(configClass, prefix, defaults);
         }
         return instance;
     }
 
-    static <T> ConfigurationProvider<T> createLegacyConfigurationProvider(Class<T> configClass) {
-        ConfigurationProvider<T> provider = new ConfigurationProvider<T>(configClass);
-        provider.legacy = true;
-        return provider;
-    }
 }

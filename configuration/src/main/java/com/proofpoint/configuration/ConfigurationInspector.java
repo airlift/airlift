@@ -154,12 +154,9 @@ public class ConfigurationInspector
         ConfigurationMetadata<?> metadata = configurationProvider.getConfigurationMetadata();
 
         Object instance = configurationProvider.get();
-        Object defaults = null;
-        if (!configurationProvider.isLegacy()) {
-            defaults = configurationProvider.getDefaults();
-            if (defaults == null) {
-                defaults = newDefaultInstance(configurationProvider);
-            }
+        Object defaults = configurationProvider.getDefaults();
+        if (defaults == null) {
+            defaults = newDefaultInstance(configurationProvider);
         }
 
         String prefix = configurationProvider.getPrefix();
@@ -169,18 +166,7 @@ public class ConfigurationInspector
             String propertyName = prefix + attribute.getPropertyName();
             Method getter = attribute.getGetter();
 
-            String defaultValue;
-            if (!configurationProvider.isLegacy()) {
-                defaultValue = getValue(getter, defaults, "-- none --");
-            } else {
-                Default annotation = getter.getAnnotation(Default.class);
-                if (annotation != null) {
-                    defaultValue = annotation.value();
-                } else {
-                    defaultValue = "-- none --";
-                }
-
-            }
+            String defaultValue = getValue(getter, defaults, "-- none --");
             String currentValue = getValue(getter, instance, "-- n/a --");
             String description = attribute.getDescription();
             if (description == null) description = "";

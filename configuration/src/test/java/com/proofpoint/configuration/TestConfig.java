@@ -1,8 +1,6 @@
 package com.proofpoint.configuration;
 
-import com.google.common.collect.Maps;
 import com.google.inject.Binder;
-import com.google.inject.ConfigurationException;
 import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -14,132 +12,16 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
 
-@SuppressWarnings( { "UnnecessaryLocalVariable", "deprecation" })
-public class TestConfig
+ public class TestConfig
 {
     private ImmutableMap<String,String> properties;
-
-    @Test
-    public void testLegacy()
-    {
-        try
-        {
-            ConfigurationFactory            factory = new ConfigurationFactory(new HashMap<String, String>()).createLegacyFactory();
-            LegacyPathConfig                config = factory.build(LegacyPathConfig.class);
-            assertNotNull(config);
-        }
-        catch ( ConfigurationException e )
-        {
-            fail("Legacy issue", e);
-        }
-    }
-
-    @Test
-    public void testFoo()
-            throws Exception
-    {
-        Map<String, String> config = Maps.newHashMap();
-        config.put("hello", "world");
-        config.put("thevalue", "value");
-
-        Injector injector = createInjector(config, createLegacyModule(Thing.class));
-
-        Thing t = injector.getInstance(Thing.class);
-        assertEquals(t.getName(), "world");
-    }
-
-    @Test
-    public void testDefaultValue()
-            throws Exception
-    {
-        Map<String, String> config = Maps.newHashMap();
-        Injector injector = createInjector(config, createLegacyModule(Thing.class));
-        Thing t = injector.getInstance(Thing.class);
-        assertEquals(t.getName(), "woof");
-    }
-
-    @Test
-    public void testDefaultViaImpl()
-            throws Exception
-    {
-        Injector injector = createInjector(Collections.<String, String>emptyMap(), createLegacyModule(LegacyConfig2.class));
-        LegacyConfig2 config = injector.getInstance(LegacyConfig2.class);
-        assertEquals(config.getOption(), "default");
-    }
-
-    @Test
-    public void testProvidedOverridesDefault()
-            throws Exception
-    {
-        Map<String, String> properties = Maps.newHashMap();
-        properties.put("option", "provided");
-
-        Injector injector = createInjector(properties, createLegacyModule(LegacyConfig2.class));
-        LegacyConfig2 instance = injector.getInstance(LegacyConfig2.class);
-
-        assertEquals(instance.getOption(), "provided");
-    }
-
-    @Test
-    public void testMissingDefault()
-            throws Exception
-    {
-        try {
-            createInjector(Collections.<String, String>emptyMap(), createLegacyModule(LegacyConfig3.class))
-                    .getInstance(LegacyConfig3.class);
-            fail("Expected exception due to missing value");
-        }
-        catch (Exception e) {
-            // do nothing
-        }
-    }
-
-    @Test
-    public void testDetectsAbstractMethod()
-            throws Exception
-    {
-        try {
-            Injector injector = createInjector(Collections.<String, String>emptyMap(), createLegacyModule(LegacyConfig4.class));
-            injector.getInstance(LegacyConfig4.class);
-            fail("Expected exception due to abstract method without @Config annotation");
-        }
-        catch (CreationException e) {
-            // do nothing
-        }
-    }
-
-    @Test
-    public void testLegacyConfigTypes()
-    {
-        Injector injector = createInjector(properties, createLegacyModule(LegacyConfig1.class));
-        LegacyConfig1 legacyConfig = injector.getInstance(LegacyConfig1.class);
-        assertEquals("a string", legacyConfig.getStringOption());
-        assertEquals(true, legacyConfig.getBooleanOption());
-        assertEquals(Boolean.TRUE, legacyConfig.getBoxedBooleanOption());
-        assertEquals(Byte.MAX_VALUE, legacyConfig.getByteOption());
-        assertEquals(Byte.valueOf(Byte.MAX_VALUE), legacyConfig.getBoxedByteOption());
-        assertEquals(Short.MAX_VALUE, legacyConfig.getShortOption());
-        assertEquals(Short.valueOf(Short.MAX_VALUE), legacyConfig.getBoxedShortOption());
-        assertEquals(Integer.MAX_VALUE, legacyConfig.getIntegerOption());
-        assertEquals(Integer.valueOf(Integer.MAX_VALUE), legacyConfig.getBoxedIntegerOption());
-        assertEquals(Long.MAX_VALUE, legacyConfig.getLongOption());
-        assertEquals(Long.valueOf(Long.MAX_VALUE), legacyConfig.getBoxedLongOption());
-        assertEquals(Float.MAX_VALUE, legacyConfig.getFloatOption(), 0);
-        assertEquals(Float.MAX_VALUE, legacyConfig.getBoxedFloatOption());
-        assertEquals(Double.MAX_VALUE, legacyConfig.getDoubleOption(), 0);
-        assertEquals(Double.MAX_VALUE, legacyConfig.getBoxedDoubleOption());
-        assertEquals(MyEnum.FOO, legacyConfig.getMyEnumOption());
-        assertEquals(legacyConfig.getValueClassOption().getValue(), "a value class");
-    }
 
     @Test
     public void testConfig()
@@ -213,18 +95,6 @@ public class TestConfig
         return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
     }
 
-    private <T> Module createLegacyModule(final Class<T> configClass)
-    {
-        Module module = new Module() {
-            @Override
-            public void configure(Binder binder)
-            {
-                ConfigurationModule.bindConfig(binder, configClass);
-            }
-        };
-        return module;
-    }
-
     private <T> Module createModule(final Class<T> configClass, final String prefix, final T defaults)
     {
         Module module = new Module() {
@@ -269,12 +139,5 @@ public class TestConfig
             builder.put(prefix + "." + entry.getKey(), entry.getValue());
         }
         return builder.build();
-    }
-
-    public abstract static class Thing
-    {
-        @Config("hello")
-        @Default("woof")
-        public abstract String getName();
     }
 }
