@@ -47,6 +47,27 @@ public final class Assertions
         fail("%sexpected:<%s> to equal ignoring case <%s>", toMessageString(message), actual, expected);
     }
 
+    public static void assertNotEquals(Object actual, Object expected) {
+        assertNotEquals(actual, expected, null);
+    }
+
+    public static void assertNotEquals(Object actual, Object expected, String message)
+    {
+        if (actual == null) {
+            if (expected != null) {
+                // ok
+                return;
+            }
+        }
+        else {
+            if (!actual.equals(expected)) {
+                // ok
+                return;
+            }
+        }
+        fail("%sexpected:<%s> to not equal <%s>", toMessageString(message), actual, expected);
+    }
+
     public static <T extends Comparable<T>> void assertGreaterThan(T actual, T expected) {
         assertGreaterThan(actual, expected, null);
     }
@@ -195,7 +216,7 @@ public final class Assertions
                     lowerBound,
                     upperBound,
                     actual.getClass().getName(),
-                    lowerBound.getClass().getName(), 
+                    lowerBound.getClass().getName(),
                     upperBound.getClass().getName());
         }
         fail("%sexpected:<%s> to be between <%s> and <%s> inclusive", toMessageString(message), actual, lowerBound, upperBound);

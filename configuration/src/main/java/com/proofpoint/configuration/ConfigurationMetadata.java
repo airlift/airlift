@@ -16,7 +16,6 @@ import java.util.Map;
 
 public class ConfigurationMetadata<T>
 {
-
     public static <T> ConfigurationMetadata<T> getValidConfigurationMetadata(Class<T> configClass) throws ConfigurationException
     {
         return getValidConfigurationMetadata(configClass, Problems.NULL_MONITOR);

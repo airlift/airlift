@@ -1,6 +1,8 @@
 package com.proofpoint.configuration;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.MapMaker;
 import com.google.inject.ConfigurationException;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
 
@@ -8,6 +10,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 import static com.proofpoint.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
@@ -16,11 +19,21 @@ public class ConfigurationFactory
 {
     private final Map<String, String> properties;
     private final Problems.Monitor monitor;
+    private final ConcurrentMap<Class<?>, ConfigurationMetadata<?>> metadataCache;
 
-    public ConfigurationFactory(Map<String, String> properties, Problems.Monitor monitor)
+    public ConfigurationFactory(Map<String, String> properties, final Problems.Monitor monitor)
     {
         this.monitor = monitor;
         this.properties = ImmutableMap.copyOf(properties);
+
+        metadataCache = new MapMaker().weakKeys().weakValues().makeComputingMap(new Function<Class<?>, ConfigurationMetadata<?>>()
+        {
+            @Override
+            public ConfigurationMetadata<?> apply(Class<?> configClass)
+            {
+                return ConfigurationMetadata.getConfigurationMetadata(configClass, monitor);
+            }
+        });
     }
 
     public ConfigurationFactory(Map<String, String> properties)
@@ -28,7 +41,8 @@ public class ConfigurationFactory
         this(properties, Problems.NULL_MONITOR);
     }
 
-    public Map<String, String> getProperties() {
+    public Map<String, String> getProperties()
+    {
         return properties;
     }
 
@@ -45,11 +59,13 @@ public class ConfigurationFactory
 
         if (prefix == null) {
             prefix = "";
-        } else if (!prefix.isEmpty()) {
+        }
+        else if (!prefix.isEmpty()) {
             prefix = prefix + ".";
         }
 
-        ConfigurationMetadata<T> configurationMetadata = ConfigurationMetadata.getValidConfigurationMetadata(configClass);
+        ConfigurationMetadata<T> configurationMetadata = (ConfigurationMetadata<T>) metadataCache.get(configClass);
+        configurationMetadata.getProblems().throwIfHasErrors();
 
         if (instance == null) {
             instance = newInstance(configurationMetadata);
@@ -58,7 +74,7 @@ public class ConfigurationFactory
         Problems problems = new Problems(monitor);
         for (AttributeMetadata attribute : configurationMetadata.getAttributes().values()) {
             try {
-                setConfigProperty(instance,attribute, prefix);
+                setConfigProperty(instance, attribute, prefix);
             }
             catch (InvalidConfigurationException e) {
                 problems.addError(e.getCause(), e.getMessage());
@@ -66,7 +82,7 @@ public class ConfigurationFactory
         }
 
         problems.throwIfHasErrors();
-        
+
         return instance;
     }
 
@@ -106,7 +122,7 @@ public class ConfigurationFactory
     }
 
     private String findOperativeProperty(AttributeMetadata attribute, String prefix)
-        throws ConfigurationException
+            throws ConfigurationException
     {
         String operativeName = attribute.getPropertyName() == null ? null : prefix + attribute.getPropertyName();
         String operativeValue = operativeName == null ? null : properties.get(operativeName);
@@ -118,13 +134,14 @@ public class ConfigurationFactory
             String value = properties.get(fullName);
             if (value != null) {
                 String deprecatedReplacement
-                        = attribute.getPropertyName() == null ? "There is no replacement." : format("Use '%s' instead.", prefix+attribute.getPropertyName());
+                        = attribute.getPropertyName() == null ? "There is no replacement." : format("Use '%s' instead.", prefix + attribute.getPropertyName());
                 problems.addWarning("Configuration property '%s' has been deprecated. " + deprecatedReplacement, fullName);
 
                 if (operativeValue == null) {
                     operativeValue = value;
                     operativeName = fullName;
-                } else if (!value.equals(operativeValue)) {
+                }
+                else if (!value.equals(operativeValue)) {
                     problems.addError("Value for property '%s' (=%s) conflicts with property '%s' (=%s)", fullName, value, operativeName, operativeValue);
                 }
             }
@@ -170,7 +187,8 @@ public class ConfigurationFactory
         try {
             if (String.class.isAssignableFrom(type)) {
                 return value;
-            } else if (Boolean.class.isAssignableFrom(type) || Boolean.TYPE.isAssignableFrom(type)) {
+            }
+            else if (Boolean.class.isAssignableFrom(type) || Boolean.TYPE.isAssignableFrom(type)) {
                 return Boolean.valueOf(value);
             }
             else if (Byte.class.isAssignableFrom(type) || Byte.TYPE.isAssignableFrom(type)) {

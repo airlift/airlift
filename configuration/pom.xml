@@ -49,14 +49,14 @@
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>testing</artifactId>
             <version>0.24-SNAPSHOT</version>
-            <scope>test</scope>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <version>5.14</version>
-            <scope>test</scope>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 
