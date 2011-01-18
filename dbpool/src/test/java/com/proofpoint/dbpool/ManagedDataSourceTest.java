@@ -2,10 +2,13 @@ package com.proofpoint.dbpool;
 
 import com.proofpoint.dbpool.MockConnectionPoolDataSource.MockConnection;
 import static com.proofpoint.testing.Assertions.assertGreaterThan;
-import static com.proofpoint.testing.Assertions.assertInstanceof;
+
 import com.proofpoint.stats.Duration;
 import static com.proofpoint.stats.Duration.nanosSince;
+
 import org.testng.Assert;
+
+import static com.proofpoint.testing.Assertions.assertInstanceOf;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertSame;
@@ -266,7 +269,7 @@ public class ManagedDataSourceTest
         assertTrue(wasInterrupted.get(), "createThread.isInterrupted()");
         SQLException sqlException = exception.get();
         assertNotNull(sqlException);
-        assertInstanceof(sqlException.getCause(), InterruptedException.class);
+        assertInstanceOf(sqlException.getCause(), InterruptedException.class);
 
         connection.close();
         assertEquals(dataSource.getConnectionsActive(), 0);
