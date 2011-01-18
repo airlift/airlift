@@ -60,6 +60,4 @@ public class TestJettyModule
         injector.getInstance(Server.class);
     }
 
-
-
 }
