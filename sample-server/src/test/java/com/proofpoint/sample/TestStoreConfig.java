@@ -1,5 +1,5 @@
 package com.proofpoint.sample;
 
-public class TestConfig
+public class TestStoreConfig
 {
 }
