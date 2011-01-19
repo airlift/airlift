@@ -101,6 +101,13 @@
         </dependency>
 
         <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>testing</artifactId>
+            <version>0.24-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <version>5.14</version>

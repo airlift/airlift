@@ -1,37 +1,36 @@
 package com.proofpoint.jetty;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-import com.google.inject.Binder;
-import com.google.inject.Guice;
-import com.google.inject.Module;
-import com.proofpoint.configuration.ConfigurationFactory;
-import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.configuration.test.ConfigAssertions;
 import com.proofpoint.stats.Duration;
 import org.testng.annotations.Test;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
 
 public class TestJettyConfig
 {
     @Test
     public void testDefaults()
     {
-        assertDefaults(new JettyConfig());
-    }
+        Map<String, Object> expectedAttributeValues = new HashMap<String, Object>();
+        expectedAttributeValues.put("Ip", null);
+        expectedAttributeValues.put("HttpEnabled", true);
+        expectedAttributeValues.put("HttpPort", 8080);
+        expectedAttributeValues.put("HttpsEnabled", false);
+        expectedAttributeValues.put("HttpsPort", 8443);
+        expectedAttributeValues.put("KeystorePath", null);
+        expectedAttributeValues.put("KeystorePassword", null);
+        expectedAttributeValues.put("LogPath", "var/log/jetty.log");
+        expectedAttributeValues.put("LogRetentionTime", new Duration(90, TimeUnit.DAYS));
+        expectedAttributeValues.put("MinThreads", 2);
+        expectedAttributeValues.put("MaxThreads", 200);
+        expectedAttributeValues.put("ThreadMaxIdleTime", new Duration(1, TimeUnit.MINUTES));
+        expectedAttributeValues.put("NetworkMaxIdleTime", new Duration(200, TimeUnit.SECONDS));
+        expectedAttributeValues.put("UserAuthFile", null);
 
-    @Test
-    public void testDefaultPropertyMappings()
-    {
-        Map<String, String> properties = Maps.newHashMap();
-        JettyConfig config = buildConfig(properties);
-        assertDefaults(config);
+        ConfigAssertions.assertDefaults(expectedAttributeValues, JettyConfig.class);
     }
 
     @Test
@@ -54,71 +53,40 @@ public class TestJettyConfig
                 .put("jetty.auth.users-file", "/auth")
                 .build();
 
-        JettyConfig config = buildConfig(properties);
+        JettyConfig expected = new JettyConfig()
+                .setIp("1.2.3.4")
+                .setHttpEnabled(false)
+                .setHttpPort(1)
+                .setHttpsEnabled(true)
+                .setHttpsPort(2)
+                .setKeystorePath("/keystore")
+                .setKeystorePassword("keystore password")
+                .setLogPath("/log")
+                .setLogRetentionTime(new Duration(1, TimeUnit.DAYS))
+                .setMinThreads(100)
+                .setMaxThreads(500)
+                .setThreadMaxIdleTime(new Duration(10, TimeUnit.MINUTES))
+                .setNetworkMaxIdleTime(new Duration(20, TimeUnit.MINUTES))
+                .setUserAuthFile("/auth");
 
-        assertEquals(config.getIp(), "1.2.3.4");
-        assertFalse(config.isHttpEnabled());
-        assertEquals(config.getHttpPort(), 1);
-        assertTrue(config.isHttpsEnabled());
-        assertEquals(config.getHttpsPort(), 2);
-        assertEquals(config.getKeystorePath(), "/keystore");
-        assertEquals(config.getKeystorePassword(), "keystore password");
-        assertEquals(config.getLogPath(), "/log");
-        assertEquals(config.getLogRetentionTime(), new Duration(1, TimeUnit.DAYS));
-        assertEquals(config.getMinThreads(), 100);
-        assertEquals(config.getMaxThreads(), 500);
-        assertEquals(config.getThreadMaxIdleTime(), new Duration(10, TimeUnit.MINUTES));
-        assertEquals(config.getNetworkMaxIdleTime(), new Duration(20, TimeUnit.MINUTES));
-        assertEquals(config.getUserAuthFile(), "/auth");
+        ConfigAssertions.assertFullMapping(properties, expected);
     }
 
     @Test
-    public void testLegacyProperties()
+    public void testDeprecatedProperties()
     {
-        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("jetty.log.retain-days", "5")
-                .put("jetty.threads.max-idle-time-ms", "100")
-                .put("jetty.net.max-idle-time-ms", "200")
+        Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
+                .put("jetty.log.retention-time", "1d")
+                .put("jetty.threads.max-idle-time", "10m")
+                .put("jetty.net.max-idle-time", "20m")
                 .build();
 
-        JettyConfig config = buildConfig(properties);
+        Map<String, String> oldProperties = new ImmutableMap.Builder<String, String>()
+                .put("jetty.log.retain-days", "1")
+                .put("jetty.threads.max-idle-time-ms", "600000")
+                .put("jetty.net.max-idle-time-ms", "1200000")
+                .build();
 
-        assertEquals(config.getLogRetentionTime(), new Duration(5, TimeUnit.DAYS));
-        assertEquals(config.getThreadMaxIdleTime(), new Duration(100, TimeUnit.MILLISECONDS));
-        assertEquals(config.getNetworkMaxIdleTime(), new Duration(200, TimeUnit.MILLISECONDS));
+        ConfigAssertions.assertDeprecatedEquivalence(JettyConfig.class, currentProperties, oldProperties);
     }
-
-    private JettyConfig buildConfig(Map<String, String> properties)
-    {
-        Module module = new Module()
-        {
-            @Override
-            public void configure(Binder binder)
-            {
-                ConfigurationModule.bindConfig(binder).to(JettyConfig.class);
-            }
-        };
-
-        return Guice.createInjector(new ConfigurationModule(new ConfigurationFactory(properties)), module)
-                .getInstance(JettyConfig.class);
-    }
-
-    private void assertDefaults(JettyConfig config)
-    {
-        assertNull(config.getIp());
-        assertTrue(config.isHttpEnabled());
-        assertEquals(config.getHttpPort(), 8080);
-        assertFalse(config.isHttpsEnabled());
-        assertEquals(config.getHttpsPort(), 8443);
-        assertNull(config.getKeystorePath());
-        assertNull(config.getKeystorePassword());
-        assertEquals(config.getLogPath(), "var/log/jetty.log");
-        assertEquals(config.getLogRetentionTime(), new Duration(90, TimeUnit.DAYS));
-        assertEquals(config.getMinThreads(), 2);
-        assertEquals(config.getMaxThreads(), 200);
-        assertEquals(config.getThreadMaxIdleTime(), new Duration(1, TimeUnit.MINUTES));
-        assertEquals(config.getNetworkMaxIdleTime(), new Duration(200, TimeUnit.SECONDS));
-        assertNull(config.getUserAuthFile());
-    }
-
 }
