@@ -94,7 +94,7 @@ public class TestH2EmbeddedDataSourceModule
 
         ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
 
-        Assertions.assertInstanceof(objectHolder.dataSource, H2EmbeddedDataSource.class);
+        Assertions.assertInstanceOf(objectHolder.dataSource, H2EmbeddedDataSource.class);
     }
 
     @Test(groups = "requiresTempFile")
@@ -127,8 +127,8 @@ public class TestH2EmbeddedDataSourceModule
         TwoObjectsHolder twoObjectsHolder = injector.getInstance(TwoObjectsHolder.class);
 
         // Held data source objects should all be of the correct type
-        Assertions.assertInstanceof(twoObjectsHolder.mainDataSource, H2EmbeddedDataSource.class);
-        Assertions.assertInstanceof(twoObjectsHolder.aliasedDataSource, H2EmbeddedDataSource.class);
+        Assertions.assertInstanceOf(twoObjectsHolder.mainDataSource, H2EmbeddedDataSource.class);
+        Assertions.assertInstanceOf(twoObjectsHolder.aliasedDataSource, H2EmbeddedDataSource.class);
 
         // And should all be references to the same object
         assertSame(objectHolder.dataSource, twoObjectsHolder.mainDataSource);
@@ -156,7 +156,7 @@ public class TestH2EmbeddedDataSourceModule
         ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
 
         // Make sure we picked up the value with the expected prefix
-        Assertions.assertInstanceof(objectHolder.dataSource, H2EmbeddedDataSource.class);
+        Assertions.assertInstanceOf(objectHolder.dataSource, H2EmbeddedDataSource.class);
 
         H2EmbeddedDataSource created = (H2EmbeddedDataSource) objectHolder.dataSource;
 

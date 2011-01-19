@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>sample-server</artifactId>
@@ -9,7 +10,7 @@
     <properties>
         <main-class>com.proofpoint.sample.Main</main-class>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <platform-version>0.22</platform-version>
+        <platform-version>0.24-SNAPSHOT</platform-version>
     </properties>
 
     <distributionManagement>
@@ -26,6 +27,24 @@
     </distributionManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>javax.validation</groupId>
+            <artifactId>validation-api</artifactId>
+            <version>1.0.0.GA</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <version>4.0.2.GA</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
         <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
@@ -87,11 +106,19 @@
         </dependency>
 
         <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>1.8.5</version>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>testing</artifactId>
+            <version>0.24-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.ning</groupId>
+            <artifactId>async-http-client</artifactId>
+            <version>1.4.1</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>

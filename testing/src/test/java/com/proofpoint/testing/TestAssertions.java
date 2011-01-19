@@ -90,26 +90,26 @@ public class TestAssertions
     @Test
     public void testAssertInstanceof()
     {
-        passInstanceof("hello", Object.class);
-        passInstanceof("hello", String.class);
-        passInstanceof("hello", Serializable.class);
-        passInstanceof("hello", CharSequence.class);
-        passInstanceof("hello", Comparable.class);
-        passInstanceof(42, Integer.class);
+        passInstanceOf("hello", Object.class);
+        passInstanceOf("hello", String.class);
+        passInstanceOf("hello", Serializable.class);
+        passInstanceOf("hello", CharSequence.class);
+        passInstanceOf("hello", Comparable.class);
+        passInstanceOf(42, Integer.class);
 
-        failInstanceof("hello", Integer.class);
+        failInstanceOf("hello", Integer.class);
     }
 
-    private void passInstanceof(Object actual, Class<?> expectedType)
+    private void passInstanceOf(Object actual, Class<?> expectedType)
     {
-        Assertions.assertInstanceof(actual, expectedType);
-        Assertions.assertInstanceof(actual, expectedType, MESSAGE);
+        Assertions.assertInstanceOf(actual, expectedType);
+        Assertions.assertInstanceOf(actual, expectedType, MESSAGE);
     }
 
-    private void failInstanceof(Object actual, Class<?> expectedType)
+    private void failInstanceOf(Object actual, Class<?> expectedType)
     {
         try {
-            Assertions.assertInstanceof(actual, expectedType);
+            Assertions.assertInstanceOf(actual, expectedType);
             Assert.fail("Expected AssertionError");
         }
         catch (AssertionError e) {
@@ -117,7 +117,7 @@ public class TestAssertions
         }
 
         try {
-            Assertions.assertInstanceof(actual, expectedType, MESSAGE);
+            Assertions.assertInstanceOf(actual, expectedType, MESSAGE);
             Assert.fail("Expected AssertionError");
         }
         catch (AssertionError e) {

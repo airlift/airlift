@@ -43,7 +43,6 @@ public class Bootstrap
     private final Module[] modules;
 
     public Bootstrap(Module... modules)
-            throws IOException
     {
         this.modules = modules;
     }
