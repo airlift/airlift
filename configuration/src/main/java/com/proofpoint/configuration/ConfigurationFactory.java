@@ -124,8 +124,12 @@ public class ConfigurationFactory
     private String findOperativeProperty(AttributeMetadata attribute, String prefix)
             throws ConfigurationException
     {
-        String operativeName = attribute.getPropertyName() == null ? null : prefix + attribute.getPropertyName();
-        String operativeValue = operativeName == null ? null : properties.get(operativeName);
+        String operativeName = null;
+        String operativeValue = null;
+        if (attribute.getPropertyName() != null) {
+            operativeName = prefix + attribute.getPropertyName();
+            operativeValue = properties.get(operativeName);
+        }
 
         Problems problems = new Problems(monitor);
 
@@ -133,8 +137,10 @@ public class ConfigurationFactory
             String fullName = prefix + deprecatedName;
             String value = properties.get(fullName);
             if (value != null) {
-                String deprecatedReplacement
-                        = attribute.getPropertyName() == null ? "There is no replacement." : format("Use '%s' instead.", prefix + attribute.getPropertyName());
+                String deprecatedReplacement = "There is no replacement.";
+                if (attribute.getPropertyName() != null) {
+                    deprecatedReplacement = format("Use '%s' instead.", prefix + attribute.getPropertyName());
+                }
                 problems.addWarning("Configuration property '%s' has been deprecated. " + deprecatedReplacement, fullName);
 
                 if (operativeValue == null) {
