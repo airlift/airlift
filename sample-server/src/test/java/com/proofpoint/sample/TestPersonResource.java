@@ -35,6 +35,7 @@ public class TestPersonResource
         Response response = resource.get("foo");
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
         assertEquals(response.getEntity(), new Person("foo@example.com", "Mr Foo"));
+        assertNull(response.getMetadata().get("Content-Type")); // content type is set by jersey based on @Produces
     }
 
     @Test
@@ -44,6 +45,7 @@ public class TestPersonResource
 
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
         assertNull(response.getEntity());
+        assertNull(response.getMetadata().get("Content-Type")); // content type is set by jersey based on @Produces
 
         assertEquals(store.get("foo"), new Person("foo@example.com", "Mr Foo"));
     }
@@ -57,6 +59,7 @@ public class TestPersonResource
 
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
         assertNull(response.getEntity());
+        assertNull(response.getMetadata().get("Content-Type")); // content type is set by jersey based on @Produces
 
         assertEquals(store.get("foo"), new Person("bar@example.com", "Mr Bar"));
     }
