@@ -4,6 +4,7 @@ import com.proofpoint.bootstrap.Bootstrap;
 import com.proofpoint.jersey.JerseyModule;
 import com.proofpoint.jetty.JettyModule;
 import com.proofpoint.jmx.JMXModule;
+import org.weakref.jmx.guice.MBeanModule;
 
 import java.io.IOException;
 
@@ -15,6 +16,7 @@ public class Main
         Bootstrap app = new Bootstrap(
                 new JettyModule(),
                 new JerseyModule(),
+                new MBeanModule(),
                 new JMXModule(),
                 new MainModule());
 
