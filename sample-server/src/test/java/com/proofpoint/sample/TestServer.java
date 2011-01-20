@@ -95,7 +95,7 @@ public class TestServer
 
         assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.OK.getStatusCode());
         assertEquals(response.getContentType(), MediaType.APPLICATION_JSON);
-        assertEquals(response.getResponseBody(), "[]");
+        assertEquals(fromJson(response.getResponseBody(), List.class), fromJson("[]", List.class));
     }
 
     @Test
