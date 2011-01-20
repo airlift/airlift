@@ -5,12 +5,12 @@ import com.google.common.collect.MapMaker;
 import com.google.inject.Inject;
 
 import java.util.Collection;
-import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 public class PersonStore
 {
-    private final Map<String, Person> persons;
+    private final ConcurrentMap<String, Person> persons;
 
     @Inject
     public PersonStore(StoreConfig config)
