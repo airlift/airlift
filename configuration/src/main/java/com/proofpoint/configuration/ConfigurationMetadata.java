@@ -23,7 +23,7 @@ public class ConfigurationMetadata<T>
         return getValidConfigurationMetadata(configClass, Problems.NULL_MONITOR);
     }
 
-    public static <T> ConfigurationMetadata<T> getValidConfigurationMetadata(Class<T> configClass, Problems.Monitor monitor) throws ConfigurationException
+    static <T> ConfigurationMetadata<T> getValidConfigurationMetadata(Class<T> configClass, Problems.Monitor monitor) throws ConfigurationException
     {
         ConfigurationMetadata<T> metadata = getConfigurationMetadata(configClass, monitor);
         metadata.getProblems().throwIfHasErrors();
@@ -35,7 +35,7 @@ public class ConfigurationMetadata<T>
         return getConfigurationMetadata(configClass, Problems.NULL_MONITOR);
     }
 
-    public static <T> ConfigurationMetadata<T> getConfigurationMetadata(Class<T> configClass, Problems.Monitor monitor)
+    static <T> ConfigurationMetadata<T> getConfigurationMetadata(Class<T> configClass, Problems.Monitor monitor)
     {
         ConfigurationMetadata<T> metadata = new ConfigurationMetadata<T>(configClass, monitor);
         return metadata;

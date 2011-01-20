@@ -21,7 +21,12 @@ public class ConfigurationFactory
     private final Problems.Monitor monitor;
     private final ConcurrentMap<Class<?>, ConfigurationMetadata<?>> metadataCache;
 
-    public ConfigurationFactory(Map<String, String> properties, final Problems.Monitor monitor)
+    public ConfigurationFactory(Map<String, String> properties)
+    {
+        this(properties, Problems.NULL_MONITOR);
+    }
+
+    ConfigurationFactory(Map<String, String> properties, final Problems.Monitor monitor)
     {
         this.monitor = monitor;
         this.properties = ImmutableMap.copyOf(properties);
@@ -34,11 +39,6 @@ public class ConfigurationFactory
                 return ConfigurationMetadata.getConfigurationMetadata(configClass, monitor);
             }
         });
-    }
-
-    public ConfigurationFactory(Map<String, String> properties)
-    {
-        this(properties, Problems.NULL_MONITOR);
     }
 
     public Map<String, String> getProperties()
