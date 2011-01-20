@@ -1,5 +1,6 @@
 package com.proofpoint.sample;
 
+import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 
 import javax.ws.rs.Consumes;
@@ -20,6 +21,8 @@ public class PersonResource
     @Inject
     public PersonResource(PersonStore store)
     {
+        Preconditions.checkNotNull(store, "store must not be null");
+
         this.store = store;
     }
 
@@ -27,6 +30,8 @@ public class PersonResource
     @Produces(MediaType.APPLICATION_JSON)
     public Response get(@PathParam("id") String id)
     {
+        Preconditions.checkNotNull(id, "id must not be null");
+
         Person person = store.get(id);
 
         if (person == null) {
@@ -38,9 +43,12 @@ public class PersonResource
 
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response update(@PathParam("id") String id, Person updated)
+    public Response update(@PathParam("id") String id, Person person)
     {
-        store.put(id, updated);
+        Preconditions.checkNotNull(id, "id must not be null");
+        Preconditions.checkNotNull(person, "person must not be null");
+
+        store.put(id, person);
 
         return Response.ok().build();
     }
@@ -48,6 +56,8 @@ public class PersonResource
     @DELETE
     public Response delete(@PathParam("id") String id)
     {
+        Preconditions.checkNotNull(id, "id must not be null");
+
         store.delete(id);
 
         return Response.ok().build();

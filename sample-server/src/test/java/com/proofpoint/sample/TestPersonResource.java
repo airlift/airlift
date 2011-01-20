@@ -38,6 +38,12 @@ public class TestPersonResource
         assertNull(response.getMetadata().get("Content-Type")); // content type is set by jersey based on @Produces
     }
 
+    @Test(expectedExceptions = NullPointerException.class)
+    public void testGetNull()
+    {
+        resource.get(null);
+    }
+
     @Test
     public void testAdd()
     {
@@ -48,6 +54,18 @@ public class TestPersonResource
         assertNull(response.getMetadata().get("Content-Type")); // content type is set by jersey based on @Produces
 
         assertEquals(store.get("foo"), new Person("foo@example.com", "Mr Foo"));
+    }
+
+    @Test(expectedExceptions = NullPointerException.class)
+    public void testPutNullId()
+    {
+        resource.update(null, new Person("foo@example.com", "Mr Foo"));
+    }
+
+    @Test(expectedExceptions = NullPointerException.class)
+    public void testPutNullValue()
+    {
+        resource.update("foo", null);
     }
 
     @Test
@@ -82,5 +100,11 @@ public class TestPersonResource
         Response response = resource.delete("foo");
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
         assertNull(response.getEntity());
+    }
+
+    @Test(expectedExceptions = NullPointerException.class)
+    public void testDeleteNullId()
+    {
+        resource.delete(null);
     }
 }
