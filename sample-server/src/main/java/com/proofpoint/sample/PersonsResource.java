@@ -1,5 +1,6 @@
 package com.proofpoint.sample;
 
+import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 
 import javax.ws.rs.GET;
@@ -16,6 +17,8 @@ public class PersonsResource
     @Inject
     public PersonsResource(PersonStore store)
     {
+        Preconditions.checkNotNull(store, "store must not be null");
+
         this.store = store;
     }
 

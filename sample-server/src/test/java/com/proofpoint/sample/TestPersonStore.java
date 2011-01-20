@@ -45,6 +45,17 @@ public class TestPersonStore
     }
 
     @Test
+    public void testIdempotentPut()
+    {
+        PersonStore store = new PersonStore(new StoreConfig());
+        store.put("foo", new Person("foo@example.com", "Mr Foo"));
+        store.put("foo", new Person("foo@example.com", "Mr Bar"));
+
+        assertEquals(new Person("foo@example.com", "Mr Bar"), store.get("foo"));
+        assertEquals(store.getAll().size(), 1);
+    }
+
+    @Test
     public void testDelete()
     {
         PersonStore store = new PersonStore(new StoreConfig());
@@ -53,6 +64,21 @@ public class TestPersonStore
 
         assertNull(store.get("foo"));
         assertTrue(store.getAll().isEmpty());
+    }
+
+    @Test
+    public void testIdempotentDelete()
+    {
+        PersonStore store = new PersonStore(new StoreConfig());
+        store.put("foo", new Person("foo@example.com", "Mr Foo"));
+
+        store.delete("foo");
+        assertTrue(store.getAll().isEmpty());
+        assertNull(store.get("foo"));
+
+        store.delete("foo");
+        assertTrue(store.getAll().isEmpty());
+        assertNull(store.get("foo"));
     }
 
     @Test

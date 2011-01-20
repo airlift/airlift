@@ -420,6 +420,16 @@ public class ConfigurationMetadataTest
     }
 
     @Test
+    public void testEmptyStringInArrayDeprecatedConfigClass()
+            throws Exception
+    {
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(EmptyStringInArrayDeprecatedConfigClass.class);
+        verifyMetaData(metadata, EmptyStringInArrayDeprecatedConfigClass.class, true, false, false, null);
+        Problems problems = metadata.getProblems();
+        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+    }
+
+    @Test
     public void testDeprecatedConfigDuplicatesConfigClass()
             throws Exception
     {
@@ -980,6 +990,22 @@ public class ConfigurationMetadataTest
             this.value = value;
         }
     }
+
+    public static class EmptyStringInArrayDeprecatedConfigClass
+     {
+         private String value;
+
+         @DeprecatedConfig({"foo", ""})
+         public String getValue()
+         {
+             return value;
+         }
+
+         public void setValue(String value)
+         {
+             this.value = value;
+         }
+     }
 
     public static class DeprecatedConfigDuplicatesConfigClass
     {

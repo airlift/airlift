@@ -266,18 +266,12 @@ public class ConfigurationFactoryTest
 
     public static class DeprecatedConfigPresent
     {
-        private String stringA;
-        private String stringB;
+        private String stringA = "defaultA";
+        private String stringB = "defaultB";
 
         public String getStringA()
         {
             return stringA;
-        }
-
-        public DeprecatedConfigPresent()
-        {
-            this.stringA = "defaultA";
-            this.stringB = "defaultB";
         }
 
         @Config("string-a")

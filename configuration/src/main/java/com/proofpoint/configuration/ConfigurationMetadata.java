@@ -1,7 +1,8 @@
 package com.proofpoint.configuration;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Maps;
 import com.google.inject.ConfigurationException;
 import com.proofpoint.configuration.Problems.Monitor;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
 
 public class ConfigurationMetadata<T>
 {
@@ -21,7 +23,7 @@ public class ConfigurationMetadata<T>
         return getValidConfigurationMetadata(configClass, Problems.NULL_MONITOR);
     }
 
-    public static <T> ConfigurationMetadata<T> getValidConfigurationMetadata(Class<T> configClass, Problems.Monitor monitor) throws ConfigurationException
+    static <T> ConfigurationMetadata<T> getValidConfigurationMetadata(Class<T> configClass, Problems.Monitor monitor) throws ConfigurationException
     {
         ConfigurationMetadata<T> metadata = getConfigurationMetadata(configClass, monitor);
         metadata.getProblems().throwIfHasErrors();
@@ -33,7 +35,7 @@ public class ConfigurationMetadata<T>
         return getConfigurationMetadata(configClass, Problems.NULL_MONITOR);
     }
 
-    public static <T> ConfigurationMetadata<T> getConfigurationMetadata(Class<T> configClass, Problems.Monitor monitor)
+    static <T> ConfigurationMetadata<T> getConfigurationMetadata(Class<T> configClass, Problems.Monitor monitor)
     {
         ConfigurationMetadata<T> metadata = new ConfigurationMetadata<T>(configClass, monitor);
         return metadata;
@@ -126,45 +128,37 @@ public class ConfigurationMetadata<T>
         return problems;
     }
 
-    private boolean hasAValue(Config config)
-    {
-        return config != null && config.value() != null;
-    }
-
-    private boolean hasAValue(DeprecatedConfig deprecatedConfig)
-    {
-        return deprecatedConfig != null && deprecatedConfig.value() != null;
-    }
-
-    private boolean annotationsAreValid(Method configMethod)
+    private boolean validateAnnotations(Method configMethod)
     {
         Config config = configMethod.getAnnotation(Config.class);
         DeprecatedConfig deprecatedConfig = configMethod.getAnnotation(DeprecatedConfig.class);
 
-        if (!hasAValue(config) && !hasAValue(deprecatedConfig)) {
-            problems.addError("Method [%s] has neither @Config nor @DeprecatedConfig annotations", configMethod.toGenericString());
+        if (config == null && deprecatedConfig == null)
+        {
+            problems.addError("Method [%s] must have either @Config or @DeprecatedConfig annotations", configMethod.toGenericString());
             return false;
         }
 
         boolean isValid = true;
 
-        if (hasAValue(config) && config.value().isEmpty()) {
+        if (config != null && config.value().isEmpty()) {
             problems.addError("@Config method [%s] annotation has an empty value", configMethod.toGenericString());
             isValid = false;
         }
 
-        if (hasAValue(deprecatedConfig)) {
+        if (deprecatedConfig != null) {
             if (deprecatedConfig.value().length == 0) {
                 problems.addError("@DeprecatedConfig method [%s] annotation has an empty list", configMethod.toGenericString());
                 isValid = false;
             }
 
-            for (String s : deprecatedConfig.value()) {
-                if (s == null || s.isEmpty()) {
-                    problems.addError("Found null or empty string in @DeprecatedConfig method [%s] annotation", configMethod.toGenericString());
+            for (String arrayEntry : deprecatedConfig.value()) {
+                if (arrayEntry == null || arrayEntry.isEmpty()) {
+                    problems.addError("@DeprecatedConfig method [%s] annotation contains null or empty value", configMethod.toGenericString());
                     isValid = false;
-                } else if (config != null && s.equals(config.value())) {
-                    problems.addError("@DeprecatedConfig method [%s] annotation contains the @Config value", configMethod.toGenericString());
+                }
+                else if (config != null && arrayEntry.equals(config.value())) {
+                    problems.addError("@Config property name '%s' appears in @DeprecatedConfig annotation for method [%s]", config.value(), configMethod.toGenericString());
                     isValid = false;
                 }
             }
@@ -175,7 +169,7 @@ public class ConfigurationMetadata<T>
 
     private AttributeMetadata buildAttributeMetadata(Class<?> configClass, Method configMethod)
     {
-        if (!annotationsAreValid(configMethod)) {
+        if (!validateAnnotations(configMethod)) {
             return null;
         }
 
@@ -295,27 +289,27 @@ public class ConfigurationMetadata<T>
         private final Method getter;
         private final Method setter;
         private final String propertyName;
-        private final ImmutableList<String> deprecatedNames;
+        private final SortedSet<String> deprecatedNames;
 
         public AttributeMetadata(Class<?> configClass, String name, String description, String propertyName, String [] deprecatedNames, Method getter, Method setter)
         {
-            if (configClass == null) {
-                throw new NullPointerException("configClass is null");
+            Preconditions.checkNotNull(configClass);
+            Preconditions.checkNotNull(name);
+            Preconditions.checkNotNull(setter);
+
+            Preconditions.checkArgument(propertyName != null || deprecatedNames != null, "Either propertyName or deprecatedNames must be supplied");
+
+            if (deprecatedNames == null) {
+                deprecatedNames = new String[0];
             }
-            if (name == null) {
-                throw new NullPointerException("name is null");
-            }
-            if (propertyName == null && deprecatedNames == null) {
-                throw new NullPointerException("both propertyName and deprecatedNames are null");
-            }
-            if (setter == null) {
-                throw new NullPointerException("setter is null");
-            }
+
             this.configClass = configClass;
             this.name = name;
             this.description = description;
             this.propertyName = propertyName;
-            this.deprecatedNames = deprecatedNames == null ? ImmutableList.<String>of() : ImmutableList.copyOf(deprecatedNames);
+
+            this.deprecatedNames = ImmutableSortedSet.copyOf(deprecatedNames);
+
             this.getter = getter;
             this.setter = setter;
         }
@@ -340,7 +334,7 @@ public class ConfigurationMetadata<T>
             return propertyName;
         }
 
-        public ImmutableList<String> getDeprecatedNames()
+        public SortedSet<String> getDeprecatedNames()
         {
             return deprecatedNames;
         }
