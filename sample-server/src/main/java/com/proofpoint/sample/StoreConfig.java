@@ -1,5 +1,6 @@
 package com.proofpoint.sample;
 
+import com.google.common.base.Preconditions;
 import com.proofpoint.configuration.Config;
 import com.proofpoint.configuration.DeprecatedConfig;
 import com.proofpoint.stats.Duration;
@@ -21,6 +22,9 @@ public class StoreConfig
     @Config("store.ttl")
     public StoreConfig setTtl(Duration ttl)
     {
+        Preconditions.checkNotNull(ttl, "ttl must not be null"); // TODO: remove once configuration supports bean validation
+        Preconditions.checkArgument(ttl.toMillis() > 0, "ttl must be > 0");
+
         this.ttl = ttl;
         return this;
     }
