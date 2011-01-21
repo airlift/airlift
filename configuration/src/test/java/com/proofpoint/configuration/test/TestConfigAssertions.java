@@ -1,12 +1,16 @@
 package com.proofpoint.configuration.test;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.proofpoint.configuration.Config;
+import com.proofpoint.configuration.Config1;
 import com.proofpoint.configuration.DeprecatedConfig;
+import com.proofpoint.configuration.test.ConfigAssertions.$$RecordedConfigData;
 import com.proofpoint.testing.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -391,6 +395,125 @@ public class TestConfigAssertions
         }
     }
 
+    @Test
+    public void testRecordDefaults()
+            throws Exception
+    {
+        PersonConfig config = ConfigAssertions.recordDefaults(PersonConfig.class)
+                .setName("Alice Apple")
+                .setEmail("alice@example.com")
+                .setPhone("1-976-alice")
+                .setHomePage(URI.create("http://alice.example.com"));
+
+        $$RecordedConfigData<PersonConfig> data = ConfigAssertions.getRecordedConfig(config);
+
+        PersonConfig instance = data.getInstance();
+        Assert.assertNotSame(instance, config);
+
+        Assert.assertEquals(data.getInvokedMethods(), ImmutableSet.of(
+                PersonConfig.class.getMethod("setName", String.class),
+                PersonConfig.class.getMethod("setEmail", String.class),
+                PersonConfig.class.getMethod("setPhone", String.class),
+                PersonConfig.class.getMethod("setHomePage", URI.class)));
+
+        Assert.assertEquals(instance.getName(), "Alice Apple");
+        Assert.assertEquals(instance.getEmail(), "alice@example.com");
+        Assert.assertEquals(instance.getPhone(), "1-976-alice");
+        Assert.assertEquals(instance.getHomePage(), URI.create("http://alice.example.com"));
+
+        Assert.assertEquals(config.getName(), "Alice Apple");
+        Assert.assertEquals(config.getEmail(), "alice@example.com");
+        Assert.assertEquals(config.getPhone(), "1-976-alice");
+        Assert.assertEquals(config.getHomePage(), URI.create("http://alice.example.com"));
+    }
+
+    @Test
+    public void testRecordedDefaults()
+            throws Exception
+    {
+        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(PersonConfig.class)
+                .setName("Dain")
+                .setEmail("dain@proofpoint.com")
+                .setPhone(null)
+                .setHomePage(URI.create("http://iq80.com")));
+    }
+
+    @Test
+    public void testRecordedDefaultsOneOfEverything()
+            throws Exception
+    {
+        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(Config1.class)
+                .setBooleanOption(false)
+                .setBoxedBooleanOption(null)
+                .setBoxedByteOption(null)
+                .setBoxedDoubleOption(null)
+                .setBoxedFloatOption(null)
+                .setBoxedIntegerOption(null)
+                .setBoxedLongOption(null)
+                .setBoxedShortOption(null)
+                .setByteOption((byte) 0)
+                .setDoubleOption(0.0)
+                .setFloatOption(0.0f)
+                .setIntegerOption(0)
+                .setLongOption(0)
+                .setMyEnumOption(null)
+                .setShortOption((short) 0)
+                .setStringOption(null)
+                .setValueClassOption(null)
+
+        );
+    }
+
+    @Test
+    public void testRecordedDefaultsFailInvokedDeprecatedSetter()
+            throws MalformedURLException
+    {
+        boolean pass = true;
+        try {
+            ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(PersonConfig.class)
+                    .setName("Dain")
+                    .setEmail("dain@proofpoint.com")
+                    .setPhone(null)
+                    .setHomePageUrl(new URL("http://iq80.com")));
+        }
+        catch (AssertionError e) {
+            // expected
+            pass = false;
+            Assertions.assertContains(e.getMessage(), "HomePageUrl");
+        }
+
+        if (pass) {
+            Assert.fail("Expected AssertionError");
+        }
+    }
+
+    @Test
+    public void testRecordedDefaultsFailInvokedExtraMethod()
+    {
+        boolean pass = true;
+        try {
+            PersonConfig config = ConfigAssertions.recordDefaults(PersonConfig.class)
+                    .setName("Dain")
+                    .setEmail("dain@proofpoint.com")
+                    .setPhone(null)
+                    .setHomePage(URI.create("http://iq80.com"));
+
+            // extra non setter method invoked
+            config.hashCode();
+
+            ConfigAssertions.assertRecordedDefaults(config);
+        }
+        catch (AssertionError e) {
+            // expected
+            pass = false;
+            Assertions.assertContains(e.getMessage(), "hashCode()");
+        }
+
+        if (pass) {
+            Assert.fail("Expected AssertionError");
+        }
+    }
+
     public static class PersonConfig
     {
         private String name = "Dain";
@@ -449,10 +572,14 @@ public class TestConfigAssertions
 
         @DeprecatedConfig("home-page-url")
         public PersonConfig setHomePageUrl(URL homePage)
-                throws URISyntaxException
         {
-            this.homePage = homePage.toURI();
-            return this;
+            try {
+                this.homePage = homePage.toURI();
+                return this;
+            }
+            catch (URISyntaxException e) {
+                throw new IllegalArgumentException(e);
+            }
         }
     }
 }

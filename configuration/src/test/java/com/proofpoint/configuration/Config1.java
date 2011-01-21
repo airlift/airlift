@@ -42,9 +42,10 @@ public class Config1
     }
 
     @Config("stringOption")
-    public void setStringOption(String stringOption)
+    public Config1 setStringOption(String stringOption)
     {
         this.stringOption = stringOption;
+        return this;
     }
 
     public boolean getBooleanOption()
@@ -53,9 +54,10 @@ public class Config1
     }
 
     @Config("booleanOption")
-    public void setBooleanOption(boolean booleanOption)
+    public Config1 setBooleanOption(boolean booleanOption)
     {
         this.booleanOption = booleanOption;
+        return this;
     }
 
     public Boolean getBoxedBooleanOption()
@@ -64,9 +66,10 @@ public class Config1
     }
 
     @Config("boxedBooleanOption")
-    public void setBoxedBooleanOption(Boolean boxedBooleanOption)
+    public Config1 setBoxedBooleanOption(Boolean boxedBooleanOption)
     {
         this.boxedBooleanOption = boxedBooleanOption;
+        return this;
     }
 
     public byte getByteOption()
@@ -75,9 +78,10 @@ public class Config1
     }
 
     @Config("byteOption")
-    public void setByteOption(byte byteOption)
+    public Config1 setByteOption(byte byteOption)
     {
         this.byteOption = byteOption;
+        return this;
     }
 
     public Byte getBoxedByteOption()
@@ -86,9 +90,10 @@ public class Config1
     }
 
     @Config("boxedByteOption")
-    public void setBoxedByteOption(Byte boxedByteOption)
+    public Config1 setBoxedByteOption(Byte boxedByteOption)
     {
         this.boxedByteOption = boxedByteOption;
+        return this;
     }
 
     public short getShortOption()
@@ -97,9 +102,10 @@ public class Config1
     }
 
     @Config("shortOption")
-    public void setShortOption(short shortOption)
+    public Config1 setShortOption(short shortOption)
     {
         this.shortOption = shortOption;
+        return this;
     }
 
     public Short getBoxedShortOption()
@@ -108,9 +114,10 @@ public class Config1
     }
 
     @Config("boxedShortOption")
-    public void setBoxedShortOption(Short boxedShortOption)
+    public Config1 setBoxedShortOption(Short boxedShortOption)
     {
         this.boxedShortOption = boxedShortOption;
+        return this;
     }
 
     public int getIntegerOption()
@@ -119,9 +126,10 @@ public class Config1
     }
 
     @Config("integerOption")
-    public void setIntegerOption(int integerOption)
+    public Config1 setIntegerOption(int integerOption)
     {
         this.integerOption = integerOption;
+        return this;
     }
 
     public Integer getBoxedIntegerOption()
@@ -130,9 +138,10 @@ public class Config1
     }
 
     @Config("boxedIntegerOption")
-    public void setBoxedIntegerOption(Integer boxedIntegerOption)
+    public Config1 setBoxedIntegerOption(Integer boxedIntegerOption)
     {
         this.boxedIntegerOption = boxedIntegerOption;
+        return this;
     }
 
     public long getLongOption()
@@ -141,9 +150,10 @@ public class Config1
     }
 
     @Config("longOption")
-    public void setLongOption(long longOption)
+    public Config1 setLongOption(long longOption)
     {
         this.longOption = longOption;
+        return this;
     }
 
     public Long getBoxedLongOption()
@@ -152,9 +162,10 @@ public class Config1
     }
 
     @Config("boxedLongOption")
-    public void setBoxedLongOption(Long boxedLongOption)
+    public Config1 setBoxedLongOption(Long boxedLongOption)
     {
         this.boxedLongOption = boxedLongOption;
+        return this;
     }
 
     public float getFloatOption()
@@ -163,9 +174,10 @@ public class Config1
     }
 
     @Config("floatOption")
-    public void setFloatOption(float floatOption)
+    public Config1 setFloatOption(float floatOption)
     {
         this.floatOption = floatOption;
+        return this;
     }
 
     public Float getBoxedFloatOption()
@@ -174,9 +186,10 @@ public class Config1
     }
 
     @Config("boxedFloatOption")
-    public void setBoxedFloatOption(Float boxedFloatOption)
+    public Config1 setBoxedFloatOption(Float boxedFloatOption)
     {
         this.boxedFloatOption = boxedFloatOption;
+        return this;
     }
 
     public double getDoubleOption()
@@ -185,9 +198,10 @@ public class Config1
     }
 
     @Config("doubleOption")
-    public void setDoubleOption(double doubleOption)
+    public Config1 setDoubleOption(double doubleOption)
     {
         this.doubleOption = doubleOption;
+        return this;
     }
 
     public Double getBoxedDoubleOption()
@@ -196,9 +210,10 @@ public class Config1
     }
 
     @Config("boxedDoubleOption")
-    public void setBoxedDoubleOption(Double boxedDoubleOption)
+    public Config1 setBoxedDoubleOption(Double boxedDoubleOption)
     {
         this.boxedDoubleOption = boxedDoubleOption;
+        return this;
     }
 
     public MyEnum getMyEnumOption()
@@ -207,9 +222,10 @@ public class Config1
     }
 
     @Config("myEnumOption")
-    public void setMyEnumOption(MyEnum myEnumOption)
+    public Config1 setMyEnumOption(MyEnum myEnumOption)
     {
         this.myEnumOption = myEnumOption;
+        return this;
     }
 
     public ValueClass getValueClassOption()
@@ -218,8 +234,9 @@ public class Config1
     }
 
     @Config("valueClassOption")
-    public void setValueClassOption(ValueClass valueClassOption)
+    public Config1 setValueClassOption(ValueClass valueClassOption)
     {
         this.valueClassOption = valueClassOption;
+        return this;
     }
 }

@@ -14,10 +14,8 @@ public class TestStoreConfig
     @Test
     public void testDefaults()
     {
-        Map<String, Object> expectedAttributeValues = new HashMap<String, Object>();
-        expectedAttributeValues.put("Ttl", new Duration(1, TimeUnit.HOURS));
-
-        ConfigAssertions.assertDefaults(expectedAttributeValues, StoreConfig.class);
+        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(StoreConfig.class)
+                .setTtl(new Duration(1, TimeUnit.HOURS)));
     }
 
     @Test

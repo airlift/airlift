@@ -3,6 +3,8 @@ package com.proofpoint.sample;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.MapMaker;
 import com.google.inject.Inject;
+import org.weakref.jmx.Flatten;
+import org.weakref.jmx.Managed;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
@@ -11,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 public class PersonStore
 {
     private final ConcurrentMap<String, Person> persons;
+    private final PersonStoreStats stats = new PersonStoreStats();
 
     @Inject
     public PersonStore(StoreConfig config)
@@ -22,11 +25,22 @@ public class PersonStore
                 .makeMap();
     }
 
+    @Managed
+    @Flatten
+    public PersonStoreStats getStats()
+    {
+        return stats;
+    }
+
     public Person get(String id)
     {
         Preconditions.checkNotNull(id, "id must not be null");
 
-        return persons.get(id);
+        Person person = persons.get(id);
+        if (person != null) {
+            stats.personFetched();
+        }
+        return person;
     }
 
     public void put(String id, Person person)
@@ -34,14 +48,22 @@ public class PersonStore
         Preconditions.checkNotNull(id, "id must not be null");
         Preconditions.checkNotNull(person, "person must not be null");
 
-        persons.put(id, person);
+        boolean added = persons.put(id, person) == null;
+        if (added) {
+            stats.personAdded();
+        } else {
+            stats.personUpdated();
+        }
     }
 
     public void delete(String id)
     {
         Preconditions.checkNotNull(id, "id must not be null");
 
-        persons.remove(id);
+        boolean removed = persons.remove(id) == null;
+        if (removed) {
+            stats.personRemoved();
+        }
     }
 
     public Collection<Person> getAll()

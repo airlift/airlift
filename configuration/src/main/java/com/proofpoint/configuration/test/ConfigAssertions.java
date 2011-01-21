@@ -1,18 +1,37 @@
 package com.proofpoint.configuration.test;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.MapMaker;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationMetadata;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
 import com.proofpoint.testing.Assertions;
+import net.sf.cglib.proxy.Enhancer;
+import net.sf.cglib.proxy.MethodInterceptor;
+import net.sf.cglib.proxy.MethodProxy;
 import org.testng.Assert;
 
 import java.lang.reflect.Method;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentMap;
 
 public final class ConfigAssertions
 {
+    private static final Method GET_RECORDING_CONFIG_METHOD;
+
+    static {
+        try {
+            GET_RECORDING_CONFIG_METHOD = $$RecordingConfigProxy.class.getMethod("$$getRecordedConfig");
+        }
+        catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private ConfigAssertions()
     {
     }
@@ -179,7 +198,7 @@ public final class ConfigAssertions
         }
     }
 
-    private static <T> void assertAttributesNotEqual(ConfigurationMetadata<T> metadata , T actual, T expected)
+    private static <T> void assertAttributesNotEqual(ConfigurationMetadata<T> metadata, T actual, T expected)
     {
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
             Method getter = attribute.getGetter();
@@ -191,6 +210,116 @@ public final class ConfigAssertions
             Assertions.assertNotEquals(actualAttributeValue, expectedAttributeValue, attribute.getName());
         }
     }
+
+    public static <T> void assertRecordedDefaults(T recordedConfig)
+    {
+        $$RecordedConfigData<T> recordedConfigData = getRecordedConfig(recordedConfig);
+        Set<Method> invokedMethods = recordedConfigData.getInvokedMethods();
+
+        T config = recordedConfigData.getInstance();
+
+        Class<T> configClass = (Class<T>) config.getClass();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getValidConfigurationMetadata(configClass);
+
+        // collect information about the attributes that have been set
+        Map<String, Object> attributeValues = new TreeMap<String, Object>();
+        Set<String> setDeprecatedAttributes = new TreeSet<String>();
+        Set<Method> validSetterMethods = new HashSet<Method>();
+        for (AttributeMetadata attribute : metadata.getAttributes().values()) {
+            if (attribute.getPropertyName() != null) {
+                validSetterMethods.add(attribute.getSetter());
+            }
+
+            if (invokedMethods.contains(attribute.getSetter())) {
+                if (attribute.getPropertyName() != null) {
+                    Object value = invoke(config, attribute.getGetter());
+                    attributeValues.put(attribute.getName(), value);
+                } else {
+                    setDeprecatedAttributes.add(attribute.getName());
+                }
+            }
+        }
+
+        // verify no deprecated attribute setters have been called
+        if (!setDeprecatedAttributes.isEmpty()) {
+            Assert.fail("Invoked deprecated attribute setter methods: " + setDeprecatedAttributes);
+        }
+
+        // verify no other methods have been set
+        if (!validSetterMethods.containsAll(invokedMethods)) {
+            Set<Method> invalidInvocations = new HashSet<Method>(invokedMethods);
+            invalidInvocations.removeAll(validSetterMethods);
+            Assert.fail("Invoked non-attribute setter methods: " + invalidInvocations);
+
+        }
+        assertDefaults(attributeValues, configClass);
+    }
+
+    public static <T> T recordDefaults(Class<T> type)
+    {
+        final T instance = newDefaultInstance(type);
+        T proxy = (T) Enhancer.create(type, new Class[]{$$RecordingConfigProxy.class}, new MethodInterceptor()
+        {
+            private final ConcurrentMap<Method, Object> invokedMethods = new MapMaker().makeMap();
+
+            @Override
+            public Object intercept(Object proxy, Method method, Object[] args, MethodProxy methodProxy)
+                    throws Throwable
+            {
+                if (GET_RECORDING_CONFIG_METHOD.equals(method)) {
+                    return new $$RecordedConfigData<T>(instance, ImmutableSet.copyOf(invokedMethods.keySet()));
+                }
+
+                invokedMethods.put(method, Boolean.TRUE);
+
+                Object result = methodProxy.invoke(instance, args);
+                if (result == instance) {
+                    return proxy;
+                }
+                else {
+                    return result;
+                }
+            }
+        });
+
+        return proxy;
+    }
+
+    static <T> $$RecordedConfigData<T> getRecordedConfig(T config)
+    {
+        if (!(config instanceof $$RecordingConfigProxy)) {
+            throw new IllegalArgumentException("Configuration was not created with the recordDefaults method");
+        }
+        return (($$RecordingConfigProxy<T>) config).$$getRecordedConfig();
+    }
+
+    public static class $$RecordedConfigData<T>
+    {
+        private final T instance;
+        private final Set<Method> invokedMethods;
+
+        public $$RecordedConfigData(T instance, Set<Method> invokedMethods)
+        {
+            this.instance = instance;
+            this.invokedMethods = invokedMethods;
+        }
+
+        public T getInstance()
+        {
+            return instance;
+        }
+
+        public Set<Method> getInvokedMethods()
+        {
+            return invokedMethods;
+        }
+    }
+
+    public static interface $$RecordingConfigProxy<T>
+    {
+        $$RecordedConfigData<T> $$getRecordedConfig();
+    }
+
 
     private static <T> T newInstance(Class<T> configClass, Map<String, String> properties)
     {
