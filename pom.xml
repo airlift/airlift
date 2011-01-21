@@ -184,6 +184,7 @@
         <module>collections</module>
         <module>stats</module>
         <module>dbpool</module>
+        <module>base</module>
         <module>sample-server</module>
         <module>experimental</module>
     </modules>
