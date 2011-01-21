@@ -185,6 +185,7 @@
         <module>stats</module>
         <module>dbpool</module>
         <module>sample-server</module>
+        <module>experimental</module>
     </modules>
 </project>
 
