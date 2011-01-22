@@ -15,7 +15,7 @@ import javax.ws.rs.core.Response;
  * parameter in a POST. If both the X-HTTP-Method-Override header and _method parameter are present in
  * the request then the X-HTTP-Method-Override header will be used.
  */
-class OverrideMethodFilter
+public class OverrideMethodFilter
         implements ContainerRequestFilter
 {
     /**
