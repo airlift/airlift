@@ -7,7 +7,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-public class JavaLoggingToSlf4JHandler
+class JavaLoggingToSlf4JHandler
         extends Handler
 {
     public void publish(LogRecord record)
