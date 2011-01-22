@@ -101,73 +101,84 @@
                 <artifactId>maven-assembly-plugin</artifactId>
             </plugin>
 
-            <!-- TODO:
-                - exclude unwanted files (e.g., *.iml) from archetype. We may need to replace the generated
-                  archetype-metadata.xml with a custom one.
-                - rewrite the POM so that it doesn't contain all the archetype-related logic
-            -->
-
-
-            <!-- =========== ONLY FOR ARCHETYPE - remove from generated project ============== -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-archetype-plugin</artifactId>
-                <version>2.1-pp-7</version>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.1</version>
                 <configuration>
-                    <archetypeExcludedExtentions>**/*.iml</archetypeExcludedExtentions>
-                    <!-- need to override the default output directory (target/generated-sources/archetype)
-                         because IDEA likes to load everything under generated-sources into the classpath. -->
-                    <outputDirectory>${project.build.directory}/archetype-sources</outputDirectory>
+                    <source>1.6</source>
+                    <target>1.6</target>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.3.1</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>${main-class}</mainClass>
+                            <addClasspath>true</addClasspath>
+                        </manifest>
+                        <manifestEntries>
+                            <Implementation-Version>${project.version}</Implementation-Version>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.2-beta-5</version>
+
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>distribution</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.proofpoint.platform</groupId>
+                        <artifactId>packaging</artifactId>
+                        <version>${platform-version}</version>
+                    </dependency>
+                </dependencies>
+
                 <executions>
                     <execution>
-                        <id>create-archetype</id>
-                        <phase>generate-sources</phase>
+                        <id>package</id>
+                        <phase>package</phase>
                         <goals>
-                            <goal>create-from-project</goal>
+                            <goal>single</goal>
                         </goals>
                     </execution>
                 </executions>
             </plugin>
 
             <plugin>
-                <artifactId>maven-invoker-plugin</artifactId>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
                 <version>1.5</version>
-                <configuration>
-                    <debug>true</debug>
-                    <pomIncludes>
-                        <pomInclude>archetype-sources/pom.xml</pomInclude>
-                    </pomIncludes>
-                    <projectsDirectory>${project.build.directory}</projectsDirectory>
-                </configuration>
                 <executions>
                     <execution>
-                        <id>package-archetype</id>
+                        <id>attach-artifacts</id>
                         <phase>package</phase>
                         <goals>
-                            <goal>run</goal>
+                            <goal>attach-artifact</goal>
                         </goals>
                         <configuration>
-                            <goals>
-                                <goal>package</goal>
-                            </goals>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>install-archetype</id>
-                        <phase>install</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <goals>
-                                <goal>install</goal>
-                            </goals>
+                            <artifacts>
+                                <artifact>
+                                    <file>README.txt</file>
+                                    <type>txt</type>
+                                    <classifier>readme</classifier>
+                                </artifact>
+                            </artifacts>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-            <!-- ========================================================== -->
         </plugins>
     </build>
 
