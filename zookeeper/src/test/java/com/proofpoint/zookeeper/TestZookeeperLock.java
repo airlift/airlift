@@ -40,7 +40,7 @@ public class TestZookeeperLock
     public void testTimedLock()
         throws Exception
     {
-        String lockPath = "/a/b";
+        String lockPath = "/timed/lock";
         ZookeeperClientConfig config = new ZookeeperClientConfig()
         {
             @Override
