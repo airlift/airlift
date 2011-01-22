@@ -19,9 +19,7 @@ import com.proofpoint.lifecycle.LifeCycleModule;
 import com.proofpoint.log.Logger;
 import com.proofpoint.log.Logging;
 import com.proofpoint.log.LoggingConfiguration;
-import com.proofpoint.log.LoggingWriter;
 
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;

@@ -1,11 +1,13 @@
-package com.proofpoint.log;
+package com.proofpoint.bootstrap;
+
+import com.proofpoint.log.Logger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 
-public class LoggingWriter extends StringWriter
+class LoggingWriter extends StringWriter
 {
     private final Logger logger;
     private final Type type;
