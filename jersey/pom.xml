@@ -18,7 +18,7 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>jetty</artifactId>
-            <version>0.24-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -53,6 +53,18 @@
         </dependency>
 
         <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-jaxrs</artifactId>
+            <version>1.5.6</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-core-asl</artifactId>
+            <version>1.5.6</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>testing</artifactId>
             <version>0.24-SNAPSHOT</version>
@@ -63,6 +75,7 @@
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <version>5.14</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
