@@ -41,6 +41,7 @@ public class ZookeeperTestServerInstance
      */
     public ZookeeperTestServerInstance() throws Exception
     {
+        // TODO: choose random port
         this(4534);
     }
 
