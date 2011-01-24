@@ -1,4 +1,4 @@
-package com.proofpoint.lifecycle;
+package com.proofpoint.bootstrap;
 
 import com.google.common.collect.Maps;
 

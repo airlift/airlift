@@ -1,8 +1,8 @@
-package com.proofpoint.lifecycle;
+package com.proofpoint.bootstrap;
 
 import javax.annotation.PostConstruct;
 
-public interface BaseTwoWithFooMethod
+public interface BaseOneWithFooMethod
 {
     @PostConstruct
     public void foo();

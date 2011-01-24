@@ -1,4 +1,4 @@
-package com.proofpoint.lifecycle;
+package com.proofpoint.bootstrap;
 
 public class FooTestInstance implements BaseOneWithFooMethod, BaseTwoWithFooMethod
 {

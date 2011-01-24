@@ -1,4 +1,4 @@
-package com.proofpoint.lifecycle;
+package com.proofpoint.bootstrap;
 
 import com.google.common.collect.Lists;
 import com.google.inject.Binder;
@@ -20,7 +20,7 @@ import static com.google.inject.matcher.Matchers.any;
 /**
  * Guice module for binding the LifeCycle manager
  */
-public class LifeCycleModule implements Module
+class LifeCycleModule implements Module
 {
     private final List<Object>                      injectedInstances = Lists.newArrayList();
     private final LifeCycleMethodsMap               lifeCycleMethodsMap = new LifeCycleMethodsMap();

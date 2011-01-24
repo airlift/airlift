@@ -19,8 +19,6 @@ import com.proofpoint.configuration.ConfigurationValidator;
 import com.proofpoint.configuration.ValidationErrorModule;
 import com.proofpoint.formatting.ColumnPrinter;
 import com.proofpoint.jmx.JMXInspector;
-import com.proofpoint.lifecycle.LifeCycleManager;
-import com.proofpoint.lifecycle.LifeCycleModule;
 import com.proofpoint.log.Logger;
 import com.proofpoint.log.Logging;
 import com.proofpoint.log.LoggingConfiguration;
@@ -36,7 +34,7 @@ import java.util.Map;
  * <ul>
  *  <li>load, validate and bind configurations</li>
  *  <li>initialize logging</li>
- *  <li>set up lifecycle management</li>
+ *  <li>set up bootstrap management</li>
  *  <li>create an Guice injector</li>
  * </ul>
  */

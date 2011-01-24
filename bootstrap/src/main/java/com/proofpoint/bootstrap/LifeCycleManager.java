@@ -1,4 +1,4 @@
-package com.proofpoint.lifecycle;
+package com.proofpoint.bootstrap;
 
 import com.google.common.collect.Lists;
 import com.proofpoint.log.Logger;
@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Manages PostConstruct and PreDestroy life cycles
  */
-public class LifeCycleManager
+class LifeCycleManager
 {
     private final Logger                    log = Logger.get(getClass());
     private final AtomicReference<State>    state = new AtomicReference<State>(State.LATENT);
