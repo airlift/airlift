@@ -20,18 +20,16 @@ import java.util.Set;
  * Utility to output all the Configuration properties used in an Injection instance.
  * The property names used, the default values for each and the runtime values for each
  * are displayed (sorted by property name).
- * <br>
- * <br>
- *
+ * <p/>
  * To use, call: <code>injector.getInstance(ConfigInspector.class).print()</code><br>
  * This outputs via a logger. You can optionally pass a stream to capture the output.
  */
 public class ConfigurationInspector
 {
-    private static final String     PROPERTY_NAME_COLUMN = "PROPERTY";
-    private static final String     DEFAULT_VALUE_COLUMN = "DEFAULT";
-    private static final String     CURRENT_VALUE_COLUMN = "RUNTIME";
-    private static final String     DESCRIPTION_COLUMN = "DESCRIPTION";
+    private static final String PROPERTY_NAME_COLUMN = "PROPERTY";
+    private static final String DEFAULT_VALUE_COLUMN = "DEFAULT";
+    private static final String CURRENT_VALUE_COLUMN = "RUNTIME";
+    private static final String DESCRIPTION_COLUMN = "DESCRIPTION";
 
     private final Set<ConfigRecord> configs;
 
@@ -52,20 +50,17 @@ public class ConfigurationInspector
         @Override
         public boolean equals(Object o)
         {
-            if ( this == o )
-            {
+            if (this == o) {
                 return true;
             }
-            if ( o == null || getClass() != o.getClass() )
-            {
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
 
-            ConfigRecord that = (ConfigRecord)o;
+            ConfigRecord that = (ConfigRecord) o;
 
             //noinspection RedundantIfStatement
-            if ( !propertyName.equals(that.propertyName) )
-            {
+            if (!propertyName.equals(that.propertyName)) {
                 return false;
             }
 
@@ -100,9 +95,10 @@ public class ConfigurationInspector
     }
 
     @Inject
-    public ConfigurationInspector(Injector injector) throws InvocationTargetException, IllegalAccessException
+    public ConfigurationInspector(Injector injector)
+            throws InvocationTargetException, IllegalAccessException
     {
-        ImmutableSortedSet.Builder<ConfigRecord>    builder = ImmutableSortedSet.naturalOrder();
+        ImmutableSortedSet.Builder<ConfigRecord> builder = ImmutableSortedSet.naturalOrder();
         for (Entry<Key<?>, Binding<?>> entry : injector.getBindings().entrySet()) {
             Binding<?> binding = entry.getValue();
             if (binding instanceof ProviderInstanceBinding) {
@@ -123,7 +119,7 @@ public class ConfigurationInspector
      *
      * @param out stream
      */
-    public void     print(PrintWriter out)
+    public void print(PrintWriter out)
     {
         ColumnPrinter columnPrinter = makePrinter();
         columnPrinter.print(out);
@@ -132,15 +128,14 @@ public class ConfigurationInspector
 
     private ColumnPrinter makePrinter()
     {
-        ColumnPrinter       columnPrinter = new ColumnPrinter();
+        ColumnPrinter columnPrinter = new ColumnPrinter();
 
         columnPrinter.addColumn(PROPERTY_NAME_COLUMN);
         columnPrinter.addColumn(DEFAULT_VALUE_COLUMN);
         columnPrinter.addColumn(CURRENT_VALUE_COLUMN);
         columnPrinter.addColumn(DESCRIPTION_COLUMN);
 
-        for ( ConfigRecord record : configs )
-        {
+        for (ConfigRecord record : configs) {
             columnPrinter.addValue(PROPERTY_NAME_COLUMN, record.propertyName);
             columnPrinter.addValue(DEFAULT_VALUE_COLUMN, record.defaultValue);
             columnPrinter.addValue(CURRENT_VALUE_COLUMN, record.currentValue);
@@ -149,7 +144,8 @@ public class ConfigurationInspector
         return columnPrinter;
     }
 
-    private void addConfig(ConfigurationProvider<?> configurationProvider, ImmutableSortedSet.Builder<ConfigRecord> builder) throws InvocationTargetException, IllegalAccessException
+    private void addConfig(ConfigurationProvider<?> configurationProvider, ImmutableSortedSet.Builder<ConfigRecord> builder)
+            throws InvocationTargetException, IllegalAccessException
     {
         ConfigurationMetadata<?> metadata = configurationProvider.getConfigurationMetadata();
 
@@ -169,7 +165,9 @@ public class ConfigurationInspector
             String defaultValue = getValue(getter, defaults, "-- none --");
             String currentValue = getValue(getter, instance, "-- n/a --");
             String description = attribute.getDescription();
-            if (description == null) description = "";
+            if (description == null) {
+                description = "";
+            }
 
             builder.add(new ConfigRecord(propertyName, defaultValue, currentValue, description));
 
@@ -186,7 +184,8 @@ public class ConfigurationInspector
         }
     }
 
-    private String getValue(Method getter, Object instance, String defaultValue) {
+    private String getValue(Method getter, Object instance, String defaultValue)
+    {
         if (getter == null || instance == null) {
             return defaultValue;
         }
