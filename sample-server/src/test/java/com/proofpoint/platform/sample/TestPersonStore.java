@@ -1,7 +1,6 @@
-package com.proofpoint.sample;
+package com.proofpoint.platform.sample;
 
 import com.proofpoint.stats.Duration;
-import com.proofpoint.testing.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

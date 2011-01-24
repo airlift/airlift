@@ -1,4 +1,4 @@
-package com.proofpoint.sample;
+package com.proofpoint.platform.sample;
 
 import org.testng.annotations.Test;
 

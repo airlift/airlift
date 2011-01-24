@@ -1,4 +1,4 @@
-package com.proofpoint.sample;
+package com.proofpoint.platform.sample;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;

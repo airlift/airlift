@@ -1,4 +1,4 @@
-package com.proofpoint.sample;
+package com.proofpoint.platform.sample;
 
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonCreator;

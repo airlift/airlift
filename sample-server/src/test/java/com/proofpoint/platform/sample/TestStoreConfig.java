@@ -1,11 +1,10 @@
-package com.proofpoint.sample;
+package com.proofpoint.platform.sample;
 
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.test.ConfigAssertions;
 import com.proofpoint.stats.Duration;
 import org.testng.annotations.Test;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 

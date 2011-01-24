@@ -1,4 +1,4 @@
-package com.proofpoint.sample;
+package com.proofpoint.platform.sample;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.MapMaker;

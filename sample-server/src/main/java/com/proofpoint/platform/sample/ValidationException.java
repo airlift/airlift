@@ -1,4 +1,4 @@
-package com.proofpoint.sample;
+package com.proofpoint.platform.sample;
 
 import javax.validation.ConstraintViolation;
 import java.util.Set;

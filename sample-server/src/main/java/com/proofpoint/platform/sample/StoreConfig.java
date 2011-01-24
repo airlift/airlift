@@ -1,4 +1,4 @@
-package com.proofpoint.sample;
+package com.proofpoint.platform.sample;
 
 import com.google.common.base.Preconditions;
 import com.proofpoint.configuration.Config;

@@ -10,7 +10,7 @@
     </parent>
 
     <properties>
-        <main-class>com.proofpoint.sample.Main</main-class>
+        <main-class>com.proofpoint.platform.sample.Main</main-class>
     </properties>
 
     <groupId>com.proofpoint.platform</groupId>
