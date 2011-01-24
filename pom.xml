@@ -172,7 +172,7 @@
         <module>launcher</module>
         <module>packaging</module>
         <module>log</module>
-        <module>jetty</module>
+        <module>http-server</module>
         <module>jersey</module>
         <module>jmx</module>
         <module>bootstrap</module>

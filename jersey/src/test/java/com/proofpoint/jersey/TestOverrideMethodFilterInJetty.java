@@ -9,8 +9,8 @@ import com.ning.http.client.Request;
 import com.ning.http.client.RequestBuilder;
 import com.ning.http.client.RequestType;
 import com.ning.http.client.Response;
-import com.proofpoint.jetty.JettyConfig;
-import com.proofpoint.jetty.JettyProvider;
+import com.proofpoint.http.server.HttpServerConfig;
+import com.proofpoint.http.server.JettyProvider;
 import org.eclipse.jetty.server.Server;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -38,7 +38,7 @@ public class TestOverrideMethodFilterInJetty
 {
     private Server server;
     private File tempDir;
-    private JettyConfig config;
+    private HttpServerConfig config;
     private TestResource resource;
     private AsyncHttpClient client;
 
@@ -47,7 +47,7 @@ public class TestOverrideMethodFilterInJetty
             throws Exception
     {
         tempDir = Files.createTempDir().getCanonicalFile(); // getCanonicalFile needed to get around Issue 365 (http://code.google.com/p/guava-libraries/issues/detail?id=365)
-        config = makeJettyConfig(tempDir);
+        config = makeHttpServerConfig(tempDir);
 
         resource = new TestResource();
         server = createServer(config, resource);
@@ -225,7 +225,7 @@ public class TestOverrideMethodFilterInJetty
         assertNonOverridableMethod(buildRequestWithQueryParam(PUT, GET));
     }
 
-    private JettyConfig makeJettyConfig(final File tempDir)
+    private HttpServerConfig makeHttpServerConfig(final File tempDir)
             throws IOException
     {
         // TODO: replace with NetUtils.findUnusedPort()
@@ -234,7 +234,7 @@ public class TestOverrideMethodFilterInJetty
         final int port = socket.getLocalPort();
         socket.close();
 
-        return new JettyConfig()
+        return new HttpServerConfig()
             .setHttpPort(port)
             .setLogPath(new File(tempDir, "jetty.log").getAbsolutePath());
     }
@@ -293,7 +293,7 @@ public class TestOverrideMethodFilterInJetty
         }
     }
     
-    private Server createServer(final JettyConfig config, final TestResource resource)
+    private Server createServer(final HttpServerConfig config, final TestResource resource)
     {
         return Guice.createInjector(new JerseyModule(),
                                     new Module()
@@ -302,7 +302,7 @@ public class TestOverrideMethodFilterInJetty
                                         public void configure(Binder binder)
                                         {
                                             binder.bind(Server.class).toProvider(JettyProvider.class);
-                                            binder.bind(JettyConfig.class).toInstance(config);
+                                            binder.bind(HttpServerConfig.class).toInstance(config);
                                             binder.bind(TestResource.class).toInstance(resource);
                                         }
                                     }).getInstance(Server.class);

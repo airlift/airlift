@@ -11,7 +11,7 @@ import com.ning.http.client.Response;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.jersey.JerseyModule;
-import com.proofpoint.jetty.JettyModule;
+import com.proofpoint.http.server.HttpServerModule;
 import com.proofpoint.net.NetUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.eclipse.jetty.server.Server;
@@ -56,7 +56,7 @@ public class TestServer
 
         // TODO: wrap all this stuff in a TestBootstrap class
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
-        Injector injector = Guice.createInjector(new JettyModule(),
+        Injector injector = Guice.createInjector(new HttpServerModule(),
                                                  new JerseyModule(),
                                                  new MainModule(),
                                                  new ConfigurationModule(configFactory));

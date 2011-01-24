@@ -17,7 +17,7 @@
     <dependencies>
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>jetty</artifactId>
+            <artifactId>http-server</artifactId>
             <version>${project.version}</version>
         </dependency>
 

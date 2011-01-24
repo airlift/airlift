@@ -207,6 +207,14 @@ public class ConfigurationMetadata<T>
             catch (Exception ignored) {
                 // it is ok to have a write only attribute
             }
+            if (getter == null) {
+                try {
+                    getter = configClass.getMethod("is" + attributeName);
+                }
+                catch (Exception ignored) {
+                    // it is ok to have a write only attribute
+                }
+            }
             return new AttributeMetadata(configClass, attributeName, description, propertyName, deprecatedNames, getter, configMethod);
         } else if (attributeName.startsWith("get")) {
             // annotated getter
