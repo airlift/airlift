@@ -16,7 +16,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-archetype-plugin</artifactId>
-                <version>2.1-pp-10</version>
+                <version>2.1-pp-11</version>
                 <configuration>
                     <archetypeExcludedExtentions>**/*.iml</archetypeExcludedExtentions>
                     <!-- need to override the default output directory (target/generated-sources/archetype)
