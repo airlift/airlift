@@ -3,7 +3,7 @@ package com.proofpoint.platform.sample;
 import com.google.common.base.Preconditions;
 import com.proofpoint.configuration.Config;
 import com.proofpoint.configuration.DeprecatedConfig;
-import com.proofpoint.stats.Duration;
+import com.proofpoint.units.Duration;
 
 import javax.validation.constraints.NotNull;
 import java.util.concurrent.TimeUnit;

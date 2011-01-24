@@ -2,10 +2,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.proofpoint.platform</groupId>
-    <artifactId>stats</artifactId>
+    <artifactId>units</artifactId>
     <packaging>jar</packaging>
     <version>0.24-SNAPSHOT</version>
-    <name>stats</name>
+    <name>units</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
@@ -15,24 +15,6 @@
     </parent>
     
     <dependencies>
-        <dependency>
-            <groupId>com.proofpoint.platform</groupId>
-            <artifactId>units</artifactId>
-            <version>0.24-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.weakref</groupId>
-            <artifactId>jmxutils</artifactId>
-            <version>1.8</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-math</artifactId>
-            <version>2.1</version>
-        </dependency>
-
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
@@ -46,7 +28,6 @@
             <version>0.24-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
     <build>
@@ -67,6 +48,5 @@
             </plugin>
         </plugins>
     </build>
-
 </project>
 

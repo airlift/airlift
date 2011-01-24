@@ -1,12 +1,11 @@
 package com.proofpoint.dbpool;
 
+import com.proofpoint.stats.TimedStat;
+import com.proofpoint.units.Duration;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
 import java.util.concurrent.atomic.AtomicLong;
-
-import com.proofpoint.stats.Duration;
-import com.proofpoint.stats.TimedStat;
 
 public final class ManagedDataSourceStats
 {

@@ -1,6 +1,6 @@
 package com.proofpoint.dbpool;
 
-import com.proofpoint.stats.Duration;
+import com.proofpoint.units.Duration;
 
 import javax.sql.ConnectionPoolDataSource;
 import javax.sql.PooledConnection;
@@ -26,7 +26,7 @@ class PooledDataSource extends ManagedDataSource
     public void dispose() {
         disposed.set(true);
 
-        // there is really no harm in running this loop everytime dispose is called
+        // there is really no harm in running this loop every time dispose is called
         for (PooledConnection pooledConnection = pool.poll(); pooledConnection != null; pooledConnection = pool.poll()) {
             try {
                 pooledConnection.close();

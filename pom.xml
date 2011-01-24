@@ -182,6 +182,7 @@
         <module>io</module>
         <module>collections</module>
         <module>stats</module>
+        <module>units</module>
         <module>dbpool</module>
         <module>base</module>
         <module>sample-server</module>

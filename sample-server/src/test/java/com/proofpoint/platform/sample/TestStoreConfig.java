@@ -2,7 +2,7 @@ package com.proofpoint.platform.sample;
 
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.test.ConfigAssertions;
-import com.proofpoint.stats.Duration;
+import com.proofpoint.units.Duration;
 import org.testng.annotations.Test;
 
 import java.util.Map;

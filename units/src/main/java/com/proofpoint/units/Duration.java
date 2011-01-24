@@ -1,4 +1,4 @@
-package com.proofpoint.stats;
+package com.proofpoint.units;
 
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -168,7 +168,7 @@ public final class Duration implements Comparable<Duration>
         String magnitudeString = matcher.group(1);
         double magnitude = Double.parseDouble(magnitudeString);
 
-        // Determine TimeEnit of the duration
+        // Determine TimeUnit of the duration
         String timeUnitString = matcher.group(2);
         TimeUnit timeUnit;
         if (timeUnitString.equals("ms")) {

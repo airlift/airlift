@@ -1,20 +1,8 @@
 package com.proofpoint.dbpool;
 
 import com.proofpoint.dbpool.MockConnectionPoolDataSource.MockConnection;
-import static com.proofpoint.testing.Assertions.assertGreaterThan;
-
-import com.proofpoint.stats.Duration;
-import static com.proofpoint.stats.Duration.nanosSince;
-
+import com.proofpoint.units.Duration;
 import org.testng.Assert;
-
-import static com.proofpoint.testing.Assertions.assertInstanceOf;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertSame;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
-import static org.testng.AssertJUnit.assertNotNull;
 import org.testng.annotations.Test;
 
 import javax.sql.ConnectionPoolDataSource;
@@ -23,15 +11,25 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static com.proofpoint.testing.Assertions.assertGreaterThan;
+import static com.proofpoint.testing.Assertions.assertInstanceOf;
+import static com.proofpoint.units.Duration.nanosSince;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
+import static org.testng.AssertJUnit.assertNotNull;
 
 public class ManagedDataSourceTest
 {
@@ -79,7 +77,7 @@ public class ManagedDataSourceTest
         long start = System.nanoTime();
         try {
             dataSource.getConnection();
-            Assert.fail("Expected SQLExcpetion from timeout");
+            Assert.fail("Expected SQLException from timeout");
         }
         catch (SQLException expected) {
         }
@@ -93,7 +91,7 @@ public class ManagedDataSourceTest
         start = System.nanoTime();
         try {
             dataSource.getConnection();
-            Assert.fail("Expected SQLExcpetion from timeout");
+            Assert.fail("Expected SQLException from timeout");
         }
         catch (SQLException expected) {
         }
@@ -101,7 +99,7 @@ public class ManagedDataSourceTest
         assertGreaterThan(duration, new Duration(50, MILLISECONDS));
         assertEquals(dataSource.getConnectionsActive(), 1);
 
-        // verify proper handeling of illegal values
+        // verify proper handling of illegal values
         try {
             dataSource.setMaxConnectionWaitMillis(null);
             fail("NullPointerException IllegalArgumentException");
@@ -109,10 +107,10 @@ public class ManagedDataSourceTest
         catch (NullPointerException e) {
         }
         assertEquals(dataSource.getMaxConnectionWaitMillis(), 50);
-        // verify proper handeling of illegal values
+        // verify proper handling of illegal values
         try {
             dataSource.setMaxConnectionWaitMillis(new Duration(0, MILLISECONDS));
-            fail("Excpected IllegalArgumentException");
+            fail("Expected IllegalArgumentException");
         }
         catch (IllegalArgumentException e) {
         }
@@ -127,7 +125,7 @@ public class ManagedDataSourceTest
      * </p> 1) Test initial limit
      * </p> 2) Test limit increase
      * </p> 3) Test decrease below current checkout
-     * </p> 4) Verify handeling of illegal values
+     * </p> 4) Verify handling of illegal values
      */
     @Test
     public void testMaxConnections()
@@ -145,7 +143,7 @@ public class ManagedDataSourceTest
         // verify that we can't another connection
         try {
             dataSource.getConnection();
-            Assert.fail("Expected SQLExcpetion from timeout");
+            Assert.fail("Expected SQLException from timeout");
         }
         catch (SQLException expected) {
         }
@@ -160,7 +158,7 @@ public class ManagedDataSourceTest
         // verify that we can't get another connection
         try {
             dataSource.getConnection();
-            Assert.fail("Expected SQLExcpetion from timeout");
+            Assert.fail("Expected SQLException from timeout");
         }
         catch (SQLException expected) {
         }
@@ -175,7 +173,7 @@ public class ManagedDataSourceTest
         // first verify that we still can't get more connections
         try {
             dataSource.getConnection();
-            Assert.fail("Expected SQLExcpetion from timeout");
+            Assert.fail("Expected SQLException from timeout");
         }
         catch (SQLException expected) {
         }
@@ -186,7 +184,7 @@ public class ManagedDataSourceTest
         assertEquals(dataSource.getConnectionsActive(), 2);
         try {
             dataSource.getConnection();
-            Assert.fail("Expected SQLExcpetion from timeout");
+            Assert.fail("Expected SQLException from timeout");
         }
         catch (SQLException expected) {
         }
@@ -198,17 +196,17 @@ public class ManagedDataSourceTest
         assertEquals(dataSource.getConnectionsActive(), 2);
 
 
-        // verify proper handeling of illegal values
+        // verify proper handling of illegal values
         try {
             dataSource.setMaxConnectionWaitMillis(null);
-            fail("Excpected NullPointerException");
+            fail("Expected NullPointerException");
         }
         catch (NullPointerException e) {
         }
         assertEquals(dataSource.getMaxConnections(), 2);
         try {
             dataSource.setMaxConnectionWaitMillis(new Duration(0, MILLISECONDS));
-            fail("Excpected IllegalArgumentException");
+            fail("Expected IllegalArgumentException");
         }
         catch (IllegalArgumentException e) {
         }
@@ -223,7 +221,7 @@ public class ManagedDataSourceTest
     }
 
     @Test
-    public void testAquirePermitInterrupted()
+    public void testAcquirePermitInterrupted()
             throws Exception
     {
         // datasource server to 1 connection and only wait 1 ms for a connection
@@ -234,7 +232,7 @@ public class ManagedDataSourceTest
         Connection connection = dataSource.getConnection();
         assertEquals(dataSource.getConnectionsActive(), 1);
 
-        // checkout in another thread which we are going to interrupe
+        // checkout in another thread which we are going to interrupt
         final CountDownLatch startLatch = new CountDownLatch(1);
         final CountDownLatch endLatch = new CountDownLatch(1);
         final AtomicBoolean wasInterrupted = new AtomicBoolean();
@@ -250,7 +248,8 @@ public class ManagedDataSourceTest
                 }
                 catch (SQLException e) {
                     exception.set(e);
-                } finally {
+                }
+                finally {
                     wasInterrupted.set(isInterrupted());
                     endLatch.countDown();
                 }
@@ -258,9 +257,9 @@ public class ManagedDataSourceTest
         };
         createThread.start();
 
-        // wait for thread to acually start
+        // wait for thread to actually start
         startLatch.await();
-        // inerrupt the createThread
+        // interrupt the createThread
         createThread.interrupt();
         // wait for the thread to end
         endLatch.await();
@@ -281,7 +280,7 @@ public class ManagedDataSourceTest
     {
         ManagedDataSource dataSource = new ManagedDataSource(new MockConnectionPoolDataSource(), 10, new Duration(10, MILLISECONDS));
         List<MockConnection> connections = new ArrayList<MockConnection>();
-        for(int i = 0; i < 10; i++) {
+        for (int i = 0; i < 10; i++) {
             MockConnection connection = (MockConnection) dataSource.getConnection();
             Assert.assertNotNull(connection);
             connections.add(connection);
@@ -330,7 +329,7 @@ public class ManagedDataSourceTest
             assertSame(e, mockConnectionPoolDataSource.createException);
         }
         assertEquals(dataSource.getConnectionsActive(), 0);
-        
+
     }
 
     @Test

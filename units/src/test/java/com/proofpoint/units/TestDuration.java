@@ -1,4 +1,4 @@
-package com.proofpoint.stats;
+package com.proofpoint.units;
 
 import org.testng.Assert;
 import static org.testng.Assert.fail;
@@ -16,7 +16,7 @@ import java.util.ArrayList;
 
 import com.proofpoint.testing.EquivalenceTester;
 
-public class DurationTest
+public class TestDuration
 {
     @Test
     public void testConvertTo()

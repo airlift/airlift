@@ -1,7 +1,9 @@
 package com.proofpoint.dbpool;
 
-import org.weakref.jmx.Managed;
+import com.proofpoint.concurrent.ManagedSemaphore;
+import com.proofpoint.units.Duration;
 import org.weakref.jmx.Flatten;
+import org.weakref.jmx.Managed;
 
 import javax.sql.ConnectionEvent;
 import javax.sql.ConnectionEventListener;
@@ -14,11 +16,9 @@ import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import static java.lang.Math.ceil;
 
-import com.proofpoint.stats.Duration;
-import static com.proofpoint.stats.Duration.*;
-import com.proofpoint.concurrent.ManagedSemaphore;
+import static com.proofpoint.units.Duration.nanosSince;
+import static java.lang.Math.ceil;
 
 public class ManagedDataSource implements DataSource
 {

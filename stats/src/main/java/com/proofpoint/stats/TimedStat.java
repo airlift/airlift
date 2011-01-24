@@ -1,5 +1,6 @@
 package com.proofpoint.stats;
 
+import com.proofpoint.units.Duration;
 import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math.stat.descriptive.SynchronizedDescriptiveStatistics;
 import org.weakref.jmx.Managed;
