@@ -6,11 +6,12 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Multimap;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.proofpoint.guice.GuiceInjectorIterator;
+import com.proofpoint.formatting.ColumnPrinter;
 import org.weakref.jmx.Managed;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectInstance;
+import java.io.PrintWriter;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -21,6 +22,11 @@ import java.util.Set;
 public class JMXInspector implements Iterable<JMXInspector.InspectorRecord>
 {
     private final ImmutableSortedSet<InspectorRecord> inspectorRecords;
+
+    private static final String     CLASS_NAME_COLUMN = "NAME";
+    private static final String     OBJECT_NAME_COLUMN = "METHOD/ATTRIBUTE";
+    private static final String     TYPE_COLUMN = "TYPE";
+    private static final String     DESCRIPTION_COLUMN = "DESCRIPTION";
 
     public enum Types
     {
@@ -82,6 +88,37 @@ public class JMXInspector implements Iterable<JMXInspector.InspectorRecord>
     public Iterator<InspectorRecord> iterator()
     {
         return Iterators.unmodifiableIterator(inspectorRecords.iterator());
+    }
+
+    /**
+     * Print the details to the given stream
+     *
+     * @param out stream
+     */
+    public void     print(PrintWriter out)
+    {
+        ColumnPrinter columnPrinter = makePrinter();
+        columnPrinter.print(out);
+        out.flush();
+    }
+
+    private ColumnPrinter makePrinter()
+    {
+        ColumnPrinter       columnPrinter = new ColumnPrinter();
+
+        columnPrinter.addColumn(CLASS_NAME_COLUMN);
+        columnPrinter.addColumn(OBJECT_NAME_COLUMN);
+        columnPrinter.addColumn(TYPE_COLUMN);
+        columnPrinter.addColumn(DESCRIPTION_COLUMN);
+
+        for ( InspectorRecord record : inspectorRecords )
+        {
+            columnPrinter.addValue(CLASS_NAME_COLUMN, record.className);
+            columnPrinter.addValue(OBJECT_NAME_COLUMN, record.objectName);
+            columnPrinter.addValue(TYPE_COLUMN, record.type.name().toLowerCase());
+            columnPrinter.addValue(DESCRIPTION_COLUMN, record.description);
+        }
+        return columnPrinter;
     }
 
     private void addConfig(Multimap<String, String> nameMap, Class clazz, ImmutableSortedSet.Builder<InspectorRecord> builder) throws InvocationTargetException, IllegalAccessException

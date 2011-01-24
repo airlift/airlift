@@ -9,11 +9,11 @@ import com.google.inject.spi.Element;
 import com.google.inject.spi.ProviderInstanceBinding;
 import com.google.inject.spi.Message;
 import com.google.common.collect.Lists;
-import com.proofpoint.guice.ElementsIterator;
 
 import java.util.List;
 import static java.util.Collections.singletonList;
 
+@SuppressWarnings( { "ThrowableResultOfMethodCallIgnored" })
 public class ConfigurationValidator
 {
     private final ConfigurationFactory configurationFactory;
@@ -31,6 +31,7 @@ public class ConfigurationValidator
         for (final Element element : elementsIterator) {
             element.acceptVisitor(new DefaultElementVisitor<Void>()
             {
+                @Override
                 public <T> Void visit(Binding<T> binding)
                 {
                     // look for ConfigurationProviders...

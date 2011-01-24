@@ -35,12 +35,6 @@
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>guice</artifactId>
-            <version>0.24-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.proofpoint.platform</groupId>
             <artifactId>formatting</artifactId>
             <version>0.24-SNAPSHOT</version>
         </dependency>

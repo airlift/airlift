@@ -1,4 +1,4 @@
-package com.proofpoint.guice;
+package com.proofpoint.jmx;
 
 import com.google.common.collect.Sets;
 import com.google.inject.Injector;
@@ -9,10 +9,7 @@ import java.lang.reflect.Type;
 import java.util.Iterator;
 import java.util.Set;
 
-/**
- * Utility for iterating over bound classes in a Guice injector
- */
-public class GuiceInjectorIterator implements Iterator<Class<?>>, Iterable<Class<?>>
+class GuiceInjectorIterator implements Iterator<Class<?>>, Iterable<Class<?>>
 {
     private final Set<Key<?>>           visited = Sets.newHashSet();
     private final Iterator<Key<?>>      keyIterator;
@@ -101,7 +98,7 @@ public class GuiceInjectorIterator implements Iterator<Class<?>>, Iterable<Class
         visited.add(key);
 
         Class<?>    clazz;
-        Type        type = key.getTypeLiteral().getType();
+        Type type = key.getTypeLiteral().getType();
         if ( type instanceof GenericArrayType )
         {
             type = ((GenericArrayType)type).getGenericComponentType();

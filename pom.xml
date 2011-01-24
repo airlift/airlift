@@ -168,7 +168,6 @@
 
     <modules>
         <module>testing</module>
-        <module>guice</module>
         <module>launcher</module>
         <module>packaging</module>
         <module>log</module>

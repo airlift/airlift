@@ -1,4 +1,4 @@
-package com.proofpoint.guice;
+package com.proofpoint.jmx;
 
 import com.google.inject.ConfigurationException;
 import com.google.inject.Key;
@@ -13,7 +13,7 @@ import java.util.Set;
 /**
  * Utility for iterating over dependent classes in a Guice injector
  */
-public class GuiceDependencyIterator implements Iterator<Class<?>>, Iterable<Class<?>>
+class GuiceDependencyIterator implements Iterator<Class<?>>, Iterable<Class<?>>
 {
     private final Set<Key<?>>                   visited;
     private final Iterator<Dependency<?>>       currentDependencyIterator;
