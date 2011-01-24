@@ -1,4 +1,4 @@
-package com.proofpoint.concurrent;
+package com.proofpoint.dbpool;
 
 import org.weakref.jmx.Managed;
 
@@ -6,7 +6,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class ManagedSemaphore extends Semaphore
+class ManagedSemaphore extends Semaphore
 {
     private final AtomicLong activePermits = new AtomicLong();
     private int permits;

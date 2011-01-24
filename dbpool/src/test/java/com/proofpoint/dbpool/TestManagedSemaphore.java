@@ -1,11 +1,11 @@
-package com.proofpoint.concurrent;
+package com.proofpoint.dbpool;
 
 import org.testng.annotations.Test;
 import static org.testng.AssertJUnit.*;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class ManagedSemaphoreTest
+public class TestManagedSemaphore
 {
     @Test
     public void testSinglePermit()

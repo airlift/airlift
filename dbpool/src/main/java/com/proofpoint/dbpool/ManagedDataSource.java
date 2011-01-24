@@ -1,6 +1,5 @@
 package com.proofpoint.dbpool;
 
-import com.proofpoint.concurrent.ManagedSemaphore;
 import com.proofpoint.units.Duration;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
