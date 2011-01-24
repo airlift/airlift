@@ -17,7 +17,6 @@ import com.proofpoint.configuration.ConfigurationLoader;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.configuration.ConfigurationValidator;
 import com.proofpoint.configuration.ValidationErrorModule;
-import com.proofpoint.formatting.ColumnPrinter;
 import com.proofpoint.jmx.JMXInspector;
 import com.proofpoint.log.Logger;
 import com.proofpoint.log.Logging;
@@ -96,8 +95,7 @@ public class Bootstrap
         logConfiguration(configurationFactory);
 
         // Log managed objects
-        JMXInspector jmxInspector = injector.getInstance(JMXInspector.class);
-        jmxInspector.print(new PrintWriter(new LoggingWriter(log, LoggingWriter.Type.DEBUG)));
+        logJMX(injector);
 
         // Start services
         if (lifeCycleManager.size() > 0) {
@@ -114,16 +112,51 @@ public class Bootstrap
     private static final String CURRENT_VALUE_COLUMN = "RUNTIME";
     private static final String DESCRIPTION_COLUMN = "DESCRIPTION";
 
+    private static final String CLASS_NAME_COLUMN = "NAME";
+    private static final String OBJECT_NAME_COLUMN = "METHOD/ATTRIBUTE";
+    private static final String TYPE_COLUMN = "TYPE";
+
     private void logConfiguration(ConfigurationFactory configurationFactory)
     {
-        ColumnPrinter columnPrinter = makePrinter(configurationFactory);
+        ColumnPrinter columnPrinter = makePrinterForConfiguration(configurationFactory);
 
         PrintWriter out = new PrintWriter(new LoggingWriter(log, Type.INFO));
         columnPrinter.print(out);
         out.flush();
     }
 
-    private ColumnPrinter makePrinter(ConfigurationFactory configurationFactory)
+    private void logJMX(Injector injector)
+            throws Exception
+    {
+        ColumnPrinter columnPrinter = makePrinterForJMX(injector);
+
+        PrintWriter out = new PrintWriter(new LoggingWriter(log, Type.INFO));
+        columnPrinter.print(out);
+        out.flush();
+    }
+
+    private ColumnPrinter makePrinterForJMX(Injector injector)
+            throws Exception
+    {
+        JMXInspector        inspector = new JMXInspector(injector);
+
+        ColumnPrinter columnPrinter = new ColumnPrinter();
+        columnPrinter.addColumn(CLASS_NAME_COLUMN);
+        columnPrinter.addColumn(OBJECT_NAME_COLUMN);
+        columnPrinter.addColumn(TYPE_COLUMN);
+        columnPrinter.addColumn(DESCRIPTION_COLUMN);
+
+        for ( JMXInspector.InspectorRecord record : inspector )
+        {
+            columnPrinter.addValue(CLASS_NAME_COLUMN, record.className);
+            columnPrinter.addValue(OBJECT_NAME_COLUMN, record.objectName);
+            columnPrinter.addValue(TYPE_COLUMN, record.type.name().toLowerCase());
+            columnPrinter.addValue(DESCRIPTION_COLUMN, record.description);
+        }
+        return columnPrinter;
+    }
+
+    private ColumnPrinter makePrinterForConfiguration(ConfigurationFactory configurationFactory)
     {
         ConfigurationInspector configurationInspector = new ConfigurationInspector();
 

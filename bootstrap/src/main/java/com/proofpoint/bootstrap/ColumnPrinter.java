@@ -1,4 +1,4 @@
-package com.proofpoint.formatting;
+package com.proofpoint.bootstrap;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.mutable.MutableInt;
@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * A utility for outputting columnar text
  */
-public class ColumnPrinter
+class ColumnPrinter
 {
     private final List<List<String>>    data = Lists.newArrayList();
     private final List<String>          columnNames = Lists.newArrayList();
@@ -19,7 +19,7 @@ public class ColumnPrinter
 
     private static final int        DEFAULT_MARGIN = 2;
 
-    public ColumnPrinter()
+    ColumnPrinter()
     {
         margin = DEFAULT_MARGIN;
     }
@@ -29,7 +29,7 @@ public class ColumnPrinter
      *
      * @param columnName name of the column
      */
-    public void     addColumn(String columnName)
+    void     addColumn(String columnName)
     {
         data.add(new ArrayList<String>());
         columnNames.add(columnName);
@@ -41,7 +41,7 @@ public class ColumnPrinter
      * @param columnName name of the column to add to
      * @param value value to add
      */
-    public void     addValue(String columnName, String value)
+    void     addValue(String columnName, String value)
     {
         addValue(columnNames.indexOf(columnName), value);
     }
@@ -52,7 +52,7 @@ public class ColumnPrinter
      * @param columnIndex n
      * @param value value to add
      */
-    public void     addValue(int columnIndex, String value)
+    void     addValue(int columnIndex, String value)
     {
         if ( (columnIndex < 0) || (columnIndex >= data.size()) )
         {
@@ -68,7 +68,7 @@ public class ColumnPrinter
      *
      * @param margin new margin between columns
      */
-    public void     setMargin(int margin)
+    void     setMargin(int margin)
     {
         this.margin = margin;
     }
@@ -78,7 +78,7 @@ public class ColumnPrinter
      *
      * @param out stream
      */
-    public void     print(PrintWriter out)
+    void     print(PrintWriter out)
     {
         for ( String s : generate() )
         {
@@ -91,7 +91,7 @@ public class ColumnPrinter
      *
      * @return lines
      */
-    public List<String> generate()
+    List<String> generate()
     {
         List<String>            lines = Lists.newArrayList();
         StringBuilder           workStr = new StringBuilder();
