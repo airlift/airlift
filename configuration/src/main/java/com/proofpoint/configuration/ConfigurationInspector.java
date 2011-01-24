@@ -1,187 +1,39 @@
 package com.proofpoint.configuration;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableSortedSet;
-import com.google.inject.Binding;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.google.inject.Provider;
-import com.google.inject.spi.ProviderInstanceBinding;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
-import com.proofpoint.formatting.ColumnPrinter;
 
-import java.io.PrintWriter;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map.Entry;
-import java.util.Set;
+import java.util.SortedSet;
 
-/**
- * Utility to output all the Configuration properties used in an Injection instance.
- * The property names used, the default values for each and the runtime values for each
- * are displayed (sorted by property name).
- * <p/>
- * To use, call: <code>injector.getInstance(ConfigInspector.class).print()</code><br>
- * This outputs via a logger. You can optionally pass a stream to capture the output.
- */
 public class ConfigurationInspector
 {
-    private static final String PROPERTY_NAME_COLUMN = "PROPERTY";
-    private static final String DEFAULT_VALUE_COLUMN = "DEFAULT";
-    private static final String CURRENT_VALUE_COLUMN = "RUNTIME";
-    private static final String DESCRIPTION_COLUMN = "DESCRIPTION";
-
-    private final Set<ConfigRecord> configs;
-
-    private static class ConfigRecord implements Comparable<ConfigRecord>
+    public SortedSet<ConfigRecord<?>> inspect(ConfigurationFactory configurationFactory)
     {
-        final String propertyName;
-        final String defaultValue;
-        final String currentValue;
-        final String description;
-        // todo this class needs to be updated to include the concept of deprecated property names
-
-        @Override
-        public int compareTo(ConfigRecord rhs)
-        {
-            return propertyName.compareTo(rhs.propertyName);
+        ImmutableSortedSet.Builder<ConfigRecord<?>> builder = ImmutableSortedSet.naturalOrder();
+        for (Entry<ConfigurationProvider<?>, Object> entry : configurationFactory.getInstanceCache().entrySet()) {
+            ConfigurationProvider<?> configurationProvider = entry.getKey();
+            builder.add(ConfigRecord.createConfigRecord(configurationProvider));
         }
 
-        @Override
-        public boolean equals(Object o)
-        {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
-            ConfigRecord that = (ConfigRecord) o;
-
-            //noinspection RedundantIfStatement
-            if (!propertyName.equals(that.propertyName)) {
-                return false;
-            }
-
-            return true;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return propertyName.hashCode();
-        }
-
-        private ConfigRecord(String propertyName, String defaultValue, String currentValue, String description)
-        {
-            if (propertyName == null) {
-                throw new NullPointerException("propertyName is null");
-            }
-            if (defaultValue == null) {
-                throw new NullPointerException("defaultValue is null");
-            }
-            if (currentValue == null) {
-                throw new NullPointerException("currentValue is null");
-            }
-            if (description == null) {
-                throw new NullPointerException("description is null");
-            }
-            this.propertyName = propertyName;
-            this.defaultValue = defaultValue;
-            this.currentValue = currentValue;
-            this.description = description;
-        }
+        return builder.build();
     }
 
-    @Inject
-    public ConfigurationInspector(Injector injector)
-            throws InvocationTargetException, IllegalAccessException
-    {
-        ImmutableSortedSet.Builder<ConfigRecord> builder = ImmutableSortedSet.naturalOrder();
-        for (Entry<Key<?>, Binding<?>> entry : injector.getBindings().entrySet()) {
-            Binding<?> binding = entry.getValue();
-            if (binding instanceof ProviderInstanceBinding) {
-                ProviderInstanceBinding<?> providerInstanceBinding = (ProviderInstanceBinding<?>) binding;
-                Provider<?> provider = providerInstanceBinding.getProviderInstance();
-                if (provider instanceof ConfigurationProvider) {
-                    ConfigurationProvider<?> configurationProvider = (ConfigurationProvider<?>) provider;
-                    addConfig(configurationProvider, builder);
-                }
-            }
-        }
-
-        configs = builder.build();
-    }
-
-    /**
-     * Print the config details to the given stream
-     *
-     * @param out stream
-     */
-    public void print(PrintWriter out)
-    {
-        ColumnPrinter columnPrinter = makePrinter();
-        columnPrinter.print(out);
-        out.flush();
-    }
-
-    private ColumnPrinter makePrinter()
-    {
-        ColumnPrinter columnPrinter = new ColumnPrinter();
-
-        columnPrinter.addColumn(PROPERTY_NAME_COLUMN);
-        columnPrinter.addColumn(DEFAULT_VALUE_COLUMN);
-        columnPrinter.addColumn(CURRENT_VALUE_COLUMN);
-        columnPrinter.addColumn(DESCRIPTION_COLUMN);
-
-        for (ConfigRecord record : configs) {
-            columnPrinter.addValue(PROPERTY_NAME_COLUMN, record.propertyName);
-            columnPrinter.addValue(DEFAULT_VALUE_COLUMN, record.defaultValue);
-            columnPrinter.addValue(CURRENT_VALUE_COLUMN, record.currentValue);
-            columnPrinter.addValue(DESCRIPTION_COLUMN, record.description);
-        }
-        return columnPrinter;
-    }
-
-    private void addConfig(ConfigurationProvider<?> configurationProvider, ImmutableSortedSet.Builder<ConfigRecord> builder)
-            throws InvocationTargetException, IllegalAccessException
-    {
-        ConfigurationMetadata<?> metadata = configurationProvider.getConfigurationMetadata();
-
-        Object instance = configurationProvider.get();
-        Object defaults = newDefaultInstance(configurationProvider);
-
-        String prefix = configurationProvider.getPrefix();
-        prefix = prefix == null ? "" : (prefix + ".");
-
-        for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-            String propertyName = prefix + attribute.getPropertyName();
-            Method getter = attribute.getGetter();
-
-            String defaultValue = getValue(getter, defaults, "-- none --");
-            String currentValue = getValue(getter, instance, "-- n/a --");
-            String description = attribute.getDescription();
-            if (description == null) {
-                description = "";
-            }
-
-            builder.add(new ConfigRecord(propertyName, defaultValue, currentValue, description));
-
-        }
-    }
-
-    private Object newDefaultInstance(ConfigurationProvider<?> configurationProvider)
+    private static <T> T newDefaultInstance(ConfigurationMetadata<T> configurationMetadata)
     {
         try {
-            return configurationProvider.getConfigurationMetadata().getConstructor().newInstance();
+            return configurationMetadata.getConstructor().newInstance();
         }
         catch (Throwable ignored) {
             return null;
         }
     }
 
-    private String getValue(Method getter, Object instance, String defaultValue)
+    private static String getValue(Method getter, Object instance, String defaultValue)
     {
         if (getter == null || instance == null) {
             return defaultValue;
@@ -196,6 +48,194 @@ public class ConfigurationInspector
         }
         catch (Throwable e) {
             return "-- ERROR --";
+        }
+    }
+
+    public static class ConfigRecord<T> implements Comparable<ConfigRecord<?>>
+    {
+        private final Key<T> key;
+        private final Class<T> configClass;
+        private final String prefix;
+        private final SortedSet<ConfigAttribute> attributes;
+
+        public static <T> ConfigRecord<T> createConfigRecord(ConfigurationProvider<T> configurationProvider)
+        {
+            return new ConfigRecord<T>(configurationProvider);
+        }
+
+        private ConfigRecord(ConfigurationProvider<T> configurationProvider)
+        {
+            Preconditions.checkNotNull(configurationProvider, "configurationProvider");
+
+            key = configurationProvider.getKey();
+            configClass = configurationProvider.getConfigClass();
+            prefix = configurationProvider.getPrefix();
+
+            ConfigurationMetadata<T> metadata = configurationProvider.getConfigurationMetadata();
+
+            T instance = configurationProvider.get();
+            T defaults = newDefaultInstance(metadata);
+
+            String prefix = configurationProvider.getPrefix();
+            prefix = prefix == null ? "" : (prefix + ".");
+
+            ImmutableSortedSet.Builder<ConfigAttribute> builder = ImmutableSortedSet.naturalOrder();
+            for (AttributeMetadata attribute : metadata.getAttributes().values()) {
+                String propertyName = prefix + attribute.getPropertyName();
+                Method getter = attribute.getGetter();
+
+                String defaultValue = getValue(getter, defaults, "-- none --");
+                String currentValue = getValue(getter, instance, "-- n/a --");
+                String description = attribute.getDescription();
+                if (description == null) {
+                    description = "";
+                }
+
+                builder.add(new ConfigAttribute(attribute.getName(), propertyName, defaultValue, currentValue, description));
+            }
+            attributes = builder.build();
+        }
+
+        public Key<T> getKey()
+        {
+            return key;
+        }
+
+        public Class<T> getConfigClass()
+        {
+            return configClass;
+        }
+
+        public String getPrefix()
+        {
+            return prefix;
+        }
+
+        public SortedSet<ConfigAttribute> getAttributes()
+        {
+            return attributes;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            ConfigRecord<?> that = (ConfigRecord<?>) o;
+
+            return key.equals(that.key);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return key.hashCode();
+        }
+
+        @Override
+        public int compareTo(ConfigRecord<?> that)
+        {
+            return ComparisonChain.start()
+                    .compare(String.valueOf(this.key.getTypeLiteral().getType()), String.valueOf(that.key.getTypeLiteral().getType()))
+                    .compare(String.valueOf(this.key.getAnnotationType()), String.valueOf(that.key.getAnnotationType()))
+                    .result();
+        }
+    }
+
+    public static class ConfigAttribute implements Comparable<ConfigAttribute>
+    {
+        private final String attributeName;
+        private final String propertyName;
+        private final String defaultValue;
+        private final String currentValue;
+        private final String description;
+
+        // todo this class needs to be updated to include the concept of deprecated property names
+
+        private ConfigAttribute(String attributeName, String propertyName, String defaultValue, String currentValue, String description)
+        {
+            Preconditions.checkNotNull(attributeName, "attributeName");
+            Preconditions.checkNotNull(propertyName, "propertyName");
+            Preconditions.checkNotNull(defaultValue, "defaultValue");
+            Preconditions.checkNotNull(currentValue, "currentValue");
+            Preconditions.checkNotNull(description, "description");
+
+            this.attributeName = attributeName;
+            this.propertyName = propertyName;
+            this.defaultValue = defaultValue;
+            this.currentValue = currentValue;
+            this.description = description;
+        }
+
+        public String getAttributeName()
+        {
+            return attributeName;
+        }
+
+        public String getPropertyName()
+        {
+            return propertyName;
+        }
+
+        public String getDefaultValue()
+        {
+            return defaultValue;
+        }
+
+        public String getCurrentValue()
+        {
+            return currentValue;
+        }
+
+        public String getDescription()
+        {
+            return description;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            ConfigAttribute that = (ConfigAttribute) o;
+
+            return attributeName.equals(that.attributeName);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return attributeName.hashCode();
+        }
+
+        @Override
+        public int compareTo(ConfigAttribute that)
+        {
+            return this.attributeName.compareTo(that.attributeName);
+        }
+
+        @Override
+        public String toString()
+        {
+            final StringBuffer sb = new StringBuffer();
+            sb.append("ConfigAttribute");
+            sb.append("{attributeName='").append(attributeName).append('\'');
+            sb.append(", propertyName='").append(propertyName).append('\'');
+            sb.append(", defaultValue='").append(defaultValue).append('\'');
+            sb.append(", currentValue='").append(currentValue).append('\'');
+            sb.append(", description='").append(description).append('\'');
+            sb.append('}');
+            return sb.toString();
         }
     }
 }

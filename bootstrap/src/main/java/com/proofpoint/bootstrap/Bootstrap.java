@@ -4,15 +4,20 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Stage;
 import com.google.inject.spi.Message;
+import com.proofpoint.bootstrap.LoggingWriter.Type;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationInspector;
+import com.proofpoint.configuration.ConfigurationInspector.ConfigAttribute;
+import com.proofpoint.configuration.ConfigurationInspector.ConfigRecord;
 import com.proofpoint.configuration.ConfigurationLoader;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.configuration.ConfigurationValidator;
 import com.proofpoint.configuration.ValidationErrorModule;
+import com.proofpoint.formatting.ColumnPrinter;
 import com.proofpoint.jmx.JMXInspector;
 import com.proofpoint.lifecycle.LifeCycleManager;
 import com.proofpoint.lifecycle.LifeCycleModule;
@@ -90,8 +95,7 @@ public class Bootstrap
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
 
         // Log effective configuration
-        ConfigurationInspector configurationInspector = injector.getInstance(ConfigurationInspector.class);
-        configurationInspector.print(new PrintWriter(new LoggingWriter(log, LoggingWriter.Type.DEBUG)));
+        logConfiguration(configurationFactory);
 
         // Log managed objects
         JMXInspector jmxInspector = injector.getInstance(JMXInspector.class);
@@ -104,5 +108,60 @@ public class Bootstrap
 
         return injector;
     }
+
+    private static final String COMPONENT_COLUMN = "COMPONENT";
+    private static final String ATTRIBUTE_NAME_COLUMN = "ATTRIBUTE";
+    private static final String PROPERTY_NAME_COLUMN = "PROPERTY";
+    private static final String DEFAULT_VALUE_COLUMN = "DEFAULT";
+    private static final String CURRENT_VALUE_COLUMN = "RUNTIME";
+    private static final String DESCRIPTION_COLUMN = "DESCRIPTION";
+
+    private void logConfiguration(ConfigurationFactory configurationFactory)
+    {
+        ColumnPrinter columnPrinter = makePrinter(configurationFactory);
+
+        PrintWriter out = new PrintWriter(new LoggingWriter(log, Type.INFO));
+        columnPrinter.print(out);
+        out.flush();
+    }
+
+    private ColumnPrinter makePrinter(ConfigurationFactory configurationFactory)
+    {
+        ConfigurationInspector configurationInspector = new ConfigurationInspector();
+
+        ColumnPrinter columnPrinter = new ColumnPrinter();
+
+        columnPrinter.addColumn(COMPONENT_COLUMN);
+        columnPrinter.addColumn(ATTRIBUTE_NAME_COLUMN);
+        columnPrinter.addColumn(PROPERTY_NAME_COLUMN);
+        columnPrinter.addColumn(DEFAULT_VALUE_COLUMN);
+        columnPrinter.addColumn(CURRENT_VALUE_COLUMN);
+        columnPrinter.addColumn(DESCRIPTION_COLUMN);
+
+        for (ConfigRecord<?> record : configurationInspector.inspect(configurationFactory)) {
+            String componentName = getComponentName(record);
+            for (ConfigAttribute attribute : record.getAttributes()) {
+                columnPrinter.addValue(COMPONENT_COLUMN, componentName);
+                columnPrinter.addValue(ATTRIBUTE_NAME_COLUMN, attribute.getAttributeName());
+                columnPrinter.addValue(PROPERTY_NAME_COLUMN, attribute.getPropertyName());
+                columnPrinter.addValue(DEFAULT_VALUE_COLUMN, attribute.getDefaultValue());
+                columnPrinter.addValue(CURRENT_VALUE_COLUMN, attribute.getCurrentValue());
+                columnPrinter.addValue(DESCRIPTION_COLUMN, attribute.getDescription());
+            }
+        }
+        return columnPrinter;
+    }
+
+    private String getComponentName(ConfigRecord<?> record)
+    {
+        Key<?> key = record.getKey();
+        String componentName = "";
+        if (key.getAnnotationType() != null) {
+            componentName = "@" + key.getAnnotationType().getSimpleName() + " ";
+        }
+        componentName += key.getTypeLiteral();
+        return componentName;
+    }
+
 
 }

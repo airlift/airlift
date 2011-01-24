@@ -145,7 +145,7 @@ public class ConfigurationFactoryTest
         });
         DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
         monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(2);  // todo - this should be 1. See Jira PLATFORM-29
+        monitor.assertNumberOfWarnings(1);
         monitor.assertMatchingWarningRecorded("string-value", "deprecated", "Use 'string-a'");
         Assert.assertNotNull(deprecatedConfigPresent);
         Assert.assertEquals(deprecatedConfigPresent.getStringA(), "this is a");
@@ -169,7 +169,7 @@ public class ConfigurationFactoryTest
         });
         DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
         monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(2); // todo - this should be 1. See Jira PLATFORM-29
+        monitor.assertNumberOfWarnings(1);
         monitor.assertMatchingWarningRecorded("string-value", "deprecated", "Use 'string-a'");
         Assert.assertNotNull(deprecatedConfigPresent);
         Assert.assertEquals(deprecatedConfigPresent.getStringA(), "this is a");

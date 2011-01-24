@@ -1,6 +1,7 @@
 package com.proofpoint.configuration;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MapMaker;
 import com.google.inject.ConfigurationException;
@@ -10,6 +11,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static com.proofpoint.configuration.Problems.exceptionFor;
@@ -20,6 +22,7 @@ public class ConfigurationFactory
     private final Map<String, String> properties;
     private final Problems.Monitor monitor;
     private final ConcurrentMap<Class<?>, ConfigurationMetadata<?>> metadataCache;
+    private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<ConfigurationProvider<?>, Object>();
 
     public ConfigurationFactory(Map<String, String> properties)
     {
@@ -46,12 +49,39 @@ public class ConfigurationFactory
         return properties;
     }
 
-    public <T> T build(Class<T> configClass)
+    Map<ConfigurationProvider<?>, Object> getInstanceCache()
     {
-        return build(configClass, "");
+        return ImmutableMap.copyOf(instanceCache);
     }
 
-    public <T> T build(Class<T> configClass, String prefix)
+    public <T> T build(Class<T> configClass)
+    {
+        return build(configClass, null);
+    }
+
+    <T> T build(ConfigurationProvider<T> configurationProvider)
+    {
+        Preconditions.checkNotNull(configurationProvider, "configurationProvider");
+
+        // check for a prebuilt instance
+        T instance = (T) instanceCache.get(configurationProvider);
+        if (instance != null) {
+            return instance;
+        }
+
+        instance = build(configurationProvider.getConfigClass(), configurationProvider.getPrefix());
+
+        // add to instance cache
+        T existingValue = (T) instanceCache.putIfAbsent(configurationProvider, instance);
+        // if key was already associated with a value, there was a
+        // creation race and we lost. Just use the winners' instance;
+        if (existingValue != null) {
+            return existingValue;
+        }
+        return instance;
+    }
+
+    private <T> T build(Class<T> configClass, String prefix)
     {
         if (configClass == null) {
             throw new NullPointerException("configClass is null");

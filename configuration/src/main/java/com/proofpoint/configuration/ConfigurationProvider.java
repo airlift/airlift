@@ -1,48 +1,36 @@
 package com.proofpoint.configuration;
 
+import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
+import com.google.inject.Key;
 import com.google.inject.Provider;
-
-import java.util.Map;
 
 public class ConfigurationProvider<T> implements Provider<T>
 {
+    private final Key<T> key;
     private final Class<T> configClass;
     private final String prefix;
-    private T instance;
     private ConfigurationFactory configurationFactory;
 
-    public ConfigurationProvider(Class<T> configClass) {
-
-        this(configClass, null, null);
-    }
-
-    public ConfigurationProvider(Class<T> configClass, String prefix)
+    public ConfigurationProvider(Key<T> key, Class<T> configClass, String prefix)
     {
-        this(configClass, prefix, null);
-    }
+        Preconditions.checkNotNull(key, "key");
+        Preconditions.checkNotNull(configClass, "configClass");
 
-    public ConfigurationProvider(Class<T> configClass, Map<String, String> properties)
-    {
-        this(configClass, null, properties);
-    }
-
-    public ConfigurationProvider(Class<T> configClass, String prefix, Map<String, String> properties)
-    {
-        if (configClass == null) {
-            throw new NullPointerException("configClass is null");
-        }
+        this.key = key;
         this.configClass = configClass;
         this.prefix = prefix;
-        if (properties != null) {
-            configurationFactory = new ConfigurationFactory(properties);
-        }
     }
 
     @Inject
     public void setConfigurationFactory(ConfigurationFactory configurationFactory)
     {
         this.configurationFactory = configurationFactory;
+    }
+
+    public Key<T> getKey()
+    {
+        return key;
     }
 
     public Class<T> getConfigClass()
@@ -62,14 +50,33 @@ public class ConfigurationProvider<T> implements Provider<T>
     @Override
     public T get()
     {
-        if (configurationFactory == null) {
-            throw new NullPointerException("configurationFactory is null");
-        }
-        
-        if (instance == null) {
-            instance = configurationFactory.build(configClass, prefix);
-        }
-        return instance;
+        Preconditions.checkNotNull(configurationFactory, "configurationFactory");
+
+        return configurationFactory.build(this);
     }
 
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        ConfigurationProvider<?> that = (ConfigurationProvider<?>) o;
+
+        if (!key.equals(that.key)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return key.hashCode();
+    }
 }

@@ -1,6 +1,7 @@
 package com.proofpoint.configuration;
 
 import com.google.inject.Binder;
+import com.google.inject.Key;
 import com.google.inject.Module;
 
 import java.lang.annotation.Annotation;
@@ -87,14 +88,17 @@ public class ConfigurationModule
         }
 
         public <T> void to(Class<T> configClass) {
-            ConfigurationProvider<T> configurationProvider = new ConfigurationProvider<T>(configClass, prefix);
+            Key<T> key;
             if (annotationType != null) {
-                binder.bind(configClass).annotatedWith(annotationType).toProvider(configurationProvider);
+                key = Key.get(configClass, annotationType);
             } else if(annotation != null) {
-                binder.bind(configClass).annotatedWith(annotation).toProvider(configurationProvider);
+                key = Key.get(configClass, annotation);
             } else {
-                binder.bind(configClass).toProvider(configurationProvider);
+                key = Key.get(configClass);
             }
+
+            ConfigurationProvider<T> configurationProvider = new ConfigurationProvider<T>(key, configClass, prefix);
+            binder.bind(key).toProvider(configurationProvider);
         }
     }
 }
