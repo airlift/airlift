@@ -1,12 +1,12 @@
 package com.proofpoint.bootstrap;
 
 import com.google.common.collect.Lists;
-import org.apache.commons.lang.mutable.MutableInt;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A utility for outputting columnar text
@@ -96,10 +96,10 @@ class ColumnPrinter
         List<String>            lines = Lists.newArrayList();
         StringBuilder           workStr = new StringBuilder();
 
-        List<MutableInt>        columnWidths = getColumnWidths();
+        List<AtomicInteger>        columnWidths = getColumnWidths();
         List<Iterator<String>>  dataIterators = getDataIterators();
 
-        Iterator<MutableInt>    columnWidthIterator = columnWidths.iterator();
+        Iterator<AtomicInteger>    columnWidthIterator = columnWidths.iterator();
         for ( String columnName : columnNames )
         {
             int     thisWidth = columnWidthIterator.next().intValue();
@@ -112,7 +112,7 @@ class ColumnPrinter
         {
             boolean             hadValue = false;
             Iterator<Iterator<String>>  rowIterator = dataIterators.iterator();
-            for ( MutableInt width : columnWidths )
+            for ( AtomicInteger width : columnWidths )
             {
                 Iterator<String>    thisDataIterator = rowIterator.next();
                 if ( thisDataIterator.hasNext() )
@@ -164,21 +164,21 @@ class ColumnPrinter
         return dataIterators;
     }
 
-    private List<MutableInt> getColumnWidths()
+    private List<AtomicInteger> getColumnWidths()
     {
-        List<MutableInt> columnWidths = Lists.newArrayList();
+        List<AtomicInteger> columnWidths = Lists.newArrayList();
         for ( String columnName : columnNames )
         {
-            columnWidths.add(new MutableInt(columnName.length()));
+            columnWidths.add(new AtomicInteger(columnName.length()));
         }
 
         int                       columnIndex = 0;
         for ( List<String> valueList : data )
         {
-            MutableInt       width = columnWidths.get(columnIndex++);
+            AtomicInteger       width = columnWidths.get(columnIndex++);
             for ( String value : valueList )
             {
-                width.setValue(Math.max(value.length(), width.intValue()));
+                width.set(Math.max(value.length(), width.intValue()));
             }
         }
 
