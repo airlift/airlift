@@ -41,7 +41,7 @@ public class TestHttpServerModule
             throws IOException
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("jetty.log.path", new File(tempDir, "jetty.log").getAbsolutePath())
+                .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
                 .build();
 
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);

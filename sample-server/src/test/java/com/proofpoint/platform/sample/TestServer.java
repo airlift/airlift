@@ -50,8 +50,8 @@ public class TestServer
         port = NetUtils.findUnusedPort();
 
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("jetty.http.port", String.valueOf(port))
-                .put("jetty.log.path", new File(tempDir, "jetty.log").getAbsolutePath())
+                .put("http-server.http.port", String.valueOf(port))
+                .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
                 .build();
 
         // TODO: wrap all this stuff in a TestBootstrap class

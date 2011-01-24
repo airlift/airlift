@@ -236,7 +236,7 @@ public class TestOverrideMethodFilterInJetty
 
         return new HttpServerConfig()
             .setHttpPort(port)
-            .setLogPath(new File(tempDir, "jetty.log").getAbsolutePath());
+            .setLogPath(new File(tempDir, "http-request.log").getAbsolutePath());
     }
 
     @Path("/")
