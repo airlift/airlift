@@ -10,7 +10,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <platform-version>${project.version}</platform-version>
+        <platform-version>0.24-SNAPSHOT</platform-version>
     </properties>
 
     <prerequisites>
