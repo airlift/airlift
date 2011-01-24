@@ -48,10 +48,10 @@ public class ConfigurationFactory
 
     public <T> T build(Class<T> configClass)
     {
-        return build(configClass, "", null);
+        return build(configClass, "");
     }
 
-    public <T> T build(Class<T> configClass, String prefix, T instance)
+    public <T> T build(Class<T> configClass, String prefix)
     {
         if (configClass == null) {
             throw new NullPointerException("configClass is null");
@@ -67,9 +67,7 @@ public class ConfigurationFactory
         ConfigurationMetadata<T> configurationMetadata = (ConfigurationMetadata<T>) metadataCache.get(configClass);
         configurationMetadata.getProblems().throwIfHasErrors();
 
-        if (instance == null) {
-            instance = newInstance(configurationMetadata);
-        }
+        T instance = newInstance(configurationMetadata);
 
         Problems problems = new Problems(monitor);
         for (AttributeMetadata attribute : configurationMetadata.getAttributes().values()) {

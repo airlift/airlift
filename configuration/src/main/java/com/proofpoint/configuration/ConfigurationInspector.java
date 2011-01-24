@@ -150,10 +150,7 @@ public class ConfigurationInspector
         ConfigurationMetadata<?> metadata = configurationProvider.getConfigurationMetadata();
 
         Object instance = configurationProvider.get();
-        Object defaults = configurationProvider.getDefaults();
-        if (defaults == null) {
-            defaults = newDefaultInstance(configurationProvider);
-        }
+        Object defaults = newDefaultInstance(configurationProvider);
 
         String prefix = configurationProvider.getPrefix();
         prefix = prefix == null ? "" : (prefix + ".");

@@ -9,7 +9,6 @@ public class ConfigurationProvider<T> implements Provider<T>
 {
     private final Class<T> configClass;
     private final String prefix;
-    private T defaults;
     private T instance;
     private ConfigurationFactory configurationFactory;
 
@@ -56,16 +55,6 @@ public class ConfigurationProvider<T> implements Provider<T>
         return prefix;
     }
 
-    public T getDefaults()
-    {
-        return defaults;
-    }
-
-    public void setDefaults(T defaults)
-    {
-        this.defaults = defaults;
-    }
-
     public ConfigurationMetadata<T> getConfigurationMetadata() {
         return ConfigurationMetadata.getConfigurationMetadata(configClass);
     }
@@ -78,7 +67,7 @@ public class ConfigurationProvider<T> implements Provider<T>
         }
         
         if (instance == null) {
-            instance = configurationFactory.build(configClass, prefix, defaults);
+            instance = configurationFactory.build(configClass, prefix);
         }
         return instance;
     }
