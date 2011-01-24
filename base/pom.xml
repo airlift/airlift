@@ -96,6 +96,12 @@
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
+                <artifactId>units</artifactId>
+                <version>${platform-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.proofpoint.platform</groupId>
                 <artifactId>testing</artifactId>
                 <version>${platform-version}</version>
                 <scope>test</scope>
