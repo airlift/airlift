@@ -10,8 +10,8 @@ import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.jersey.JaxrsModule;
 import com.proofpoint.http.server.HttpServerModule;
+import com.proofpoint.jersey.JaxrsModule;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.eclipse.jetty.server.Server;
 import org.testng.annotations.AfterMethod;
@@ -58,9 +58,9 @@ public class TestServer
         // TODO: wrap all this stuff in a TestBootstrap class
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
         Injector injector = Guice.createInjector(new HttpServerModule(),
-                                                 new JaxrsModule(),
-                                                 new MainModule(),
-                                                 new ConfigurationModule(configFactory));
+                new JaxrsModule(),
+                new MainModule(),
+                new ConfigurationModule(configFactory));
 
         server = injector.getInstance(Server.class);
         store = injector.getInstance(PersonStore.class);

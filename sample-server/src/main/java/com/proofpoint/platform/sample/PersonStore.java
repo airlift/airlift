@@ -51,7 +51,8 @@ public class PersonStore
         boolean added = persons.put(id, person) == null;
         if (added) {
             stats.personAdded();
-        } else {
+        }
+        else {
             stats.personUpdated();
         }
     }

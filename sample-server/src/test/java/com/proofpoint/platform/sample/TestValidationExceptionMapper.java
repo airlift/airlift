@@ -39,7 +39,7 @@ public class TestValidationExceptionMapper
             return null;
         }
 
-        @Pattern(regexp="[a-z]+")
+        @Pattern(regexp = "[a-z]+")
         public String getBar()
         {
             return "abcd1234";

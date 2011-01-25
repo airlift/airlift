@@ -13,7 +13,7 @@ import java.util.List;
 
 @Provider
 public class ValidationExceptionMapper
-    implements ExceptionMapper<ValidationException>
+        implements ExceptionMapper<ValidationException>
 {
     @Override
     public Response toResponse(ValidationException e)

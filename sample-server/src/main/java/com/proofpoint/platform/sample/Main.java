@@ -1,8 +1,8 @@
 package com.proofpoint.platform.sample;
 
 import com.proofpoint.bootstrap.Bootstrap;
-import com.proofpoint.jersey.JaxrsModule;
 import com.proofpoint.http.server.HttpServerModule;
+import com.proofpoint.jersey.JaxrsModule;
 import com.proofpoint.jmx.JMXModule;
 import org.weakref.jmx.guice.MBeanModule;
 

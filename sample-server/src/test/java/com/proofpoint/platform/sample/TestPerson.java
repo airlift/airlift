@@ -18,16 +18,17 @@ public class TestPerson
     public void testEquivalence()
     {
         EquivalenceTester.check(Arrays.asList(new Person("foo@example.com", "Mr Foo"), new Person("foo@example.com", "Mr Foo")),
-                                Arrays.asList(new Person("bar@example.com", "Mr Bar"), new Person("bar@example.com", "Mr Bar")),
-                                Arrays.asList(new Person("foo@example.com", "Mr Bar"), new Person("foo@example.com", "Mr Bar")),
-                                Arrays.asList(new Person("bar@example.com", "Mr Foo"), new Person("bar@example.com", "Mr Foo")));
+                Arrays.asList(new Person("bar@example.com", "Mr Bar"), new Person("bar@example.com", "Mr Bar")),
+                Arrays.asList(new Person("foo@example.com", "Mr Bar"), new Person("foo@example.com", "Mr Bar")),
+                Arrays.asList(new Person("bar@example.com", "Mr Foo"), new Person("bar@example.com", "Mr Foo")));
 
     }
 
     @Test
     public void testDoesNotAllowNullEmail()
     {
-        assertFailsValidation(NotNull.class, "email", new Runnable() {
+        assertFailsValidation(NotNull.class, "email", new Runnable()
+        {
             @Override
             public void run()
             {
@@ -39,7 +40,8 @@ public class TestPerson
     @Test
     public void testDoesNotAllowNullName()
     {
-        assertFailsValidation(NotNull.class, "name", new Runnable() {
+        assertFailsValidation(NotNull.class, "name", new Runnable()
+        {
             @Override
             public void run()
             {
@@ -51,7 +53,8 @@ public class TestPerson
     @Test
     public void testValidatesEmailFormat()
     {
-        assertFailsValidation(Pattern.class, "name", new Runnable() {
+        assertFailsValidation(Pattern.class, "name", new Runnable()
+        {
             @Override
             public void run()
             {
@@ -72,7 +75,7 @@ public class TestPerson
             }
             if (e.getViolations().size() > 1) {
                 fail(format("expected validation to fail due to %s on %s, but multiple validations failed: %s",
-                            annotation.getClass().getName(), property, Joiner.on(", ").join(e.getViolations())));
+                        annotation.getClass().getName(), property, Joiner.on(", ").join(e.getViolations())));
 
             }
         }
