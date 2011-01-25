@@ -20,10 +20,10 @@ public class JMXAgent
     private final String host;
     private final int registryPort;
     private final int serverPort;
-    private JMXConnectorServer connectorServer;
+    private final JMXConnectorServer connectorServer;
 
     private static Logger log = Logger.get(JMXAgent.class);
-    private JMXServiceURL url;
+    private final JMXServiceURL url;
 
     @Inject
     public JMXAgent(MBeanServer server, JMXConfig config)
