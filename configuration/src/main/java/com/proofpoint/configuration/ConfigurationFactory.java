@@ -110,9 +110,7 @@ public class ConfigurationFactory
         // Check that none of the defunct properties are still in use
         if (configClass.isAnnotationPresent(DefunctConfig.class)) {
             for (String value : configClass.getAnnotation(DefunctConfig.class).value()) {
-                if (value == null || value.isEmpty()) {
-                    problems.addError("@DefunctConfig annotation on class [%s] contains null or empty values", configClass.toString());
-                } else if (properties.get(prefix + value) != null) {
+                if (!value.isEmpty() && properties.get(prefix + value) != null) {
                     problems.addError("Defunct property '%s' (class [%s]) cannot be configured.", value, configClass.toString());
                 }
             }
