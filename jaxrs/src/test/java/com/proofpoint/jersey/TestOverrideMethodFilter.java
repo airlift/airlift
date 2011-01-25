@@ -22,15 +22,15 @@ public class TestOverrideMethodFilter
     @DataProvider(name = "methods")
     private Object[][] getMethods()
     {
-        return new Object[][] {
-                { "GET" },
-                { "POST"},
-                { "PUT" },
-                { "DELETE" },
-                { "HEAD" }
+        return new Object[][]{
+                {"GET"},
+                {"POST"},
+                {"PUT"},
+                {"DELETE"},
+                {"HEAD"}
         };
     }
-    
+
     @Test(dataProvider = "methods")
     public void testQueryParamOnPOST(String method)
     {
@@ -80,11 +80,11 @@ public class TestOverrideMethodFilter
 
         WebApplication webApp = mock(WebApplication.class, RETURNS_MOCKS);
         ContainerRequest request = new ContainerRequest(webApp,
-                                                        method,
-                                                        URI.create("http://www.example.com/"),
-                                                        URI.create("http://www.example.com/"),
-                                                        new InBoundHeaders(),
-                                                        new ByteArrayInputStream(new byte[0]));
+                method,
+                URI.create("http://www.example.com/"),
+                URI.create("http://www.example.com/"),
+                new InBoundHeaders(),
+                new ByteArrayInputStream(new byte[0]));
 
         ContainerRequest result = filter.filter(request);
         assertEqualsIgnoreCase(result.getMethod(), method);
@@ -99,28 +99,28 @@ public class TestOverrideMethodFilter
         InBoundHeaders headers = new InBoundHeaders();
         headers.add(OverrideMethodFilter.HEADER, "DELETE");
         ContainerRequest request = new ContainerRequest(webApp,
-                                                        "POST",
-                                                        URI.create("http://www.example.com/"),
-                                                        URI.create("http://www.example.com/?_method=PUT"),
-                                                        headers,
-                                                        new ByteArrayInputStream(new byte[0]));
+                "POST",
+                URI.create("http://www.example.com/"),
+                URI.create("http://www.example.com/?_method=PUT"),
+                headers,
+                new ByteArrayInputStream(new byte[0]));
 
         ContainerRequest result = filter.filter(request);
         assertEqualsIgnoreCase(result.getMethod(), "DELETE");
 
     }
-    
+
     public String testQueryParam(String requestMethod, String override)
     {
         OverrideMethodFilter filter = new OverrideMethodFilter();
 
         WebApplication webApp = mock(WebApplication.class, RETURNS_MOCKS);
         ContainerRequest request = new ContainerRequest(webApp,
-                                                        requestMethod,
-                                                        URI.create("http://www.example.com/"),
-                                                        URI.create(String.format("http://www.example.com/?_method=%s", override)),
-                                                        new InBoundHeaders(),
-                                                        new ByteArrayInputStream(new byte[0]));
+                requestMethod,
+                URI.create("http://www.example.com/"),
+                URI.create(String.format("http://www.example.com/?_method=%s", override)),
+                new InBoundHeaders(),
+                new ByteArrayInputStream(new byte[0]));
 
         return filter.filter(request).getMethod();
     }
@@ -167,11 +167,11 @@ public class TestOverrideMethodFilter
         InBoundHeaders headers = new InBoundHeaders();
         headers.add("X-HTTP-Method-Override", override);
         ContainerRequest request = new ContainerRequest(webApp,
-                                                        requestMethod,
-                                                        URI.create("http://www.example.com/"),
-                                                        URI.create("http://www.example.com/"),
-                                                        headers,
-                                                        new ByteArrayInputStream(new byte[0]));
+                requestMethod,
+                URI.create("http://www.example.com/"),
+                URI.create("http://www.example.com/"),
+                headers,
+                new ByteArrayInputStream(new byte[0]));
 
         return filter.filter(request).getMethod();
     }

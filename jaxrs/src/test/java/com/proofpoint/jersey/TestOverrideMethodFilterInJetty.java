@@ -21,18 +21,21 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.core.Response.Status;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.concurrent.ExecutionException;
 
-import static com.ning.http.client.RequestType.*;
+import static com.ning.http.client.RequestType.DELETE;
+import static com.ning.http.client.RequestType.GET;
+import static com.ning.http.client.RequestType.POST;
+import static com.ning.http.client.RequestType.PUT;
 import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
-import javax.ws.rs.core.Response.Status;
 
 public class TestOverrideMethodFilterInJetty
 {
@@ -53,7 +56,7 @@ public class TestOverrideMethodFilterInJetty
         server = createServer(config, resource);
 
         client = new AsyncHttpClient();
-        
+
         server.start();
     }
 
@@ -235,8 +238,8 @@ public class TestOverrideMethodFilterInJetty
         socket.close();
 
         return new HttpServerConfig()
-            .setHttpPort(port)
-            .setLogPath(new File(tempDir, "http-request.log").getAbsolutePath());
+                .setHttpPort(port)
+                .setLogPath(new File(tempDir, "http-request.log").getAbsolutePath());
     }
 
     @Path("/")
@@ -292,19 +295,19 @@ public class TestOverrideMethodFilterInJetty
             return delete;
         }
     }
-    
+
     private Server createServer(final HttpServerConfig config, final TestResource resource)
     {
         return Guice.createInjector(new JaxrsModule(),
-                                    new Module()
-                                    {
-                                        @Override
-                                        public void configure(Binder binder)
-                                        {
-                                            binder.bind(Server.class).toProvider(JettyProvider.class);
-                                            binder.bind(HttpServerConfig.class).toInstance(config);
-                                            binder.bind(TestResource.class).toInstance(resource);
-                                        }
-                                    }).getInstance(Server.class);
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        binder.bind(Server.class).toProvider(JettyProvider.class);
+                        binder.bind(HttpServerConfig.class).toInstance(config);
+                        binder.bind(TestResource.class).toInstance(resource);
+                    }
+                }).getInstance(Server.class);
     }
 }
