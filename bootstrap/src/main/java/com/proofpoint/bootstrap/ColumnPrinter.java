@@ -13,11 +13,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 class ColumnPrinter
 {
-    private final List<List<String>>    data = Lists.newArrayList();
-    private final List<String>          columnNames = Lists.newArrayList();
-    private int                         margin;
+    private final List<List<String>> data = Lists.newArrayList();
+    private final List<String> columnNames = Lists.newArrayList();
+    private int margin;
 
-    private static final int        DEFAULT_MARGIN = 2;
+    private static final int DEFAULT_MARGIN = 2;
 
     ColumnPrinter()
     {
@@ -29,7 +29,7 @@ class ColumnPrinter
      *
      * @param columnName name of the column
      */
-    void     addColumn(String columnName)
+    void addColumn(String columnName)
     {
         data.add(new ArrayList<String>());
         columnNames.add(columnName);
@@ -41,7 +41,7 @@ class ColumnPrinter
      * @param columnName name of the column to add to
      * @param value value to add
      */
-    void     addValue(String columnName, String value)
+    void addValue(String columnName, String value)
     {
         addValue(columnNames.indexOf(columnName), value);
     }
@@ -52,14 +52,13 @@ class ColumnPrinter
      * @param columnIndex n
      * @param value value to add
      */
-    void     addValue(int columnIndex, String value)
+    void addValue(int columnIndex, String value)
     {
-        if ( (columnIndex < 0) || (columnIndex >= data.size()) )
-        {
+        if ((columnIndex < 0) || (columnIndex >= data.size())) {
             throw new IllegalArgumentException();
         }
 
-        List<String>    stringList = data.get(columnIndex);
+        List<String> stringList = data.get(columnIndex);
         stringList.add(value);
     }
 
@@ -68,7 +67,7 @@ class ColumnPrinter
      *
      * @param margin new margin between columns
      */
-    void     setMargin(int margin)
+    void setMargin(int margin)
     {
         this.margin = margin;
     }
@@ -78,10 +77,9 @@ class ColumnPrinter
      *
      * @param out stream
      */
-    void     print(PrintWriter out)
+    void print(PrintWriter out)
     {
-        for ( String s : generate() )
-        {
+        for (String s : generate()) {
             out.println(s);
         }
     }
@@ -93,44 +91,38 @@ class ColumnPrinter
      */
     List<String> generate()
     {
-        List<String>            lines = Lists.newArrayList();
-        StringBuilder           workStr = new StringBuilder();
+        List<String> lines = Lists.newArrayList();
+        StringBuilder workStr = new StringBuilder();
 
-        List<AtomicInteger>        columnWidths = getColumnWidths();
-        List<Iterator<String>>  dataIterators = getDataIterators();
+        List<AtomicInteger> columnWidths = getColumnWidths();
+        List<Iterator<String>> dataIterators = getDataIterators();
 
-        Iterator<AtomicInteger>    columnWidthIterator = columnWidths.iterator();
-        for ( String columnName : columnNames )
-        {
-            int     thisWidth = columnWidthIterator.next().intValue();
+        Iterator<AtomicInteger> columnWidthIterator = columnWidths.iterator();
+        for (String columnName : columnNames) {
+            int thisWidth = columnWidthIterator.next().intValue();
             printValue(workStr, columnName, thisWidth);
         }
         pushLine(lines, workStr);
 
-        boolean         done = false;
-        while ( !done )
-        {
-            boolean             hadValue = false;
-            Iterator<Iterator<String>>  rowIterator = dataIterators.iterator();
-            for ( AtomicInteger width : columnWidths )
-            {
-                Iterator<String>    thisDataIterator = rowIterator.next();
-                if ( thisDataIterator.hasNext() )
-                {
+        boolean done = false;
+        while (!done) {
+            boolean hadValue = false;
+            Iterator<Iterator<String>> rowIterator = dataIterators.iterator();
+            for (AtomicInteger width : columnWidths) {
+                Iterator<String> thisDataIterator = rowIterator.next();
+                if (thisDataIterator.hasNext()) {
                     hadValue = true;
 
-                    String      value = thisDataIterator.next();
+                    String value = thisDataIterator.next();
                     printValue(workStr, value, width.intValue());
                 }
-                else
-                {
+                else {
                     printValue(workStr, "", width.intValue());
                 }
             }
             pushLine(lines, workStr);
 
-            if ( !hadValue )
-            {
+            if (!hadValue) {
                 done = true;
             }
         }
@@ -156,9 +148,8 @@ class ColumnPrinter
 
     private List<Iterator<String>> getDataIterators()
     {
-        List<Iterator<String>>      dataIterators = Lists.newArrayList();
-        for ( List<String> valueList : data )
-        {
+        List<Iterator<String>> dataIterators = Lists.newArrayList();
+        for (List<String> valueList : data) {
             dataIterators.add(valueList.iterator());
         }
         return dataIterators;
@@ -167,17 +158,14 @@ class ColumnPrinter
     private List<AtomicInteger> getColumnWidths()
     {
         List<AtomicInteger> columnWidths = Lists.newArrayList();
-        for ( String columnName : columnNames )
-        {
+        for (String columnName : columnNames) {
             columnWidths.add(new AtomicInteger(columnName.length()));
         }
 
-        int                       columnIndex = 0;
-        for ( List<String> valueList : data )
-        {
-            AtomicInteger       width = columnWidths.get(columnIndex++);
-            for ( String value : valueList )
-            {
+        int columnIndex = 0;
+        for (List<String> valueList : data) {
+            AtomicInteger width = columnWidths.get(columnIndex++);
+            for (String value : valueList) {
                 width.set(Math.max(value.length(), width.intValue()));
             }
         }

@@ -13,13 +13,13 @@ public class InstanceOne
     }
 
     @PostConstruct
-    public void     postMakeOne()
+    public void postMakeOne()
     {
         TestLifeCycleManager.note("postMakeOne");
     }
 
     @PreDestroy
-    public void     preDestroyOne()
+    public void preDestroyOne()
     {
         TestLifeCycleManager.note("preDestroyOne");
     }

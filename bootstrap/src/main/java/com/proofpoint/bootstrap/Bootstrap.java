@@ -28,7 +28,7 @@ import java.util.Map;
 
 /**
  * Entry point for an application built using the platform codebase.
- *
+ * <p/>
  * This class will:
  * <ul>
  *  <li>load, validate and bind configurations</li>
@@ -138,7 +138,7 @@ public class Bootstrap
     private ColumnPrinter makePrinterForJMX(Injector injector)
             throws Exception
     {
-        JMXInspector        inspector = new JMXInspector(injector);
+        JMXInspector inspector = new JMXInspector(injector);
 
         ColumnPrinter columnPrinter = new ColumnPrinter();
         columnPrinter.addColumn(CLASS_NAME_COLUMN);
@@ -146,8 +146,7 @@ public class Bootstrap
         columnPrinter.addColumn(TYPE_COLUMN);
         columnPrinter.addColumn(DESCRIPTION_COLUMN);
 
-        for ( JMXInspector.InspectorRecord record : inspector )
-        {
+        for (JMXInspector.InspectorRecord record : inspector) {
             columnPrinter.addValue(CLASS_NAME_COLUMN, record.className);
             columnPrinter.addValue(OBJECT_NAME_COLUMN, record.objectName);
             columnPrinter.addValue(TYPE_COLUMN, record.type.name().toLowerCase());
@@ -193,6 +192,4 @@ public class Bootstrap
         componentName += key.getTypeLiteral();
         return componentName;
     }
-
-
 }

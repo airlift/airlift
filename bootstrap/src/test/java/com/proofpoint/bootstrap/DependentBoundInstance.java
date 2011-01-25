@@ -6,8 +6,8 @@ import javax.annotation.PreDestroy;
 public interface DependentBoundInstance
 {
     @PostConstruct
-    public void     postDependentBoundInstance();
+    public void postDependentBoundInstance();
 
     @PreDestroy
-    public void     preDependentBoundInstance();
+    public void preDependentBoundInstance();
 }

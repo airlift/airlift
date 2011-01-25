@@ -13,13 +13,13 @@ public class InstanceTwo
     }
 
     @PostConstruct
-    public void     postMakeTwo()
+    public void postMakeTwo()
     {
         TestLifeCycleManager.note("postMakeTwo");
     }
 
     @PreDestroy
-    public void     preDestroyTwo()
+    public void preDestroyTwo()
     {
         TestLifeCycleManager.note("preDestroyTwo");
     }

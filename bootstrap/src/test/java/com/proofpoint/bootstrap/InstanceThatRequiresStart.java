@@ -2,16 +2,19 @@ package com.proofpoint.bootstrap;
 
 import javax.annotation.PostConstruct;
 
-public class InstanceThatRequiresStart {
-    private boolean     hasStarted = false;
+public class InstanceThatRequiresStart
+{
+    private boolean hasStarted = false;
 
     @PostConstruct
-    public void start() {
+    public void start()
+    {
         hasStarted = true;
     }
 
-    public void doSomething() {
-        if ( !hasStarted ) {
+    public void doSomething()
+    {
+        if (!hasStarted) {
             throw new IllegalStateException();
         }
     }

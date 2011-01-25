@@ -16,13 +16,13 @@ public class SimpleBaseImpl implements SimpleBase
     }
 
     @PostConstruct
-    public void     postSimpleBaseImpl()
+    public void postSimpleBaseImpl()
     {
         TestLifeCycleManager.note("postSimpleBaseImpl");
     }
 
     @PreDestroy
-    public void     preSimpleBaseImpl()
+    public void preSimpleBaseImpl()
     {
         TestLifeCycleManager.note("preSimpleBaseImpl");
     }

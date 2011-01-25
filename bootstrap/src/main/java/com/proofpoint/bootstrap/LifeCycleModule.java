@@ -22,8 +22,8 @@ import static com.google.inject.matcher.Matchers.any;
  */
 class LifeCycleModule implements Module
 {
-    private final List<Object>                      injectedInstances = Lists.newArrayList();
-    private final LifeCycleMethodsMap               lifeCycleMethodsMap = new LifeCycleMethodsMap();
+    private final List<Object> injectedInstances = Lists.newArrayList();
+    private final LifeCycleMethodsMap lifeCycleMethodsMap = new LifeCycleMethodsMap();
     private final AtomicReference<LifeCycleManager> lifeCycleManagerRef = new AtomicReference<LifeCycleManager>(null);
 
     @Override
@@ -39,22 +39,17 @@ class LifeCycleModule implements Module
                     @Override
                     public void afterInjection(T obj)
                     {
-                        if ( isLifeCycleClass(obj.getClass()) )
-                        {
+                        if (isLifeCycleClass(obj.getClass())) {
                             LifeCycleManager lifeCycleManager = lifeCycleManagerRef.get();
-                            if ( lifeCycleManager != null )
-                            {
-                                try
-                                {
+                            if (lifeCycleManager != null) {
+                                try {
                                     lifeCycleManager.addInstance(obj);
                                 }
-                                catch ( Exception e )
-                                {
+                                catch (Exception e) {
                                     throw new Error(e);
                                 }
                             }
-                            else
-                            {
+                            else {
                                 injectedInstances.add(obj);
                             }
                         }
@@ -66,7 +61,7 @@ class LifeCycleModule implements Module
 
     @Provides
     @Singleton
-    public LifeCycleManager     getServerManager()
+    public LifeCycleManager getServerManager()
             throws Exception
     {
         LifeCycleManager lifeCycleManager = new LifeCycleManager(injectedInstances, lifeCycleMethodsMap);
@@ -76,7 +71,7 @@ class LifeCycleModule implements Module
 
     private boolean isLifeCycleClass(Class<?> clazz)
     {
-        LifeCycleMethods        methods = lifeCycleMethodsMap.get(clazz);
+        LifeCycleMethods methods = lifeCycleMethodsMap.get(clazz);
         return methods.hasFor(PostConstruct.class) || methods.hasFor(PreDestroy.class);
     }
 }

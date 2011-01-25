@@ -5,7 +5,7 @@ import javax.annotation.PostConstruct;
 public class PostConstructOnly
 {
     @PostConstruct
-    public void     makeMe()
+    public void makeMe()
     {
         TestLifeCycleManager.note("makeMe");
     }

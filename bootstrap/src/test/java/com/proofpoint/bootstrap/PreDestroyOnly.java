@@ -5,7 +5,7 @@ import javax.annotation.PreDestroy;
 public class PreDestroyOnly
 {
     @PreDestroy
-    public void     unmakeMe()
+    public void unmakeMe()
     {
         TestLifeCycleManager.note("unmakeMe");
     }

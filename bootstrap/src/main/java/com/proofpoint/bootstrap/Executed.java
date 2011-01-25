@@ -10,16 +10,16 @@ import java.util.concurrent.Executors;
  */
 public abstract class Executed implements Runnable
 {
-    private final ExecutorService       executor = Executors.newSingleThreadExecutor();
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @PostConstruct
-    public void     startExecution()
+    public void startExecution()
     {
         executor.submit(this);
     }
 
     @PreDestroy
-    public void     stopExecution()
+    public void stopExecution()
     {
         executor.shutdownNow();
     }

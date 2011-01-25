@@ -16,7 +16,7 @@ class LoggingWriter extends StringWriter
     {
         DEBUG,
         INFO
-    }    
+    }
 
     public LoggingWriter(Logger logger, Type type)
     {
@@ -25,7 +25,8 @@ class LoggingWriter extends StringWriter
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
+            throws IOException
     {
         flush();
         super.close();
@@ -34,41 +35,32 @@ class LoggingWriter extends StringWriter
     @Override
     public void flush()
     {
-        BufferedReader  in = new BufferedReader(new StringReader(getBuffer().toString()));
-        for(;;)
-        {
-            try
-            {
-                String      line = in.readLine();
-                if ( line == null )
-                {
+        BufferedReader in = new BufferedReader(new StringReader(getBuffer().toString()));
+        for (; ;) {
+            try {
+                String line = in.readLine();
+                if (line == null) {
                     break;
                 }
 
-                switch ( type )
-                {
+                switch (type) {
                     default:
-                    case DEBUG:
-                    {
-                        if ( logger.isDebugEnabled() )
-                        {
+                    case DEBUG: {
+                        if (logger.isDebugEnabled()) {
                             logger.debug(line);
                         }
                         break;
                     }
 
-                    case INFO:
-                    {
-                        if ( logger.isInfoEnabled() )
-                        {
+                    case INFO: {
+                        if (logger.isInfoEnabled()) {
                             logger.info(line);
                         }
                         break;
                     }
                 }
             }
-            catch ( IOException e )
-            {
+            catch (IOException e) {
                 throw new Error(e); // should never get here
             }
         }
@@ -76,7 +68,8 @@ class LoggingWriter extends StringWriter
         getBuffer().setLength(0);
     }
 
-    public void printMessage(String message, Object... args) throws IOException
+    public void printMessage(String message, Object... args)
+            throws IOException
     {
         write(String.format(message, args) + "\n");
     }

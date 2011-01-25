@@ -18,10 +18,10 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 class LifeCycleManager
 {
-    private final Logger                    log = Logger.get(getClass());
-    private final AtomicReference<State>    state = new AtomicReference<State>(State.LATENT);
-    private final Queue<Object>             managedInstances = new ConcurrentLinkedQueue<Object>();
-    private final LifeCycleMethodsMap       methodsMap;
+    private final Logger log = Logger.get(getClass());
+    private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
+    private final Queue<Object> managedInstances = new ConcurrentLinkedQueue<Object>();
+    private final LifeCycleMethodsMap methodsMap;
 
     private enum State
     {
@@ -41,8 +41,7 @@ class LifeCycleManager
             throws Exception
     {
         this.methodsMap = (methodsMap != null) ? methodsMap : new LifeCycleMethodsMap();
-        for ( Object instance : managedInstances )
-        {
+        for (Object instance : managedInstances) {
             addInstance(instance);
         }
     }
@@ -52,7 +51,7 @@ class LifeCycleManager
      *
      * @return qty
      */
-    public int      size()
+    public int size()
     {
         return managedInstances.size();
     }
@@ -62,41 +61,34 @@ class LifeCycleManager
      *
      * @throws Exception errors
      */
-    public void     start() throws Exception
+    public void start()
+            throws Exception
     {
-        if ( !state.compareAndSet(State.LATENT, State.STARTING) )
-        {
+        if (!state.compareAndSet(State.LATENT, State.STARTING)) {
             throw new Exception("System already starting");
         }
         log.info("Life cycle starting...");
 
-        for ( Object obj : managedInstances )
-        {
+        for (Object obj : managedInstances) {
             LifeCycleMethods methods = methodsMap.get(obj.getClass());
-            if ( !methods.hasFor(PreDestroy.class) )
-            {
+            if (!methods.hasFor(PreDestroy.class)) {
                 managedInstances.remove(obj);   // remove reference to instances that aren't needed anymore
             }
         }
 
-        Runtime.getRuntime().addShutdownHook
-        (
-            new Thread()
+        Runtime.getRuntime().addShutdownHook(new Thread()
+        {
+            @Override
+            public void run()
             {
-                @Override
-                public void run()
-                {
-                    try
-                    {
-                        LifeCycleManager.this.stop();
-                    }
-                    catch ( Exception e )
-                    {
-                        log.error(e, "Trying to shut down");
-                    }
+                try {
+                    LifeCycleManager.this.stop();
+                }
+                catch (Exception e) {
+                    log.error(e, "Trying to shut down");
                 }
             }
-        );
+        });
 
         state.set(State.STARTED);
         log.info("Life cycle startup complete. System ready.");
@@ -107,24 +99,22 @@ class LifeCycleManager
      *
      * @throws Exception errors
      */
-    public void     stop() throws Exception
+    public void stop()
+            throws Exception
     {
-        if ( !state.compareAndSet(State.STARTED, State.STOPPING) )
-        {
+        if (!state.compareAndSet(State.STARTED, State.STOPPING)) {
             return;
         }
 
         log.info("Life cycle stopping...");
 
-        List<Object>        reversedInstances = Lists.newArrayList(managedInstances);
+        List<Object> reversedInstances = Lists.newArrayList(managedInstances);
         Collections.reverse(reversedInstances);
 
-        for ( Object obj : reversedInstances )
-        {
+        for (Object obj : reversedInstances) {
             log.debug("Stopping %s", obj.getClass().getName());
-            LifeCycleMethods        methods = methodsMap.get(obj.getClass());
-            for ( Method preDestroy : methods.methodsFor(PreDestroy.class) )
-            {
+            LifeCycleMethods methods = methodsMap.get(obj.getClass());
+            for (Method preDestroy : methods.methodsFor(PreDestroy.class)) {
                 log.debug("\t%s()", preDestroy.getName());
                 preDestroy.invoke(obj);
             }
@@ -140,29 +130,27 @@ class LifeCycleManager
      * @param instance instance to add
      * @throws Exception errors
      */
-    public void addInstance(Object instance) throws Exception
+    public void addInstance(Object instance)
+            throws Exception
     {
         State currentState = state.get();
-        if ( (currentState == State.STOPPING) || (currentState == State.STOPPED) )
-        {
+        if ((currentState == State.STOPPING) || (currentState == State.STOPPED)) {
             throw new IllegalStateException();
         }
-        else
-        {
+        else {
             startInstance(instance);
-            if ( methodsMap.get(instance.getClass()).hasFor(PreDestroy.class) )
-            {
+            if (methodsMap.get(instance.getClass()).hasFor(PreDestroy.class)) {
                 managedInstances.add(instance);
             }
         }
     }
 
-    private void startInstance(Object obj) throws IllegalAccessException, InvocationTargetException
+    private void startInstance(Object obj)
+            throws IllegalAccessException, InvocationTargetException
     {
         log.debug("Starting %s", obj.getClass().getName());
         LifeCycleMethods methods = methodsMap.get(obj.getClass());
-        for ( Method postConstruct : methods.methodsFor(PostConstruct.class) )
-        {
+        for (Method postConstruct : methods.methodsFor(PostConstruct.class)) {
             log.debug("\t%s()", postConstruct.getName());
             postConstruct.invoke(obj);
         }

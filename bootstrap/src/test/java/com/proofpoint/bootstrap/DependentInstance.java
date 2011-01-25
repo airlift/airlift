@@ -9,17 +9,17 @@ public class DependentInstance
 {
     @Inject
     public DependentInstance()
-    {        
+    {
     }
 
     @PostConstruct
-    public void     postDependentInstance()
+    public void postDependentInstance()
     {
         TestLifeCycleManager.note("postDependentInstance");
     }
 
     @PreDestroy
-    public void     preDependentInstance()
+    public void preDependentInstance()
     {
         TestLifeCycleManager.note("preDependentInstance");
     }
