@@ -14,57 +14,51 @@ import java.util.UUID;
 
 public class TestConsistentHash
 {
-    private static final double          TOLERATED_DEVIATION = .50; // TODO find out why this number can't be lower
+    private static final double TOLERATED_DEVIATION = .50; // TODO find out why this number can't be lower
 
     @Test
-    public void     testBasic()
+    public void testBasic()
     {
         ConsistentHash<String> hasher = ConsistentHash.newConsistentHash(null);
 
         List<String> nodes = Lists.newArrayList();
-        for ( int i = 0; i < 10; ++i )
-        {
+        for (int i = 0; i < 10; ++i) {
             String node = UUID.randomUUID().toString();
             nodes.add(node);
             hasher.addNode(node);
         }
 
-        List<String>                values = Lists.newArrayList();
-        for ( int i = 0; i < 1000; ++i )
-        {
+        List<String> values = Lists.newArrayList();
+        for (int i = 0; i < 1000; ++i) {
             values.add(UUID.randomUUID().toString());
         }
 
         Map<String, String> valueToNode = Maps.newHashMap();
-        for ( String v : values )
-        {
+        for (String v : values) {
             valueToNode.put(v, hasher.getNodeForKey(v));
         }
 
         validateConsistency(values, valueToNode, hasher);
 
         Random random = new Random();
-        for ( int i = 0; i < 2; ++i )
-        {
+        for (int i = 0; i < 2; ++i) {
             nodes.remove(random.nextInt(nodes.size()));
             validateConsistency(values, valueToNode, hasher);
         }
 
-        for ( int i = 0; i < 10; ++i )
-        {
+        for (int i = 0; i < 10; ++i) {
             nodes.add(UUID.randomUUID().toString());
             validateConsistency(values, valueToNode, hasher);
         }
 
-        for ( int i = 0; i < (nodes.size() / 4); ++i )
-        {
+        for (int i = 0; i < (nodes.size() / 4); ++i) {
             nodes.remove(random.nextInt(nodes.size()));
             validateConsistency(values, valueToNode, hasher);
         }
     }
 
     @Test
-    public void     testExtremes()
+    public void testExtremes()
     {
         ConsistentHash<String> hasher = ConsistentHash.newConsistentHash();
 
@@ -74,8 +68,7 @@ public class TestConsistentHash
         hasher.addNode(nodeId);
         Assert.assertEquals(hasher.getNodesForKey("359023q r", 100).size(), 1);
 
-        for ( int i = 0; i < 1000; ++i )
-        {
+        for (int i = 0; i < 1000; ++i) {
             Assert.assertEquals(hasher.getNodeForKey(UUID.randomUUID().toString()), nodeId);
         }
 
@@ -86,25 +79,25 @@ public class TestConsistentHash
     }
 
     @Test
-    public void     testDistributionManyNodesFewKeys()
+    public void testDistributionManyNodesFewKeys()
     {
         testDistribution(100, 3);
     }
 
     @Test
-    public void     testDistributionFewNodesManyKeys()
+    public void testDistributionFewNodesManyKeys()
     {
         testDistribution(3, 1000);
     }
 
     @Test
-    public void     testDistributionFew()
+    public void testDistributionFew()
     {
         testDistribution(3, 10);
     }
 
     @Test
-    public void     testDistributionMany()
+    public void testDistributionMany()
     {
         testDistribution(1000, 10000);
     }
@@ -114,33 +107,29 @@ public class TestConsistentHash
         ConsistentHash<String> hasher = ConsistentHash.newConsistentHash(null);
         List<String> nodes = Lists.newArrayList();
         Map<String, Integer> nodeCounts = Maps.newHashMap();
-        for ( int i = 0; i < nodeQty; ++i )
-        {
+        for (int i = 0; i < nodeQty; ++i) {
             String node = UUID.randomUUID().toString();
             nodes.add(node);
             hasher.addNode(node);
             nodeCounts.put(node, 0);
         }
 
-        for ( int i = 0; i < keyQty; ++i )
-        {
-            String      node = hasher.getNodeForKey(UUID.randomUUID().toString());
+        for (int i = 0; i < keyQty; ++i) {
+            String node = hasher.getNodeForKey(UUID.randomUUID().toString());
             nodeCounts.put(node, nodeCounts.get(node) + 1);
         }
 
-        AggregateSummaryStatistics  statistics = new AggregateSummaryStatistics();
-        SummaryStatistics           summaryStatistics = statistics.createContributingStatistics();
-        for ( int count : nodeCounts.values() )
-        {
-            summaryStatistics.addValue((double)count / (double)keyQty);
+        AggregateSummaryStatistics statistics = new AggregateSummaryStatistics();
+        SummaryStatistics summaryStatistics = statistics.createContributingStatistics();
+        for (int count : nodeCounts.values()) {
+            summaryStatistics.addValue((double) count / (double) keyQty);
         }
         Assert.assertTrue(statistics.getStandardDeviation() <= TOLERATED_DEVIATION);
     }
 
     private void validateConsistency(List<String> values, Map<String, String> valueToNode, ConsistentHash<String> hasher)
     {
-        for ( String v : values )
-        {
+        for (String v : values) {
             String node = hasher.getNodeForKey(v);
             Assert.assertEquals(node, valueToNode.get(v));
         }

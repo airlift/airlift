@@ -22,35 +22,34 @@ public class ConsistentHash<T>
     /**
      * The default hashing function. Uses 50% of an MD5's bits
      */
-    private static final HashFunction   md5Hash = new HashFunction()
+    private static final HashFunction md5Hash = new HashFunction()
     {
         @Override
         public long hash(Object s)
         {
-            try
-            {
+            try {
                 MessageDigest digest = MessageDigest.getInstance("MD5");
-                String          stringValue = String.valueOf(s);
-                byte[]          bytes = digest.digest(stringValue.getBytes());
+                String stringValue = String.valueOf(s);
+                byte[] bytes = digest.digest(stringValue.getBytes());
                 return getLong(bytes, 0);
             }
-            catch ( NoSuchAlgorithmException e )
-            {
+            catch (NoSuchAlgorithmException e) {
                 throw new IllegalStateException(e);
             }
         }
 
-        @SuppressWarnings({ "PointlessBitwiseExpression", "PointlessArithmeticExpression" })
+        @SuppressWarnings({"PointlessBitwiseExpression", "PointlessArithmeticExpression"})
         // copied from JDK's Bits.java
-        private long getLong(byte[] b, int off) {
-        return ((b[off + 7] & 0xFFL) << 0) +
-               ((b[off + 6] & 0xFFL) << 8) +
-               ((b[off + 5] & 0xFFL) << 16) +
-               ((b[off + 4] & 0xFFL) << 24) +
-               ((b[off + 3] & 0xFFL) << 32) +
-               ((b[off + 2] & 0xFFL) << 40) +
-               ((b[off + 1] & 0xFFL) << 48) +
-               (((long) b[off + 0]) << 56);
+        private long getLong(byte[] b, int off)
+        {
+            return ((b[off + 7] & 0xFFL) << 0) +
+                    ((b[off + 6] & 0xFFL) << 8) +
+                    ((b[off + 5] & 0xFFL) << 16) +
+                    ((b[off + 4] & 0xFFL) << 24) +
+                    ((b[off + 3] & 0xFFL) << 32) +
+                    ((b[off + 2] & 0xFFL) << 40) +
+                    ((b[off + 1] & 0xFFL) << 48) +
+                    (((long) b[off + 0]) << 56);
         }
     };
 
@@ -60,7 +59,7 @@ public class ConsistentHash<T>
      * @param nodes initial nodes (can be empty)
      * @return new hasher
      */
-    public static<T> ConsistentHash<T> newConsistentHash(Collection<T> nodes)
+    public static <T> ConsistentHash<T> newConsistentHash(Collection<T> nodes)
     {
         return new ConsistentHash<T>(md5Hash, nodes);
     }
@@ -70,7 +69,7 @@ public class ConsistentHash<T>
      *
      * @return new hasher
      */
-    public static<T> ConsistentHash<T> newConsistentHash()
+    public static <T> ConsistentHash<T> newConsistentHash()
     {
         return new ConsistentHash<T>(md5Hash, null);
     }
@@ -83,10 +82,8 @@ public class ConsistentHash<T>
     {
         this.hashFunction = hashFunction;
 
-        if ( nodes != null )
-        {
-            for ( T node : nodes )
-            {
+        if (nodes != null) {
+            for (T node : nodes) {
                 addNode(node);
             }
         }
@@ -134,29 +131,25 @@ public class ConsistentHash<T>
      * @param qty number of nodes to get
      * @return list of nodes (size will be less than qty if qty is larger than the number of nodes)
      */
-    public Collection<T>    getNodesForKey(Object key, int qty)
+    public Collection<T> getNodesForKey(Object key, int qty)
     {
-        if ( nodes.size() == 0 )
-        {
+        if (nodes.size() == 0) {
             return Lists.newArrayList();
         }
 
         qty = Math.max(1, Math.min(qty, nodes.size()));
 
-        List<T>     list = Lists.newArrayList();
-        int         index = keyToIndex(key);
-        int         startingIndex = index;
-        while ( qty-- > 0 )
-        {
+        List<T> list = Lists.newArrayList();
+        int index = keyToIndex(key);
+        int startingIndex = index;
+        while (qty-- > 0) {
             list.add(nodes.get(index));
             ++index;
-            if ( index >= nodes.size() )
-            {
+            if (index >= nodes.size()) {
                 index = 0;
             }
 
-            if ( (index == startingIndex) && (qty > 0) )
-            {
+            if ((index == startingIndex) && (qty > 0)) {
                 throw new IllegalStateException();
             }
         }
@@ -169,7 +162,7 @@ public class ConsistentHash<T>
      *
      * @return nodes
      */
-    public Set<T>   getNodes()
+    public Set<T> getNodes()
     {
         return Sets.newHashSet(nodes);
     }
@@ -181,7 +174,7 @@ public class ConsistentHash<T>
 
     private int keyToIndex(Object key)
     {
-        long        hashOfKey = hashFunction.hash(key);
-        return (int)Math.abs(hashOfKey / factor);
+        long hashOfKey = hashFunction.hash(key);
+        return (int) Math.abs(hashOfKey / factor);
     }
 }
