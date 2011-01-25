@@ -2,7 +2,6 @@ package com.proofpoint.jmx;
 
 import com.google.inject.Inject;
 import com.proofpoint.log.Logger;
-import com.proofpoint.net.NetUtils;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;

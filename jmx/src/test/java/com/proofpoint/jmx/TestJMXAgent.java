@@ -1,6 +1,5 @@
 package com.proofpoint.jmx;
 
-import com.proofpoint.net.NetUtils;
 import org.testng.annotations.Test;
 
 import javax.management.MBeanServer;

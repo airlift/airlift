@@ -12,7 +12,6 @@ import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.jersey.JaxrsModule;
 import com.proofpoint.http.server.HttpServerModule;
-import com.proofpoint.net.NetUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.eclipse.jetty.server.Server;
 import org.testng.annotations.AfterMethod;
@@ -22,6 +21,8 @@ import org.testng.annotations.Test;
 import javax.ws.rs.core.MediaType;
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -47,7 +48,7 @@ public class TestServer
             throws Exception
     {
         tempDir = Files.createTempDir().getCanonicalFile(); // getCanonicalFile needed to get around Issue 365 (http://code.google.com/p/guava-libraries/issues/detail?id=365)
-        port = NetUtils.findUnusedPort();
+        port = findUnusedPort();
 
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("http-server.http.port", String.valueOf(port))
@@ -205,4 +206,22 @@ public class TestServer
         ObjectMapper mapper = new ObjectMapper();
         return clazz.cast(mapper.readValue(json, Object.class));
     }
+
+    private static int findUnusedPort()
+            throws IOException
+    {
+        int port;
+
+        ServerSocket socket = new ServerSocket();
+        try {
+            socket.bind(new InetSocketAddress(0));
+            port = socket.getLocalPort();
+        }
+        finally {
+            socket.close();
+        }
+
+        return port;
+    }
+
 }
