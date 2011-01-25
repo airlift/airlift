@@ -65,8 +65,15 @@ public class ConfigurationMetadata<T>
 
         this.defunctConfig = Sets.newHashSet();
         if (configClass.isAnnotationPresent(DefunctConfig.class)) {
+            final DefunctConfig defunctConfig = configClass.getAnnotation(DefunctConfig.class);
+            if (defunctConfig.value().length < 1) {
+                problems.addError("@DefunctConfig annotation on class [%s] is empty", configClass.getName());
+            }
             for (String defunct : configClass.getAnnotation(DefunctConfig.class).value()) {
-                if (!this.defunctConfig.add(defunct)) {
+                if (defunct.isEmpty()) {
+                    problems.addError("@DefunctConfig annotation on class [%s] contains empty values", configClass.getName());
+                }
+                else if (!this.defunctConfig.add(defunct)) {
                     problems.addError("Defunct property '%s' is listed more than once in @DefunctConfig for class [%s]", defunct, configClass.getName());
                 }
             }
@@ -131,13 +138,13 @@ public class ConfigurationMetadata<T>
         LegacyConfig legacyConfig = configMethod.getAnnotation(LegacyConfig.class);
 
         if (config == null) {
-            problems.addError("Method [%s] must have either @Config annotation", configMethod.toGenericString());
+            problems.addError("Method [%s] must have @Config annotation", configMethod.toGenericString());
             return false;
         }
 
         boolean isValid = true;
 
-        if (config != null && config.value().isEmpty()) {
+        if (config.value().isEmpty()) {
             problems.addError("@Config method [%s] annotation has an empty value", configMethod.toGenericString());
             isValid = false;
         }
@@ -148,7 +155,7 @@ public class ConfigurationMetadata<T>
                 isValid = false;
             }
 
-            if (!legacyConfig.replacedBy().isEmpty() && config != null && !config.value().isEmpty()) {
+            if (!legacyConfig.replacedBy().isEmpty()) {
                 problems.addError("@Config method [%s] has annotation claiming to be replaced by another property ('%s')", configMethod.toGenericString(), legacyConfig.replacedBy());
                 isValid = false;
             }
@@ -157,7 +164,7 @@ public class ConfigurationMetadata<T>
                 if (arrayEntry == null || arrayEntry.isEmpty()) {
                     problems.addError("@LegacyConfig method [%s] annotation contains null or empty value", configMethod.toGenericString());
                     isValid = false;
-                } else if (config != null && arrayEntry.equals(config.value())) {
+                } else if (arrayEntry.equals(config.value())) {
                     problems.addError("@Config property name '%s' appears in @LegacyConfig annotation for method [%s]", config.value(), configMethod.toGenericString());
                     isValid = false;
                 }
@@ -613,10 +620,10 @@ public class ConfigurationMetadata<T>
                                      problems.addError("@LegacyConfig property '%s' on method [%s] is defunct on class [%s]", property, method, configClass);
                                 }
 
-                                if (property != propertyName) {
+                                if (!property.equals(propertyName)) {
                                     setters.add(InjectionPointMetaData.newLegacy(configClass, property, method));
                                 } else {
-                                    problems.addError("@LegacyConfig property '%s' on method [%s] replaces @Config property of same name on method [%s]",
+                                    problems.addError("@LegacyConfig property '%s' on method [%s] is replaced by @Config property of same name on method [%s]",
                                             property, method.toGenericString(), setterName);
                                 }
                             }
@@ -630,10 +637,10 @@ public class ConfigurationMetadata<T>
                                      problems.addError("@LegacyConfig property '%s' on method [%s] is defunct on class [%s]", property, method, configClass);
                                 }
 
-                                if (property != propertyName) {
+                                if (!property.equals(propertyName)) {
                                     setters.add(InjectionPointMetaData.newLegacy(configClass, property, method));
                                 } else {
-                                    problems.addError("@LegacyConfig property '%s' on method [%s] replaces @Config property of same name on method [%s]",
+                                    problems.addError("@LegacyConfig property '%s' on method [%s] is replaced by @Config property of same name on method [%s]",
                                             property, method.toGenericString(), setterName);
                                 }
                             }

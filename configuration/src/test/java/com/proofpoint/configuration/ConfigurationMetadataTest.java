@@ -367,19 +367,30 @@ public class ConfigurationMetadataTest
     }
 
     @Test
+    public void testMultipleAnnotatedSettersClass()
+            throws Exception
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(MultipleAnnotatedSettersClass.class, monitor);
+        verifyMetaData(metadata, MultipleAnnotatedSettersClass.class, true, false, false, null);
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("Multiple methods are annotated", "Value");
+    }
+
+    @Test
     public void testCurrentAndLegacyConfigOnGetterClass()
         throws Exception
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(CurrentAndLegacyConfigOnGetterClass.class, monitor);
-        Problems problems = metadata.getProblems();
         monitor.assertNumberOfErrors(1);
         monitor.assertNumberOfWarnings(0);
         monitor.assertMatchingErrorRecorded("not a valid setter", "getValue");
     }
 
     @Test
-    public void testLegacyAndDeprecatedConfigOnSetterClass()
+    public void testCurrentAndLegacyConfigOnSetterClass()
         throws Exception
     {
         TestMonitor monitor = new TestMonitor();
@@ -390,12 +401,22 @@ public class ConfigurationMetadataTest
     }
 
     @Test
+    public void testCurrentConfigWithReplacedByClass()
+        throws Exception
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(CurrentConfigWithReplacedByClass.class, monitor);
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("@Config method", "setValue", "claiming to be replaced by", "'other-name'");
+    }
+
+    @Test
     public void testLegacyConfigOnGetterClass()
         throws Exception
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnGetterClass.class, monitor);
-        Problems problems = metadata.getProblems();
         monitor.assertNumberOfErrors(2);
         monitor.assertNumberOfWarnings(0);
         monitor.assertMatchingErrorRecorded("not a valid setter", "getValue");
@@ -408,7 +429,6 @@ public class ConfigurationMetadataTest
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnSetterClass.class, monitor);
-        Problems problems = metadata.getProblems();
         monitor.assertNumberOfErrors(1);
         monitor.assertNumberOfWarnings(0);
         monitor.assertMatchingErrorRecorded("LegacyConfig", "setValue", "not associated with any valid @Config");
@@ -420,7 +440,6 @@ public class ConfigurationMetadataTest
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnDeprecatedSetterClass.class, monitor);
-        Problems problems = metadata.getProblems();
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
     }
@@ -431,7 +450,6 @@ public class ConfigurationMetadataTest
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnNonDeprecatedSetterClass.class, monitor);
-        Problems problems = metadata.getProblems();
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
         monitor.assertMatchingWarningRecorded("Replaced @LegacyConfig method", "setValue(int)", "should be @Deprecated");
@@ -497,6 +515,32 @@ public class ConfigurationMetadataTest
     }
 
     @Test
+    public void testLegacyConfigDuplicatesConfigOnOtherMethodClass()
+            throws Exception
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigDuplicatesConfigOnOtherMethodClass.class, monitor);
+        verifyMetaData(metadata, LegacyConfigDuplicatesConfigOnOtherMethodClass.class, true, false, false, null);
+        monitor.assertNumberOfErrors(2);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("@LegacyConfig", "'value'", "is replaced by @Config", "same name", "setValue");
+        monitor.assertMatchingErrorRecorded("@LegacyConfig", "setValue", "not associated with any valid @Config");
+    }
+
+    @Test
+    public void testLegacyConfigDuplicatesConfigOnLinkedMethodClass()
+            throws Exception
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigDuplicatesConfigOnLinkedMethodClass.class, monitor);
+        verifyMetaData(metadata, LegacyConfigDuplicatesConfigOnLinkedMethodClass.class, true, false, false, null);
+        monitor.assertNumberOfErrors(2);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("@LegacyConfig", "'value'", "is replaced by @Config", "same name", "setValue");
+        monitor.assertMatchingErrorRecorded("@LegacyConfig", "setIntValue", "not associated with any valid @Config");
+    }
+
+    @Test
     public void testDeprecatedConfigClass()
             throws Exception
     {
@@ -531,6 +575,89 @@ public class ConfigurationMetadataTest
         monitor.assertNumberOfErrors(1);
         monitor.assertNumberOfWarnings(0);
         monitor.assertMatchingErrorRecorded("getDeprecated", "setDeprecated", "must be @Deprecated together");
+    }
+
+    @Test
+    public void testDefunctConfigClass()
+            throws Exception
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DefunctConfigClass.class, monitor);
+        verifyMetaData(metadata, DefunctConfigClass.class, true, false, false, null);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
+    }
+
+    @Test
+    public void testDefunctConfigEmptyArrayClass()
+            throws Exception
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DefunctConfigEmptyArrayClass.class, monitor);
+        verifyMetaData(metadata, DefunctConfigEmptyArrayClass.class, true, false, false, null);
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("@DefunctConfig", "is empty");
+    }
+
+    @Test
+    public void testDefunctConfigEmptyStringClass()
+            throws Exception
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DefunctConfigEmptyStringClass.class, monitor);
+        verifyMetaData(metadata, DefunctConfigEmptyStringClass.class, true, false, false, null);
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("@DefunctConfig", "contains empty values");
+    }
+
+    @Test
+    public void testDefunctConfigInUseClass()
+            throws Exception
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DefunctConfigInUseClass.class, monitor);
+        verifyMetaData(metadata, DefunctConfigInUseClass.class, true, false, false, null);
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("@Config property", "'value'", "setValue", "is defunct on class");
+    }
+
+    @Test
+    public void testDefunctConfigInLegacyUseClass()
+            throws Exception
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DefunctConfigInLegacyUseClass.class, monitor);
+        verifyMetaData(metadata, DefunctConfigInLegacyUseClass.class, true, false, false, null);
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("@LegacyConfig property", "'replacedValue'", "setValue", "is defunct on class");
+    }
+
+    @Test
+    public void testDefunctConfigInLinkedLegacyUseClass()
+            throws Exception
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DefunctConfigInLinkedLegacyUseClass.class, monitor);
+        verifyMetaData(metadata, DefunctConfigInLinkedLegacyUseClass.class, true, false, false, null);
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("@LegacyConfig property", "'replacedValue'", "setIntValue", "is defunct on class");
+    }
+
+    @Test
+    public void testDuplicateDefunctConfigClass()
+            throws Exception
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DuplicateDefunctConfigClass.class, monitor);
+        verifyMetaData(metadata, DuplicateDefunctConfigClass.class, true, false, false, null);
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("Defunct property", "'defunct'", "listed more than once");
     }
 
     private void verifyMetaData(ConfigurationMetadata<?> metadata, Class<?> configClass, boolean hasConstructor, boolean hasGetter, boolean hasSetter, String description)
@@ -944,6 +1071,29 @@ public class ConfigurationMetadataTest
         }
     }
 
+    public static class MultipleAnnotatedSettersClass
+    {
+        private String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+
+        @Config("int-value")
+        public void setValue(int value)
+        {
+            this.value = Integer.toString(value);
+        }
+
+    }
+
     public static class CurrentAndLegacyConfigOnGetterClass
     {
         private String value;
@@ -974,6 +1124,34 @@ public class ConfigurationMetadataTest
         @Config("value")
         @LegacyConfig("replacedValue")
         @ConfigDescription("description")
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+    }
+
+    public static class CurrentConfigWithReplacedByClass
+    {
+        private String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        public String getValueByOtherName()
+        {
+            return value;
+        }
+
+        @Config("other-name")
+        public void setValueByOtherName(String value)
+        {
+            this.value = value;
+        }
+
+        @Config("value")
+        @LegacyConfig(value = "replacedValue", replacedBy = "other-name")
         public void setValue(String value)
         {
             this.value = value;
@@ -1143,6 +1321,52 @@ public class ConfigurationMetadataTest
         }
     }
 
+    public static class LegacyConfigDuplicatesConfigOnOtherMethodClass
+    {
+        private String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+
+        @Deprecated
+        @LegacyConfig("value")
+        public void setValue(int value)
+        {
+            this.value = Integer.toString(value);
+        }
+    }
+
+    public static class LegacyConfigDuplicatesConfigOnLinkedMethodClass
+    {
+        private String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+
+        @Deprecated
+        @LegacyConfig(value = "value", replacedBy = "value")
+        public void setIntValue(int value)
+        {
+            this.value = Integer.toString(value);
+        }
+    }
+
     public static class DeprecatedConfigClass
     {
         private String value;
@@ -1231,6 +1455,138 @@ public class ConfigurationMetadataTest
         }
     }
 
+    @DefunctConfig({"defunct1", "defunct2"})
+    public static class DefunctConfigClass
+    {
+        private String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+    }
+
+    @DefunctConfig({})
+    public static class DefunctConfigEmptyArrayClass
+    {
+        private String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+    }
+
+    @DefunctConfig({"defunct1", ""})
+    public static class DefunctConfigEmptyStringClass
+    {
+        private String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+    }
+
+    @DefunctConfig("value")
+    public static class DefunctConfigInUseClass
+    {
+        private String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+    }
+
+    @DefunctConfig("replacedValue")
+    public static class DefunctConfigInLegacyUseClass
+    {
+        private String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+
+        @Deprecated
+        @LegacyConfig("replacedValue")
+        public void setValue(int value)
+        {
+            this.value = Integer.toString(value);
+        }
+    }
+
+    @DefunctConfig("replacedValue")
+    public static class DefunctConfigInLinkedLegacyUseClass
+    {
+        private String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+
+        @Deprecated
+        @LegacyConfig(value = "replacedValue", replacedBy = "value")
+        public void setIntValue(int value)
+        {
+            this.value = Integer.toString(value);
+        }
+    }
+
+    @DefunctConfig({"defunct", "defunct"})
+    public static class DuplicateDefunctConfigClass
+    {
+        private String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+    }
 
     private static Method findMethod(Class<?> configClass, String methodName, Class<?>... paramTypes)
     {
