@@ -1,17 +1,18 @@
 package com.proofpoint.stats;
 
-import static com.proofpoint.testing.Assertions.assertGreaterThanOrEqual;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.fail;
-import static org.testng.AssertJUnit.assertTrue;
 import org.testng.annotations.Test;
 
-import static java.lang.Math.min;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+
+import static com.proofpoint.testing.Assertions.assertGreaterThanOrEqual;
+import static java.lang.Math.min;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.fail;
+import static org.testng.AssertJUnit.assertTrue;
 
 
 public class TimedStatTest
@@ -24,7 +25,7 @@ public class TimedStatTest
         TimedStat stat = new TimedStat();
         List<Double> values = new ArrayList<Double>(VALUES);
         for (int i = 0; i < VALUES; i++) {
-            values.add((double)i);
+            values.add((double) i);
         }
         Collections.shuffle(values);
         for (Double value : values) {
@@ -33,9 +34,9 @@ public class TimedStatTest
         Collections.sort(values);
 
         assertEquals(stat.getCount(), values.size());
-        assertEquals(stat.getMax(), values.get(values.size() -1));
+        assertEquals(stat.getMax(), values.get(values.size() - 1));
         assertEquals(stat.getMin(), values.get(0));
-        assertEquals(stat.getMean(), (values.get(0) + values.get(values.size() -1)) / 2.0);
+        assertEquals(stat.getMean(), (values.get(0) + values.get(values.size() - 1)) / 2.0);
 
 
         assertPercentile("tp50", stat.getTP50(), values, 0.50);
@@ -66,7 +67,8 @@ public class TimedStatTest
             throws Exception
     {
         TimedStat stat = new TimedStat();
-        stat.time(new Callable<Void>() {
+        stat.time(new Callable<Void>()
+        {
             @Override
             public Void call()
                     throws Exception
