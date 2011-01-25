@@ -1,7 +1,6 @@
 package com.proofpoint.platform.sample;
 
 import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.inject.Guice;
@@ -10,10 +9,10 @@ import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.http.server.HttpServerModule;
+import com.proofpoint.http.server.testing.TestingHttpServer;
+import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.jersey.JaxrsModule;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.eclipse.jetty.server.Server;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -21,8 +20,7 @@ import org.testng.annotations.Test;
 import javax.ws.rs.core.MediaType;
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -37,9 +35,8 @@ public class TestServer
     private static final int NOT_ALLOWED = 405;
 
     private AsyncHttpClient client;
-    private Server server;
+    private TestingHttpServer server;
     private File tempDir;
-    private int port;
 
     private PersonStore store;
 
@@ -48,21 +45,14 @@ public class TestServer
             throws Exception
     {
         tempDir = Files.createTempDir().getCanonicalFile(); // getCanonicalFile needed to get around Issue 365 (http://code.google.com/p/guava-libraries/issues/detail?id=365)
-        port = findUnusedPort();
-
-        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("http-server.http.port", String.valueOf(port))
-                .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
-                .build();
 
         // TODO: wrap all this stuff in a TestBootstrap class
-        ConfigurationFactory configFactory = new ConfigurationFactory(properties);
-        Injector injector = Guice.createInjector(new HttpServerModule(),
+        Injector injector = Guice.createInjector(new TestingHttpServerModule(),
                 new JaxrsModule(),
                 new MainModule(),
-                new ConfigurationModule(configFactory));
+                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
 
-        server = injector.getInstance(Server.class);
+        server = injector.getInstance(TestingHttpServer.class);
         store = injector.getInstance(PersonStore.class);
 
         server.start();
@@ -196,7 +186,7 @@ public class TestServer
 
     private String urlFor(String path)
     {
-        return format("http://localhost:%d%s", port, path);
+        return server.getBaseUrl().resolve(path).toString();
     }
 
     private static <T> T fromJson(String json, Class<T> clazz)
@@ -206,22 +196,4 @@ public class TestServer
         ObjectMapper mapper = new ObjectMapper();
         return clazz.cast(mapper.readValue(json, Object.class));
     }
-
-    private static int findUnusedPort()
-            throws IOException
-    {
-        int port;
-
-        ServerSocket socket = new ServerSocket();
-        try {
-            socket.bind(new InetSocketAddress(0));
-            port = socket.getLocalPort();
-        }
-        finally {
-            socket.close();
-        }
-
-        return port;
-    }
-
 }

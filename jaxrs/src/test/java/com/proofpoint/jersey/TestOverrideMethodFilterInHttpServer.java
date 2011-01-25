@@ -9,9 +9,8 @@ import com.ning.http.client.Request;
 import com.ning.http.client.RequestBuilder;
 import com.ning.http.client.RequestType;
 import com.ning.http.client.Response;
-import com.proofpoint.http.server.HttpServerConfig;
-import com.proofpoint.http.server.JettyProvider;
-import org.eclipse.jetty.server.Server;
+import com.proofpoint.http.server.testing.TestingHttpServer;
+import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -24,8 +23,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Response.Status;
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.util.concurrent.ExecutionException;
 
 import static com.ning.http.client.RequestType.DELETE;
@@ -37,11 +34,9 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-public class TestOverrideMethodFilterInJetty
+public class TestOverrideMethodFilterInHttpServer
 {
-    private Server server;
-    private File tempDir;
-    private HttpServerConfig config;
+    private TestingHttpServer server;
     private TestResource resource;
     private AsyncHttpClient client;
 
@@ -49,11 +44,8 @@ public class TestOverrideMethodFilterInJetty
     public void setup()
             throws Exception
     {
-        tempDir = Files.createTempDir().getCanonicalFile(); // getCanonicalFile needed to get around Issue 365 (http://code.google.com/p/guava-libraries/issues/detail?id=365)
-        config = makeHttpServerConfig(tempDir);
-
         resource = new TestResource();
-        server = createServer(config, resource);
+        server = createServer(resource);
 
         client = new AsyncHttpClient();
 
@@ -68,13 +60,18 @@ public class TestOverrideMethodFilterInJetty
             if (server != null) {
                 server.stop();
             }
+        }
+        catch (Throwable e) {
+            // ignore
+        }
 
+        try {
             if (client != null) {
                 client.close();
             }
         }
-        finally {
-            Files.deleteRecursively(tempDir);
+        catch (Throwable e) {
+            // ignore
         }
     }
 
@@ -182,15 +179,17 @@ public class TestOverrideMethodFilterInJetty
     private Request buildRequestWithHeader(RequestType type, RequestType override)
     {
         return new RequestBuilder(type)
-                .setUrl(format("http://localhost:%d/", config.getHttpPort()))
+                .setUrl(server.getBaseUrl().toString())
                 .addHeader("X-HTTP-Method-Override", override.name())
                 .build();
     }
 
     private Request buildRequestWithQueryParam(RequestType type, RequestType override)
     {
+        String url = server.getBaseUrl().resolve(format("/?_method=%s", override.name())).toString();
+
         return new RequestBuilder(type)
-                .setUrl(format("http://localhost:%d/?_method=%s", config.getHttpPort(), override.name()))
+                .setUrl(url)
                 .build();
     }
 
@@ -226,20 +225,6 @@ public class TestOverrideMethodFilterInJetty
         assertNonOverridableMethod(buildRequestWithQueryParam(PUT, POST));
         assertNonOverridableMethod(buildRequestWithQueryParam(PUT, DELETE));
         assertNonOverridableMethod(buildRequestWithQueryParam(PUT, GET));
-    }
-
-    private HttpServerConfig makeHttpServerConfig(final File tempDir)
-            throws IOException
-    {
-        // TODO: replace with NetUtils.findUnusedPort()
-        ServerSocket socket = new ServerSocket();
-        socket.bind(new InetSocketAddress(0));
-        final int port = socket.getLocalPort();
-        socket.close();
-
-        return new HttpServerConfig()
-                .setHttpPort(port)
-                .setLogPath(new File(tempDir, "http-request.log").getAbsolutePath());
     }
 
     @Path("/")
@@ -296,18 +281,17 @@ public class TestOverrideMethodFilterInJetty
         }
     }
 
-    private Server createServer(final HttpServerConfig config, final TestResource resource)
+    private TestingHttpServer createServer(final TestResource resource)
     {
         return Guice.createInjector(new JaxrsModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.bind(Server.class).toProvider(JettyProvider.class);
-                        binder.bind(HttpServerConfig.class).toInstance(config);
-                        binder.bind(TestResource.class).toInstance(resource);
-                    }
-                }).getInstance(Server.class);
+                                    new TestingHttpServerModule(),
+                                    new Module()
+                                    {
+                                        @Override
+                                        public void configure(Binder binder)
+                                        {
+                                            binder.bind(TestResource.class).toInstance(resource);
+                                        }
+                                    }).getInstance(TestingHttpServer.class);
     }
 }
