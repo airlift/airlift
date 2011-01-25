@@ -20,13 +20,15 @@ public class JettyServer
     }
 
     @PostConstruct
-    public void start() throws Exception
+    public void start()
+            throws Exception
     {
         server.start();
     }
 
     @PreDestroy
-    public void stop() throws Exception
+    public void stop()
+            throws Exception
     {
         server.stop();
     }

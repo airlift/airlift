@@ -46,15 +46,15 @@ public class TestHttpServerModule
 
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
         Injector injector = Guice.createInjector(new HttpServerModule(),
-                                                 new ConfigurationModule(configFactory),
-                                                 new Module()
-        {
-            @Override
-            public void configure(Binder binder)
-            {
-                binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
-            }
-        });
+                new ConfigurationModule(configFactory),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
+                    }
+                });
 
         injector.getInstance(Server.class);
     }

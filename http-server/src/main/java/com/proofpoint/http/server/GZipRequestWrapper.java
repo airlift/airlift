@@ -23,7 +23,8 @@ class GZipRequestWrapper
     }
 
     @Override
-    public ServletInputStream getInputStream() throws IOException
+    public ServletInputStream getInputStream()
+            throws IOException
     {
         return new ServletInputStreamFromInputStream(new GZIPInputStream(request.getInputStream()));
     }
@@ -42,7 +43,7 @@ class GZipRequestWrapper
         }
 
         // TODO: filter out content-coding
-        
+
         return request.getHeader(name);
     }
 
@@ -54,26 +55,27 @@ class GZipRequestWrapper
     }
 
     @Override
-    public Enumeration getHeaderNames()
+    public Enumeration<?> getHeaderNames()
     {
         // TODO: filter out content-length & content-coding
         return request.getHeaderNames();
     }
 
     @Override
-    public Enumeration getHeaders(String name)
+    public Enumeration<?> getHeaders(String name)
     {
         // TODO: filter out content-length & content-coding
         return request.getHeaders(name);
     }
-    
+
 
     private static class ServletInputStreamFromInputStream
             extends ServletInputStream
     {
         private final InputStream stream;
 
-        public ServletInputStreamFromInputStream(InputStream stream) throws IOException
+        public ServletInputStreamFromInputStream(InputStream stream)
+                throws IOException
         {
             this.stream = stream;
         }
@@ -114,9 +116,9 @@ class GZipRequestWrapper
             stream.close();
         }
 
-        public void mark(int readlimit)
+        public void mark(int readLimit)
         {
-            stream.mark(readlimit);
+            stream.mark(readLimit);
         }
 
         public void reset()

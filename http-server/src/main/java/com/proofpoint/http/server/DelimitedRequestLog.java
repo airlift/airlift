@@ -1,12 +1,12 @@
 package com.proofpoint.http.server;
 
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
 import org.joda.time.format.ISODateTimeFormat;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -89,11 +89,13 @@ class DelimitedRequestLog
         return System.currentTimeMillis() - request.getTimeStamp();
     }
 
-    public void start() throws Exception
+    public void start()
+            throws Exception
     {
     }
 
-    public void stop() throws Exception
+    public void stop()
+            throws Exception
     {
         out.close();
     }

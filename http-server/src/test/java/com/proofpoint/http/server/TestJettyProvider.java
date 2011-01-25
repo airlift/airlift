@@ -33,7 +33,7 @@ public class TestJettyProvider
     {
         tempDir = Files.createTempDir().getCanonicalFile(); // getCanonicalFile needed to get around Issue 365 (http://code.google.com/p/guava-libraries/issues/detail?id=365)
     }
-    
+
     @AfterMethod
     public void teardown()
             throws Exception
@@ -103,7 +103,7 @@ public class TestJettyProvider
         Files.write("user: password", file, Charsets.UTF_8);
 
         HttpServerConfig config = makeBaseConfig()
-            .setUserAuthFile(file.getAbsolutePath());
+                .setUserAuthFile(file.getAbsolutePath());
 
         createServer(config);
         server.start();
@@ -143,7 +143,7 @@ public class TestJettyProvider
         // TODO
     }
 
-    public void testLogPathParentCannotbeCreated()
+    public void testLogPathParentCannotBeCreated()
     {
         // TODO
     }
@@ -166,8 +166,8 @@ public class TestJettyProvider
             final int port = socket.getLocalPort();
 
             return new HttpServerConfig()
-                .setHttpPort(port)
-                .setLogPath(new File(tempDir, "http-request.log").getAbsolutePath());
+                    .setHttpPort(port)
+                    .setLogPath(new File(tempDir, "http-request.log").getAbsolutePath());
         }
         finally {
             socket.close();

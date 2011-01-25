@@ -2,12 +2,12 @@ package com.proofpoint.http.server;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.DateTimeFormatterBuilder;
-import org.joda.time.format.ISODateTimeFormat;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.DateTimeFormatterBuilder;
+import org.joda.time.format.ISODateTimeFormat;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -26,14 +26,15 @@ public class TestDelimitedRequestLog
     private DateTimeFormatter isoFormatter;
 
     @BeforeMethod
-    public void setup() throws IOException
+    public void setup()
+            throws IOException
     {
         file = File.createTempFile(getClass().getName(), ".log");
 
         isoFormatter = new DateTimeFormatterBuilder()
-                 .append(ISODateTimeFormat.dateHourMinuteSecondFraction())
-                 .appendTimeZoneOffset("Z", true, 2, 2)
-                 .toFormatter();
+                .append(ISODateTimeFormat.dateHourMinuteSecondFraction())
+                .appendTimeZoneOffset("Z", true, 2, 2)
+                .toFormatter();
     }
 
     @AfterMethod
@@ -46,7 +47,8 @@ public class TestDelimitedRequestLog
     }
 
     @Test
-    public void testWriteLog() throws Exception
+    public void testWriteLog()
+            throws Exception
     {
         final Request request = mock(Request.class);
         final Response response = mock(Response.class);
@@ -64,7 +66,8 @@ public class TestDelimitedRequestLog
         final HttpURI uri = new HttpURI("http://www.example.com/aaa+bbb/ccc?param=hello%20there&other=true");
 
 
-        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1) {
+        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1)
+        {
             @Override
             protected long getRequestTime(Request request)
             {

@@ -10,7 +10,7 @@ import org.eclipse.jetty.server.Server;
 /**
  * Provides a fully configured instance of an http server,
  * ready to use with Guice (via {@link com.google.inject.servlet.GuiceFilter})
- *
+ * <p/>
  * Features:
  *    - HTTP/HTTPS
  *    - Basic Auth
@@ -18,16 +18,16 @@ import org.eclipse.jetty.server.Server;
  *    - JMX
  *
  * Configuration options are provided via {@link HttpServerConfig}
- *
+ * <p/>
  * To enable JMX, an {@link javax.management.MBeanServer} must be bound elsewhere
  * To enable Basic Auth, a {@link org.eclipse.jetty.security.LoginService} must be bound elsewhere
- *
+ * <p/>
  * To enable HTTPS, HttpServerConfig.isHttpsEnabled() must return true and HttpServerConfig.getKeystorePath() and
  * HttpServerConfig.getKeystorePassword() must return the path to the keystore containing the ssl cert & the password to the
  * keystore, respectively. The https port is specified via HttpServerConfig.getHttpsPort()
  */
 public class HttpServerModule
-    implements Module
+        implements Module
 {
     public static final String REALM_NAME = "Proofpoint";
 

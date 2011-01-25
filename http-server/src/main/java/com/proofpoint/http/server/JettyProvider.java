@@ -28,8 +28,8 @@ import javax.servlet.Servlet;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
@@ -75,7 +75,7 @@ public class JettyProvider
     public Server get()
     {
         String ip = config.getIp();
-        
+
         Server server = new Server();
 
         if (mbeanServer != null) {
@@ -111,10 +111,10 @@ public class JettyProvider
             server.addConnector(sslConnector);
         }
 
-        QueuedThreadPool threadpool = new QueuedThreadPool(config.getMaxThreads());
-        threadpool.setMinThreads(config.getMinThreads());
-        threadpool.setMaxIdleTimeMs((int) config.getThreadMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
-        server.setThreadPool(threadpool);
+        QueuedThreadPool threadPool = new QueuedThreadPool(config.getMaxThreads());
+        threadPool.setMinThreads(config.getMinThreads());
+        threadPool.setMaxIdleTimeMs((int) config.getThreadMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
+        server.setThreadPool(threadPool);
 
         /**
          * structure is:
