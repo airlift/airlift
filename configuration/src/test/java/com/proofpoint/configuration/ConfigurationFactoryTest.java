@@ -1,5 +1,6 @@
 package com.proofpoint.configuration;
 
+import com.google.common.collect.Maps;
 import com.google.inject.Binder;
 import com.google.inject.CreationException;
 import com.google.inject.Guice;
@@ -158,6 +159,30 @@ public class ConfigurationFactoryTest
         }
     }
 
+    @Test
+    public void testDefunctPropertyInConfigThrows()
+    {
+        Map<String, String> properties = Maps.newTreeMap();
+        properties.put("string-value", "this is a");
+        properties.put("defunct-value", "this shouldn't work");
+        TestMonitor monitor = new TestMonitor();
+        try {
+            createInjector(properties, monitor, new Module()
+            {
+                public void configure(Binder binder)
+                {
+                    ConfigurationModule.bindConfig(binder).to(DefunctConfigPresent.class);
+                }
+            });
+
+            Assert.fail("Expected an exception in object creation due to use of defunct config");
+        } catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(0);
+            monitor.assertMatchingErrorRecorded("Defunct property", "'defunct-value", "cannot be configured");
+        }
+    }
+
     private Injector createInjector(Map<String, String> properties, TestMonitor monitor, Module module)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, monitor);
@@ -246,6 +271,24 @@ public class ConfigurationFactoryTest
         public void setStringB(String stringValue)
         {
             this.stringB = stringValue;
+        }
+    }
+
+    @DefunctConfig("defunct-value")
+    public static class DefunctConfigPresent
+    {
+        private String stringValue;
+        private boolean booleanValue;
+
+        public String getStringValue()
+        {
+            return stringValue;
+        }
+
+        @Config("string-value")
+        public void setStringValue(String stringValue)
+        {
+            this.stringValue = stringValue;
         }
     }
 }
