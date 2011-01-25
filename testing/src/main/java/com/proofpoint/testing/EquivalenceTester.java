@@ -5,7 +5,6 @@ package com.proofpoint.testing;
  *
  * Licensed under Apache License, Version 2.0
  */
-
 import java.util.Collection;
 import java.util.List;
 
@@ -40,7 +39,7 @@ public final class EquivalenceTester
                 try {
                     assertFalse(element.equals(null),
                             format("%s can not be equal to null", element)
-                            );
+                    );
                 }
                 catch (NullPointerException e) {
                     throw new AssertionError(
@@ -55,7 +54,7 @@ public final class EquivalenceTester
             ec.add(c);
             for (Object element : congruenceClass) {
                 assertTrue(element.equals(element),
-                           format("reflexivity of %s", element));
+                        format("reflexivity of %s", element));
                 compareShouldReturn0(element, element);
                 c.add(element);
             }
@@ -104,10 +103,11 @@ public final class EquivalenceTester
                 checkComparison(lesserBag, greaterBag);
             }
         }
-        
+
     }
 
-    private static <T extends Comparable<T>> void checkComparison(Collection<T> lesserBag, Collection<T> greaterBag) {
+    private static <T extends Comparable<T>> void checkComparison(Collection<T> lesserBag, Collection<T> greaterBag)
+    {
         for (T lesser : lesserBag) {
             for (T greater : greaterBag) {
                 Assertions.assertLessThan(lesser, greater);
@@ -115,13 +115,13 @@ public final class EquivalenceTester
             }
         }
     }
-    
+
     @SuppressWarnings("unchecked")
     private static void compareShouldReturn0(Object e1, Object e2)
     {
         if (e1 instanceof Comparable<?>) {
             assertTrue(((Comparable<Object>) e1).compareTo(e2) == 0,
-                       format("comparison should return 0 for %s and %s", e1, e2));
+                    format("comparison should return 0 for %s and %s", e1, e2));
         }
     }
 
@@ -130,7 +130,7 @@ public final class EquivalenceTester
     {
         if (e1 instanceof Comparable<?>) {
             assertFalse(((Comparable<Object>) e1).compareTo(e2) == 0,
-                        format("comparison should not return 0 for %s and %s", e1, e2));
+                    format("comparison should not return 0 for %s and %s", e1, e2));
         }
     }
 

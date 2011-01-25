@@ -1,7 +1,8 @@
 package com.proofpoint.testing;
 
-import static org.testng.Assert.assertNotNull;
 import org.testng.Assert;
+
+import static org.testng.Assert.assertNotNull;
 
 public final class Assertions
 {
@@ -9,15 +10,15 @@ public final class Assertions
     {
     }
 
-    public static void assertContains(String actual, String expectedPart) {
+    public static void assertContains(String actual, String expectedPart)
+    {
         assertContains(actual, expectedPart, null);
     }
 
     public static void assertContainsAllOf(String actual, String... expectedParts)
     {
         // todo improve naive implementation
-        for (String expected : expectedParts)
-        {
+        for (String expected : expectedParts) {
             assertContains(actual, expected, null);
         }
     }
@@ -33,7 +34,8 @@ public final class Assertions
         fail("%sexpected:<%s> to contain <%s>", toMessageString(message), actual, expectedPart);
     }
 
-    public static void assertEqualsIgnoreCase(String actual, String expected) {
+    public static void assertEqualsIgnoreCase(String actual, String expected)
+    {
         assertEqualsIgnoreCase(actual, expected, null);
     }
 
@@ -47,7 +49,8 @@ public final class Assertions
         fail("%sexpected:<%s> to equal ignoring case <%s>", toMessageString(message), actual, expected);
     }
 
-    public static void assertNotEquals(Object actual, Object expected) {
+    public static void assertNotEquals(Object actual, Object expected)
+    {
         assertNotEquals(actual, expected, null);
     }
 
@@ -68,11 +71,13 @@ public final class Assertions
         fail("%sexpected:<%s> to not equal <%s>", toMessageString(message), actual, expected);
     }
 
-    public static <T extends Comparable<T>> void assertGreaterThan(T actual, T expected) {
+    public static <T extends Comparable<T>> void assertGreaterThan(T actual, T expected)
+    {
         assertGreaterThan(actual, expected, null);
     }
 
-    public static <T extends Comparable<T>> void assertGreaterThan(T actual, T expected, String message) {
+    public static <T extends Comparable<T>> void assertGreaterThan(T actual, T expected, String message)
+    {
         assertNotNull(actual, "actual is null");
         try {
             if (actual.compareTo(expected) > 0) {
@@ -99,11 +104,13 @@ public final class Assertions
         fail("%sexpected:<%s> to be greater than <%s>", toMessageString(message), actual, expected);
     }
 
-    public static <T extends Comparable<T>> void assertGreaterThanOrEqual(T actual, T expected) {
+    public static <T extends Comparable<T>> void assertGreaterThanOrEqual(T actual, T expected)
+    {
         assertGreaterThanOrEqual(actual, expected, null);
     }
 
-    public static <T extends Comparable<T>> void assertGreaterThanOrEqual(T actual, T expected, String message) {
+    public static <T extends Comparable<T>> void assertGreaterThanOrEqual(T actual, T expected, String message)
+    {
         assertNotNull(actual, "actual is null");
         try {
             int compareValue = actual.compareTo(expected);
@@ -133,11 +140,13 @@ public final class Assertions
         fail("%sexpected:<%s> to be greater than or equal to <%s>", toMessageString(message), actual, expected);
     }
 
-    public static <T extends Comparable<T>> void assertLessThan(T actual, T expected) {
+    public static <T extends Comparable<T>> void assertLessThan(T actual, T expected)
+    {
         assertLessThan(actual, expected, null);
     }
 
-    public static <T extends Comparable<T>> void assertLessThan(T actual, T expected, String message) {
+    public static <T extends Comparable<T>> void assertLessThan(T actual, T expected, String message)
+    {
         assertNotNull(actual, "actual is null");
         try {
             if (actual.compareTo(expected) < 0) {
@@ -164,11 +173,13 @@ public final class Assertions
         fail("%sexpected:<%s> to be less than <%s>", toMessageString(message), actual, expected);
     }
 
-    public static <T extends Comparable<T>> void assertLessThanOrEqual(T actual, T expected) {
+    public static <T extends Comparable<T>> void assertLessThanOrEqual(T actual, T expected)
+    {
         assertLessThanOrEqual(actual, expected, null);
     }
 
-    public static <T extends Comparable<T>> void assertLessThanOrEqual(T actual, T expected, String message) {
+    public static <T extends Comparable<T>> void assertLessThanOrEqual(T actual, T expected, String message)
+    {
         assertNotNull(actual, "actual is null");
         try {
             int compareValue = actual.compareTo(expected);
@@ -197,11 +208,13 @@ public final class Assertions
         fail("%sexpected:<%s> to be less than or equal to <%s>", toMessageString(message), actual, expected);
     }
 
-    public static <T extends Comparable<T>> void assertBetweenInclusive(T actual, T lowerBound, T upperBound) {
+    public static <T extends Comparable<T>> void assertBetweenInclusive(T actual, T lowerBound, T upperBound)
+    {
         assertBetweenInclusive(actual, lowerBound, upperBound, null);
     }
 
-    public static <T extends Comparable<T>> void assertBetweenInclusive(T actual, T lowerBound, T upperBound, String message) {
+    public static <T extends Comparable<T>> void assertBetweenInclusive(T actual, T lowerBound, T upperBound, String message)
+    {
         assertNotNull(actual, "actual is null");
         try {
             if (actual.compareTo(lowerBound) >= 0 && actual.compareTo(upperBound) <= 0) {
@@ -222,11 +235,13 @@ public final class Assertions
         fail("%sexpected:<%s> to be between <%s> and <%s> inclusive", toMessageString(message), actual, lowerBound, upperBound);
     }
 
-    public static <T extends Comparable<T>> void assertBetweenExclusive(T actual, T lowerBound, T upperBound) {
+    public static <T extends Comparable<T>> void assertBetweenExclusive(T actual, T lowerBound, T upperBound)
+    {
         assertBetweenExclusive(actual, lowerBound, upperBound, null);
     }
 
-    public static <T extends Comparable<T>> void assertBetweenExclusive(T actual, T lowerBound, T upperBound, String message) {
+    public static <T extends Comparable<T>> void assertBetweenExclusive(T actual, T lowerBound, T upperBound, String message)
+    {
         assertNotNull(actual, "actual is null");
         try {
             if (actual.compareTo(lowerBound) > 0 && actual.compareTo(upperBound) < 0) {

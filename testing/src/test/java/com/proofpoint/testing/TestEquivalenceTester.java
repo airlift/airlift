@@ -5,22 +5,20 @@ package com.proofpoint.testing;
  *
  * Licensed under Apache License, Version 2.0
  */
-
+import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import java.util.Collection;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.testng.FileAssert.fail;
-import org.testng.Assert;
-
-import java.util.Collection;
-
 
 public class TestEquivalenceTester
 {
 
     @Test(expectedExceptions = AssertionError.class)
-    public void nothinCanBeEqualToNull()
+    public void nothingCanBeEqualToNull()
     {
         EquivalenceTester.check(newArrayList(new EqualsDoesNotHandleNullArg()));
     }
@@ -78,8 +76,8 @@ public class TestEquivalenceTester
         failCheckComparison(newArrayList(1), newArrayList(0, 0), newArrayList(-1, -1, -1));
         failCheckComparison(newArrayList("charlie"), newArrayList("bob", "bob"), newArrayList("alice", "alice", "alice"));
 
-        failCheckComparison(newArrayList(-1,0), newArrayList(1));
-        failCheckComparison(newArrayList(-1), newArrayList(0,1));
+        failCheckComparison(newArrayList(-1, 0), newArrayList(1));
+        failCheckComparison(newArrayList(-1), newArrayList(0, 1));
     }
 
     private <T extends Comparable<T>> void passCheckComparison(Collection<T>... equivalenceClasses)
