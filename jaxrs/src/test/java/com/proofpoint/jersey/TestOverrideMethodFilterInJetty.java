@@ -295,7 +295,7 @@ public class TestOverrideMethodFilterInJetty
     
     private Server createServer(final HttpServerConfig config, final TestResource resource)
     {
-        return Guice.createInjector(new JerseyModule(),
+        return Guice.createInjector(new JaxrsModule(),
                                     new Module()
                                     {
                                         @Override

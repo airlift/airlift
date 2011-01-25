@@ -1,7 +1,7 @@
 package com.proofpoint.platform.sample;
 
 import com.proofpoint.bootstrap.Bootstrap;
-import com.proofpoint.jersey.JerseyModule;
+import com.proofpoint.jersey.JaxrsModule;
 import com.proofpoint.http.server.HttpServerModule;
 import com.proofpoint.jmx.JMXModule;
 import org.weakref.jmx.guice.MBeanModule;
@@ -13,7 +13,7 @@ public class Main
     {
         Bootstrap app = new Bootstrap(
                 new HttpServerModule(),
-                new JerseyModule(),
+                new JaxrsModule(),
                 new MBeanModule(),
                 new JMXModule(),
                 new MainModule());

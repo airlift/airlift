@@ -51,7 +51,7 @@
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>jersey</artifactId>
+            <artifactId>jaxrs</artifactId>
         </dependency>
 
         <dependency>

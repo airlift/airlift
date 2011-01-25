@@ -15,7 +15,7 @@ import javax.servlet.Servlet;
 import java.util.HashMap;
 import java.util.Map;
 
-public class JerseyModule implements Module
+public class JaxrsModule implements Module
 {
     @Override
     public void configure(Binder binder)
