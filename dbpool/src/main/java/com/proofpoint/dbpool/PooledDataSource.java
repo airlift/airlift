@@ -23,7 +23,8 @@ class PooledDataSource extends ManagedDataSource
         super(dataSource, maxConnections, maxConnectionWait);
     }
 
-    public void dispose() {
+    public void dispose()
+    {
         disposed.set(true);
 
         // there is really no harm in running this loop every time dispose is called
@@ -59,7 +60,8 @@ class PooledDataSource extends ManagedDataSource
         if (disposed.get() || getConnectionsActive() + pool.size() > getMaxConnections()) {
             // close this connection
             super.connectionReturned(pooledConnection, checkoutTime);
-        } else {
+        }
+        else {
             // otherwise add it to the pool
             pool.addLast(pooledConnection);
         }

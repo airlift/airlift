@@ -18,9 +18,20 @@ import com.proofpoint.configuration.Config;
  */
 public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2EmbeddedDataSourceConfig>
 {
-    public static enum AllowLiterals { NONE, NUMBERS, ALL }
-    public static enum CompressLob { NO, LZF, DEFLATE }
-    public static enum Cipher { NONE, AES, XTEA }
+    public static enum AllowLiterals
+    {
+        NONE, NUMBERS, ALL
+    }
+
+    public static enum CompressLob
+    {
+        NO, LZF, DEFLATE
+    }
+
+    public static enum Cipher
+    {
+        NONE, AES, XTEA
+    }
 
     private String filename;
     private String filePassword;
@@ -144,7 +155,7 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2Embedd
             throw new NullPointerException("cipher is null");
         }
         this.cipher = cipher;
-        return this;        
+        return this;
     }
 
     /**

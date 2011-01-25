@@ -309,7 +309,7 @@ public class ManagedDataSourceTest
         MockConnection connection = (MockConnection) dataSource.getConnection();
         Assert.assertNotNull(connection);
         assertEquals(dataSource.getConnectionsActive(), 1);
-        connection.errorOccured();
+        connection.errorOccurred();
         assertEquals(dataSource.getConnectionsActive(), 0);
     }
 
@@ -352,7 +352,7 @@ public class ManagedDataSourceTest
         assertEquals(dataSource.getConnectionsActive(), 1);
         connection.close();
         assertEquals(dataSource.getConnectionsActive(), 0);
-        connection.errorOccured();
+        connection.errorOccurred();
         assertEquals(dataSource.getConnectionsActive(), 0);
     }
 
@@ -372,7 +372,7 @@ public class ManagedDataSourceTest
         for (int i = 0; i < 10; i++) {
             connection.close();
             assertEquals(dataSource.getConnectionsActive(), 0);
-            connection.errorOccured();
+            connection.errorOccurred();
             assertEquals(dataSource.getConnectionsActive(), 0);
         }
     }

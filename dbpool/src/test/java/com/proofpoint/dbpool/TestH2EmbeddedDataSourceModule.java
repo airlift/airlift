@@ -184,9 +184,11 @@ public class TestH2EmbeddedDataSourceModule
         // Required to bind a configuration module and an MBean server when binding an H2EmbeddedDataSourceModule
         Injector injector = Guice.createInjector(module,
                 new ConfigurationModule(configurationFactory),
-                new Module() {
+                new Module()
+                {
                     @Override
-                    public void configure(Binder binder) {
+                    public void configure(Binder binder)
+                    {
                         binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
                     }
                 });
@@ -200,16 +202,19 @@ public class TestH2EmbeddedDataSourceModule
 
     @BeforeMethod(groups = "requiresTempFile")
     private void createTempFile()
-            throws IOException {
+            throws IOException
+    {
         this.temporaryFile = File.createTempFile("h2db-", ".db");
     }
 
     @AfterMethod(groups = "requiresTempFile")
-    private void deleteTempFile() {
+    private void deleteTempFile()
+    {
         this.temporaryFile.delete();
     }
 
-    private static Map<String, String> createDefaultConfigurationProperties(String prefix, String filename) {
+    private static Map<String, String> createDefaultConfigurationProperties(String prefix, String filename)
+    {
         Map<String, String> properties = new HashMap<String, String>();
 
         if (!prefix.endsWith(".")) {

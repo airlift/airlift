@@ -14,7 +14,8 @@ public class MySqlDataSource extends ManagedDataSource
                 config.getMaxConnectionWait());
     }
 
-    private static MysqlConnectionPoolDataSource createMySQLConnectionPoolDataSource(MySqlDataSourceConfig config) {
+    private static MysqlConnectionPoolDataSource createMySQLConnectionPoolDataSource(MySqlDataSourceConfig config)
+    {
         MysqlConnectionPoolDataSource dataSource = new MysqlConnectionPoolDataSource();
         dataSource.setServerName(config.getHost());
         dataSource.setUser(config.getUsername());

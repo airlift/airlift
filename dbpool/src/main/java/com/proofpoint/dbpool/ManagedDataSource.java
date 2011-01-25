@@ -83,7 +83,7 @@ public class ManagedDataSource implements DataSource
             return connection;
         }
         finally {
-            if (!success){
+            if (!success) {
                 stats.creationErrorOccurred();
             }
         }
@@ -125,7 +125,7 @@ public class ManagedDataSource implements DataSource
         if (maxConnectionWait == null) {
             throw new NullPointerException("maxConnectionWait is null");
         }
-        
+
         int millis = (int) ceil(maxConnectionWait.toMillis());
         if (millis < 1) {
             throw new IllegalArgumentException("maxConnectionWait must be greater than 1 millisecond");
@@ -216,6 +216,7 @@ public class ManagedDataSource implements DataSource
 
     /**
      * Not supported.
+     *
      * @throws UnsupportedOperationException always
      */
     @Override
@@ -262,7 +263,7 @@ public class ManagedDataSource implements DataSource
             }
             finally {
                 semaphore.release();
-                
+
                 if (pooledConnection != null) {
                     connectionReturned(pooledConnection, checkoutTime);
                 }

@@ -1,9 +1,9 @@
 package com.proofpoint.dbpool;
 
 import com.google.common.base.Charsets;
-import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
+import com.proofpoint.dbpool.H2EmbeddedDataSourceConfig.Cipher;
 import org.h2.jdbc.JdbcSQLException;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -11,17 +11,11 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
-
-import com.proofpoint.dbpool.H2EmbeddedDataSourceConfig.Cipher;
 
 public class H2EmbeddedDataSourceTest
 {
@@ -68,9 +62,9 @@ public class H2EmbeddedDataSourceTest
 
     @Test
     public void testInitFromFile()
-        throws Exception
+            throws Exception
     {
-        File initScript = File.createTempFile("initscript",".ddl");
+        File initScript = File.createTempFile("initscript", ".ddl");
         Connection connection = null;
         Statement statement = null;
         ResultSet resultSet = null;
@@ -101,7 +95,7 @@ public class H2EmbeddedDataSourceTest
     public void testInitFromInvalidDdlThrows()
             throws Exception
     {
-        File initScript = File.createTempFile("initscript",".ddl");
+        File initScript = File.createTempFile("initscript", ".ddl");
         try {
             String invalidDdl = "This isn't valid SQL";
             Files.write(invalidDdl, initScript, Charsets.UTF_8);
@@ -134,7 +128,7 @@ public class H2EmbeddedDataSourceTest
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testEmptyFilenameThrows()
-        throws Exception
+            throws Exception
     {
         H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
                 .setFilename("")

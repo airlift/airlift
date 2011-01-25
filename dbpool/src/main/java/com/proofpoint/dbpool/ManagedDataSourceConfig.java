@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
  * }
  *
  * @param <T> The type current class or subclass, which is used for method chaining
- *
+ * <p/>
  * Implementation Note:</br>
  * The generic type T is used for method chaining.  A sub class should declare
  * the Class as follows:</br>

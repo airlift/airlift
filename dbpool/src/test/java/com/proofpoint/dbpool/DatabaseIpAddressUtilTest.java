@@ -1,13 +1,13 @@
 package com.proofpoint.dbpool;
 
 import org.testng.annotations.Test;
-import static org.testng.Assert.assertEquals;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import static com.proofpoint.dbpool.DatabaseIpAddressUtil.toDatabaseIpAddress;
 import static com.proofpoint.dbpool.DatabaseIpAddressUtil.fromDatabaseIpAddress;
+import static com.proofpoint.dbpool.DatabaseIpAddressUtil.toDatabaseIpAddress;
+import static org.testng.Assert.assertEquals;
 
 public class DatabaseIpAddressUtilTest
 {
@@ -26,7 +26,7 @@ public class DatabaseIpAddressUtilTest
     {
         // use Java to convert the string to an integer
         InetAddress address = InetAddress.getByName(ipString);
-        // java inet4 address hashcode is the address object
+        // java inet4 address hashCode is the address object
         int javaIpAddress = address.hashCode();
 
         // Verify the java integer value is as expected
@@ -36,7 +36,7 @@ public class DatabaseIpAddressUtilTest
         int databaseIpAddress = toDatabaseIpAddress(javaIpAddress);
         assertEquals(databaseIpAddress, expectedDatabaseIpAddress);
 
-        // Finally, roundtrip back to java and verify
+        // Finally, round trip back to java and verify
         assertEquals(fromDatabaseIpAddress(databaseIpAddress), javaIpAddress);
     }
 }

@@ -1,19 +1,20 @@
 package com.proofpoint.dbpool;
 
-import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
-import com.google.inject.Provider;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.google.inject.Scopes;
+import com.google.inject.Provider;
 import com.google.inject.ProvisionException;
-import com.google.common.collect.ImmutableList;
+import com.google.inject.Scopes;
 import org.weakref.jmx.guice.MBeanModule;
 
 import javax.sql.DataSource;
 import java.lang.annotation.Annotation;
-import java.util.List;
 import java.util.Collections;
+import java.util.List;
+
+import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 
 public class H2EmbeddedDataSourceModule extends MBeanModule
 {
@@ -36,7 +37,8 @@ public class H2EmbeddedDataSourceModule extends MBeanModule
         this.propertyPrefix = propertyPrefix;
         if (aliases != null) {
             this.aliases = ImmutableList.copyOf(aliases);
-        } else {
+        }
+        else {
             this.aliases = Collections.emptyList();
         }
     }
@@ -53,8 +55,8 @@ public class H2EmbeddedDataSourceModule extends MBeanModule
 
         // Bind aliases
         Key<DataSource> key = Key.get(DataSource.class, annotation);
-        for (Class<? extends Annotation> alise : aliases) {
-            bind(DataSource.class).annotatedWith(alise).to(key);
+        for (Class<? extends Annotation> alias : aliases) {
+            bind(DataSource.class).annotatedWith(alias).to(key);
         }
     }
 
@@ -69,10 +71,12 @@ public class H2EmbeddedDataSourceModule extends MBeanModule
         }
 
         @Inject
-        public void setInjector(Injector injector) {
+        public void setInjector(Injector injector)
+        {
 
             this.injector = injector;
         }
+
         @Override
         public H2EmbeddedDataSource get()
         {

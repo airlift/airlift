@@ -1,9 +1,11 @@
 package com.proofpoint.dbpool;
 
 import org.testng.annotations.Test;
-import static org.testng.AssertJUnit.*;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.testng.AssertJUnit.assertEquals;
+import static org.testng.AssertJUnit.assertFalse;
+import static org.testng.AssertJUnit.assertTrue;
 
 public class TestManagedSemaphore
 {
@@ -18,7 +20,7 @@ public class TestManagedSemaphore
         // tryAcquire()
         //
 
-        // checout the one permit
+        // checkout the one permit
         assertTrue(semaphore.tryAcquire());
         assertPermits(semaphore, 1, 1);
 
@@ -47,7 +49,7 @@ public class TestManagedSemaphore
         // tryAcquire(long timeout, TimeUnit unit)
         //
 
-        // checout the one permit
+        // checkout the one permit
         assertTrue(semaphore.tryAcquire(1, MILLISECONDS));
         assertPermits(semaphore, 1, 1);
 
@@ -63,7 +65,7 @@ public class TestManagedSemaphore
         // acquire()
         //
 
-        // checout the one permit
+        // checkout the one permit
         semaphore.acquire();
         assertPermits(semaphore, 1, 1);
 
@@ -76,7 +78,7 @@ public class TestManagedSemaphore
         // acquireUninterruptibly()
         //
 
-        // checout the one permit
+        // checkout the one permit
         semaphore.acquireUninterruptibly();
         assertPermits(semaphore, 1, 1);
 
@@ -88,7 +90,7 @@ public class TestManagedSemaphore
         // drainPermits
         //
         assertEquals(semaphore.drainPermits(), 1);
-        assertPermits(semaphore, 1, 1);        
+        assertPermits(semaphore, 1, 1);
     }
 
     @Test
@@ -102,7 +104,7 @@ public class TestManagedSemaphore
         // tryAcquire()
         //
 
-        // checout the two permits
+        // checkout the two permits
         assertTrue(semaphore.tryAcquire(2));
         assertPermits(semaphore, 3, 2);
 
@@ -131,7 +133,7 @@ public class TestManagedSemaphore
         // tryAcquire(long timeout, TimeUnit unit)
         //
 
-        // checout two permits
+        // checkout two permits
         assertTrue(semaphore.tryAcquire(2, 1, MILLISECONDS));
         assertPermits(semaphore, 3, 2);
 
@@ -147,7 +149,7 @@ public class TestManagedSemaphore
         // acquire()
         //
 
-        // checout two permit
+        // checkout two permit
         semaphore.acquire(2);
         assertPermits(semaphore, 3, 2);
 
@@ -160,7 +162,7 @@ public class TestManagedSemaphore
         // acquireUninterruptibly()
         //
 
-        // checout two permit
+        // checkout two permit
         semaphore.acquireUninterruptibly(2);
         assertPermits(semaphore, 3, 2);
 
@@ -181,7 +183,7 @@ public class TestManagedSemaphore
         ManagedSemaphore semaphore = new ManagedSemaphore(1);
         assertPermits(semaphore, 1, 0);
 
-        // checout one permit
+        // checkout one permit
         assertTrue(semaphore.tryAcquire());
         assertPermits(semaphore, 1, 1);
 
@@ -222,11 +224,11 @@ public class TestManagedSemaphore
         assertPermits(semaphore, 2, 0);
     }
 
-    private void assertPermits(ManagedSemaphore semaphore, int totalPermits, int checkedoutPermits)
+    private void assertPermits(ManagedSemaphore semaphore, int totalPermits, int checkedOutPermits)
     {
         assertEquals(semaphore.getPermits(), totalPermits);
-        assertEquals(semaphore.getActivePermits(), checkedoutPermits);
-        assertEquals(semaphore.getAvailablePermits(), totalPermits - checkedoutPermits);
-        assertEquals(semaphore.availablePermits(), totalPermits - checkedoutPermits);
+        assertEquals(semaphore.getActivePermits(), checkedOutPermits);
+        assertEquals(semaphore.getAvailablePermits(), totalPermits - checkedOutPermits);
+        assertEquals(semaphore.availablePermits(), totalPermits - checkedOutPermits);
     }
 }

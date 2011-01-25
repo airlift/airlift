@@ -1,26 +1,26 @@
 package com.proofpoint.dbpool;
 
+import javax.sql.ConnectionEvent;
+import javax.sql.ConnectionEventListener;
 import javax.sql.ConnectionPoolDataSource;
 import javax.sql.PooledConnection;
-import javax.sql.ConnectionEventListener;
-import javax.sql.ConnectionEvent;
 import javax.sql.StatementEventListener;
-import java.sql.SQLException;
-import java.sql.Connection;
-import java.sql.Statement;
-import java.sql.PreparedStatement;
-import java.sql.CallableStatement;
-import java.sql.DatabaseMetaData;
-import java.sql.SQLWarning;
-import java.sql.Savepoint;
-import java.sql.Clob;
-import java.sql.Blob;
-import java.sql.NClob;
-import java.sql.SQLXML;
-import java.sql.SQLClientInfoException;
-import java.sql.Array;
-import java.sql.Struct;
 import java.io.PrintWriter;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.CallableStatement;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.NClob;
+import java.sql.PreparedStatement;
+import java.sql.SQLClientInfoException;
+import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Savepoint;
+import java.sql.Statement;
+import java.sql.Struct;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -102,7 +102,9 @@ public class MockConnectionPoolDataSource implements ConnectionPoolDataSource
         public MockConnection getConnection()
                 throws SQLException
         {
-            if (closed) throw new SQLException("connection has been closed");
+            if (closed) {
+                throw new SQLException("connection has been closed");
+            }
             return new MockConnection(this);
         }
 
@@ -116,14 +118,14 @@ public class MockConnectionPoolDataSource implements ConnectionPoolDataSource
             }
         }
 
-        public void closeOccured()
+        public void closeOccurred()
         {
             for (ConnectionEventListener connectionEventListener : connectionEventListeners) {
                 connectionEventListener.connectionClosed(new ConnectionEvent(this));
             }
         }
 
-        public void errorOccured()
+        public void errorOccurred()
         {
             closed = true;
             for (ConnectionEventListener connectionEventListener : connectionEventListeners) {
@@ -171,17 +173,21 @@ public class MockConnectionPoolDataSource implements ConnectionPoolDataSource
         public void close()
                 throws SQLException
         {
-            if (closed) return;
+            if (closed) {
+                return;
+            }
             closed = true;
-            mockPooledConnection.closeOccured();
+            mockPooledConnection.closeOccurred();
         }
 
-        public void errorOccured()
+        public void errorOccurred()
                 throws SQLException
         {
-            if (closed) return;
+            if (closed) {
+                return;
+            }
             closed = true;
-            mockPooledConnection.errorOccured();
+            mockPooledConnection.errorOccurred();
         }
 
 
