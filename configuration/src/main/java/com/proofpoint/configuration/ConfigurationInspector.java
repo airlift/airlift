@@ -81,7 +81,7 @@ public class ConfigurationInspector
 
             ImmutableSortedSet.Builder<ConfigAttribute> builder = ImmutableSortedSet.naturalOrder();
             for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-                String propertyName = prefix + attribute.getPropertyName();
+                String propertyName = prefix + attribute.getInjectionPoint().getProperty();
                 Method getter = attribute.getGetter();
 
                 String defaultValue = getValue(getter, defaults, "-- none --");
@@ -125,7 +125,6 @@ public class ConfigurationInspector
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-
             ConfigRecord<?> that = (ConfigRecord<?>) o;
 
             return key.equals(that.key);

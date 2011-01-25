@@ -1,7 +1,7 @@
 package com.proofpoint.configuration;
 
-import com.google.inject.Module;
 import com.google.inject.Binder;
+import com.google.inject.Module;
 import com.google.inject.spi.Message;
 
 import java.util.List;

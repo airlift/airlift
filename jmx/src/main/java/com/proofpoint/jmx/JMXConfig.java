@@ -8,36 +8,36 @@ public final class JMXConfig
     private Integer rmiServerPort;
     private String hostname;
 
-    @Config("jmx.rmiregistry.port")
     public Integer getRmiRegistryPort()
     {
         return rmiRegistryPort;
     }
 
+    @Config("jmx.rmiregistry.port")
     public JMXConfig setRmiRegistryPort(Integer rmiRegistryPort)
     {
         this.rmiRegistryPort = rmiRegistryPort;
         return this;
     }
 
-    @Config("jmx.rmiserver.port")
     public Integer getRmiServerPort()
     {
         return rmiServerPort;
     }
 
+    @Config("jmx.rmiserver.port")
     public JMXConfig setRmiServerPort(Integer rmiServerPort)
     {
         this.rmiServerPort = rmiServerPort;
         return this;
     }
 
-    @Config("jmx.rmiserver.hostname")
     public String getHostname()
     {
         return hostname;
     }
 
+    @Config("jmx.rmiserver.hostname")
     public JMXConfig setHostname(String hostname)
     {
         this.hostname = hostname;

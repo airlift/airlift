@@ -10,7 +10,6 @@ import com.proofpoint.testing.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -18,71 +17,28 @@ import java.util.TreeMap;
 public class ConfigurationFactoryTest
 {
 
-    class TestMonitor implements Problems.Monitor
-    {
-        private List<Message> errors = new ArrayList<Message>();
-        private List<Message> warnings = new ArrayList<Message>();
-
-        @Override
-        public void onError(Message error)
-        {
-            errors.add(error);
-        }
-
-        @Override
-        public void onWarning(Message warning)
-        {
-            warnings.add(warning);
-        }
-
-        public void assertNumberOfErrors(int expected)
-        {
-            Assert.assertEquals(errors.size(), expected, "Number of errors is incorrect");
-        }
-
-        public void assertNumberOfWarnings(int expected)
-        {
-            Assert.assertEquals(warnings.size(), expected, "Number of warnings is incorrect");
-        }
-
-        private void assertMatchingWarningRecorded(String... parts)
-        {
-            for (Message warning : warnings) {
-                boolean matched = true;
-                for (String part : parts) {
-                    if (!warning.getMessage().contains(part)) {
-                        matched = false;
-                    }
-                }
-                if (matched) {
-                    return;
-                }
-            }
-            Assert.fail("Expected message not found in monitor warning list");
-        }
-    }
-
     @Test
-    public void testAnnotatedGetters()
+    public void testAnnotatedGettersThrows()
     {
         Map<String, String> properties = new TreeMap<String, String>();
         properties.put("string-value", "some value");
         properties.put("boolean-value", "true");
         TestMonitor monitor = new TestMonitor();
-
-        Injector injector = createInjector(properties, monitor, new Module()
-        {
-            public void configure(Binder binder)
+        try {
+            createInjector(properties, monitor, new Module()
             {
-                ConfigurationModule.bindConfig(binder).to(AnnotatedGetter.class);
-            }
-        });
-        AnnotatedGetter annotatedGetter = injector.getInstance(AnnotatedGetter.class);
-        monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(0);
-        Assert.assertNotNull(annotatedGetter);
-        Assert.assertEquals(annotatedGetter.getStringValue(), "some value");
-        Assert.assertEquals(annotatedGetter.isBooleanValue(), true);
+                public void configure(Binder binder)
+                {
+                    ConfigurationModule.bindConfig(binder).to(AnnotatedGetter.class);
+                }
+            });
+
+            Assert.fail("Expected an exception in object creation due to conflicting configuration");
+        } catch (CreationException e) {
+            monitor.assertNumberOfErrors(2);
+            Assertions.assertContainsAllOf(e.getMessage(), "not a valid setter", "getStringValue") ;
+            Assertions.assertContainsAllOf(e.getMessage(), "not a valid setter", "isBooleanValue") ;
+        }
     }
 
     @Test
@@ -118,15 +74,15 @@ public class ConfigurationFactoryTest
         {
             public void configure(Binder binder)
             {
-                ConfigurationModule.bindConfig(binder).to(DeprecatedConfigPresent.class);
+                ConfigurationModule.bindConfig(binder).to(LegacyConfigPresent.class);
             }
         });
-        DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
+        LegacyConfigPresent legacyConfigPresent = injector.getInstance(LegacyConfigPresent.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        Assert.assertNotNull(deprecatedConfigPresent);
-        Assert.assertEquals(deprecatedConfigPresent.getStringA(), "this is a");
-        Assert.assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
+        Assert.assertNotNull(legacyConfigPresent);
+        Assert.assertEquals(legacyConfigPresent.getStringA(), "this is a");
+        Assert.assertEquals(legacyConfigPresent.getStringB(), "this is b");
     }
 
     @Test
@@ -140,16 +96,16 @@ public class ConfigurationFactoryTest
         {
             public void configure(Binder binder)
             {
-                ConfigurationModule.bindConfig(binder).to(DeprecatedConfigPresent.class);
+                ConfigurationModule.bindConfig(binder).to(LegacyConfigPresent.class);
             }
         });
-        DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
+        LegacyConfigPresent legacyConfigPresent = injector.getInstance(LegacyConfigPresent.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
-        monitor.assertMatchingWarningRecorded("string-value", "deprecated", "Use 'string-a'");
-        Assert.assertNotNull(deprecatedConfigPresent);
-        Assert.assertEquals(deprecatedConfigPresent.getStringA(), "this is a");
-        Assert.assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
+        monitor.assertMatchingWarningRecorded("string-value", "replaced", "Use 'string-a'");
+        Assert.assertNotNull(legacyConfigPresent);
+        Assert.assertEquals(legacyConfigPresent.getStringA(), "this is a");
+        Assert.assertEquals(legacyConfigPresent.getStringB(), "this is b");
     }
 
     @Test
@@ -164,16 +120,16 @@ public class ConfigurationFactoryTest
         {
             public void configure(Binder binder)
             {
-                ConfigurationModule.bindConfig(binder).to(DeprecatedConfigPresent.class);
+                ConfigurationModule.bindConfig(binder).to(LegacyConfigPresent.class);
             }
         });
-        DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
+        LegacyConfigPresent legacyConfigPresent = injector.getInstance(LegacyConfigPresent.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
-        monitor.assertMatchingWarningRecorded("string-value", "deprecated", "Use 'string-a'");
-        Assert.assertNotNull(deprecatedConfigPresent);
-        Assert.assertEquals(deprecatedConfigPresent.getStringA(), "this is a");
-        Assert.assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
+        monitor.assertMatchingWarningRecorded("string-value", "replaced", "Use 'string-a'");
+        Assert.assertNotNull(legacyConfigPresent);
+        Assert.assertEquals(legacyConfigPresent.getStringA(), "this is a");
+        Assert.assertEquals(legacyConfigPresent.getStringB(), "this is b");
     }
 
     @Test
@@ -189,7 +145,7 @@ public class ConfigurationFactoryTest
             {
                 public void configure(Binder binder)
                 {
-                    ConfigurationModule.bindConfig(binder).to(DeprecatedConfigPresent.class);
+                    ConfigurationModule.bindConfig(binder).to(LegacyConfigPresent.class);
                 }
             });
 
@@ -197,7 +153,7 @@ public class ConfigurationFactoryTest
         } catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(1);
-            monitor.assertMatchingWarningRecorded("string-value", "deprecated", "Use 'string-a'");
+            monitor.assertMatchingWarningRecorded("string-value", "replaced", "Use 'string-a'");
             Assertions.assertContainsAllOf(e.getMessage(), "string-value", "conflicts with property", "string-a") ;
         }
     }
@@ -264,7 +220,7 @@ public class ConfigurationFactoryTest
         }
     }
 
-    public static class DeprecatedConfigPresent
+    public static class LegacyConfigPresent
     {
         private String stringA = "defaultA";
         private String stringB = "defaultB";
@@ -275,7 +231,7 @@ public class ConfigurationFactoryTest
         }
 
         @Config("string-a")
-        @DeprecatedConfig("string-value")
+        @LegacyConfig("string-value")
         public void setStringA(String stringValue)
         {
             this.stringA = stringValue;

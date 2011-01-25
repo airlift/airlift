@@ -1,16 +1,19 @@
 package com.proofpoint.configuration;
 
+
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * A generic description annotation
- */
+
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.TYPE, ElementType.FIELD, ElementType.PARAMETER})
-public @interface ConfigDescription
+@Target(ElementType.METHOD)
+public @interface LegacyConfig
 {
-    String value();
+    String[] value();
+
+    String replacedBy() default "";
 }

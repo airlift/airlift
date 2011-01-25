@@ -89,8 +89,7 @@ public class ConfigurationFactory
 
         if (prefix == null) {
             prefix = "";
-        }
-        else if (!prefix.isEmpty()) {
+        } else if (!prefix.isEmpty()) {
             prefix = prefix + ".";
         }
 
@@ -103,9 +102,19 @@ public class ConfigurationFactory
         for (AttributeMetadata attribute : configurationMetadata.getAttributes().values()) {
             try {
                 setConfigProperty(instance, attribute, prefix);
-            }
-            catch (InvalidConfigurationException e) {
+            } catch (InvalidConfigurationException e) {
                 problems.addError(e.getCause(), e.getMessage());
+            }
+        }
+
+        // Check that none of the defunct properties are still in use
+        if (configClass.isAnnotationPresent(DefunctConfig.class)) {
+            for (String value : configClass.getAnnotation(DefunctConfig.class).value()) {
+                if (value == null || value.isEmpty()) {
+                    problems.addError("@DefunctConfig annotation on class [%s] contains null or empty values", configClass.toString());
+                } else if (properties.get(prefix + value) != null) {
+                    problems.addError("Defunct property '%s' (class [%s]) cannot be configured.", value, configClass.toString());
+                }
             }
         }
 
@@ -118,8 +127,7 @@ public class ConfigurationFactory
     {
         try {
             return configurationMetadata.getConstructor().newInstance();
-        }
-        catch (Throwable e) {
+        } catch (Throwable e) {
             if (e instanceof InvocationTargetException && e.getCause() != null) {
                 e = e.getCause();
             }
@@ -131,82 +139,87 @@ public class ConfigurationFactory
             throws InvalidConfigurationException
     {
         // Get property value
-        Object value = getPropertyValue(attribute, prefix);
+        ConfigurationMetadata.InjectionPointMetaData injectionPoint = findOperativeInjectionPoint(attribute, prefix);
 
-        // If we did not get a value, do not call the setter
-        if (value == null) {
+        // If we did not get an injection point, do not call the setter
+        if (injectionPoint == null) {
             return;
         }
 
+        Object value = getInjectedValue(injectionPoint, prefix);
+
         try {
-            attribute.getSetter().invoke(instance, value);
-        }
-        catch (Throwable e) {
+            injectionPoint.getSetter().invoke(instance, value);
+        } catch (Throwable e) {
             if (e instanceof InvocationTargetException && e.getCause() != null) {
                 e = e.getCause();
             }
-            throw new InvalidConfigurationException(e, "Error invoking configuration method [%s]", attribute.getSetter().toGenericString());
+            throw new InvalidConfigurationException(e, "Error invoking configuration method [%s]", injectionPoint.getSetter().toGenericString());
         }
     }
 
-    private String findOperativeProperty(AttributeMetadata attribute, String prefix)
+    private ConfigurationMetadata.InjectionPointMetaData findOperativeInjectionPoint(AttributeMetadata attribute, String prefix)
             throws ConfigurationException
     {
+        ConfigurationMetadata.InjectionPointMetaData operativeInjectionPoint = attribute.getInjectionPoint();
         String operativeName = null;
         String operativeValue = null;
-        if (attribute.getPropertyName() != null) {
-            operativeName = prefix + attribute.getPropertyName();
+        if (operativeInjectionPoint != null) {
+            operativeName = prefix + operativeInjectionPoint.getProperty();
             operativeValue = properties.get(operativeName);
         }
 
         Problems problems = new Problems(monitor);
 
-        for (String deprecatedName : attribute.getDeprecatedNames()) {
-            String fullName = prefix + deprecatedName;
+        for (ConfigurationMetadata.InjectionPointMetaData injectionPoint : attribute.getLegacyInjectionPoints()) {
+            String fullName = prefix + injectionPoint.getProperty();
             String value = properties.get(fullName);
             if (value != null) {
-                String deprecatedReplacement = "There is no replacement.";
-                if (attribute.getPropertyName() != null) {
-                    deprecatedReplacement = format("Use '%s' instead.", prefix + attribute.getPropertyName());
+                String replacement = "deprecated.";
+                if (attribute.getInjectionPoint() != null) {
+                    replacement = format("replaced. Use '%s' instead.", prefix + attribute.getInjectionPoint().getProperty());
                 }
-                problems.addWarning("Configuration property '%s' has been deprecated. " + deprecatedReplacement, fullName);
+                problems.addWarning("Configuration property '%s' has been " + replacement, fullName);
 
                 if (operativeValue == null) {
+                    operativeInjectionPoint = injectionPoint;
                     operativeValue = value;
                     operativeName = fullName;
-                }
-                else if (!value.equals(operativeValue)) {
+                } else if (!value.equals(operativeValue)) {
                     problems.addError("Value for property '%s' (=%s) conflicts with property '%s' (=%s)", fullName, value, operativeName, operativeValue);
                 }
             }
         }
 
         problems.throwIfHasErrors();
-        return operativeName;
+        if (operativeValue == null) {
+            // No injection from configuration
+            return null;
+        }
+
+        return operativeInjectionPoint;
     }
 
-    private Object getPropertyValue(AttributeMetadata attribute, String prefix)
+    private Object getInjectedValue(ConfigurationMetadata.InjectionPointMetaData injectionPoint, String prefix)
             throws InvalidConfigurationException
     {
         // Get the property value
-        String propertyName = findOperativeProperty(attribute, prefix);
-        String value = propertyName == null ? null : properties.get(propertyName);
+        String value = injectionPoint == null ? null : properties.get(prefix + injectionPoint.getProperty());
 
         if (value == null) {
             return null;
         }
 
         // coerce the property value to the final type
-        Class<?> propertyType = attribute.getSetter().getParameterTypes()[0];
+        Class<?> propertyType = injectionPoint.getSetter().getParameterTypes()[0];
 
         Object finalValue = coerce(propertyType, value);
         if (finalValue == null) {
-            throw new InvalidConfigurationException(format("Could not coerce value '%s' to %s for attribute '%s' (property '%s') in [%s]",
+            throw new InvalidConfigurationException(format("Could not coerce value '%s' to %s (property '%s') in order to call [%s]",
                     value,
                     propertyType.getName(),
-                    attribute.getName(),
-                    propertyName,
-                    attribute.getSetter().toGenericString()));
+                    injectionPoint.getProperty(),
+                    injectionPoint.getSetter().toGenericString()));
         }
         return finalValue;
     }
@@ -221,30 +234,22 @@ public class ConfigurationFactory
         try {
             if (String.class.isAssignableFrom(type)) {
                 return value;
-            }
-            else if (Boolean.class.isAssignableFrom(type) || Boolean.TYPE.isAssignableFrom(type)) {
+            } else if (Boolean.class.isAssignableFrom(type) || Boolean.TYPE.isAssignableFrom(type)) {
                 return Boolean.valueOf(value);
-            }
-            else if (Byte.class.isAssignableFrom(type) || Byte.TYPE.isAssignableFrom(type)) {
+            } else if (Byte.class.isAssignableFrom(type) || Byte.TYPE.isAssignableFrom(type)) {
                 return Byte.valueOf(value);
-            }
-            else if (Short.class.isAssignableFrom(type) || Short.TYPE.isAssignableFrom(type)) {
+            } else if (Short.class.isAssignableFrom(type) || Short.TYPE.isAssignableFrom(type)) {
                 return Short.valueOf(value);
-            }
-            else if (Integer.class.isAssignableFrom(type) || Integer.TYPE.isAssignableFrom(type)) {
+            } else if (Integer.class.isAssignableFrom(type) || Integer.TYPE.isAssignableFrom(type)) {
                 return Integer.valueOf(value);
-            }
-            else if (Long.class.isAssignableFrom(type) || Long.TYPE.isAssignableFrom(type)) {
+            } else if (Long.class.isAssignableFrom(type) || Long.TYPE.isAssignableFrom(type)) {
                 return Long.valueOf(value);
-            }
-            else if (Float.class.isAssignableFrom(type) || Float.TYPE.isAssignableFrom(type)) {
+            } else if (Float.class.isAssignableFrom(type) || Float.TYPE.isAssignableFrom(type)) {
                 return Float.valueOf(value);
-            }
-            else if (Double.class.isAssignableFrom(type) || Double.TYPE.isAssignableFrom(type)) {
+            } else if (Double.class.isAssignableFrom(type) || Double.TYPE.isAssignableFrom(type)) {
                 return Double.valueOf(value);
             }
-        }
-        catch (Exception ignored) {
+        } catch (Exception ignored) {
             // ignore the random exceptions from the built in types
             return null;
         }
@@ -255,16 +260,14 @@ public class ConfigurationFactory
             if (valueOf.getReturnType().isAssignableFrom(type)) {
                 return valueOf.invoke(null, value);
             }
-        }
-        catch (Throwable ignored) {
+        } catch (Throwable ignored) {
         }
 
         // Look for a constructor taking a string
         try {
             Constructor<?> constructor = type.getConstructor(String.class);
             return constructor.newInstance(value);
-        }
-        catch (Throwable ignored) {
+        } catch (Throwable ignored) {
         }
 
         return null;

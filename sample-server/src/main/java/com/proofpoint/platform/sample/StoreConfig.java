@@ -2,7 +2,7 @@ package com.proofpoint.platform.sample;
 
 import com.google.common.base.Preconditions;
 import com.proofpoint.configuration.Config;
-import com.proofpoint.configuration.DeprecatedConfig;
+import com.proofpoint.configuration.LegacyConfig;
 import com.proofpoint.units.Duration;
 
 import javax.validation.constraints.NotNull;
@@ -13,7 +13,7 @@ public class StoreConfig
     private Duration ttl = new Duration(1, TimeUnit.HOURS);
 
     @Deprecated
-    @DeprecatedConfig("store.ttl-in-ms")
+    @LegacyConfig(value = "store.ttl-in-ms", replacedBy = "store.ttl")
     public StoreConfig setTtlInMs(int duration)
     {
         return setTtl(new Duration(duration, TimeUnit.MILLISECONDS));

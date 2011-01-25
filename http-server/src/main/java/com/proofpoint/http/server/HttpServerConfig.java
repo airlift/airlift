@@ -1,7 +1,7 @@
 package com.proofpoint.http.server;
 
 import com.proofpoint.configuration.Config;
-import com.proofpoint.configuration.DeprecatedConfig;
+import com.proofpoint.configuration.LegacyConfig;
 import com.proofpoint.units.Duration;
 
 import java.util.concurrent.TimeUnit;
@@ -33,7 +33,7 @@ public class HttpServerConfig
     }
 
     @Config("http-server.ip")
-    @DeprecatedConfig("jetty.ip")
+    @LegacyConfig("jetty.ip")
     public HttpServerConfig setIp(String ip)
     {
         this.ip = ip;
@@ -46,7 +46,7 @@ public class HttpServerConfig
     }
 
     @Config("http-server.http.enabled")
-    @DeprecatedConfig("jetty.http.enabled")
+    @LegacyConfig("jetty.http.enabled")
     public HttpServerConfig setHttpEnabled(boolean httpEnabled)
     {
         this.httpEnabled = httpEnabled;
@@ -59,7 +59,7 @@ public class HttpServerConfig
     }
 
     @Config("http-server.http.port")
-    @DeprecatedConfig("jetty.http.port")
+    @LegacyConfig("jetty.http.port")
     public HttpServerConfig setHttpPort(int httpPort)
     {
         this.httpPort = httpPort;
@@ -72,7 +72,7 @@ public class HttpServerConfig
     }
 
     @Config("http-server.https.enabled")
-    @DeprecatedConfig("jetty.https.enabled")
+    @LegacyConfig("jetty.https.enabled")
     public HttpServerConfig setHttpsEnabled(boolean httpsEnabled)
     {
         this.httpsEnabled = httpsEnabled;
@@ -85,7 +85,7 @@ public class HttpServerConfig
     }
 
     @Config("http-server.https.port")
-    @DeprecatedConfig("jetty.https.port")
+    @LegacyConfig("jetty.https.port")
     public HttpServerConfig setHttpsPort(int httpsPort)
     {
         this.httpsPort = httpsPort;
@@ -98,7 +98,7 @@ public class HttpServerConfig
     }
 
     @Config("http-server.https.keystore.path")
-    @DeprecatedConfig("jetty.https.keystore.path")
+    @LegacyConfig("jetty.https.keystore.path")
     public HttpServerConfig setKeystorePath(String keystorePath)
     {
         this.keystorePath = keystorePath;
@@ -111,7 +111,7 @@ public class HttpServerConfig
     }
 
     @Config("http-server.https.keystore.password")
-    @DeprecatedConfig("jetty.https.keystore.password")
+    @LegacyConfig("jetty.https.keystore.password")
     public HttpServerConfig setKeystorePassword(String keystorePassword)
     {
         this.keystorePassword = keystorePassword;
@@ -124,7 +124,7 @@ public class HttpServerConfig
     }
 
     @Config("http-server.log.path")
-    @DeprecatedConfig("jetty.log.path")
+    @LegacyConfig("jetty.log.path")
     public HttpServerConfig setLogPath(String logPath)
     {
         this.logPath = logPath;
@@ -137,7 +137,7 @@ public class HttpServerConfig
     }
 
     @Config("http-server.threads.max")
-    @DeprecatedConfig("jetty.threads.max")
+    @LegacyConfig("jetty.threads.max")
     public HttpServerConfig setMaxThreads(int maxThreads)
     {
         this.maxThreads = maxThreads;
@@ -150,7 +150,7 @@ public class HttpServerConfig
     }
 
     @Config("http-server.threads.min")
-    @DeprecatedConfig("jetty.threads.min")
+    @LegacyConfig("jetty.threads.min")
     public HttpServerConfig setMinThreads(int minThreads)
     {
         this.minThreads = minThreads;
@@ -170,7 +170,7 @@ public class HttpServerConfig
     }
 
     @Deprecated
-    @DeprecatedConfig("jetty.threads.max-idle-time-ms")
+    @LegacyConfig(value = "jetty.threads.max-idle-time-ms", replacedBy = "http-server.threads.max-idle-time")
     public HttpServerConfig setThreadMaxIdleTimeInMs(int millis)
     {
         return setThreadMaxIdleTime(new Duration(millis, TimeUnit.MILLISECONDS));
@@ -189,7 +189,7 @@ public class HttpServerConfig
     }
 
     @Deprecated
-    @DeprecatedConfig("jetty.log.retain-days")
+    @LegacyConfig(value = "jetty.log.retain-days", replacedBy = "http-server.log.retention-time")
     public HttpServerConfig setLogRetentionTimeInDays(int days)
     {
         return setLogRetentionTime(new Duration(days, TimeUnit.DAYS));
@@ -201,7 +201,7 @@ public class HttpServerConfig
     }
 
     @Config("http-server.auth.users-file")
-    @DeprecatedConfig("jetty.auth.users-file")
+    @LegacyConfig("jetty.auth.users-file")
     public HttpServerConfig setUserAuthFile(String userAuthFile)
     {
         this.userAuthFile = userAuthFile;
@@ -221,7 +221,7 @@ public class HttpServerConfig
     }
 
     @Deprecated
-    @DeprecatedConfig("jetty.net.max-idle-time-ms")
+    @LegacyConfig(value = "jetty.net.max-idle-time-ms", replacedBy = "http-server.net.max-idle-time")
     public HttpServerConfig setNetworkMaxIdleTimeInMs(int millis)
     {
         return setNetworkMaxIdleTime(new Duration(millis, TimeUnit.MILLISECONDS));

@@ -1,6 +1,7 @@
 package com.proofpoint.configuration;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 import com.google.inject.ConfigurationException;
 import com.google.inject.spi.Message;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
@@ -9,8 +10,10 @@ import com.proofpoint.testing.EquivalenceTester;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import javax.management.MalformedObjectNameException;
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.Set;
 
 import static org.testng.Assert.fail;
 
@@ -21,8 +24,8 @@ public class ConfigurationMetadataTest
     {
         EquivalenceTester.check(
                 ImmutableList.of(
-                        ConfigurationMetadata.getConfigurationMetadata(GetterConfigClass.class),
-                        ConfigurationMetadata.getConfigurationMetadata(GetterConfigClass.class)
+                        ConfigurationMetadata.getConfigurationMetadata(SetterSubConfigClass.class),
+                        ConfigurationMetadata.getConfigurationMetadata(SetterSubConfigClass.class)
                 ),
                 ImmutableList.of(
                         ConfigurationMetadata.getConfigurationMetadata(SetterConfigClass.class),
@@ -32,8 +35,8 @@ public class ConfigurationMetadataTest
 
         EquivalenceTester.check(
                 ImmutableList.of(
-                        ConfigurationMetadata.getConfigurationMetadata(GetterConfigClass.class).getAttributes().get("Value"),
-                        ConfigurationMetadata.getConfigurationMetadata(GetterConfigClass.class).getAttributes().get("Value")
+                        ConfigurationMetadata.getConfigurationMetadata(SetterSubConfigClass.class).getAttributes().get("Value"),
+                        ConfigurationMetadata.getConfigurationMetadata(SetterSubConfigClass.class).getAttributes().get("Value")
                 ),
                 ImmutableList.of(
                         ConfigurationMetadata.getConfigurationMetadata(SetterConfigClass.class).getAttributes().get("Value"),
@@ -43,63 +46,55 @@ public class ConfigurationMetadataTest
     }
 
     @Test
-    public void testGetterConfigClass()
-            throws Exception
-    {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterConfigClass.class);
-        verifyMetaData(metadata, GetterConfigClass.class, true, true, true, "description");
-        Problems problems = metadata.getProblems();
-        Assert.assertEquals(problems.getErrors().size(), 0);
-    }
-
-    @Test
-    public void testValidGetterConfigClass()
-            throws Exception
-    {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getValidConfigurationMetadata(GetterConfigClass.class);
-        verifyMetaData(metadata, GetterConfigClass.class, true, true, true, "description");
-        Problems problems = metadata.getProblems();
-        Assert.assertEquals(problems.getErrors().size(), 0);
-    }
-
-    @Test
     public void testSetterConfigClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(SetterConfigClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(SetterConfigClass.class, monitor);
         verifyMetaData(metadata, SetterConfigClass.class, true, true, true, "description");
-        Problems problems = metadata.getProblems();
-        Assert.assertEquals(problems.getErrors().size(), 0);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
     }
 
     @Test
-    public void testSubGetterConfigClass()
+    public void testSubSetterConfigClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterSubConfigClass.class);
-        verifyMetaData(metadata, GetterSubConfigClass.class, true, true, true, "description");
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(SetterSubConfigClass.class, monitor);
+        verifyMetaData(metadata, SetterSubConfigClass.class, true, true, true, "description");
         Problems problems = metadata.getProblems();
-        Assert.assertEquals(problems.getErrors().size(), 0);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
     }
 
     @Test
-    public void testGetterInterfaceImpl()
+    public void testSetterInterfaceImpl()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterInterfaceImpl.class);
-        verifyMetaData(metadata, GetterInterfaceImpl.class, true, true, true, "description");
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(SetterInterfaceImpl.class, monitor);
+        verifyMetaData(metadata, SetterInterfaceImpl.class, true, true, true, "description");
         Problems problems = metadata.getProblems();
-        Assert.assertEquals(problems.getErrors().size(), 0);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
     }
 
     @Test
-    public void testSetterNoGetterConfigClass()
+    public void testSetterNoGetterConfigClassThrows()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(SetterNoGetterConfigClass.class);
-        verifyMetaData(metadata, SetterNoGetterConfigClass.class, true, false, true, null);
-        Problems problems = metadata.getProblems();
-        Assert.assertEquals(problems.getErrors().size(), 0);
+        TestMonitor monitor = new TestMonitor();
+        try {
+            ConfigurationMetadata<?> metadata = ConfigurationMetadata.getValidConfigurationMetadata(SetterNoGetterConfigClass.class, monitor);
+            fail("Expected ConfigurationException");
+        }
+        catch (ConfigurationException e)
+        {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(0);
+            monitor.assertMatchingErrorRecorded("No getter");
+        }
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -112,28 +107,26 @@ public class ConfigurationMetadataTest
     public void testAbstractClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(AbstractClass.class);
-        Problems problems = metadata.getProblems();
-        Assert.assertEquals(problems.getErrors().size(), 1);
-        Message message = problems.getErrors().get(0);
-        Assert.assertTrue(message.getMessage().contains("[" + metadata.getConfigClass().getName() + "]"));
-        Assert.assertTrue(message.getMessage().contains("abstract"));
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(AbstractClass.class, monitor);
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("abstract", AbstractClass.class.getName());
     }
 
     @Test
     public void testGetValidAbstractClass()
             throws Exception
     {
+        TestMonitor monitor = new TestMonitor();
         try {
-            ConfigurationMetadata.getValidConfigurationMetadata(AbstractClass.class);
+            ConfigurationMetadata.getValidConfigurationMetadata(AbstractClass.class, monitor);
             fail("Expected ConfigurationException");
         }
         catch (ConfigurationException e) {
-            Collection<Message> errorMessages = e.getErrorMessages();
-            Assert.assertEquals(errorMessages.size(), 1);
-            Message message = errorMessages.iterator().next();
-            Assert.assertTrue(message.getMessage().contains("[" + AbstractClass.class.getName() + "]"));
-            Assert.assertTrue(message.getMessage().contains("abstract"));
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(0);
+            monitor.assertMatchingErrorRecorded("abstract", AbstractClass.class.getName());
         }
     }
 
@@ -141,141 +134,155 @@ public class ConfigurationMetadataTest
     public void testNotPublicClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(NotPublicClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(NotPublicClass.class, monitor);
         verifyMetaData(metadata, NotPublicClass.class, true, true, true, null);
-        Problems problems = metadata.getProblems();
-        Assert.assertEquals(problems.getErrors().size(), 1);
-        Message message = problems.getErrors().get(0);
-        Assert.assertTrue(message.getMessage().contains("[" + metadata.getConfigClass().getName() + "]"));
-        Assert.assertTrue(message.getMessage().contains("not public"));
-
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("not public", NotPublicClass.class.getName());
     }
 
     @Test
     public void testNotPublicConstructorClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(NotPublicConstructorClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(NotPublicConstructorClass.class, monitor);
         verifyMetaData(metadata, NotPublicConstructorClass.class, true, true, true, null);
-        Problems problems = metadata.getProblems();
-        Assert.assertEquals(problems.getErrors().size(), 1);
-        Message message = problems.getErrors().get(0);
-        Assert.assertTrue(message.getMessage().contains("[" + metadata.getConfigClass().getName() + "()]"));
-        Assert.assertTrue(message.getMessage().contains("not public"));
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("not public", metadata.getConfigClass().getName() + "()");
     }
 
     @Test
     public void testNoNoArgConstructorClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(NoNoArgConstructorClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(NoNoArgConstructorClass.class, monitor);
         verifyMetaData(metadata, NoNoArgConstructorClass.class, false, true, true, null);
-        Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + metadata.getConfigClass().getName() + "]");
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("no-arg constructor", NoNoArgConstructorClass.class.getName());
     }
 
     @Test
     public void testNoConfigMethodsClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(NoConfigMethodsClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(NoConfigMethodsClass.class, monitor);
         verifyMetaData(metadata, NoConfigMethodsClass.class, true, false, false, null);
-        Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + metadata.getConfigClass().getName() + "]");
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("does not have any @Config annotations", NoConfigMethodsClass.class.getName());
     }
 
     @Test
     public void testGetterAndSetterAnnotatedClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterAndSetterAnnotatedClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterAndSetterAnnotatedClass.class, monitor);
         verifyMetaData(metadata, GetterAndSetterAnnotatedClass.class, true, true, true, null);
-        Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + metadata.getConfigClass().getName() + "]");
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded(GetterAndSetterAnnotatedClass.class.getName());
     }
 
     @Test
     public void testEmptyPropertyNameClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(EmptyPropertyNameClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(EmptyPropertyNameClass.class, monitor);
         verifyMetaData(metadata, EmptyPropertyNameClass.class, true, false, false, null);
-        Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + metadata.getConfigClass().getMethod("getValue").toGenericString() + "]");
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("empty value", "setValue");
     }
 
     @Test
     public void testNotPublicAttributeClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(NotPublicAttributeClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(NotPublicAttributeClass.class, monitor);
         verifyMetaData(metadata, NotPublicAttributeClass.class, true, false, false, null);
-        Problems problems = metadata.getProblems();
-        String name = "getValue";
-        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), name).toGenericString() + "]");
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("No getter", "unusable", "getValue", "setValue");
     }
 
     @Test
     public void testStaticAttributeClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(StaticAttributeClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(StaticAttributeClass.class, monitor);
         verifyMetaData(metadata, StaticAttributeClass.class, true, false, false, null);
-        Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded(StaticAttributeClass.class.getName(), "setValue", "is static");
     }
 
     @Test
     public void testGetterWithParameterClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterWithParameterClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterWithParameterClass.class, monitor);
         verifyMetaData(metadata, GetterWithParameterClass.class, true, false, false, null);
-        Problems problems = metadata.getProblems();
-        Class<?> configClass = metadata.getConfigClass();
-        String name = "getValue";
-        Class<?> parameterTypes = String.class;
-        verifyErrors(problems, "[" + findMethod(configClass, name, parameterTypes).toGenericString() + "]");
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("No getter", "unusable", "getValue", "setValue");
     }
 
     @Test
     public void testGetterNoReturnClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterNoReturnClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterNoReturnClass.class, monitor);
         verifyMetaData(metadata, GetterNoReturnClass.class, true, false, false, null);
-        Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("No getter", "unusable", "getValue", "setValue");
     }
 
     @Test
     public void testGetterNoSetterClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterNoSetterClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterNoSetterClass.class, monitor);
         verifyMetaData(metadata, GetterNoSetterClass.class, true, false, false, null);
-        Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("is not a valid setter", GetterNoSetterClass.class.getName(), "getValue");
     }
 
     @Test
     public void testGetterMultipleSettersClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterMultipleSettersClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterMultipleSettersClass.class, monitor);
         verifyMetaData(metadata, GetterMultipleSettersClass.class, true, false, false, null);
-        Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
     }
 
     @Test
     public void testGetterPrivateSetterClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterPrivateSetterClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterPrivateSetterClass.class, monitor);
         verifyMetaData(metadata, GetterPrivateSetterClass.class, true, false, false, null);
-        Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("@Config method", "setValue", "is not public");
     }
 
 
@@ -283,170 +290,191 @@ public class ConfigurationMetadataTest
     public void testIsMethodWithParameterClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(IsMethodWithParameterClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(IsMethodWithParameterClass.class, monitor);
         verifyMetaData(metadata, IsMethodWithParameterClass.class, true, false, false, null);
-        Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "isValue", boolean.class).toGenericString() + "]");
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("No getter", "unusable", "isValue", "setValue");
     }
 
     @Test
     public void testIsMethodNoReturnClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(IsMethodNoReturnClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(IsMethodNoReturnClass.class, monitor);
         verifyMetaData(metadata, IsMethodNoReturnClass.class, true, false, false, null);
-        Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "isValue").toGenericString() + "]");
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("No getter", "setValue");
     }
 
     @Test
     public void testIsMethodNoSetterClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(IsMethodNoSetterClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(IsMethodNoSetterClass.class, monitor);
         verifyMetaData(metadata, IsMethodNoSetterClass.class, true, false, false, null);
-        Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "isValue").toGenericString() + "]");
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded(IsMethodNoSetterClass.class.getName(), "isValue", "is not a valid setter");
     }
 
     @Test
     public void testIsMethodMultipleSettersClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(IsMethodMultipleSettersClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(IsMethodMultipleSettersClass.class, monitor);
         verifyMetaData(metadata, IsMethodMultipleSettersClass.class, true, false, false, null);
-        Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "isValue").toGenericString() + "]");
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
     }
 
     @Test
     public void testIsMethodPrivateSetterClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(IsMethodPrivateSetterClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(IsMethodPrivateSetterClass.class, monitor);
         verifyMetaData(metadata, IsMethodPrivateSetterClass.class, true, false, false, null);
         Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "isValue").toGenericString() + "]");
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("@Config method", IsMethodPrivateSetterClass.class.getName(), "setValue", "is not public");
     }
 
     @Test
     public void testSetterWithNoParameterClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(SetterWithNoParameterClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(SetterWithNoParameterClass.class, monitor);
         verifyMetaData(metadata, SetterWithNoParameterClass.class, true, false, false, null);
-        Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "setValue").toGenericString() + "]");
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("does not have exactly one parameter", SetterWithNoParameterClass.class.getName(), "setValue");
     }
 
     @Test
     public void testNotJavaBeanClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(NotJavaBeanClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(NotJavaBeanClass.class, monitor);
         verifyMetaData(metadata, NotJavaBeanClass.class, true, false, false, null);
-        Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "putValue", String.class).toGenericString() + "]");
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("not a valid setter", "putValue");
     }
 
     @Test
     public void testCurrentAndDeprecatedConfigOnGetterClass()
         throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(CurrentAndDeprecatedConfigOnGetterClass.class);
-        verifyMetaData(metadata, CurrentAndDeprecatedConfigOnGetterClass.class, "value", ImmutableList.of("deprecatedValue"), true, true, true, "description");
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(CurrentAndDeprecatedConfigOnGetterClass.class, monitor);
         Problems problems = metadata.getProblems();
-        Assert.assertEquals(problems.getErrors().size(), 0);
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("not a valid setter", "getValue");
     }
 
     @Test
     public void testCurrentAndDeprecatedConfigOnSetterClass()
         throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(CurrentAndDeprecatedConfigOnSetterClass.class);
-        verifyMetaData(metadata, CurrentAndDeprecatedConfigOnSetterClass.class, "value", ImmutableList.of("deprecatedValue"), true, true, true, "description");
-        Problems problems = metadata.getProblems();
-        Assert.assertEquals(problems.getErrors().size(), 0);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(CurrentAndDeprecatedConfigOnSetterClass.class, monitor);
+        verifyMetaData(metadata, CurrentAndDeprecatedConfigOnSetterClass.class, "value", ImmutableList.of("replacedValue"), true, true, true, "description");
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
     }
 
     @Test
     public void testDeprecatedConfigOnGetterClass()
         throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DeprecatedConfigOnGetterClass.class);
-        verifyMetaData(metadata, DeprecatedConfigOnGetterClass.class, null, ImmutableList.of("deprecatedValue"), true, true, true, null);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DeprecatedConfigOnGetterClass.class, monitor);
         Problems problems = metadata.getProblems();
-        Assert.assertEquals(problems.getErrors().size(), 0);
+        monitor.assertNumberOfErrors(2);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("not a valid setter", "getValue");
+        monitor.assertMatchingErrorRecorded("LegacyConfig", "getValue", "not associated with any valid @Config");
     }
 
     @Test
     public void testDeprecatedConfigOnSetterClass()
         throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DeprecatedConfigOnSetterClass.class);
-        verifyMetaData(metadata, DeprecatedConfigOnSetterClass.class, null, ImmutableList.of("deprecatedValue"), true, true, true, null);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnSetterClass.class, monitor);
         Problems problems = metadata.getProblems();
-        Assert.assertEquals(problems.getErrors().size(), 0);
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("LegacyConfig", "setValue", "not associated with any valid @Config");
     }
 
     @Test
     public void testMultipleDeprecatedConfigClass()
         throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(MultipleDeprecatedConfigClass.class);
-        verifyMetaData(metadata, MultipleDeprecatedConfigClass.class, "value", ImmutableList.of("deprecated1", "deprecated2"), true, true, true, "description");
-        Problems problems = metadata.getProblems();
-        Assert.assertEquals(problems.getErrors().size(), 0);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(MultipleDeprecatedConfigClass.class, monitor);
+        verifyMetaData(metadata, MultipleDeprecatedConfigClass.class, "value", ImmutableList.of("legacy1", "legacy2"), true, true, true, "description");
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
     }
 
     @Test
     public void testEmptyStringDeprecatedConfigClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(EmptyStringDeprecatedConfigClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(EmptyStringDeprecatedConfigClass.class, monitor);
         verifyMetaData(metadata, EmptyStringDeprecatedConfigClass.class, true, false, false, null);
-        Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("@LegacyConfig method", EmptyStringDeprecatedConfigClass.class.getName(), "setValue", "null or empty value");
     }
 
     @Test
     public void testEmptyArrayDeprecatedConfigClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(EmptyArrayDeprecatedConfigClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(EmptyArrayDeprecatedConfigClass.class, monitor);
         verifyMetaData(metadata, EmptyArrayDeprecatedConfigClass.class, true, false, false, null);
-        Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("@LegacyConfig method", EmptyArrayDeprecatedConfigClass.class.getName(), "setValue", "empty list");
     }
 
     @Test
     public void testEmptyStringInArrayDeprecatedConfigClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(EmptyStringInArrayDeprecatedConfigClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(EmptyStringInArrayDeprecatedConfigClass.class, monitor);
         verifyMetaData(metadata, EmptyStringInArrayDeprecatedConfigClass.class, true, false, false, null);
-        Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("@LegacyConfig method", EmptyStringInArrayDeprecatedConfigClass.class.getName(), "setValue", "null or empty value");
     }
 
     @Test
     public void testDeprecatedConfigDuplicatesConfigClass()
             throws Exception
     {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DeprecatedConfigDuplicatesConfigClass.class);
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DeprecatedConfigDuplicatesConfigClass.class, monitor);
         verifyMetaData(metadata, DeprecatedConfigDuplicatesConfigClass.class, true, false, false, null);
-        Problems problems = metadata.getProblems();
-        verifyErrors(problems, "[" + findMethod(metadata.getConfigClass(), "getValue").toGenericString() + "]");
-    }
-
-    private void verifyErrors(Problems problems, String expectedMessage)
-    {
-        if (problems.getErrors().size() > 1) {
-            System.out.println(problems.getErrors());
-        }
-        Assert.assertEquals(problems.getErrors().size(), 1);
-        Message message = problems.getErrors().get(0);
-        Assertions.assertContains(message.getMessage(), expectedMessage);
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("@Config property", "'value'", "appears in @LegacyConfig", "setValue");
     }
 
     private void verifyMetaData(ConfigurationMetadata<?> metadata, Class<?> configClass, boolean hasConstructor, boolean hasGetter, boolean hasSetter, String description)
@@ -455,7 +483,7 @@ public class ConfigurationMetadataTest
          verifyMetaData(metadata, configClass, "value", ImmutableList.<String>of(), hasConstructor, hasGetter, hasSetter, description);
     }
 
-    private void verifyMetaData(ConfigurationMetadata<?> metadata, Class<?> configClass, String propertyName, ImmutableList<String> deprecatedNames, boolean hasConstructor, boolean hasGetter, boolean hasSetter, String description)
+    private void verifyMetaData(ConfigurationMetadata<?> metadata, Class<?> configClass, String propertyName, ImmutableList<String> legacyNames, boolean hasConstructor, boolean hasGetter, boolean hasSetter, String description)
             throws Exception
     {
         Assert.assertEquals(metadata.getConfigClass(), configClass);
@@ -466,33 +494,20 @@ public class ConfigurationMetadataTest
             Assert.assertEquals(metadata.getAttributes().size(), 1);
             AttributeMetadata attribute = metadata.getAttributes().get("Value");
             Assert.assertEquals(attribute.getConfigClass(), configClass);
-            Assert.assertEquals(attribute.getDeprecatedNames(), deprecatedNames);
+            Set<String> namesToTest = Sets.newHashSet();
+            for (ConfigurationMetadata.InjectionPointMetaData legacyInjectionPoint : attribute.getLegacyInjectionPoints()) {
+                namesToTest.add(legacyInjectionPoint.getProperty());
+            }
+            Assert.assertEquals(namesToTest, legacyNames);
             Assert.assertEquals(attribute.getName(), "Value");
-            Assert.assertEquals(attribute.getPropertyName(), propertyName);
+            Assert.assertEquals(attribute.getInjectionPoint().getProperty(), propertyName);
             if (hasGetter) {
                 Assert.assertEquals(attribute.getGetter(), findMethod(configClass, "getValue"));
             }
             if (hasSetter) {
-                Assert.assertEquals(attribute.getSetter(), findMethod(configClass, "setValue", String.class));
+                Assert.assertEquals(attribute.getInjectionPoint().getSetter(), findMethod(configClass, "setValue", String.class));
             }
             Assert.assertEquals(attribute.getDescription(), description);
-        }
-    }
-
-    public static class GetterConfigClass
-    {
-        private String value;
-
-        @Config("value")
-        @ConfigDescription("description")
-        public String getValue()
-        {
-            return value;
-        }
-
-        public void setValue(String value)
-        {
-            this.value = value;
         }
     }
 
@@ -518,18 +533,18 @@ public class ConfigurationMetadataTest
         }
     }
 
-    public static class GetterSubConfigClass extends GetterConfigClass
+    public static class SetterSubConfigClass extends SetterConfigClass
     {
     }
 
-    public interface GetterInterface
+    public interface SetterInterface
     {
         @Config("value")
         @ConfigDescription("description")
-        public String getValue();
+        public void setValue(String value);
     }
 
-    public static class GetterInterfaceImpl implements GetterInterface
+    public static class SetterInterfaceImpl implements SetterInterface
     {
         private String value;
 
@@ -556,12 +571,12 @@ public class ConfigurationMetadataTest
     {
         private String value;
 
-        @Config("value")
         public String getValue()
         {
             return value;
         }
 
+        @Config("value")
         public void setValue(String value)
         {
             this.value = value;
@@ -576,12 +591,12 @@ public class ConfigurationMetadataTest
         {
         }
 
-        @Config("value")
         public String getValue()
         {
             return value;
         }
 
+        @Config("value")
         public void setValue(String value)
         {
             this.value = value;
@@ -597,12 +612,12 @@ public class ConfigurationMetadataTest
             this.value = value;
         }
 
-        @Config("value")
         public String getValue()
         {
             return value;
         }
 
+        @Config("value")
         public void setValue(String value)
         {
             this.value = value;
@@ -617,12 +632,12 @@ public class ConfigurationMetadataTest
         {
         }
 
-        @Config("value")
         public String getValue()
         {
             return value;
         }
 
+        @Config("value")
         public void setValue(String value)
         {
             this.value = value;
@@ -654,12 +669,12 @@ public class ConfigurationMetadataTest
     {
         private String value;
 
-        @Config("")
         public String getValue()
         {
             return value;
         }
 
+        @Config("")
         public void setValue(String value)
         {
             this.value = value;
@@ -670,12 +685,12 @@ public class ConfigurationMetadataTest
     {
         private String value;
 
-        @Config("value")
         String getValue()
         {
             return value;
         }
 
+        @Config("value")
         public void setValue(String value)
         {
             this.value = value;
@@ -686,12 +701,12 @@ public class ConfigurationMetadataTest
     {
         private static String value;
 
-        @Config("value")
         public static String getValue()
         {
             return value;
         }
 
+        @Config("value")
         public static void setValue(String v)
         {
             value = v;
@@ -702,12 +717,12 @@ public class ConfigurationMetadataTest
     {
         private String value;
 
-        @Config("value")
         public String getValue(String foo)
         {
             return value;
         }
 
+        @Config("value")
         public void setValue(String value)
         {
             this.value = value;
@@ -716,11 +731,11 @@ public class ConfigurationMetadataTest
 
     public static class GetterNoReturnClass
     {
-        @Config("value")
         public void getValue()
         {
         }
 
+        @Config("value")
         public void setValue(String value)
         {
         }
@@ -739,12 +754,12 @@ public class ConfigurationMetadataTest
     {
         private String value;
 
-        @Config("value")
         public String getValue()
         {
             return value;
         }
 
+        @Config("value")
         public void setValue(String value)
         {
             this.value = value;
@@ -759,12 +774,12 @@ public class ConfigurationMetadataTest
     {
         private String value;
 
-        @Config("value")
         public String getValue()
         {
             return value;
         }
 
+        @Config("value")
         private void setValue(String value)
         {
             this.value = value;
@@ -775,12 +790,12 @@ public class ConfigurationMetadataTest
     {
         private boolean value;
 
-        @Config("value")
         public boolean isValue(boolean foo)
         {
             return value;
         }
 
+        @Config("value")
         public void setValue(boolean value)
         {
             this.value = value;
@@ -789,11 +804,11 @@ public class ConfigurationMetadataTest
 
     public static class IsMethodNoReturnClass
     {
-        @Config("value")
         public void isValue()
         {
         }
 
+        @Config("value")
         public void setValue(boolean value)
         {
         }
@@ -812,12 +827,12 @@ public class ConfigurationMetadataTest
     {
         private boolean value;
 
-        @Config("value")
         public boolean isValue()
         {
             return value;
         }
 
+        @Config("value")
         public void setValue(boolean value)
         {
             this.value = value;
@@ -832,12 +847,12 @@ public class ConfigurationMetadataTest
     {
         private boolean value;
 
-        @Config("value")
         public boolean isValue()
         {
             return value;
         }
 
+        @Config("value")
         private void setValue(boolean value)
         {
             this.value = value;
@@ -878,7 +893,7 @@ public class ConfigurationMetadataTest
         private String value;
 
         @Config("value")
-        @DeprecatedConfig("deprecatedValue")
+        @LegacyConfig("replacedValue")
         @ConfigDescription("description")
         public String getValue()
         {
@@ -901,7 +916,7 @@ public class ConfigurationMetadataTest
         }
 
         @Config("value")
-        @DeprecatedConfig("deprecatedValue")
+        @LegacyConfig("replacedValue")
         @ConfigDescription("description")
         public void setValue(String value)
         {
@@ -913,7 +928,7 @@ public class ConfigurationMetadataTest
     {
         private String value;
 
-        @DeprecatedConfig("deprecatedValue")
+        @LegacyConfig("replacedValue")
         public String getValue()
         {
             return value;
@@ -925,7 +940,7 @@ public class ConfigurationMetadataTest
         }
     }
 
-    public static class DeprecatedConfigOnSetterClass
+    public static class LegacyConfigOnSetterClass
     {
         private String value;
 
@@ -934,7 +949,7 @@ public class ConfigurationMetadataTest
             return value;
         }
 
-        @DeprecatedConfig("deprecatedValue")
+        @LegacyConfig("replacedValue")
         public void setValue(String value)
         {
             this.value = value;
@@ -945,14 +960,14 @@ public class ConfigurationMetadataTest
     {
         private String value;
 
-        @Config("value")
-        @DeprecatedConfig({"deprecated1", "deprecated2"})
-        @ConfigDescription("description")
         public String getValue()
         {
             return value;
         }
 
+        @Config("value")
+        @LegacyConfig({"legacy1", "legacy2"})
+        @ConfigDescription("description")
         public void setValue(String value)
         {
             this.value = value;
@@ -963,12 +978,13 @@ public class ConfigurationMetadataTest
     {
         private String value;
 
-        @DeprecatedConfig("")
         public String getValue()
         {
             return value;
         }
 
+        @Config("value")
+        @LegacyConfig("")
         public void setValue(String value)
         {
             this.value = value;
@@ -979,12 +995,13 @@ public class ConfigurationMetadataTest
     {
         private String value;
 
-        @DeprecatedConfig({})
         public String getValue()
         {
             return value;
         }
 
+        @Config("value")
+        @LegacyConfig({})
         public void setValue(String value)
         {
             this.value = value;
@@ -995,12 +1012,13 @@ public class ConfigurationMetadataTest
      {
          private String value;
 
-         @DeprecatedConfig({"foo", ""})
          public String getValue()
          {
              return value;
          }
 
+         @Config("value")
+         @LegacyConfig({"foo", ""})
          public void setValue(String value)
          {
              this.value = value;
@@ -1011,13 +1029,13 @@ public class ConfigurationMetadataTest
     {
         private String value;
 
-        @Config("value")
-        @DeprecatedConfig("value")
         public String getValue()
         {
             return value;
         }
 
+        @Config("value")
+        @LegacyConfig("value")
         public void setValue(String value)
         {
             this.value = value;

@@ -50,7 +50,7 @@ public final class ConfigAssertions
         // verify all supplied attributes are supported not deprecated
         Set<String> nonDeprecatedAttributes = new TreeSet<String>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-            if (attribute.getPropertyName() != null) {
+            if (attribute.getInjectionPoint().getProperty() != null) {
                 nonDeprecatedAttributes.add(attribute.getName());
             }
         }
@@ -97,8 +97,8 @@ public final class ConfigAssertions
         // verify that every (non-deprecated) property is tested
         Set<String> nonDeprecatedProperties = new TreeSet<String>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-            if (attribute.getPropertyName() != null) {
-                nonDeprecatedProperties.add(attribute.getPropertyName());
+            if (attribute.getInjectionPoint().getProperty() != null) {
+                nonDeprecatedProperties.add(attribute.getInjectionPoint().getProperty());
             }
         }
         if (!properties.keySet().equals(nonDeprecatedProperties)) {
@@ -137,7 +137,9 @@ public final class ConfigAssertions
         // verify that all deprecated properties are tested
         Set<String> knownDeprecatedProperties = new TreeSet<String>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-            knownDeprecatedProperties.addAll(attribute.getDeprecatedNames());
+            for (ConfigurationMetadata.InjectionPointMetaData deprecated : attribute.getLegacyInjectionPoints()) {
+                knownDeprecatedProperties.add(deprecated.getProperty());
+            }
         }
         Set<String> suppliedDeprecatedProperties = new TreeSet<String>();
         suppliedDeprecatedProperties.addAll(oldProperties.keySet());
@@ -165,11 +167,13 @@ public final class ConfigAssertions
         Set<String> supportedProperties = new TreeSet<String>();
         Set<String> nonDeprecatedProperties = new TreeSet<String>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-            if (attribute.getPropertyName() != null) {
-                nonDeprecatedProperties.add(attribute.getPropertyName());
-                supportedProperties.add(attribute.getPropertyName());
+            if (attribute.getInjectionPoint().getProperty() != null) {
+                nonDeprecatedProperties.add(attribute.getInjectionPoint().getProperty());
+                supportedProperties.add(attribute.getInjectionPoint().getProperty());
             }
-            supportedProperties.addAll(attribute.getDeprecatedNames());
+            for (ConfigurationMetadata.InjectionPointMetaData deprecated : attribute.getLegacyInjectionPoints()) {
+                supportedProperties.add(deprecated.getProperty());
+            }
         }
         if (!supportedProperties.containsAll(propertyNames)) {
             TreeSet<String> unsupportedProperties = new TreeSet<String>(propertyNames);
@@ -226,12 +230,12 @@ public final class ConfigAssertions
         Set<String> setDeprecatedAttributes = new TreeSet<String>();
         Set<Method> validSetterMethods = new HashSet<Method>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-            if (attribute.getPropertyName() != null) {
-                validSetterMethods.add(attribute.getSetter());
+            if (attribute.getInjectionPoint().getProperty() != null) {
+                validSetterMethods.add(attribute.getInjectionPoint().getSetter());
             }
 
-            if (invokedMethods.contains(attribute.getSetter())) {
-                if (attribute.getPropertyName() != null) {
+            if (invokedMethods.contains(attribute.getInjectionPoint().getSetter())) {
+                if (attribute.getInjectionPoint().getProperty() != null) {
                     Object value = invoke(config, attribute.getGetter());
                     attributeValues.put(attribute.getName(), value);
                 } else {
@@ -331,8 +335,7 @@ public final class ConfigAssertions
     {
         try {
             return configClass.newInstance();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             AssertionError error = new AssertionError(String.format("Exception creating default instance of %s", configClass.getName()));
             error.initCause(e);
             throw error;
@@ -343,8 +346,7 @@ public final class ConfigAssertions
     {
         try {
             return getter.invoke(actual);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             AssertionError error = new AssertionError(String.format("Exception invoking %s", getter.toGenericString()));
             error.initCause(e);
             throw error;

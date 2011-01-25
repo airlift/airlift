@@ -1,13 +1,14 @@
 package com.proofpoint.configuration;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.inject.ConfigurationException;
 import com.google.inject.spi.Message;
 
+import java.util.List;
+
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
-import java.util.List;
 
 class Problems
 {
@@ -18,6 +19,7 @@ class Problems
     public interface Monitor
     {
         void onError(Message errorMessage);
+
         void onWarning(Message warningMessage);
     }
 
@@ -84,13 +86,25 @@ class Problems
         monitor.onWarning(message);
     }
 
+    public String toString()
+    {
+        StringBuilder builder = new StringBuilder();
+        for (Message error : errors) {
+            builder.append(error.getMessage()).append('\n');
+        }
+        for (Message warning : warnings) {
+            builder.append(warning.getMessage()).append('\n');
+        }
+        return builder.toString();
+    }
+
     private ConfigurationException getException()
     {
         ImmutableList<Message> messages
                 = new ImmutableList.Builder<Message>()
-                        .addAll(errors)
-                        .addAll(warnings)
-                        .build();
+                .addAll(errors)
+                .addAll(warnings)
+                .build();
 
         return new ConfigurationException(messages);
     }

@@ -19,9 +19,9 @@ public class ConfigurationLoader
         if (configFile != null) {
             internalLoadProperties(result, configFile);
         }
-        
+
         result.putAll(toMap(System.getProperties()));
-        
+
         return result;
     }
 
@@ -47,8 +47,7 @@ public class ConfigurationLoader
         Properties properties = new Properties();
         try {
             properties.load(reader);
-        }
-        finally {
+        } finally {
             reader.close();
         }
 

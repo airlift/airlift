@@ -29,12 +29,11 @@ public class ConfigurationModule
         boolean foundThisClass = false;
         for (StackTraceElement element : stack) {
             if (!foundThisClass) {
-                if (element.getClassName().equals(ConfigurationModule.class.getName())){
+                if (element.getClassName().equals(ConfigurationModule.class.getName())) {
                     foundThisClass = true;
                 }
-            }
-            else {
-                if (!element.getClassName().equals(ConfigurationModule.class.getName())){
+            } else {
+                if (!element.getClassName().equals(ConfigurationModule.class.getName())) {
                     return element;
                 }
 
@@ -43,37 +42,44 @@ public class ConfigurationModule
         return null;
     }
 
-    public static AnnotatedBindingBuilder bindConfig(Binder binder) {
+    public static AnnotatedBindingBuilder bindConfig(Binder binder)
+    {
         return new AnnotatedBindingBuilder(binder.withSource(getCaller()));
     }
 
-    public static class AnnotatedBindingBuilder extends PrefixBindingBuilder {
+    public static class AnnotatedBindingBuilder extends PrefixBindingBuilder
+    {
         public AnnotatedBindingBuilder(Binder binder)
         {
             super(binder, null, null);
         }
 
-        public PrefixBindingBuilder annotatedWith(Class<? extends Annotation> annotationType) {
+        public PrefixBindingBuilder annotatedWith(Class<? extends Annotation> annotationType)
+        {
             return new PrefixBindingBuilder(binder, annotationType, null);
         }
 
-        public PrefixBindingBuilder annotatedWith(Annotation annotation) {
+        public PrefixBindingBuilder annotatedWith(Annotation annotation)
+        {
             return new PrefixBindingBuilder(binder, null, annotation);
         }
     }
 
-    public static class PrefixBindingBuilder extends ConfigBindingBuilder {
+    public static class PrefixBindingBuilder extends ConfigBindingBuilder
+    {
         public PrefixBindingBuilder(Binder binder, Class<? extends Annotation> annotationType, Annotation annotation)
         {
             super(binder, annotationType, annotation, null);
         }
 
-        public ConfigBindingBuilder prefixedWith(String prefix) {
-            return new ConfigBindingBuilder(binder, annotationType, annotation,  prefix);
+        public ConfigBindingBuilder prefixedWith(String prefix)
+        {
+            return new ConfigBindingBuilder(binder, annotationType, annotation, prefix);
         }
     }
 
-    public static class ConfigBindingBuilder {
+    public static class ConfigBindingBuilder
+    {
         protected final Binder binder;
         protected final Class<? extends Annotation> annotationType;
         protected final Annotation annotation;

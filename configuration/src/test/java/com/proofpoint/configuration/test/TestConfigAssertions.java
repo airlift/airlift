@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.proofpoint.configuration.Config;
 import com.proofpoint.configuration.Config1;
-import com.proofpoint.configuration.DeprecatedConfig;
+import com.proofpoint.configuration.LegacyConfig;
 import com.proofpoint.configuration.test.ConfigAssertions.$$RecordedConfigData;
 import com.proofpoint.testing.Assertions;
 import org.testng.Assert;
@@ -521,56 +521,56 @@ public class TestConfigAssertions
         private String phone;
         private URI homePage = URI.create("http://iq80.com");
 
-        @Config("name")
         public String getName()
         {
             return name;
         }
 
+        @Config("name")
         public PersonConfig setName(String name)
         {
             this.name = name;
             return this;
         }
 
-        @Config("email")
-        @DeprecatedConfig({"exchange-id", "notes-id"})
         public String getEmail()
         {
             return email;
         }
 
+        @Config("email")
+        @LegacyConfig({"exchange-id", "notes-id"})
         public PersonConfig setEmail(String email)
         {
             this.email = email;
             return this;
         }
 
-        @Config("phone")
         public String getPhone()
         {
             return phone;
         }
 
+        @Config("phone")
         public PersonConfig setPhone(String phone)
         {
             this.phone = phone;
             return this;
         }
 
-        @Config("home-page")
         public URI getHomePage()
         {
             return homePage;
         }
 
+        @Config("home-page")
         public PersonConfig setHomePage(URI homePage)
         {
             this.homePage = homePage;
             return this;
         }
 
-        @DeprecatedConfig("home-page-url")
+        @LegacyConfig(value = "home-page-url", replacedBy = "home-page")
         public PersonConfig setHomePageUrl(URL homePage)
         {
             try {
