@@ -1,15 +1,15 @@
 package com.proofpoint.units;
 
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class Duration implements Comparable<Duration>
 {
     public static Duration nanosSince(long nanos)
     {
         long l = System.nanoTime();
-        return new Duration(l - nanos,  TimeUnit.NANOSECONDS);
+        return new Duration(l - nanos, TimeUnit.NANOSECONDS);
     }
 
     private final double millis;
@@ -55,12 +55,18 @@ public final class Duration implements Comparable<Duration>
     @Override
     public boolean equals(Object o)
     {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         Duration duration = (Duration) o;
 
-        if (Double.compare(duration.millis, millis) != 0) return false;
+        if (Double.compare(duration.millis, millis) != 0) {
+            return false;
+        }
 
         return true;
     }
@@ -119,10 +125,10 @@ public final class Duration implements Comparable<Duration>
         double conversionFactor;
         switch (timeUnit) {
             case NANOSECONDS:
-                conversionFactor = 1.0/ 1000000.0;
+                conversionFactor = 1.0 / 1000000.0;
                 break;
             case MICROSECONDS:
-                conversionFactor = 1.0/ 1000.0;
+                conversionFactor = 1.0 / 1000.0;
                 break;
             case MILLISECONDS:
                 conversionFactor = 1;
@@ -147,6 +153,7 @@ public final class Duration implements Comparable<Duration>
 
 
     private static final Pattern DURATION_PATTERN = Pattern.compile("^\\s*(\\d+(?:\\.\\d+)?)\\s*(s|m|h|d|ms)\\s*$");
+
     public static Duration valueOf(String duration)
             throws IllegalArgumentException
     {

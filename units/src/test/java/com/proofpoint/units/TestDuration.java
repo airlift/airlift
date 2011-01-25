@@ -1,20 +1,20 @@
 package com.proofpoint.units;
 
+import com.proofpoint.testing.EquivalenceTester;
 import org.testng.Assert;
-import static org.testng.Assert.fail;
 import org.testng.annotations.Test;
+
+import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static java.util.concurrent.TimeUnit.MICROSECONDS;
-import java.util.concurrent.TimeUnit;
-import java.util.ArrayList;
-
-import com.proofpoint.testing.EquivalenceTester;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.fail;
 
 public class TestDuration
 {
@@ -114,7 +114,7 @@ public class TestDuration
         Assert.assertEquals(new Duration(12359.0d, MILLISECONDS), new Duration(12359.0d, MILLISECONDS));
         Assert.assertFalse(new Duration(12359.0d, MILLISECONDS).equals(new Duration(4444.0d, MILLISECONDS)));
     }
-    
+
     @Test
     public void testHashCode()
     {
@@ -148,7 +148,7 @@ public class TestDuration
         Duration duration = new Duration(nanos, NANOSECONDS);
         Assert.assertEquals(duration.toMillis(), nanos / 1000000);
         Assert.assertEquals(duration.convertTo(NANOSECONDS), nanos);
-        Assert.assertEquals(duration.convertTo(MILLISECONDS), nanos / 1000000 );
+        Assert.assertEquals(duration.convertTo(MILLISECONDS), nanos / 1000000);
         Assert.assertEquals(duration.convertTo(SECONDS), nanos / 1000000 / 1000);
         Assert.assertEquals(duration.convertTo(MINUTES), nanos / 1000000 / 1000 / 60, 1.0E10);
         Assert.assertEquals(duration.convertTo(HOURS), nanos / 1000000 / 1000 / 60 / 60, 1.0E10);
@@ -182,7 +182,8 @@ public class TestDuration
         }
     }
 
-    private void failDurationConstruction(double value, TimeUnit timeUnit) {
+    private void failDurationConstruction(double value, TimeUnit timeUnit)
+    {
         try {
             new Duration(value, timeUnit);
             Assert.fail("Expected NullPointerException or IllegalArgumentException");
