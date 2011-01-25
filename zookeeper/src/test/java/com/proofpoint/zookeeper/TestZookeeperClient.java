@@ -31,32 +31,29 @@ import static org.testng.Assert.fail;
 
 public class TestZookeeperClient
 {
-//    @Test TODO - this doesn't work due to this bug: https://issues.apache.org/jira/browse/ZOOKEEPER-832
-    public void     testMultiServer() throws Exception
+    //    @Test TODO - this doesn't work due to this bug: https://issues.apache.org/jira/browse/ZOOKEEPER-832
+    public void testMultiServer()
+            throws Exception
     {
-        ZookeeperTestServerInstance     testServer1 = new ZookeeperTestServerInstance(10000);
-        ZookeeperTestServerInstance     testServer2 = new ZookeeperTestServerInstance(10001);
-        String                          connectionString = testServer1.getConnectString() + "\\," + testServer2.getConnectString();
+        ZookeeperTestServerInstance testServer1 = new ZookeeperTestServerInstance(10000);
+        ZookeeperTestServerInstance testServer2 = new ZookeeperTestServerInstance(10001);
+        String connectionString = testServer1.getConnectString() + "\\," + testServer2.getConnectString();
 
-        Map<String, String>             props = new HashMap<String, String>();
+        Map<String, String> props = new HashMap<String, String>();
         props.put("zookeeper.connection-string", connectionString);
-        ConfigurationFactory            factory = new ConfigurationFactory(props);
-        ZookeeperClient                 client = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class)));
+        ConfigurationFactory factory = new ConfigurationFactory(props);
+        ZookeeperClient client = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class)));
         client.start();
 
-        for ( int i = 0; i < 2; ++i )
-        {
-            try
-            {
+        for (int i = 0; i < 2; ++i) {
+            try {
                 client.exists("/one/two");
             }
-            catch ( Exception e )
-            {
+            catch (Exception e) {
                 fail("Connection Failed", e);
             }
 
-            if ( i == 0 )
-            {
+            if (i == 0) {
                 testServer1.close();
             }
         }
@@ -67,61 +64,59 @@ public class TestZookeeperClient
     }
 
     @Test
-    public void     testNewSessionFromSaved() throws Exception
+    public void testNewSessionFromSaved()
+            throws Exception
     {
-        ZookeeperTestServerInstance     server = new ZookeeperTestServerInstance();
-        try
-        {
-            ZookeeperClientConfig   config = new ZookeeperClientConfig();
+        ZookeeperTestServerInstance server = new ZookeeperTestServerInstance();
+        try {
+            ZookeeperClientConfig config = new ZookeeperClientConfig();
             config.setSessionStorePath(server.getTempDirectory().newFile().getPath());
             config.setConnectionString(server.getConnectString());
 
-            ZookeeperClient         client1 = new ZookeeperClient(new DefaultZookeeperClientCreator(config));
+            ZookeeperClient client1 = new ZookeeperClient(new DefaultZookeeperClientCreator(config));
             client1.start();
-            ZookeeperSessionID      initialSession = client1.getSessionInfo();
+            ZookeeperSessionID initialSession = client1.getSessionInfo();
             client1.closeForShutdown();
 
-            ZookeeperClient         client2 = new ZookeeperClient(new DefaultZookeeperClientCreator(config));
+            ZookeeperClient client2 = new ZookeeperClient(new DefaultZookeeperClientCreator(config));
             client2.start();
-            ZookeeperSessionID      nextSession = client2.getSessionInfo();
+            ZookeeperSessionID nextSession = client2.getSessionInfo();
             client2.closeForShutdown();
 
             Assert.assertNotSame(initialSession, nextSession);
         }
-        finally
-        {
+        finally {
             server.close();
         }
     }
 
     @Test
-    public void     testRestartSession() throws Exception
+    public void testRestartSession()
+            throws Exception
     {
-        ZookeeperClient                 client1 = null;
-        ZookeeperClient                 client2 = null;
-        ZookeeperTestServerInstance     server = new ZookeeperTestServerInstance();
-        try
-        {
-            ZookeeperClientConfig   config = new ZookeeperClientConfig();
+        ZookeeperClient client1 = null;
+        ZookeeperClient client2 = null;
+        ZookeeperTestServerInstance server = new ZookeeperTestServerInstance();
+        try {
+            ZookeeperClientConfig config = new ZookeeperClientConfig();
             config.setSessionStorePath(server.getTempDirectory().newFile().getPath());
             config.setConnectionString(server.getConnectString());
 
             client1 = new ZookeeperClient(new DefaultZookeeperClientCreator(config));
             client1.start();
-            ZookeeperSessionID      initialSession = client1.getSessionInfo();
+            ZookeeperSessionID initialSession = client1.getSessionInfo();
 
             client2 = new ZookeeperClient(new DefaultZookeeperClientCreator(config));    // should resume session
             client2.start();
-            ZookeeperSessionID      nextSession = client2.getSessionInfo();
+            ZookeeperSessionID nextSession = client2.getSessionInfo();
 
             Assert.assertEquals(initialSession, nextSession);
         }
-        finally
-        {
-            if ( client1 != null ) {
+        finally {
+            if (client1 != null) {
                 client1.closeForShutdown();
             }
-            if ( client2 != null ) {
+            if (client2 != null) {
                 client2.closeForShutdown();
             }
 
@@ -130,60 +125,60 @@ public class TestZookeeperClient
     }
 
     @Test
-    public void     testMissingStart() throws Exception
+    public void testMissingStart()
+            throws Exception
     {
-        ZookeeperClient     client = new ZookeeperClient(new DefaultZookeeperClientCreator(new ZookeeperClientConfig()));
-        try
-        {
+        ZookeeperClient client = new ZookeeperClient(new DefaultZookeeperClientCreator(new ZookeeperClientConfig()));
+        try {
             client.delete("/foo");
             fail();
         }
-        catch ( Exception e )
-        {
+        catch (Exception e) {
             // correct behavior
         }
     }
 
     @Test
-    public void     testPostCreationEvents() throws Exception
+    public void testPostCreationEvents()
+            throws Exception
     {
-        HashMap<String, String>         properties = new HashMap<String, String>();
+        HashMap<String, String> properties = new HashMap<String, String>();
         properties.put("zookeeper.connection-string", "foo");
-        ConfigurationFactory            configurationFactory = new ConfigurationFactory(properties);
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
 
-        final ZooKeeper                 mockedClient = mock(ZooKeeper.class);
-        DefaultZookeeperClientCreator   clientCreator = new DefaultZookeeperClientCreator(configurationFactory.build(ZookeeperClientConfig.class));
-        final Watcher                   watcher = clientCreator.newWatcher();
-        final WatchedEvent              connectEvent = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.SyncConnected, "/");
-        final WatchedEvent              nodeEvent = new WatchedEvent(Watcher.Event.EventType.NodeCreated, Watcher.Event.KeeperState.SyncConnected, "/");
-        final WatchedEvent              postCreationEvent = new WatchedEvent(Watcher.Event.EventType.NodeDeleted, Watcher.Event.KeeperState.SyncConnected, "/");
+        final ZooKeeper mockedClient = mock(ZooKeeper.class);
+        DefaultZookeeperClientCreator clientCreator = new DefaultZookeeperClientCreator(configurationFactory.build(ZookeeperClientConfig.class));
+        final Watcher watcher = clientCreator.newWatcher();
+        final WatchedEvent connectEvent = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.SyncConnected, "/");
+        final WatchedEvent nodeEvent = new WatchedEvent(Watcher.Event.EventType.NodeCreated, Watcher.Event.KeeperState.SyncConnected, "/");
+        final WatchedEvent postCreationEvent = new WatchedEvent(Watcher.Event.EventType.NodeDeleted, Watcher.Event.KeeperState.SyncConnected, "/");
 
-        final CountDownLatch            callableStartLatch = new CountDownLatch(1);
-        final CountDownLatch            waitingForPostCreationLatch = new CountDownLatch(1);
-        final CountDownLatch            postCreationEventProcessedLatch = new CountDownLatch(1);
-        Executors.newSingleThreadExecutor().submit
-        (
-            new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
+        final CountDownLatch callableStartLatch = new CountDownLatch(1);
+        final CountDownLatch waitingForPostCreationLatch = new CountDownLatch(1);
+        final CountDownLatch postCreationEventProcessedLatch = new CountDownLatch(1);
+        Executors.newSingleThreadExecutor().submit(
+                new Callable<Void>()
                 {
-                    callableStartLatch.await();
+                    @Override
+                    public Void call()
+                            throws Exception
+                    {
+                        callableStartLatch.await();
 
-                    watcher.process(connectEvent);
-                    watcher.process(nodeEvent);
+                        watcher.process(connectEvent);
+                        watcher.process(nodeEvent);
 
-                    waitingForPostCreationLatch.await();
-                    watcher.process(postCreationEvent);
-                    postCreationEventProcessedLatch.countDown();
+                        waitingForPostCreationLatch.await();
+                        watcher.process(postCreationEvent);
+                        postCreationEventProcessedLatch.countDown();
 
-                    return null;
+                        return null;
+                    }
                 }
-            }
         );
 
-        final List<WatchedEvent>        processedEvents = Lists.newArrayList();
-        Watcher                         newWatcher = new Watcher()
+        final List<WatchedEvent> processedEvents = Lists.newArrayList();
+        Watcher newWatcher = new Watcher()
         {
             @Override
             public void process(WatchedEvent event)
@@ -197,23 +192,24 @@ public class TestZookeeperClient
 
         waitingForPostCreationLatch.countDown();
         postCreationEventProcessedLatch.await();
-        
+
         assertEquals(Arrays.asList(connectEvent, nodeEvent, postCreationEvent), processedEvents);
     }
 
     @Test
-    public void     testCreationEvents() throws Exception
+    public void testCreationEvents()
+            throws Exception
     {
-        ZooKeeper                       mockedClient = mock(ZooKeeper.class);
-        DefaultZookeeperClientCreator   clientCreator = new DefaultZookeeperClientCreator(mock(ZookeeperClientConfig.class));
-        Watcher                         watcher = clientCreator.newWatcher();
-        WatchedEvent                    connectEvent = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.SyncConnected, "/");
-        WatchedEvent                    nodeEvent = new WatchedEvent(Watcher.Event.EventType.NodeCreated, Watcher.Event.KeeperState.SyncConnected, "/");
+        ZooKeeper mockedClient = mock(ZooKeeper.class);
+        DefaultZookeeperClientCreator clientCreator = new DefaultZookeeperClientCreator(mock(ZookeeperClientConfig.class));
+        Watcher watcher = clientCreator.newWatcher();
+        WatchedEvent connectEvent = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.SyncConnected, "/");
+        WatchedEvent nodeEvent = new WatchedEvent(Watcher.Event.EventType.NodeCreated, Watcher.Event.KeeperState.SyncConnected, "/");
         watcher.process(connectEvent);
         watcher.process(nodeEvent);
 
-        final List<WatchedEvent>        processedEvents = Lists.newArrayList();
-        Watcher                         newWatcher = new Watcher()
+        final List<WatchedEvent> processedEvents = Lists.newArrayList();
+        Watcher newWatcher = new Watcher()
         {
             @Override
             public void process(WatchedEvent event)
@@ -227,15 +223,16 @@ public class TestZookeeperClient
     }
 
     @Test
-    public void     testRetries() throws Exception
+    public void testRetries()
+            throws Exception
     {
-        ZookeeperTestServerInstance     testServer = new ZookeeperTestServerInstance();
+        ZookeeperTestServerInstance testServer = new ZookeeperTestServerInstance();
 
-        final AtomicInteger             retryCount = new AtomicInteger(0);
-        Map<String, String>             props = Maps.newHashMap();
+        final AtomicInteger retryCount = new AtomicInteger(0);
+        Map<String, String> props = Maps.newHashMap();
         props.put("zookeeper.connection-string", testServer.getConnectString());
-        ConfigurationFactory            factory = new ConfigurationFactory(props);
-        DefaultZookeeperClientCreator   clientCreator = new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class))
+        ConfigurationFactory factory = new ConfigurationFactory(props);
+        DefaultZookeeperClientCreator clientCreator = new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class))
         {
             @Override
             public RetryPolicy getRetryPolicy()
@@ -243,7 +240,8 @@ public class TestZookeeperClient
                 return new RetryPolicy()
                 {
                     @Override
-                    public boolean shouldRetry(Exception e, int retries) throws Exception
+                    public boolean shouldRetry(Exception e, int retries)
+                            throws Exception
                     {
                         retryCount.incrementAndGet();
                         return retries < 1;
@@ -251,26 +249,24 @@ public class TestZookeeperClient
                 };
             }
         };
-        ZookeeperClient                 client = new ZookeeperClient(clientCreator);
+        ZookeeperClient client = new ZookeeperClient(clientCreator);
         client.start();
         client.exists("/"); // blocks until connection is achieved
 
         testServer.close(); // next client call should fail
 
-        try
-        {
+        try {
             client.exists("/");
             fail();
         }
-        catch ( Exception e )
-        {
+        catch (Exception e) {
             // correct
         }
         assertEquals(retryCount.get(), 2);
 
         // now try with a background call
 
-        final CountDownLatch        latch = new CountDownLatch(1);
+        final CountDownLatch latch = new CountDownLatch(1);
         client.setErrorHandler(new ZookeeperClientErrorHandler()
         {
             @Override
@@ -288,22 +284,21 @@ public class TestZookeeperClient
     }
 
     @Test
-    public void     testConnection() throws Exception
+    public void testConnection()
+            throws Exception
     {
-        ZookeeperTestServerInstance     testServer = new ZookeeperTestServerInstance(4532);
+        ZookeeperTestServerInstance testServer = new ZookeeperTestServerInstance(4532);
 
-        Map<String, String>             props = Maps.newHashMap();
+        Map<String, String> props = Maps.newHashMap();
         props.put("zookeeper.connection-string", testServer.getConnectString());
-        ConfigurationFactory            factory = new ConfigurationFactory(props);
-        ZookeeperClient                 client = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class)));
+        ConfigurationFactory factory = new ConfigurationFactory(props);
+        ZookeeperClient client = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class)));
         client.start();
 
-        try
-        {
+        try {
             client.exists("/one/two");
         }
-        catch ( Exception e )
-        {
+        catch (Exception e) {
             fail("Connection Failed", e);
         }
 
@@ -313,39 +308,39 @@ public class TestZookeeperClient
     }
 
     @Test
-    public void    testMessaging() throws Exception
+    public void testMessaging()
+            throws Exception
     {
-        ZookeeperTestServerInstance     testServer = new ZookeeperTestServerInstance(4532);
+        ZookeeperTestServerInstance testServer = new ZookeeperTestServerInstance(4532);
 
-        Map<String, String>             props = Maps.newHashMap();
+        Map<String, String> props = Maps.newHashMap();
         props.put("zookeeper.connection-string", testServer.getConnectString());
-        ConfigurationFactory            factory = new ConfigurationFactory(props);
-        ZookeeperClient                 client = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class)));
+        ConfigurationFactory factory = new ConfigurationFactory(props);
+        ZookeeperClient client = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class)));
 
-        final String                    path = "/one";
-        final CountDownLatch            latch = new CountDownLatch(1);
-        client.addListener
-        (
-            new EventQueue.EventListener<com.proofpoint.zookeeper.ZookeeperEvent>()
-            {
-                @Override
-                public void eventProcessed(ZookeeperEvent event) throws Exception
+        final String path = "/one";
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.addListener(
+                new EventQueue.EventListener<com.proofpoint.zookeeper.ZookeeperEvent>()
                 {
-                    if ( event.getType() == ZookeeperEvent.Type.CREATE )
+                    @Override
+                    public void eventProcessed(ZookeeperEvent event)
+                            throws Exception
                     {
-                        assertEquals(event.getPath(), path);
-                        latch.countDown();
+                        if (event.getType() == ZookeeperEvent.Type.CREATE) {
+                            assertEquals(event.getPath(), path);
+                            latch.countDown();
+                        }
+                    }
+                },
+                new Predicate<ZookeeperEvent>()
+                {
+                    @Override
+                    public boolean apply(ZookeeperEvent event)
+                    {
+                        return isOurEvent(event, path);
                     }
                 }
-           },
-           new Predicate<ZookeeperEvent>()
-           {
-               @Override
-               public boolean apply(ZookeeperEvent event)
-               {
-                   return isOurEvent(event, path);
-               }
-           }
         );
 
         client.start();
@@ -361,40 +356,40 @@ public class TestZookeeperClient
     }
 
     @Test
-    public void    testMessagingMultiClient() throws Exception
+    public void testMessagingMultiClient()
+            throws Exception
     {
-        ZookeeperTestServerInstance     testServer = new ZookeeperTestServerInstance(4325);
+        ZookeeperTestServerInstance testServer = new ZookeeperTestServerInstance(4325);
 
-        Map<String, String>             props = Maps.newHashMap();
+        Map<String, String> props = Maps.newHashMap();
         props.put("zookeeper.connection-string", testServer.getConnectString());
-        ConfigurationFactory            factory = new ConfigurationFactory(props);
-        ZookeeperClient                 client1 = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class)));
-        ZookeeperClient                 client2 = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class)));
+        ConfigurationFactory factory = new ConfigurationFactory(props);
+        ZookeeperClient client1 = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class)));
+        ZookeeperClient client2 = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class)));
 
-        final String                    path = "/one";
-        final CountDownLatch            latch = new CountDownLatch(1);
-        client2.addListener
-        (
-            new EventQueue.EventListener<com.proofpoint.zookeeper.ZookeeperEvent>()
-            {
-                @Override
-                public void eventProcessed(ZookeeperEvent event) throws Exception
+        final String path = "/one";
+        final CountDownLatch latch = new CountDownLatch(1);
+        client2.addListener(
+                new EventQueue.EventListener<com.proofpoint.zookeeper.ZookeeperEvent>()
                 {
-                    if ( event.getType() == ZookeeperEvent.Type.EXISTS)
+                    @Override
+                    public void eventProcessed(ZookeeperEvent event)
+                            throws Exception
                     {
-                        assertEquals(event.getPath(), path);
-                        latch.countDown();
+                        if (event.getType() == ZookeeperEvent.Type.EXISTS) {
+                            assertEquals(event.getPath(), path);
+                            latch.countDown();
+                        }
+                    }
+                },
+                new Predicate<ZookeeperEvent>()
+                {
+                    @Override
+                    public boolean apply(ZookeeperEvent event)
+                    {
+                        return isOurEvent(event, path);
                     }
                 }
-            },
-            new Predicate<ZookeeperEvent>()
-            {
-                @Override
-                public boolean apply(ZookeeperEvent event)
-                {
-                    return isOurEvent(event, path);
-                }
-            }
         );
 
         client1.start();
@@ -413,36 +408,34 @@ public class TestZookeeperClient
     }
 
     @Test
-    public void     testVersionMismatch() throws Exception
+    public void testVersionMismatch()
+            throws Exception
     {
-        ZookeeperTestServerInstance     testServer = new ZookeeperTestServerInstance();
+        ZookeeperTestServerInstance testServer = new ZookeeperTestServerInstance();
 
-        Map<String, String>             props = Maps.newHashMap();
+        Map<String, String> props = Maps.newHashMap();
         props.put("zookeeper.connection-string", testServer.getConnectString());
-        ConfigurationFactory            factory = new ConfigurationFactory(props);
-        ZookeeperClient                 client = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class)));
+        ConfigurationFactory factory = new ConfigurationFactory(props);
+        ZookeeperClient client = new ZookeeperClient(new DefaultZookeeperClientCreator(factory.build(ZookeeperClientConfig.class)));
 
-        final String                    path = "/one";
+        final String path = "/one";
 
         client.start();
 
         client.create(path, new byte[0]);
-        Stat        preChangeStat = client.exists(path);
+        Stat preChangeStat = client.exists(path);
         assertEquals(preChangeStat.getVersion(), 0);
         client.setData(path, "test".getBytes());
-        Stat        postChangeStat = client.exists(path);
+        Stat postChangeStat = client.exists(path);
         assertNotSame(preChangeStat.getVersion(), postChangeStat.getVersion());
-        try
-        {
+        try {
             client.dataVersion(preChangeStat.getVersion()).setData(path, "something".getBytes());
             fail();
         }
-        catch ( KeeperException.BadVersionException e )
-        {
+        catch (KeeperException.BadVersionException e) {
             // sucess
         }
-        catch ( Exception e )
-        {
+        catch (Exception e) {
             fail("", e);
         }
 
@@ -453,10 +446,8 @@ public class TestZookeeperClient
 
     private boolean isOurEvent(ZookeeperEvent event, String path)
     {
-        if ( event.getPath() != null )
-        {
-            if ( event.getPath().startsWith(path) )
-            {
+        if (event.getPath() != null) {
+            if (event.getPath().startsWith(path)) {
                 return true;
             }
         }

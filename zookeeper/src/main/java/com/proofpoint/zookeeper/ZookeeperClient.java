@@ -31,17 +31,17 @@ import java.util.concurrent.locks.Condition;
  */
 public class ZookeeperClient implements ZookeeperClientHelper
 {
-    private final AtomicBoolean                     started;
-    private final EventQueue<ZookeeperEvent>        eventQueue;
-    private final AtomicReference<State>            stateRef;
-    private final ZookeeperClientCreator            creator;
-    private final CreateMode                        createMode;
-    private final boolean                           inBackground;
-    private final Object                            key;
-    private final boolean                           watched;
-    private final int                               dataVersion;
-    private final Object                            context;
-    private final Map<EventQueue.EventListener<ZookeeperEvent>, EventQueue.EventListener<ZookeeperEvent>>   externalToInternalListenerMap = new ConcurrentHashMap<EventQueue.EventListener<ZookeeperEvent>, EventQueue.EventListener<ZookeeperEvent>>();
+    private final AtomicBoolean started;
+    private final EventQueue<ZookeeperEvent> eventQueue;
+    private final AtomicReference<State> stateRef;
+    private final ZookeeperClientCreator creator;
+    private final CreateMode createMode;
+    private final boolean inBackground;
+    private final Object key;
+    private final boolean watched;
+    private final int dataVersion;
+    private final Object context;
+    private final Map<EventQueue.EventListener<ZookeeperEvent>, EventQueue.EventListener<ZookeeperEvent>> externalToInternalListenerMap = new ConcurrentHashMap<EventQueue.EventListener<ZookeeperEvent>, EventQueue.EventListener<ZookeeperEvent>>();
     private final AtomicReference<ZookeeperClientErrorHandler> errorHandler = new AtomicReference<ZookeeperClientErrorHandler>(null);
 
     private volatile ZooKeeper client;
@@ -55,23 +55,22 @@ public class ZookeeperClient implements ZookeeperClientHelper
     }
 
     @Inject
-    public ZookeeperClient(ZookeeperClientCreator creator) throws IOException
+    public ZookeeperClient(ZookeeperClientCreator creator)
+            throws IOException
     {
-        this
-        (
-            new AtomicBoolean(false),
-            null,
-            new EventQueue<ZookeeperEvent>(0),
-            // no wait for events - process immediately
-            new AtomicReference<State>(State.WAITING_FOR_STARTUP),
-            creator,
-            CreateMode.PERSISTENT, 
-            false,
-            null,
-            false,
-            -1,
-            null,
-            null
+        this(new AtomicBoolean(false),
+                null,
+                new EventQueue<ZookeeperEvent>(0),
+                // no wait for events - process immediately
+                new AtomicReference<State>(State.WAITING_FOR_STARTUP),
+                creator,
+                CreateMode.PERSISTENT,
+                false,
+                null,
+                false,
+                -1,
+                null,
+                null
         );
     }
 
@@ -81,30 +80,29 @@ public class ZookeeperClient implements ZookeeperClientHelper
      * @param errorHandler handler
      */
     @Inject(optional = true)
-    public void     setErrorHandler(ZookeeperClientErrorHandler errorHandler)
+    public void setErrorHandler(ZookeeperClientErrorHandler errorHandler)
     {
         this.errorHandler.set(errorHandler);
     }
 
     /**
      * Returns a copy of the ZK session info
+     *
      * @return session info
      * @throws Exception errors
      */
-    public ZookeeperSessionID   getSessionInfo()
+    public ZookeeperSessionID getSessionInfo()
             throws Exception
     {
         ZookeeperSessionID sessionID = new ZookeeperSessionID();
-        if ( waitForStart() )
-        {
+        if (waitForStart()) {
             sessionID.setPassword(client.getSessionPasswd());
             sessionID.setSessionId(client.getSessionId());
         }
         return sessionID;
     }
 
-    private ZookeeperClient
-        (
+    private ZookeeperClient(
             AtomicBoolean started,
             ZooKeeper client,
             EventQueue<ZookeeperEvent> eventQueue,
@@ -117,7 +115,7 @@ public class ZookeeperClient implements ZookeeperClientHelper
             int dataVersion,
             Object context,
             ZookeeperClientErrorHandler errorHandler
-        )
+    )
     {
         this.started = started;
         this.client = client;
@@ -140,25 +138,25 @@ public class ZookeeperClient implements ZookeeperClientHelper
     }
 
     @Override
-    public ZookeeperClientHelper    inBackground(Object key)
+    public ZookeeperClientHelper inBackground(Object key)
     {
         return new ZookeeperClient(started, client, eventQueue, stateRef, creator, createMode, true, key, watched, dataVersion, context, errorHandler.get());
     }
 
     @Override
-    public ZookeeperClientHelper    watched()
+    public ZookeeperClientHelper watched()
     {
         return new ZookeeperClient(started, client, eventQueue, stateRef, creator, createMode, inBackground, key, true, dataVersion, context, errorHandler.get());
     }
 
     @Override
-    public ZookeeperClientHelper    withContext(Object contextArg)
+    public ZookeeperClientHelper withContext(Object contextArg)
     {
         return new ZookeeperClient(started, client, eventQueue, stateRef, creator, createMode, inBackground, key, watched, dataVersion, contextArg, errorHandler.get());
     }
 
     @Override
-    public ZookeeperClientHelper    dataVersion(int version)
+    public ZookeeperClientHelper dataVersion(int version)
     {
         return new ZookeeperClient(started, client, eventQueue, stateRef, creator, createMode, inBackground, key, watched, version, context, errorHandler.get());
     }
@@ -166,21 +164,19 @@ public class ZookeeperClient implements ZookeeperClientHelper
     @PreDestroy
     public void closeForShutdown()
     {
-        try
-        {
+        try {
             client.close();
         }
-        catch ( InterruptedException e )
-        {
+        catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
     }
 
     @PostConstruct
-    public void start() throws Exception
+    public void start()
+            throws Exception
     {
-        if ( started.compareAndSet(false, true) )
-        {
+        if (started.compareAndSet(false, true)) {
             client = creator.create();
         }
     }
@@ -200,36 +196,31 @@ public class ZookeeperClient implements ZookeeperClientHelper
      *
      * @param listener listener
      * @param basePath base path - can be null
-     * @param backgroundKey background key (see {@link #inBackground(Object)}) - can be null 
+     * @param backgroundKey background key (see {@link #inBackground(Object)}) - can be null
      */
-    public void     addListener(final EventQueue.EventListener<ZookeeperEvent> listener, final String basePath, final Object backgroundKey)
+    public void addListener(final EventQueue.EventListener<ZookeeperEvent> listener, final String basePath, final Object backgroundKey)
     {
         addListener(listener, new Predicate<ZookeeperEvent>()
         {
             @Override
             public boolean apply(ZookeeperEvent event)
             {
-                boolean     applies = true;
-                do
-                {
-                    if ( (basePath != null) && (event.getPath() != null) )
-                    {
-                        if ( !event.getPath().startsWith(basePath) )
-                        {
+                boolean applies = true;
+                do {
+                    if ((basePath != null) && (event.getPath() != null)) {
+                        if (!event.getPath().startsWith(basePath)) {
                             applies = false;
                             break;
                         }
                     }
 
-                    if ( (backgroundKey != null) && (event.getKey() != null) )
-                    {
-                        if ( !event.getKey().equals(backgroundKey) )
-                        {
+                    if ((backgroundKey != null) && (event.getKey() != null)) {
+                        if (!event.getKey().equals(backgroundKey)) {
                             applies = false;
                             break;
                         }
                     }
-                } while ( false );
+                } while (false);
 
                 return applies;
             }
@@ -242,15 +233,15 @@ public class ZookeeperClient implements ZookeeperClientHelper
      * @param listener the listener
      * @param predicate functor that decides which events to pass through to the listener
      */
-    public void     addListener(final EventQueue.EventListener<ZookeeperEvent> listener, final Predicate<ZookeeperEvent> predicate)
+    public void addListener(final EventQueue.EventListener<ZookeeperEvent> listener, final Predicate<ZookeeperEvent> predicate)
     {
-        EventQueue.EventListener<ZookeeperEvent>    internalListener = new EventQueue.EventListener<com.proofpoint.zookeeper.ZookeeperEvent>()
+        EventQueue.EventListener<ZookeeperEvent> internalListener = new EventQueue.EventListener<com.proofpoint.zookeeper.ZookeeperEvent>()
         {
             @Override
-            public void eventProcessed(ZookeeperEvent event) throws Exception
+            public void eventProcessed(ZookeeperEvent event)
+                    throws Exception
             {
-                if ( predicate.apply(event) )
-                {
+                if (predicate.apply(event)) {
                     listener.eventProcessed(event);
                 }
             }
@@ -264,38 +255,35 @@ public class ZookeeperClient implements ZookeeperClientHelper
      *
      * @param listener the listener to remove
      */
-    public void     removeListener(EventQueue.EventListener<ZookeeperEvent> listener)
+    public void removeListener(EventQueue.EventListener<ZookeeperEvent> listener)
     {
-        EventQueue.EventListener<ZookeeperEvent>    internalListener = externalToInternalListenerMap.remove(listener);
-        if ( internalListener != null )
-        {
+        EventQueue.EventListener<ZookeeperEvent> internalListener = externalToInternalListenerMap.remove(listener);
+        if (internalListener != null) {
             eventQueue.removeListener(internalListener);
         }
     }
 
     @Override
-    public List<String> getChildren(final String path) throws Exception
+    public List<String> getChildren(final String path)
+            throws Exception
     {
-        if ( !waitForStart() )
-        {
+        if (!waitForStart()) {
             return new ArrayList<String>();
         }
 
-        if ( inBackground )
-        {
-            client.getChildren
-            (
-                path,
-                watched,
-                new AsyncCallback.Children2Callback()
-                {
-                    @Override
-                    public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat)
+        if (inBackground) {
+            client.getChildren(
+                    path,
+                    watched,
+                    new AsyncCallback.Children2Callback()
                     {
-                        eventQueue.postEvent(new ZookeeperEvent(ZookeeperEvent.Type.GET_CHILDREN, rc, path, ctx, null, stat, null, children, key));
-                    }
-                },
-                context
+                        @Override
+                        public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat)
+                        {
+                            eventQueue.postEvent(new ZookeeperEvent(ZookeeperEvent.Type.GET_CHILDREN, rc, path, ctx, null, stat, null, children, key));
+                        }
+                    },
+                    context
             );
             return null;
         }
@@ -303,7 +291,8 @@ public class ZookeeperClient implements ZookeeperClientHelper
         return withRetry(new Callable<List<String>>()
         {
             @Override
-            public List<String> call() throws Exception
+            public List<String> call()
+                    throws Exception
             {
                 return client.getChildren(path, watched);
             }
@@ -311,28 +300,26 @@ public class ZookeeperClient implements ZookeeperClientHelper
     }
 
     @Override
-    public DataAndStat getDataAndStat(final String path) throws Exception
+    public DataAndStat getDataAndStat(final String path)
+            throws Exception
     {
-        if ( !waitForStart() )
-        {
+        if (!waitForStart()) {
             return null;
         }
 
-        if ( inBackground )
-        {
-            client.getData
-            (
-                path,
-                watched,
-                new AsyncCallback.DataCallback()
-                {
-                    @Override
-                    public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
+        if (inBackground) {
+            client.getData(
+                    path,
+                    watched,
+                    new AsyncCallback.DataCallback()
                     {
-                        eventQueue.postEvent(new ZookeeperEvent(ZookeeperEvent.Type.GET_DATA, rc, path, ctx, data, stat, null, null, key));
-                    }
-                },
-                context
+                        @Override
+                        public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
+                        {
+                            eventQueue.postEvent(new ZookeeperEvent(ZookeeperEvent.Type.GET_DATA, rc, path, ctx, data, stat, null, null, key));
+                        }
+                    },
+                    context
             );
             return null;
         }
@@ -340,7 +327,8 @@ public class ZookeeperClient implements ZookeeperClientHelper
         return withRetry(new Callable<DataAndStat>()
         {
             @Override
-            public DataAndStat call() throws Exception
+            public DataAndStat call()
+                    throws Exception
             {
                 final Stat stat = new Stat();
                 final byte[] data = client.getData(path, watched, stat);
@@ -363,45 +351,43 @@ public class ZookeeperClient implements ZookeeperClientHelper
     }
 
     @Override
-    public byte[] getData(final String path) throws Exception
+    public byte[] getData(final String path)
+            throws Exception
     {
         DataAndStat dataAndStat = getDataAndStat(path);
         return (dataAndStat != null) ? dataAndStat.getData() : null;
     }
 
     @Override
-    public String create(final String path, final byte data[]) throws Exception
+    public String create(final String path, final byte data[])
+            throws Exception
     {
-        if ( !waitForStart() )
-        {
+        if (!waitForStart()) {
             return null;
         }
 
-        if ( inBackground )
-        {
-            BackgroundRetryHandler.Call     backgroundCall = new BackgroundRetryHandler.Call()
+        if (inBackground) {
+            BackgroundRetryHandler.Call backgroundCall = new BackgroundRetryHandler.Call()
             {
                 @Override
                 public void call(final BackgroundRetryHandler retryHandler)
                 {
-                    client.create
-                    (
-                        path,
-                        data,
-                        ZooDefs.Ids.OPEN_ACL_UNSAFE,
-                        createMode,
-                        new AsyncCallback.StringCallback()
-                        {
-                            @Override
-                            public void processResult(int rc, String path, Object ctx, String name)
+                    client.create(
+                            path,
+                            data,
+                            ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                            createMode,
+                            new AsyncCallback.StringCallback()
                             {
-                                if ( !retryHandler.handled(rc) )
+                                @Override
+                                public void processResult(int rc, String path, Object ctx, String name)
                                 {
-                                    eventQueue.postEvent(new ZookeeperEvent(ZookeeperEvent.Type.CREATE, rc, path, ctx, null, null, name, null, key));
+                                    if (!retryHandler.handled(rc)) {
+                                        eventQueue.postEvent(new ZookeeperEvent(ZookeeperEvent.Type.CREATE, rc, path, ctx, null, null, name, null, key));
+                                    }
                                 }
-                            }
-                        },
-                        context
+                            },
+                            context
                     );
                 }
             };
@@ -413,7 +399,8 @@ public class ZookeeperClient implements ZookeeperClientHelper
         return withRetry(new Callable<String>()
         {
             @Override
-            public String call() throws Exception
+            public String call()
+                    throws Exception
             {
                 return client.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, createMode);
             }
@@ -421,36 +408,33 @@ public class ZookeeperClient implements ZookeeperClientHelper
     }
 
     @Override
-    public Stat exists(final String path) throws Exception
+    public Stat exists(final String path)
+            throws Exception
     {
-        if ( !waitForStart() )
-        {
+        if (!waitForStart()) {
             return null;
         }
 
-        if ( inBackground )
-        {
-            BackgroundRetryHandler.Call     backgroundCall = new BackgroundRetryHandler.Call()
+        if (inBackground) {
+            BackgroundRetryHandler.Call backgroundCall = new BackgroundRetryHandler.Call()
             {
                 @Override
                 public void call(final BackgroundRetryHandler retryHandler)
                 {
-                    client.exists
-                    (
-                        path,
-                        watched,
-                        new AsyncCallback.StatCallback()
-                        {
-                            @Override
-                            public void processResult(int rc, String path, Object ctx, Stat stat)
+                    client.exists(
+                            path,
+                            watched,
+                            new AsyncCallback.StatCallback()
                             {
-                                if ( !retryHandler.handled(rc) )
+                                @Override
+                                public void processResult(int rc, String path, Object ctx, Stat stat)
                                 {
-                                    eventQueue.postEvent(new ZookeeperEvent(ZookeeperEvent.Type.EXISTS, rc, path, ctx, null, stat, null, null, key));
+                                    if (!retryHandler.handled(rc)) {
+                                        eventQueue.postEvent(new ZookeeperEvent(ZookeeperEvent.Type.EXISTS, rc, path, ctx, null, stat, null, null, key));
+                                    }
                                 }
-                            }
-                        },
-                        context
+                            },
+                            context
                     );
                 }
             };
@@ -461,7 +445,8 @@ public class ZookeeperClient implements ZookeeperClientHelper
         return withRetry(new Callable<Stat>()
         {
             @Override
-            public Stat call() throws Exception
+            public Stat call()
+                    throws Exception
             {
                 return client.exists(path, watched);
             }
@@ -469,38 +454,35 @@ public class ZookeeperClient implements ZookeeperClientHelper
     }
 
     @Override
-    public void sync(final String path) throws Exception
+    public void sync(final String path)
+            throws Exception
     {
-        if ( !waitForStart() )
-        {
+        if (!waitForStart()) {
             return;
         }
 
-        if ( !inBackground )
-        {
+        if (!inBackground) {
             throw new Exception("sync() must be called inBackground()");
         }
 
-        BackgroundRetryHandler.Call     backgroundCall = new BackgroundRetryHandler.Call()
+        BackgroundRetryHandler.Call backgroundCall = new BackgroundRetryHandler.Call()
         {
             @Override
             public void call(final BackgroundRetryHandler retryHandler)
             {
-                client.sync
-                (
-                    path,
-                    new AsyncCallback.VoidCallback()
-                    {
-                        @Override
-                        public void processResult(int rc, String path, Object ctx)
+                client.sync(
+                        path,
+                        new AsyncCallback.VoidCallback()
                         {
-                            if ( !retryHandler.handled(rc) )
+                            @Override
+                            public void processResult(int rc, String path, Object ctx)
                             {
-                                eventQueue.postEvent(new ZookeeperEvent(ZookeeperEvent.Type.SYNC, rc, path, ctx, null, null, null, null, key));
+                                if (!retryHandler.handled(rc)) {
+                                    eventQueue.postEvent(new ZookeeperEvent(ZookeeperEvent.Type.SYNC, rc, path, ctx, null, null, null, null, key));
+                                }
                             }
-                        }
-                    },
-                    context
+                        },
+                        context
                 );
             }
         };
@@ -508,37 +490,34 @@ public class ZookeeperClient implements ZookeeperClientHelper
     }
 
     @Override
-    public Stat setData(final String path, final byte data[]) throws Exception
+    public Stat setData(final String path, final byte data[])
+            throws Exception
     {
-        if ( !waitForStart() )
-        {
+        if (!waitForStart()) {
             return null;
         }
 
-        if ( inBackground )
-        {
-            BackgroundRetryHandler.Call     backgroundCall = new BackgroundRetryHandler.Call()
+        if (inBackground) {
+            BackgroundRetryHandler.Call backgroundCall = new BackgroundRetryHandler.Call()
             {
                 @Override
                 public void call(final BackgroundRetryHandler retryHandler)
                 {
-                    client.setData
-                    (
-                        path,
-                        data,
-                        dataVersion,
-                        new AsyncCallback.StatCallback()
-                        {
-                            @Override
-                            public void processResult(int rc, String path, Object ctx, Stat stat)
+                    client.setData(
+                            path,
+                            data,
+                            dataVersion,
+                            new AsyncCallback.StatCallback()
                             {
-                                if ( !retryHandler.handled(rc) )
+                                @Override
+                                public void processResult(int rc, String path, Object ctx, Stat stat)
                                 {
-                                    eventQueue.postEvent(new ZookeeperEvent(ZookeeperEvent.Type.SET_DATA, rc, path, ctx, null, stat, null, null, key));
+                                    if (!retryHandler.handled(rc)) {
+                                        eventQueue.postEvent(new ZookeeperEvent(ZookeeperEvent.Type.SET_DATA, rc, path, ctx, null, stat, null, null, key));
+                                    }
                                 }
-                            }
-                        },
-                        context
+                            },
+                            context
                     );
                 }
             };
@@ -549,7 +528,8 @@ public class ZookeeperClient implements ZookeeperClientHelper
         return withRetry(new Callable<Stat>()
         {
             @Override
-            public Stat call() throws Exception
+            public Stat call()
+                    throws Exception
             {
                 return client.setData(path, data, dataVersion);
             }
@@ -557,47 +537,44 @@ public class ZookeeperClient implements ZookeeperClientHelper
     }
 
     @Override
-    public void delete(final String path) throws Exception
+    public void delete(final String path)
+            throws Exception
     {
-        if ( !waitForStart() )
-        {
+        if (!waitForStart()) {
             return;
         }
 
-        if ( inBackground )
-        {
-            BackgroundRetryHandler.Call     backgroundCall = new BackgroundRetryHandler.Call()
+        if (inBackground) {
+            BackgroundRetryHandler.Call backgroundCall = new BackgroundRetryHandler.Call()
             {
                 @Override
                 public void call(final BackgroundRetryHandler retryHandler)
                 {
-                    client.delete
-                    (
-                        path,
-                        dataVersion,
-                        new AsyncCallback.VoidCallback()
-                        {
-                            @Override
-                            public void processResult(int rc, String path, Object ctx)
+                    client.delete(
+                            path,
+                            dataVersion,
+                            new AsyncCallback.VoidCallback()
                             {
-                                if ( !retryHandler.handled(rc) )
+                                @Override
+                                public void processResult(int rc, String path, Object ctx)
                                 {
-                                    eventQueue.postEvent(new ZookeeperEvent(ZookeeperEvent.Type.DELETE, rc, path, ctx, null, null, null, null, key));
+                                    if (!retryHandler.handled(rc)) {
+                                        eventQueue.postEvent(new ZookeeperEvent(ZookeeperEvent.Type.DELETE, rc, path, ctx, null, null, null, null, key));
+                                    }
                                 }
-                            }
-                        },
-                        context
+                            },
+                            context
                     );
                 }
             };
             BackgroundRetryHandler.makeAndStart(this, creator.getRetryPolicy(), backgroundCall);
         }
-        else
-        {
+        else {
             withRetry(new Callable<Object>()
             {
                 @Override
-                public Object call() throws Exception
+                public Object call()
+                        throws Exception
                 {
                     client.delete(path, dataVersion);
                     return null;
@@ -613,10 +590,10 @@ public class ZookeeperClient implements ZookeeperClientHelper
      * @return sorted list of children
      * @throws Exception errors
      */
-    public List<String> getSortedChildren(String path) throws Exception
+    public List<String> getSortedChildren(String path)
+            throws Exception
     {
-        if ( !waitForStart() )
-        {
+        if (!waitForStart()) {
             return new ArrayList<String>();
         }
 
@@ -627,13 +604,13 @@ public class ZookeeperClient implements ZookeeperClientHelper
      * Make sure all the nodes in the path are created. NOTE: Unlike File.mkdirs(), Zookeeper doesn't distinguish
      * between directories and files. So, every node in the path is created. The data for each node is an empty blob
      *
-     * @param path      path to ensure
+     * @param path path to ensure
      * @throws Exception errors
      */
-    public void mkdirs(String path) throws Exception
+    public void mkdirs(String path)
+            throws Exception
     {
-        if ( !waitForStart() )
-        {
+        if (!waitForStart()) {
             return;
         }
 
@@ -647,11 +624,11 @@ public class ZookeeperClient implements ZookeeperClientHelper
      * @param child the child
      * @return full path
      */
-    public String    makePath(String parent, String child)
+    public String makePath(String parent, String child)
     {
         return ZookeeperUtils.makePath(parent, child);
     }
-    
+
     /**
      * Given a parent path and a child node, create a combined full path
      *
@@ -659,12 +636,13 @@ public class ZookeeperClient implements ZookeeperClientHelper
      * @param child the child
      * @return full path
      */
-    public static String    staticMakePath(String parent, String child)
+    public static String staticMakePath(String parent, String child)
     {
         return ZookeeperUtils.makePath(parent, child);
     }
 
-    CrossProcessLock newLock(final String path) throws Exception
+    CrossProcessLock newLock(final String path)
+            throws Exception
     {
         return new CrossProcessLock()
         {
@@ -675,7 +653,8 @@ public class ZookeeperClient implements ZookeeperClientHelper
             }
 
             @Override
-            public boolean isLocked() throws Exception
+            public boolean isLocked()
+                    throws Exception
             {
                 return getLock().isLocked();
             }
@@ -693,13 +672,15 @@ public class ZookeeperClient implements ZookeeperClientHelper
             }
 
             @Override
-            public void lockInterruptibly() throws InterruptedException
+            public void lockInterruptibly()
+                    throws InterruptedException
             {
                 getLock().lockInterruptibly();
             }
 
             @Override
-            public boolean tryLock(long time, TimeUnit unit) throws InterruptedException
+            public boolean tryLock(long time, TimeUnit unit)
+                    throws InterruptedException
             {
                 return getLock().tryLock(time, unit);
             }
@@ -712,17 +693,14 @@ public class ZookeeperClient implements ZookeeperClientHelper
 
             private synchronized CrossProcessLock getLock()
             {
-                try
-                {
+                try {
                     waitForStart();
-                    if ( lock == null )
-                    {
+                    if (lock == null) {
                         lock = new CrossProcessLockImp(client, path);
                     }
                     return lock;
                 }
-                catch ( Exception e )
-                {
+                catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -734,69 +712,59 @@ public class ZookeeperClient implements ZookeeperClientHelper
     void errorConnectionLost()
     {
         ZookeeperClientErrorHandler localErrorHandler = errorHandler.get();
-        if ( localErrorHandler != null )
-        {
+        if (localErrorHandler != null) {
             localErrorHandler.connectionLost(this);
         }
     }
 
     private ZookeeperEvent.Type getTypeFromWatched(WatchedEvent event)
     {
-        switch ( event.getType() )
-        {
-            case None:
-            {
+        switch (event.getType()) {
+            case None: {
                 return ZookeeperEvent.Type.WATCHED_NONE;
             }
 
-            case NodeCreated:
-            {
+            case NodeCreated: {
                 return ZookeeperEvent.Type.WATCHED_NODE_CREATED;
             }
 
-            case NodeDeleted:
-            {
+            case NodeDeleted: {
                 return ZookeeperEvent.Type.WATCHED_NODE_DELETED;
             }
 
-            case NodeDataChanged:
-            {
+            case NodeDataChanged: {
                 return ZookeeperEvent.Type.WATCHED_NODE_DATA_CHANGED;
             }
 
-            case NodeChildrenChanged:
-            {
+            case NodeChildrenChanged: {
                 return ZookeeperEvent.Type.WATCHED_NODE_CHILDREN_CHANGED;
             }
         }
         return ZookeeperEvent.Type.WATCHED_NONE;
     }
 
-    private boolean waitForStart() throws Exception
+    private boolean waitForStart()
+            throws Exception
     {
-        if ( !started.get() ) {
+        if (!started.get()) {
             throw new IllegalStateException("start() must be called before other APIs are available");
         }
 
-        boolean     result;
-        switch ( stateRef.get() )
-        {
+        boolean result;
+        switch (stateRef.get()) {
             default:
-            case WAITING_FOR_STARTUP:
-            {
+            case WAITING_FOR_STARTUP: {
                 result = internalWaitForStart();
                 break;
             }
 
             case STARTUP_FAILED:
-            case ZOMBIE_MODE:
-            {
+            case ZOMBIE_MODE: {
                 result = false;
                 break;
             }
 
-            case STARTUP_SUCCEEDED:
-            {
+            case STARTUP_SUCCEEDED: {
                 result = true;
                 break;
             }
@@ -808,37 +776,33 @@ public class ZookeeperClient implements ZookeeperClientHelper
     private boolean internalWaitForStart()
             throws Exception
     {
-        try
-        {
+        try {
             Watcher watcher = new Watcher()
             {
                 @Override
                 public void process(WatchedEvent event)
                 {
-                    if ( (event.getState() == Event.KeeperState.Disconnected) || (event.getState() == Event.KeeperState.Expired) )
-                    {
+                    if ((event.getState() == Event.KeeperState.Disconnected) || (event.getState() == Event.KeeperState.Expired)) {
                         errorConnectionLost();
                     }
-                    else
-                    {
+                    else {
                         eventQueue.postEvent(new ZookeeperEvent(getTypeFromWatched(event), 0, event.getPath(), null, null, null, null, null, null));
                     }
                 }
             };
 
-            int         invalidSessionCount = 0;
-            boolean     done;
+            int invalidSessionCount = 0;
+            boolean done;
             do {
                 done = true;
-                switch ( creator.waitForStart(client, watcher) )
-                {
+                switch (creator.waitForStart(client, watcher)) {
                     case SUCCESS: {
                         stateRef.compareAndSet(State.WAITING_FOR_STARTUP, State.STARTUP_SUCCEEDED);
                         break;
                     }
 
                     case INVALID_SESSION: {
-                        if ( invalidSessionCount > 0 ) {
+                        if (invalidSessionCount > 0) {
                             stateRef.set(State.STARTUP_FAILED);
                             errorConnectionLost();
                         }
@@ -856,10 +820,9 @@ public class ZookeeperClient implements ZookeeperClientHelper
                         break;
                     }
                 }
-            } while ( !done );
+            } while (!done);
         }
-        catch ( InterruptedException e )
-        {
+        catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             stateRef.set(State.STARTUP_FAILED);
         }
@@ -867,11 +830,11 @@ public class ZookeeperClient implements ZookeeperClientHelper
         return stateRef.get() == State.STARTUP_SUCCEEDED;
     }
 
-    private<T> T withRetry(Callable<T> proc) throws Exception
+    private <T> T withRetry(Callable<T> proc)
+            throws Exception
     {
         //noinspection unchecked
-        Callable<T> proxy = (Callable<T>)RetryProxy.create(Callable.class, proc, creator.getRetryPolicy());
+        Callable<T> proxy = (Callable<T>) RetryProxy.create(Callable.class, proc, creator.getRetryPolicy());
         return proxy.call();
     }
-
 }

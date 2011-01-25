@@ -14,7 +14,8 @@ public interface ZookeeperClientHelper
      * @return list of children
      * @throws Exception ZooKeeper errors or timeouts, etc.
      */
-    public List<String> getChildren(String path) throws Exception;
+    public List<String> getChildren(String path)
+            throws Exception;
 
     /**
      * Analog for {@link org.apache.zookeeper.ZooKeeper#create(String, byte[], java.util.List, org.apache.zookeeper.CreateMode)}
@@ -24,7 +25,8 @@ public interface ZookeeperClientHelper
      * @return for sequential files, returns the actual name created
      * @throws Exception ZooKeeper errors or timeouts, etc.
      */
-    public String create(String path, byte data[]) throws Exception;
+    public String create(String path, byte data[])
+            throws Exception;
 
     /**
      * Analog for {@link org.apache.zookeeper.ZooKeeper#exists(String, boolean)}
@@ -33,7 +35,8 @@ public interface ZookeeperClientHelper
      * @return stat or null
      * @throws Exception ZooKeeper errors or timeouts, etc.
      */
-    public Stat exists(String path) throws Exception;
+    public Stat exists(String path)
+            throws Exception;
 
     /**
      * Analog for {@link org.apache.zookeeper.ZooKeeper#sync(String, org.apache.zookeeper.AsyncCallback.VoidCallback, Object)}
@@ -41,7 +44,8 @@ public interface ZookeeperClientHelper
      * @param path the path
      * @throws Exception ZooKeeper errors or timeouts, etc.
      */
-    public void sync(String path) throws Exception;
+    public void sync(String path)
+            throws Exception;
 
     /**
      * Analog for {@link org.apache.zookeeper.ZooKeeper#setData(String, byte[], int)}
@@ -51,7 +55,8 @@ public interface ZookeeperClientHelper
      * @return the stat for the node
      * @throws Exception ZooKeeper errors or timeouts, etc.
      */
-    public Stat setData(String path, byte data[]) throws Exception;
+    public Stat setData(String path, byte data[])
+            throws Exception;
 
     /**
      * Analog for {@link org.apache.zookeeper.ZooKeeper#delete(String, int)}
@@ -59,32 +64,35 @@ public interface ZookeeperClientHelper
      * @param path the path
      * @throws Exception ZooKeeper errors or timeouts, etc.
      */
-    public void delete(String path) throws Exception;
+    public void delete(String path)
+            throws Exception;
 
     /**
      * Analog for {@link org.apache.zookeeper.ZooKeeper#getData(String, boolean, org.apache.zookeeper.data.Stat)}
      *
      * @param path the path
-     * @throws Exception ZooKeeper errors or timeouts, etc.
      * @return the data
+     * @throws Exception ZooKeeper errors or timeouts, etc.
      */
-    public byte[] getData(String path) throws Exception;
+    public byte[] getData(String path)
+            throws Exception;
 
     public interface DataAndStat
     {
-        public Stat     getStat();
+        public Stat getStat();
 
-        public byte[]   getData();
+        public byte[] getData();
     }
 
     /**
      * Analog for {@link org.apache.zookeeper.ZooKeeper#getData(String, boolean, org.apache.zookeeper.data.Stat)}
      *
      * @param path the path
-     * @throws Exception ZooKeeper errors or timeouts, etc.
      * @return the data
+     * @throws Exception ZooKeeper errors or timeouts, etc.
      */
-    public DataAndStat getDataAndStat(String path) throws Exception;
+    public DataAndStat getDataAndStat(String path)
+            throws Exception;
 
     /**
      * Builder-style method that returns a view of the client with the given create mode. The
@@ -99,10 +107,10 @@ public interface ZookeeperClientHelper
      * Builder-style method that returns a view of the client that causes methods that take a callback
      * to use an internal callback that posts messages to the client's event queue
      *
-     * @return new instance with background mode set
      * @param key key to identify the event when it comes through the queue
+     * @return new instance with background mode set
      */
-    ZookeeperClientHelper    inBackground(Object key);
+    ZookeeperClientHelper inBackground(Object key);
 
     /**
      * Builder-style method that returns a view of the client that passes <code>true</code> for the various
@@ -110,7 +118,7 @@ public interface ZookeeperClientHelper
      *
      * @return new instance with background mode set
      */
-    ZookeeperClientHelper    watched();
+    ZookeeperClientHelper watched();
 
     /**
      * Builder-style method that returns a view of the client that passes a context object
@@ -120,7 +128,7 @@ public interface ZookeeperClientHelper
      * @param contextArg the context to set
      * @return new instance with background mode set
      */
-    ZookeeperClientHelper   withContext(Object contextArg);
+    ZookeeperClientHelper withContext(Object contextArg);
 
     /**
      * Builder-style method that returns a view of the client with the given data version set. The default data version is
@@ -129,5 +137,5 @@ public interface ZookeeperClientHelper
      * @param version new data version
      * @return new instance with the data version set
      */
-    ZookeeperClientHelper    dataVersion(int version);
+    ZookeeperClientHelper dataVersion(int version);
 }

@@ -19,7 +19,8 @@ public class TestChildrenSync
     private ZookeeperTestServerInstance server;
 
     @BeforeMethod
-    public void setup() throws Exception
+    public void setup()
+            throws Exception
     {
         server = new ZookeeperTestServerInstance();
         Map<String, String> props = new HashMap<String, String>();
@@ -30,7 +31,8 @@ public class TestChildrenSync
     }
 
     @AfterMethod
-    public void teardown() throws InterruptedException
+    public void teardown()
+            throws InterruptedException
     {
         client.closeForShutdown();
         server.close();
@@ -38,7 +40,7 @@ public class TestChildrenSync
 
     @Test
     public void test()
-        throws Exception
+            throws Exception
     {
         client.mkdirs("/test");
 
@@ -67,19 +69,19 @@ public class TestChildrenSync
 
         {
             client.create("/test/child", "hey".getBytes());
-            String  value = event.poll(1, TimeUnit.MINUTES);
+            String value = event.poll(1, TimeUnit.MINUTES);
             Assert.assertEquals("add/child/hey", value);
         }
 
         {
             client.setData("/test/child", "yo".getBytes());
-            String  value = event.poll(1, TimeUnit.MINUTES);
+            String value = event.poll(1, TimeUnit.MINUTES);
             Assert.assertEquals("update/child/yo", value);
         }
 
         {
             client.delete("/test/child");
-            String  value = event.poll(1, TimeUnit.MINUTES);
+            String value = event.poll(1, TimeUnit.MINUTES);
             Assert.assertEquals("remove/child", value);
         }
 

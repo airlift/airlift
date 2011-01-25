@@ -68,23 +68,23 @@ public class DefaultZookeeperClientCreator
     public ZooKeeper create()
             throws Exception
     {
-        ZooKeeper       keeper;
+        ZooKeeper keeper;
 
         //noinspection LoopStatementThatDoesntLoop
         do {
-            ZookeeperSessionID      session = readSessionId();
-            if ( session != null ) {
+            ZookeeperSessionID session = readSessionId();
+            if (session != null) {
                 try {
                     keeper = new ZooKeeper(config.getConnectionString(), config.getSessionTimeoutInMs(), newWatcher(), session.getSessionId(), session.getPassword());
                     break;
                 }
-                catch ( IOException e ) {
+                catch (IOException e) {
                     log.warn(e, "Could not read/write session file: %s", config.getSessionStorePath());
                 }
             }
 
             keeper = new ZooKeeper(config.getConnectionString(), config.getSessionTimeoutInMs(), newWatcher());
-        } while ( false );
+        } while (false);
 
         return keeper;
     }
@@ -96,15 +96,15 @@ public class DefaultZookeeperClientCreator
 
     private ZookeeperSessionID readSessionId()
     {
-        if ( getSessionStorePath() != null ) {
+        if (getSessionStorePath() != null) {
             File sessionIdFile = new File(getSessionStorePath());
-            if ( sessionIdFile.exists() ) {
+            if (sessionIdFile.exists()) {
                 try {
                     String sessionSpec = FileUtils.readFileToString(sessionIdFile);
-                    ObjectMapper        mapper = new ObjectMapper();
+                    ObjectMapper mapper = new ObjectMapper();
                     return mapper.readValue(sessionSpec, ZookeeperSessionID.class);
                 }
-                catch ( IOException e ) {
+                catch (IOException e) {
                     log.warn(e, "Could not read/write session file: %s", getSessionStorePath());
                 }
             }
@@ -115,16 +115,16 @@ public class DefaultZookeeperClientCreator
 
     private void writeSessionId(ZooKeeper keeper)
     {
-        if ( getSessionStorePath() != null ) {
+        if (getSessionStorePath() != null) {
             ZookeeperSessionID session = new ZookeeperSessionID();
             session.setPassword(keeper.getSessionPasswd());
             session.setSessionId(keeper.getSessionId());
             ObjectMapper mapper = new ObjectMapper();
             try {
-                String                  sessionSpec = mapper.writeValueAsString(session);
+                String sessionSpec = mapper.writeValueAsString(session);
                 FileUtils.writeStringToFile(new File(getSessionStorePath()), sessionSpec);
             }
-            catch ( IOException e ) {
+            catch (IOException e) {
                 log.warn(e, "Couldn't write session info to: %s", getSessionStorePath());
             }
         }
@@ -143,30 +143,23 @@ public class DefaultZookeeperClientCreator
             public void process(WatchedEvent event)
             {
                 CountDownLatch latch = startupLatchRef.get();
-                if ( latch != null )
-                {
-                    if ( event.getType() == Event.EventType.None )
-                    {
-                        if ( event.getState() == Event.KeeperState.SyncConnected )
-                        {
+                if (latch != null) {
+                    if (event.getType() == Event.EventType.None) {
+                        if (event.getState() == Event.KeeperState.SyncConnected) {
                             connectionStatus.set(ConnectionStatus.SUCCESS);
                         }
-                        else
-                        {
+                        else {
                             connectionStatus.set((event.getState() == Event.KeeperState.Expired) ? ConnectionStatus.INVALID_SESSION : ConnectionStatus.FAILED);
                         }
                         latch.countDown();
                     }
                 }
 
-                synchronized (events)
-                {
-                    if ( waitingWatcher != null )
-                    {
+                synchronized (events) {
+                    if (waitingWatcher != null) {
                         waitingWatcher.process(event);
                     }
-                    else
-                    {
+                    else {
                         events.add(event);
                     }
                 }
@@ -179,27 +172,21 @@ public class DefaultZookeeperClientCreator
             throws InterruptedException
     {
         CountDownLatch latch = startupLatchRef.get();
-        if ( latch != null )
-        {
-            try
-            {
+        if (latch != null) {
+            try {
                 latch.await(config.getConnectionTimeoutInMs(), TimeUnit.MILLISECONDS);
             }
-            finally
-            {
+            finally {
                 startupLatchRef.set(null);
             }
         }
 
         ConnectionStatus status = connectionStatus.get();
-        if ( status == ConnectionStatus.SUCCESS )
-        {
-            synchronized (events)
-            {
+        if (status == ConnectionStatus.SUCCESS) {
+            synchronized (events) {
                 waitingWatcher = watcher;
 
-                for ( WatchedEvent event : events )
-                {
+                for (WatchedEvent event : events) {
                     watcher.process(event);
                 }
                 events.clear();

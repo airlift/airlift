@@ -5,12 +5,12 @@ import com.proofpoint.configuration.ConfigDescription;
 
 public class ZookeeperClientConfig
 {
-    private String  connectionString;
-    private int     sessionTimeoutInMs = 60000;
-    private int     connectionTimeoutInMs = 10000;
-    private int     maxConnectionLossRetries = 2;
-    private int     connectionLossSleepInMs = 1000;
-    private String  sessionStorePath;
+    private String connectionString;
+    private int sessionTimeoutInMs = 60000;
+    private int connectionTimeoutInMs = 10000;
+    private int maxConnectionLossRetries = 2;
+    private int connectionLossSleepInMs = 1000;
+    private String sessionStorePath;
 
     public String getSessionStorePath()
     {
@@ -29,31 +29,16 @@ public class ZookeeperClientConfig
         return connectionString;
     }
 
-    public int getSessionTimeoutInMs()
-    {
-        return sessionTimeoutInMs;
-    }
-
-    public int getConnectionTimeoutInMs()
-    {
-        return connectionTimeoutInMs;
-    }
-
-    public int getMaxConnectionLossRetries()
-    {
-        return maxConnectionLossRetries;
-    }
-
-    public int getConnectionLossSleepInMs()
-    {
-        return connectionLossSleepInMs;
-    }
-
     @Config("zookeeper.connection-string")
     @ConfigDescription("Zookeeper connection string")
     public void setConnectionString(String connectionString)
     {
         this.connectionString = connectionString;
+    }
+
+    public int getSessionTimeoutInMs()
+    {
+        return sessionTimeoutInMs;
     }
 
     @Config("zookeeper.session-timeout-in-ms")
@@ -63,6 +48,11 @@ public class ZookeeperClientConfig
         this.sessionTimeoutInMs = sessionTimeoutInMs;
     }
 
+    public int getConnectionTimeoutInMs()
+    {
+        return connectionTimeoutInMs;
+    }
+
     @Config("zookeeper.connection-timeout-in-ms")
     @ConfigDescription("Zookeeper connection timeout in ms")
     public void setConnectionTimeoutInMs(int connectionTimeoutInMs)
@@ -70,11 +60,21 @@ public class ZookeeperClientConfig
         this.connectionTimeoutInMs = connectionTimeoutInMs;
     }
 
+    public int getMaxConnectionLossRetries()
+    {
+        return maxConnectionLossRetries;
+    }
+
     @Config("zookeeper.connection-max-retries")
     @ConfigDescription("Max number of times to retry connecting to the ZK cluster before failing")
     public void setMaxConnectionLossRetries(int maxConnectionLossRetries)
     {
         this.maxConnectionLossRetries = maxConnectionLossRetries;
+    }
+
+    public int getConnectionLossSleepInMs()
+    {
+        return connectionLossSleepInMs;
     }
 
     @Config("zookeeper.connection-loss-sleep")

@@ -15,7 +15,8 @@ public interface ZookeeperClientCreator
      * @return instance
      * @throws Exception errors
      */
-    public ZooKeeper    create() throws Exception;
+    public ZooKeeper create()
+            throws Exception;
 
     public enum ConnectionStatus
     {
@@ -43,22 +44,24 @@ public interface ZookeeperClientCreator
      * @return whether connection was successful or not
      * @throws InterruptedException connection was interrupted
      */
-    public ConnectionStatus       waitForStart(ZooKeeper client, Watcher watcher) throws InterruptedException;
+    public ConnectionStatus waitForStart(ZooKeeper client, Watcher watcher)
+            throws InterruptedException;
 
     /**
      * If {@link #waitForStart(org.apache.zookeeper.ZooKeeper, org.apache.zookeeper.Watcher)} fails with the status
      * {@link ConnectionStatus#INVALID_SESSION}, you can call this method. Once called, you should re-call {@link #create()}.
      * It will initiate a connection with a new session.
-     * 
+     *
      * @return instance
      * @throws Exception errors
      */
-    public ZooKeeper             recreateWithNewSession() throws Exception;
+    public ZooKeeper recreateWithNewSession()
+            throws Exception;
 
     /**
      * Return the retry policy to use for connection losses
      *
      * @return the policy
      */
-    public RetryPolicy          getRetryPolicy();
+    public RetryPolicy getRetryPolicy();
 }

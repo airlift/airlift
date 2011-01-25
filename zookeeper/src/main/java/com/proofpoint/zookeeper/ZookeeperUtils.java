@@ -24,10 +24,11 @@ public class ZookeeperUtils
      * @throws InterruptedException thread interruption
      * @throws org.apache.zookeeper.KeeperException zookeeper errors
      */
-    static List<String> getSortedChildren(ZooKeeper zookeeper, String path) throws InterruptedException, KeeperException
+    static List<String> getSortedChildren(ZooKeeper zookeeper, String path)
+            throws InterruptedException, KeeperException
     {
-        List<String>        children = zookeeper.getChildren(path, false);
-        List<String>        sortedList = new ArrayList<String>(children);
+        List<String> children = zookeeper.getChildren(path, false);
+        List<String> sortedList = new ArrayList<String>(children);
         Collections.sort(sortedList);
         return sortedList;
     }
@@ -37,11 +38,9 @@ public class ZookeeperUtils
      * between directories and files. So, every node in the path is created. The data for each node is an empty blob
      *
      * @param zookeeper the client
-     * @param path      path to ensure
-     *
+     * @param path path to ensure
      * @throws InterruptedException thread interruption
-     * @throws org.apache.zookeeper.KeeperException
-     *                              Zookeeper errors
+     * @throws org.apache.zookeeper.KeeperException Zookeeper errors
      */
     public static void mkdirs(ZooKeeper zookeeper, String path)
             throws InterruptedException, KeeperException
@@ -55,7 +54,7 @@ public class ZookeeperUtils
             if (pos == -1) {
                 pos = path.length();
             }
-            
+
             String subPath = path.substring(0, pos);
             if (zookeeper.exists(subPath, false) == null) {
                 try {
@@ -77,31 +76,26 @@ public class ZookeeperUtils
      * @param child the child
      * @return full path
      */
-    static String    makePath(String parent, String child)
+    static String makePath(String parent, String child)
     {
-        if ( child.length() == 0 )
-        {
+        if (child.length() == 0) {
             throw new UnsupportedOperationException();
         }
 
-        StringBuilder       path = new StringBuilder();
+        StringBuilder path = new StringBuilder();
 
-        if ( !parent.startsWith("/") )
-        {
+        if (!parent.startsWith("/")) {
             path.append("/");
         }
         path.append(parent);
-        if ( !parent.endsWith("/") )
-        {
+        if (!parent.endsWith("/")) {
             path.append("/");
         }
 
-        if ( child.startsWith("/") )
-        {
+        if (child.startsWith("/")) {
             path.append(child.substring(1));
         }
-        else
-        {
+        else {
             path.append(child);
         }
 

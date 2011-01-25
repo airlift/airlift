@@ -13,15 +13,15 @@ import java.util.List;
  */
 public class ZookeeperEvent implements EventQueue.Event<ZookeeperEvent>
 {
-    private final Type                  type;
-    private final Object                context;
-    private final KeeperException.Code  resultCode;
-    private final byte[]                data;
-    private final Stat                  stat;
-    private final String                path;
-    private final String                name;
-    private final List<String>          children;
-    private final Object                key;
+    private final Type type;
+    private final Object context;
+    private final KeeperException.Code resultCode;
+    private final byte[] data;
+    private final Stat stat;
+    private final String path;
+    private final String name;
+    private final List<String> children;
+    private final Object key;
 
     public enum Type
     {
@@ -173,14 +173,13 @@ public class ZookeeperEvent implements EventQueue.Event<ZookeeperEvent>
     @Override
     public String toString()
     {
-        return
-            "type: " + type + "; " +
-            "context: " + context + "; " +
-            "resultCode: " + resultCode + "; " +
-            "stat: " + stat + "; " +
-            "path: " + path + "; " +
-            "name: " + name + "; "
-            ;
+        return "type: " + type + "; " +
+                "context: " + context + "; " +
+                "resultCode: " + resultCode + "; " +
+                "stat: " + stat + "; " +
+                "path: " + path + "; " +
+                "name: " + name + "; "
+                ;
     }
 
     @Override

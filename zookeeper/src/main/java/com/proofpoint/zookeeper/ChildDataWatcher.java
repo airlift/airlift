@@ -1,9 +1,9 @@
 package com.proofpoint.zookeeper;
 
-import com.proofpoint.log.Logger;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.proofpoint.concurrent.events.EventQueue;
+import com.proofpoint.log.Logger;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
@@ -27,7 +27,7 @@ public class ChildDataWatcher implements EventQueue.EventListener<ZookeeperEvent
     private final ChildDataListener listener;
     private final Executor executor;
 
-    private final Object    backgroundKey = new Object();
+    private final Object backgroundKey = new Object();
 
     private final Stat SENTINEL = new Stat();
 
@@ -56,21 +56,18 @@ public class ChildDataWatcher implements EventQueue.EventListener<ZookeeperEvent
     }
 
     @Override
-    public void eventProcessed(ZookeeperEvent event) throws Exception
+    public void eventProcessed(ZookeeperEvent event)
+            throws Exception
     {
-        if ( isOurEvent(event) )
-        {
-            switch ( event.getType() )
-            {
-                case WATCHED_NODE_CHILDREN_CHANGED:
-                {
+        if (isOurEvent(event)) {
+            switch (event.getType()) {
+                case WATCHED_NODE_CHILDREN_CHANGED: {
                     log.debug("Getting children: %s", path);
                     client.watched().inBackground(backgroundKey).getChildren(path);
                     break;
                 }
 
-                case WATCHED_NODE_DATA_CHANGED:
-                {
+                case WATCHED_NODE_DATA_CHANGED: {
                     String child = event.getPath().substring(path.length() + 1);
 
                     log.debug("Getting data: %s", event.getPath());
@@ -78,14 +75,12 @@ public class ChildDataWatcher implements EventQueue.EventListener<ZookeeperEvent
                     break;
                 }
 
-                case GET_CHILDREN:
-                {
+                case GET_CHILDREN: {
                     processGetChildren(event);
                     break;
                 }
 
-                case GET_DATA:
-                {
+                case GET_DATA: {
                     processGetData(event);
                     break;
                 }
@@ -101,12 +96,13 @@ public class ChildDataWatcher implements EventQueue.EventListener<ZookeeperEvent
      */
     public void removeLocal(String child)
     {
-        synchronized(elements) {
+        synchronized (elements) {
             elements.remove(child);
         }
     }
 
-    private void processGetData(ZookeeperEvent event) throws Exception
+    private void processGetData(ZookeeperEvent event)
+            throws Exception
     {
         log.debug("ChildDataCallback: [rc = %d] %s, %s", event.getResultCode().intValue(), path, event.getStat());
         if (isStarted.get() && event.getResultCode() == KeeperException.Code.OK) { // check for case where the child disappeared since we got the childrenChanged notification
@@ -128,7 +124,8 @@ public class ChildDataWatcher implements EventQueue.EventListener<ZookeeperEvent
         }
     }
 
-    private void processGetChildren(ZookeeperEvent event) throws Exception
+    private void processGetChildren(ZookeeperEvent event)
+            throws Exception
     {
         log.debug("ChildrenListCallBack: [rc = %d], %s, %s", event.getResultCode().intValue(), event.getPath(), event.getChildren());
         if (isStarted.get() && event.getResultCode() == KeeperException.Code.OK) {
@@ -139,7 +136,7 @@ public class ChildDataWatcher implements EventQueue.EventListener<ZookeeperEvent
                 for (String child : added) {
                     String fullPath = path + "/" + child;
                     elements.put(child,
-                                 SENTINEL); // mark this child as tentative -- notifications will be sent once we get the data
+                            SENTINEL); // mark this child as tentative -- notifications will be sent once we get the data
 
                     log.debug("Getting data: %s", fullPath);
                     client.watched().inBackground(backgroundKey).withContext(child).getData(fullPath);
@@ -159,10 +156,8 @@ public class ChildDataWatcher implements EventQueue.EventListener<ZookeeperEvent
 
     private boolean isOurEvent(ZookeeperEvent event)
     {
-        if ( event.getPath() != null )
-        {
-            if ( event.getPath().startsWith(path) )
-            {
+        if (event.getPath() != null) {
+            if (event.getPath().startsWith(path)) {
                 return true;
             }
         }
@@ -173,19 +168,16 @@ public class ChildDataWatcher implements EventQueue.EventListener<ZookeeperEvent
     private void notifyAdded(final String child, final byte[] bytes)
     {
         log.debug("Notify added: %s", child);
-        if ( isStarted.get() )
-        {
+        if (isStarted.get()) {
             executor.execute(new Runnable()
             {
                 @Override
                 public void run()
                 {
-                    try
-                    {
+                    try {
                         listener.added(child, bytes);
                     }
-                    catch ( Exception e )
-                    {
+                    catch (Exception e) {
                         log.error(e, "From added() listener");
                     }
                 }
@@ -196,19 +188,16 @@ public class ChildDataWatcher implements EventQueue.EventListener<ZookeeperEvent
     private void notifyUpdated(final String child, final byte[] bytes, final int version)
     {
         log.debug("Notify updated: %s (version %d)", child, version);
-        if ( isStarted.get() )
-        {
+        if (isStarted.get()) {
             executor.execute(new Runnable()
             {
                 @Override
                 public void run()
                 {
-                    try
-                    {
+                    try {
                         listener.updated(child, bytes, version);
                     }
-                    catch ( Exception e )
-                    {
+                    catch (Exception e) {
                         log.error(e, "From updated() listener");
                     }
                 }
@@ -218,20 +207,17 @@ public class ChildDataWatcher implements EventQueue.EventListener<ZookeeperEvent
 
     private void notifyRemoved(final String child)
     {
-        if ( isStarted.get() )
-        {
+        if (isStarted.get()) {
             log.debug("Notify removed: %s", child);
             executor.execute(new Runnable()
             {
                 @Override
                 public void run()
                 {
-                    try
-                    {
+                    try {
                         listener.removed(child);
                     }
-                    catch ( Exception e )
-                    {
+                    catch (Exception e) {
                         log.error(e, "From removed() listener");
                     }
                 }

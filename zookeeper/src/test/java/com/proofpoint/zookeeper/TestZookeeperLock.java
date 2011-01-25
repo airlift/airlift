@@ -38,7 +38,7 @@ public class TestZookeeperLock
 
     @Test
     public void testTimedLock()
-        throws Exception
+            throws Exception
     {
         String lockPath = "/timed/lock";
         ZookeeperClientConfig config = new ZookeeperClientConfig()
@@ -82,18 +82,16 @@ public class TestZookeeperLock
         final CrossProcessLock lock2 = client2.newLock(lockPath);
 
         Assert.assertTrue(lock1.tryLock());
-        Thread  t = new Thread()
+        Thread t = new Thread()
         {
             @Override
             public void run()
             {
-                try
-                {
+                try {
                     Thread.sleep(2000);
                     lock1.unlock();
                 }
-                catch ( InterruptedException e )
-                {
+                catch (InterruptedException e) {
                     interrupt();
                 }
             }
@@ -209,30 +207,30 @@ public class TestZookeeperLock
         final int loops = 100;
 
         Callable<Integer> counter = new Callable<Integer>()
+        {
+            @Override
+            public Integer call()
+                    throws Exception
             {
-                @Override
-                public Integer call()
-                        throws Exception
-                {
-                    CrossProcessLock lock = client.newLock(lockPath);
+                CrossProcessLock lock = client.newLock(lockPath);
 
-                    int result = 0;
+                int result = 0;
 
-                    start.await();
-                    lock.lock();
-                    try {
-                        for (int i = 0; i < loops; ++i) {
-                            result = count.incrementAndGet();
-                            Thread.sleep(1);
-                        }
+                start.await();
+                lock.lock();
+                try {
+                    for (int i = 0; i < loops; ++i) {
+                        result = count.incrementAndGet();
+                        Thread.sleep(1);
                     }
-                    finally {
-                        lock.unlock();
-                    }
-
-                    return result;
                 }
-            };
+                finally {
+                    lock.unlock();
+                }
+
+                return result;
+            }
+        };
 
         try {
             Future<Integer> t1 = executor.submit(counter);

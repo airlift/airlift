@@ -18,14 +18,14 @@ import java.util.concurrent.locks.Condition;
  */
 class CrossProcessLockImp implements CrossProcessLock
 {
-    private final ZooKeeper         zookeeper;
-    private final String            basePath;
-    private final String            path;
-    private final Watcher           watcher;
+    private final ZooKeeper zookeeper;
+    private final String basePath;
+    private final String path;
+    private final Watcher watcher;
 
     private volatile String lockPath;
 
-    private static final String     LOCK_NAME = "lock-";
+    private static final String LOCK_NAME = "lock-";
 
     /**
      * Allocate a lock for the given path. The mutex locks on other ZKLocks with the same
@@ -52,18 +52,16 @@ class CrossProcessLockImp implements CrossProcessLock
     }
 
     @Override
-    public void lockInterruptibly() throws InterruptedException
+    public void lockInterruptibly()
+            throws InterruptedException
     {
-        try
-        {
+        try {
             internalLock(true, -1, null);
         }
-        catch ( InterruptedException e )
-        {
+        catch (InterruptedException e) {
             throw e;
         }
-        catch ( Exception e )
-        {
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -80,25 +78,22 @@ class CrossProcessLockImp implements CrossProcessLock
     @Override
     public void lock()
     {
-        try
-        {
+        try {
             internalLock(true, -1, null);
         }
-        catch ( Exception e )
-        {
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public boolean tryLock(long time, TimeUnit unit) throws InterruptedException
+    public boolean tryLock(long time, TimeUnit unit)
+            throws InterruptedException
     {
-        try
-        {
+        try {
             internalLock(true, time, unit);
         }
-        catch ( Exception e )
-        {
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
         return isLocked();
@@ -107,16 +102,13 @@ class CrossProcessLockImp implements CrossProcessLock
     @Override
     public boolean tryLock()
     {
-        try
-        {
+        try {
             internalLock(false, -1, null);
         }
-        catch ( InterruptedException e )
-        {
+        catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        catch ( Exception e )
-        {
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
         return isLocked();
@@ -131,41 +123,33 @@ class CrossProcessLockImp implements CrossProcessLock
     @Override
     public void unlock()
     {
-        if ( lockPath == null )
-        {
+        if (lockPath == null) {
             throw new Error("You do not own the lock: " + basePath);
         }
 
-        try
-        {
+        try {
             zookeeper.delete(lockPath, -1);
             lockPath = null;
 
             // attempt to delete the parent node so that sequence numbers get reset
-            try
-            {
-                Stat        stat = zookeeper.exists(path, false);
-                if ( (stat != null) && (stat.getNumChildren() == 0) )
-                {
+            try {
+                Stat stat = zookeeper.exists(path, false);
+                if ((stat != null) && (stat.getNumChildren() == 0)) {
                     zookeeper.delete(basePath, -1);
                 }
             }
-            catch ( KeeperException.BadVersionException ignore )
-            {
+            catch (KeeperException.BadVersionException ignore) {
                 // ignore - another thread/process got the lock
             }
-            catch ( KeeperException.NotEmptyException ignore )
-            {
+            catch (KeeperException.NotEmptyException ignore) {
                 // ignore - other threads/processes are waiting
             }
         }
-        catch ( InterruptedException e )
-        {
+        catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);  // TODO - is this correct or should it just return?
         }
-        catch ( KeeperException e )
-        {
+        catch (KeeperException e) {
             throw new RuntimeException(e);
         }
     }
@@ -175,73 +159,61 @@ class CrossProcessLockImp implements CrossProcessLock
         notifyAll();
     }
 
-    private void internalLock(boolean blocking, long time, TimeUnit unit) throws Exception
+    private void internalLock(boolean blocking, long time, TimeUnit unit)
+            throws Exception
     {
-        if ( isLocked() )
-        {
+        if (isLocked()) {
             throw new IllegalStateException("This lock is already owned and is not re-entrant: " + basePath);
         }
 
-        long        startMillis = System.currentTimeMillis();
-        Long        millisToWait = (unit != null) ? unit.toMillis(time) : null;
+        long startMillis = System.currentTimeMillis();
+        Long millisToWait = (unit != null) ? unit.toMillis(time) : null;
 
         ZookeeperUtils.mkdirs(zookeeper, basePath);
-        String      ourPath = zookeeper.create(path, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
-        try
-        {
-            while ( lockPath == null )
-            {
-                List<String>    children = ZookeeperUtils.getSortedChildren(zookeeper, basePath);
-                String          sequenceNodeName = ourPath.substring(basePath.length() + 1); // +1 to include the slash
-                int             ourIndex = children.indexOf(sequenceNodeName);
-                if ( ourIndex < 0 )
-                {
+        String ourPath = zookeeper.create(path, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
+        try {
+            while (lockPath == null) {
+                List<String> children = ZookeeperUtils.getSortedChildren(zookeeper, basePath);
+                String sequenceNodeName = ourPath.substring(basePath.length() + 1); // +1 to include the slash
+                int ourIndex = children.indexOf(sequenceNodeName);
+                if (ourIndex < 0) {
                     throw new Exception("Sequential path not found: " + ourPath);
                 }
 
-                if ( ourIndex == 0 )
-                {
+                if (ourIndex == 0) {
                     // we have the lock
                     lockPath = ourPath;
                 }
-                else if ( blocking )
-                {
-                    String  previousSequenceNodeName = children.get(ourIndex - 1);
-                    String  previousSequencePath = basePath + "/" + previousSequenceNodeName;
-                    synchronized(this)
-                    {
-                        Stat    stat = zookeeper.exists(previousSequencePath, watcher);
-                        if ( stat != null )
-                        {
-                            if ( millisToWait != null )
-                            {
+                else if (blocking) {
+                    String previousSequenceNodeName = children.get(ourIndex - 1);
+                    String previousSequencePath = basePath + "/" + previousSequenceNodeName;
+                    synchronized (this) {
+                        Stat stat = zookeeper.exists(previousSequencePath, watcher);
+                        if (stat != null) {
+                            if (millisToWait != null) {
                                 millisToWait -= (System.currentTimeMillis() - startMillis);
                                 startMillis = System.currentTimeMillis();
-                                if ( millisToWait <= 0 )
-                                {
+                                if (millisToWait <= 0) {
                                     break;
                                 }
 
                                 wait(millisToWait);
                             }
-                            else
-                            {
+                            else {
                                 wait();
                             }
                         }
                         // else it may have been deleted (i.e. lock released). Try to acquire again
                     }
                 }
-                else
-                {
+                else {
                     // didn't get it and we're not blocking... delete our lock file 
                     zookeeper.delete(ourPath, -1);
                     break;
                 }
             }
         }
-        catch ( Exception e )
-        {
+        catch (Exception e) {
             zookeeper.delete(ourPath, -1);
             throw e;
         }
@@ -249,8 +221,7 @@ class CrossProcessLockImp implements CrossProcessLock
 
     private static String makePath(String path)
     {
-        if ( !path.endsWith("/") )
-        {
+        if (!path.endsWith("/")) {
             path += "/";
         }
         return path + LOCK_NAME;

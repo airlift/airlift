@@ -4,8 +4,8 @@ import java.util.Arrays;
 
 public class ZookeeperSessionID
 {
-    private long        sessionId;
-    private byte[]      password;
+    private long sessionId;
+    private byte[] password;
 
     public long getSessionId()
     {
@@ -30,14 +30,22 @@ public class ZookeeperSessionID
     @Override
     public boolean equals(Object o)
     {
-        if ( this == o ) { return true; }
-        if ( o == null || getClass() != o.getClass() ) { return false; }
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         ZookeeperSessionID sessionID = (ZookeeperSessionID) o;
 
-        if ( sessionId != sessionID.sessionId ) { return false; }
+        if (sessionId != sessionID.sessionId) {
+            return false;
+        }
         //noinspection RedundantIfStatement
-        if ( !Arrays.equals(password, sessionID.password) ) { return false; }
+        if (!Arrays.equals(password, sessionID.password)) {
+            return false;
+        }
 
         return true;
     }

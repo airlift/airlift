@@ -1,8 +1,8 @@
 package com.proofpoint.zookeeper;
 
-import com.proofpoint.log.Logger;
 import ch.qos.logback.classic.Level;
 import com.proofpoint.io.TempLocalDirectory;
+import com.proofpoint.log.Logger;
 import org.apache.zookeeper.ClientCnxn;
 import org.apache.zookeeper.server.FinalRequestProcessor;
 import org.apache.zookeeper.server.NIOServerCnxn;
@@ -19,18 +19,18 @@ import java.net.InetSocketAddress;
  */
 public class ZookeeperTestServerInstance
 {
-    private static final Logger     log = Logger.get(ZookeeperTestServerInstance.class);
-    static
-    {
+    private static final Logger log = Logger.get(ZookeeperTestServerInstance.class);
+
+    static {
         ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(FinalRequestProcessor.class)).setLevel(Level.ERROR);
         ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(ClientCnxn.class)).setLevel(Level.ERROR);
         ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(ZookeeperEvent.class)).setLevel(Level.ERROR);
     }
 
-    private final ZooKeeperServer       server;
-    private final int                   port;
+    private final ZooKeeperServer server;
+    private final int port;
     private final NIOServerCnxn.Factory factory;
-    private final TempLocalDirectory    tempLocalDirectory;
+    private final TempLocalDirectory tempLocalDirectory;
 
     private static final int TIME_IN_MS = 2000;
 
@@ -39,7 +39,8 @@ public class ZookeeperTestServerInstance
      *
      * @throws Exception errors
      */
-    public ZookeeperTestServerInstance() throws Exception
+    public ZookeeperTestServerInstance()
+            throws Exception
     {
         // TODO: choose random port
         this(4534);
@@ -62,17 +63,15 @@ public class ZookeeperTestServerInstance
 
         log.info("Test Zookeeper port: %d path: %s", port, tempDirectory);
 
-        File                    logDir = new File(tempDirectory, "log");
-        File                    dataDir = new File(tempDirectory, "data");
+        File logDir = new File(tempDirectory, "log");
+        File dataDir = new File(tempDirectory, "data");
 
-        try
-        {
+        try {
             server = new ZooKeeperServer(dataDir, logDir, TIME_IN_MS);
             factory = new NIOServerCnxn.Factory(new InetSocketAddress(port));
             factory.startup(server);
         }
-        catch ( BindException e )
-        {
+        catch (BindException e) {
             log.debug("Address is in use: %d", port);
             throw e;
         }
@@ -83,15 +82,14 @@ public class ZookeeperTestServerInstance
      *
      * @throws InterruptedException thread interruption
      */
-    public void             close() throws InterruptedException
+    public void close()
+            throws InterruptedException
     {
-        try
-        {
+        try {
             server.shutdown();
             factory.shutdown();
         }
-        finally
-        {
+        finally {
             tempLocalDirectory.cleanup();
         }
     }

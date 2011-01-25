@@ -9,7 +9,7 @@ import com.proofpoint.zookeeper.ZookeeperClientConfig;
 import com.proofpoint.zookeeper.ZookeeperClientCreator;
 
 public class ZookeeperModule
-    extends AbstractModule
+        extends AbstractModule
 {
     @Override
     protected void configure()

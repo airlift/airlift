@@ -29,7 +29,8 @@ public class ZookeeperCrossProcessLockFactory implements CrossProcessLockFactory
     }
 
     @Override
-    public CrossProcessLock newLock(String name) throws Exception
+    public CrossProcessLock newLock(String name)
+            throws Exception
     {
         return client.newLock(client.makePath(namespacePath, name));
     }
