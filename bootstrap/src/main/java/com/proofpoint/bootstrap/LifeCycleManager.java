@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Manages PostConstruct and PreDestroy life cycles
  */
-class LifeCycleManager
+public class LifeCycleManager
 {
     private final Logger log = Logger.get(getClass());
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);

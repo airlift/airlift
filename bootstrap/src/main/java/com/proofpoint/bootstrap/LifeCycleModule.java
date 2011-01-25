@@ -20,7 +20,7 @@ import static com.google.inject.matcher.Matchers.any;
 /**
  * Guice module for binding the LifeCycle manager
  */
-class LifeCycleModule implements Module
+public class LifeCycleModule implements Module
 {
     private final List<Object> injectedInstances = Lists.newArrayList();
     private final LifeCycleMethodsMap lifeCycleMethodsMap = new LifeCycleMethodsMap();
