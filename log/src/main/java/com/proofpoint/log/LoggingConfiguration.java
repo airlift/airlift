@@ -10,60 +10,60 @@ public class LoggingConfiguration
     private int maxHistory;
     private String levelsFile;
 
-    @Config("log.enable-console")
     public boolean isConsoleEnabled()
     {
         return consoleEnabled;
     }
 
+    @Config("log.enable-console")
     public LoggingConfiguration setConsoleEnabled(boolean consoleEnabled)
     {
         this.consoleEnabled = consoleEnabled;
         return this;
     }
 
-    @Config("log.output-file")
     public String getLogPath()
     {
         return logPath;
     }
 
+    @Config("log.output-file")
     public LoggingConfiguration setLogPath(String logPath)
     {
         this.logPath = logPath;
         return this;
     }
 
-    @Config("log.max-size-in-bytes")
     public long getMaxSegmentSizeInBytes()
     {
         return maxSegmentSizeInBytes;
     }
 
+    @Config("log.max-size-in-bytes")
     public LoggingConfiguration setMaxSegmentSizeInBytes(long maxSegmentSizeInBytes)
     {
         this.maxSegmentSizeInBytes = maxSegmentSizeInBytes;
         return this;
     }
 
-    @Config("log.max-history")
     public int getMaxHistory()
     {
         return maxHistory;
     }
 
+    @Config("log.max-history")
     public LoggingConfiguration setMaxHistory(int maxHistory)
     {
         this.maxHistory = maxHistory;
         return this;
     }
 
-    @Config("log.levels-file")
     public String getLevelsFile()
     {
         return levelsFile;
     }
 
+    @Config("log.levels-file")
     public LoggingConfiguration setLevelsFile(String levelsFile)
     {
         this.levelsFile = levelsFile;
