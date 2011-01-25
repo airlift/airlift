@@ -25,13 +25,15 @@ finally
 public interface TempFileBackedOutputStream
 {
     /**
-     * Returnt the output stream. This can safely be called mulitple times
+     * Returns the output stream. This can safely be called multiple times
      *
      * @return stream.
      */
-    DataOutputStream        getStream();
+    DataOutputStream getStream();
 
-    void                    commit() throws IOException;
+    void commit()
+            throws IOException;
 
-    void                    release() throws IOException;
+    void release()
+            throws IOException;
 }

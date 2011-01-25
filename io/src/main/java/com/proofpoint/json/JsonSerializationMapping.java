@@ -5,8 +5,8 @@ package com.proofpoint.json;
  */
 public class JsonSerializationMapping<T, S extends JsonSerializerHelper<T>>
 {
-    private final Class<T>      type;
-    private final S             serializer;
+    private final Class<T> type;
+    private final S serializer;
 
     /**
      * Helper. NOTE that the value return is not generically type so that it can be easily added to a collection
@@ -16,7 +16,7 @@ public class JsonSerializationMapping<T, S extends JsonSerializerHelper<T>>
      * @param serializer serializer instance
      * @return mapping
      */
-    public static<T, S extends JsonSerializerHelper<T>> JsonSerializationMapping  make(Class<T> type, S serializer)
+    public static <T, S extends JsonSerializerHelper<T>> JsonSerializationMapping make(Class<T> type, S serializer)
     {
         return new JsonSerializationMapping<T, S>(type, serializer);
     }
@@ -44,13 +44,19 @@ public class JsonSerializationMapping<T, S extends JsonSerializerHelper<T>>
     @Override
     public boolean equals(Object o)
     {
-        if ( this == o ) { return true; }
-        if ( o == null || getClass() != o.getClass() ) { return false; }
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
-        JsonSerializationMapping that = (JsonSerializationMapping)o;
+        JsonSerializationMapping that = (JsonSerializationMapping) o;
 
         //noinspection RedundantIfStatement
-        if ( !type.equals(that.type) ) { return false; }
+        if (!type.equals(that.type)) {
+            return false;
+        }
 
         return true;
     }

@@ -18,7 +18,8 @@ public interface JsonSerializerHelper<T>
      * @param object object to serialize
      * @throws Exception errors
      */
-    public void writeObject(JsonUtilFactory factory, JsonGenerator generator, T object) throws Exception;
+    public void writeObject(JsonUtilFactory factory, JsonGenerator generator, T object)
+            throws Exception;
 
     /**
      * Called to de-serialize an object
@@ -28,5 +29,6 @@ public interface JsonSerializerHelper<T>
      * @return object
      * @throws Exception errors
      */
-    public T readObject(JsonUtilFactory factory, JsonParser parser) throws Exception;
+    public T readObject(JsonUtilFactory factory, JsonParser parser)
+            throws Exception;
 }

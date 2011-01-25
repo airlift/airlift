@@ -1,7 +1,7 @@
 package com.proofpoint.io;
 
-import com.proofpoint.log.Logger;
 import com.google.inject.Inject;
+import com.proofpoint.log.Logger;
 import org.apache.commons.io.FileUtils;
 
 import java.io.BufferedOutputStream;
@@ -12,9 +12,9 @@ import java.io.IOException;
 
 /**
  * Abstraction for managing temporary directories used for interacting with Lucene, etc.
- *
+ * <p/>
  * Usage:
- *
+ * <p/>
  * <pre>
  * TempLocalDirectory tmp = new TempLocalDirectory()
  * try {
@@ -53,7 +53,7 @@ public class TempLocalDirectory
         else {
             dir = File.createTempFile(PREFIX, SUFFIX, parent);
         }
-        
+
         if (!dir.delete()) {
             throw new IOException("Could not delete temp file: " + path.getAbsolutePath());
         }

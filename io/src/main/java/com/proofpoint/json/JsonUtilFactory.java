@@ -29,7 +29,7 @@ import java.util.Set;
  */
 public class JsonUtilFactory
 {
-    private static final Logger     log = Logger.get(JsonUtilFactory.class);
+    private static final Logger log = Logger.get(JsonUtilFactory.class);
 
     private final CustomSerializerFactory customSerializerFactory;
     private final CustomDeserializerFactory customDeserializerFactory;
@@ -42,8 +42,7 @@ public class JsonUtilFactory
     {
         customSerializerFactory = new CustomSerializerFactory();
         customDeserializerFactory = new CustomDeserializerFactory();
-        for ( JsonSerializationMapping mapping : mappings )
-        {
+        for (JsonSerializationMapping mapping : mappings) {
             //noinspection unchecked
             customSerializerFactory.addSpecificMapping(mapping.getType(), wrapSerializer(mapping.getSerializer()));    // safe due to JsonSerializationMapping
             //noinspection unchecked
@@ -56,23 +55,25 @@ public class JsonUtilFactory
      * value being the object. i.e.
      * <code><br>
      * {<br>
-     *     "name" : {<i>value</i>}<br>
+     * "name" : {<i>value</i>}<br>
      * }<br>
      * </code>
+     *
      * @param name field name
      * @param value object to serialize
      * @return JSON object as byte array
      * @throws IOException errors
      */
-    public<T> byte[] serializeWithName(String name, T value) throws IOException
+    public <T> byte[] serializeWithName(String name, T value)
+            throws IOException
     {
-        ObjectMapper                mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializerFactory(customSerializerFactory);
 
-        ObjectNode                  node = mapper.createObjectNode();
+        ObjectNode node = mapper.createObjectNode();
         node.putPOJO(name, value);
 
-        ByteArrayOutputStream       out = new ByteArrayOutputStream();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
         mapper.writeValue(out, node);
         return out.toByteArray();
     }
@@ -82,15 +83,17 @@ public class JsonUtilFactory
      * <code><br>
      * {<i>value</i>}
      * </code>
+     *
      * @param value object to serialize
      * @return JSON object as byte array
      * @throws IOException errors
      */
-    public<T> byte[] serialize(T value) throws IOException
+    public <T> byte[] serialize(T value)
+            throws IOException
     {
-        ObjectMapper                mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializerFactory(customSerializerFactory);
-        ByteArrayOutputStream       out = new ByteArrayOutputStream();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
         mapper.writeValue(out, value);
         return out.toByteArray();
     }
@@ -104,16 +107,15 @@ public class JsonUtilFactory
      * @return object
      * @throws IOException errors
      */
-    public<T> T deserialize(Class<T> type, byte[] bytes) throws IOException
+    public <T> T deserialize(Class<T> type, byte[] bytes)
+            throws IOException
     {
-        try
-        {
-            ObjectMapper                mapper = new ObjectMapper();
+        try {
+            ObjectMapper mapper = new ObjectMapper();
             mapper.setDeserializerProvider(new StdDeserializerProvider(customDeserializerFactory));
             return mapper.readValue(new ByteArrayInputStream(bytes), type);
         }
-        catch ( IOException e )
-        {
+        catch (IOException e) {
             log.error(e, "Could not deserialize type [%s] from JSON: %s", type.getName(), new String(bytes));
             throw e;
         }
@@ -128,23 +130,21 @@ public class JsonUtilFactory
      * @return collection of objects
      * @throws IOException errors
      */
-    public<T> Collection<T> deserializeCollection(Class<T> type, byte[] bytes) throws IOException
+    public <T> Collection<T> deserializeCollection(Class<T> type, byte[] bytes)
+            throws IOException
     {
-        try
-        {
-            ObjectMapper                mapper = new ObjectMapper();
+        try {
+            ObjectMapper mapper = new ObjectMapper();
             mapper.setDeserializerProvider(new StdDeserializerProvider(customDeserializerFactory));
-            JsonNode                    nodes = mapper.readTree(new ByteArrayInputStream(bytes));
+            JsonNode nodes = mapper.readTree(new ByteArrayInputStream(bytes));
 
-            List<T>                     list = new ArrayList<T>();
-            for ( JsonNode n : nodes )
-            {
+            List<T> list = new ArrayList<T>();
+            for (JsonNode n : nodes) {
                 list.add(deserializeContained(type, n));
             }
             return list;
         }
-        catch ( IOException e )
-        {
+        catch (IOException e) {
             log.error(e, "Could not deserialize collection of type [%s] from JSON: %s", type.getName(), new String(bytes));
             throw e;
         }
@@ -155,9 +155,9 @@ public class JsonUtilFactory
      *
      * @return new mapper
      */
-    public ObjectMapper     newObjectMapper()
+    public ObjectMapper newObjectMapper()
     {
-        ObjectMapper                mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializerFactory(customSerializerFactory);
         mapper.setDeserializerProvider(new StdDeserializerProvider(customDeserializerFactory));
         return mapper;
@@ -172,7 +172,8 @@ public class JsonUtilFactory
      * @return the object
      * @throws IOException errors
      */
-    public<T> T deserializeContained(Class<T> type, JsonNode node) throws IOException
+    public <T> T deserializeContained(Class<T> type, JsonNode node)
+            throws IOException
     {
         return deserialize(type, node.toString().getBytes());
     }
@@ -186,7 +187,8 @@ public class JsonUtilFactory
      * @return the object
      * @throws IOException errors
      */
-    public<T> Collection<T> deserializeContainedCollection(Class<T> type, JsonNode node) throws IOException
+    public <T> Collection<T> deserializeContainedCollection(Class<T> type, JsonNode node)
+            throws IOException
     {
         return deserializeCollection(type, node.toString().getBytes());
     }
@@ -196,18 +198,16 @@ public class JsonUtilFactory
         return new JsonDeserializer()
         {
             @Override
-            public Object deserialize(JsonParser parser, DeserializationContext context) throws IOException
+            public Object deserialize(JsonParser parser, DeserializationContext context)
+                    throws IOException
             {
-                try
-                {
+                try {
                     return serializer.readObject(JsonUtilFactory.this, parser);
                 }
-                catch ( IOException e )
-                {
+                catch (IOException e) {
                     throw e;
                 }
-                catch ( Exception e )
-                {
+                catch (Exception e) {
                     throw new IOException(e);
                 }
             }
@@ -219,19 +219,17 @@ public class JsonUtilFactory
         return new JsonSerializer()
         {
             @Override
-            public void serialize(Object value, JsonGenerator generator, SerializerProvider provider) throws IOException
+            public void serialize(Object value, JsonGenerator generator, SerializerProvider provider)
+                    throws IOException
             {
-                try
-                {
+                try {
                     //noinspection unchecked
                     serializer.writeObject(JsonUtilFactory.this, generator, value);   // is type safe due to JsonSerializationMapping
                 }
-                catch ( IOException e )
-                {
+                catch (IOException e) {
                     throw e;
                 }
-                catch ( Exception e )
-                {
+                catch (Exception e) {
                     throw new IOException(e);
                 }
             }

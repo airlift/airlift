@@ -7,7 +7,8 @@ import org.codehaus.jackson.JsonParser;
 public class MyPojoSerializer implements JsonSerializerHelper<MyPojo>
 {
     @Override
-    public void writeObject(JsonUtilFactory factory, JsonGenerator generator, MyPojo object) throws Exception
+    public void writeObject(JsonUtilFactory factory, JsonGenerator generator, MyPojo object)
+            throws Exception
     {
         generator.writeStartObject();
         generator.writeStringField(FieldNames.STRING, object.getStr());
@@ -18,15 +19,15 @@ public class MyPojoSerializer implements JsonSerializerHelper<MyPojo>
     }
 
     @Override
-    public MyPojo readObject(JsonUtilFactory factory, JsonParser parser) throws Exception
+    public MyPojo readObject(JsonUtilFactory factory, JsonParser parser)
+            throws Exception
     {
         JsonNode node = parser.readValueAsTree();
-        return new MyPojo
-        (
-            node.get(FieldNames.STRING).getTextValue(),
-            node.get(FieldNames.INT).getIntValue(),
-            node.get(FieldNames.LONG).getLongValue(),
-            node.get(FieldNames.DOUBLE).getDoubleValue()
+        return new MyPojo(
+                node.get(FieldNames.STRING).getTextValue(),
+                node.get(FieldNames.INT).getIntValue(),
+                node.get(FieldNames.LONG).getLongValue(),
+                node.get(FieldNames.DOUBLE).getDoubleValue()
         );
     }
 }

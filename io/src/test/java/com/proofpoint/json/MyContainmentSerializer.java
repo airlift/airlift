@@ -7,7 +7,8 @@ import org.codehaus.jackson.JsonParser;
 public class MyContainmentSerializer implements JsonSerializerHelper<MyContainment>
 {
     @Override
-    public void writeObject(JsonUtilFactory factory, JsonGenerator generator, MyContainment object) throws Exception
+    public void writeObject(JsonUtilFactory factory, JsonGenerator generator, MyContainment object)
+            throws Exception
     {
         generator.writeStartObject();
         generator.writeObjectField(FieldNames.POJO, object.getP());
@@ -16,14 +17,14 @@ public class MyContainmentSerializer implements JsonSerializerHelper<MyContainme
     }
 
     @Override
-    public MyContainment readObject(JsonUtilFactory factory, JsonParser parser) throws Exception
+    public MyContainment readObject(JsonUtilFactory factory, JsonParser parser)
+            throws Exception
     {
         JsonNode node = parser.readValueAsTree();
 
-        return new MyContainment
-        (
-            factory.deserializeContained(MyPojo.class, node.get(FieldNames.POJO)),
-            node.get(FieldNames.STRING).getTextValue()
+        return new MyContainment(
+                factory.deserializeContained(MyPojo.class, node.get(FieldNames.POJO)),
+                node.get(FieldNames.STRING).getTextValue()
         );
     }
 }

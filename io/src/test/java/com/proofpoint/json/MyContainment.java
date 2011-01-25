@@ -2,8 +2,8 @@ package com.proofpoint.json;
 
 public class MyContainment
 {
-    private final MyPojo        p;
-    private final String        s;
+    private final MyPojo p;
+    private final String s;
 
     public MyContainment(MyPojo p, String s)
     {
@@ -24,24 +24,20 @@ public class MyContainment
     @Override
     public boolean equals(Object o)
     {
-        if ( this == o )
-        {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
-        MyContainment that = (MyContainment)o;
+        MyContainment that = (MyContainment) o;
 
-        if ( p != null ? !p.equals(that.p) : that.p != null )
-        {
+        if (p != null ? !p.equals(that.p) : that.p != null) {
             return false;
         }
         //noinspection RedundantIfStatement
-        if ( s != null ? !s.equals(that.s) : that.s != null )
-        {
+        if (s != null ? !s.equals(that.s) : that.s != null) {
             return false;
         }
 
