@@ -21,7 +21,7 @@ public class JMXModule
         ConfigurationModule.bindConfig(binder).to(JMXConfig.class);
 
         ExportBuilder builder = MBeanModule.newExporter(binder);
-        builder.export(StackTraceMBean.class).withGeneratedName();        
+        builder.export(StackTraceMBean.class).withGeneratedName();
     }
 }
 

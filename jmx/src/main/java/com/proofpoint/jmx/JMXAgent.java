@@ -53,7 +53,7 @@ public class JMXAgent
 
         try {
             url = new JMXServiceURL(String.format("service:jmx:rmi://%s:%d/jndi/rmi://%s:%d/jmxrmi",
-                                                                host, serverPort, host, registryPort));
+                    host, serverPort, host, registryPort));
         }
         catch (MalformedURLException e) {
             // should not happen...
@@ -83,7 +83,8 @@ public class JMXAgent
     }
 
     @PreDestroy
-    public void stop() throws IOException
+    public void stop()
+            throws IOException
     {
         connectorServer.stop();
     }

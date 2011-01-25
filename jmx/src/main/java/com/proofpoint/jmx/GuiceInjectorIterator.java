@@ -11,13 +11,13 @@ import java.util.Set;
 
 class GuiceInjectorIterator implements Iterator<Class<?>>, Iterable<Class<?>>
 {
-    private final Set<Key<?>>           visited = Sets.newHashSet();
-    private final Iterator<Key<?>>      keyIterator;
-    private final Injector              injector;
+    private final Set<Key<?>> visited = Sets.newHashSet();
+    private final Iterator<Key<?>> keyIterator;
+    private final Injector injector;
 
-    private boolean                     needsReset = true;
-    private Class<?>                    currentClass = null;
-    private GuiceDependencyIterator     currentDependencyIterator = null;
+    private boolean needsReset = true;
+    private Class<?> currentClass = null;
+    private GuiceDependencyIterator currentDependencyIterator = null;
 
     /**
      * @param injector the injector to iterate over
@@ -29,14 +29,14 @@ class GuiceInjectorIterator implements Iterator<Class<?>>, Iterable<Class<?>>
     }
 
     @Override
-    public boolean      hasNext()
+    public boolean hasNext()
     {
         checkReset();
         return (currentClass != null);
     }
 
     @Override
-    public Class<?>     next()
+    public Class<?> next()
     {
         needsReset = true;
         return currentClass;
@@ -54,33 +54,27 @@ class GuiceInjectorIterator implements Iterator<Class<?>>, Iterable<Class<?>>
         throw new UnsupportedOperationException();
     }
 
-    private void        checkReset()
+    private void checkReset()
     {
-        if ( !needsReset )
-        {
+        if (!needsReset) {
             return;
         }
         needsReset = false;
 
         currentClass = null;
-        if ( currentDependencyIterator != null )
-        {
-            if ( currentDependencyIterator.hasNext() )
-            {
+        if (currentDependencyIterator != null) {
+            if (currentDependencyIterator.hasNext()) {
                 currentClass = currentDependencyIterator.next();
             }
-            else
-            {
+            else {
                 currentDependencyIterator = null;
             }
         }
 
-        while ( (currentClass == null) && keyIterator.hasNext() )
-        {
-            Key<?>  key = keyIterator.next();
+        while ((currentClass == null) && keyIterator.hasNext()) {
+            Key<?> key = keyIterator.next();
             currentClass = parseKey(visited, key);
-            if ( currentClass == null )
-            {
+            if (currentClass == null) {
                 continue;
             }
 
@@ -91,24 +85,20 @@ class GuiceInjectorIterator implements Iterator<Class<?>>, Iterable<Class<?>>
 
     static Class<?> parseKey(Set<Key<?>> visited, Key<?> key)
     {
-        if ( visited.contains(key) )
-        {
+        if (visited.contains(key)) {
             return null;
         }
         visited.add(key);
 
-        Class<?>    clazz;
+        Class<?> clazz;
         Type type = key.getTypeLiteral().getType();
-        if ( type instanceof GenericArrayType )
-        {
-            type = ((GenericArrayType)type).getGenericComponentType();
+        if (type instanceof GenericArrayType) {
+            type = ((GenericArrayType) type).getGenericComponentType();
         }
-        if ( type instanceof Class )
-        {
-            clazz = (Class)type;
+        if (type instanceof Class) {
+            clazz = (Class<?>) type;
         }
-        else
-        {
+        else {
             clazz = key.getTypeLiteral().getRawType();
         }
 

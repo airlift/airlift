@@ -56,8 +56,8 @@ public class TestJMXAgent
 
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
         JMXConfig config = new JMXConfig()
-            .setRmiRegistryPort(port)
-            .setHostname(host);
+                .setRmiRegistryPort(port)
+                .setHostname(host);
 
         JMXAgent agent = new JMXAgent(server, config);
         agent.start();
@@ -68,5 +68,4 @@ public class TestJMXAgent
         MBeanServerConnection connection = connector.getMBeanServerConnection();
         assertTrue(connection.getMBeanCount() > 0);
     }
-
 }

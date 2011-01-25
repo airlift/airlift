@@ -29,10 +29,10 @@ public class JMXInspector implements Iterable<JMXInspector.InspectorRecord>
 
     public static class InspectorRecord implements Comparable<InspectorRecord>
     {
-        public final String        className;
-        public final String        objectName;
-        public final String        description;
-        public final Types         type;
+        public final String className;
+        public final String objectName;
+        public final String description;
+        public final Types type;
 
         @Override
         public int hashCode()
@@ -43,7 +43,7 @@ public class JMXInspector implements Iterable<JMXInspector.InspectorRecord>
         @Override
         public int compareTo(InspectorRecord rhs)
         {
-            int     diff = objectName.compareTo(rhs.objectName);
+            int diff = objectName.compareTo(rhs.objectName);
             return (diff != 0) ? diff : className.compareTo(rhs.className);
         }
 
@@ -57,20 +57,19 @@ public class JMXInspector implements Iterable<JMXInspector.InspectorRecord>
     }
 
     @Inject
-    public JMXInspector(Injector injector) throws Exception
+    public JMXInspector(Injector injector)
+            throws Exception
     {
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
         Set<ObjectInstance> instances = mBeanServer.queryMBeans(null, null);
         Multimap<String, String> nameMap = ArrayListMultimap.create();
-        for ( ObjectInstance i : instances )
-        {
+        for (ObjectInstance i : instances) {
             nameMap.put(i.getClassName(), i.getObjectName().getCanonicalName());
         }
 
-        ImmutableSortedSet.Builder<InspectorRecord>    builder = ImmutableSortedSet.naturalOrder();
+        ImmutableSortedSet.Builder<InspectorRecord> builder = ImmutableSortedSet.naturalOrder();
         GuiceInjectorIterator injectorIterator = new GuiceInjectorIterator(injector);
-        for ( Class<?> clazz : injectorIterator )
-        {
+        for (Class<?> clazz : injectorIterator) {
             addConfig(nameMap, clazz, builder);
         }
 
@@ -83,18 +82,15 @@ public class JMXInspector implements Iterable<JMXInspector.InspectorRecord>
         return Iterators.unmodifiableIterator(inspectorRecords.iterator());
     }
 
-    private void addConfig(Multimap<String, String> nameMap, Class clazz, ImmutableSortedSet.Builder<InspectorRecord> builder) throws InvocationTargetException, IllegalAccessException
+    private void addConfig(Multimap<String, String> nameMap, Class<?> clazz, ImmutableSortedSet.Builder<InspectorRecord> builder)
+            throws InvocationTargetException, IllegalAccessException
     {
         Collection<String> thisNameList = nameMap.get(clazz.getName());
-        if ( thisNameList != null )
-        {
-            for ( Method method : clazz.getMethods() )
-            {
+        if (thisNameList != null) {
+            for (Method method : clazz.getMethods()) {
                 Managed configAnnotation = method.getAnnotation(Managed.class);
-                if ( configAnnotation != null )
-                {
-                    for ( String thisName : thisNameList )
-                    {
+                if (configAnnotation != null) {
+                    for (String thisName : thisNameList) {
                         builder.add(new InspectorRecord(thisName, method.getName(), configAnnotation.description(), getType(method)));
                     }
                 }
@@ -104,11 +100,15 @@ public class JMXInspector implements Iterable<JMXInspector.InspectorRecord>
 
     private Types getType(Method method)
     {
-        if ( method.getReturnType() == Void.TYPE )
-        {
+        if (method.getReturnType() == Void.TYPE) {
             return Types.ACTION;
         }
 
-        return (method.getParameterTypes().length > 0) ? Types.ACTION : Types.ATTRIBUTE;
+        if (method.getParameterTypes().length > 0) {
+            return Types.ACTION;
+        }
+        else {
+            return Types.ATTRIBUTE;
+        }
     }
 }

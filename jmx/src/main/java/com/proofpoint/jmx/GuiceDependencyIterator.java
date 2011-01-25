@@ -15,12 +15,12 @@ import java.util.Set;
  */
 class GuiceDependencyIterator implements Iterator<Class<?>>, Iterable<Class<?>>
 {
-    private final Set<Key<?>>                   visited;
-    private final Iterator<Dependency<?>>       currentDependencyIterator;
-    private final TypeLiteral<?>                creationTypeLiteral;
-    private final Class<?>                      creationClass;
+    private final Set<Key<?>> visited;
+    private final Iterator<Dependency<?>> currentDependencyIterator;
+    private final TypeLiteral<?> creationTypeLiteral;
+    private final Class<?> creationClass;
 
-    private Class<?>                            currentClass = null;
+    private Class<?> currentClass = null;
 
     /**
      * @param typeLiteral the type literal to iterate over
@@ -54,7 +54,7 @@ class GuiceDependencyIterator implements Iterator<Class<?>>, Iterable<Class<?>>
      * @param visited the visited set. A copy is _not_ made. The original instance will be mutated
      * @return new iterator that uses the given visited set instance
      */
-    public GuiceDependencyIterator  substituteVisitedSet(Set<Key<?>> visited)
+    public GuiceDependencyIterator substituteVisitedSet(Set<Key<?>> visited)
     {
         return new GuiceDependencyIterator(creationClass, creationTypeLiteral, visited);
     }
@@ -68,10 +68,8 @@ class GuiceDependencyIterator implements Iterator<Class<?>>, Iterable<Class<?>>
     @Override
     public boolean hasNext()
     {
-        if ( currentDependencyIterator != null )
-        {
-            while ( (currentClass == null) && currentDependencyIterator.hasNext() )
-            {
+        if (currentDependencyIterator != null) {
+            while ((currentClass == null) && currentDependencyIterator.hasNext()) {
                 currentClass = GuiceInjectorIterator.parseKey(visited, currentDependencyIterator.next().getKey());
             }
         }
@@ -105,13 +103,18 @@ class GuiceDependencyIterator implements Iterator<Class<?>>, Iterable<Class<?>>
 
     private Iterator<Dependency<?>> initInjectionPoint()
     {
-        try
-        {
-            InjectionPoint injectionPoint = (creationTypeLiteral != null) ? InjectionPoint.forConstructorOf(creationTypeLiteral) : InjectionPoint.forConstructorOf(creationClass);
+        try {
+            InjectionPoint injectionPoint;
+            if (creationTypeLiteral != null) {
+                injectionPoint = InjectionPoint.forConstructorOf(creationTypeLiteral);
+            }
+            else {
+                injectionPoint = InjectionPoint.forConstructorOf(creationClass);
+            }
+
             return injectionPoint.getDependencies().iterator();
         }
-        catch ( ConfigurationException dummy )
-        {
+        catch (ConfigurationException dummy) {
             // ignore
         }
 

@@ -15,15 +15,13 @@ public class StackTraceMBean
     }
 
     @Managed
-    public List<String>     getStackTrace()
+    public List<String> getStackTrace()
     {
-        List<String>                            output = Lists.newArrayList();
-        Map<Thread, StackTraceElement[]>        stackTraces = Thread.getAllStackTraces();
-        for ( Map.Entry<Thread, StackTraceElement[]> entry : stackTraces.entrySet() )
-        {
+        List<String> output = Lists.newArrayList();
+        Map<Thread, StackTraceElement[]> stackTraces = Thread.getAllStackTraces();
+        for (Map.Entry<Thread, StackTraceElement[]> entry : stackTraces.entrySet()) {
             output.add(entry.getKey().toString());
-            for ( StackTraceElement element : entry.getValue() )
-            {
+            for (StackTraceElement element : entry.getValue()) {
                 output.add("\t" + element.toString());
             }
             output.add("");
