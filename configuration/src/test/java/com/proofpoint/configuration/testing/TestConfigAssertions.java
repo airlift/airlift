@@ -1,11 +1,11 @@
-package com.proofpoint.configuration.test;
+package com.proofpoint.configuration.testing;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.proofpoint.configuration.Config;
 import com.proofpoint.configuration.Config1;
 import com.proofpoint.configuration.LegacyConfig;
-import com.proofpoint.configuration.test.ConfigAssertions.$$RecordedConfigData;
+import com.proofpoint.configuration.testing.ConfigAssertions.$$RecordedConfigData;
 import com.proofpoint.testing.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.Test;

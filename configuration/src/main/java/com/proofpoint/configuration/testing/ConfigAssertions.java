@@ -1,4 +1,4 @@
-package com.proofpoint.configuration.test;
+package com.proofpoint.configuration.testing;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
