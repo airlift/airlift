@@ -15,18 +15,18 @@ import java.net.MalformedURLException;
 import java.rmi.registry.LocateRegistry;
 import java.util.Collections;
 
-public class JMXAgent
+public class JmxAgent
 {
     private final String host;
     private final int registryPort;
     private final int serverPort;
     private final JMXConnectorServer connectorServer;
 
-    private static Logger log = Logger.get(JMXAgent.class);
+    private static Logger log = Logger.get(JmxAgent.class);
     private final JMXServiceURL url;
 
     @Inject
-    public JMXAgent(MBeanServer server, JMXConfig config)
+    public JmxAgent(MBeanServer server, JmxConfig config)
             throws IOException
     {
         if (config.getHostname() == null) {

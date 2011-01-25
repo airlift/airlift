@@ -16,7 +16,7 @@ public class TestJmxModule
     {
         Map<String, String> properties = Maps.newHashMap();
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
-        Injector injector = Guice.createInjector(new JMXModule(), new ConfigurationModule(configFactory));
-        injector.getInstance(JMXAgent.class);
+        Injector injector = Guice.createInjector(new JmxModule(), new ConfigurationModule(configFactory));
+        injector.getInstance(JmxAgent.class);
     }
 }

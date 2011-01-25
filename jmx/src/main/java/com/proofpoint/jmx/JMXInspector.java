@@ -17,7 +17,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 
-public class JMXInspector implements Iterable<JMXInspector.InspectorRecord>
+public class JmxInspector
+        implements Iterable<JmxInspector.InspectorRecord>
 {
     private final ImmutableSortedSet<InspectorRecord> inspectorRecords;
 
@@ -57,7 +58,7 @@ public class JMXInspector implements Iterable<JMXInspector.InspectorRecord>
     }
 
     @Inject
-    public JMXInspector(Injector injector)
+    public JmxInspector(Injector injector)
             throws Exception
     {
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();

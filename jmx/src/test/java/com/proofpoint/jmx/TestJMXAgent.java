@@ -19,7 +19,7 @@ public class TestJMXAgent
             throws IOException
     {
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        JMXAgent agent = new JMXAgent(server, new JMXConfig());
+        JmxAgent agent = new JmxAgent(server, new JmxConfig());
         agent.start();
 
         JMXConnector connector = JMXConnectorFactory.connect(agent.getURL());
@@ -36,7 +36,7 @@ public class TestJMXAgent
         final String host = Inet4Address.getLocalHost().getCanonicalHostName();
 
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        JMXAgent agent = new JMXAgent(server, new JMXConfig().setHostname(host));
+        JmxAgent agent = new JmxAgent(server, new JmxConfig().setHostname(host));
         agent.start();
 
         JMXConnector connector = JMXConnectorFactory.connect(agent.getURL());
@@ -54,11 +54,11 @@ public class TestJMXAgent
         final int port = NetUtils.findUnusedPort();
 
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        JMXConfig config = new JMXConfig()
+        JmxConfig config = new JmxConfig()
                 .setRmiRegistryPort(port)
                 .setHostname(host);
 
-        JMXAgent agent = new JMXAgent(server, config);
+        JmxAgent agent = new JmxAgent(server, config);
         agent.start();
 
         JMXConnector connector = JMXConnectorFactory.connect(agent.getURL());

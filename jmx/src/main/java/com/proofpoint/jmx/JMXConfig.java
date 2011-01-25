@@ -2,7 +2,7 @@ package com.proofpoint.jmx;
 
 import com.proofpoint.configuration.Config;
 
-public final class JMXConfig
+public final class JmxConfig
 {
     private Integer rmiRegistryPort;
     private Integer rmiServerPort;
@@ -14,7 +14,7 @@ public final class JMXConfig
     }
 
     @Config("jmx.rmiregistry.port")
-    public JMXConfig setRmiRegistryPort(Integer rmiRegistryPort)
+    public JmxConfig setRmiRegistryPort(Integer rmiRegistryPort)
     {
         this.rmiRegistryPort = rmiRegistryPort;
         return this;
@@ -26,7 +26,7 @@ public final class JMXConfig
     }
 
     @Config("jmx.rmiserver.port")
-    public JMXConfig setRmiServerPort(Integer rmiServerPort)
+    public JmxConfig setRmiServerPort(Integer rmiServerPort)
     {
         this.rmiServerPort = rmiServerPort;
         return this;
@@ -38,7 +38,7 @@ public final class JMXConfig
     }
 
     @Config("jmx.rmiserver.hostname")
-    public JMXConfig setHostname(String hostname)
+    public JmxConfig setHostname(String hostname)
     {
         this.hostname = hostname;
         return this;

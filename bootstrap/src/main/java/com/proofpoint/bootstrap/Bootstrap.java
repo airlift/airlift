@@ -17,7 +17,7 @@ import com.proofpoint.configuration.ConfigurationLoader;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.configuration.ConfigurationValidator;
 import com.proofpoint.configuration.ValidationErrorModule;
-import com.proofpoint.jmx.JMXInspector;
+import com.proofpoint.jmx.JmxInspector;
 import com.proofpoint.log.Logger;
 import com.proofpoint.log.Logging;
 import com.proofpoint.log.LoggingConfiguration;
@@ -138,7 +138,7 @@ public class Bootstrap
     private ColumnPrinter makePrinterForJMX(Injector injector)
             throws Exception
     {
-        JMXInspector inspector = new JMXInspector(injector);
+        JmxInspector inspector = new JmxInspector(injector);
 
         ColumnPrinter columnPrinter = new ColumnPrinter();
         columnPrinter.addColumn(CLASS_NAME_COLUMN);
@@ -146,7 +146,7 @@ public class Bootstrap
         columnPrinter.addColumn(TYPE_COLUMN);
         columnPrinter.addColumn(DESCRIPTION_COLUMN);
 
-        for (JMXInspector.InspectorRecord record : inspector) {
+        for (JmxInspector.InspectorRecord record : inspector) {
             columnPrinter.addValue(CLASS_NAME_COLUMN, record.className);
             columnPrinter.addValue(OBJECT_NAME_COLUMN, record.objectName);
             columnPrinter.addValue(TYPE_COLUMN, record.type.name().toLowerCase());
