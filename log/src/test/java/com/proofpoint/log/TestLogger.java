@@ -64,7 +64,7 @@ public class TestLogger
         verify(mockLogger).warn("hello, you", (Throwable) null);
 
         // throwable with message
-        @SuppressWarnings({ "ThrowableInstanceNeverThrown" })
+        @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         Throwable exception = new Throwable();
 
         logger.warn(exception, "got exception: %s", "foo");
@@ -84,14 +84,14 @@ public class TestLogger
         verify(mockLogger).error("hello, you", (Throwable) null);
 
         // throwable with message
-        @SuppressWarnings({ "ThrowableInstanceNeverThrown" })
+        @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         Throwable exception = new Throwable();
 
         logger.error(exception, "got exception: %s", "foo");
         verify(mockLogger).error("got exception: foo", exception);
 
         // throwable alone
-        @SuppressWarnings({ "ThrowableInstanceNeverThrown" })
+        @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         Throwable exception2 = new Throwable("the message");
         logger.error(exception2);
         verify(mockLogger).error(exception2.getMessage(), exception2);
@@ -146,7 +146,7 @@ public class TestLogger
 
         Logger logger = new Logger(mockLogger);
 
-        @SuppressWarnings({ "ThrowableInstanceNeverThrown" })
+        @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         Throwable e = new Throwable();
         logger.warn(e, "hello");
 
@@ -175,7 +175,7 @@ public class TestLogger
 
         Logger logger = new Logger(mockLogger);
 
-        @SuppressWarnings({ "ThrowableInstanceNeverThrown" })
+        @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         Throwable e = new Throwable();
         logger.error(e, "hello");
 
@@ -191,7 +191,7 @@ public class TestLogger
 
         Logger logger = new Logger(mockLogger);
 
-        @SuppressWarnings({ "ThrowableInstanceNeverThrown" })
+        @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         Throwable e = new Throwable();
         logger.error(e);
 
@@ -212,7 +212,7 @@ public class TestLogger
         logger.debug(format, param);
 
         verify(mockLogger).error(stringThatContains("Invalid format", "DEBUG", format, param),
-                                 any(IllegalFormatException.class));
+                any(IllegalFormatException.class));
     }
 
     @Test
@@ -228,7 +228,7 @@ public class TestLogger
         logger.info(format, param);
 
         verify(mockLogger).error(stringThatContains("Invalid format", "INFO", format, param),
-                                 any(IllegalFormatException.class));
+                any(IllegalFormatException.class));
     }
 
     @Test
@@ -244,7 +244,7 @@ public class TestLogger
         logger.warn(format, param);
 
         verify(mockLogger).error(stringThatContains("Invalid format", "WARN", format, param),
-                                 any(IllegalFormatException.class));
+                any(IllegalFormatException.class));
     }
 
     @Test
@@ -260,7 +260,7 @@ public class TestLogger
         logger.error(format, param);
 
         verify(mockLogger).error(stringThatContains("Invalid format", "ERROR", format, param),
-                                 any(IllegalFormatException.class));
+                any(IllegalFormatException.class));
     }
 
     @Test
@@ -277,7 +277,7 @@ public class TestLogger
         logger.warn(exception, format, param);
 
         verify(mockLogger).error(stringThatContains("Invalid format", "WARN", format, param),
-                                 any(IllegalFormatException.class));
+                any(IllegalFormatException.class));
 
         verify(mockLogger).warn(stringThatContains(format, param), eq(exception));
     }
@@ -296,7 +296,7 @@ public class TestLogger
         logger.error(exception, format, param);
 
         verify(mockLogger).error(stringThatContains("Invalid format", "ERROR", format, param),
-                                 any(IllegalFormatException.class));
+                any(IllegalFormatException.class));
 
         verify(mockLogger).error(stringThatContains(format, param), eq(exception));
     }
@@ -308,7 +308,7 @@ public class TestLogger
         verify(mockLogger, never()).debug(any(String.class), any(Object.class), any(Object.class));
         verify(mockLogger, never()).debug(any(String.class), any(Object[].class));
         verify(mockLogger, never()).debug(any(String.class), any(Throwable.class));
-        
+
         verify(mockLogger, never()).info(any(String.class));
         verify(mockLogger, never()).info(any(String.class), any(Object.class));
         verify(mockLogger, never()).info(any(String.class), any(Object.class), any(Object.class));
