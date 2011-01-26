@@ -30,6 +30,15 @@
         </snapshotRepository>
     </distributionManagement>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.testng</groupId>
+                <artifactId>testng</artifactId>
+                <version>5.14.6</version>
+            </dependency>
+    </dependencyManagement>
+
     <build>
         <plugins>
             <plugin>
