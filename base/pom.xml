@@ -3,10 +3,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.proofpoint.platform</groupId>
-    <artifactId>base</artifactId>
+    <artifactId>rest-server-base</artifactId>
     <version>0.24-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>Platform Base POM</name>
+    <name>REST Server Base POM</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

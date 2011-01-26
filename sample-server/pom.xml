@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.proofpoint.platform</groupId>
-        <artifactId>base</artifactId>
+        <artifactId>rest-server-base</artifactId>
         <version>0.24-SNAPSHOT</version>
         <relativePath>../base/pom.xml</relativePath>
     </parent>
