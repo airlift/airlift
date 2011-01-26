@@ -3,6 +3,7 @@ package com.proofpoint.io;
 import com.google.common.io.Files;
 import com.google.inject.Inject;
 import com.proofpoint.log.Logger;
+import org.apache.commons.io.FileUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
@@ -67,7 +68,7 @@ public class TempLocalDirectory
     public void cleanupPrevious()
     {
         try {
-            Files.deleteDirectoryContents(path);
+            FileUtils.cleanDirectory(path);
             log.debug("Cleaned up local temp dir: " + path.getAbsolutePath());
         }
         catch (IOException e) {
@@ -79,7 +80,7 @@ public class TempLocalDirectory
     public void cleanup()
     {
         try {
-            Files.deleteDirectoryContents(path);
+            FileUtils.deleteDirectory(path);
             log.debug("Cleaned up local temp dir: " + path.getAbsolutePath());
         }
         catch (IOException e) {
@@ -111,7 +112,7 @@ public class TempLocalDirectory
     public void deleteDirectory(File dir)
     {
         try {
-            Files.deleteRecursively(dir);
+            FileUtils.deleteDirectory(dir);
         }
         catch (IOException e) {
             // throwing an excepiton is useless - just record it
