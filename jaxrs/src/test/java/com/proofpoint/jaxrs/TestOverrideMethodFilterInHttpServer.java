@@ -6,7 +6,6 @@ import com.google.inject.Module;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Request;
 import com.ning.http.client.RequestBuilder;
-import com.ning.http.client.RequestType;
 import com.ning.http.client.Response;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
@@ -23,10 +22,6 @@ import javax.ws.rs.core.Response.Status;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
-import static com.ning.http.client.RequestType.DELETE;
-import static com.ning.http.client.RequestType.GET;
-import static com.ning.http.client.RequestType.POST;
-import static com.ning.http.client.RequestType.PUT;
 import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -34,6 +29,11 @@ import static org.testng.Assert.assertTrue;
 
 public class TestOverrideMethodFilterInHttpServer
 {
+    private static final String GET = "GET";
+    private static final String POST = "POST";
+    private static final String PUT = "PUT";
+    private static final String DELETE = "DELETE";
+
     private TestingHttpServer server;
     private TestResource resource;
     private AsyncHttpClient client;
@@ -174,17 +174,17 @@ public class TestOverrideMethodFilterInHttpServer
         assertFalse(resource.getCalled(), "GET");
     }
 
-    private Request buildRequestWithHeader(RequestType type, RequestType override)
+    private Request buildRequestWithHeader(String type, String override)
     {
         return new RequestBuilder(type)
                 .setUrl(server.getBaseUrl().toString())
-                .addHeader("X-HTTP-Method-Override", override.name())
+                .addHeader("X-HTTP-Method-Override", override)
                 .build();
     }
 
-    private Request buildRequestWithQueryParam(RequestType type, RequestType override)
+    private Request buildRequestWithQueryParam(String type, String override)
     {
-        String url = server.getBaseUrl().resolve(format("/?_method=%s", override.name())).toString();
+        String url = server.getBaseUrl().resolve(format("/?_method=%s", override)).toString();
 
         return new RequestBuilder(type)
                 .setUrl(url)
