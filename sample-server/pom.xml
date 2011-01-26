@@ -14,7 +14,7 @@
 
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>sample-server</artifactId>
-    <version>0.26</version>
+    <version>0.27-SNAPSHOT</version>
     <name>sample-server</name>
 
     <dependencies>
