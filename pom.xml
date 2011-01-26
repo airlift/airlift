@@ -179,7 +179,6 @@
         <module>configuration</module>
         <module>zookeeper</module>
         <module>concurrent</module>
-        <module>io</module>
 
         <module>stats</module>
         <module>units</module>
