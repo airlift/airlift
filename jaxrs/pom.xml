@@ -4,13 +4,13 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>jaxrs</artifactId>
     <packaging>jar</packaging>
-    <version>0.25</version>
+    <version>0.26-SNAPSHOT</version>
     <name>jaxrs</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.25</version>
+        <version>0.26-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -67,7 +67,7 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>testing</artifactId>
-            <version>0.25</version>
+            <version>0.26-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
 
