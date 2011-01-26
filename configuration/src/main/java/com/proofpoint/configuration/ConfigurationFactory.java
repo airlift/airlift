@@ -7,6 +7,9 @@ import com.google.common.collect.MapMaker;
 import com.google.inject.ConfigurationException;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -99,6 +102,7 @@ public class ConfigurationFactory
         T instance = newInstance(configurationMetadata);
 
         Problems problems = new Problems(monitor);
+
         for (AttributeMetadata attribute : configurationMetadata.getAttributes().values()) {
             try {
                 setConfigProperty(instance, attribute, prefix);
@@ -114,6 +118,12 @@ public class ConfigurationFactory
                     problems.addError("Defunct property '%s' (class [%s]) cannot be configured.", value, configClass.toString());
                 }
             }
+        }
+
+        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+        for (ConstraintViolation violation : validator.validate(instance)) {
+            problems.addError("Constraint violation with property prefix '%s': %s %s (for class %s)",
+                    prefix, violation.getPropertyPath(), violation.getMessage(), configClass.getName());
         }
 
         problems.throwIfHasErrors();

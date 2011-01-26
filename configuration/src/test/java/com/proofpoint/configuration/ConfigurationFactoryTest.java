@@ -11,6 +11,9 @@ import com.proofpoint.testing.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -183,6 +186,52 @@ public class ConfigurationFactoryTest
         }
     }
 
+    @Test
+    public void testSuccessfulBeanValidation()
+    {
+        Map<String, String> properties = Maps.newHashMap();
+        properties.put("string-value", "has a value");
+        properties.put("int-value", "50");
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(properties, monitor, new Module()
+        {
+            public void configure(Binder binder)
+            {
+                ConfigurationModule.bindConfig(binder).to(BeanValidationClass.class);
+            }
+        });
+        BeanValidationClass beanValidationClass = injector.getInstance(BeanValidationClass.class);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
+        Assert.assertNotNull(beanValidationClass);
+        Assert.assertEquals(beanValidationClass.getStringValue(), "has a value");
+        Assert.assertEquals(beanValidationClass.getIntValue(), 50);
+    }
+
+    @Test
+    public void testFailedBeanValidation()
+    {
+        Map<String, String> properties = Maps.newHashMap();
+        // string-value left at invalid default
+        properties.put("int-value", "5000");  // out of range
+        TestMonitor monitor = new TestMonitor();
+        try {
+            Injector injector = createInjector(properties, monitor, new Module()
+            {
+                public void configure(Binder binder)
+                {
+                    ConfigurationModule.bindConfig(binder).to(BeanValidationClass.class);
+                }
+            });
+        } catch (CreationException e) {
+            monitor.assertNumberOfErrors(2);
+            monitor.assertNumberOfWarnings(0);
+            monitor.assertMatchingErrorRecorded("Constraint violation", "intValue", "must be less than or equal to 100", "BeanValidationClass");
+            monitor.assertMatchingErrorRecorded("Constraint violation", "stringValue", "may not be null", "BeanValidationClass");
+        }
+    }
+
+
     private Injector createInjector(Map<String, String> properties, TestMonitor monitor, Module module)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, monitor);
@@ -289,6 +338,38 @@ public class ConfigurationFactoryTest
         public void setStringValue(String stringValue)
         {
             this.stringValue = stringValue;
+        }
+    }
+
+    public static class BeanValidationClass
+    {
+        @NotNull
+        private String stringValue = null;
+
+        private int myIntValue;
+
+        public String getStringValue()
+        {
+            return stringValue;
+        }
+
+        @Config("string-value")
+        public void setStringValue(String value)
+        {
+            this.stringValue = value;
+        }
+
+        @Min(1)
+        @Max(100)
+        public int getIntValue()
+        {
+            return myIntValue;
+        }
+
+        @Config("int-value")
+        public void setIntValue(int value)
+        {
+            this.myIntValue = value;
         }
     }
 }
