@@ -1,7 +1,6 @@
 package com.proofpoint.platform.sample;
 
 import com.google.common.base.Charsets;
-import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -18,7 +17,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.core.MediaType;
-import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -26,7 +24,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static com.google.common.collect.Sets.newHashSet;
-import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -36,7 +33,6 @@ public class TestServer
 
     private AsyncHttpClient client;
     private TestingHttpServer server;
-    private File tempDir;
 
     private PersonStore store;
 
@@ -44,8 +40,6 @@ public class TestServer
     public void setup()
             throws Exception
     {
-        tempDir = Files.createTempDir().getCanonicalFile(); // getCanonicalFile needed to get around Issue 365 (http://code.google.com/p/guava-libraries/issues/detail?id=365)
-
         // TODO: wrap all this stuff in a TestBootstrap class
         Injector injector = Guice.createInjector(new TestingHttpServerModule(),
                 new JaxrsModule(),
@@ -56,7 +50,6 @@ public class TestServer
         store = injector.getInstance(PersonStore.class);
 
         server.start();
-
         client = new AsyncHttpClient();
     }
 
@@ -64,17 +57,12 @@ public class TestServer
     public void teardown()
             throws Exception
     {
-        try {
-            if (server != null) {
-                server.stop();
-            }
-
-            if (client != null) {
-                client.close();
-            }
+        if (server != null) {
+            server.stop();
         }
-        finally {
-            Files.deleteRecursively(tempDir);
+
+        if (client != null) {
+            client.close();
         }
     }
 
