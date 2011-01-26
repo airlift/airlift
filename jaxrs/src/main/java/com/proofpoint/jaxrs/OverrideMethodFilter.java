@@ -1,4 +1,4 @@
-package com.proofpoint.jersey;
+package com.proofpoint.jaxrs;
 
 import com.google.common.base.Strings;
 import com.sun.jersey.spi.container.ContainerRequest;

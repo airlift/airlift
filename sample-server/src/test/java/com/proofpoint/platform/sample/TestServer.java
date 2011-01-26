@@ -10,7 +10,7 @@ import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
-import com.proofpoint.jersey.JaxrsModule;
+import com.proofpoint.jaxrs.JaxrsModule;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;

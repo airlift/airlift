@@ -1,4 +1,4 @@
-package com.proofpoint.jersey;
+package com.proofpoint.jaxrs;
 
 import com.sun.jersey.core.header.InBoundHeaders;
 import com.sun.jersey.spi.container.ContainerRequest;

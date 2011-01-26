@@ -1,6 +1,5 @@
-package com.proofpoint.jersey;
+package com.proofpoint.jaxrs;
 
-import com.google.common.io.Files;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Module;
@@ -21,7 +20,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response.Status;
-import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 

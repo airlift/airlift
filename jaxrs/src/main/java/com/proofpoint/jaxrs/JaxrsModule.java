@@ -1,4 +1,4 @@
-package com.proofpoint.jersey;
+package com.proofpoint.jaxrs;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
