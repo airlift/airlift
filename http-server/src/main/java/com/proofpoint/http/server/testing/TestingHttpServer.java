@@ -1,5 +1,6 @@
 package com.proofpoint.http.server.testing;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.proofpoint.http.server.GZipRequestFilter;
@@ -44,6 +45,7 @@ public class TestingHttpServer
             throws Exception
     {
         server.start();
+        Preconditions.checkState(server.isRunning(), "server is not running");
     }
 
     @PreDestroy
