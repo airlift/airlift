@@ -178,7 +178,6 @@
         <module>bootstrap</module>
         <module>configuration</module>
         <module>zookeeper</module>
-        <module>concurrent</module>
 
         <module>stats</module>
         <module>units</module>
