@@ -6,7 +6,7 @@
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>rest-server-base</artifactId>
         <version>0.24-SNAPSHOT</version>
-        <relativePath>../base/pom.xml</relativePath>
+        <relativePath>../rest-server-base/pom.xml</relativePath>
     </parent>
 
     <properties>

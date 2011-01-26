@@ -182,7 +182,7 @@
         <module>stats</module>
         <module>units</module>
         <module>dbpool</module>
-        <module>base</module>
+        <module>rest-server-base</module>
         <module>sample-server</module>
         <module>experimental</module>
         <module>sample-server-archetype-builder</module>
