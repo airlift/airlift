@@ -180,7 +180,7 @@
         <module>zookeeper</module>
         <module>concurrent</module>
         <module>io</module>
-        <module>collections</module>
+
         <module>stats</module>
         <module>units</module>
         <module>dbpool</module>
