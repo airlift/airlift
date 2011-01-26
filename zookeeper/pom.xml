@@ -21,16 +21,6 @@
             <artifactId>log</artifactId>
             <version>0.24-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>com.proofpoint.platform</groupId>
-            <artifactId>concurrent</artifactId>
-            <version>0.24-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.proofpoint.platform</groupId>
-            <artifactId>io</artifactId>
-            <version>0.24-SNAPSHOT</version>
-        </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -47,6 +37,11 @@
             <groupId>com.cloudera.hadoop</groupId>
             <artifactId>hadoop-core</artifactId>
             <version>0.20.2-320</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-mapper-asl</artifactId>
+            <version>1.5.6</version>
         </dependency>
         <dependency>
             <groupId>org.testng</groupId>

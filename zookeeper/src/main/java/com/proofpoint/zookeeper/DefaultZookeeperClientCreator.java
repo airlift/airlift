@@ -1,8 +1,9 @@
 package com.proofpoint.zookeeper;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 import com.google.inject.Inject;
 import com.proofpoint.log.Logger;
-import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.io.retry.RetryPolicies;
 import org.apache.hadoop.io.retry.RetryPolicy;
 import org.apache.zookeeper.KeeperException;
@@ -100,7 +101,7 @@ public class DefaultZookeeperClientCreator
             File sessionIdFile = new File(getSessionStorePath());
             if (sessionIdFile.exists()) {
                 try {
-                    String sessionSpec = FileUtils.readFileToString(sessionIdFile);
+                    String sessionSpec = Files.toString(sessionIdFile, Charsets.UTF_8);
                     ObjectMapper mapper = new ObjectMapper();
                     return mapper.readValue(sessionSpec, ZookeeperSessionID.class);
                 }
@@ -122,7 +123,7 @@ public class DefaultZookeeperClientCreator
             ObjectMapper mapper = new ObjectMapper();
             try {
                 String sessionSpec = mapper.writeValueAsString(session);
-                FileUtils.writeStringToFile(new File(getSessionStorePath()), sessionSpec);
+                Files.write(sessionSpec, new File(getSessionStorePath()), Charsets.UTF_8);
             }
             catch (IOException e) {
                 log.warn(e, "Couldn't write session info to: %s", getSessionStorePath());
