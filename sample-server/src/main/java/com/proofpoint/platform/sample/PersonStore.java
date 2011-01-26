@@ -1,6 +1,8 @@
 package com.proofpoint.platform.sample;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.MapMaker;
 import com.google.inject.Inject;
 import org.weakref.jmx.Flatten;
@@ -69,6 +71,6 @@ public class PersonStore
 
     public Collection<Person> getAll()
     {
-        return persons.values();
+        return ImmutableList.copyOf(persons.values());
     }
 }
