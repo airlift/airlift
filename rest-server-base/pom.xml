@@ -3,13 +3,13 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>rest-server-base</artifactId>
-    <version>0.26</version>
+    <version>0.27-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>REST Server Base POM</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <platform-version>0.26</platform-version>
+        <platform-version>0.27-SNAPSHOT</platform-version>
     </properties>
 
     <prerequisites>
