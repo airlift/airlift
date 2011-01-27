@@ -199,8 +199,10 @@
         <module>dbpool</module>
         <module>rest-server-base</module>
         <module>sample-server</module>
+        <module>skeleton-server</module>
         <module>experimental</module>
         <module>sample-server-archetype-builder</module>
+        <module>skeleton-server-archetype-builder</module>
     </modules>
 </project>
 
