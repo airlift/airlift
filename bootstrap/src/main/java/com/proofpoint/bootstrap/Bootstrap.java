@@ -2,6 +2,7 @@ package com.proofpoint.bootstrap;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
+import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -17,6 +18,7 @@ import com.proofpoint.configuration.ConfigurationLoader;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.configuration.ConfigurationValidator;
 import com.proofpoint.configuration.ValidationErrorModule;
+import com.proofpoint.configuration.WarningsMonitor;
 import com.proofpoint.jmx.JmxInspector;
 import com.proofpoint.log.Logger;
 import com.proofpoint.log.Logging;
@@ -72,8 +74,18 @@ public class Bootstrap
         LoggingConfiguration configuration = configurationFactory.build(LoggingConfiguration.class);
         logging.initialize(configuration);
 
+        // create warning logger now that we have logging initialized
+        final WarningsMonitor warningsMonitor = new WarningsMonitor()
+        {
+            @Override
+            public void onWarning(String message)
+            {
+                log.warn(message);
+            }
+        };
+
         // Validate configuration
-        ConfigurationValidator configurationValidator = new ConfigurationValidator(configurationFactory);
+        ConfigurationValidator configurationValidator = new ConfigurationValidator(configurationFactory, warningsMonitor);
         List<Message> messages = configurationValidator.validate(modules);
 
         // system modules
@@ -83,6 +95,13 @@ public class Bootstrap
         if (!messages.isEmpty()) {
             moduleList.add(new ValidationErrorModule(messages));
         }
+        moduleList.add(new Module() {
+            @Override
+            public void configure(Binder binder)
+            {
+                binder.bind(WarningsMonitor.class).toInstance(warningsMonitor);
+            }
+        });
         moduleList.add(modules);
 
         // create the injector

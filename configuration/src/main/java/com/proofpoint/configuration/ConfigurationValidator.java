@@ -17,10 +17,12 @@ import static java.util.Collections.singletonList;
 public class ConfigurationValidator
 {
     private final ConfigurationFactory configurationFactory;
+    private final WarningsMonitor warningsMonitor;
 
-    public ConfigurationValidator(ConfigurationFactory configurationFactory)
+    public ConfigurationValidator(ConfigurationFactory configurationFactory, WarningsMonitor warningsMonitor)
     {
         this.configurationFactory = configurationFactory;
+        this.warningsMonitor = warningsMonitor;
     }
 
     public List<Message> validate(Module... modules)
@@ -41,6 +43,7 @@ public class ConfigurationValidator
                             ConfigurationProvider<?> configurationProvider = (ConfigurationProvider<?>) provider;
                             // give the provider the configuration factory
                             configurationProvider.setConfigurationFactory(configurationFactory);
+                            configurationProvider.setWarningsMonitor(warningsMonitor);
                             try {
                                 // call the getter which will cause object creation
                                 configurationProvider.get();

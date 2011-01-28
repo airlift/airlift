@@ -74,7 +74,7 @@ import static org.testng.Assert.fail;
     private Injector createInjector(Map<String, String> properties, Module module)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
-        List<Message> messages = new ConfigurationValidator(configurationFactory).validate(module);
+        List<Message> messages = new ConfigurationValidator(configurationFactory, null).validate(module);
         return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
     }
 

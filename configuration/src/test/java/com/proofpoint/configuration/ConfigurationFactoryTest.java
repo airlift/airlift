@@ -235,7 +235,7 @@ public class ConfigurationFactoryTest
     private Injector createInjector(Map<String, String> properties, TestMonitor monitor, Module module)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, monitor);
-        List<Message> messages = new ConfigurationValidator(configurationFactory).validate(module);
+        List<Message> messages = new ConfigurationValidator(configurationFactory, null).validate(module);
         return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
     }
 

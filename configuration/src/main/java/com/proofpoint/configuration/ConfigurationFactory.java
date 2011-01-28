@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MapMaker;
 import com.google.inject.ConfigurationException;
+import com.google.inject.spi.Message;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
 
 import javax.validation.ConstraintViolation;
@@ -59,10 +60,13 @@ public class ConfigurationFactory
 
     public <T> T build(Class<T> configClass)
     {
-        return build(configClass, null);
+        return build(configClass, null).instance;
     }
 
-    <T> T build(ConfigurationProvider<T> configurationProvider)
+    /**
+     * This is used by the configuration provider
+     */
+    <T> T build(ConfigurationProvider<T> configurationProvider, WarningsMonitor warningsMonitor)
     {
         Preconditions.checkNotNull(configurationProvider, "configurationProvider");
 
@@ -72,7 +76,15 @@ public class ConfigurationFactory
             return instance;
         }
 
-        instance = build(configurationProvider.getConfigClass(), configurationProvider.getPrefix());
+        ConfigurationHolder<T> holder = build(configurationProvider.getConfigClass(), configurationProvider.getPrefix());
+        instance = holder.instance;
+
+        // inform caller about warnings
+        if (warningsMonitor != null) {
+            for (Message message : holder.problems.getWarnings()) {
+                warningsMonitor.onWarning(message.toString());
+            }
+        }
 
         // add to instance cache
         T existingValue = (T) instanceCache.putIfAbsent(configurationProvider, instance);
@@ -84,7 +96,7 @@ public class ConfigurationFactory
         return instance;
     }
 
-    private <T> T build(Class<T> configClass, String prefix)
+    private <T> ConfigurationHolder<T> build(Class<T> configClass, String prefix)
     {
         if (configClass == null) {
             throw new NullPointerException("configClass is null");
@@ -105,7 +117,7 @@ public class ConfigurationFactory
 
         for (AttributeMetadata attribute : configurationMetadata.getAttributes().values()) {
             try {
-                setConfigProperty(instance, attribute, prefix);
+                setConfigProperty(instance, attribute, prefix, problems);
             } catch (InvalidConfigurationException e) {
                 problems.addError(e.getCause(), e.getMessage());
             }
@@ -128,7 +140,7 @@ public class ConfigurationFactory
 
         problems.throwIfHasErrors();
 
-        return instance;
+        return new ConfigurationHolder<T>(instance, problems);
     }
 
     private <T> T newInstance(ConfigurationMetadata<T> configurationMetadata)
@@ -143,11 +155,11 @@ public class ConfigurationFactory
         }
     }
 
-    private <T> void setConfigProperty(T instance, AttributeMetadata attribute, String prefix)
+    private <T> void setConfigProperty(T instance, AttributeMetadata attribute, String prefix, Problems problems)
             throws InvalidConfigurationException
     {
         // Get property value
-        ConfigurationMetadata.InjectionPointMetaData injectionPoint = findOperativeInjectionPoint(attribute, prefix);
+        ConfigurationMetadata.InjectionPointMetaData injectionPoint = findOperativeInjectionPoint(attribute, prefix, problems);
 
         // If we did not get an injection point, do not call the setter
         if (injectionPoint == null) {
@@ -166,7 +178,7 @@ public class ConfigurationFactory
         }
     }
 
-    private ConfigurationMetadata.InjectionPointMetaData findOperativeInjectionPoint(AttributeMetadata attribute, String prefix)
+    private ConfigurationMetadata.InjectionPointMetaData findOperativeInjectionPoint(AttributeMetadata attribute, String prefix, Problems problems)
             throws ConfigurationException
     {
         ConfigurationMetadata.InjectionPointMetaData operativeInjectionPoint = attribute.getInjectionPoint();
@@ -176,8 +188,6 @@ public class ConfigurationFactory
             operativeName = prefix + operativeInjectionPoint.getProperty();
             operativeValue = properties.get(operativeName);
         }
-
-        Problems problems = new Problems(monitor);
 
         for (ConfigurationMetadata.InjectionPointMetaData injectionPoint : attribute.getLegacyInjectionPoints()) {
             String fullName = prefix + injectionPoint.getProperty();
@@ -279,5 +289,17 @@ public class ConfigurationFactory
         }
 
         return null;
+    }
+
+    private static class ConfigurationHolder<T>
+    {
+        private final T instance;
+        private final Problems problems;
+
+        private ConfigurationHolder(T instance, Problems problems)
+        {
+            this.instance = instance;
+            this.problems = problems;
+        }
     }
 }
