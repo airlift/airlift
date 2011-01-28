@@ -7,7 +7,32 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
+    <groupId>com.proofpoint.platform</groupId>
     <artifactId>experimental</artifactId>
+    <packaging>jar</packaging>
+    <version>0.27-SNAPSHOT</version>
 
+
+    <dependencies>
+
+        <dependency>
+          <groupId>org.codehaus.jackson</groupId>
+          <artifactId>jackson-mapper-asl</artifactId>
+          <version>1.7.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>r07</version>
+        </dependency>
+
+    </dependencies>
 
 </project>
