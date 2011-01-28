@@ -10,18 +10,20 @@ import org.apache.zookeeper.server.ZooKeeperServer;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.BindException;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 
 /**
- * manages an internally running ZooKeeper server and clients to that server.
- * FOR TESTING PURPOSES ONLY
+ * manages an internally running ZooKeeper server and clients to that server. FOR TESTING PURPOSES ONLY
  */
 public class ZookeeperTestServerInstance
 {
     private static final Logger log = Logger.get(ZookeeperTestServerInstance.class);
 
-    static {
+    static
+    {
         ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(FinalRequestProcessor.class)).setLevel(Level.ERROR);
         ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(ClientCnxn.class)).setLevel(Level.ERROR);
         ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(ZookeeperEvent.class)).setLevel(Level.ERROR);
@@ -42,14 +44,36 @@ public class ZookeeperTestServerInstance
     public ZookeeperTestServerInstance()
             throws Exception
     {
-        // TODO: choose random port
-        this(4534);
+        this(getRandomPort());
+    }
+
+    private static int getRandomPort()
+    {
+        ServerSocket server = null;
+        try {
+            server = new ServerSocket(0);
+            return server.getLocalPort();
+        }
+        catch ( IOException e ) {
+            throw new Error(e);
+        }
+        finally {
+            if ( server != null ) {
+                try {
+                    server.close();
+                }
+                catch ( IOException ignore ) {
+                    // ignore
+                }
+            }
+        }
     }
 
     /**
      * Create the server using the given port
      *
      * @param port the port
+     *
      * @throws Exception errors
      */
     public ZookeeperTestServerInstance(int port)
@@ -66,12 +90,14 @@ public class ZookeeperTestServerInstance
         File logDir = new File(tempDirectory, "log");
         File dataDir = new File(tempDirectory, "data");
 
-        try {
+        try
+        {
             server = new ZooKeeperServer(dataDir, logDir, TIME_IN_MS);
             factory = new NIOServerCnxn.Factory(new InetSocketAddress(port));
             factory.startup(server);
         }
-        catch (BindException e) {
+        catch ( BindException e )
+        {
             log.debug("Address is in use: %d", port);
             throw e;
         }
@@ -85,11 +111,13 @@ public class ZookeeperTestServerInstance
     public void close()
             throws InterruptedException
     {
-        try {
+        try
+        {
             server.shutdown();
             factory.shutdown();
         }
-        finally {
+        finally
+        {
             tempLocalDirectory.cleanup();
         }
     }
