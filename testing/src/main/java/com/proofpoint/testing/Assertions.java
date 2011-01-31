@@ -294,7 +294,7 @@ public final class Assertions
         ImmutableMultiset<?> actualSet = ImmutableMultiset.copyOf(actual);
         ImmutableMultiset<?> expectedSet = ImmutableMultiset.copyOf(expected);
         if (!actualSet.equals(expectedSet)) {
-            fail("%s: collections to be equal (ignoring order). Actual <%s>, expected <%s>", toMessageString(message), actual, expected);
+            fail("%sexpected: collections to be equal (ignoring order). Actual <%s>, expected <%s>", toMessageString(message), actual, expected);
         }
     }
 
