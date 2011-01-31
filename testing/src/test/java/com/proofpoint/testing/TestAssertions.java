@@ -1,9 +1,13 @@
 package com.proofpoint.testing;
 
+import com.google.common.collect.Sets;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static com.proofpoint.testing.TestAssertions.SubComparable.createSubComparable;
 import static com.proofpoint.testing.TestAssertions.SuperComparable.createSuperComparable;
@@ -189,6 +193,50 @@ public class TestAssertions
 
         // invalid comparison
         failGreaterThanOrEqual(createSuperComparable("bob"), createSubComparable("alice"));
+    }
+
+    @Test
+    public void testEqualsIgnoreOrder()
+    {
+        passEqualsIgnoreOrder(Collections.emptyList(), Collections.emptyList());
+        passEqualsIgnoreOrder(Arrays.asList(1, 2, 3), Arrays.asList(1, 2, 3));
+        passEqualsIgnoreOrder(Arrays.asList(3, 2, 1), Arrays.asList(1, 2, 3));
+        passEqualsIgnoreOrder(Arrays.asList(1, 1, 1), Arrays.asList(1, 1, 1));
+        passEqualsIgnoreOrder(Arrays.asList(1, 2, 3), Sets.newHashSet(1, 2, 3));
+
+        List<Integer> list = Arrays.asList(3, 2, 1);
+        passEqualsIgnoreOrder(list, list);
+
+        failEqualsIgnoreOrder(Arrays.asList(1, 1, 1), Arrays.asList(1, 1));
+        failEqualsIgnoreOrder(Collections.emptyList(), Arrays.asList(1, 2, 3));
+        failEqualsIgnoreOrder(Arrays.asList(4, 5, 6, 7), Arrays.asList(1, 2, 3));
+        failEqualsIgnoreOrder(Arrays.asList(1, 2, 3, 4), Arrays.asList(1, 2, 3));
+        failEqualsIgnoreOrder(Arrays.asList(1, 2, 3), Arrays.asList(1, 2, 3, 4));
+    }
+
+
+    private void passEqualsIgnoreOrder(Iterable<?> actual, Iterable<?> expected)
+    {
+        Assertions.assertEqualsIgnoreOrder(actual, expected);
+        Assertions.assertEqualsIgnoreOrder(actual, expected, MESSAGE);
+    }
+
+    private void failEqualsIgnoreOrder(Iterable<?> actual, Iterable<?> expected)
+    {
+        try {
+            Assertions.assertEqualsIgnoreOrder(actual, expected);
+            Assert.fail("Expected AssertionError");
+        }
+        catch (AssertionError e) {
+            verifyExceptionMessage(e, null, actual, expected);
+        }
+        try {
+            Assertions.assertEqualsIgnoreOrder(actual, expected, MESSAGE);
+            Assert.fail("Expected AssertionError");
+        }
+        catch (AssertionError e) {
+            verifyExceptionMessage(e, MESSAGE, actual, expected);
+        }
     }
 
     @SuppressWarnings({"RawUseOfParameterizedType"})

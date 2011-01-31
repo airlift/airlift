@@ -1,7 +1,9 @@
 package com.proofpoint.testing;
 
+import com.google.common.collect.ImmutableMultiset;
 import org.testng.Assert;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
 public final class Assertions
@@ -276,6 +278,24 @@ public final class Assertions
             return;
         }
         fail("%sexpected:<%s> to be an instance of <%s>", toMessageString(message), actual, expectedType.getName());
+    }
+
+    public static void assertEqualsIgnoreOrder(Iterable<?> actual, Iterable<?> expected)
+    {
+        assertEqualsIgnoreOrder(actual, expected, null);
+    }
+
+    public static void assertEqualsIgnoreOrder(Iterable<?> actual, Iterable<?> expected, String message)
+    {
+        assertNotNull(actual, "actual is null");
+        assertNotNull(expected, "expected is null");
+
+
+        ImmutableMultiset<?> actualSet = ImmutableMultiset.copyOf(actual);
+        ImmutableMultiset<?> expectedSet = ImmutableMultiset.copyOf(expected);
+        if (!actualSet.equals(expectedSet)) {
+            fail("%s: collections to be equal (ignoring order). Actual <%s>, expected <%s>", toMessageString(message), actual, expected);
+        }
     }
 
     private static String toMessageString(String message)
