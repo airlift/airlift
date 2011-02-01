@@ -6,10 +6,10 @@ import java.util.regex.Pattern;
 
 public final class Duration implements Comparable<Duration>
 {
-    public static Duration nanosSince(long nanos)
+    public static Duration nanosSince(long start)
     {
-        long l = System.nanoTime();
-        return new Duration(l - nanos, TimeUnit.NANOSECONDS);
+        long end = System.nanoTime();
+        return new Duration(end - start, TimeUnit.NANOSECONDS);
     }
 
     private final double millis;
