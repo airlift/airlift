@@ -13,7 +13,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-@Path("/v1/person/{id}")
+@Path("/v1/person/{id: \\w+}")
 public class PersonResource
 {
     private final PersonStore store;
