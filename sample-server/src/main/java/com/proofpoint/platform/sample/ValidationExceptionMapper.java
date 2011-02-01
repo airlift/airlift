@@ -1,15 +1,12 @@
 package com.proofpoint.platform.sample;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
 
 import javax.validation.ConstraintViolation;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
-import java.util.List;
 
 @Provider
 public class ValidationExceptionMapper
@@ -18,24 +15,14 @@ public class ValidationExceptionMapper
     @Override
     public Response toResponse(ValidationException e)
     {
-        List<String> messages = Lists.newArrayList(Iterables.transform(e.getViolations(), asString()));
+        ImmutableList.Builder<String> messages = new ImmutableList.Builder<String>();
+        for (ConstraintViolation<?> violation : e.getViolations()) {
+            messages.add(violation.getPropertyPath().toString() + " " + violation.getMessage());
+        }
 
         return Response.status(Response.Status.BAD_REQUEST)
                 .type(MediaType.APPLICATION_JSON_TYPE)
-                .entity(messages)
+                .entity(messages.build())
                 .build();
     }
-
-    private Function<ConstraintViolation<?>, String> asString()
-    {
-        return new Function<ConstraintViolation<?>, String>()
-        {
-            @Override
-            public String apply(ConstraintViolation<?> input)
-            {
-                return input.getPropertyPath().toString() + " " + input.getMessage();
-            }
-        };
-    }
-
 }
