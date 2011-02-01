@@ -49,7 +49,7 @@ public class TestPersonResource
     {
         Response response = resource.update("foo", new Person("foo@example.com", "Mr Foo"));
 
-        assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
+        assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
         assertNull(response.getEntity());
         assertNull(response.getMetadata().get("Content-Type")); // content type is set by jersey based on @Produces
 
@@ -75,7 +75,7 @@ public class TestPersonResource
 
         Response response = resource.update("foo", new Person("bar@example.com", "Mr Bar"));
 
-        assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
+        assertEquals(response.getStatus(), Response.Status.NO_CONTENT.getStatusCode());
         assertNull(response.getEntity());
         assertNull(response.getMetadata().get("Content-Type")); // content type is set by jersey based on @Produces
 
@@ -88,7 +88,7 @@ public class TestPersonResource
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
 
         Response response = resource.delete("foo");
-        assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
+        assertEquals(response.getStatus(), Response.Status.NO_CONTENT.getStatusCode());
         assertNull(response.getEntity());
 
         assertNull(store.get("foo"));
@@ -98,7 +98,7 @@ public class TestPersonResource
     public void testDeleteMissing()
     {
         Response response = resource.delete("foo");
-        assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
+        assertEquals(response.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
         assertNull(response.getEntity());
     }
 

@@ -123,7 +123,7 @@ public class TestServer
                 .execute()
                 .get();
 
-        assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.OK.getStatusCode());
+        assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.CREATED.getStatusCode());
 
         assertEquals(store.get("foo"), new Person("foo@example.com", "Mr Foo"));
     }
@@ -139,7 +139,7 @@ public class TestServer
                 .execute()
                 .get();
 
-        assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.OK.getStatusCode());
+        assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.NO_CONTENT.getStatusCode());
 
         assertNull(store.get("foo"));
     }
@@ -153,7 +153,7 @@ public class TestServer
                 .execute()
                 .get();
 
-        assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.OK.getStatusCode());
+        assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.NOT_FOUND.getStatusCode());
     }
 
     @Test

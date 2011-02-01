@@ -12,6 +12,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 
 @Path("/v1/person/{id: \\w+}")
 public class PersonResource
@@ -48,9 +49,14 @@ public class PersonResource
         Preconditions.checkNotNull(id, "id must not be null");
         Preconditions.checkNotNull(person, "person must not be null");
 
-        store.put(id, person);
+        boolean added = store.put(id, person);
+        if (added) {
+            UriBuilder uri = UriBuilder.fromResource(PersonResource.class);
+            return Response.created(uri.build(id))
+                            .build();
+        }
 
-        return Response.ok().build();
+        return Response.noContent().build();
     }
 
     @DELETE
@@ -58,8 +64,10 @@ public class PersonResource
     {
         Preconditions.checkNotNull(id, "id must not be null");
 
-        store.delete(id);
+        if (!store.delete(id)) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
 
-        return Response.ok().build();
+        return Response.noContent().build();
     }
 }

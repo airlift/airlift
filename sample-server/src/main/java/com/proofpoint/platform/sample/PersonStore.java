@@ -45,7 +45,10 @@ public class PersonStore
         return person;
     }
 
-    public void put(String id, Person person)
+    /**
+     * @return true if the entry was created for the first time
+     */
+    public boolean put(String id, Person person)
     {
         Preconditions.checkNotNull(id, "id must not be null");
         Preconditions.checkNotNull(person, "person must not be null");
@@ -57,16 +60,22 @@ public class PersonStore
         else {
             stats.personUpdated();
         }
+        return added;
     }
 
-    public void delete(String id)
+    /**
+     * @return true if the entry was removed
+     */
+    public boolean delete(String id)
     {
         Preconditions.checkNotNull(id, "id must not be null");
 
-        boolean removed = persons.remove(id) == null;
+        boolean removed = persons.remove(id) != null;
         if (removed) {
             stats.personRemoved();
         }
+
+        return removed;
     }
 
     public Collection<Person> getAll()
