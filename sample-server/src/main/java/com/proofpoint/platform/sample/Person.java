@@ -1,16 +1,18 @@
 package com.proofpoint.platform.sample;
 
+import com.google.common.base.Preconditions;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonMethod;
 import org.codehaus.jackson.annotate.JsonProperty;
 
+import javax.annotation.concurrent.Immutable;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 
-@JsonAutoDetect(JsonMethod.NONE)
+@Immutable
 public class Person
 {
     private final String email;
@@ -18,30 +20,18 @@ public class Person
 
     @JsonCreator
     public Person(@JsonProperty("email") String email, @JsonProperty("name") String name)
-            throws ValidationException
     {
         this.email = email;
         this.name = name;
-
-        validate().throwIfHasErrors();
-    }
-
-    private Errors validate()
-    {
-        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-        return Errors.forViolations(validator.validate(this));
     }
 
     @JsonProperty
-    @NotNull(message = "is missing")
-    @Pattern(regexp = "[^@]+@[^@]+", message = "is malformed")
     public String getEmail()
     {
         return email;
     }
 
     @JsonProperty
-    @NotNull(message = "is missing")
     public String getName()
     {
         return name;

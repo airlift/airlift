@@ -16,7 +16,6 @@ public class MainModule
 
         binder.bind(PersonsResource.class).in(Scopes.SINGLETON);
         binder.bind(PersonResource.class).in(Scopes.SINGLETON);
-        binder.bind(ValidationExceptionMapper.class).in(Scopes.SINGLETON);
 
         ConfigurationModule.bindConfig(binder).to(StoreConfig.class);
     }
