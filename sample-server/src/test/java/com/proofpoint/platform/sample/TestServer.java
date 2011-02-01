@@ -8,10 +8,10 @@ import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.experimental.json.JsonCodec;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.jaxrs.JaxrsModule;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -35,6 +35,10 @@ public class TestServer
     private TestingHttpServer server;
 
     private PersonStore store;
+
+    // TODO: json codec needs to support type literals
+    private final JsonCodec<Map> mapCodec = JsonCodec.createJsonCodec(Map.class);
+    private final JsonCodec<List> listCodec = JsonCodec.createJsonCodec(List.class);
 
     @BeforeMethod
     public void setup()
@@ -74,7 +78,7 @@ public class TestServer
 
         assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.OK.getStatusCode());
         assertEquals(response.getContentType(), MediaType.APPLICATION_JSON);
-        assertEquals(fromJson(response.getResponseBody(), List.class), fromJson("[]", List.class));
+        assertEquals(listCodec.fromJson(response.getResponseBody()), Collections.<Object>emptyList());
     }
 
     @Test
@@ -89,8 +93,8 @@ public class TestServer
         assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.OK.getStatusCode());
         assertEquals(response.getContentType(), MediaType.APPLICATION_JSON);
 
-        List<?> expected = fromJson(Resources.toString(Resources.getResource("list.json"), Charsets.UTF_8), List.class);
-        List<?> actual = fromJson(response.getResponseBody(), List.class);
+        List<?> expected = listCodec.fromJson(Resources.toString(Resources.getResource("list.json"), Charsets.UTF_8));
+        List<?> actual = listCodec.fromJson(response.getResponseBody());
 
         assertEquals(newHashSet(actual), newHashSet(expected));
     }
@@ -106,8 +110,8 @@ public class TestServer
         assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.OK.getStatusCode());
         assertEquals(response.getContentType(), MediaType.APPLICATION_JSON);
 
-        Map<?, ?> expected = fromJson(Resources.toString(Resources.getResource("single.json"), Charsets.UTF_8), Map.class);
-        Map<?, ?> actual = fromJson(response.getResponseBody(), Map.class);
+        Map<?, ?> expected = mapCodec.fromJson(Resources.toString(Resources.getResource("single.json"), Charsets.UTF_8));
+        Map<?, ?> actual = mapCodec.fromJson(response.getResponseBody());
 
         assertEquals(actual, expected);
     }
@@ -175,13 +179,5 @@ public class TestServer
     private String urlFor(String path)
     {
         return server.getBaseUrl().resolve(path).toString();
-    }
-
-    private static <T> T fromJson(String json, Class<T> clazz)
-            throws IOException
-    {
-        // TODO: use JsonCodec or similar
-        ObjectMapper mapper = new ObjectMapper();
-        return clazz.cast(mapper.readValue(json, Object.class));
     }
 }
