@@ -73,6 +73,13 @@
             <artifactId>jackson-core-asl</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>experimental</artifactId>
+            <version>0.27-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- for packaging -->
         <dependency>
             <groupId>com.proofpoint.platform</groupId>

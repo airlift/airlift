@@ -5,6 +5,8 @@ import org.testng.annotations.Test;
 
 import javax.ws.rs.core.Response;
 
+import java.net.URI;
+
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -23,7 +25,7 @@ public class TestPersonResource
     @Test
     public void testNotFound()
     {
-        Response response = resource.get("foo");
+        Response response = resource.get("foo", MockUriInfo.from(URI.create("http://localhost/v1/person/1")));
         assertEquals(response.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
     }
 
@@ -32,22 +34,22 @@ public class TestPersonResource
     {
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
 
-        Response response = resource.get("foo");
+        Response response = resource.get("foo", MockUriInfo.from(URI.create("http://localhost/v1/person/1")));
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
-        assertEquals(response.getEntity(), new Person("foo@example.com", "Mr Foo"));
+        assertEquals(response.getEntity(), new PersonRepresentation("foo@example.com", "Mr Foo", URI.create("http://localhost/v1/person/1")));
         assertNull(response.getMetadata().get("Content-Type")); // content type is set by jersey based on @Produces
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testGetNull()
     {
-        resource.get(null);
+        resource.get(null, MockUriInfo.from(URI.create("http://localhost/v1/person/1")));
     }
 
     @Test
     public void testAdd()
     {
-        Response response = resource.update("foo", new Person("foo@example.com", "Mr Foo"));
+        Response response = resource.put("foo", new PersonRepresentation("foo@example.com", "Mr Foo", null));
 
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
         assertNull(response.getEntity());
@@ -59,13 +61,13 @@ public class TestPersonResource
     @Test(expectedExceptions = NullPointerException.class)
     public void testPutNullId()
     {
-        resource.update(null, new Person("foo@example.com", "Mr Foo"));
+        resource.put(null, new PersonRepresentation("foo@example.com", "Mr Foo", null));
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testPutNullValue()
     {
-        resource.update("foo", null);
+        resource.put("foo", null);
     }
 
     @Test
@@ -73,7 +75,7 @@ public class TestPersonResource
     {
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
 
-        Response response = resource.update("foo", new Person("bar@example.com", "Mr Bar"));
+        Response response = resource.put("foo", new PersonRepresentation("bar@example.com", "Mr Bar", null));
 
         assertEquals(response.getStatus(), Response.Status.NO_CONTENT.getStatusCode());
         assertNull(response.getEntity());

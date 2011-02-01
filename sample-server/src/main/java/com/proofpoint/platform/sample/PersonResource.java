@@ -10,9 +10,17 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
+import javax.ws.rs.core.UriInfo;
+import java.net.URI;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+
+import static com.proofpoint.platform.sample.PersonRepresentation.from;
 
 @Path("/v1/person/{id: \\w+}")
 public class PersonResource
@@ -29,7 +37,7 @@ public class PersonResource
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response get(@PathParam("id") String id)
+    public Response get(@PathParam("id") String id, @Context UriInfo uriInfo)
     {
         Preconditions.checkNotNull(id, "id must not be null");
 
@@ -39,17 +47,17 @@ public class PersonResource
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
-        return Response.ok(person).build();
+        return Response.ok(from(person, uriInfo.getRequestUri())).build();
     }
 
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response update(@PathParam("id") String id, Person person)
+    public Response put(@PathParam("id") String id, PersonRepresentation person)
     {
         Preconditions.checkNotNull(id, "id must not be null");
         Preconditions.checkNotNull(person, "person must not be null");
 
-        boolean added = store.put(id, person);
+        boolean added = store.put(id, person.toPerson());
         if (added) {
             UriBuilder uri = UriBuilder.fromResource(PersonResource.class);
             return Response.created(uri.build(id))

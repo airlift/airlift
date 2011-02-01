@@ -18,25 +18,24 @@ public class Person
     private final String email;
     private final String name;
 
-    @JsonCreator
-    public Person(@JsonProperty("email") String email, @JsonProperty("name") String name)
+    public Person(String email, String name)
     {
+        Preconditions.checkNotNull(email, "email is null");
+        Preconditions.checkNotNull(email, "name is null");
+
         this.email = email;
         this.name = name;
     }
 
-    @JsonProperty
     public String getEmail()
     {
         return email;
     }
 
-    @JsonProperty
     public String getName()
     {
         return name;
     }
-
 
     @Override
     public boolean equals(Object o)
@@ -66,14 +65,5 @@ public class Person
         int result = email != null ? email.hashCode() : 0;
         result = 31 * result + (name != null ? name.hashCode() : 0);
         return result;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "Person{" +
-                "email='" + email + '\'' +
-                ", name='" + name + '\'' +
-                '}';
     }
 }
