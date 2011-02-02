@@ -4,11 +4,13 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.TypeLiteral;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.experimental.json.JsonCodec;
+import com.proofpoint.experimental.json.JsonCodecBuilder;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.jaxrs.JaxrsModule;
@@ -36,9 +38,8 @@ public class TestServer
 
     private PersonStore store;
 
-    // TODO: json codec needs to support type literals
-    private final JsonCodec<Map> mapCodec = JsonCodec.createJsonCodec(Map.class);
-    private final JsonCodec<List> listCodec = JsonCodec.createJsonCodec(List.class);
+    private final JsonCodec<Map<String, Object>> mapCodec = new JsonCodecBuilder().build(new TypeLiteral<Map<String, Object>>() {});
+    private final JsonCodec<List<Object>> listCodec = new JsonCodecBuilder().build(new TypeLiteral<List<Object>>() {});
 
     @BeforeMethod
     public void setup()
@@ -93,8 +94,8 @@ public class TestServer
         assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.OK.getStatusCode());
         assertEquals(response.getContentType(), MediaType.APPLICATION_JSON);
 
-        List<?> expected = listCodec.fromJson(Resources.toString(Resources.getResource("list.json"), Charsets.UTF_8));
-        List<?> actual = listCodec.fromJson(response.getResponseBody());
+        List<Object> expected = listCodec.fromJson(Resources.toString(Resources.getResource("list.json"), Charsets.UTF_8));
+        List<Object> actual = listCodec.fromJson(response.getResponseBody());
 
         assertEquals(newHashSet(actual), newHashSet(expected));
     }
@@ -110,8 +111,8 @@ public class TestServer
         assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.OK.getStatusCode());
         assertEquals(response.getContentType(), MediaType.APPLICATION_JSON);
 
-        Map<?, ?> expected = mapCodec.fromJson(Resources.toString(Resources.getResource("single.json"), Charsets.UTF_8));
-        Map<?, ?> actual = mapCodec.fromJson(response.getResponseBody());
+        Map<String, Object> expected = mapCodec.fromJson(Resources.toString(Resources.getResource("single.json"), Charsets.UTF_8));
+        Map<String, Object> actual = mapCodec.fromJson(response.getResponseBody());
 
         assertEquals(actual, expected);
     }

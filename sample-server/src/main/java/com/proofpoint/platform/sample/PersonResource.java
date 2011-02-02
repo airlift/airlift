@@ -19,7 +19,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -48,7 +47,7 @@ public class PersonResource
         Person person = store.get(id);
 
         if (person == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return Response.status(Response.Status.NOT_FOUND).entity("[" + id + "]").build();
         }
 
         return Response.ok(from(person, uriInfo.getRequestUri())).build();
@@ -65,15 +64,15 @@ public class PersonResource
 
         if (!violations.isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST)
-                            .entity(messsagesFor(violations))
-                            .build();
+                    .entity(messagesFor(violations))
+                    .build();
         }
 
         boolean added = store.put(id, person.toPerson());
         if (added) {
             UriBuilder uri = UriBuilder.fromResource(PersonResource.class);
             return Response.created(uri.build(id))
-                            .build();
+                    .build();
         }
 
         return Response.noContent().build();
@@ -97,7 +96,7 @@ public class PersonResource
         return validator.validate(person);
     }
 
-    private static List<String> messsagesFor(Collection<? extends ConstraintViolation<?>> violations)
+    private static List<String> messagesFor(Collection<? extends ConstraintViolation<?>> violations)
     {
         ImmutableList.Builder<String> messages = new ImmutableList.Builder<String>();
         for (ConstraintViolation<?> violation : violations) {
