@@ -7,6 +7,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -82,6 +83,7 @@ public class TestZookeeperLock
         final CrossProcessLock lock2 = client2.newLock(lockPath);
 
         Assert.assertTrue(lock1.tryLock());
+        final CountDownLatch      threadLatch = new CountDownLatch(1);
         Thread t = new Thread()
         {
             @Override
@@ -90,6 +92,7 @@ public class TestZookeeperLock
                 try {
                     Thread.sleep(2000);
                     lock1.unlock();
+                    threadLatch.countDown();
                 }
                 catch (InterruptedException e) {
                     interrupt();
@@ -98,7 +101,9 @@ public class TestZookeeperLock
         };
         t.start();
         Assert.assertFalse(lock2.tryLock());
-        Assert.assertTrue(lock2.tryLock(1, TimeUnit.MINUTES));
+        Assert.assertTrue(lock2.tryLock(20, TimeUnit.SECONDS));
+
+        Assert.assertTrue(threadLatch.await(20, TimeUnit.SECONDS));
         Assert.assertFalse(lock1.tryLock());
         lock2.unlock();
 
