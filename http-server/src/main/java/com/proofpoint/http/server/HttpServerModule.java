@@ -2,6 +2,7 @@ package com.proofpoint.http.server;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.proofpoint.configuration.ConfigurationModule;
 import org.eclipse.jetty.security.LoginService;
@@ -29,8 +30,27 @@ import org.eclipse.jetty.server.Server;
 public class HttpServerModule
         implements Module
 {
+    private final Class<? extends Provider<? extends LoginService>> loginServiceProviderClass;
+
     public static final String REALM_NAME = "Proofpoint";
 
+    /**
+     * Uses a default login service
+     */
+    public HttpServerModule()
+    {
+        this(HashLoginServiceProvider.class);
+    }
+
+    /**
+     * @param loginServiceProviderClass Provider for a login service or null for none
+     */
+    public HttpServerModule(Class<? extends Provider<? extends LoginService>> loginServiceProviderClass)
+    {
+        this.loginServiceProviderClass = loginServiceProviderClass;
+    }
+
+    @Override
     public void configure(Binder binder)
     {
         binder.bind(Server.class)
@@ -39,8 +59,9 @@ public class HttpServerModule
 
         binder.bind(JettyServer.class).in(Scopes.SINGLETON);
 
-        binder.bind(LoginService.class)
-                .toProvider(HashLoginServiceProvider.class);
+        if ( loginServiceProviderClass != null ) {
+            binder.bind(LoginService.class).toProvider(loginServiceProviderClass);
+        }
 
         ConfigurationModule.bindConfig(binder).to(HttpServerConfig.class);
     }
