@@ -166,6 +166,10 @@ public class ConfigurationFactory
             return;
         }
 
+        if (injectionPoint.getSetter().isAnnotationPresent(Deprecated.class)) {
+            problems.addWarning("Configuration property '%s' is deprecated and should not be used", injectionPoint.getProperty());
+        }
+
         Object value = getInjectedValue(injectionPoint, prefix);
 
         try {

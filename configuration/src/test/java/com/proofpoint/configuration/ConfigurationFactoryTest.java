@@ -163,6 +163,50 @@ public class ConfigurationFactoryTest
     }
 
     @Test
+    public void testConfigurationDespiteDeprecatedConfig()
+    {
+        Map<String, String> properties = new TreeMap<String, String>();
+        properties.put("string-b", "this is b");
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(properties, monitor, new Module()
+        {
+            public void configure(Binder binder)
+            {
+                ConfigurationModule.bindConfig(binder).to(DeprecatedConfigPresent.class);
+            }
+        });
+        DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
+        Assert.assertNotNull(deprecatedConfigPresent);
+        Assert.assertEquals(deprecatedConfigPresent.getStringA(), "defaultA");
+        Assert.assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
+    }
+
+    @Test
+    public void testConfigurationThroughDeprecatedConfig()
+    {
+        Map<String, String> properties = new TreeMap<String, String>();
+        properties.put("string-a", "this is a");
+        properties.put("string-b", "this is b");
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(properties, monitor, new Module()
+        {
+            public void configure(Binder binder)
+            {
+                ConfigurationModule.bindConfig(binder).to(DeprecatedConfigPresent.class);
+            }
+        });
+        DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(1);
+        monitor.assertMatchingWarningRecorded("string-a", "deprecated and should not be used");
+        Assert.assertNotNull(deprecatedConfigPresent);
+        Assert.assertEquals(deprecatedConfigPresent.getStringA(), "this is a");
+        Assert.assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
+    }
+
+    @Test
     public void testDefunctPropertyInConfigThrows()
     {
         Map<String, String> properties = Maps.newTreeMap();
@@ -306,6 +350,36 @@ public class ConfigurationFactoryTest
 
         @Config("string-a")
         @LegacyConfig("string-value")
+        public void setStringA(String stringValue)
+        {
+            this.stringA = stringValue;
+        }
+
+        public String getStringB()
+        {
+            return stringB;
+        }
+
+        @Config("string-b")
+        public void setStringB(String stringValue)
+        {
+            this.stringB = stringValue;
+        }
+    }
+
+    public static class DeprecatedConfigPresent
+    {
+        private String stringA = "defaultA";
+        private String stringB = "defaultB";
+
+        @Deprecated
+        public String getStringA()
+        {
+            return stringA;
+        }
+
+        @Deprecated
+        @Config("string-a")
         public void setStringA(String stringValue)
         {
             this.stringA = stringValue;
