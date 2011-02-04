@@ -68,7 +68,7 @@ public class ConfigurationFactoryTest
     }
 
     @Test
-    public void testConfigurationDespiteDeprecatedConfig()
+    public void testConfigurationDespiteLegacyConfig()
     {
         Map<String, String> properties = new TreeMap<String, String>();
         properties.put("string-a", "this is a");
@@ -90,7 +90,7 @@ public class ConfigurationFactoryTest
     }
 
     @Test
-    public void testConfigurationThroughDeprecatedConfig()
+    public void testConfigurationThroughLegacyConfig()
     {
         Map<String, String> properties = new TreeMap<String, String>();
         properties.put("string-value", "this is a");
@@ -113,7 +113,7 @@ public class ConfigurationFactoryTest
     }
 
     @Test
-    public void testConfigurationWithRedundantDeprecatedConfig()
+    public void testConfigurationWithRedundantLegacyConfig()
     {
         Map<String, String> properties = new TreeMap<String, String>();
         properties.put("string-value", "this is a");
@@ -137,7 +137,7 @@ public class ConfigurationFactoryTest
     }
 
     @Test
-    public void testConfigurationWithConflictingDeprecatedConfigThrows()
+    public void testConfigurationWithConflictingLegacyConfigThrows()
     {
         Map<String, String> properties = new TreeMap<String, String>();
         properties.put("string-value", "this is the old value");
