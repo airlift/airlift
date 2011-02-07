@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>rest-server-base</artifactId>
-        <version>0.30-SNAPSHOT</version>
+        <version>0.30</version>
         <relativePath>../rest-server-base/pom.xml</relativePath>
     </parent>
 
@@ -14,7 +14,7 @@
 
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>skeleton-server</artifactId>
-    <version>0.30-SNAPSHOT</version>
+    <version>0.30</version>
     <name>skeleton-server</name>
 
     <dependencies>
