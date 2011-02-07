@@ -6,7 +6,7 @@ import com.proofpoint.units.Duration;
 
 import java.util.concurrent.TimeUnit;
 
-public class HttpServerConfig
+public class HttpServerConfig implements Cloneable
 {
     private String ip;
     private boolean httpEnabled = true;
@@ -26,6 +26,20 @@ public class HttpServerConfig
     private Duration networkMaxIdleTime = new Duration(200, TimeUnit.SECONDS);
 
     private String userAuthFile;
+
+    @SuppressWarnings( { "CloneDoesntDeclareCloneNotSupportedException" })
+    @Override
+    public HttpServerConfig clone()
+    {
+        try
+        {
+            return (HttpServerConfig)super.clone();
+        }
+        catch ( CloneNotSupportedException e )
+        {
+            throw new Error(e);
+        }
+    }
 
     public String getIp()
     {

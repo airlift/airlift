@@ -31,6 +31,7 @@ public class HttpServerModule
         implements Module
 {
     private final Class<? extends Provider<? extends LoginService>> loginServiceProviderClass;
+    private final Class<? extends Provider<? extends Server>> serverProviderClass;
 
     public static final String REALM_NAME = "Proofpoint";
 
@@ -39,22 +40,24 @@ public class HttpServerModule
      */
     public HttpServerModule()
     {
-        this(HashLoginServiceProvider.class);
+        this(HashLoginServiceProvider.class, JettyProvider.class);
     }
 
     /**
      * @param loginServiceProviderClass Provider for a login service or null for none
+     * @param serverProviderClass Provider for servlet server
      */
-    public HttpServerModule(Class<? extends Provider<? extends LoginService>> loginServiceProviderClass)
+    public HttpServerModule(Class<? extends Provider<? extends LoginService>> loginServiceProviderClass, Class<? extends Provider<? extends Server>> serverProviderClass)
     {
         this.loginServiceProviderClass = loginServiceProviderClass;
+        this.serverProviderClass = serverProviderClass;
     }
 
     @Override
     public void configure(Binder binder)
     {
         binder.bind(Server.class)
-                .toProvider(JettyProvider.class)
+                .toProvider(serverProviderClass)
                 .in(Scopes.SINGLETON);
 
         binder.bind(JettyServer.class).in(Scopes.SINGLETON);
