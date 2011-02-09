@@ -6,8 +6,8 @@ public class LoggingConfiguration
 {
     private boolean consoleEnabled = true;
     private String logPath;
-    private long maxSegmentSizeInBytes;
-    private int maxHistory;
+    private long maxSegmentSizeInBytes = 100 * 1024 * 1024;  // TODO: need "size" unit similar to Duration
+    private int maxHistory = 30;
     private String levelsFile;
 
     public boolean isConsoleEnabled()
