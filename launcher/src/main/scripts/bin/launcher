@@ -42,7 +42,7 @@
 function getParentDirPath() {
     pushd "$PWD" > /dev/null
     dir=`dirname $0`
-    if [ $dir == "." ]; then 
+    if [ $dir == "." ]; then
         cd ..
         path=$PWD
     else
@@ -54,7 +54,7 @@ function getParentDirPath() {
 
 
 # ========================================
-# Common globals 
+# Common globals
 # ========================================
 getParentDirPath $0
 HOME_DIR=$PARENT_DIR
@@ -62,6 +62,7 @@ VAR_DIR=$HOME_DIR/var
 RUN_DIR=$VAR_DIR/run
 LOG_DIR=$VAR_DIR/log
 CFG_DIR=$HOME_DIR/etc
+TIMEOUT_SECS=10
 
 
 # ========================================
@@ -228,9 +229,15 @@ function stop() {
         OLD_PID=$PID
         kill $PID
 
+        start_time=`date +%s`
         while [ `isPidAlive $PID` -eq 0 ]
         do
             sleep 0.1
+            current_time=`date +%s`
+            if [ `expr $current_time - $start_time` -ge $TIMEOUT_SECS ]
+            then
+                kill -9 $PID
+            fi
         done
 
         clearPid
@@ -280,7 +287,7 @@ function status() {
 # Show help info
 function show_help() {
     echo "Usage: $(basename $0) [options] <command>"
-    echo 
+    echo
     echo "Commands:"
     echo "  run"
     echo "  start"
@@ -336,7 +343,7 @@ elif [ -n "$*" ]; then
 fi
 
 # run the command
-case $command in 
+case $command in
 	"run")
 		run
 		;;
@@ -349,7 +356,7 @@ case $command in
 	"kill")
 		stop_force
 		;;
-	"restart")   
+	"restart")
 		stop
 		start
 		;;
@@ -357,7 +364,7 @@ case $command in
                 status
 		;;
 	"unknown")
-		log_info "Expected a single command" 
+		log_info "Expected a single command"
 		exit $ERR_INVALID_ARGS
 		;;
 	*)
