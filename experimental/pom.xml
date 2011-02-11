@@ -17,7 +17,7 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>jaxrs</artifactId>
-            <version>0.28-SNAPSHOT</version>
+            <version>0.33-SNAPSHOT</version>
         </dependency>
 
         <dependency>
