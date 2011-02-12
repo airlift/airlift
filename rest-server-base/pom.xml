@@ -389,5 +389,57 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <id>rpm</id>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>rpm-maven-plugin</artifactId>
+                        <version>2.1-alpha-1</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>attached-rpm</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <group>Applications</group>
+                            <copyright>Proofpoint</copyright>
+                            <prefix>/</prefix>
+                            <needarch>i386</needarch>  <!-- rpm plugin has a bug when using noarch where it constructs the name of the file using 'i386' but to reference one that contatins 'noarch' when installing/deploying -->
+                            <defineStatements>
+                                <defineStatement>_tmppath ${project.build.directory}/rpm-tmp</defineStatement>
+                            </defineStatements>
+                            <postinstallScriptlet>
+                                <script>
+                                    cd $RPM_INSTALL_PREFIX
+                                    tar xzf ${project.artifactId}-${project.version}-distribution.tar.gz
+                                </script>
+                            </postinstallScriptlet>
+                            <postremoveScriptlet>
+                                <script>
+                                    rm -rf $RPM_INSTALL_PREFIX/${project.artifactId}-${project.version}
+                                </script>
+                            </postremoveScriptlet>
+                            <mappings>
+                                <mapping>
+                                    <directory>/</directory>
+                                    <sources>
+                                        <source>
+                                            <location>target/${project.artifactId}-${project.version}-distribution.tar.gz</location>
+                                        </source>
+                                    </sources>
+                                </mapping>
+                            </mappings>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>
