@@ -10,7 +10,10 @@
     <url>http://github.com/proofpoint/platform</url>
 
     <inceptionYear>2010</inceptionYear>
-    <organization>Proofpoint, Inc.</organization>
+    <organization>
+        <name>Proofpoint, Inc.</name>
+        <url>http://www.proofpoint.com</url>
+    </organization>
     <licenses>
         <license>
             <name>Apache License 2.0</name>
