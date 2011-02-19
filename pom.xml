@@ -6,15 +6,32 @@
     <packaging>pom</packaging>
     <version>0.33-SNAPSHOT</version>
     <name>platform</name>
+    <description>Proofpoint platform </description>
+    <url>http://github.com/proofpoint/platform</url>
+
+    <inceptionYear>2010</inceptionYear>
+    <organization>Proofpoint, Inc.</organization>
+    <licenses>
+        <license>
+            <name>Apache License 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <scm>
-        <connection>scm:git:git://yorktown.us.proofpoint.com/platform.git</connection>
-        <developerConnection>scm:git:ssh://git@yorktown.us.proofpoint.com/platform.git</developerConnection>
+        <connection>scm:git:git://github.com/proofpoint/platform.git</connection>
+        <developerConnection>scm:git:git@github.com:proofpoint/platform.git</developerConnection>
+        <url>http://github.com/proofpoint/platform/tree/master</url>
     </scm>
+
+    <prerequisites>
+        <maven>3.0</maven>
+    </prerequisites>
 
     <distributionManagement>
         <repository>
