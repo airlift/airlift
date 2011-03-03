@@ -24,7 +24,6 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <platform-version>0.30</platform-version>
     </properties>
 
     <prerequisites>
@@ -85,7 +84,7 @@
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>concurrent</artifactId>
-                <version>${platform-version}</version>
+                <version>0.33-SNAPSHOT</version>
             </dependency>
 
             <dependency>
@@ -334,7 +333,7 @@
                             <dependency>
                                 <groupId>com.proofpoint.platform</groupId>
                                 <artifactId>packaging</artifactId>
-                                <version>${platform-version}</version>
+                                <version>0.33-SNAPSHOT</version>
                             </dependency>
                         </dependencies>
 
