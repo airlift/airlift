@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -51,6 +52,9 @@ public class Logging
     private final ch.qos.logback.classic.Logger root;
     private final Logger log = Logger.get(Logging.class);
     private OutputStreamAppender<ILoggingEvent> consoleAppender;
+
+    private static final String TEMP_FILE_EXTENSION = ".tmp";
+    private static final String LOG_FILE_EXTENSION = ".log";
 
     /**
      * Sets up default logging:
@@ -113,6 +117,8 @@ public class Logging
     public void logToFile(String logPath, int maxHistory, long maxSizeInBytes)
     {
         log.info("Logging to %s", logPath);
+
+        recoverTempFiles(logPath);
 
         PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setPattern(PATTERN);
@@ -179,6 +185,35 @@ public class Logging
         }
     }
 
+    private void recoverTempFiles(String logPath)
+    {
+        // logback has a tendency to leave around temp files if it is interrupted
+        // these .tmp files are log files that are about to be compressed.
+        // This method recovers them so that they aren't orphaned
+
+        File    logPathFile = new File(logPath).getParentFile();
+        File[]  tempFiles = logPathFile.listFiles(new FilenameFilter()
+        {
+            @Override
+            public boolean accept(File dir, String name)
+            {
+                return name.endsWith(TEMP_FILE_EXTENSION);
+            }
+        });
+
+        if ( tempFiles != null ) {
+            for ( File tempFile : tempFiles ) {
+                String      newName = tempFile.getName().substring(0, tempFile.getName().length() - TEMP_FILE_EXTENSION.length());
+                File        newFile = new File(tempFile.getParent(), newName + LOG_FILE_EXTENSION);
+                if ( tempFile.renameTo(newFile) ) {
+                    log.info("Recovered temp file: ", tempFile);
+                }
+                else {
+                    log.warn("Could not rename temp file [%s] to [%s]", tempFile, newFile);
+                }
+            }
+        }
+    }
 
     public void initialize(LoggingConfiguration config)
             throws IOException
