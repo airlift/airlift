@@ -4,13 +4,13 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>http-server</artifactId>
     <packaging>jar</packaging>
-    <version>0.34-SNAPSHOT</version>
+    <version>0.34</version>
     <name>http-server</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.34-SNAPSHOT</version>
+        <version>0.34</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -18,13 +18,13 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>log</artifactId>
-            <version>0.34-SNAPSHOT</version>
+            <version>0.34</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>configuration</artifactId>
-            <version>0.34-SNAPSHOT</version>
+            <version>0.34</version>
         </dependency>
 
         <dependency>
@@ -97,13 +97,13 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>stats</artifactId>
-            <version>0.34-SNAPSHOT</version>
+            <version>0.34</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>testing</artifactId>
-            <version>0.34-SNAPSHOT</version>
+            <version>0.34</version>
             <scope>test</scope>
         </dependency>
 
