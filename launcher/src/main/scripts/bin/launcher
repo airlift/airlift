@@ -33,4 +33,4 @@
 #
 # Requires Java to be in PATH
 
-$(dirname $0)/launcher.sh $*
+$(dirname $0)/launcher.rb $*

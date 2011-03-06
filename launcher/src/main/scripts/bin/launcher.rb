@@ -22,9 +22,9 @@ Options
 * TODO install: invoked after package is deployed. Component should only make changes to resources it owns (i.e., no "touching" of environment or external services)
 * TODO config
 * TODO verify: make sure component can run within provided environment and with the given config.
-* start (run as daemon) 
-* stop (stop gracefully)    
-* kill (hard stop) 
+* start (run as daemon)
+* stop (stop gracefully)
+* kill (hard stop)
 * status (check status of daemon)
 
 Custom commands (for dev & debugging convenience)
@@ -39,7 +39,7 @@ Expects config under "etc":
 
 Logs to var/log/launcher.log when run as daemon
 Logs to console when run in foreground, unless log file provided
- 
+
 Libs must be installed under "lib"
 
 Requires java & ruby to be in PATH
@@ -84,7 +84,7 @@ class Pid
   end
 
   def clear()
-    File.delete(@path)
+    File.delete(@path) if File.exists?(@path)
   end
 
   def alive?
@@ -116,7 +116,7 @@ class CommandError < RuntimeError
 end
 
 def build_cmd_line(options)
-  install_path = Pathname.new(__FILE__).parent.parent
+  install_path = Pathname.new(__FILE__).parent.parent.expand_path
 
   log_option = if options[:daemon]
     "-Dlog.output-file=#{options[:log_path]}"
@@ -157,13 +157,17 @@ end
 def start(options)
   pid_file = Pid.new(options[:pid_file])
   if pid_file.alive?
-    raise CommandError.new(:already_running, "Already running as #{pid_file.get}") unless pid_file.alive?
+    return :success, "Already running as #{pid_file.get}"
   end
 
   options[:daemon] = true
   command = build_cmd_line(options)
-  
+
+  puts command
   pid = fork do
+    STDOUT.close
+    STDERR.close
+
     Process.setsid
     Dir.chdir(options[:install_path])
 
@@ -179,7 +183,10 @@ end
 def stop(options)
   pid_file = Pid.new(options[:pid_file])
 
-  raise CommandError.new(:not_running, "Not running") unless pid_file.alive?
+  if !pid_file.alive?
+    pid_file.clear
+    return :success, "Stopped #{pid_file.get}"
+  end
 
   pid = pid_file.get
   Process.kill(Signal.list["TERM"], pid)
@@ -196,7 +203,10 @@ end
 def kill(options)
   pid_file = Pid.new(options[:pid_file])
 
-  raise CommandError.new(:not_running, "Not running") unless pid_file.alive?
+  if !pid_file.alive?
+    pid_file.clear
+    return :success, "foo"
+  end
 
   pid = pid_file.get
 
@@ -213,16 +223,19 @@ end
 
 def status(options)
   pid_file = Pid.new(options[:pid_file])
-  
-  if pid_file.alive?
+
+  if pid_file.get.nil?
+    return :not_running, "Not running"
+  elsif pid_file.alive?
     return :running, "Running as #{pid_file.get}"
   else
-    return :not_running, "Not running"
+    # todo this is wrong. how do you get path from the pid_file
+    return :not_running_with_pid_file, "Program is dead and pid file #{pid_file.get} exists"
   end
 end
 
 commands = [:run, :start, :stop, :kill, :status]
-install_path = Pathname.new(__FILE__).parent.parent
+install_path = Pathname.new(__FILE__).parent.parent.expand_path
 
 # initialize defaults
 options = {
@@ -282,6 +295,7 @@ puts options.map { |k, v| "#{k}=#{v}"}.join("\n") if options[:verbose]
 status_codes = {
         :success => 0,
         :running => 0,
+        :not_running_with_pid_file => 1,
         :not_running => 3
 }
 
@@ -290,8 +304,7 @@ error_codes = {
         :generic_error => 1,
         :invalid_args => 2,
         :unsupported => 3,
-        :config_missing => 6,
-        :not_running => 7
+        :config_missing => 6
 }
 
 if ARGV.length != 1
