@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 
 public class HttpServerConfig implements Cloneable
 {
-    private String ip;
     private boolean httpEnabled = true;
     private int httpPort = 8080;
 
@@ -54,19 +53,6 @@ public class HttpServerConfig implements Cloneable
         {
             throw new Error(e);
         }
-    }
-
-    public String getIp()
-    {
-        return ip;
-    }
-
-    @Config("http-server.ip")
-    @LegacyConfig("jetty.ip")
-    public HttpServerConfig setIp(String ip)
-    {
-        this.ip = ip;
-        return this;
     }
 
     public boolean isHttpEnabled()

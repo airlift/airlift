@@ -29,7 +29,6 @@ public class TestHttpServerConfig
     public void testDefaults()
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(HttpServerConfig.class)
-                .setIp(null)
                 .setHttpEnabled(true)
                 .setHttpPort(8080)
                 .setHttpsEnabled(false)
@@ -50,7 +49,6 @@ public class TestHttpServerConfig
     public void testExplicitPropertyMappings()
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("http-server.ip", "1.2.3.4")
                 .put("http-server.http.enabled", "false")
                 .put("http-server.http.port", "1")
                 .put("http-server.https.enabled", "true")
@@ -67,7 +65,6 @@ public class TestHttpServerConfig
                 .build();
 
         HttpServerConfig expected = new HttpServerConfig()
-                .setIp("1.2.3.4")
                 .setHttpEnabled(false)
                 .setHttpPort(1)
                 .setHttpsEnabled(true)
@@ -89,7 +86,6 @@ public class TestHttpServerConfig
     public void testDeprecatedProperties()
     {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
-                .put("http-server.ip", "1.2.3.4")
                 .put("http-server.http.enabled", "false")
                 .put("http-server.http.port", "1")
                 .put("http-server.https.enabled", "true")
@@ -106,7 +102,6 @@ public class TestHttpServerConfig
                 .build();
 
         Map<String, String> oldProperties = new ImmutableMap.Builder<String, String>()
-                .put("jetty.ip", "1.2.3.4")
                 .put("jetty.http.enabled", "false")
                 .put("jetty.http.port", "1")
                 .put("jetty.https.enabled", "true")

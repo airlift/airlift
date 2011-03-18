@@ -23,7 +23,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
-import org.eclipse.jetty.server.Server;
+import com.proofpoint.node.NodeInfo;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -32,6 +32,10 @@ import javax.servlet.Servlet;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 
 public class TestHttpServerModule
 {
@@ -71,7 +75,45 @@ public class TestHttpServerModule
                     }
                 });
 
-        injector.getInstance(Server.class);
+        HttpServer server = injector.getInstance(HttpServer.class);
+        assertNotNull(server);
     }
 
+    @Test
+    public void testHttpServerUri()
+            throws Exception
+    {
+        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
+                .build();
+
+        ConfigurationFactory configFactory = new ConfigurationFactory(properties);
+        Injector injector = Guice.createInjector(new HttpServerModule(),
+                new ConfigurationModule(configFactory),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
+                    }
+                });
+
+        NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
+        HttpServer server = injector.getInstance(HttpServer.class);
+        assertNotNull(server);
+        server.start();
+        try {
+            HttpServerInfo httpServerInfo = injector.getInstance(HttpServerInfo.class);
+            assertNotNull(httpServerInfo);
+            assertNotNull(httpServerInfo.getHttpUri());
+            assertEquals(httpServerInfo.getHttpUri().getScheme(), "http");
+            assertEquals(httpServerInfo.getHttpUri().getHost(), nodeInfo.getPublicIp().getHostAddress());
+            assertEquals(httpServerInfo.getHttpUri(), server.getHttpUri());
+            assertNull(httpServerInfo.getHttpsUri());
+        }
+        catch (Exception e) {
+            server.stop();
+        }
+    }
 }

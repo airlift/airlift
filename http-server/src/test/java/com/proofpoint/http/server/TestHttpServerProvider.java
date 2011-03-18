@@ -20,7 +20,7 @@ import com.google.common.io.Files;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
 import com.ning.http.util.Base64;
-import org.eclipse.jetty.server.Server;
+import com.proofpoint.node.NodeInfo;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -37,9 +37,9 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-public class TestJettyProvider
+public class TestHttpServerProvider
 {
-    private Server server;
+    private HttpServer server;
     private File tempDir;
 
     @BeforeMethod
@@ -166,9 +166,9 @@ public class TestJettyProvider
     private void createServer(HttpServerConfig config)
     {
         HashLoginServiceProvider loginServiceProvider = new HashLoginServiceProvider(config);
-        JettyProvider provider = new JettyProvider(config, new DummyServlet());
-        provider.setLoginService(loginServiceProvider.get());
-        server = provider.get();
+        HttpServerProvider serverProvider = new HttpServerProvider(new NodeInfo(), config, new DummyServlet());
+        serverProvider.setLoginService(loginServiceProvider.get());
+        server = serverProvider.get();
     }
 
     private HttpServerConfig makeBaseConfig()

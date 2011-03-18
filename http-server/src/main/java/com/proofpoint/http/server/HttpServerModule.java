@@ -21,7 +21,6 @@ import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.proofpoint.configuration.ConfigurationModule;
 import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.server.Server;
 
 /**
  * Provides a fully configured instance of an http server,
@@ -46,7 +45,7 @@ public class HttpServerModule
         implements Module
 {
     private final Class<? extends Provider<? extends LoginService>> loginServiceProviderClass;
-    private final Class<? extends Provider<? extends Server>> serverProviderClass;
+    private final Class<? extends Provider<? extends HttpServer>> httpServerProviderClass;
 
     public static final String REALM_NAME = "Proofpoint";
 
@@ -55,29 +54,26 @@ public class HttpServerModule
      */
     public HttpServerModule()
     {
-        this(HashLoginServiceProvider.class, JettyProvider.class);
+        this(HashLoginServiceProvider.class, HttpServerProvider.class);
     }
 
     /**
      * @param loginServiceProviderClass Provider for a login service or null for none
-     * @param serverProviderClass Provider for servlet server
+     * @param httpServerProviderClass Provider for servlet server
      */
-    public HttpServerModule(Class<? extends Provider<? extends LoginService>> loginServiceProviderClass, Class<? extends Provider<? extends Server>> serverProviderClass)
+    public HttpServerModule(Class<? extends Provider<? extends LoginService>> loginServiceProviderClass, Class<? extends Provider<? extends HttpServer>> httpServerProviderClass)
     {
         this.loginServiceProviderClass = loginServiceProviderClass;
-        this.serverProviderClass = serverProviderClass;
+        this.httpServerProviderClass = httpServerProviderClass;
     }
 
     @Override
     public void configure(Binder binder)
     {
-        binder.bind(Server.class)
-                .toProvider(serverProviderClass)
-                .in(Scopes.SINGLETON);
+        binder.bind(HttpServer.class).toProvider(httpServerProviderClass).in(Scopes.SINGLETON);
+        binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
 
-        binder.bind(JettyServer.class).in(Scopes.SINGLETON);
-
-        if ( loginServiceProviderClass != null ) {
+        if (loginServiceProviderClass != null) {
             binder.bind(LoginService.class).toProvider(loginServiceProviderClass);
         }
 

@@ -16,15 +16,20 @@
 package com.proofpoint.http.server.testing;
 
 import com.google.inject.Binder;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
+import com.proofpoint.http.server.HttpServer;
+import com.proofpoint.http.server.HttpServerInfo;
 
 public class TestingHttpServerModule
-    implements Module
+        implements Module
 {
     @Override
     public void configure(Binder binder)
     {
+        binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
         binder.bind(TestingHttpServer.class).in(Scopes.SINGLETON);
+        binder.bind(HttpServer.class).to(Key.get(TestingHttpServer.class));
     }
 }
