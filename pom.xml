@@ -224,6 +224,7 @@
         <module>launcher</module>
         <module>packaging</module>
         <module>log</module>
+        <module>node</module>
         <module>http-server</module>
         <module>jaxrs</module>
         <module>jmx</module>
