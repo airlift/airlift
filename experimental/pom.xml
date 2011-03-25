@@ -3,21 +3,21 @@
     <parent>
         <artifactId>platform</artifactId>
         <groupId>com.proofpoint.platform</groupId>
-        <version>0.36-SNAPSHOT</version>
+        <version>0.36</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>experimental</artifactId>
     <packaging>jar</packaging>
-    <version>0.36-SNAPSHOT</version>
+    <version>0.36</version>
 
 
     <dependencies>
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>jaxrs</artifactId>
-            <version>0.36-SNAPSHOT</version>
+            <version>0.36</version>
         </dependency>
 
         <dependency>
