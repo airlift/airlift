@@ -477,23 +477,17 @@
                             <defineStatements>
                                 <defineStatement>_tmppath ${project.build.directory}/rpm-tmp</defineStatement>
                             </defineStatements>
-                            <postinstallScriptlet>
+                            <installScriptlet>
                                 <script>
-                                    cd $RPM_INSTALL_PREFIX
-                                    tar xzf ${project.artifactId}-${project.version}-distribution.tar.gz
+                                    tar -xz -C $RPM_BUILD_ROOT -f ${project.build.directory}/${project.artifactId}-${project.version}-distribution.tar.gz
                                 </script>
-                            </postinstallScriptlet>
-                            <postremoveScriptlet>
-                                <script>
-                                    rm -rf $RPM_INSTALL_PREFIX/${project.artifactId}-${project.version}
-                                </script>
-                            </postremoveScriptlet>
+                            </installScriptlet>
                             <mappings>
                                 <mapping>
-                                    <directory>/</directory>
+                                    <directory>/${project.artifactId}-${project.version}</directory>
                                     <sources>
                                         <source>
-                                            <location>target/${project.artifactId}-${project.version}-distribution.tar.gz</location>
+                                            <location>${project.build.directory}/${project.artifactId}-${project.version}</location>
                                         </source>
                                     </sources>
                                 </mapping>
