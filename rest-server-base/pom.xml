@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>rest-server-base</artifactId>
-    <version>0.35-SNAPSHOT</version>
+    <version>0.35</version>
     <packaging>pom</packaging>
     <name>REST Server Base POM</name>
     <description>Proofpoint platform REST server base POM</description>
@@ -72,43 +72,43 @@
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>bootstrap</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.35</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>configuration</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.35</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>dbpool</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.35</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>jaxrs</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.35</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>http-server</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.35</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>jmx</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.35</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>launcher</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.35</version>
                 <classifier>bin</classifier>
                 <type>tar.gz</type>
             </dependency>
@@ -116,25 +116,25 @@
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>log</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.35</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>stats</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.35</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>units</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.35</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>testing</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.35</version>
                 <scope>test</scope>
             </dependency>
 
@@ -327,7 +327,7 @@
                             <dependency>
                                 <groupId>com.proofpoint.platform</groupId>
                                 <artifactId>packaging</artifactId>
-                                <version>0.35-SNAPSHOT</version>
+                                <version>0.35</version>
                             </dependency>
                         </dependencies>
 
