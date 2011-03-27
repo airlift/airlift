@@ -17,7 +17,6 @@ package com.proofpoint.http.server;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.net.InetAddresses;
 import com.proofpoint.node.NodeInfo;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.jmx.MBeanContainer;
@@ -26,7 +25,6 @@ import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -46,8 +44,6 @@ import javax.management.MBeanServer;
 import javax.servlet.Servlet;
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -57,15 +53,14 @@ import static java.lang.String.format;
 public class HttpServer
 {
     private final Server server;
-    private final SelectChannelConnector httpConnector;
-    private final SslSelectChannelConnector httpsConnector;
-    private final NodeInfo nodeInfo;
 
-
-    public HttpServer(NodeInfo nodeInfo, HttpServerConfig config, Servlet theServlet, Map<String, String> parameters, MBeanServer mbeanServer, LoginService loginService)
+    public HttpServer(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config, Servlet theServlet, Map<String, String> parameters, MBeanServer mbeanServer, LoginService loginService)
             throws IOException
     {
-        this.nodeInfo = nodeInfo;
+        Preconditions.checkNotNull(httpServerInfo, "httpServerInfo is null");
+        Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
+        Preconditions.checkNotNull(config, "config is null");
+        Preconditions.checkNotNull(theServlet, "theServlet is null");
 
         Server server = new Server();
 
@@ -76,22 +71,22 @@ public class HttpServer
         }
 
         // set up NIO-based HTTP connector
+        SelectChannelConnector httpConnector;
         if (config.isHttpEnabled()) {
             httpConnector = new SelectChannelConnector();
-            httpConnector.setPort(config.getHttpPort());
+            httpConnector.setPort(httpServerInfo.getHttpUri().getPort());
             httpConnector.setMaxIdleTime((int) config.getNetworkMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
             httpConnector.setStatsOn(true);
             httpConnector.setHost(nodeInfo.getBindIp().getHostAddress());
 
             server.addConnector(httpConnector);
-        } else {
-            httpConnector = null;
         }
 
         // set up NIO-based HTTPS connector
+        SslSelectChannelConnector httpsConnector;
         if (config.isHttpsEnabled()) {
             httpsConnector = new SslSelectChannelConnector();
-            httpsConnector.setPort(config.getHttpsPort());
+            httpsConnector.setPort(httpServerInfo.getHttpsUri().getPort());
             httpsConnector.setStatsOn(true);
             httpsConnector.setKeystore(config.getKeystorePath());
             httpsConnector.setPassword(config.getKeystorePassword());
@@ -99,8 +94,6 @@ public class HttpServer
             httpsConnector.setHost(nodeInfo.getBindIp().getHostAddress());
 
             server.addConnector(httpsConnector);
-        } else {
-            httpsConnector = null;
         }
 
         QueuedThreadPool threadPool = new QueuedThreadPool(config.getMaxThreads());
@@ -206,43 +199,5 @@ public class HttpServer
             throws Exception
     {
         server.stop();
-    }
-
-    public URI getHttpUri()
-    {
-        return getConnectorUri("http", httpConnector);
-    }
-
-    public URI getHttpsUri()
-    {
-        return getConnectorUri("https", httpsConnector);
-    }
-
-    private URI getConnectorUri(String scheme, Connector connector)
-    {
-        if (connector == null) {
-            return null;
-        }
-
-        int port = getPort(connector);
-
-        try {
-            return new URI(scheme, null, InetAddresses.toUriString(nodeInfo.getPublicIp()), port, null, null, null);
-        }
-        catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private int getPort(Connector connector)
-    {
-        int port = connector.getLocalPort();
-        if (port == -1) {
-            throw new IllegalStateException("Server has not yet been started");
-        }
-        else if (port == -2) {
-            throw new IllegalStateException("Server has already been stopped");
-        }
-        return port;
     }
 }

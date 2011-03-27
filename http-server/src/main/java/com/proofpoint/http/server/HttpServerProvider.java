@@ -15,6 +15,8 @@
  */
 package com.proofpoint.http.server;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
@@ -24,7 +26,6 @@ import org.eclipse.jetty.security.LoginService;
 import javax.annotation.Nullable;
 import javax.management.MBeanServer;
 import javax.servlet.Servlet;
-import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -34,6 +35,7 @@ import java.util.Map;
 public class HttpServerProvider
         implements Provider<HttpServer>
 {
+    private final HttpServerInfo httpServerInfo;
     private final NodeInfo nodeInfo;
     private final HttpServerConfig config;
     private final Servlet theServlet;
@@ -42,8 +44,14 @@ public class HttpServerProvider
     private LoginService loginService;
 
     @Inject
-    public HttpServerProvider(NodeInfo nodeInfo, HttpServerConfig config, @TheServlet Servlet theServlet)
+    public HttpServerProvider(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config, @TheServlet Servlet theServlet)
     {
+        Preconditions.checkNotNull(httpServerInfo, "httpServerInfo is null");
+        Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
+        Preconditions.checkNotNull(config, "config is null");
+        Preconditions.checkNotNull(theServlet, "theServlet is null");
+
+        this.httpServerInfo = httpServerInfo;
         this.nodeInfo = nodeInfo;
         this.config = config;
         this.theServlet = theServlet;
@@ -70,10 +78,12 @@ public class HttpServerProvider
     public HttpServer get()
     {
         try {
-            return new HttpServer(nodeInfo, config, theServlet, servletInitParameters, mbeanServer, loginService);
+            HttpServer httpServer = new HttpServer(httpServerInfo, nodeInfo, config, theServlet, servletInitParameters, mbeanServer, loginService);
+            httpServer.start();
+            return httpServer;
         }
-        catch (IOException e) {
-            throw new RuntimeException(e);
+        catch (Exception e) {
+            throw Throwables.propagate(e);
         }
     }
 }

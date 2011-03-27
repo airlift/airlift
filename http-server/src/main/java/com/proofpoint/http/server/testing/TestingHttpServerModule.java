@@ -20,6 +20,7 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.proofpoint.http.server.HttpServer;
+import com.proofpoint.http.server.HttpServerConfig;
 import com.proofpoint.http.server.HttpServerInfo;
 
 public class TestingHttpServerModule
@@ -28,6 +29,7 @@ public class TestingHttpServerModule
     @Override
     public void configure(Binder binder)
     {
+        binder.bind(HttpServerConfig.class).toInstance(new HttpServerConfig().setMinThreads(1).setMaxThreads(2).setHttpPort(0));
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
         binder.bind(TestingHttpServer.class).in(Scopes.SINGLETON);
         binder.bind(HttpServer.class).to(Key.get(TestingHttpServer.class));

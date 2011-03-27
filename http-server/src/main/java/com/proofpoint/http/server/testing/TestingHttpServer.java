@@ -15,10 +15,10 @@
  */
 package com.proofpoint.http.server.testing;
 
-import com.google.common.net.InetAddresses;
 import com.google.inject.Inject;
 import com.proofpoint.http.server.HttpServer;
 import com.proofpoint.http.server.HttpServerConfig;
+import com.proofpoint.http.server.HttpServerInfo;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.node.NodeInfo;
 
@@ -32,25 +32,30 @@ import java.util.Map;
  */
 public class TestingHttpServer extends HttpServer
 {
+
+    private final HttpServerInfo httpServerInfo;
+
     @Inject
-    public TestingHttpServer(@TheServlet Servlet servlet, @TheServlet Map<String, String> initParameters)
+    public TestingHttpServer(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config, @TheServlet Servlet servlet, @TheServlet Map<String, String> initParameters)
             throws IOException
     {
-        super(new NodeInfo("test-node", InetAddresses.forString("127.0.0.1")),
-                new HttpServerConfig().setMinThreads(1).setMaxThreads(2).setHttpPort(0),
+        super(httpServerInfo,
+                nodeInfo,
+                config,
                 servlet,
                 initParameters,
                 null,
                 null);
+        this.httpServerInfo = httpServerInfo;
     }
 
     public URI getBaseUrl()
     {
-        return getHttpUri();
+        return httpServerInfo.getHttpUri();
     }
 
     public int getPort()
     {
-        return getHttpUri().getPort();
+        return httpServerInfo.getHttpUri().getPort();
     }
 }

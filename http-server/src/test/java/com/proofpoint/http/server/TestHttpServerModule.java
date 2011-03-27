@@ -60,6 +60,7 @@ public class TestHttpServerModule
             throws IOException
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("http-server.http.port", "0")
                 .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
                 .build();
 
@@ -84,6 +85,7 @@ public class TestHttpServerModule
             throws Exception
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("http-server.http.port", "0")
                 .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
                 .build();
 
@@ -109,7 +111,6 @@ public class TestHttpServerModule
             assertNotNull(httpServerInfo.getHttpUri());
             assertEquals(httpServerInfo.getHttpUri().getScheme(), "http");
             assertEquals(httpServerInfo.getHttpUri().getHost(), nodeInfo.getPublicIp().getHostAddress());
-            assertEquals(httpServerInfo.getHttpUri(), server.getHttpUri());
             assertNull(httpServerInfo.getHttpsUri());
         }
         catch (Exception e) {

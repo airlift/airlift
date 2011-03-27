@@ -3,6 +3,7 @@ package com.proofpoint.node;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.InetAddresses;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.weakref.jmx.Managed;
 
 import java.net.Inet4Address;
@@ -15,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+@Singleton
 public class NodeInfo
 {
     private final String nodeId;

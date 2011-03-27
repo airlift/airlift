@@ -18,6 +18,9 @@ package com.proofpoint.http.server.testing;
 import com.google.common.collect.ImmutableMap;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
+import com.proofpoint.http.server.HttpServerConfig;
+import com.proofpoint.http.server.HttpServerInfo;
+import com.proofpoint.node.NodeInfo;
 import org.testng.annotations.Test;
 
 import javax.servlet.ServletConfig;
@@ -42,7 +45,7 @@ public class TestTestingHttpServer
     {
         DummyServlet servlet = new DummyServlet();
         Map<String, String> params = ImmutableMap.of("sampleInitParameter", "the value");
-        TestingHttpServer server = new TestingHttpServer(servlet, params);
+        TestingHttpServer server = createTestingHttpServer(servlet, params);
 
         try {
             server.start();
@@ -63,7 +66,7 @@ public class TestTestingHttpServer
         AsyncHttpClient client = null;
 
         try {
-            server = new TestingHttpServer(servlet, Collections.<String, String>emptyMap());
+            server = createTestingHttpServer(servlet, Collections.<String, String>emptyMap());
             client = new AsyncHttpClient();
 
             server.start();
@@ -84,6 +87,15 @@ public class TestTestingHttpServer
                 closeQuietly(client);
             }
         }
+    }
+
+    private TestingHttpServer createTestingHttpServer(DummyServlet servlet, Map<String, String> params)
+            throws IOException
+    {
+        NodeInfo nodeInfo = new NodeInfo();
+        HttpServerConfig config = new HttpServerConfig();
+        HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params);
     }
 
     private void closeQuietly(TestingHttpServer server)
