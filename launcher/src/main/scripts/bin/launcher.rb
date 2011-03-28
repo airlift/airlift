@@ -46,7 +46,7 @@ Requires java & ruby to be in PATH
 
 =end
 
-require 'ftools'
+require 'fileutils'
 require 'optparse'
 require 'pathname'
 require 'pp'
