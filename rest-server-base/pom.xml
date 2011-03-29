@@ -486,7 +486,7 @@
                             <group>Applications</group>
                             <copyright>Proofpoint</copyright>
                             <prefix>/</prefix>
-                            <needarch>i386</needarch>  <!-- rpm plugin has a bug when using noarch where it constructs the name of the file using 'i386' but to reference one that contatins 'noarch' when installing/deploying -->
+                            <needarch>i386</needarch>  <!-- rpm plugin has a bug when using noarch where it constructs the name of the file using 'i386' but uses a reference to one that contains 'noarch' when installing/deploying -->
                             <defineStatements>
                                 <defineStatement>_tmppath ${project.build.directory}/rpm-tmp</defineStatement>
                             </defineStatements>
