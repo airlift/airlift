@@ -466,7 +466,7 @@
                         <configuration>
                             <target>
                                 <!-- need an empty dir to "trick" the rpm plugin when it looks for source files -->
-                                <mkdir dir="${project.build.directory}/empty-dir"/>
+                                <mkdir dir="${project.build.directory}/empty-dir/${project.artifactId}-${project.version}"/>
                             </target>
                         </configuration>
                     </plugin>
