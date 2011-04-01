@@ -35,11 +35,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+// This code was based of the JacksonProvider
 @Provider
 @Consumes({MediaType.APPLICATION_JSON, "text/json"})
 @Produces({MediaType.APPLICATION_JSON, "text/json"})
 public class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<Object>
 {
+    public static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
+
     /**
      * Looks like we need to worry about accidental
      * data binding for types we shouldn't be handling. This is
@@ -117,8 +120,8 @@ public class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<
                             .build());
         }
 
-        Set<ConstraintViolation<Object>> violations = validate(object);
-
+        // validate object using the bean validation framework
+        Set<ConstraintViolation<Object>> violations = VALIDATOR.validate(object);
         if (!violations.isEmpty()) {
             throw new WebApplicationException(
                     Response.status(Response.Status.BAD_REQUEST)
@@ -215,12 +218,6 @@ public class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<
             return null;
         }
         return queryParameters.getFirst("jsonp");
-    }
-
-    private static <T> Set<ConstraintViolation<T>> validate(T object)
-    {
-        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-        return validator.validate(object);
     }
 
     private static List<String> messagesFor(Collection<? extends ConstraintViolation<?>> violations)
