@@ -1,20 +1,27 @@
 package com.proofpoint.experimental.jaxrs;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.spi.container.WebApplication;
 import org.codehaus.jackson.JsonEncoding;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonParser;
+import org.codehaus.jackson.JsonProcessingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.type.TypeFactory;
 import org.codehaus.jackson.map.util.JSONPObject;
 import org.codehaus.jackson.type.JavaType;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
@@ -24,6 +31,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
 @Provider
 @Consumes({MediaType.APPLICATION_JSON, "text/json"})
@@ -89,13 +99,35 @@ public class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<
             InputStream inputStream)
             throws IOException
     {
-        JsonParser jsonParser = objectMapper.getJsonFactory().createJsonParser(inputStream);
+        Object object;
+        try {
+            JsonParser jsonParser = objectMapper.getJsonFactory().createJsonParser(inputStream);
 
-        // Important: we are NOT to close the underlying stream after
-        // mapping, so we need to instruct parser:
-        jsonParser.disable(JsonParser.Feature.AUTO_CLOSE_SOURCE);
+            // Important: we are NOT to close the underlying stream after
+            // mapping, so we need to instruct parser:
+            jsonParser.disable(JsonParser.Feature.AUTO_CLOSE_SOURCE);
 
-        return objectMapper.readValue(jsonParser, TypeFactory.type(genericType));
+            object = objectMapper.readValue(jsonParser, TypeFactory.type(genericType));
+        }
+        catch (JsonProcessingException e) {
+            // invalid json request
+            throw new WebApplicationException(
+                    Response.status(Response.Status.BAD_REQUEST)
+                            .entity("Invalid json for Java type " + type)
+                            .build());
+        }
+
+        Set<ConstraintViolation<Object>> violations = validate(object);
+
+        if (!violations.isEmpty()) {
+            throw new WebApplicationException(
+                    Response.status(Response.Status.BAD_REQUEST)
+                            .entity(messagesFor(violations))
+                            .build());
+        }
+
+
+        return object;
     }
 
     public long getSize(Object value, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType)
@@ -150,6 +182,8 @@ public class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<
         else {
             objectMapper.writeValue(jsonGenerator, value);
         }
+        // add a newline so when you use curl it looks nice
+        outputStream.write('\n');
     }
 
     private boolean isPrettyPrintRequested()
@@ -181,5 +215,21 @@ public class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<
             return null;
         }
         return queryParameters.getFirst("jsonp");
+    }
+
+    private static <T> Set<ConstraintViolation<T>> validate(T object)
+    {
+        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+        return validator.validate(object);
+    }
+
+    private static List<String> messagesFor(Collection<? extends ConstraintViolation<?>> violations)
+    {
+        ImmutableList.Builder<String> messages = new ImmutableList.Builder<String>();
+        for (ConstraintViolation<?> violation : violations) {
+            messages.add(violation.getPropertyPath().toString() + " " + violation.getMessage());
+        }
+
+        return messages.build();
     }
 }
