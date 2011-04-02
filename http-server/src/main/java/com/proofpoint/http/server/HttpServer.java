@@ -66,7 +66,13 @@ public class HttpServer
 
         if (mbeanServer != null) {
             // export jmx mbeans if a server was provided
-            MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);
+            MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer) {
+                @Override
+                public void doStart()
+                {
+                    // jetty registers a shutdown hook that can cause a deadlock
+                }
+            };
             server.getContainer().addEventListener(mbeanContainer);
         }
 
