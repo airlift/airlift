@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>rest-server-base</artifactId>
-    <version>0.35-SNAPSHOT</version>
+    <version>0.37-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>REST Server Base POM</name>
     <description>Proofpoint platform REST server base POM</description>
@@ -72,49 +72,43 @@
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>bootstrap</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.37-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>configuration</artifactId>
-                <version>0.35-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>concurrent</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.37-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>dbpool</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.37-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>jaxrs</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.37-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>http-server</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.37-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>jmx</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.37-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>launcher</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.37-SNAPSHOT</version>
                 <classifier>bin</classifier>
                 <type>tar.gz</type>
             </dependency>
@@ -122,25 +116,25 @@
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>log</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.37-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>stats</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.37-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>units</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.37-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>testing</artifactId>
-                <version>0.35-SNAPSHOT</version>
+                <version>0.37-SNAPSHOT</version>
                 <scope>test</scope>
             </dependency>
 
@@ -334,7 +328,7 @@
                             <dependency>
                                 <groupId>com.proofpoint.platform</groupId>
                                 <artifactId>packaging</artifactId>
-                                <version>0.35-SNAPSHOT</version>
+                                <version>0.37-SNAPSHOT</version>
                             </dependency>
                         </dependencies>
 
@@ -474,6 +468,25 @@
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.6</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                   <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <target>
+                                <!-- need an empty dir to "trick" the rpm plugin when it looks for source files -->
+                                <mkdir dir="${project.build.directory}/empty-dir/${project.artifactId}-${project.version}"/>
+                            </target>
+                        </configuration>
+                    </plugin>
+                    <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>rpm-maven-plugin</artifactId>
                         <version>2.1-alpha-1</version>
@@ -489,27 +502,22 @@
                             <group>Applications</group>
                             <copyright>Proofpoint</copyright>
                             <prefix>/</prefix>
-                            <needarch>i386</needarch>  <!-- rpm plugin has a bug when using noarch where it constructs the name of the file using 'i386' but to reference one that contatins 'noarch' when installing/deploying -->
+                            <needarch>i386</needarch>  <!-- rpm plugin has a bug when using noarch where it constructs the name of the file using 'i386' but uses a reference to one that contains 'noarch' when installing/deploying -->
                             <defineStatements>
                                 <defineStatement>_tmppath ${project.build.directory}/rpm-tmp</defineStatement>
+                                <defineStatement>__os_install_post %{nil}</defineStatement>
                             </defineStatements>
-                            <postinstallScriptlet>
+                            <installScriptlet>
                                 <script>
-                                    cd $RPM_INSTALL_PREFIX
-                                    tar xzf ${project.artifactId}-${project.version}-distribution.tar.gz
+                                    tar -xz -C $RPM_BUILD_ROOT -f ${project.build.directory}/${project.artifactId}-${project.version}-distribution.tar.gz
                                 </script>
-                            </postinstallScriptlet>
-                            <postremoveScriptlet>
-                                <script>
-                                    rm -rf $RPM_INSTALL_PREFIX/${project.artifactId}-${project.version}
-                                </script>
-                            </postremoveScriptlet>
+                            </installScriptlet>
                             <mappings>
                                 <mapping>
                                     <directory>/</directory>
                                     <sources>
                                         <source>
-                                            <location>target/${project.artifactId}-${project.version}-distribution.tar.gz</location>
+                                            <location>${project.build.directory}/empty-dir</location>
                                         </source>
                                     </sources>
                                 </mapping>
