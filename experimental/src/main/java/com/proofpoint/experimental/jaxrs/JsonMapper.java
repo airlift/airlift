@@ -112,7 +112,12 @@ public class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<
 
             object = objectMapper.readValue(jsonParser, TypeFactory.type(genericType));
         }
-        catch (JsonProcessingException e) {
+        catch (Exception e) {
+            // we want to return a 400 for bad JSON but not for a real IO exception
+            if (e instanceof IOException && !(e instanceof JsonProcessingException)) {
+                throw (IOException) e;
+            }
+
             // invalid json request
             throw new WebApplicationException(
                     Response.status(Response.Status.BAD_REQUEST)
