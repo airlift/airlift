@@ -44,18 +44,18 @@ public class EventBinder
         Binder sourcedBinder = binder.withSource(getCaller());
 
         // Build event type metadata and bind any errors into Guice
-        ImmutableList.Builder<EventTypeMetadata<? extends T>> builder = ImmutableList.builder();
-        for (Class<? extends T> eventType : eventTypes) {
-            EventTypeMetadata<? extends T> eventTypeMetadata = getEventTypeMetadata(eventType);
+        ImmutableList.Builder<EventTypeMetadata<?>> builder = ImmutableList.builder();
+        for (Class<?> eventType : eventTypes) {
+            EventTypeMetadata<?> eventTypeMetadata = getEventTypeMetadata(eventType);
             builder.add(eventTypeMetadata);
             for (String error : eventTypeMetadata.getErrors()) {
                 sourcedBinder.addError(error);
             }
         }
-        EventClientProvider<T> eventClientProvider = new EventClientProvider<T>(builder.build());
+        EventClientProvider eventClientProvider = new EventClientProvider(builder.build());
 
         // create a valid key
-        Key<EventClient<T>> key = (Key<EventClient<T>>) Key.get(newParameterizedType(EventClient.class, boundType));
+        Key<EventClient> key = (Key<EventClient>) Key.get(newParameterizedType(EventClient.class, boundType));
 
         // bind the event client provider
         sourcedBinder.bind(key).toProvider(eventClientProvider);

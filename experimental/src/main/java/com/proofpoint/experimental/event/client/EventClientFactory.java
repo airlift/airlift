@@ -4,5 +4,5 @@ import java.util.List;
 
 public interface EventClientFactory
 {
-    <T> EventClient<T> createEventClient(List<EventTypeMetadata<? extends T>> types);
+    EventClient createEventClient(List<EventTypeMetadata<?>> types);
 }
