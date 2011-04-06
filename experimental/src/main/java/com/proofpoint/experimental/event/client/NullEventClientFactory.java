@@ -7,9 +7,9 @@ import java.util.List;
 public class NullEventClientFactory implements EventClientFactory
 {
     @Override
-    public <T> NullEventClient<T> createEventClient(List<EventTypeMetadata<? extends T>> eventTypes)
+    public NullEventClient createEventClient(List<EventTypeMetadata<?>> eventTypes)
     {
         Preconditions.checkNotNull(eventTypes, "eventTypes is null");
-        return new NullEventClient<T>();
+        return new NullEventClient();
     }
 }

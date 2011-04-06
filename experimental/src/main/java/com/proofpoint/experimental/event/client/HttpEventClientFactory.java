@@ -39,9 +39,9 @@ public class HttpEventClientFactory implements EventClientFactory
     }
 
     @Override
-    public <T> HttpEventClient<T> createEventClient(List<EventTypeMetadata<? extends T>> eventTypes)
+    public HttpEventClient createEventClient(List<EventTypeMetadata<?>> eventTypes)
     {
         Preconditions.checkNotNull(eventTypes, "eventTypes is null");
-        return new HttpEventClient<T>(httpEventClientConfig, objectMapperProvider.get(), client, eventTypes);
+        return new HttpEventClient(httpEventClientConfig, objectMapperProvider.get(), client, eventTypes);
     }
 }

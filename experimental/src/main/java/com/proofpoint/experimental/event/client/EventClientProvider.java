@@ -6,12 +6,12 @@ import com.google.inject.Provider;
 
 import java.util.List;
 
-public class EventClientProvider<T> implements Provider<EventClient<T>>
+public class EventClientProvider implements Provider<EventClient>
 {
-    private final List<EventTypeMetadata<? extends T>> types;
+    private final List<EventTypeMetadata<?>> types;
     private EventClientFactory eventClientFactory;
 
-    public EventClientProvider(List<EventTypeMetadata<? extends T>> eventTypes)
+    public EventClientProvider(List<EventTypeMetadata<?>> eventTypes)
     {
         Preconditions.checkNotNull(eventTypes, "eventTypes is null");
         this.types = eventTypes;
@@ -24,7 +24,7 @@ public class EventClientProvider<T> implements Provider<EventClient<T>>
     }
 
     @Override
-    public EventClient<T> get()
+    public EventClient get()
     {
         Preconditions.checkNotNull(eventClientFactory, "eventClientFactory is null");
         return eventClientFactory.createEventClient(types);
