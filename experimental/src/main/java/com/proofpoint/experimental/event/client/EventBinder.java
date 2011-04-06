@@ -7,7 +7,6 @@ import com.google.inject.Key;
 
 import java.util.List;
 
-import static com.google.inject.util.Types.newParameterizedType;
 import static com.proofpoint.experimental.event.client.EventTypeMetadata.getEventTypeMetadata;
 
 public class EventBinder
@@ -24,22 +23,21 @@ public class EventBinder
         this.binder = binder;
     }
 
-    public <T> void bindEventClient(Class<T> type)
+    public void bindEventClient(Class<?>... types)
     {
-        bindGenericEventClient(type, type);
+        bindGenericEventClient(types);
     }
 
-    public <T> void bindGenericEventClient(Class<T> boundType, Class<? extends T>... eventTypes)
+    public void bindGenericEventClient(Class<?>... eventTypes)
     {
-        Preconditions.checkNotNull(boundType, "boundType is null");
         Preconditions.checkNotNull(eventTypes, "eventTypes is null");
-        bindGenericEventClient(boundType, ImmutableList.copyOf(eventTypes));
+        bindGenericEventClient(ImmutableList.copyOf(eventTypes));
     }
 
-    public <T> void bindGenericEventClient(Class<T> boundType, List<Class<? extends T>> eventTypes)
+    public void bindGenericEventClient(List<Class<?>> eventTypes)
     {
-        Preconditions.checkNotNull(boundType, "boundType is null");
         Preconditions.checkNotNull(eventTypes, "eventTypes is null");
+        Preconditions.checkArgument(!eventTypes.isEmpty(), "eventTypes is empty");
 
         Binder sourcedBinder = binder.withSource(getCaller());
 
@@ -55,7 +53,7 @@ public class EventBinder
         EventClientProvider eventClientProvider = new EventClientProvider(builder.build());
 
         // create a valid key
-        Key<EventClient> key = (Key<EventClient>) Key.get(newParameterizedType(EventClient.class, boundType));
+        Key<EventClient> key = Key.get(EventClient.class);
 
         // bind the event client provider
         sourcedBinder.bind(key).toProvider(eventClientProvider);
