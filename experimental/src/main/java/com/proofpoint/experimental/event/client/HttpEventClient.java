@@ -1,6 +1,7 @@
 package com.proofpoint.experimental.event.client;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Request;
@@ -20,20 +21,22 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class HttpEventClient<T> implements EventClient<T>
+public class HttpEventClient implements EventClient
 {
     private static final Logger log = Logger.get(HttpEventClient.class);
 
     private final ObjectMapper objectMapper;
     private final String baseUrl;
     private final AsyncHttpClient client;
+    private final Set<Class<?>> registeredTypes;
 
-    public HttpEventClient(HttpEventClientConfig config, ObjectMapper objectMapper, AsyncHttpClient client, List<EventTypeMetadata<? extends T>> eventTypes)
+    public HttpEventClient(HttpEventClientConfig config, ObjectMapper objectMapper, AsyncHttpClient client, List<EventTypeMetadata<?>> eventTypes)
     {
         Preconditions.checkNotNull(config, "config is null");
         Preconditions.checkNotNull(objectMapper, "objectMapper is null");
@@ -45,15 +48,19 @@ public class HttpEventClient<T> implements EventClient<T>
         this.client = client;
         this.baseUrl = config.getBaseUrl();
 
+        ImmutableSet.Builder<Class<?>> typeRegistrations = ImmutableSet.builder();
+
         SimpleModule eventModule = new SimpleModule("MyModule", new Version(1, 0, 0, null));
-        for (EventTypeMetadata<? extends T> eventType : eventTypes) {
+        for (EventTypeMetadata<?> eventType : eventTypes) {
             eventModule.addSerializer(EventJsonSerializer.createEventJsonSerializer(eventType, config.getJsonVersion()));
+            typeRegistrations.add(eventType.getEventClass());
         }
         objectMapper.registerModule(eventModule);
+        this.registeredTypes = typeRegistrations.build();
     }
 
     @Override
-    public Future<Void> post(T... event)
+    public <T> Future<Void> post(T... event)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(event, "event is null");
@@ -61,7 +68,7 @@ public class HttpEventClient<T> implements EventClient<T>
     }
 
     @Override
-    public Future<Void> post(final Iterable<T> events)
+    public <T> Future<Void> post(final Iterable<T> events)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(events, "eventsSupplier is null");
@@ -79,14 +86,14 @@ public class HttpEventClient<T> implements EventClient<T>
     }
 
     @Override
-    public Future<Void> post(EventGenerator<T> eventGenerator)
+    public <T> Future<Void> post(EventGenerator<T> eventGenerator)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(eventGenerator, "eventGenerator is null");
         Request request = new RequestBuilder("POST")
                 .setUrl(baseUrl)
                 .setHeader("Content-Type", "application/json")
-                .setBody(new JsonEntityWriter<T>(objectMapper, eventGenerator))
+                .setBody(new JsonEntityWriter<T>(objectMapper, registeredTypes, eventGenerator))
                 .build();
 
         try {
@@ -161,13 +168,16 @@ public class HttpEventClient<T> implements EventClient<T>
     private static class JsonEntityWriter<T> implements EntityWriter
     {
         private final ObjectMapper objectMapper;
+        private final Set<Class<?>> registeredTypes;
         private final EventGenerator<T> events;
 
-        public JsonEntityWriter(ObjectMapper objectMapper, EventGenerator<T> events)
+        public JsonEntityWriter(ObjectMapper objectMapper, Set<Class<?>> registeredTypes, EventGenerator<T> events)
         {
-            this.objectMapper = objectMapper;
             Preconditions.checkNotNull(objectMapper, "objectMapper is null");
+            Preconditions.checkNotNull(registeredTypes, "registeredTypes is null");
             Preconditions.checkNotNull(events, "events is null");
+            this.objectMapper = objectMapper;
+            this.registeredTypes = registeredTypes;
             this.events = events;
         }
 
@@ -187,6 +197,11 @@ public class HttpEventClient<T> implements EventClient<T>
                 public void post(T event)
                         throws IOException
                 {
+                    if (!registeredTypes.contains(event.getClass())) {
+                        throw new RuntimeException(
+                                String.format("Event type %s has not been registered as an event",
+                                        event.getClass().getSimpleName()));
+                    }
                     jsonGenerator.writeObject(event);
                 }
             });

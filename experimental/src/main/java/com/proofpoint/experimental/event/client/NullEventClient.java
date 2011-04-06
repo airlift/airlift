@@ -6,10 +6,10 @@ import com.google.common.util.concurrent.Futures;
 import java.util.Arrays;
 import java.util.concurrent.Future;
 
-public class NullEventClient<T> implements EventClient<T>
+public class NullEventClient implements EventClient
 {
     @Override
-    public Future<Void> post(T... events)
+    public <T> Future<Void> post(T... events)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(events, "event is null");
@@ -17,7 +17,7 @@ public class NullEventClient<T> implements EventClient<T>
     }
 
     @Override
-    public Future<Void> post(Iterable<T> events)
+    public <T> Future<Void> post(Iterable<T> events)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(events, "event is null");
@@ -33,7 +33,7 @@ public class NullEventClient<T> implements EventClient<T>
     }
 
     @Override
-    public Future<Void> post(EventGenerator<T> eventGenerator)
+    public <T> Future<Void> post(EventGenerator<T> eventGenerator)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(eventGenerator, "eventGenerator is null");

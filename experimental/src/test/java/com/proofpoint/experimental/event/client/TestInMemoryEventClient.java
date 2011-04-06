@@ -7,13 +7,13 @@ import org.testng.annotations.Test;
 
 public class TestInMemoryEventClient
 {
-    private InMemoryEventClient<DummyEventClass> eventClient;
+    private InMemoryEventClient eventClient;
 
     @BeforeMethod
     public void setup()
             throws Exception
     {
-        eventClient = new InMemoryEventClient<DummyEventClass>();
+        eventClient = new InMemoryEventClient();
     }
 
     @Test

@@ -3,15 +3,15 @@ package com.proofpoint.experimental.event.client;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
-public interface EventClient<T>
+public interface EventClient
 {
-    Future<Void> post(T... event)
+    <T> Future<Void> post(T... event)
             throws IllegalArgumentException;
 
-    Future<Void> post(Iterable<T> events)
+    <T> Future<Void> post(Iterable<T> events)
             throws IllegalArgumentException;
 
-    Future<Void> post(EventGenerator<T> eventGenerator)
+    <T> Future<Void> post(EventGenerator<T> eventGenerator)
             throws IllegalArgumentException;
 
     public interface EventGenerator<T>

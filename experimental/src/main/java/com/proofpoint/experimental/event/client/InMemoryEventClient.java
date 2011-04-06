@@ -10,19 +10,19 @@ import java.util.concurrent.Future;
 
 import static com.google.common.collect.Lists.newArrayList;
 
-public class InMemoryEventClient<T> implements EventClient<T>
+public class InMemoryEventClient implements EventClient
 {
-    private final List<T> events = newArrayList();
+    private final List<Object> events = newArrayList();
 
     @Override
-    public Future<Void> post(T... events)
+    public <T> Future<Void> post(T... events)
             throws IllegalArgumentException
     {
         return post(Arrays.asList(events));
     }
 
     @Override
-    public Future<Void> post(Iterable<T> events)
+    public <T> Future<Void> post(Iterable<T> events)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(events, "event is null");
@@ -39,7 +39,7 @@ public class InMemoryEventClient<T> implements EventClient<T>
     }
 
     @Override
-    public Future<Void> post(EventGenerator<T> eventGenerator)
+    public <T> Future<Void> post(EventGenerator<T> eventGenerator)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(eventGenerator, "eventGenerator is null");
@@ -60,7 +60,7 @@ public class InMemoryEventClient<T> implements EventClient<T>
         return Futures.immediateFuture(null);
     }
 
-    public List<T> getEvents()
+    public List<Object> getEvents()
     {
         return ImmutableList.copyOf(events);
     }
