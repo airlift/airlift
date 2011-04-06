@@ -56,6 +56,10 @@ public class Logging
     private static final String TEMP_FILE_EXTENSION = ".tmp";
     private static final String LOG_FILE_EXTENSION = ".log";
 
+    // keep a reference to the original System.err so that we can rewire logging to the right place if this
+    // class is created multiple times
+    private static final OutputStream stderr = System.err;
+
     /**
      * Sets up default logging:
      * <p/>
@@ -78,9 +82,7 @@ public class Logging
 
     private void rewireStdStreams()
     {
-        OutputStream out = System.err;
-
-        redirectSlf4jTo(out);
+        redirectSlf4jTo(stderr);
         log.info("Logging to stderr");
 
         redirectStdStreamsToSlf4j();
