@@ -514,6 +514,10 @@
                             </installScriptlet>
                             <mappings>
                                 <mapping>
+                                    <username>root</username>
+                                    <groupname>root</groupname>
+                                </mapping>
+                                <mapping>
                                     <directory>/</directory>
                                     <sources>
                                         <source>
