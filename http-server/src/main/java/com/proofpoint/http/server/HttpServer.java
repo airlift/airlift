@@ -121,7 +121,10 @@ public class HttpServer
          */
         HandlerCollection handlers = new HandlerCollection();
         handlers.addHandler(createServletContext(theServlet, parameters, loginService));
-        handlers.addHandler(createLogHandler(config));
+        RequestLogHandler logHandler = createLogHandler(config);
+        if (logHandler != null) {
+            handlers.addHandler(logHandler);
+        }
 
         // add handlers to Jetty
         StatisticsHandler statsHandler = new StatisticsHandler();
@@ -168,7 +171,7 @@ public class HttpServer
         return securityHandler;
     }
 
-    private static RequestLogHandler createLogHandler(HttpServerConfig config)
+    protected RequestLogHandler createLogHandler(HttpServerConfig config)
             throws IOException
     {
         // TODO: use custom (more easily-parseable) format

@@ -21,6 +21,7 @@ import com.proofpoint.http.server.HttpServerConfig;
 import com.proofpoint.http.server.HttpServerInfo;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.node.NodeInfo;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
 
 import javax.servlet.Servlet;
 import java.io.IOException;
@@ -47,6 +48,13 @@ public class TestingHttpServer extends HttpServer
                 null,
                 null);
         this.httpServerInfo = httpServerInfo;
+    }
+
+    @Override
+    public RequestLogHandler createLogHandler(HttpServerConfig config)
+            throws IOException
+    {
+        return null;
     }
 
     public URI getBaseUrl()
