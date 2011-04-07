@@ -311,6 +311,7 @@ class EventTypeMetadata<T>
                         name,
                         method.toGenericString());
             }
+
             getEventDataType().writeFieldValue(jsonGenerator, value);
         }
     }
@@ -323,7 +324,7 @@ class EventTypeMetadata<T>
                     public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                             throws IOException
                     {
-                        Preconditions.checkArgument(value instanceof String, "value is not a String");
+                        validateFieldValueType(value, String.class);
                         jsonGenerator.writeString((String) value);
                     }
                 },
@@ -333,7 +334,7 @@ class EventTypeMetadata<T>
                     public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                             throws IOException
                     {
-                        Preconditions.checkArgument(value instanceof Boolean, "value is not a Boolean");
+                        validateFieldValueType(value, Boolean.class);
                         jsonGenerator.writeBoolean((Boolean) value);
                     }
                 },
@@ -343,7 +344,7 @@ class EventTypeMetadata<T>
                     public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                             throws IOException
                     {
-                        Preconditions.checkArgument(value instanceof Byte, "value is not a Byte");
+                        validateFieldValueType(value, Byte.class);
                         jsonGenerator.writeNumber((Byte) value);
                     }
                 },
@@ -353,7 +354,7 @@ class EventTypeMetadata<T>
                     public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                             throws IOException
                     {
-                        Preconditions.checkArgument(value instanceof Short, "value is not a Short");
+                        validateFieldValueType(value, Short.class);
                         jsonGenerator.writeNumber((Short) value);
                     }
                 },
@@ -363,7 +364,7 @@ class EventTypeMetadata<T>
                     public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                             throws IOException
                     {
-                        Preconditions.checkArgument(value instanceof Integer, "value is not a Integer");
+                        validateFieldValueType(value, Integer.class);
                         jsonGenerator.writeNumber((Integer) value);
                     }
                 },
@@ -373,7 +374,7 @@ class EventTypeMetadata<T>
                     public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                             throws IOException
                     {
-                        Preconditions.checkArgument(value instanceof Long, "value is not a Long");
+                        validateFieldValueType(value, Long.class);
                         jsonGenerator.writeNumber((Long) value);
                     }
                 },
@@ -383,7 +384,7 @@ class EventTypeMetadata<T>
                     public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                             throws IOException
                     {
-                        Preconditions.checkArgument(value instanceof Float, "value is not a Float");
+                        validateFieldValueType(value, Float.class);
                         jsonGenerator.writeNumber((Float) value);
                     }
                 },
@@ -393,7 +394,7 @@ class EventTypeMetadata<T>
                     public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                             throws IOException
                     {
-                        Preconditions.checkArgument(value instanceof Double, "value is not a Double");
+                        validateFieldValueType(value, Double.class);
                         jsonGenerator.writeNumber((Double) value);
                     }
                 },
@@ -403,7 +404,7 @@ class EventTypeMetadata<T>
                     public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                             throws IOException
                     {
-                        Preconditions.checkArgument(value instanceof BigDecimal, "value is not a BigDecimal");
+                        validateFieldValueType(value, BigDecimal.class);
                         jsonGenerator.writeNumber((BigDecimal) value);
                     }
                 },
@@ -413,7 +414,7 @@ class EventTypeMetadata<T>
                     public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                             throws IOException
                     {
-                        Preconditions.checkArgument(value instanceof BigInteger, "value is not a BigInteger");
+                        validateFieldValueType(value, BigInteger.class);
                         jsonGenerator.writeNumber(new BigDecimal((BigInteger) value));
                     }
                 },
@@ -423,7 +424,7 @@ class EventTypeMetadata<T>
                     public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                             throws IOException
                     {
-                        Preconditions.checkArgument(value instanceof DateTime, "value is not a DateTime");
+                        validateFieldValueType(value, DateTime.class);
                         jsonGenerator.writeString(ISODateTimeFormat.dateTime().print((DateTime) value));
                     }
                 },
@@ -433,7 +434,7 @@ class EventTypeMetadata<T>
                     public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                             throws IOException
                     {
-                        Preconditions.checkArgument(value instanceof Enum, "value is not a Enum");
+                        validateFieldValueType(value, Enum.class);
                         jsonGenerator.writeString(value.toString());
                     }
                 },
@@ -443,7 +444,7 @@ class EventTypeMetadata<T>
                     public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                             throws IOException
                     {
-                        Preconditions.checkArgument(value instanceof InetAddress, "value is not a InetAddress");
+                        validateFieldValueType(value, InetAddress.class);
                         jsonGenerator.writeString(((InetAddress) value).getHostAddress());
                     }
                 },
@@ -453,7 +454,7 @@ class EventTypeMetadata<T>
                     public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                             throws IOException
                     {
-                        Preconditions.checkArgument(value instanceof java.util.UUID, "value is not a UUID");
+                        validateFieldValueType(value, java.util.UUID.class);
                         jsonGenerator.writeString(value.toString());
                     }
                 },;
@@ -482,6 +483,16 @@ class EventTypeMetadata<T>
         public Class<?> getType()
         {
             return type;
+        }
+
+        private static void validateFieldValueType(Object value, Class<?> expectedType)
+        {
+            if (value == null) {
+                return;
+            }
+            Preconditions.checkArgument(expectedType.isInstance(value),
+                    "Expected 'value' to be a " + expectedType.getSimpleName() +
+                            " but it is a " + value.getClass().getName());
         }
 
         public abstract void writeFieldValue(JsonGenerator jsonGenerator, Object value)
