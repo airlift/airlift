@@ -30,7 +30,7 @@ public class HttpServerInfo
         }
 
         if (config.isHttpsEnabled()) {
-            httpsUri = buildUri("http", nodeInfo, config.getHttpsPort());
+            httpsUri = buildUri("https", nodeInfo, config.getHttpsPort());
         }
         else {
             httpsUri = null;
