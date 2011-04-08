@@ -121,12 +121,14 @@ public class TestServer
     {
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
 
-        Response response = client.prepareGet(urlFor("/v1/person/foo")).execute().get();
+        String requestUrl = urlFor("/v1/person/foo");
+        Response response = client.prepareGet(requestUrl).execute().get();
 
         assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.OK.getStatusCode());
         assertEquals(response.getContentType(), MediaType.APPLICATION_JSON);
 
         Map<String, Object> expected = mapCodec.fromJson(Resources.toString(Resources.getResource("single.json"), Charsets.UTF_8));
+        expected.put("self", requestUrl);
         Map<String, Object> actual = mapCodec.fromJson(response.getResponseBody());
 
         assertEquals(actual, expected);

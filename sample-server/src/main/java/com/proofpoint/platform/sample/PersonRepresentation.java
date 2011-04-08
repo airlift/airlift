@@ -62,6 +62,7 @@ public class PersonRepresentation
         return person.getName();
     }
 
+    @JsonProperty
     public URI getSelf()
     {
         return self;

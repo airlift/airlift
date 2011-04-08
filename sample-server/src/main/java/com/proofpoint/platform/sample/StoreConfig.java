@@ -37,7 +37,7 @@ public class StoreConfig
     @Config("store.ttl")
     public StoreConfig setTtl(Duration ttl)
     {
-        Preconditions.checkNotNull(ttl, "ttl must not be null"); // TODO: remove once configuration supports bean validation
+        Preconditions.checkNotNull(ttl, "ttl must not be null");
         Preconditions.checkArgument(ttl.toMillis() > 0, "ttl must be > 0");
 
         this.ttl = ttl;

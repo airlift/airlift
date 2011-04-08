@@ -16,12 +16,8 @@
 package com.proofpoint.platform.sample;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -34,9 +30,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
 
 import static com.proofpoint.platform.sample.PersonRepresentation.from;
 
@@ -75,19 +68,10 @@ public class PersonResource
         Preconditions.checkNotNull(id, "id must not be null");
         Preconditions.checkNotNull(person, "person must not be null");
 
-        Set<ConstraintViolation<PersonRepresentation>> violations = validate(person);
-
-        if (!violations.isEmpty()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(messagesFor(violations))
-                    .build();
-        }
-
         boolean added = store.put(id, person.toPerson());
         if (added) {
             UriBuilder uri = UriBuilder.fromResource(PersonResource.class);
-            return Response.created(uri.build(id))
-                    .build();
+            return Response.created(uri.build(id)).build();
         }
 
         return Response.noContent().build();
@@ -103,21 +87,5 @@ public class PersonResource
         }
 
         return Response.noContent().build();
-    }
-
-    private static Set<ConstraintViolation<PersonRepresentation>> validate(PersonRepresentation person)
-    {
-        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-        return validator.validate(person);
-    }
-
-    private static List<String> messagesFor(Collection<? extends ConstraintViolation<?>> violations)
-    {
-        ImmutableList.Builder<String> messages = new ImmutableList.Builder<String>();
-        for (ConstraintViolation<?> violation : violations) {
-            messages.add(violation.getPropertyPath().toString() + " " + violation.getMessage());
-        }
-
-        return messages.build();
     }
 }
