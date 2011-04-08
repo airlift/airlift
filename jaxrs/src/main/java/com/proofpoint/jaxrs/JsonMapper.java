@@ -40,7 +40,7 @@ import java.util.Set;
 @Provider
 @Consumes({MediaType.APPLICATION_JSON, "text/json"})
 @Produces({MediaType.APPLICATION_JSON, "text/json"})
-public class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<Object>
+class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<Object>
 {
     public static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
 
