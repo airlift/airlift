@@ -1,4 +1,4 @@
-package com.proofpoint.experimental.jaxrs;
+package com.proofpoint.jaxrs;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -35,7 +35,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-// This code was based of the JacksonProvider
+// This code is based on JacksonJsonProvider
 @Provider
 @Consumes({MediaType.APPLICATION_JSON, "text/json"})
 @Produces({MediaType.APPLICATION_JSON, "text/json"})
@@ -50,14 +50,14 @@ public class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<
      * blacklisting things we are not to handle.
      */
     private final static ImmutableSet<Class<?>> IO_CLASSES = ImmutableSet.<Class<?>>builder()
-            .add(java.io.InputStream.class)
+            .add(InputStream.class)
             .add(java.io.Reader.class)
-            .add(java.io.OutputStream.class)
+            .add(OutputStream.class)
             .add(java.io.Writer.class)
             .add(byte[].class)
             .add(char[].class)
             .add(javax.ws.rs.core.StreamingOutput.class)
-            .add(javax.ws.rs.core.Response.class)
+            .add(Response.class)
             .build();
 
     private final ObjectMapper objectMapper;
