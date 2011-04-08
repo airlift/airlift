@@ -20,17 +20,12 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.Singleton;
 import com.proofpoint.http.server.TheServlet;
 import com.sun.jersey.core.util.FeaturesAndProperties;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
 import com.sun.jersey.spi.MessageBodyWorkers;
 import com.sun.jersey.spi.container.ExceptionMapperContext;
 import com.sun.jersey.spi.container.WebApplication;
-import org.codehaus.jackson.map.DeserializationConfig;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import javax.servlet.Servlet;
 import javax.ws.rs.ext.Providers;
@@ -44,6 +39,7 @@ public class JaxrsModule implements Module
     {
         binder.bind(GuiceContainer.class).in(Scopes.SINGLETON);
         binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(Key.get(GuiceContainer.class));
+        binder.bind(JsonMapper.class).in(Scopes.SINGLETON);
     }
 
     @Provides
@@ -54,19 +50,6 @@ public class JaxrsModule implements Module
         initParams.put("com.sun.jersey.spi.container.ContainerRequestFilters", OverrideMethodFilter.class.getName());
 
         return initParams;
-    }
-
-
-    @Provides
-    @Singleton
-    public JsonMapper createJsonMapper(final WebApplication webApplication)
-    {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.getDeserializationConfig().disable(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES);
-        mapper.getSerializationConfig().disable(SerializationConfig.Feature.WRITE_DATES_AS_TIMESTAMPS);
-        mapper.getSerializationConfig().setSerializationInclusion(JsonSerialize.Inclusion.NON_NULL);
-
-        return new JsonMapper(mapper, webApplication);
     }
 
     @Provides

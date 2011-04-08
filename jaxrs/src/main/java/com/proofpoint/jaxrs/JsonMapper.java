@@ -2,6 +2,7 @@ package com.proofpoint.jaxrs;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.inject.Inject;
 import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.spi.container.WebApplication;
 import org.codehaus.jackson.JsonEncoding;
@@ -64,6 +65,7 @@ public class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<
 
     private final WebApplication webApplication;
 
+    @Inject
     public JsonMapper(ObjectMapper objectMapper, WebApplication webApplication)
     {
         this.objectMapper = objectMapper;
