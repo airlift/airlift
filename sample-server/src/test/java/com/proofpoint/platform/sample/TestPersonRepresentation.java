@@ -18,14 +18,14 @@ package com.proofpoint.platform.sample;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import com.proofpoint.experimental.json.JsonCodec;
-import com.proofpoint.experimental.json.JsonCodecBuilder;
 import org.testng.annotations.Test;
 
+import static com.proofpoint.experimental.json.JsonCodec.jsonCodec;
 import static org.testng.Assert.assertEquals;
 
 public class TestPersonRepresentation
 {
-    private final JsonCodec<PersonRepresentation> codec = new JsonCodecBuilder().build(PersonRepresentation.class);
+    private final JsonCodec<PersonRepresentation> codec = jsonCodec(PersonRepresentation.class);
 
     // TODO: add equivalence test
 

@@ -16,12 +16,18 @@
 package com.proofpoint.experimental.json;
 
 import com.google.inject.TypeLiteral;
+import com.proofpoint.json.ObjectMapperProvider;
+import org.codehaus.jackson.map.ObjectMapper;
 
+import static org.codehaus.jackson.map.SerializationConfig.Feature.INDENT_OUTPUT;
+
+// This will be removed soon
+@Deprecated
 public class JsonCodecBuilder
 {
     private final boolean prettyPrint;
 
-    public JsonCodecBuilder()
+    private JsonCodecBuilder()
     {
         prettyPrint = false;
     }
@@ -38,11 +44,23 @@ public class JsonCodecBuilder
 
     public <T> JsonCodec<T> build(Class<T> type)
     {
-        return new JacksonJsonCodec<T>(type, prettyPrint);
+        return new JsonCodec<T>(createObjectMapper(), type);
     }
 
     public <T> JsonCodec<T> build(TypeLiteral<T> type)
     {
-        return new JacksonJsonCodec<T>(type.getType(), prettyPrint);
+        return new JsonCodec<T>(createObjectMapper(), type.getType());
     }
+
+    private ObjectMapper createObjectMapper()
+    {
+        ObjectMapper objectMapper = new ObjectMapperProvider().get();
+        if (prettyPrint) {
+            objectMapper.getSerializationConfig().enable(INDENT_OUTPUT);
+        } else {
+            objectMapper.getSerializationConfig().disable(INDENT_OUTPUT);
+        }
+        return objectMapper;
+    }
+
 }

@@ -19,13 +19,11 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.experimental.json.JsonCodec;
-import com.proofpoint.experimental.json.JsonCodecBuilder;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.jaxrs.JaxrsModule;
@@ -41,6 +39,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static com.google.common.collect.Sets.newHashSet;
+import static com.proofpoint.experimental.json.JsonCodec.listJsonCodec;
+import static com.proofpoint.experimental.json.JsonCodec.mapJsonCodec;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -53,8 +53,8 @@ public class TestServer
 
     private PersonStore store;
 
-    private final JsonCodec<Map<String, Object>> mapCodec = new JsonCodecBuilder().build(new TypeLiteral<Map<String, Object>>() {});
-    private final JsonCodec<List<Object>> listCodec = new JsonCodecBuilder().build(new TypeLiteral<List<Object>>() {});
+    private final JsonCodec<Map<String, Object>> mapCodec = mapJsonCodec(String.class, Object.class);
+    private final JsonCodec<List<Object>> listCodec = listJsonCodec(Object.class);
 
     @BeforeMethod
     public void setup()

@@ -1,7 +1,9 @@
-package com.proofpoint.json;
+package com.proofpoint.experimental.json;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.Scopes;
+import com.proofpoint.json.ObjectMapperProvider;
 import org.codehaus.jackson.map.ObjectMapper;
 
 public class JsonModule implements Module
@@ -12,5 +14,7 @@ public class JsonModule implements Module
         // NOTE: this MUST NOT be a singleton because ObjectMappers are mutable.  This means
         // one component could reconfigure the mapper and break all other components
         binder.bind(ObjectMapper.class).toProvider(ObjectMapperProvider.class);
+
+        binder.bind(JsonCodecFactory.class).in(Scopes.SINGLETON);
     }
 }
