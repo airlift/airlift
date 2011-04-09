@@ -1,31 +1,60 @@
 package com.proofpoint.json;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Module;
+import org.codehaus.jackson.JsonParser;
+import org.codehaus.jackson.JsonToken;
 import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.map.DeserializationContext;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.deser.StdScalarDeserializer;
+import org.codehaus.jackson.map.ser.ToStringSerializer;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
+import static com.proofpoint.json.JsonBinder.jsonBinder;
 import static org.joda.time.DateTimeZone.UTC;
 import static org.testng.Assert.assertEquals;
 
 public class TestJsonModule
 {
-    public static final Car CAR = new Car().setMake("BMW").setModel("M3").setYear(2011).setPurchased(new DateTime().withZone(UTC)).setNotes("sweet!");
+    public static final Car CAR = new Car()
+            .setMake("BMW")
+            .setModel("M3")
+            .setYear(2011)
+            .setPurchased(new DateTime().withZone(UTC))
+            .setNotes("sweet!")
+            .setNameList(superDuper("d*a*i*n"));
+
     private ObjectMapper objectMapper;
 
     @BeforeMethod
     public void setUp()
             throws Exception
     {
-        Injector injector = Guice.createInjector(new JsonModule());
+        Injector injector = Guice.createInjector(new JsonModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        jsonBinder(binder).addSerializerBinding(SuperDuperNameList.class).toInstance(ToStringSerializer.instance);
+                        jsonBinder(binder).addDeserializerBinding(SuperDuperNameList.class).to(SuperDuperNameListDeserializer.class);
+                    }
+                });
         objectMapper = injector.getInstance(ObjectMapper.class);
     }
 
@@ -34,8 +63,9 @@ public class TestJsonModule
             throws Exception
     {
         assertEquals(CAR, CAR);
-        assertEquals(objectMapper.readValue(objectMapper.writeValueAsString(CAR), Car.class), CAR);
-        assertEquals(objectMapper.readValue(objectMapper.writeValueAsString(CAR), Car.class), CAR);
+        String json = objectMapper.writeValueAsString(CAR);
+        Car actual = objectMapper.readValue(json, Car.class);
+        assertEquals(actual, CAR);
     }
 
     @Test
@@ -46,7 +76,7 @@ public class TestJsonModule
 
         // notes is not annotated so should not be included
         // color is null so should not be included
-        assertEquals(actual.keySet(), ImmutableSet.of("make", "model", "year", "purchased"));
+        assertEquals(actual.keySet(), ImmutableSet.of("make", "model", "year", "purchased", "nameList"));
     }
 
     @Test
@@ -84,6 +114,9 @@ public class TestJsonModule
 
         // non-json property to verify that auto-detection is disabled
         public String notes;
+
+        // property that requires special serializer and deserializer
+        public SuperDuperNameList nameList;
 
         @JsonProperty
         public String getMake()
@@ -150,6 +183,19 @@ public class TestJsonModule
             return this;
         }
 
+        @JsonProperty
+        public SuperDuperNameList getNameList()
+        {
+            return nameList;
+        }
+
+        @JsonProperty
+        public Car setNameList(SuperDuperNameList nameList)
+        {
+            this.nameList = nameList;
+            return this;
+        }
+
         // this field should not be written
 
         public String getNotes()
@@ -187,6 +233,9 @@ public class TestJsonModule
             if (model != null ? !model.equals(car.model) : car.model != null) {
                 return false;
             }
+            if (nameList != null ? !nameList.equals(car.nameList) : car.nameList != null) {
+                return false;
+            }
             if (purchased != null ? !purchased.equals(car.purchased) : car.purchased != null) {
                 return false;
             }
@@ -202,6 +251,7 @@ public class TestJsonModule
             result = 31 * result + year;
             result = 31 * result + (purchased != null ? purchased.hashCode() : 0);
             result = 31 * result + (color != null ? color.hashCode() : 0);
+            result = 31 * result + (nameList != null ? nameList.hashCode() : 0);
             return result;
         }
 
@@ -216,8 +266,85 @@ public class TestJsonModule
             sb.append(", purchased=").append(purchased);
             sb.append(", color='").append(color).append('\'');
             sb.append(", notes='").append(notes).append('\'');
+            sb.append(", nameList=").append(nameList);
             sb.append('}');
             return sb.toString();
         }
+    }
+
+    public static class SuperDuperNameList
+    {
+        private List<String> name;
+
+        private SuperDuperNameList(String superDuperNameList)
+        {
+            this(superDuperNameList, null);
+        }
+
+        private SuperDuperNameList(String superDuperNameList, Object stopJacksonFromUsingStringConstructor)
+        {
+            this.name = ImmutableList.copyOf(Splitter.on('*').split(superDuperNameList));
+        }
+
+        public List<String> getName()
+        {
+            return name;
+        }
+
+        @Override
+        public String toString()
+        {
+            return Joiner.on("*").join(name);
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof SuperDuperNameList)) {
+                return false;
+            }
+
+            SuperDuperNameList that = (SuperDuperNameList) o;
+
+            if (!name.equals(that.name)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return name.hashCode();
+        }
+    }
+
+    public final static class SuperDuperNameListDeserializer
+            extends StdScalarDeserializer<SuperDuperNameList>
+    {
+        public SuperDuperNameListDeserializer()
+        {
+            super(SuperDuperNameList.class);
+        }
+
+        @Override
+        public SuperDuperNameList deserialize(JsonParser jp, DeserializationContext context)
+                throws IOException
+        {
+            JsonToken token = jp.getCurrentToken();
+            if (token == JsonToken.VALUE_STRING) {
+                return new SuperDuperNameList(jp.getText(), null);
+            }
+            throw context.mappingException(getValueClass());
+        }
+    }
+
+    public static SuperDuperNameList superDuper(String superDuperNameList)
+    {
+        return new SuperDuperNameList(superDuperNameList, null);
     }
 }
