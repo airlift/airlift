@@ -14,6 +14,7 @@ import org.testng.annotations.Test;
 import java.util.List;
 import java.util.Map;
 
+import static com.proofpoint.experimental.json.JsonCodecBinder.jsonCodecBinder;
 import static org.testng.Assert.assertNotNull;
 
 public class TestJsonCodecBinder
@@ -34,7 +35,7 @@ public class TestJsonCodecBinder
                 {
                     public void configure(Binder binder)
                     {
-                        JsonCodecBinder codecBinder = new JsonCodecBinder(binder);
+                        JsonCodecBinder codecBinder = jsonCodecBinder(binder);
                         codecBinder.bindJsonCodec(Person.class);
                         codecBinder.bindListJsonCodec(Person.class);
                         codecBinder.bindMapJsonCodec(String.class, Person.class);

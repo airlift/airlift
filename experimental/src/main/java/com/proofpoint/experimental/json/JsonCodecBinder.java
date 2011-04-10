@@ -15,7 +15,12 @@ public class JsonCodecBinder
 {
     private final Binder binder;
 
-    public JsonCodecBinder(Binder binder)
+    public static JsonCodecBinder jsonCodecBinder(Binder binder)
+    {
+        return new JsonCodecBinder(binder);
+    }
+
+    private JsonCodecBinder(Binder binder)
     {
         this.binder = binder;
     }
