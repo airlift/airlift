@@ -17,7 +17,6 @@ package com.proofpoint.dbpool;
 
 import com.proofpoint.dbpool.MockConnectionPoolDataSource.MockConnection;
 import com.proofpoint.units.Duration;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import javax.sql.ConnectionPoolDataSource;
@@ -41,10 +40,10 @@ import static com.proofpoint.units.Duration.nanosSince;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
-import static org.testng.AssertJUnit.assertNotNull;
 
 public class ManagedDataSourceTest
 {
@@ -60,8 +59,8 @@ public class ManagedDataSourceTest
         assertEquals(dataSource.getStats().getConnectionErrorCount(), 0);
 
         Connection connection = dataSource.getConnection();
-        Assert.assertNotNull(connection);
-        Assert.assertTrue(connection instanceof MockConnection);
+        assertNotNull(connection);
+        assertTrue(connection instanceof MockConnection);
         assertEquals(dataSource.getConnectionsActive(), 1);
         assertEquals(dataSource.getStats().getCheckout().getCount(), 1);
         assertEquals(dataSource.getStats().getCreate().getCount(), 1);
@@ -92,7 +91,7 @@ public class ManagedDataSourceTest
         long start = System.nanoTime();
         try {
             dataSource.getConnection();
-            Assert.fail("Expected SQLException from timeout");
+            fail("Expected SQLException from timeout");
         }
         catch (SQLException expected) {
         }
@@ -106,7 +105,7 @@ public class ManagedDataSourceTest
         start = System.nanoTime();
         try {
             dataSource.getConnection();
-            Assert.fail("Expected SQLException from timeout");
+            fail("Expected SQLException from timeout");
         }
         catch (SQLException expected) {
         }
@@ -158,7 +157,7 @@ public class ManagedDataSourceTest
         // verify that we can't another connection
         try {
             dataSource.getConnection();
-            Assert.fail("Expected SQLException from timeout");
+            fail("Expected SQLException from timeout");
         }
         catch (SQLException expected) {
         }
@@ -173,7 +172,7 @@ public class ManagedDataSourceTest
         // verify that we can't get another connection
         try {
             dataSource.getConnection();
-            Assert.fail("Expected SQLException from timeout");
+            fail("Expected SQLException from timeout");
         }
         catch (SQLException expected) {
         }
@@ -188,7 +187,7 @@ public class ManagedDataSourceTest
         // first verify that we still can't get more connections
         try {
             dataSource.getConnection();
-            Assert.fail("Expected SQLException from timeout");
+            fail("Expected SQLException from timeout");
         }
         catch (SQLException expected) {
         }
@@ -199,7 +198,7 @@ public class ManagedDataSourceTest
         assertEquals(dataSource.getConnectionsActive(), 2);
         try {
             dataSource.getConnection();
-            Assert.fail("Expected SQLException from timeout");
+            fail("Expected SQLException from timeout");
         }
         catch (SQLException expected) {
         }
@@ -297,7 +296,7 @@ public class ManagedDataSourceTest
         List<MockConnection> connections = new ArrayList<MockConnection>();
         for (int i = 0; i < 10; i++) {
             MockConnection connection = (MockConnection) dataSource.getConnection();
-            Assert.assertNotNull(connection);
+            assertNotNull(connection);
             connections.add(connection);
         }
 
@@ -322,7 +321,7 @@ public class ManagedDataSourceTest
     {
         ManagedDataSource dataSource = new ManagedDataSource(new MockConnectionPoolDataSource(), 1, new Duration(10, MILLISECONDS));
         MockConnection connection = (MockConnection) dataSource.getConnection();
-        Assert.assertNotNull(connection);
+        assertNotNull(connection);
         assertEquals(dataSource.getConnectionsActive(), 1);
         connection.errorOccurred();
         assertEquals(dataSource.getConnectionsActive(), 0);
@@ -338,7 +337,7 @@ public class ManagedDataSourceTest
         assertEquals(dataSource.getConnectionsActive(), 0);
         try {
             dataSource.getConnection();
-            Assert.fail("expected SQLException");
+            fail("expected SQLException");
         }
         catch (SQLException e) {
             assertSame(e, mockConnectionPoolDataSource.createException);
@@ -357,13 +356,13 @@ public class ManagedDataSourceTest
 
         assertEquals(dataSource.getConnectionsActive(), 0);
         MockConnection connection = (MockConnection) dataSource.getConnection();
-        Assert.assertNotNull(connection);
+        assertNotNull(connection);
         assertEquals(dataSource.getConnectionsActive(), 1);
         connection.close();
         assertEquals(dataSource.getConnectionsActive(), 0);
 
         connection = (MockConnection) dataSource.getConnection();
-        Assert.assertNotNull(connection);
+        assertNotNull(connection);
         assertEquals(dataSource.getConnectionsActive(), 1);
         connection.close();
         assertEquals(dataSource.getConnectionsActive(), 0);
@@ -381,7 +380,7 @@ public class ManagedDataSourceTest
 
         assertEquals(dataSource.getConnectionsActive(), 0);
         MockConnection connection = (MockConnection) dataSource.getConnection();
-        Assert.assertNotNull(connection);
+        assertNotNull(connection);
         assertEquals(dataSource.getConnectionsActive(), 1);
 
         for (int i = 0; i < 10; i++) {

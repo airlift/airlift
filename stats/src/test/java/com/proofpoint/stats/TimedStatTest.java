@@ -26,8 +26,8 @@ import java.util.concurrent.TimeUnit;
 import static com.proofpoint.testing.Assertions.assertGreaterThanOrEqual;
 import static java.lang.Math.min;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
-import static org.testng.AssertJUnit.assertTrue;
 
 
 public class TimedStatTest
