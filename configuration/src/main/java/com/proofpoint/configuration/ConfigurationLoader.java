@@ -15,6 +15,8 @@
  */
 package com.proofpoint.configuration;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Maps;
 
 import java.io.File;
@@ -29,15 +31,15 @@ public class ConfigurationLoader
     public Map<String, String> loadProperties()
             throws IOException
     {
-        Map<String, String> result = Maps.newHashMap();
+        Map<String, String> result = Maps.newTreeMap();
         String configFile = System.getProperty("config");
         if (configFile != null) {
-            internalLoadProperties(result, configFile);
+            result.putAll(loadPropertiesFrom(configFile));
         }
 
-        result.putAll(toMap(System.getProperties()));
+        result.putAll(getSystemProperties());
 
-        return result;
+        return ImmutableSortedMap.copyOf(result);
     }
 
     /**
@@ -50,15 +52,7 @@ public class ConfigurationLoader
     public Map<String, String> loadPropertiesFrom(String path)
             throws IOException
     {
-        Map<String, String> result = Maps.newHashMap();
-        internalLoadProperties(result, path);
-        return result;
-    }
-
-    private void internalLoadProperties(Map<String, String> result, String configFile)
-            throws IOException
-    {
-        Reader reader = new FileReader(new File(configFile));
+        Reader reader = new FileReader(new File(path));
         Properties properties = new Properties();
         try {
             properties.load(reader);
@@ -66,17 +60,21 @@ public class ConfigurationLoader
             reader.close();
         }
 
-        result.putAll(toMap(properties));
+        return toMap(properties);
     }
 
-    private static Map<String, String> toMap(Properties properties)
+    public Map<String, String> getSystemProperties()
     {
-        Map<String, String> result = Maps.newHashMap();
+        return toMap(System.getProperties());
+    }
+
+    private static ImmutableMap<String, String> toMap(Properties properties)
+    {
+        ImmutableMap.Builder<String, String> result = ImmutableMap.builder();
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
             result.put(entry.getKey().toString(), entry.getValue().toString());
         }
 
-        return result;
+        return result.build();
     }
-
 }

@@ -18,7 +18,9 @@ package com.proofpoint.configuration;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.MapMaker;
+import com.google.common.collect.Sets;
 import com.google.inject.ConfigurationException;
 import com.google.inject.spi.Message;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
@@ -30,6 +32,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -42,6 +45,7 @@ public class ConfigurationFactory
     private final Problems.Monitor monitor;
     private final ConcurrentMap<Class<?>, ConfigurationMetadata<?>> metadataCache;
     private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<ConfigurationProvider<?>, Object>();
+    private final Set<String> usedProperties = Sets.newTreeSet();
 
     public ConfigurationFactory(Map<String, String> properties)
     {
@@ -66,6 +70,11 @@ public class ConfigurationFactory
     public Map<String, String> getProperties()
     {
         return properties;
+    }
+
+    public Set<String> getUsedProperties()
+    {
+        return ImmutableSortedSet.copyOf(usedProperties);
     }
 
     Map<ConfigurationProvider<?>, Object> getInstanceCache()
@@ -148,7 +157,7 @@ public class ConfigurationFactory
         }
 
         Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-        for (ConstraintViolation violation : validator.validate(instance)) {
+        for (ConstraintViolation<?> violation : validator.validate(instance)) {
             problems.addError("Constraint violation with property prefix '%s': %s %s (for class %s)",
                     prefix, violation.getPropertyPath(), violation.getMessage(), configClass.getName());
         }
@@ -241,7 +250,8 @@ public class ConfigurationFactory
             throws InvalidConfigurationException
     {
         // Get the property value
-        String value = injectionPoint == null ? null : properties.get(prefix + injectionPoint.getProperty());
+        String name = prefix + injectionPoint.getProperty();
+        String value = injectionPoint == null ? null : properties.get(name);
 
         if (value == null) {
             return null;
@@ -258,6 +268,7 @@ public class ConfigurationFactory
                     injectionPoint.getProperty(),
                     injectionPoint.getSetter().toGenericString()));
         }
+        usedProperties.add(name);
         return finalValue;
     }
 

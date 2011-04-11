@@ -33,7 +33,8 @@ public class Main
                 new JaxrsModule(),
                 new MBeanModule(),
                 new JmxModule(),
-                new MainModule());
+                new MainModule())
+                .strictConfig();
 
         app.initialize();
     }

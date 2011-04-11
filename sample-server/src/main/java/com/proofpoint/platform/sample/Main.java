@@ -37,7 +37,8 @@ public class Main
                 new MBeanModule(),
                 new JmxModule(),
                 new JmxHttpModule(),
-                new MainModule());
+                new MainModule())
+                .strictConfig();
 
         app.initialize();
     }

@@ -17,6 +17,8 @@ package com.proofpoint.bootstrap;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
+import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.Maps;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -40,8 +42,12 @@ import com.proofpoint.log.Logging;
 import com.proofpoint.log.LoggingConfiguration;
 
 import java.io.PrintWriter;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 /**
  * Entry point for an application built using the platform codebase.
@@ -58,10 +64,17 @@ public class Bootstrap
 {
     private final Logger log = Logger.get(Bootstrap.class);
     private final Module[] modules;
+    private boolean strictConfig = false;
 
     public Bootstrap(Module... modules)
     {
         this.modules = modules;
+    }
+
+    public Bootstrap strictConfig()
+    {
+        this.strictConfig = true;
+        return this;
     }
 
     public Injector initialize()
@@ -81,7 +94,18 @@ public class Bootstrap
         // initialize configuration
         log.info("Loading configuration");
         ConfigurationLoader loader = new ConfigurationLoader();
-        Map<String, String> properties = loader.loadProperties();
+
+        Map<String, String> configFileProperties = Collections.emptyMap();
+        String configFile = System.getProperty("config");
+        if (configFile != null) {
+            configFileProperties = loader.loadPropertiesFrom(configFile);
+        }
+
+        SortedMap<String, String> properties = Maps.newTreeMap();
+        properties.putAll(configFileProperties);
+        properties.putAll(loader.getSystemProperties());
+        properties = ImmutableSortedMap.copyOf(properties);
+
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
 
         // initialize logging
@@ -103,6 +127,12 @@ public class Bootstrap
         ConfigurationValidator configurationValidator = new ConfigurationValidator(configurationFactory, warningsMonitor);
         List<Message> messages = configurationValidator.validate(modules);
 
+        // at this point all config file properties should be used
+        // so we can calculate the unused properties
+        final TreeMap<String, String> unusedProperties = Maps.newTreeMap();
+        unusedProperties.putAll(configFileProperties);
+        unusedProperties.keySet().removeAll(configurationFactory.getUsedProperties());
+
         // system modules
         Builder<Module> moduleList = ImmutableList.builder();
         moduleList.add(new LifeCycleModule());
@@ -117,6 +147,19 @@ public class Bootstrap
                 binder.bind(WarningsMonitor.class).toInstance(warningsMonitor);
             }
         });
+        // todo this should be part of the ValidationErrorModule
+        if (strictConfig) {
+            moduleList.add(new Module()
+            {
+                @Override
+                public void configure(Binder binder)
+                {
+                    for (Entry<String,String> unusedProperty : unusedProperties.entrySet()) {
+                        binder.addError("Configuration property '%s=%s' was not used", unusedProperty.getKey(), unusedProperty.getValue());
+                    }
+                }
+            });
+        }
         moduleList.add(modules);
 
         // create the injector
@@ -126,7 +169,7 @@ public class Bootstrap
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
 
         // Log effective configuration
-        logConfiguration(configurationFactory);
+        logConfiguration(configurationFactory, unusedProperties);
 
         // Log managed objects
         logJMX(injector);
@@ -150,13 +193,22 @@ public class Bootstrap
     private static final String OBJECT_NAME_COLUMN = "METHOD/ATTRIBUTE";
     private static final String TYPE_COLUMN = "TYPE";
 
-    private void logConfiguration(ConfigurationFactory configurationFactory)
+    private void logConfiguration(ConfigurationFactory configurationFactory, Map<String, String> unusedProperties)
     {
         ColumnPrinter columnPrinter = makePrinterForConfiguration(configurationFactory);
 
         PrintWriter out = new PrintWriter(new LoggingWriter(log, Type.INFO));
         columnPrinter.print(out);
         out.flush();
+
+        // Warn about unused properties
+        if (!unusedProperties.isEmpty()) {
+            log.warn("UNUSED PROPERTIES");
+            for (Entry<String,String> unusedProperty : unusedProperties.entrySet()) {
+                log.warn("%s=%s", unusedProperty.getKey(), unusedProperty.getValue());
+            }
+            log.warn("");
+        }
     }
 
     private void logJMX(Injector injector)
