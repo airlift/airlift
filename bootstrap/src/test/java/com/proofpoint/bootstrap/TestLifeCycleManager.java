@@ -58,6 +58,7 @@ public class TestLifeCycleManager
             @Override
             public void configure(Binder binder)
             {
+                binder.bind(InstanceThatRequiresStart.class).in(Scopes.SINGLETON);
                 binder.bind(InstanceThatUsesInstanceThatRequiresStart.class).in(Scopes.SINGLETON);
             }
         };
@@ -141,7 +142,15 @@ public class TestLifeCycleManager
     {
         Injector injector = Guice.createInjector(
                 Stage.PRODUCTION,
-                new LifeCycleModule()
+                new LifeCycleModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        binder.bind(ExecutedInstance.class).in(Scopes.SINGLETON);
+                    }
+                }
         );
         ExecutedInstance instance = injector.getInstance(ExecutedInstance.class);
 
@@ -165,7 +174,9 @@ public class TestLifeCycleManager
             @Override
             public void configure(Binder binder)
             {
+                binder.bind(AnInstance.class).in(Scopes.SINGLETON);
                 binder.bind(AnotherInstance.class).in(Scopes.SINGLETON);
+                binder.bind(DependentInstance.class).in(Scopes.SINGLETON);
             }
         };
         Injector injector = Guice.createInjector(
@@ -238,7 +249,16 @@ public class TestLifeCycleManager
     {
         Injector injector = Guice.createInjector(
                 Stage.PRODUCTION,
-                new LifeCycleModule()
+                new LifeCycleModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        binder.bind(AnInstance.class).in(Scopes.SINGLETON);
+                        binder.bind(DependentInstance.class).in(Scopes.SINGLETON);
+                    }
+                }
         );
         injector.getInstance(AnInstance.class);
 
@@ -287,6 +307,7 @@ public class TestLifeCycleManager
             {
                 binder.bind(DependentBoundInstance.class).to(DependentInstanceImpl.class).in(Scopes.SINGLETON);
 
+                binder.bind(DependentInstance.class).in(Scopes.SINGLETON);
                 binder.bind(InstanceOne.class).in(Scopes.SINGLETON);
                 binder.bind(InstanceTwo.class).in(Scopes.SINGLETON);
             }
