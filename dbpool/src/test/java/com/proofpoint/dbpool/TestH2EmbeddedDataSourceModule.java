@@ -15,6 +15,7 @@
  */
 package com.proofpoint.dbpool;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
 import com.google.inject.BindingAnnotation;
 import com.google.inject.Guice;
@@ -22,6 +23,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.ProvisionException;
+import com.google.inject.Scopes;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.testing.Assertions;
@@ -35,6 +37,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
@@ -105,7 +108,7 @@ public class TestH2EmbeddedDataSourceModule
         final String prefix = "test";
         Map<String, String> properties = createDefaultConfigurationProperties(prefix, temporaryFile.getAbsolutePath());
 
-        Injector injector = createInjector(new H2EmbeddedDataSourceModule(prefix, MainBinding.class), properties);
+        Injector injector = createInjector(properties, new H2EmbeddedDataSourceModule(prefix, MainBinding.class));
 
         ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
 
@@ -118,7 +121,7 @@ public class TestH2EmbeddedDataSourceModule
         final String prefix = "test";
         Map<String, String> properties = createDefaultConfigurationProperties(prefix, temporaryFile.getAbsolutePath());
 
-        Injector injector = createInjector(new H2EmbeddedDataSourceModule(prefix, MainBinding.class), properties);
+        Injector injector = createInjector(properties, new H2EmbeddedDataSourceModule(prefix, MainBinding.class));
 
         ObjectHolder objectHolder1 = injector.getInstance(ObjectHolder.class);
         ObjectHolder objectHolder2 = injector.getInstance(ObjectHolder.class);
@@ -136,7 +139,17 @@ public class TestH2EmbeddedDataSourceModule
         final String prefix = "test";
         Map<String, String> properties = createDefaultConfigurationProperties(prefix, temporaryFile.getAbsolutePath());
 
-        Injector injector = createInjector(new H2EmbeddedDataSourceModule(prefix, MainBinding.class, AliasBinding.class), properties);
+        Injector injector = createInjector(properties,
+                                           new H2EmbeddedDataSourceModule(prefix, MainBinding.class, AliasBinding.class),
+                                           new Module()
+                                           {
+                                               @Override
+                                               public void configure(Binder binder)
+                                               {
+                                                   binder.bind(TwoObjectsHolder.class);
+                                               }
+                                           }
+        );
 
         ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
         TwoObjectsHolder twoObjectsHolder = injector.getInstance(TwoObjectsHolder.class);
@@ -166,7 +179,7 @@ public class TestH2EmbeddedDataSourceModule
         properties.put(otherPrefix + propertySuffixToTest, Integer.toString(expectedValue + 5678));
         properties.put(expectedPrefix + propertySuffixToTest, Integer.toString(expectedValue));
 
-        Injector injector = createInjector(new H2EmbeddedDataSourceModule(expectedPrefix, MainBinding.class), properties);
+        Injector injector = createInjector(properties, new H2EmbeddedDataSourceModule(expectedPrefix, MainBinding.class));
 
         ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
 
@@ -186,29 +199,31 @@ public class TestH2EmbeddedDataSourceModule
 
         Map<String, String> properties = createDefaultConfigurationProperties(configurationPrefix, temporaryFile.getAbsolutePath());
 
-        Injector injector = createInjector(new H2EmbeddedDataSourceModule(constructionPrefix, MainBinding.class), properties);
+        Injector injector = createInjector(properties, new H2EmbeddedDataSourceModule(constructionPrefix, MainBinding.class));
 
         // Will throw com.google.inject.ProvisionException because construction will fail due to the incorrect prefixing.
         ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
     }
 
-    private static Injector createInjector(H2EmbeddedDataSourceModule module, Map<String, String> properties)
+    private static Injector createInjector(Map<String, String> properties, Module... modules)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
 
         // Required to bind a configuration module and an MBean server when binding an H2EmbeddedDataSourceModule
-        Injector injector = Guice.createInjector(module,
-                new ConfigurationModule(configurationFactory),
-                new Module()
-                {
+        List<Module> moduleList = ImmutableList.<Module>builder()
+                .add(modules)
+                .add(new ConfigurationModule(configurationFactory))
+                .add(new Module() {
                     @Override
                     public void configure(Binder binder)
                     {
                         binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
+                        binder.bind(ObjectHolder.class);
                     }
-                });
+                })
+                .build();
 
-        return injector;
+        return Guice.createInjector(moduleList);
     }
 
 
