@@ -15,13 +15,13 @@
  */
 package com.proofpoint.configuration;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
 import com.google.inject.Binder;
 import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
-import com.google.inject.internal.ImmutableMap;
-import com.google.inject.internal.ImmutableMap.Builder;
 import com.google.inject.spi.Message;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
