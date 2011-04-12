@@ -24,6 +24,7 @@ import com.ning.http.client.RequestBuilder;
 import com.ning.http.client.Response;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
+import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -300,6 +301,7 @@ public class TestOverrideMethodFilterInHttpServer
         return Guice.createInjector(
                 new TestingNodeModule(),
                 new JaxrsModule(),
+                new JsonModule(),
                 new TestingHttpServerModule(),
                 new Module()
                 {
