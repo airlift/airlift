@@ -40,6 +40,7 @@ public class JmxModule
 
         ExportBuilder builder = MBeanModule.newExporter(binder);
         builder.export(StackTraceMBean.class).withGeneratedName();
+        binder.bind(StackTraceMBean.class).in(Scopes.SINGLETON);
     }
 }
 
