@@ -1,5 +1,6 @@
 package com.proofpoint.node;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.InetAddresses;
 import com.google.inject.Inject;
@@ -19,25 +20,35 @@ import java.util.UUID;
 @Singleton
 public class NodeInfo
 {
+    private final String environment;
+    private final String pool;
     private final String nodeId;
     private final String instanceId = UUID.randomUUID().toString();
     private final InetAddress publicIp;
     private final InetAddress bindIp;
     private final long startTime = System.currentTimeMillis();
 
-    public NodeInfo()
+    public NodeInfo(String environment)
     {
-        this(null, null);
+        this(new NodeConfig().setEnvironment(environment));
     }
 
     @Inject
     public NodeInfo(NodeConfig config)
     {
-        this(config.getNodeId(), config.getNodeIp());
+        this(config.getEnvironment(), config.getPool(), config.getNodeId(), config.getNodeIp());
     }
 
-    public NodeInfo(String nodeId, InetAddress nodeIp)
+    public NodeInfo(String environment, String pool, String nodeId, InetAddress nodeIp)
     {
+        Preconditions.checkNotNull(environment, "environment is null");
+        Preconditions.checkNotNull(pool, "pool is null");
+        Preconditions.checkArgument(environment.matches(NodeConfig.ENV_REGEXP), String.format("environment '%s' is invalid", environment));
+        Preconditions.checkArgument(pool.matches(NodeConfig.POOL_REGEXP), String.format("pool '%s' is invalid", pool));
+
+        this.environment = environment;
+        this.pool = pool;
+
         if (nodeId != null) {
             this.nodeId = nodeId;
         }
@@ -53,6 +64,24 @@ public class NodeInfo
             this.publicIp = findPublicIp();
             this.bindIp = InetAddresses.fromInteger(0);
         }
+    }
+
+    /**
+     * The environment in which this server is running.
+     */
+    @Managed
+    public String getEnvironment()
+    {
+        return environment;
+    }
+
+    /**
+     * The pool of which this server is a member.
+     */
+    @Managed
+    public String getPool()
+    {
+        return pool;
     }
 
     /**

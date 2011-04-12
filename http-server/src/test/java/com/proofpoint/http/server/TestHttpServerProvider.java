@@ -51,7 +51,7 @@ public class TestHttpServerProvider
         config = new HttpServerConfig()
                 .setHttpPort(0)
                 .setLogPath(new File(tempDir, "http-request.log").getAbsolutePath());
-        nodeInfo = new NodeInfo();
+        nodeInfo = new NodeInfo("test");
         httpServerInfo = new HttpServerInfo(config, nodeInfo);
     }
 

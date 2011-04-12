@@ -9,16 +9,20 @@ import java.net.InetAddress;
 
 public class TestNodeInfo
 {
+    public static final String ENVIRONMENT = "environment_1234";
+    public static final String POOL = "pool_1234";
+
     @Test
-    public void testFullConfig()
+    public void testBasicNodeInfo()
     {
         long testStartTime = System.currentTimeMillis();
 
         String nodeId = "nodeId";
         InetAddress publicIp = InetAddresses.forString("10.0.0.22");
 
-        NodeInfo nodeInfo = new NodeInfo(nodeId, publicIp);
-        Assert.assertNotNull(nodeInfo);
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, nodeId, publicIp);
+        Assert.assertEquals(nodeInfo.getEnvironment(), ENVIRONMENT);
+        Assert.assertEquals(nodeInfo.getPool(), POOL);
         Assert.assertEquals(nodeInfo.getNodeId(), nodeId);
         Assert.assertNotNull(nodeInfo.getInstanceId());
 
@@ -30,5 +34,17 @@ public class TestNodeInfo
 
         // make sure toString doesn't throw an exception
         Assert.assertNotNull(nodeInfo.toString());
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testInvalidEnvironment()
+    {
+        new NodeInfo("ENV", POOL, null, null);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testInvalidPool()
+    {
+        new NodeInfo(ENVIRONMENT, "POOL", null, null);
     }
 }

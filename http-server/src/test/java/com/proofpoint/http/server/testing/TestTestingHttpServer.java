@@ -92,7 +92,7 @@ public class TestTestingHttpServer
     private TestingHttpServer createTestingHttpServer(DummyServlet servlet, Map<String, String> params)
             throws IOException
     {
-        NodeInfo nodeInfo = new NodeInfo();
+        NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig();
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
         return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params);

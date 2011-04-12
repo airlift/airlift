@@ -16,13 +16,19 @@
 package com.proofpoint.platform.sample;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
 import com.google.inject.Inject;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+
+import static com.proofpoint.platform.sample.PersonRepresentation.from;
 
 @Path("/v1/person")
 public class PersonsResource
@@ -39,8 +45,12 @@ public class PersonsResource
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response listAll()
+    public Response listAll(@Context UriInfo uriInfo)
     {
-        return Response.ok(store.getAll()).build();
+        Builder<PersonRepresentation> builder = ImmutableList.builder();
+        for (Person person : store.getAll()) {
+            builder.add(from(person, uriInfo.getRequestUri().resolve("unknown")));
+        }
+        return Response.ok(builder.build()).build();
     }
 }

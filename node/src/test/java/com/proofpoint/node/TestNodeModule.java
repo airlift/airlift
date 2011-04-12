@@ -17,10 +17,12 @@ public class TestNodeModule
     {
         long testStartTime = System.currentTimeMillis();
 
-        ConfigurationFactory configFactory = new ConfigurationFactory(ImmutableMap.<String, String>of());
+        ConfigurationFactory configFactory = new ConfigurationFactory(ImmutableMap.<String, String>of("node.environment", "environment"));
         Injector injector = Guice.createInjector(new NodeModule(), new ConfigurationModule(configFactory));
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
         Assert.assertNotNull(nodeInfo);
+        Assert.assertEquals(nodeInfo.getEnvironment(), "environment");
+        Assert.assertEquals(nodeInfo.getPool(), "general");
         Assert.assertNotNull(nodeInfo.getNodeId());
         Assert.assertNotNull(nodeInfo.getInstanceId());
 
@@ -41,9 +43,13 @@ public class TestNodeModule
     {
         long testStartTime = System.currentTimeMillis();
 
+        String environment = "environment";
+        String pool = "pool";
         String nodeId = "nodeId";
         String publicIp = "10.0.0.22";
         ConfigurationFactory configFactory = new ConfigurationFactory(ImmutableMap.<String, String>builder()
+                .put("node.environment", environment)
+                .put("node.pool", pool)
                 .put("node.id", nodeId)
                 .put("node.ip", publicIp)
                 .build()
@@ -52,6 +58,8 @@ public class TestNodeModule
         Injector injector = Guice.createInjector(new NodeModule(), new ConfigurationModule(configFactory));
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
         Assert.assertNotNull(nodeInfo);
+        Assert.assertEquals(nodeInfo.getEnvironment(), environment);
+        Assert.assertEquals(nodeInfo.getPool(), pool);
         Assert.assertEquals(nodeInfo.getNodeId(), nodeId);
         Assert.assertNotNull(nodeInfo.getInstanceId());
 

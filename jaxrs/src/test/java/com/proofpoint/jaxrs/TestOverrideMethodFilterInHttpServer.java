@@ -24,6 +24,7 @@ import com.ning.http.client.RequestBuilder;
 import com.ning.http.client.Response;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
+import com.proofpoint.node.testing.TestingNodeModule;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -296,15 +297,17 @@ public class TestOverrideMethodFilterInHttpServer
 
     private TestingHttpServer createServer(final TestResource resource)
     {
-        return Guice.createInjector(new JaxrsModule(),
-                                    new TestingHttpServerModule(),
-                                    new Module()
-                                    {
-                                        @Override
-                                        public void configure(Binder binder)
-                                        {
-                                            binder.bind(TestResource.class).toInstance(resource);
-                                        }
-                                    }).getInstance(TestingHttpServer.class);
+        return Guice.createInjector(
+                new TestingNodeModule(),
+                new JaxrsModule(),
+                new TestingHttpServerModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        binder.bind(TestResource.class).toInstance(resource);
+                    }
+                }).getInstance(TestingHttpServer.class);
     }
 }

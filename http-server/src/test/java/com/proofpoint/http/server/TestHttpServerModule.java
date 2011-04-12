@@ -24,6 +24,7 @@ import com.google.inject.Module;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.node.NodeInfo;
+import com.proofpoint.node.NodeModule;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -60,12 +61,14 @@ public class TestHttpServerModule
             throws IOException
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("node.environment", "test")
                 .put("http-server.http.port", "0")
                 .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
                 .build();
 
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
         Injector injector = Guice.createInjector(new HttpServerModule(),
+                new NodeModule(),
                 new ConfigurationModule(configFactory),
                 new Module()
                 {
@@ -85,12 +88,14 @@ public class TestHttpServerModule
             throws Exception
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("node.environment", "test")
                 .put("http-server.http.port", "0")
                 .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
                 .build();
 
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
         Injector injector = Guice.createInjector(new HttpServerModule(),
+                new NodeModule(),
                 new ConfigurationModule(configFactory),
                 new Module()
                 {

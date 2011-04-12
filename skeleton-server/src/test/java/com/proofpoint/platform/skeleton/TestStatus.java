@@ -24,6 +24,8 @@ import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.jaxrs.JaxrsModule;
+import com.proofpoint.json.JsonModule;
+import com.proofpoint.node.testing.TestingNodeModule;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -47,6 +49,8 @@ public class TestStatus
     {
         // TODO: wrap all this stuff in a TestBootstrap class
         Injector injector = Guice.createInjector(new TestingHttpServerModule(),
+                new TestingNodeModule(),
+                new JsonModule(),
                 new JaxrsModule(),
                 new MainModule(),
                 new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));

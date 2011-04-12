@@ -14,11 +14,6 @@ public class HttpServerInfo
     private final URI httpUri;
     private final URI httpsUri;
 
-    public HttpServerInfo()
-    {
-        this(new HttpServerConfig(), new NodeInfo());
-    }
-
     @Inject
     public HttpServerInfo(HttpServerConfig config, NodeInfo nodeInfo)
     {
