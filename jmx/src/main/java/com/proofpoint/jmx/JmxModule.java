@@ -31,6 +31,9 @@ public class JmxModule
     @Override
     public void configure(Binder binder)
     {
+        binder.requireExplicitBindings();
+        binder.disableCircularProxies();
+
         binder.bind(MBeanServer.class).toInstance(ManagementFactory.getPlatformMBeanServer());
         binder.bind(JmxAgent.class).in(Scopes.SINGLETON);
         ConfigurationModule.bindConfig(binder).to(JmxConfig.class);

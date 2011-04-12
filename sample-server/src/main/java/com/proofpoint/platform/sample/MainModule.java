@@ -26,6 +26,9 @@ public class MainModule
 {
     public void configure(Binder binder)
     {
+        binder.requireExplicitBindings();
+        binder.disableCircularProxies();
+
         binder.bind(PersonStore.class).in(Scopes.SINGLETON);
         MBeanModule.newExporter(binder).export(PersonStore.class).withGeneratedName();
 

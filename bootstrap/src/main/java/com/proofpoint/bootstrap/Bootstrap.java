@@ -147,6 +147,17 @@ public class Bootstrap
                 binder.bind(WarningsMonitor.class).toInstance(warningsMonitor);
             }
         });
+
+        moduleList.add(new Module()
+        {
+            @Override
+            public void configure(Binder binder)
+            {
+                binder.disableCircularProxies();
+                binder.requireExplicitBindings();
+            }
+        });
+
         // todo this should be part of the ValidationErrorModule
         if (strictConfig) {
             moduleList.add(new Module()

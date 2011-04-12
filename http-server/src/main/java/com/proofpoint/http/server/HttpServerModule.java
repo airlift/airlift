@@ -70,6 +70,9 @@ public class HttpServerModule
     @Override
     public void configure(Binder binder)
     {
+        binder.requireExplicitBindings();
+        binder.disableCircularProxies();
+
         binder.bind(HttpServer.class).toProvider(httpServerProviderClass).in(Scopes.SINGLETON);
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
 

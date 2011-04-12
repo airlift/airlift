@@ -37,6 +37,9 @@ public class JaxrsModule implements Module
     @Override
     public void configure(Binder binder)
     {
+        binder.requireExplicitBindings();
+        binder.disableCircularProxies();
+
         binder.bind(GuiceContainer.class).in(Scopes.SINGLETON);
         binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(Key.get(GuiceContainer.class));
         binder.bind(JsonMapper.class).in(Scopes.SINGLETON);

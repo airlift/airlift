@@ -12,6 +12,9 @@ public class NodeModule
     @Override
     public void configure(Binder binder)
     {
+        binder.requireExplicitBindings();
+        binder.disableCircularProxies();
+
         binder.bind(NodeInfo.class).in(Scopes.SINGLETON);
         ConfigurationModule.bindConfig(binder).to(NodeConfig.class);
         MBeanModule.newExporter(binder).export(NodeInfo.class).withGeneratedName();
