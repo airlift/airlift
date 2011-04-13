@@ -15,11 +15,11 @@
  */
 package com.proofpoint.platform.sample;
 
+import com.proofpoint.jaxrs.testing.MockUriInfo;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.core.Response;
-
 import java.net.URI;
 
 import static org.testng.Assert.assertEquals;
