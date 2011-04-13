@@ -26,7 +26,5 @@ public class MainModule
     {
         binder.requireExplicitBindings();
         binder.disableCircularProxies();
-
-        binder.bind(StatusResource.class).in(Scopes.SINGLETON);
     }
 }

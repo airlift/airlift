@@ -16,9 +16,11 @@
 package com.proofpoint.platform.skeleton;
 
 import com.proofpoint.bootstrap.Bootstrap;
+import com.proofpoint.experimental.jmx.JmxHttpModule;
 import com.proofpoint.http.server.HttpServerModule;
 import com.proofpoint.jaxrs.JaxrsModule;
 import com.proofpoint.jmx.JmxModule;
+import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.NodeModule;
 import org.weakref.jmx.guice.MBeanModule;
 
@@ -30,8 +32,10 @@ public class Main
         Bootstrap app = new Bootstrap(
                 new NodeModule(),
                 new HttpServerModule(),
+                new JsonModule(),
                 new JaxrsModule(),
                 new MBeanModule(),
+                new JmxHttpModule(),
                 new JmxModule(),
                 new MainModule())
                 .strictConfig();
