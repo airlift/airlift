@@ -116,10 +116,6 @@ public class TestServer
 
         List<Object> expected = listCodec.fromJson(Resources.toString(Resources.getResource("list.json"), Charsets.UTF_8));
         List<Object> actual = listCodec.fromJson(response.getResponseBody());
-        // todo this should add the expected self value instead of removing it from actual
-        for (Object o : actual) {
-            ((Map<String,?>)o).remove("self");
-        }
 
         assertEquals(newHashSet(actual), newHashSet(expected));
     }

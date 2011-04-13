@@ -23,10 +23,8 @@ import com.google.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
 import static com.proofpoint.platform.sample.PersonRepresentation.from;
 
@@ -45,11 +43,11 @@ public class PersonsResource
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response listAll(@Context UriInfo uriInfo)
+    public Response listAll()
     {
         Builder<PersonRepresentation> builder = ImmutableList.builder();
         for (Person person : store.getAll()) {
-            builder.add(from(person, uriInfo.getRequestUri().resolve("unknown")));
+            builder.add(from(person, null));
         }
         return Response.ok(builder.build()).build();
     }

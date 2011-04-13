@@ -16,7 +16,6 @@
 package com.proofpoint.platform.sample;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.MapMaker;
 import com.google.inject.Inject;
@@ -38,7 +37,7 @@ public class PersonStore
         Preconditions.checkNotNull(config, "config must not be null");
 
         persons = new MapMaker()
-                .expiration((long) config.getTtl().toMillis(), TimeUnit.MILLISECONDS)
+                .expireAfterWrite((long) config.getTtl().toMillis(), TimeUnit.MILLISECONDS)
                 .makeMap();
     }
 

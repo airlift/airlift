@@ -15,12 +15,10 @@
  */
 package com.proofpoint.platform.sample;
 
-import com.proofpoint.jaxrs.testing.MockUriInfo;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.core.Response;
-import java.net.URI;
 import java.util.Collection;
 
 import static com.google.common.collect.Lists.newArrayList;
@@ -42,7 +40,7 @@ public class TestPersonsResource
     @Test
     public void testEmpty()
     {
-        Response response = resource.listAll(MockUriInfo.from(URI.create("http://localhost/v1/person/")));
+        Response response = resource.listAll();
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
         assertInstanceOf(response.getEntity(), Collection.class);
         assertEquals((Collection<?>) response.getEntity(), newArrayList());
@@ -54,12 +52,12 @@ public class TestPersonsResource
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
         store.put("bar", new Person("bar@example.com", "Mr Bar"));
 
-        Response response = resource.listAll(MockUriInfo.from(URI.create("http://localhost/v1/person/")));
+        Response response = resource.listAll();
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
         assertInstanceOf(response.getEntity(), Collection.class);
         assertEquals((Collection<?>) response.getEntity(), newArrayList(
-                new PersonRepresentation("foo@example.com", "Mr Foo", URI.create("http://localhost/v1/person/unknown")),
-                new PersonRepresentation("bar@example.com", "Mr Bar", URI.create("http://localhost/v1/person/unknown"))
+                new PersonRepresentation("foo@example.com", "Mr Foo", null),
+                new PersonRepresentation("bar@example.com", "Mr Bar", null)
         ));
     }
 
