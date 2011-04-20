@@ -44,28 +44,7 @@ import org.eclipse.jetty.security.LoginService;
 public class HttpServerModule
         implements Module
 {
-    private final Class<? extends Provider<? extends LoginService>> loginServiceProviderClass;
-    private final Class<? extends Provider<? extends HttpServer>> httpServerProviderClass;
-
     public static final String REALM_NAME = "Proofpoint";
-
-    /**
-     * Uses a default login service
-     */
-    public HttpServerModule()
-    {
-        this(HashLoginServiceProvider.class, HttpServerProvider.class);
-    }
-
-    /**
-     * @param loginServiceProviderClass Provider for a login service or null for none
-     * @param httpServerProviderClass Provider for servlet server
-     */
-    public HttpServerModule(Class<? extends Provider<? extends LoginService>> loginServiceProviderClass, Class<? extends Provider<? extends HttpServer>> httpServerProviderClass)
-    {
-        this.loginServiceProviderClass = loginServiceProviderClass;
-        this.httpServerProviderClass = httpServerProviderClass;
-    }
 
     @Override
     public void configure(Binder binder)
@@ -73,12 +52,8 @@ public class HttpServerModule
         binder.requireExplicitBindings();
         binder.disableCircularProxies();
 
-        binder.bind(HttpServer.class).toProvider(httpServerProviderClass).in(Scopes.SINGLETON);
+        binder.bind(HttpServer.class).toProvider(HttpServerProvider.class).in(Scopes.SINGLETON);
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
-
-        if (loginServiceProviderClass != null) {
-            binder.bind(LoginService.class).toProvider(loginServiceProviderClass);
-        }
 
         ConfigurationModule.bindConfig(binder).to(HttpServerConfig.class);
     }
