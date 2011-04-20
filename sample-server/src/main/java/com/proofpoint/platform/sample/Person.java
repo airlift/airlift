@@ -28,7 +28,7 @@ public class Person
     public Person(String email, String name)
     {
         Preconditions.checkNotNull(email, "email is null");
-        Preconditions.checkNotNull(email, "name is null");
+        Preconditions.checkNotNull(name, "name is null");
 
         this.email = email;
         this.name = name;
