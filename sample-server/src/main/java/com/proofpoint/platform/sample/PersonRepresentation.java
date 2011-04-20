@@ -15,16 +15,13 @@
  */
 package com.proofpoint.platform.sample;
 
-import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonCreator;
-import org.codehaus.jackson.annotate.JsonMethod;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import java.net.URI;
 
-@JsonAutoDetect(JsonMethod.NONE)
 public class PersonRepresentation
 {
     private final Person person;
