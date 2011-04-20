@@ -87,6 +87,35 @@ public class Logger
     }
 
     /**
+     * Logs a message at DEBUG level.
+     * <br/>
+     * Usage example:
+     * <pre>
+     *    logger.debug(e, "value is %s (%d ms)", value, time);
+     * </pre>
+     * If the format string is invalid or the arguments are insufficient, an error will be logged and execution
+     * will continue.
+     *
+     * @param exception an exception associated with the debug message being logged
+     * @param format a format string compatible with String.format()
+     * @param args arguments for the format string
+     */
+    public void debug(Throwable exception, String format, Object... args)
+    {
+        if (logger.isDebugEnabled()) {
+            String message;
+            try {
+                message = format(format, args);
+            }
+            catch (IllegalFormatException e) {
+                logger.error(illegalFormatMessageFor(Level.DEBUG, format, args), e);
+                message = rawMessageFor(format, args);
+            }
+            logger.debug(message, exception);
+        }
+    }
+
+    /**
      * Logs a message at INFO level.
      * <br/>
      * Usage example:
