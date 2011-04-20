@@ -58,7 +58,7 @@ public class Logging
 
     // keep a reference to the original System.err so that we can rewire logging to the right place if this
     // class is created multiple times
-    private static final OutputStream stderr = System.err;
+    private static final OutputStream stderr = new NonCloseableOutputStream(System.err);
 
     /**
      * Sets up default logging:
