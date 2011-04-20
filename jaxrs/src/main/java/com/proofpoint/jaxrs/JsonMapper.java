@@ -3,6 +3,7 @@ package com.proofpoint.jaxrs;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
+import com.proofpoint.log.Logger;
 import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.spi.container.WebApplication;
 import org.codehaus.jackson.JsonEncoding;
@@ -60,6 +61,7 @@ class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<Object>
             .add(javax.ws.rs.core.StreamingOutput.class)
             .add(Response.class)
             .build();
+    public static final Logger log = Logger.get(JsonMapper.class);
 
     private final ObjectMapper objectMapper;
 
@@ -119,6 +121,10 @@ class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<Object>
             if (e instanceof IOException && !(e instanceof JsonProcessingException)) {
                 throw (IOException) e;
             }
+
+            // log the exception at debug so it can be viewed during development
+            // Note: we are not logging at a higher level because this could cause a denial of service
+            log.debug(e, "Invalid json for Java type %s", type);
 
             // invalid json request
             throw new WebApplicationException(
