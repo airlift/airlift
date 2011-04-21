@@ -20,6 +20,8 @@ package com.proofpoint.testing;
  *
  * Licensed under Apache License, Version 2.0
  */
+import com.google.common.base.Objects;
+import com.google.common.collect.ComparisonChain;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -76,6 +78,12 @@ public class TestEquivalenceTester
         EquivalenceTester.check(
                 newArrayList(new NotComparable()),
                 newArrayList("Hello"));
+    }
+
+    @Test
+    public void compareToAgainstNull()
+    {
+        failCheckComparison(newArrayList(new ComparableThatDoesNotThrowNPE(1), new ComparableThatDoesNotThrowNPE(1), new ComparableThatDoesNotThrowNPE(1)));
     }
 
     @Test
@@ -157,5 +165,41 @@ public class TestEquivalenceTester
 
     static class NotComparable
     {
+    }
+
+    static class ComparableThatDoesNotThrowNPE
+        implements Comparable<ComparableThatDoesNotThrowNPE>
+    {
+        private final int value;
+
+        public ComparableThatDoesNotThrowNPE(int value)
+        {
+            this.value = value;
+        }
+
+        @Override
+        public int compareTo(ComparableThatDoesNotThrowNPE o)
+        {
+            if (o == null) {
+                return 1;
+            }
+
+            return ComparisonChain.start().compare(value, o.value).result();
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (o == null) {
+                return false;
+            }
+            return value == ((ComparableThatDoesNotThrowNPE) o).value;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return value;
+        }
     }
 }

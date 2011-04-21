@@ -20,6 +20,8 @@ package com.proofpoint.testing;
  *
  * Licensed under Apache License, Version 2.0
  */
+import org.testng.Assert;
+
 import java.util.Collection;
 import java.util.List;
 
@@ -29,6 +31,7 @@ import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 /**
  * Equivalence tester streamlining tests of {@link #equals} and {@link #hashCode} methods. Using this tester makes it
@@ -48,9 +51,15 @@ public final class EquivalenceTester
         List<List<Object>> ec =
                 newArrayListWithExpectedSize(equivalenceClasses.length);
 
-        // nothing can be equal to null
+        int classNumber = 0;
         for (Collection<?> congruenceClass : equivalenceClasses) {
+            ++classNumber;
+
+            int elementNumber = 0;
             for (Object element : congruenceClass) {
+                ++elementNumber;
+
+                // nothing can be equal to null
                 try {
                     assertFalse(element.equals(null),
                             format("%s can not be equal to null", element)
@@ -59,6 +68,17 @@ public final class EquivalenceTester
                 catch (NullPointerException e) {
                     throw new AssertionError(
                             format("NullPointerException when comparing %s to null", element));
+                }
+
+                // if a class implements comparable, object.compareTo(null) must throw NPE
+                if (element instanceof Comparable) {
+                    try {
+                        ((Comparable<?>) element).compareTo(null);
+                        fail(format("Element at position (%d, %d) implements Comparable but does not throw NullPointerException when compared to null", classNumber, elementNumber));
+                    }
+                    catch (NullPointerException e) {
+                        // ok
+                    }
                 }
             }
         }
