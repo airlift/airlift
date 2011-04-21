@@ -53,21 +53,16 @@ public final class EquivalenceTester
 
         int classNumber = 0;
         for (Collection<?> congruenceClass : equivalenceClasses) {
-            ++classNumber;
-
             int elementNumber = 0;
             for (Object element : congruenceClass) {
-                ++elementNumber;
-
                 // nothing can be equal to null
                 try {
                     assertFalse(element.equals(null),
-                            format("%s can not be equal to null", element)
+                            format("Element at position (%d, %d) returns true when compared to null via equals()", classNumber, elementNumber)
                     );
                 }
                 catch (NullPointerException e) {
-                    throw new AssertionError(
-                            format("NullPointerException when comparing %s to null", element));
+                    fail(format("Element at position (%d, %d) throws NullPointerException when comparing to null via equals()", classNumber, elementNumber));
                 }
 
                 // if a class implements comparable, object.compareTo(null) must throw NPE
@@ -80,50 +75,62 @@ public final class EquivalenceTester
                         // ok
                     }
                 }
+
+                ++elementNumber;
             }
+
+            ++classNumber;
         }
 
         // reflexivity
+        classNumber = 0;
         for (Collection<?> congruenceClass : equivalenceClasses) {
             List<Object> c = newArrayList();
             ec.add(c);
+
+            int elementNumber = 0;
             for (Object element : congruenceClass) {
-                assertTrue(element.equals(element),
-                        format("reflexivity of %s", element));
-                compareShouldReturn0(element, element);
+                ++elementNumber;
+                assertTrue(element.equals(element), format("Element at position (%d, %d) is not equal to itself when compared via equals()", classNumber, elementNumber));
+                compareShouldReturn0(element, element, "Element at position (%d, %d) implements Comparable but does not return 0 when compared to itself");
                 c.add(element);
             }
+            ++classNumber;
         }
 
         // equality within congruence classes
+        classNumber = 0;
         for (List<Object> c : ec) {
             for (int i = 0; i < c.size(); i++) {
                 Object e1 = c.get(i);
                 for (int j = i + 1; j < c.size(); j++) {
                     Object e2 = c.get(j);
-                    assertTrue(e1.equals(e2), format("%s=%s", e1, e2));
-                    assertTrue(e2.equals(e1), format("%s=%s", e2, e1));
-                    compareShouldReturn0(e1, e2);
-                    compareShouldReturn0(e2, e1);
-                    assertEquals(e1.hashCode(), e2.hashCode(), format("hashCode %s vs. %s", e1, e2));
+                    assertTrue(e1.equals(e2), format("Element at position (%d, %d) is not equal to element (%d, %d) when compared via equals()", classNumber, i, classNumber, j));
+                    assertTrue(e2.equals(e1), format("Element at position (%d, %d) is not equal to element (%d, %d) when compared via equals()", classNumber, j, classNumber, i));
+                    compareShouldReturn0(e1, e2, format("Element at position (%d, %d) implements Comparable and does not return 0 when compared to element (%d, %d)", classNumber, i, classNumber, j));
+                    compareShouldReturn0(e2, e1, format("Element at position (%d, %d) implements Comparable and does not return 0 when compared to element (%d, %d)", classNumber, j, classNumber, i));
+                    assertEquals(e1.hashCode(), e2.hashCode(), format("Elements at position (%d, %d) and (%d, %d) have different hash codes", classNumber, i, classNumber, j));
                 }
             }
+            ++classNumber;
         }
 
         // inequality across congruence classes
+        classNumber = 0;
         for (int i = 0; i < ec.size(); i++) {
             List<Object> c1 = ec.get(i);
             for (int j = i + 1; j < ec.size(); j++) {
                 List<Object> c2 = ec.get(j);
                 for (Object e1 : c1) {
                     for (Object e2 : c2) {
-                        assertFalse(e1.equals(e2), format("%s!=%s", e1, e2));
-                        assertFalse(e2.equals(e1), format("%s!=%s", e2, e1));
-                        compareShouldNotReturn0(e1, e2);
-                        compareShouldNotReturn0(e2, e1);
+                        assertFalse(e1.equals(e2), format("Element at position (%d, %d) is equal to element (%d, %d) when compared via equals()", classNumber, i, classNumber, j));
+                        assertFalse(e2.equals(e1), format("Element at position (%d, %d) is equal to element (%d, %d) when compared via equals()", classNumber, j, classNumber, i));
+                        compareShouldNotReturn0(e1, e2, format("Element at position (%d, %d) implements Comparable and returns 0 when compared to element (%d, %d)", classNumber, i, classNumber, j));
+                        compareShouldNotReturn0(e2, e1, format("Element at position (%d, %d) implements Comparable and returns 0 when compared to element (%d, %d)", classNumber, j, classNumber, i));
                     }
                 }
             }
+            ++classNumber;
         }
     }
 
@@ -152,20 +159,18 @@ public final class EquivalenceTester
     }
 
     @SuppressWarnings("unchecked")
-    private static void compareShouldReturn0(Object e1, Object e2)
+    private static void compareShouldReturn0(Object e1, Object e2, String message)
     {
         if (e1 instanceof Comparable<?>) {
-            assertTrue(((Comparable<Object>) e1).compareTo(e2) == 0,
-                    format("comparison should return 0 for %s and %s", e1, e2));
+            assertTrue(((Comparable<Object>) e1).compareTo(e2) == 0, message);
         }
     }
 
     @SuppressWarnings("unchecked")
-    private static void compareShouldNotReturn0(Object e1, Object e2)
+    private static void compareShouldNotReturn0(Object e1, Object e2, String message)
     {
         if (e1 instanceof Comparable<?>) {
-            assertFalse(((Comparable<Object>) e1).compareTo(e2) == 0,
-                    format("comparison should not return 0 for %s and %s", e1, e2));
+            assertFalse(((Comparable<Object>) e1).compareTo(e2) == 0, message);
         }
     }
 
