@@ -102,12 +102,16 @@ public class TestEquivalenceTester
 
     private <T extends Comparable<T>> void failCheckComparison(Collection<T>... equivalenceClasses)
     {
+        boolean assertionFailed = false;
         try {
             EquivalenceTester.checkComparison(equivalenceClasses);
-            Assert.fail("Expected AssertionError");
         }
         catch (AssertionError e) {
-            // ok
+            assertionFailed = true;
+        }
+
+        if (!assertionFailed) {
+            Assert.fail("Expected AssertionError");
         }
     }
 
