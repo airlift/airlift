@@ -46,6 +46,18 @@ public class TestDurationValidator
     }
 
     @Test
+    public void testAllowsNullMinAnnotation()
+    {
+        validator.validate(new NullMinAnnotation());
+    }
+
+    @Test
+    public void testAllowsNullMaxAnnotation()
+    {
+        validator.validate(new NullMaxAnnotation());
+    }
+
+    @Test
     public void testDetectsBrokenMinAnnotation()
     {
         try {
@@ -149,6 +161,24 @@ public class TestDurationValidator
         public Duration getConstrainedByMinAndMax()
         {
             return duration;
+        }
+    }
+
+    public static class NullMinAnnotation
+    {
+        @MinDuration("1s")
+        public Duration getConstrainedByMin()
+        {
+            return null;
+        }
+    }
+
+    public static class NullMaxAnnotation
+    {
+        @MaxDuration("1s")
+        public Duration getConstrainedByMin()
+        {
+            return null;
         }
     }
 

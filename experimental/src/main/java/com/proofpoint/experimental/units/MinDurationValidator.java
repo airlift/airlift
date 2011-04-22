@@ -19,6 +19,6 @@ public class MinDurationValidator
     @Override
     public boolean isValid(Duration duration, ConstraintValidatorContext context)
     {
-        return duration.compareTo(min) >= 0;
+        return duration == null || duration.compareTo(min) >= 0;
     }
 }

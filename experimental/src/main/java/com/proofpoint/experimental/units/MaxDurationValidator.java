@@ -19,6 +19,6 @@ public class MaxDurationValidator
     @Override
     public boolean isValid(Duration duration, ConstraintValidatorContext context)
     {
-        return duration.compareTo(max) <= 0;
+        return duration == null || duration.compareTo(max) <= 0;
     }
 }
