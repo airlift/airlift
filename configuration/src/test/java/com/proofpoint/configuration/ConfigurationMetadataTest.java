@@ -15,19 +15,18 @@
  */
 package com.proofpoint.configuration;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.inject.ConfigurationException;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
-import com.proofpoint.testing.EquivalenceTester;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.Map;
 import java.util.Set;
 
+import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
 import static org.testng.Assert.fail;
 
 public class ConfigurationMetadataTest
@@ -35,27 +34,27 @@ public class ConfigurationMetadataTest
     @Test
     public void testEquivalence()
     {
-        EquivalenceTester.check(
-                ImmutableList.of(
+        equivalenceTester()
+                .addEquivalentGroup(
                         ConfigurationMetadata.getConfigurationMetadata(SetterSubConfigClass.class),
                         ConfigurationMetadata.getConfigurationMetadata(SetterSubConfigClass.class)
-                ),
-                ImmutableList.of(
+                )
+                .addEquivalentGroup(
                         ConfigurationMetadata.getConfigurationMetadata(SetterConfigClass.class),
                         ConfigurationMetadata.getConfigurationMetadata(SetterConfigClass.class)
                 )
-        );
+                .check();
 
-        EquivalenceTester.check(
-                ImmutableList.of(
+        equivalenceTester()
+                .addEquivalentGroup(
                         ConfigurationMetadata.getConfigurationMetadata(SetterSubConfigClass.class).getAttributes().get("Value"),
                         ConfigurationMetadata.getConfigurationMetadata(SetterSubConfigClass.class).getAttributes().get("Value")
-                ),
-                ImmutableList.of(
+                )
+                .addEquivalentGroup(
                         ConfigurationMetadata.getConfigurationMetadata(SetterConfigClass.class).getAttributes().get("Value"),
                         ConfigurationMetadata.getConfigurationMetadata(SetterConfigClass.class).getAttributes().get("Value")
                 )
-        );
+                .check();
     }
 
     @Test

@@ -15,13 +15,13 @@
  */
 package com.proofpoint.units;
 
-import com.proofpoint.testing.EquivalenceTester;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
+import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
@@ -140,7 +140,11 @@ public class TestDuration
     @Test
     public void testEquivalence()
     {
-        EquivalenceTester.checkComparison(generateTimeBucket(1), generateTimeBucket(2), generateTimeBucket(3));
+        equivalenceTester()
+                .addEquivalentGroup(generateTimeBucket(1))
+                .addEquivalentGroup(generateTimeBucket(2))
+                .addEquivalentGroup(generateTimeBucket(3))
+                .check();
     }
 
     private ArrayList<Duration> generateTimeBucket(double seconds)

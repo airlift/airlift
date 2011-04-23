@@ -22,13 +22,13 @@ package com.proofpoint.testing;
  */
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static com.google.common.collect.Lists.newArrayListWithExpectedSize;
 import static java.lang.String.format;
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.*;
 
@@ -40,216 +40,304 @@ import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.*;
  */
 public final class EquivalenceTester
 {
-    private EquivalenceTester()
-    {
-    }
-
-    @SuppressWarnings({"ObjectEqualsNull"})
+    @Deprecated
     public static void check(Collection<?>... equivalenceClasses)
     {
-        ArrayList<ElementCheckFailure> failures = newArrayList();
-
-        checkEquivalence(failures, toListOfLists(equivalenceClasses));
-
-        if (!failures.isEmpty()) {
-            throw new EquivalenceAssertionError(failures);
+        EquivalenceCheck<Object> tester = equivalenceTester();
+        for (Collection<?> equivalenceClass : equivalenceClasses) {
+            tester.addEquivalentGroup((Iterable<Object>)equivalenceClass);
         }
+        tester.check();
     }
 
-    private static <T> List<List<T>> toListOfLists(Collection<T>... equivalenceClasses)
+    public static <T> EquivalenceCheck<T> equivalenceTester()
     {
-        List<List<T>> listOfLists = newArrayListWithExpectedSize(equivalenceClasses.length);
-        for (Collection<T> equivalenceClass : equivalenceClasses) {
-            listOfLists.add(newArrayList((equivalenceClass)));
-        }
-        return listOfLists;
+        return new EquivalenceCheck<T>();
     }
 
-    @SuppressWarnings({"ObjectEqualsNull"})
-    private static void checkEquivalence(List<ElementCheckFailure> errors, List<? extends List<?>> equivalenceClasses)
+    public static class EquivalenceCheck<T>
     {
-        //
-        // equal(null)
-        //
-        int classNumber = 0;
-        for (Collection<?> congruenceClass : equivalenceClasses) {
-            int elementNumber = 0;
-            for (Object element : congruenceClass) {
-                // nothing can be equal to null
-                try {
-                    if (element.equals(null)) {
-                        errors.add(new ElementCheckFailure(EQUAL_TO_NULL, classNumber, elementNumber));
-                    }
-                }
-                catch (NullPointerException e) {
-                }
+        private List<List<T>> equivalenceClasses = newArrayList();
 
-                // if a class implements comparable, object.compareTo(null) must throw NPE
-                if (element instanceof Comparable) {
+        private EquivalenceCheck()
+        {
+        }
+
+        public EquivalenceCheck<T> addEquivalentGroup(T value, T... moreValues)
+        {
+            equivalenceClasses.add(Lists.asList(value, moreValues));
+            return this;
+        }
+
+        public EquivalenceCheck<T> addEquivalentGroup(Iterable<T> objects)
+        {
+            equivalenceClasses.add(newArrayList(objects));
+            return this;
+        }
+
+        public void check()
+        {
+            ArrayList<ElementCheckFailure> failures = newArrayList();
+
+            checkEquivalence(failures);
+
+            if (!failures.isEmpty()) {
+                throw new EquivalenceAssertionError(failures);
+            }
+        }
+
+        @SuppressWarnings({"ObjectEqualsNull"})
+        private void checkEquivalence(List<ElementCheckFailure> errors)
+        {
+            //
+            // equal(null)
+            //
+            int classNumber = 0;
+            for (Collection<?> congruenceClass : equivalenceClasses) {
+                int elementNumber = 0;
+                for (Object element : congruenceClass) {
+                    // nothing can be equal to null
                     try {
-                        ((Comparable<?>) element).compareTo(null);
-                        errors.add(new ElementCheckFailure(COMPARE_EQUAL_TO_NULL, classNumber, elementNumber));
+                        if (element.equals(null)) {
+                            errors.add(new ElementCheckFailure(EQUAL_TO_NULL, classNumber, elementNumber));
+                        }
                     }
                     catch (NullPointerException e) {
-                        // ok
                     }
-                }
 
-                ++elementNumber;
-            }
-
-            ++classNumber;
-        }
-
-        //
-        // reflexivity
-        //
-        classNumber = 0;
-        for (Collection<?> congruenceClass : equivalenceClasses) {
-            int elementNumber = 0;
-            for (Object element : congruenceClass) {
-                if (!element.equals(element)) {
-                    errors.add(new ElementCheckFailure(NOT_REFLEXIVE, classNumber, elementNumber));
-                }
-                if (!doesCompareReturn0(element, element)) {
-                    errors.add(new ElementCheckFailure(COMPARE_NOT_REFLEXIVE, classNumber, elementNumber));
-                }
-                ++elementNumber;
-            }
-            ++classNumber;
-        }
-
-        //
-        // equality within congruence classes
-        //
-        classNumber = 0;
-        for (List<?> congruenceClass : equivalenceClasses) {
-            for (int primaryElementNumber = 0; primaryElementNumber < congruenceClass.size(); primaryElementNumber++) {
-                Object primary = congruenceClass.get(primaryElementNumber);
-                for (int secondaryElementNumber = primaryElementNumber + 1; secondaryElementNumber < congruenceClass.size(); secondaryElementNumber++) {
-                    Object secondary = congruenceClass.get(secondaryElementNumber);
-                    if (!primary.equals(secondary)) {
-                        errors.add(new PairCheckFailure(NOT_EQUAL, classNumber, primaryElementNumber, classNumber, secondaryElementNumber));
-                    }
-                    if (!secondary.equals(primary)) {
-                        errors.add(new PairCheckFailure(NOT_EQUAL, classNumber, secondaryElementNumber, classNumber, primaryElementNumber));
-                    }
-                    try {
-                        if (!doesCompareReturn0(primary, secondary)) {
-                            errors.add(new PairCheckFailure(COMPARE_NOT_EQUAL,
-                                    classNumber,
-                                    primaryElementNumber,
-                                    classNumber,
-                                    secondaryElementNumber));
+                    // if a class implements comparable, object.compareTo(null) must throw NPE
+                    if (element instanceof Comparable) {
+                        try {
+                            ((Comparable<?>) element).compareTo(null);
+                            errors.add(new ElementCheckFailure(COMPARE_EQUAL_TO_NULL, classNumber, elementNumber));
+                        }
+                        catch (NullPointerException e) {
+                            // ok
                         }
                     }
-                    catch (ClassCastException e) {
-                        errors.add(new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION, classNumber, primaryElementNumber, classNumber, secondaryElementNumber));
-                    }
-                    try {
-                        if (!doesCompareReturn0(secondary, primary)) {
-                            errors.add(new PairCheckFailure(COMPARE_NOT_EQUAL,
-                                    classNumber,
-                                    secondaryElementNumber,
-                                    classNumber,
-                                    primaryElementNumber));
-                        }
-                    }
-                    catch (ClassCastException e) {
-                        errors.add(new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION, classNumber, secondaryElementNumber, classNumber, primaryElementNumber));
-                    }
-                    if (primary.hashCode() != secondary.hashCode()) {
-                        errors.add(new PairCheckFailure(HASH_CODE_NOT_SAME, classNumber, primaryElementNumber, classNumber, secondaryElementNumber));
-                    }
-                }
-            }
-            ++classNumber;
-        }
 
-        //
-        // inequality across congruence classes
-        //
-        for (int primaryClassNumber = 0; primaryClassNumber < equivalenceClasses.size(); primaryClassNumber++) {
-            List<?> primaryCongruenceClass = equivalenceClasses.get(primaryClassNumber);
-            for (int secondaryClassNumber = primaryClassNumber + 1; secondaryClassNumber < equivalenceClasses.size(); secondaryClassNumber++) {
-                List<?> secondaryCongruenceClass = equivalenceClasses.get(secondaryClassNumber);
-                int primaryElementNumber = 0;
-                for (Object primary : primaryCongruenceClass) {
-                    int secondaryElementNumber = 0;
-                    for (Object secondary : secondaryCongruenceClass) {
-                        if (primary.equals(secondary)) {
-                            errors.add(new PairCheckFailure(EQUAL, primaryClassNumber, primaryElementNumber, secondaryClassNumber, secondaryElementNumber));
+                    ++elementNumber;
+                }
+
+                ++classNumber;
+            }
+
+            //
+            // reflexivity
+            //
+            classNumber = 0;
+            for (Collection<?> congruenceClass : equivalenceClasses) {
+                int elementNumber = 0;
+                for (Object element : congruenceClass) {
+                    if (!element.equals(element)) {
+                        errors.add(new ElementCheckFailure(NOT_REFLEXIVE, classNumber, elementNumber));
+                    }
+                    if (!doesCompareReturn0(element, element)) {
+                        errors.add(new ElementCheckFailure(COMPARE_NOT_REFLEXIVE, classNumber, elementNumber));
+                    }
+                    ++elementNumber;
+                }
+                ++classNumber;
+            }
+
+            //
+            // equality within congruence classes
+            //
+            classNumber = 0;
+            for (List<?> congruenceClass : equivalenceClasses) {
+                for (int primaryElementNumber = 0; primaryElementNumber < congruenceClass.size(); primaryElementNumber++) {
+                    Object primary = congruenceClass.get(primaryElementNumber);
+                    for (int secondaryElementNumber = primaryElementNumber + 1; secondaryElementNumber < congruenceClass.size(); secondaryElementNumber++) {
+                        Object secondary = congruenceClass.get(secondaryElementNumber);
+                        if (!primary.equals(secondary)) {
+                            errors.add(new PairCheckFailure(NOT_EQUAL, classNumber, primaryElementNumber, classNumber, secondaryElementNumber));
                         }
-                        if (secondary.equals(primary)) {
-                            errors.add(new PairCheckFailure(EQUAL, secondaryClassNumber, secondaryElementNumber, primaryClassNumber, primaryElementNumber));
+                        if (!secondary.equals(primary)) {
+                            errors.add(new PairCheckFailure(NOT_EQUAL, classNumber, secondaryElementNumber, classNumber, primaryElementNumber));
                         }
                         try {
-                            if (!doesCompareNotReturn0(primary, secondary)) {
-                                errors.add(new PairCheckFailure(COMPARE_EQUAL, primaryClassNumber, primaryElementNumber, secondaryClassNumber, secondaryElementNumber));
+                            if (!doesCompareReturn0(primary, secondary)) {
+                                errors.add(new PairCheckFailure(COMPARE_NOT_EQUAL,
+                                        classNumber,
+                                        primaryElementNumber,
+                                        classNumber,
+                                        secondaryElementNumber));
                             }
                         }
                         catch (ClassCastException e) {
-                            errors.add(new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION, primaryClassNumber, primaryElementNumber, secondaryClassNumber, secondaryElementNumber));
+                            errors.add(new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION, classNumber, primaryElementNumber, classNumber, secondaryElementNumber));
                         }
                         try {
-                            if (!doesCompareNotReturn0(secondary, primary)) {
-                                errors.add(new PairCheckFailure(COMPARE_EQUAL, secondaryClassNumber, secondaryElementNumber, primaryClassNumber, primaryElementNumber));
+                            if (!doesCompareReturn0(secondary, primary)) {
+                                errors.add(new PairCheckFailure(COMPARE_NOT_EQUAL,
+                                        classNumber,
+                                        secondaryElementNumber,
+                                        classNumber,
+                                        primaryElementNumber));
                             }
                         }
                         catch (ClassCastException e) {
-                            errors.add(new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION, secondaryClassNumber, secondaryElementNumber, primaryClassNumber, primaryElementNumber));
+                            errors.add(new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION, classNumber, secondaryElementNumber, classNumber, primaryElementNumber));
                         }
-                        secondaryElementNumber++;
+                        if (primary.hashCode() != secondary.hashCode()) {
+                            errors.add(new PairCheckFailure(HASH_CODE_NOT_SAME, classNumber, primaryElementNumber, classNumber, secondaryElementNumber));
+                        }
                     }
-                    primaryElementNumber++;
+                }
+                ++classNumber;
+            }
+
+            //
+            // inequality across congruence classes
+            //
+            for (int primaryClassNumber = 0; primaryClassNumber < equivalenceClasses.size(); primaryClassNumber++) {
+                List<?> primaryCongruenceClass = equivalenceClasses.get(primaryClassNumber);
+                for (int secondaryClassNumber = primaryClassNumber + 1; secondaryClassNumber < equivalenceClasses.size(); secondaryClassNumber++) {
+                    List<?> secondaryCongruenceClass = equivalenceClasses.get(secondaryClassNumber);
+                    int primaryElementNumber = 0;
+                    for (Object primary : primaryCongruenceClass) {
+                        int secondaryElementNumber = 0;
+                        for (Object secondary : secondaryCongruenceClass) {
+                            if (primary.equals(secondary)) {
+                                errors.add(new PairCheckFailure(EQUAL, primaryClassNumber, primaryElementNumber, secondaryClassNumber, secondaryElementNumber));
+                            }
+                            if (secondary.equals(primary)) {
+                                errors.add(new PairCheckFailure(EQUAL, secondaryClassNumber, secondaryElementNumber, primaryClassNumber, primaryElementNumber));
+                            }
+                            try {
+                                if (!doesCompareNotReturn0(primary, secondary)) {
+                                    errors.add(new PairCheckFailure(COMPARE_EQUAL, primaryClassNumber, primaryElementNumber, secondaryClassNumber, secondaryElementNumber));
+                                }
+                            }
+                            catch (ClassCastException e) {
+                                errors.add(new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION,
+                                        primaryClassNumber,
+                                        primaryElementNumber,
+                                        secondaryClassNumber,
+                                        secondaryElementNumber));
+                            }
+                            try {
+                                if (!doesCompareNotReturn0(secondary, primary)) {
+                                    errors.add(new PairCheckFailure(COMPARE_EQUAL, secondaryClassNumber, secondaryElementNumber, primaryClassNumber, primaryElementNumber));
+                                }
+                            }
+                            catch (ClassCastException e) {
+                                errors.add(new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION,
+                                        secondaryClassNumber,
+                                        secondaryElementNumber,
+                                        primaryClassNumber,
+                                        primaryElementNumber));
+                            }
+                            secondaryElementNumber++;
+                        }
+                        primaryElementNumber++;
+                    }
                 }
             }
         }
     }
 
-    public static <T extends Comparable<T>> void checkComparison(Collection<T>... equivalenceClasses)
+    @Deprecated
+    public static <T extends Comparable<T>> void checkComparison(Iterable<T> initialGroup, Iterable<T> greaterGroup, Iterable<T>... moreGreaterGroup)
     {
-        List<ElementCheckFailure> failures = newArrayList();
+        ComparisonCheck<T> tester = comparisonTester()
+                .initialGroup(initialGroup)
+                .addGreaterGroup(greaterGroup);
 
-        List<List<T>> classes = toListOfLists(equivalenceClasses);
-        checkEquivalence(failures, classes);
+        for (Iterable<T> equivalenceClass : moreGreaterGroup) {
+            tester.addGreaterGroup(equivalenceClass);
+        }
+        tester.check();
+    }
 
-        for (int lesserClassNumber = 0; lesserClassNumber < classes.size(); lesserClassNumber++) {
-            List<T> lesserBag = classes.get(lesserClassNumber);
+    public static InitialComparisonCheck comparisonTester()
+    {
+        return new InitialComparisonCheck();
+    }
 
-            for (int greaterClassNumber = lesserClassNumber + 1; greaterClassNumber < classes.size(); greaterClassNumber++) {
-                List<T> greaterBag = classes.get(greaterClassNumber);
-                checkComparison(failures, lesserClassNumber, lesserBag, greaterClassNumber, greaterBag);
-            }
+    public static class InitialComparisonCheck
+    {
+
+        private InitialComparisonCheck()
+        {
         }
 
-        if (!failures.isEmpty()) {
-            throw new EquivalenceAssertionError(failures);
+        public <T extends Comparable<T>> ComparisonCheck<T> initialGroup(T value, T... moreValues)
+        {
+            ComparisonCheck<T> comparisonCheck = new ComparisonCheck<T>();
+            comparisonCheck.addGreaterGroup(Lists.asList(value, moreValues));
+            return comparisonCheck;
+        }
+
+        public <T extends Comparable<T>> ComparisonCheck<T> initialGroup(Iterable<T> objects)
+        {
+            ComparisonCheck<T> comparisonCheck = new ComparisonCheck<T>();
+            comparisonCheck.addGreaterGroup(objects);
+            return comparisonCheck;
         }
     }
 
-    private static <T extends Comparable<T>> void checkComparison(List<ElementCheckFailure> errors, int lesserClassNumber, List<T> lesserBag, int greaterClassNumber, List<T> greaterBag)
+    public static class ComparisonCheck <T extends Comparable<T>>
     {
-        for (int lesserElementNumber = 0; lesserElementNumber < lesserBag.size(); lesserElementNumber++) {
-            T lesser = lesserBag.get(lesserElementNumber);
-            for (int greaterElementNumber = 0; greaterElementNumber < greaterBag.size(); greaterElementNumber++) {
-                T greater = greaterBag.get(greaterElementNumber);
-                try {
-                    if (lesser.compareTo(greater) >= 0) {
-                        errors.add(new PairCheckFailure(NOT_LESS_THAN, lesserClassNumber, lesserElementNumber, greaterClassNumber, greaterElementNumber));
+        private EquivalenceCheck<T> equivalence= new EquivalenceCheck<T>();
+
+        private ComparisonCheck()
+        {
+        }
+
+        public ComparisonCheck<T> addGreaterGroup(T value, T... moreValues)
+        {
+            equivalence.addEquivalentGroup(Lists.asList(value, moreValues));
+            return this;
+        }
+
+        public ComparisonCheck<T> addGreaterGroup(Iterable<T> objects)
+        {
+            equivalence.addEquivalentGroup(objects);
+            return this;
+        }
+
+        public void check()
+        {
+            ArrayList<ElementCheckFailure> failures = newArrayList();
+
+            equivalence.checkEquivalence(failures);
+
+            List<List<T>> equivalenceClasses = equivalence.equivalenceClasses;
+            for (int lesserClassNumber = 0; lesserClassNumber < equivalenceClasses.size(); lesserClassNumber++) {
+                List<T> lesserBag = equivalenceClasses.get(lesserClassNumber);
+
+                for (int greaterClassNumber = lesserClassNumber + 1; greaterClassNumber < equivalenceClasses.size(); greaterClassNumber++) {
+                    List<T> greaterBag = equivalenceClasses.get(greaterClassNumber);
+                    for (int lesserElementNumber = 0; lesserElementNumber < lesserBag.size(); lesserElementNumber++) {
+                        T lesser = lesserBag.get(lesserElementNumber);
+                        for (int greaterElementNumber = 0; greaterElementNumber < greaterBag.size(); greaterElementNumber++) {
+                            T greater = greaterBag.get(greaterElementNumber);
+                            try {
+                                if (lesser.compareTo(greater) >= 0) {
+                                    failures.add(new PairCheckFailure(NOT_LESS_THAN, lesserClassNumber, lesserElementNumber, greaterClassNumber, greaterElementNumber));
+                                }
+                            }
+                            catch (ClassCastException e) {
+                                // this has already been reported in the checkEquivalence section
+                            }
+                            try {
+                                if (greater.compareTo(lesser) <= 0) {
+                                    failures.add(new PairCheckFailure(NOT_GREATER_THAN, greaterClassNumber, greaterElementNumber, lesserClassNumber, lesserElementNumber));
+                                }
+                            }
+                            catch (ClassCastException e) {
+                                // this has already been reported in the checkEquivalence section
+                            }
+                        }
                     }
+
                 }
-                catch (ClassCastException e) {
-                    // this has already been reported in the checkEquivalence section
-                }
-                try {
-                    if (greater.compareTo(lesser) <= 0) {
-                        errors.add(new PairCheckFailure(NOT_GREATER_THAN, greaterClassNumber, greaterElementNumber, lesserClassNumber, lesserElementNumber));
-                    }
-                }
-                catch (ClassCastException e) {
-                    // this has already been reported in the checkEquivalence section
-                }
+            }
+
+
+            if (!failures.isEmpty()) {
+                throw new EquivalenceAssertionError(failures);
             }
         }
     }
@@ -275,6 +363,7 @@ public final class EquivalenceTester
         Comparable<T> comparable = (Comparable<T>) e1;
         return comparable.compareTo(e2) != 0;
     }
+
 
     public static enum EquivalenceFailureType {
         EQUAL_TO_NULL("Element (%d, %d) returns true when compared to null via equals()"),

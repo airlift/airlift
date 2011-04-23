@@ -45,6 +45,8 @@ import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.NO
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.NOT_GREATER_THAN;
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.NOT_LESS_THAN;
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.NOT_REFLEXIVE;
+import static com.proofpoint.testing.EquivalenceTester.comparisonTester;
+import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
 import static org.testng.Assert.assertEquals;
 import static org.testng.FileAssert.fail;
 
@@ -61,7 +63,10 @@ public class TestEquivalenceTester
     public void notEqual()
     {
         try {
-            EquivalenceTester.check(newArrayList("foo"), newArrayList("foo"));
+            equivalenceTester()
+                    .addEquivalentGroup("foo")
+                    .addEquivalentGroup("foo")
+                    .check();
         }
         catch (EquivalenceAssertionError e) {
             assertEqualsIgnoreOrder(
@@ -80,7 +85,9 @@ public class TestEquivalenceTester
     public void notReflexive()
     {
         try {
-            EquivalenceTester.check(newArrayList(new NotReflexive()));
+            equivalenceTester()
+                    .addEquivalentGroup(new NotReflexive())
+                    .check();
         }
         catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e, new ElementCheckFailure(NOT_REFLEXIVE, 0, 0));
@@ -100,7 +107,9 @@ public class TestEquivalenceTester
     public void comparableNotReflexive()
     {
         try {
-            EquivalenceTester.check(newArrayList(new ComparableNotReflexive()));
+            equivalenceTester()
+                    .addEquivalentGroup(new ComparableNotReflexive())
+                    .check();
         }
         catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e, new ElementCheckFailure(COMPARE_NOT_REFLEXIVE, 0, 0));
@@ -121,7 +130,9 @@ public class TestEquivalenceTester
     public void equalsNull()
     {
         try {
-            EquivalenceTester.check(newArrayList(new EqualsNull()));
+            equivalenceTester()
+                    .addEquivalentGroup(new EqualsNull())
+                    .check();
         }
         catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e, new ElementCheckFailure(EQUAL_TO_NULL, 0, 0));
@@ -141,7 +152,9 @@ public class TestEquivalenceTester
     public void nothingCanBeEqualToNull()
     {
         try {
-            EquivalenceTester.check(newArrayList(new EqualsDoesNotHandleNullArg()));
+            equivalenceTester()
+                    .addEquivalentGroup(new EqualsDoesNotHandleNullArg())
+                    .check();
         }
         catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e, new ElementCheckFailure(EQUAL_TO_NULL, 0, 0));
@@ -162,7 +175,9 @@ public class TestEquivalenceTester
     public void comparableAndNotComparable()
     {
         try {
-            EquivalenceTester.check(newArrayList(new NotComparable(), "Hello"));
+            equivalenceTester()
+                    .addEquivalentGroup(new NotComparable(), "Hello")
+                    .check();
             fail("EquivalenceTester should have throw an EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
@@ -175,7 +190,9 @@ public class TestEquivalenceTester
         }
 
         try {
-            EquivalenceTester.check(newArrayList("Hello", new NotComparable()));
+            equivalenceTester()
+                    .addEquivalentGroup("Hello", new NotComparable())
+                    .check();
             fail("EquivalenceTester should have throw an EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
@@ -188,7 +205,10 @@ public class TestEquivalenceTester
         }
 
         try {
-            EquivalenceTester.check(newArrayList(new NotComparable()), newArrayList("Hello"));
+            equivalenceTester()
+                    .addEquivalentGroup(new NotComparable())
+                    .addEquivalentGroup("Hello")
+                    .check();
             fail("EquivalenceTester should have throw an EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
@@ -198,7 +218,10 @@ public class TestEquivalenceTester
         }
 
         try {
-            EquivalenceTester.check(newArrayList("Hello"), newArrayList(new NotComparable()));
+            equivalenceTester()
+                    .addEquivalentGroup("Hello")
+                    .addEquivalentGroup(new NotComparable())
+                    .check();
             fail("EquivalenceTester should have throw an EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
@@ -216,7 +239,9 @@ public class TestEquivalenceTester
     public void compareToAgainstNull()
     {
         try {
-            EquivalenceTester.checkComparison(newArrayList(new ComparableThatDoesNotThrowNPE(1)));
+            equivalenceTester()
+                    .addEquivalentGroup(new ComparableThatDoesNotThrowNPE(1))
+                    .check();
             Assert.fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
@@ -229,11 +254,29 @@ public class TestEquivalenceTester
     @Test
     public void testCheckCompare()
     {
-        EquivalenceTester.checkComparison(newArrayList(-1), newArrayList(0), newArrayList(1));
-        EquivalenceTester.checkComparison(newArrayList("alice"), newArrayList("bob"), newArrayList("charlie"));
+        comparisonTester()
+                .initialGroup(-1)
+                .addGreaterGroup(0)
+                .addGreaterGroup(1)
+                .check();
 
-        EquivalenceTester.checkComparison(newArrayList(-1, -1, -1), newArrayList(0, 0), newArrayList(1));
-        EquivalenceTester.checkComparison(newArrayList("alice"), newArrayList("bob", "bob"), newArrayList("charlie", "charlie", "charlie"));
+        comparisonTester()
+                .initialGroup("alice")
+                .addGreaterGroup("bob")
+                .addGreaterGroup("charlie")
+                .check();
+
+        comparisonTester()
+                .initialGroup(-1, -1, -1)
+                .addGreaterGroup(0, 0)
+                .addGreaterGroup(1)
+                .check();
+
+        comparisonTester()
+                .initialGroup("alice")
+                .addGreaterGroup("bob", "bob")
+                .addGreaterGroup("charlie", "charlie", "charlie")
+                .check();
 
     }
 
@@ -241,7 +284,10 @@ public class TestEquivalenceTester
     public void testComparisonOrder()
     {
         try {
-            EquivalenceTester.checkComparison(newArrayList(1), newArrayList(0));
+            comparisonTester()
+                    .initialGroup(1)
+                    .addGreaterGroup(0)
+                    .check();
             Assert.fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
@@ -251,7 +297,10 @@ public class TestEquivalenceTester
             );
         }
         try {
-            EquivalenceTester.checkComparison(newArrayList("bob"), newArrayList("alice"));
+            comparisonTester()
+                    .initialGroup("bob")
+                    .addGreaterGroup("alice")
+                    .check();
             Assert.fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
@@ -261,7 +310,10 @@ public class TestEquivalenceTester
             );
         }
         try {
-            EquivalenceTester.checkComparison(newArrayList(1), newArrayList(0, 0));
+            comparisonTester()
+                    .initialGroup(1)
+                    .addGreaterGroup(0, 0)
+                    .check();
             Assert.fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
@@ -273,7 +325,10 @@ public class TestEquivalenceTester
             );
         }
         try {
-            EquivalenceTester.checkComparison(newArrayList("bob"), newArrayList("alice", "alice"));
+            comparisonTester()
+                    .initialGroup("bob")
+                    .addGreaterGroup("alice", "alice")
+                    .check();
             Assert.fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
@@ -284,14 +339,16 @@ public class TestEquivalenceTester
                     new PairCheckFailure(NOT_GREATER_THAN, 1, 1, 0, 0)
             );
         }
-
     }
 
     @Test
     public void testComparisonNotEquals()
     {
         try {
-            EquivalenceTester.checkComparison(newArrayList(0), newArrayList(1, 2));
+            comparisonTester()
+                    .initialGroup(0)
+                    .addGreaterGroup(1, 2)
+                    .check();
             Assert.fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
@@ -304,7 +361,10 @@ public class TestEquivalenceTester
             );
         }
         try {
-            EquivalenceTester.checkComparison(newArrayList("alice"), newArrayList("bob", "charlie"));
+            comparisonTester()
+                    .initialGroup("alice")
+                    .addGreaterGroup("bob", "charlie")
+                    .check();
             Assert.fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
@@ -324,7 +384,10 @@ public class TestEquivalenceTester
     public void testNotComparableComparison()
     {
         try {
-            EquivalenceTester.checkComparison((List) newArrayList(1), (List) newArrayList("string"));
+            comparisonTester()
+                    .initialGroup((List) newArrayList(1))
+                    .addGreaterGroup("string")
+                    .check();
             Assert.fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
