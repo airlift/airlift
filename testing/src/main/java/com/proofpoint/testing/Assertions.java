@@ -15,6 +15,7 @@
  */
 package com.proofpoint.testing;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMultiset;
 import org.testng.Assert;
 
@@ -309,7 +310,8 @@ public final class Assertions
         ImmutableMultiset<?> actualSet = ImmutableMultiset.copyOf(actual);
         ImmutableMultiset<?> expectedSet = ImmutableMultiset.copyOf(expected);
         if (!actualSet.equals(expectedSet)) {
-            fail("%sexpected: collections to be equal (ignoring order). Actual <%s>, expected <%s>", toMessageString(message), actual, expected);
+            Joiner joiner = Joiner.on("\n      ");
+            fail("%sexpected: collections to be equal (ignoring order).%nActual:%n      %s%nExpected:%n      %s", toMessageString(message), joiner.join(actual), joiner.join(expected));
         }
     }
 

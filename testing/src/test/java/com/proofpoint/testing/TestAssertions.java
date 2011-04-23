@@ -243,14 +243,14 @@ public class TestAssertions
             Assert.fail("Expected AssertionError");
         }
         catch (AssertionError e) {
-            verifyExceptionMessage(e, null, actual, expected);
+            verifyExceptionMessageList(e, null, actual, expected);
         }
         try {
             Assertions.assertEqualsIgnoreOrder(actual, expected, MESSAGE);
             Assert.fail("Expected AssertionError");
         }
         catch (AssertionError e) {
-            verifyExceptionMessage(e, MESSAGE, actual, expected);
+            verifyExceptionMessageList(e, MESSAGE, actual, expected);
         }
     }
 
@@ -471,6 +471,25 @@ public class TestAssertions
 
         for (Object value : values) {
             Assert.assertTrue(actualMessage.contains("<" + value + ">"));
+        }
+    }
+
+    private void verifyExceptionMessageList(AssertionError e, String message, Iterable<?>... lists)
+    {
+        Assert.assertNotNull(e);
+        String actualMessage = e.getMessage();
+        Assert.assertNotNull(actualMessage);
+        if (message != null) {
+            Assert.assertTrue(actualMessage.startsWith(message + " "));
+        }
+        else {
+            Assert.assertFalse(actualMessage.startsWith(" "));
+        }
+
+        for (Iterable<?> values : lists) {
+            for (Object value : values) {
+                Assert.assertTrue(actualMessage.contains(value.toString()));
+            }
         }
     }
 
