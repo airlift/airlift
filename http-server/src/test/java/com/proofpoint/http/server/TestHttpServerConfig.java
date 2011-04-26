@@ -54,7 +54,7 @@ public class TestHttpServerConfig
                 .put("http-server.https.enabled", "true")
                 .put("http-server.https.port", "2")
                 .put("http-server.https.keystore.path", "/keystore")
-                .put("http-server.https.keystore.password", "keystore password")
+                .put("http-server.https.keystore.key", "keystore password")
                 .put("http-server.log.path", "/log")
                 .put("http-server.log.retention-time", "1d")
                 .put("http-server.threads.min", "100")
@@ -91,7 +91,7 @@ public class TestHttpServerConfig
                 .put("http-server.https.enabled", "true")
                 .put("http-server.https.port", "2")
                 .put("http-server.https.keystore.path", "/keystore")
-                .put("http-server.https.keystore.password", "keystore password")
+                .put("http-server.https.keystore.key", "keystore password")
                 .put("http-server.log.path", "/log")
                 .put("http-server.log.retention-time", "1d")
                 .put("http-server.threads.min", "100")
@@ -102,6 +102,22 @@ public class TestHttpServerConfig
                 .build();
 
         Map<String, String> oldProperties = new ImmutableMap.Builder<String, String>()
+                .put("http-server.http.enabled", "false")
+                .put("http-server.http.port", "1")
+                .put("http-server.https.enabled", "true")
+                .put("http-server.https.port", "2")
+                .put("http-server.https.keystore.path", "/keystore")
+                .put("http-server.https.keystore.password", "keystore password")
+                .put("http-server.log.path", "/log")
+                .put("http-server.log.retention-time", "1d")
+                .put("http-server.threads.min", "100")
+                .put("http-server.threads.max", "500")
+                .put("http-server.threads.max-idle-time", "10m")
+                .put("http-server.net.max-idle-time", "20m")
+                .put("http-server.auth.users-file", "/auth")
+                .build();
+
+        Map<String, String> olderProperties = new ImmutableMap.Builder<String, String>()
                 .put("jetty.http.enabled", "false")
                 .put("jetty.http.port", "1")
                 .put("jetty.https.enabled", "true")
@@ -117,6 +133,6 @@ public class TestHttpServerConfig
                 .put("jetty.auth.users-file", "/auth")
                 .build();
 
-        ConfigAssertions.assertDeprecatedEquivalence(HttpServerConfig.class, currentProperties, oldProperties);
+        ConfigAssertions.assertDeprecatedEquivalence(HttpServerConfig.class, currentProperties, oldProperties, olderProperties);
     }
 }

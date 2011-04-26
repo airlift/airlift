@@ -111,8 +111,8 @@ public class HttpServerConfig
         return keystorePassword;
     }
 
-    @Config("http-server.https.keystore.password")
-    @LegacyConfig("jetty.https.keystore.password")
+    @Config("http-server.https.keystore.key")
+    @LegacyConfig({"jetty.https.keystore.password", "http-server.https.keystore.password"})
     public HttpServerConfig setKeystorePassword(String keystorePassword)
     {
         this.keystorePassword = keystorePassword;
