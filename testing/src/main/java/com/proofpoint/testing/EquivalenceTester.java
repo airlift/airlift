@@ -22,9 +22,9 @@ package com.proofpoint.testing;
  */
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -77,9 +77,7 @@ public final class EquivalenceTester
 
         public void check()
         {
-            ArrayList<ElementCheckFailure> failures = newArrayList();
-
-            checkEquivalence(failures);
+            List<ElementCheckFailure> failures = checkEquivalence();
 
             if (!failures.isEmpty()) {
                 throw new EquivalenceAssertionError(failures);
@@ -87,8 +85,10 @@ public final class EquivalenceTester
         }
 
         @SuppressWarnings({"ObjectEqualsNull"})
-        private void checkEquivalence(List<ElementCheckFailure> errors)
+        private List<ElementCheckFailure> checkEquivalence()
         {
+            ImmutableList.Builder<ElementCheckFailure> errors = new ImmutableList.Builder<ElementCheckFailure>();
+
             //
             // equal(null)
             //
@@ -234,6 +234,8 @@ public final class EquivalenceTester
                     }
                 }
             }
+
+            return errors.build();
         }
     }
 
@@ -299,9 +301,9 @@ public final class EquivalenceTester
 
         public void check()
         {
-            ArrayList<ElementCheckFailure> failures = newArrayList();
+            ImmutableList.Builder<ElementCheckFailure> builder = new ImmutableList.Builder<ElementCheckFailure>();
 
-            equivalence.checkEquivalence(failures);
+            builder.addAll(equivalence.checkEquivalence());
 
             List<List<T>> equivalenceClasses = equivalence.equivalenceClasses;
             for (int lesserClassNumber = 0; lesserClassNumber < equivalenceClasses.size(); lesserClassNumber++) {
@@ -315,7 +317,7 @@ public final class EquivalenceTester
                             T greater = greaterBag.get(greaterElementNumber);
                             try {
                                 if (lesser.compareTo(greater) >= 0) {
-                                    failures.add(new PairCheckFailure(NOT_LESS_THAN, lesserClassNumber, lesserElementNumber, greaterClassNumber, greaterElementNumber));
+                                    builder.add(new PairCheckFailure(NOT_LESS_THAN, lesserClassNumber, lesserElementNumber, greaterClassNumber, greaterElementNumber));
                                 }
                             }
                             catch (ClassCastException e) {
@@ -323,7 +325,7 @@ public final class EquivalenceTester
                             }
                             try {
                                 if (greater.compareTo(lesser) <= 0) {
-                                    failures.add(new PairCheckFailure(NOT_GREATER_THAN, greaterClassNumber, greaterElementNumber, lesserClassNumber, lesserElementNumber));
+                                    builder.add(new PairCheckFailure(NOT_GREATER_THAN, greaterClassNumber, greaterElementNumber, lesserClassNumber, lesserElementNumber));
                                 }
                             }
                             catch (ClassCastException e) {
@@ -335,7 +337,7 @@ public final class EquivalenceTester
                 }
             }
 
-
+            List<ElementCheckFailure> failures = builder.build();
             if (!failures.isEmpty()) {
                 throw new EquivalenceAssertionError(failures);
             }
