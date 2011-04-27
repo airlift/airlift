@@ -57,7 +57,7 @@ public final class EquivalenceTester
 
     public static class EquivalenceCheck<T>
     {
-        private List<List<T>> equivalenceClasses = newArrayList();
+        private final List<List<T>> equivalenceClasses = newArrayList();
 
         private EquivalenceCheck()
         {
@@ -279,7 +279,7 @@ public final class EquivalenceTester
 
     public static class ComparisonCheck <T extends Comparable<T>>
     {
-        private EquivalenceCheck<T> equivalence= new EquivalenceCheck<T>();
+        private final EquivalenceCheck<T> equivalence = new EquivalenceCheck<T>();
 
         private ComparisonCheck()
         {
