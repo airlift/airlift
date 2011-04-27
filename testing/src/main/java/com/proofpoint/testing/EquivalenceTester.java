@@ -241,7 +241,7 @@ public final class EquivalenceTester
     public static <T extends Comparable<T>> void checkComparison(Iterable<T> initialGroup, Iterable<T> greaterGroup, Iterable<T>... moreGreaterGroup)
     {
         ComparisonCheck<T> tester = comparisonTester()
-                .initialGroup(initialGroup)
+                .addLesserGroup(initialGroup)
                 .addGreaterGroup(greaterGroup);
 
         for (Iterable<T> equivalenceClass : moreGreaterGroup) {
@@ -269,7 +269,7 @@ public final class EquivalenceTester
             return comparisonCheck;
         }
 
-        public <T extends Comparable<T>> ComparisonCheck<T> initialGroup(Iterable<T> objects)
+        public <T extends Comparable<T>> ComparisonCheck<T> addLesserGroup(Iterable<T> objects)
         {
             ComparisonCheck<T> comparisonCheck = new ComparisonCheck<T>();
             comparisonCheck.addGreaterGroup(objects);

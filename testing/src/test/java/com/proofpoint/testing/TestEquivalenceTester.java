@@ -385,7 +385,7 @@ public class TestEquivalenceTester
     {
         try {
             comparisonTester()
-                    .initialGroup((List) newArrayList(1))
+                    .addLesserGroup((List) newArrayList(1))
                     .addGreaterGroup("string")
                     .check();
             Assert.fail("Expected EquivalenceAssertionError");
