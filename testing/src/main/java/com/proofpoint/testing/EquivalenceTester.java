@@ -237,6 +237,28 @@ public final class EquivalenceTester
 
             return errors.build();
         }
+
+        @SuppressWarnings("unchecked")
+        private static <T> boolean doesCompareReturn0(T e1, T e2)
+        {
+            if (!(e1 instanceof Comparable<?>)) {
+                return true;
+            }
+
+            Comparable<T> comparable = (Comparable<T>) e1;
+            return comparable.compareTo(e2) == 0;
+        }
+
+        @SuppressWarnings("unchecked")
+        private static <T> boolean doesCompareNotReturn0(T e1, T e2)
+        {
+            if (!(e1 instanceof Comparable<?>)) {
+                return true;
+            }
+
+            Comparable<T> comparable = (Comparable<T>) e1;
+            return comparable.compareTo(e2) != 0;
+        }
     }
 
     @Deprecated
@@ -343,29 +365,6 @@ public final class EquivalenceTester
             }
         }
     }
-
-    @SuppressWarnings("unchecked")
-    private static <T> boolean doesCompareReturn0(T e1, T e2)
-    {
-        if (!(e1 instanceof Comparable<?>)) {
-            return true;
-        }
-
-        Comparable<T> comparable = (Comparable<T>) e1;
-        return comparable.compareTo(e2) == 0;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T> boolean doesCompareNotReturn0(T e1, T e2)
-    {
-        if (!(e1 instanceof Comparable<?>)) {
-            return true;
-        }
-
-        Comparable<T> comparable = (Comparable<T>) e1;
-        return comparable.compareTo(e2) != 0;
-    }
-
 
     public static enum EquivalenceFailureType {
         EQUAL_TO_NULL("Element (%d, %d) returns true when compared to null via equals()"),
