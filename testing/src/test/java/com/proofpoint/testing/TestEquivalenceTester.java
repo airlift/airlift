@@ -25,7 +25,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ComparisonChain;
 import com.proofpoint.testing.EquivalenceTester.ElementCheckFailure;
 import com.proofpoint.testing.EquivalenceTester.PairCheckFailure;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -247,7 +246,7 @@ public class TestEquivalenceTester
             equivalenceTester()
                     .addEquivalentGroup(new ComparableThatDoesNotThrowNPE(1))
                     .check();
-            Assert.fail("Expected EquivalenceAssertionError");
+            fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e,
@@ -293,7 +292,7 @@ public class TestEquivalenceTester
                     .addLesserGroup(1)
                     .addGreaterGroup(0)
                     .check();
-            Assert.fail("Expected EquivalenceAssertionError");
+            fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e,
@@ -306,7 +305,7 @@ public class TestEquivalenceTester
                     .addLesserGroup("bob")
                     .addGreaterGroup("alice")
                     .check();
-            Assert.fail("Expected EquivalenceAssertionError");
+            fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e,
@@ -319,7 +318,7 @@ public class TestEquivalenceTester
                     .addLesserGroup(1)
                     .addGreaterGroup(0, 0)
                     .check();
-            Assert.fail("Expected EquivalenceAssertionError");
+            fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e,
@@ -334,7 +333,7 @@ public class TestEquivalenceTester
                     .addLesserGroup("bob")
                     .addGreaterGroup("alice", "alice")
                     .check();
-            Assert.fail("Expected EquivalenceAssertionError");
+            fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e,
@@ -354,7 +353,7 @@ public class TestEquivalenceTester
                     .addLesserGroup(0)
                     .addGreaterGroup(1, 2)
                     .check();
-            Assert.fail("Expected EquivalenceAssertionError");
+            fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e,
@@ -370,7 +369,7 @@ public class TestEquivalenceTester
                     .addLesserGroup("alice")
                     .addGreaterGroup("bob", "charlie")
                     .check();
-            Assert.fail("Expected EquivalenceAssertionError");
+            fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e,
@@ -393,7 +392,7 @@ public class TestEquivalenceTester
                     .addLesserGroup((List) newArrayList(1))
                     .addGreaterGroup("string")
                     .check();
-            Assert.fail("Expected EquivalenceAssertionError");
+            fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e,
