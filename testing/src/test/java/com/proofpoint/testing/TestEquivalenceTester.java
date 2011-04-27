@@ -156,7 +156,7 @@ public class TestEquivalenceTester
     {
         try {
             equivalenceTester()
-                    .addEquivalentGroup(new EqualsDoesNotHandleNullArg())
+                    .addEquivalentGroup(new EqualsToNull())
                     .check();
             fail("Expected EquivalenceAssertionError");
         }
@@ -165,12 +165,11 @@ public class TestEquivalenceTester
         }
     }
 
-    static class EqualsDoesNotHandleNullArg
+    static class EqualsToNull
     {
         @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass"})
         public boolean equals(Object that)
         {
-            checkNotNull(that);
             return true;
         }
     }
