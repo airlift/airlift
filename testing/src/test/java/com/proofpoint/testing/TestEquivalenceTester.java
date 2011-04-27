@@ -183,7 +183,7 @@ public class TestEquivalenceTester
             equivalenceTester()
                     .addEquivalentGroup(new NotComparable(), "Hello")
                     .check();
-            fail("EquivalenceTester should have throw an EquivalenceAssertionError");
+            fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e,
@@ -198,7 +198,7 @@ public class TestEquivalenceTester
             equivalenceTester()
                     .addEquivalentGroup("Hello", new NotComparable())
                     .check();
-            fail("EquivalenceTester should have throw an EquivalenceAssertionError");
+            fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e,
