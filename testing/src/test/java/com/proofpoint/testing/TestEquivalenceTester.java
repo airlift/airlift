@@ -67,6 +67,7 @@ public class TestEquivalenceTester
                     .addEquivalentGroup("foo")
                     .addEquivalentGroup("foo")
                     .check();
+            fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
             assertEqualsIgnoreOrder(
@@ -88,6 +89,7 @@ public class TestEquivalenceTester
             equivalenceTester()
                     .addEquivalentGroup(new NotReflexive())
                     .check();
+            fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e, new ElementCheckFailure(NOT_REFLEXIVE, 0, 0));
@@ -110,6 +112,7 @@ public class TestEquivalenceTester
             equivalenceTester()
                     .addEquivalentGroup(new ComparableNotReflexive())
                     .check();
+            fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e, new ElementCheckFailure(COMPARE_NOT_REFLEXIVE, 0, 0));
@@ -133,6 +136,7 @@ public class TestEquivalenceTester
             equivalenceTester()
                     .addEquivalentGroup(new EqualsNull())
                     .check();
+            fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e, new ElementCheckFailure(EQUAL_TO_NULL, 0, 0));
@@ -155,6 +159,7 @@ public class TestEquivalenceTester
             equivalenceTester()
                     .addEquivalentGroup(new EqualsDoesNotHandleNullArg())
                     .check();
+            fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e, new ElementCheckFailure(EQUAL_TO_NULL, 0, 0));
