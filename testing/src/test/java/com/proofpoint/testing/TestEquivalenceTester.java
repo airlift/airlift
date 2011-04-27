@@ -255,25 +255,25 @@ public class TestEquivalenceTester
     public void testCheckCompare()
     {
         comparisonTester()
-                .initialGroup(-1)
+                .addLesserGroup(-1)
                 .addGreaterGroup(0)
                 .addGreaterGroup(1)
                 .check();
 
         comparisonTester()
-                .initialGroup("alice")
+                .addLesserGroup("alice")
                 .addGreaterGroup("bob")
                 .addGreaterGroup("charlie")
                 .check();
 
         comparisonTester()
-                .initialGroup(-1, -1, -1)
+                .addLesserGroup(-1, -1, -1)
                 .addGreaterGroup(0, 0)
                 .addGreaterGroup(1)
                 .check();
 
         comparisonTester()
-                .initialGroup("alice")
+                .addLesserGroup("alice")
                 .addGreaterGroup("bob", "bob")
                 .addGreaterGroup("charlie", "charlie", "charlie")
                 .check();
@@ -285,7 +285,7 @@ public class TestEquivalenceTester
     {
         try {
             comparisonTester()
-                    .initialGroup(1)
+                    .addLesserGroup(1)
                     .addGreaterGroup(0)
                     .check();
             Assert.fail("Expected EquivalenceAssertionError");
@@ -298,7 +298,7 @@ public class TestEquivalenceTester
         }
         try {
             comparisonTester()
-                    .initialGroup("bob")
+                    .addLesserGroup("bob")
                     .addGreaterGroup("alice")
                     .check();
             Assert.fail("Expected EquivalenceAssertionError");
@@ -311,7 +311,7 @@ public class TestEquivalenceTester
         }
         try {
             comparisonTester()
-                    .initialGroup(1)
+                    .addLesserGroup(1)
                     .addGreaterGroup(0, 0)
                     .check();
             Assert.fail("Expected EquivalenceAssertionError");
@@ -326,7 +326,7 @@ public class TestEquivalenceTester
         }
         try {
             comparisonTester()
-                    .initialGroup("bob")
+                    .addLesserGroup("bob")
                     .addGreaterGroup("alice", "alice")
                     .check();
             Assert.fail("Expected EquivalenceAssertionError");
@@ -346,7 +346,7 @@ public class TestEquivalenceTester
     {
         try {
             comparisonTester()
-                    .initialGroup(0)
+                    .addLesserGroup(0)
                     .addGreaterGroup(1, 2)
                     .check();
             Assert.fail("Expected EquivalenceAssertionError");
@@ -362,7 +362,7 @@ public class TestEquivalenceTester
         }
         try {
             comparisonTester()
-                    .initialGroup("alice")
+                    .addLesserGroup("alice")
                     .addGreaterGroup("bob", "charlie")
                     .check();
             Assert.fail("Expected EquivalenceAssertionError");

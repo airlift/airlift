@@ -262,7 +262,7 @@ public final class EquivalenceTester
         {
         }
 
-        public <T extends Comparable<T>> ComparisonCheck<T> initialGroup(T value, T... moreValues)
+        public <T extends Comparable<T>> ComparisonCheck<T> addLesserGroup(T value, T... moreValues)
         {
             ComparisonCheck<T> comparisonCheck = new ComparisonCheck<T>();
             comparisonCheck.addGreaterGroup(Lists.asList(value, moreValues));
