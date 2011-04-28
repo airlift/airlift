@@ -1,0 +1,9 @@
+* 0.40
+
+- Builder-based API for EquivalenceTester
+- Improved error reporting for EquivalenceTester
+- MockRequest for testing Jax-RS resources
+- Bean validation annotations for Durations (@MinDuration, @MaxDuration)
+- Log.debug() variant that takes an exception
+- http-server.https.keystore.password to http-server.https.keystore.key
+- Bug fixes
