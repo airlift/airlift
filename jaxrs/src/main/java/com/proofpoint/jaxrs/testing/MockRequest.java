@@ -17,6 +17,7 @@ package com.proofpoint.jaxrs.testing;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
@@ -294,13 +295,6 @@ public class MockRequest implements Request
 
     private static <T> T firstNonNull(T... objects)
     {
-        return Iterables.find(asList(objects), new Predicate<T>()
-        {
-            @Override
-            public boolean apply(@Nullable T input)
-            {
-                return input != null;
-            }
-        }, null);
+        return Iterables.find(asList(objects), Predicates.<Object>notNull(), null);
     }
 }
