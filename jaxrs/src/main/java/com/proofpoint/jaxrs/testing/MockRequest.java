@@ -16,7 +16,11 @@
 package com.proofpoint.jaxrs.testing;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 
+import javax.annotation.Nullable;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
@@ -24,6 +28,8 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Variant;
 import java.util.Date;
 import java.util.List;
+
+import static java.util.Arrays.asList;
 
 public class MockRequest implements Request
 {
@@ -191,14 +197,7 @@ public class MockRequest implements Request
     {
         Preconditions.checkNotNull(eTag, "eTag is null");
 
-        // if-match
-        ResponseBuilder responseBuilder = evaluateIfMatch(eTag);
-        if (responseBuilder != null) {
-            return responseBuilder;
-        }
-
-        // if-none-match
-        return evaluateIfNoneMatch(eTag);
+        return firstNonNull(evaluateIfMatch(eTag), evaluateIfNoneMatch(eTag));
     }
 
     @Override
@@ -206,14 +205,7 @@ public class MockRequest implements Request
     {
         Preconditions.checkNotNull(lastModified, "lastModified is null");
 
-        // if-modified-since
-        ResponseBuilder responseBuilder = evaluateIfModifiedSince(lastModified);
-        if (responseBuilder != null) {
-            return responseBuilder;
-        }
-
-        // if-unmodified-since
-        return evaluateIfUnmodifiedSince(lastModified);
+        return firstNonNull(evaluateIfModifiedSince(lastModified), evaluateIfUnmodifiedSince(lastModified));
     }
 
     @Override
@@ -222,14 +214,7 @@ public class MockRequest implements Request
         Preconditions.checkNotNull(eTag, "eTag is null");
         Preconditions.checkNotNull(lastModified, "lastModified is null");
 
-        // check last modified
-        ResponseBuilder responseBuilder = evaluatePreconditions(lastModified);
-        if (responseBuilder != null) {
-            return responseBuilder;
-        }
-
-        // check eTag
-        return evaluatePreconditions(eTag);
+        return firstNonNull(evaluatePreconditions(lastModified), evaluatePreconditions(eTag));
     }
 
     private ResponseBuilder evaluateIfMatch(EntityTag eTag)
@@ -305,5 +290,17 @@ public class MockRequest implements Request
         }
 
         return Response.status(Response.Status.PRECONDITION_FAILED);
+    }
+
+    private static <T> T firstNonNull(T... objects)
+    {
+        return Iterables.find(asList(objects), new Predicate<T>()
+        {
+            @Override
+            public boolean apply(@Nullable T input)
+            {
+                return input != null;
+            }
+        }, null);
     }
 }
