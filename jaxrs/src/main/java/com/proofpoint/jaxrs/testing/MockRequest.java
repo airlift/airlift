@@ -124,7 +124,7 @@ public class MockRequest implements Request
         @Override
         public String toString()
         {
-            final StringBuffer sb = new StringBuffer();
+            final StringBuilder sb = new StringBuilder();
             sb.append(method);
             if (selectVariant != null) {
                 sb.append("{").append(selectVariant).append('}');
