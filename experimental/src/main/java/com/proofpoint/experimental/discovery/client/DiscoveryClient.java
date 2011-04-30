@@ -34,6 +34,7 @@ import static com.proofpoint.experimental.discovery.client.ServiceTypeFactory.se
 import static java.lang.String.format;
 import static javax.ws.rs.core.Response.Status.NOT_MODIFIED;
 import static javax.ws.rs.core.Response.Status.CREATED;
+import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
 
 public class DiscoveryClient
@@ -87,7 +88,7 @@ public class DiscoveryClient
                 {
                     Duration maxAge = extractMaxAge(response);
                     int statusCode = response.getStatusCode();
-                    if (OK.getStatusCode() != statusCode && CREATED.getStatusCode() != statusCode) {
+                    if (OK.getStatusCode() != statusCode && CREATED.getStatusCode() != statusCode && NO_CONTENT.getStatusCode() != statusCode) {
                         throw new DiscoveryException(String.format("Announcement failed with status code %s", statusCode));
                     }
 
