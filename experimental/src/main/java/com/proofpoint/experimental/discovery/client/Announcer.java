@@ -16,7 +16,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-class Announcer
+public class Announcer
 {
     private final static Logger log = Logger.get(Announcer.class);
     private final ConcurrentMap<UUID, ServiceAnnouncement> announcements = new MapMaker().makeMap();
