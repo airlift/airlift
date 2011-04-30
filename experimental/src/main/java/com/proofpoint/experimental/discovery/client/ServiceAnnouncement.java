@@ -2,7 +2,6 @@ package com.proofpoint.experimental.discovery.client;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 import java.util.Map;
