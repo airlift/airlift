@@ -16,14 +16,20 @@
 package com.proofpoint.jmx;
 
 import com.google.inject.Binder;
+import com.google.inject.Inject;
 import com.google.inject.Module;
+import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.experimental.discovery.client.ServiceAnnouncement;
 import org.weakref.jmx.guice.ExportBuilder;
 import org.weakref.jmx.guice.MBeanModule;
 
 import javax.management.MBeanServer;
 import java.lang.management.ManagementFactory;
+
+import static com.proofpoint.experimental.discovery.client.DiscoveryBinder.discoveryBinder;
+import static com.proofpoint.experimental.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 
 public class JmxModule
         implements Module
@@ -41,6 +47,28 @@ public class JmxModule
         ExportBuilder builder = MBeanModule.newExporter(binder);
         builder.export(StackTraceMBean.class).withGeneratedName();
         binder.bind(StackTraceMBean.class).in(Scopes.SINGLETON);
+
+        discoveryBinder(binder).bindServiceAnnouncement(JmxAnnouncementProvider.class);
     }
+
+    static class JmxAnnouncementProvider implements Provider<ServiceAnnouncement>
+    {
+        private JmxAgent jmxAgent;
+
+        @Inject
+        public void setJmxAgent(JmxAgent jmxAgent)
+        {
+            this.jmxAgent = jmxAgent;
+        }
+
+        @Override
+        public ServiceAnnouncement get()
+        {
+            return serviceAnnouncement("jmx")
+                    .addProperty("jmx", jmxAgent.getURL().toString())
+                    .build();
+        }
+    }
+
 }
 
