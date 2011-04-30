@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.proofpoint.experimental.http.server.HttpAnnouncementBinder.httpAnnouncementBinder;
 import static com.proofpoint.json.JsonBinder.jsonBinder;
 
 public class JmxHttpModule implements Module
@@ -51,6 +52,9 @@ public class JmxHttpModule implements Module
 
         // jackson has a bug in the serializer selection code so it does not know that subclasses of LazyCompositeData are also CompositeData
         jsonBinder(binder).addSerializerBinding(LazyCompositeData.class).to(CompositeDataSerializer.class);
+
+        // todo move this to the jmx announcement when this module is promoted from experimental
+        httpAnnouncementBinder(binder).bindHttpAnnouncement("jmx-http");
     }
 
     static class ObjectNameDeserializer

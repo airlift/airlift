@@ -18,8 +18,10 @@ package com.proofpoint.platform.sample;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.proofpoint.configuration.ConfigurationModule;
 import org.weakref.jmx.guice.MBeanModule;
+
+import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
+import static com.proofpoint.experimental.http.server.HttpAnnouncementBinder.httpAnnouncementBinder;
 
 public class MainModule
         implements Module
@@ -35,6 +37,8 @@ public class MainModule
         binder.bind(PersonsResource.class).in(Scopes.SINGLETON);
         binder.bind(PersonResource.class).in(Scopes.SINGLETON);
 
-        ConfigurationModule.bindConfig(binder).to(StoreConfig.class);
+        bindConfig(binder).to(StoreConfig.class);
+
+        httpAnnouncementBinder(binder).bindHttpAnnouncement("person");
     }
 }

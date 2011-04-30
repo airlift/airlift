@@ -1,6 +1,7 @@
 package com.proofpoint.experimental.discovery.client;
 
 import com.google.inject.Binder;
+import com.google.inject.Provider;
 import com.google.inject.multibindings.Multibinder;
 
 import static com.proofpoint.experimental.discovery.client.ServiceTypeFactory.serviceType;
@@ -39,5 +40,15 @@ public class DiscoveryBinder
     public void bindServiceAnnouncement(ServiceAnnouncement announcement)
     {
         serviceAnnouncementBinder.addBinding().toInstance(announcement);
+    }
+
+    public void bindServiceAnnouncement(Provider<ServiceAnnouncement> announcementProvider)
+    {
+        serviceAnnouncementBinder.addBinding().toProvider(announcementProvider);
+    }
+
+    public <T extends ServiceAnnouncement> void bindServiceAnnouncement(Class<? extends Provider<T>> announcementProviderClass)
+    {
+        serviceAnnouncementBinder.addBinding().toProvider(announcementProviderClass);
     }
 }

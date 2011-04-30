@@ -15,12 +15,15 @@
  */
 package com.proofpoint.platform.sample;
 
+import com.google.inject.Injector;
 import com.proofpoint.bootstrap.Bootstrap;
+import com.proofpoint.experimental.discovery.client.Announcer;
+import com.proofpoint.experimental.discovery.client.DiscoveryModule;
 import com.proofpoint.experimental.jmx.JmxHttpModule;
+import com.proofpoint.experimental.json.JsonModule;
 import com.proofpoint.http.server.HttpServerModule;
 import com.proofpoint.jaxrs.JaxrsModule;
 import com.proofpoint.jmx.JmxModule;
-import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.NodeModule;
 import org.weakref.jmx.guice.MBeanModule;
 
@@ -31,15 +34,16 @@ public class Main
     {
         Bootstrap app = new Bootstrap(
                 new NodeModule(),
+                new DiscoveryModule(),
                 new HttpServerModule(),
                 new JsonModule(),
                 new JaxrsModule(),
                 new MBeanModule(),
                 new JmxModule(),
                 new JmxHttpModule(),
-                new MainModule())
-                .strictConfig();
+                new MainModule());
 
-        app.initialize();
+        Injector injector = app.strictConfig().initialize();
+        injector.getInstance(Announcer.class).start();
     }
 }
