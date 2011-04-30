@@ -41,7 +41,6 @@ public class ServiceDescriptor
         this.properties = ImmutableMap.copyOf(properties);
     }
 
-    @JsonProperty
     public UUID getId()
     {
         return id;
@@ -52,13 +51,11 @@ public class ServiceDescriptor
         return nodeId;
     }
 
-    @JsonProperty
     public String getType()
     {
         return type;
     }
 
-    @JsonProperty
     public String getPool()
     {
         return pool;
@@ -69,7 +66,6 @@ public class ServiceDescriptor
         return location;
     }
 
-    @JsonProperty
     public Map<String, String> getProperties()
     {
         return properties;
