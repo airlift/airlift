@@ -6,7 +6,7 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.proofpoint.experimental.discovery.client.DiscoveryClient.ServiceDescriptorsRepresentation;
+import com.proofpoint.experimental.discovery.client.HttpDiscoveryClient.ServiceDescriptorsRepresentation;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -19,7 +19,7 @@ public class DiscoveryModule implements Module
     @Override
     public void configure(Binder binder)
     {
-        binder.bind(DiscoveryClient.class).in(Scopes.SINGLETON);
+        binder.bind(DiscoveryClient.class).to(HttpDiscoveryClient.class).in(Scopes.SINGLETON);
         jsonCodecBinder(binder).bindJsonCodec(ServiceDescriptorsRepresentation.class);
         jsonCodecBinder(binder).bindJsonCodec(Announcement.class);
 

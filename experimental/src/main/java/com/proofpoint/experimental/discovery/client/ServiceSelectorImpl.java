@@ -3,7 +3,6 @@ package com.proofpoint.experimental.discovery.client;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.CheckedFuture;
-import com.proofpoint.experimental.discovery.client.DiscoveryClient.ServiceDescriptors;
 import com.proofpoint.log.Logger;
 import com.proofpoint.units.Duration;
 

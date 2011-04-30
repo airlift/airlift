@@ -30,7 +30,6 @@ public class ServiceDescriptor
         Preconditions.checkNotNull(nodeId, "nodeId is null");
         Preconditions.checkNotNull(type, "type is null");
         Preconditions.checkNotNull(pool, "pool is null");
-        Preconditions.checkNotNull(location, "location is null");
         Preconditions.checkNotNull(properties, "properties is null");
 
         this.id = id;
