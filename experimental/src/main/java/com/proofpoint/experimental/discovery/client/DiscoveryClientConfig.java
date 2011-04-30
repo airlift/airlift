@@ -16,8 +16,8 @@ public class DiscoveryClientConfig
         return discoveryServiceURI;
     }
 
-    @Config("server.discovery-uri")
-    @ConfigDescription("Discovery service URI, including port")
+    @Config("discovery.uri")
+    @ConfigDescription("Discovery service base URI")
     public DiscoveryClientConfig setDiscoveryServiceURI(URI uri)
     {
         this.discoveryServiceURI = uri;
