@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
 import com.proofpoint.experimental.json.JsonCodec;
-import junit.framework.TestCase;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -15,8 +14,9 @@ import static com.proofpoint.experimental.discovery.client.ServiceAnnouncement.s
 import static com.proofpoint.experimental.json.JsonCodec.jsonCodec;
 import static com.proofpoint.experimental.json.JsonCodec.mapJsonCodec;
 import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
+import static org.testng.Assert.assertEquals;
 
-public class TestAnnouncement extends TestCase
+public class TestAnnouncement
 {
     private final JsonCodec<Announcement> announcementCodec = jsonCodec(Announcement.class);
     private final JsonCodec<Map<String, Object>> objectCodec = mapJsonCodec(String.class, Object.class);

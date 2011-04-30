@@ -2,13 +2,12 @@ package com.proofpoint.experimental.discovery.client;
 
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.testing.ConfigAssertions;
-import junit.framework.TestCase;
 import org.testng.annotations.Test;
 
 import java.net.URI;
 import java.util.Map;
 
-public class TestDiscoveryClientConfig extends TestCase
+public class TestDiscoveryClientConfig
 {
     @Test
     public void testDefaults()

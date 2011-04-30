@@ -4,7 +4,6 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 import com.proofpoint.experimental.json.JsonCodec;
-import junit.framework.TestCase;
 import org.testng.annotations.Test;
 
 import java.util.Map;
@@ -13,8 +12,9 @@ import java.util.UUID;
 import static com.proofpoint.experimental.json.JsonCodec.jsonCodec;
 import static com.proofpoint.experimental.json.JsonCodec.mapJsonCodec;
 import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
+import static org.testng.Assert.assertEquals;
 
-public class TestServiceDescriptor extends TestCase
+public class TestServiceDescriptor
 {
     private final JsonCodec<ServiceDescriptor> serviceDescriptorCodec = jsonCodec(ServiceDescriptor.class);
     private final JsonCodec<Map<String, Object>> objectCodec = mapJsonCodec(String.class, Object.class);
