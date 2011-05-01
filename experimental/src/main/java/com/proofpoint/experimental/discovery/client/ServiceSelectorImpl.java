@@ -1,12 +1,14 @@
 package com.proofpoint.experimental.discovery.client;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.proofpoint.log.Logger;
 import com.proofpoint.units.Duration;
 
 import javax.annotation.PostConstruct;
+import java.net.ConnectException;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.Random;
@@ -105,7 +107,11 @@ public class ServiceSelectorImpl implements ServiceSelector
                             }
                         }
                         catch (DiscoveryException e) {
-                            log.error(e);
+                            if (Throwables.getRootCause(e) instanceof ConnectException) {
+                                log.debug(e, "Can not connect to discovery server");
+                            } else {
+                                log.error(e);
+                            }
                         }
                     }
                 }, executor);

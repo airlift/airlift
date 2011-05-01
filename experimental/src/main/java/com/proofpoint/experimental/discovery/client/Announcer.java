@@ -1,8 +1,8 @@
 package com.proofpoint.experimental.discovery.client;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.collect.MapMaker;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -10,12 +10,11 @@ import com.google.inject.Inject;
 import com.proofpoint.log.Logger;
 import com.proofpoint.units.Duration;
 
-import java.util.List;
+import java.net.ConnectException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -133,7 +132,12 @@ public class Announcer
                     }
                 }
                 catch (DiscoveryException e) {
-                    log.error(e);
+                    if (Throwables.getRootCause(e) instanceof ConnectException) {
+                        log.debug(e, "Can not connect to discovery server");
+                    }
+                    else {
+                        log.error(e);
+                    }
                 }
             }
         }, executor);
