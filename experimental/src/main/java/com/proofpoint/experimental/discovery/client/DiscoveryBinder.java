@@ -32,7 +32,7 @@ public class DiscoveryBinder
         bindSelector(serviceType(type, pool));
     }
 
-    private void bindSelector(ServiceType serviceType)
+    public void bindSelector(ServiceType serviceType)
     {
         binder.bind(ServiceSelector.class).annotatedWith(serviceType).toProvider(new ServiceSelectorProvider(serviceType));
     }
