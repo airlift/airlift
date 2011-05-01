@@ -7,32 +7,17 @@ import com.proofpoint.units.Duration;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class HttpEventClientConfig
 {
-    private String baseUrl;
     private int maxConnections = -1;
     private Duration connectTimeout = new Duration(50, MILLISECONDS);
     private Duration requestTimeout = new Duration(60, SECONDS);
     private boolean compress;
     private int jsonVersion = 2;
-
-    @NotNull
-    public String getBaseUrl()
-    {
-        return baseUrl;
-    }
-
-    @Config("collector.baseurl")
-    public HttpEventClientConfig setBaseUrl(String baseUrl)
-    {
-        this.baseUrl = baseUrl;
-        return this;
-    }
 
     public int getMaxConnections()
     {

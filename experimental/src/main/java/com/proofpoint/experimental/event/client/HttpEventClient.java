@@ -1,5 +1,4 @@
 package com.proofpoint.experimental.event.client;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
@@ -9,6 +8,8 @@ import com.ning.http.client.Request;
 import com.ning.http.client.Request.EntityWriter;
 import com.ning.http.client.RequestBuilder;
 import com.ning.http.client.Response;
+import com.proofpoint.experimental.discovery.client.ServiceType;
+import com.proofpoint.experimental.http.client.HttpServiceSelector;
 import com.proofpoint.log.Logger;
 import org.codehaus.jackson.JsonEncoding;
 import org.codehaus.jackson.JsonFactory;
@@ -21,7 +22,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -33,25 +33,27 @@ public class HttpEventClient implements EventClient
     private static final Logger log = Logger.get(HttpEventClient.class);
 
     private final ObjectMapper objectMapper;
-    private final String baseUrl;
+    private final HttpServiceSelector serviceSelector;
     private final AsyncHttpClient client;
     private final Set<Class<?>> registeredTypes;
 
     @Inject
     public HttpEventClient(HttpEventClientConfig config,
+            @ServiceType("event") HttpServiceSelector serviceSelector,
             ObjectMapper objectMapper,
             @ForEventClient AsyncHttpClient client,
-            List<EventTypeMetadata<?>> eventTypes)
+            Set<EventTypeMetadata<?>> eventTypes)
     {
         Preconditions.checkNotNull(config, "config is null");
+        Preconditions.checkNotNull(serviceSelector, "serviceSelector is null");
         Preconditions.checkNotNull(objectMapper, "objectMapper is null");
         Preconditions.checkNotNull(client, "client is null");
         Preconditions.checkNotNull(eventTypes, "types is null");
         Preconditions.checkArgument(!eventTypes.isEmpty(), "types is empty");
 
+        this.serviceSelector = serviceSelector;
         this.objectMapper = objectMapper;
         this.client = client;
-        this.baseUrl = config.getBaseUrl();
 
         ImmutableSet.Builder<Class<?>> typeRegistrations = ImmutableSet.builder();
 
@@ -95,17 +97,19 @@ public class HttpEventClient implements EventClient
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(eventGenerator, "eventGenerator is null");
-        Request request = new RequestBuilder("POST")
-                .setUrl(baseUrl)
-                .setHeader("Content-Type", "application/json")
-                .setBody(new JsonEntityWriter<T>(objectMapper, registeredTypes, eventGenerator))
-                .build();
 
         try {
+            Request request = new RequestBuilder("POST")
+                    .setUrl(serviceSelector.selectHttpService().toString())
+                    .setHeader("Content-Type", "application/json")
+                    .setBody(new JsonEntityWriter<T>(objectMapper, registeredTypes, eventGenerator))
+                    .build();
+
             return new FutureResponse(client.prepareRequest(request).execute());
         }
-        catch (IOException e) {
-            log.error(e, "Posting event failed");
+        catch (Exception e) {
+            // todo not noisy enough
+            log.debug(e, "Posting event failed");
             return Futures.immediateFuture(null);
         }
     }

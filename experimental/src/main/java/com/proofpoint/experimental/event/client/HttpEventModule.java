@@ -9,14 +9,16 @@ import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClientConfig;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
+import static com.proofpoint.experimental.http.client.HttpServiceSelectorBinder.httpServiceSelectorBinder;
 
 public class HttpEventModule implements Module
 {
     @Override
     public void configure(Binder binder)
     {
-        binder.bind(HttpEventClient.class).in(Scopes.SINGLETON);
+        binder.bind(EventClient.class).to(HttpEventClient.class).in(Scopes.SINGLETON);
         bindConfig(binder).to(HttpEventClientConfig.class);
+        httpServiceSelectorBinder(binder).bindSelector("event");
     }
 
     @Provides
