@@ -19,6 +19,7 @@ import com.google.inject.Injector;
 import com.proofpoint.bootstrap.Bootstrap;
 import com.proofpoint.experimental.discovery.client.Announcer;
 import com.proofpoint.experimental.discovery.client.DiscoveryModule;
+import com.proofpoint.experimental.event.client.HttpEventModule;
 import com.proofpoint.experimental.jmx.JmxHttpModule;
 import com.proofpoint.experimental.json.JsonModule;
 import com.proofpoint.http.server.HttpServerModule;
@@ -41,6 +42,7 @@ public class Main
                 new MBeanModule(),
                 new JmxModule(),
                 new JmxHttpModule(),
+                new HttpEventModule(),
                 new MainModule());
 
         Injector injector = app.strictConfig().initialize();

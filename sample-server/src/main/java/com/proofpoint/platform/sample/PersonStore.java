@@ -19,6 +19,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.MapMaker;
 import com.google.inject.Inject;
+import com.proofpoint.experimental.event.client.EventClient;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
@@ -26,19 +27,25 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
+import static com.proofpoint.platform.sample.PersonEvent.personAdded;
+import static com.proofpoint.platform.sample.PersonEvent.personRemoved;
+import static com.proofpoint.platform.sample.PersonEvent.personUpdated;
+
 public class PersonStore
 {
     private final ConcurrentMap<String, Person> persons;
-    private final PersonStoreStats stats = new PersonStoreStats();
+    private final PersonStoreStats stats;
 
     @Inject
-    public PersonStore(StoreConfig config)
+    public PersonStore(StoreConfig config, EventClient eventClient)
     {
         Preconditions.checkNotNull(config, "config must not be null");
+        Preconditions.checkNotNull(eventClient, "eventClient is null");
 
         persons = new MapMaker()
                 .expireAfterWrite((long) config.getTtl().toMillis(), TimeUnit.MILLISECONDS)
                 .makeMap();
+        stats = new PersonStoreStats(eventClient);
     }
 
     @Managed
@@ -69,10 +76,10 @@ public class PersonStore
 
         boolean added = persons.put(id, person) == null;
         if (added) {
-            stats.personAdded();
+            stats.personAdded(id, person);
         }
         else {
-            stats.personUpdated();
+            stats.personUpdated(id, person);
         }
         return added;
     }
@@ -84,12 +91,12 @@ public class PersonStore
     {
         Preconditions.checkNotNull(id, "id must not be null");
 
-        boolean removed = persons.remove(id) != null;
-        if (removed) {
-            stats.personRemoved();
+        Person removedPerson = persons.remove(id);
+        if (removedPerson != null) {
+            stats.personRemoved(id, removedPerson);
         }
 
-        return removed;
+        return removedPerson != null;
     }
 
     public Collection<Person> getAll()

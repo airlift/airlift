@@ -15,6 +15,8 @@
  */
 package com.proofpoint.platform.sample;
 
+import com.proofpoint.experimental.event.client.InMemoryEventClient;
+import com.proofpoint.experimental.event.client.NullEventClient;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -33,7 +35,7 @@ public class TestPersonsResource
     @BeforeMethod
     public void setup()
     {
-        store = new PersonStore(new StoreConfig());
+        store = new PersonStore(new StoreConfig(), new NullEventClient());
         resource = new PersonsResource(store);
     }
 

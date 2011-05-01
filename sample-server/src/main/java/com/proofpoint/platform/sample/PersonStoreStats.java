@@ -15,6 +15,7 @@
  */
 package com.proofpoint.platform.sample;
 
+import com.proofpoint.experimental.event.client.EventClient;
 import org.weakref.jmx.Managed;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -25,6 +26,12 @@ public class PersonStoreStats
     private final AtomicLong added = new AtomicLong();
     private final AtomicLong updated = new AtomicLong();
     private final AtomicLong removed = new AtomicLong();
+    private final EventClient eventClient;
+
+    public PersonStoreStats(EventClient eventClient)
+    {
+        this.eventClient = eventClient;
+    }
 
     @Managed
     public long getFetched()
@@ -55,18 +62,21 @@ public class PersonStoreStats
         fetched.getAndIncrement();
     }
 
-    public void personAdded()
+    public void personAdded(String id, Person person)
     {
         added.getAndIncrement();
+        eventClient.post(PersonEvent.personAdded(id, person));
     }
 
-    public void personUpdated()
+    public void personUpdated(String id, Person person)
     {
         updated.getAndIncrement();
+        eventClient.post(PersonEvent.personUpdated(id, person));
     }
 
-    public void personRemoved()
+    public void personRemoved(String id, Person person)
     {
         removed.getAndIncrement();
+        eventClient.post(PersonEvent.personRemoved(id, person));
     }
 }

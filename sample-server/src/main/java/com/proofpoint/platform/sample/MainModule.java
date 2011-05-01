@@ -21,6 +21,7 @@ import com.google.inject.Scopes;
 import org.weakref.jmx.guice.MBeanModule;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
+import static com.proofpoint.experimental.event.client.EventBinder.eventBinder;
 import static com.proofpoint.experimental.http.server.HttpAnnouncementBinder.httpAnnouncementBinder;
 
 public class MainModule
@@ -38,6 +39,7 @@ public class MainModule
         binder.bind(PersonResource.class).in(Scopes.SINGLETON);
 
         bindConfig(binder).to(StoreConfig.class);
+        eventBinder(binder).bindEventClient(PersonEvent.class);
 
         httpAnnouncementBinder(binder).bindHttpAnnouncement("person");
     }

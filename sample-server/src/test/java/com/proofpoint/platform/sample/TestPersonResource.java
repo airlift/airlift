@@ -15,6 +15,8 @@
  */
 package com.proofpoint.platform.sample;
 
+import com.google.common.collect.ImmutableList;
+import com.proofpoint.experimental.event.client.InMemoryEventClient;
 import com.proofpoint.jaxrs.testing.MockUriInfo;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -22,6 +24,9 @@ import org.testng.annotations.Test;
 import javax.ws.rs.core.Response;
 import java.net.URI;
 
+import static com.proofpoint.platform.sample.PersonEvent.personAdded;
+import static com.proofpoint.platform.sample.PersonEvent.personRemoved;
+import static com.proofpoint.platform.sample.PersonEvent.personUpdated;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -29,11 +34,13 @@ public class TestPersonResource
 {
     private PersonResource resource;
     private PersonStore store;
+    private InMemoryEventClient eventClient;
 
     @BeforeMethod
     public void setup()
     {
-        store = new PersonStore(new StoreConfig());
+        eventClient = new InMemoryEventClient();
+        store = new PersonStore(new StoreConfig(), eventClient);
         resource = new PersonResource(store);
     }
 
@@ -71,6 +78,11 @@ public class TestPersonResource
         assertNull(response.getMetadata().get("Content-Type")); // content type is set by jersey based on @Produces
 
         assertEquals(store.get("foo"), new Person("foo@example.com", "Mr Foo"));
+
+
+        assertEquals(eventClient.getEvents(), ImmutableList.of(
+                personAdded("foo", new Person("foo@example.com", "Mr Foo"))
+        ));
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -97,6 +109,11 @@ public class TestPersonResource
         assertNull(response.getMetadata().get("Content-Type")); // content type is set by jersey based on @Produces
 
         assertEquals(store.get("foo"), new Person("bar@example.com", "Mr Bar"));
+
+        assertEquals(eventClient.getEvents(), ImmutableList.of(
+                personAdded("foo", new Person("foo@example.com", "Mr Foo")),
+                personUpdated("foo", new Person("bar@example.com", "Mr Bar"))
+        ));
     }
 
     @Test
@@ -109,6 +126,11 @@ public class TestPersonResource
         assertNull(response.getEntity());
 
         assertNull(store.get("foo"));
+
+        assertEquals(eventClient.getEvents(), ImmutableList.of(
+                personAdded("foo", new Person("foo@example.com", "Mr Foo")),
+                personRemoved("foo", new Person("foo@example.com", "Mr Foo"))
+        ));
     }
 
     @Test

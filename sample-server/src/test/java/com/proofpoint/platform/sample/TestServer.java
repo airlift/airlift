@@ -16,6 +16,7 @@
 package com.proofpoint.platform.sample;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -23,6 +24,9 @@ import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.experimental.event.client.EventClient;
+import com.proofpoint.experimental.event.client.InMemoryEventClient;
+import com.proofpoint.experimental.event.client.InMemoryEventModule;
 import com.proofpoint.experimental.json.JsonCodec;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
@@ -43,6 +47,8 @@ import java.util.concurrent.ExecutionException;
 import static com.google.common.collect.Sets.newHashSet;
 import static com.proofpoint.experimental.json.JsonCodec.listJsonCodec;
 import static com.proofpoint.experimental.json.JsonCodec.mapJsonCodec;
+import static com.proofpoint.platform.sample.PersonEvent.personAdded;
+import static com.proofpoint.platform.sample.PersonEvent.personRemoved;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -57,6 +63,7 @@ public class TestServer
 
     private final JsonCodec<Map<String, Object>> mapCodec = mapJsonCodec(String.class, Object.class);
     private final JsonCodec<List<Object>> listCodec = listJsonCodec(Object.class);
+    private InMemoryEventClient eventClient;
 
     @BeforeMethod
     public void setup()
@@ -65,6 +72,7 @@ public class TestServer
         // TODO: wrap all this stuff in a TestBootstrap class
         Injector injector = Guice.createInjector(
                 new TestingNodeModule(),
+                new InMemoryEventModule(),
                 new TestingHttpServerModule(),
                 new JsonModule(),
                 new JaxrsModule(),
@@ -73,6 +81,7 @@ public class TestServer
 
         server = injector.getInstance(TestingHttpServer.class);
         store = injector.getInstance(PersonStore.class);
+        eventClient = (InMemoryEventClient) injector.getInstance(EventClient.class);
 
         server.start();
         client = new AsyncHttpClient();
@@ -153,6 +162,11 @@ public class TestServer
         assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.CREATED.getStatusCode());
 
         assertEquals(store.get("foo"), new Person("foo@example.com", "Mr Foo"));
+
+
+        assertEquals(eventClient.getEvents(), ImmutableList.of(
+                personAdded("foo", new Person("foo@example.com", "Mr Foo"))
+        ));
     }
 
     @Test
@@ -169,6 +183,11 @@ public class TestServer
         assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.NO_CONTENT.getStatusCode());
 
         assertNull(store.get("foo"));
+
+        assertEquals(eventClient.getEvents(), ImmutableList.of(
+                personAdded("foo", new Person("foo@example.com", "Mr Foo")),
+                personRemoved("foo", new Person("foo@example.com", "Mr Foo"))
+        ));
     }
 
     @Test
