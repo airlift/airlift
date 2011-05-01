@@ -3,7 +3,8 @@ package com.proofpoint.experimental.event.client;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
-import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 
 import java.util.List;
 
@@ -40,23 +41,16 @@ public class EventBinder
         Preconditions.checkArgument(!eventTypes.isEmpty(), "eventTypes is empty");
 
         Binder sourcedBinder = binder.withSource(getCaller());
+        Multibinder<EventTypeMetadata<?>> metadataBinder = Multibinder.newSetBinder(binder, new TypeLiteral<EventTypeMetadata<?>>() {});
 
-        // Build event type metadata and bind any errors into Guice
-        ImmutableList.Builder<EventTypeMetadata<?>> builder = ImmutableList.builder();
+        // Bind event type metadata and bind any errors into Guice
         for (Class<?> eventType : eventTypes) {
             EventTypeMetadata<?> eventTypeMetadata = getEventTypeMetadata(eventType);
-            builder.add(eventTypeMetadata);
+            metadataBinder.addBinding().toInstance(eventTypeMetadata);
             for (String error : eventTypeMetadata.getErrors()) {
                 sourcedBinder.addError(error);
             }
         }
-        EventClientProvider eventClientProvider = new EventClientProvider(builder.build());
-
-        // create a valid key
-        Key<EventClient> key = Key.get(EventClient.class);
-
-        // bind the event client provider
-        sourcedBinder.bind(key).toProvider(eventClientProvider);
     }
 
     private static StackTraceElement getCaller()

@@ -3,6 +3,7 @@ package com.proofpoint.experimental.event.client;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
+import com.google.inject.Inject;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Request;
 import com.ning.http.client.Request.EntityWriter;
@@ -36,7 +37,11 @@ public class HttpEventClient implements EventClient
     private final AsyncHttpClient client;
     private final Set<Class<?>> registeredTypes;
 
-    public HttpEventClient(HttpEventClientConfig config, ObjectMapper objectMapper, AsyncHttpClient client, List<EventTypeMetadata<?>> eventTypes)
+    @Inject
+    public HttpEventClient(HttpEventClientConfig config,
+            ObjectMapper objectMapper,
+            @ForEventClient AsyncHttpClient client,
+            List<EventTypeMetadata<?>> eventTypes)
     {
         Preconditions.checkNotNull(config, "config is null");
         Preconditions.checkNotNull(objectMapper, "objectMapper is null");

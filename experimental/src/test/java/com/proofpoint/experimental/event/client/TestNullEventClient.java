@@ -2,14 +2,12 @@ package com.proofpoint.experimental.event.client;
 
 import org.testng.annotations.BeforeMethod;
 
-public class TestInMemoryEventClient extends AbstractTestInMemoryEventClient
+public class TestNullEventClient extends AbstractTestNullEventClient
 {
-
     @BeforeMethod
-    public void setup()
+    public void setUp()
             throws Exception
     {
-        eventClient = new InMemoryEventClient();
+        eventClient = new NullEventClient();
     }
-
 }
