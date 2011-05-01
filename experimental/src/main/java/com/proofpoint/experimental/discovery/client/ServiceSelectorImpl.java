@@ -15,6 +15,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static java.lang.String.format;
+
 public class ServiceSelectorImpl implements ServiceSelector
 {
     private final static Logger log = Logger.get(ServiceSelectorImpl.class);
@@ -56,6 +58,9 @@ public class ServiceSelectorImpl implements ServiceSelector
     public ServiceDescriptor selectService()
     {
         List<ServiceDescriptor> services = selectAllServices();
+        if (services.isEmpty()) {
+            throw new IllegalStateException(format("No %s services from pool %s available", type.value(), type.pool()));
+        }
         int index = random.nextInt(services.size());
         return services.get(index);
     }
