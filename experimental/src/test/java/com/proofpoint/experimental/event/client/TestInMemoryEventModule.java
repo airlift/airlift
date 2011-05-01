@@ -13,6 +13,6 @@ public class TestInMemoryEventModule extends AbstractTestInMemoryEventClient
         Injector injector = Guice.createInjector(
                 new InMemoryEventModule()
         );
-        eventClient = injector.getInstance(InMemoryEventClient.class);
+        eventClient = (InMemoryEventClient) injector.getInstance(EventClient.class);
     }
 }

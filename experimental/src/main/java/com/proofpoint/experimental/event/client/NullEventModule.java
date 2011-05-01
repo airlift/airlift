@@ -9,6 +9,6 @@ public class NullEventModule implements Module
     @Override
     public void configure(Binder binder)
     {
-        binder.bind(NullEventClient.class).in(Scopes.SINGLETON);
+        binder.bind(EventClient.class).to(NullEventClient.class).in(Scopes.SINGLETON);
     }
 }

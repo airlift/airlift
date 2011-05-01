@@ -13,6 +13,6 @@ public class TestNullEventModule extends AbstractTestNullEventClient
         Injector injector = Guice.createInjector(
                 new NullEventModule()
         );
-        eventClient = injector.getInstance(NullEventClient.class);
+        eventClient = (NullEventClient) injector.getInstance(EventClient.class);
     }
 }

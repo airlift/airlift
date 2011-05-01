@@ -9,6 +9,6 @@ public class InMemoryEventModule implements Module
     @Override
     public void configure(Binder binder)
     {
-        binder.bind(InMemoryEventClient.class).in(Scopes.SINGLETON);
+        binder.bind(EventClient.class).to(InMemoryEventClient.class).in(Scopes.SINGLETON);
     }
 }
