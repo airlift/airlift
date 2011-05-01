@@ -29,6 +29,7 @@ public class ServiceSelectorProvider
     @Inject
     public void setExecutor(@ForDiscoverClient ScheduledExecutorService executor)
     {
+        Preconditions.checkNotNull(executor, "executor is null");
         this.executor = executor;
     }
 
