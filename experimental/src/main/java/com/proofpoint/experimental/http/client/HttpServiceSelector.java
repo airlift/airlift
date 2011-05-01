@@ -2,14 +2,17 @@ package com.proofpoint.experimental.http.client;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.proofpoint.experimental.discovery.client.DiscoveryClient;
 import com.proofpoint.experimental.discovery.client.ServiceDescriptor;
 import com.proofpoint.experimental.discovery.client.ServiceSelector;
+import com.proofpoint.experimental.discovery.client.ServiceSelectorImpl;
 import com.proofpoint.experimental.discovery.client.ServiceType;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static java.lang.String.format;
 
@@ -18,12 +21,14 @@ public class HttpServiceSelector
     private final ServiceType type;
     private final ServiceSelector serviceSelector;
 
-    public HttpServiceSelector(ServiceType type, ServiceSelector serviceSelector)
+    public HttpServiceSelector(ServiceType type, DiscoveryClient client, ScheduledExecutorService executor)
     {
         Preconditions.checkNotNull(type, "type is null");
-        Preconditions.checkNotNull(serviceSelector, "serviceSelector is null");
+        Preconditions.checkNotNull(client, "client is null");
+        Preconditions.checkNotNull(executor, "executor is null");
+
         this.type = type;
-        this.serviceSelector = serviceSelector;
+        this.serviceSelector = new ServiceSelectorImpl(type, client, executor);
     }
 
     public URI selectHttpService()

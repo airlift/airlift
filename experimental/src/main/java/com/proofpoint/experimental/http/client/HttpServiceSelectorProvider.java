@@ -2,17 +2,19 @@ package com.proofpoint.experimental.http.client;
 
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.google.inject.Key;
 import com.google.inject.Provider;
-import com.proofpoint.experimental.discovery.client.ServiceSelector;
+import com.proofpoint.experimental.discovery.client.DiscoveryClient;
+import com.proofpoint.experimental.discovery.client.ForDiscoverClient;
 import com.proofpoint.experimental.discovery.client.ServiceType;
+
+import java.util.concurrent.ScheduledExecutorService;
 
 public class HttpServiceSelectorProvider
         implements Provider<HttpServiceSelector>
 {
     private final ServiceType type;
-    private Injector injector;
+    private DiscoveryClient client;
+    private ScheduledExecutorService executor;
 
     public HttpServiceSelectorProvider(ServiceType type)
     {
@@ -21,16 +23,25 @@ public class HttpServiceSelectorProvider
     }
 
     @Inject
-    public void setInjector(Injector injector)
+    public void setClient(DiscoveryClient client)
     {
-        this.injector = injector;
+        Preconditions.checkNotNull(client, "client is null");
+        this.client = client;
+    }
+
+    @Inject
+    public void setExecutor(@ForDiscoverClient ScheduledExecutorService executor)
+    {
+        Preconditions.checkNotNull(executor, "executor is null");
+        this.executor = executor;
     }
 
     public HttpServiceSelector get()
     {
-        Preconditions.checkNotNull(injector, "injector is null");
-        ServiceSelector serviceSelector = injector.getInstance(Key.get(ServiceSelector.class, type));
-        HttpServiceSelector httpServiceSelector = new HttpServiceSelector(type, serviceSelector);
+        Preconditions.checkNotNull(client, "client is null");
+        Preconditions.checkNotNull(executor, "executor is null");
+
+        HttpServiceSelector httpServiceSelector = new HttpServiceSelector(type, client, executor);
         return httpServiceSelector;
     }
 
