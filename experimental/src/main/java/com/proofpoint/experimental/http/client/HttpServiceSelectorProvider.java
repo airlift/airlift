@@ -2,46 +2,38 @@ package com.proofpoint.experimental.http.client;
 
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Provider;
-import com.proofpoint.experimental.discovery.client.DiscoveryClient;
-import com.proofpoint.experimental.discovery.client.ForDiscoverClient;
-import com.proofpoint.experimental.discovery.client.ServiceType;
+import com.proofpoint.experimental.discovery.client.ServiceSelector;
 
-import java.util.concurrent.ScheduledExecutorService;
+import static com.proofpoint.experimental.discovery.client.ServiceTypeFactory.serviceType;
 
 public class HttpServiceSelectorProvider
         implements Provider<HttpServiceSelector>
 {
-    private final ServiceType type;
-    private DiscoveryClient client;
-    private ScheduledExecutorService executor;
+    private final String type;
+    private Injector injector;
 
-    public HttpServiceSelectorProvider(ServiceType type)
+    public HttpServiceSelectorProvider(String type)
     {
         Preconditions.checkNotNull(type);
         this.type = type;
     }
 
     @Inject
-    public void setClient(DiscoveryClient client)
+    public void setInjector(Injector injector)
     {
-        Preconditions.checkNotNull(client, "client is null");
-        this.client = client;
-    }
-
-    @Inject
-    public void setExecutor(@ForDiscoverClient ScheduledExecutorService executor)
-    {
-        Preconditions.checkNotNull(executor, "executor is null");
-        this.executor = executor;
+        this.injector = injector;
     }
 
     public HttpServiceSelector get()
     {
-        Preconditions.checkNotNull(client, "client is null");
-        Preconditions.checkNotNull(executor, "executor is null");
+        Preconditions.checkNotNull(injector, "injector is null");
 
-        HttpServiceSelector httpServiceSelector = new HttpServiceSelector(type, client, executor);
+        ServiceSelector serviceSelector = injector.getInstance(Key.get(ServiceSelector.class, serviceType(type)));
+
+        HttpServiceSelector httpServiceSelector = new HttpServiceSelector(serviceSelector);
         return httpServiceSelector;
     }
 

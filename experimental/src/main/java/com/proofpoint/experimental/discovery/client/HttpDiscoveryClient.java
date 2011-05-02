@@ -30,7 +30,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static com.proofpoint.experimental.discovery.client.ServiceTypeFactory.serviceType;
 import static java.lang.String.format;
 import static javax.ws.rs.core.Response.Status.NOT_MODIFIED;
 import static javax.ws.rs.core.Response.Status.CREATED;
@@ -119,26 +118,27 @@ public class HttpDiscoveryClient implements DiscoveryClient
     }
 
     @Override
-    public CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(ServiceType type)
+    public CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(String type, String pool)
     {
         Preconditions.checkNotNull(type, "type is null");
-        return lookup(type, null);
+        Preconditions.checkNotNull(pool, "pool is null");
+        return lookup(type, pool, null);
     }
 
     @Override
     public CheckedFuture<ServiceDescriptors, DiscoveryException> refreshServices(ServiceDescriptors serviceDescriptors)
     {
         Preconditions.checkNotNull(serviceDescriptors, "serviceDescriptors is null");
-        return lookup(serviceDescriptors.getType(), serviceDescriptors);
+        return lookup(serviceDescriptors.getType(), serviceDescriptors.getPool(), serviceDescriptors);
     }
 
-    private CheckedFuture<ServiceDescriptors, DiscoveryException> lookup(final ServiceType type, final ServiceDescriptors serviceDescriptors)
+    private CheckedFuture<ServiceDescriptors, DiscoveryException> lookup(final String type, final String pool, final ServiceDescriptors serviceDescriptors)
     {
         ListenableFuture<ServiceDescriptors> serviceDescriptorsFuture;
         try {
             Preconditions.checkNotNull(type, "type is null");
 
-            BoundRequestBuilder request = client.prepareGet(discoveryServiceURI + "/v1/service/" + type.value() + "/" + type.pool());
+            BoundRequestBuilder request = client.prepareGet(discoveryServiceURI + "/v1/service/" + type + "/" + pool);
             if (serviceDescriptors != null) {
                 request.setHeader(HttpHeaders.ETAG, serviceDescriptors.getETag());
             }
@@ -176,6 +176,7 @@ public class HttpDiscoveryClient implements DiscoveryClient
 
                             return new ServiceDescriptors(
                                     type,
+                                    pool,
                                     serviceDescriptorsRepresentation.getServiceDescriptors(),
                                     maxAge,
                                     eTag);

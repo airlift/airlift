@@ -16,12 +16,11 @@ import java.util.concurrent.TimeUnit;
 import static com.proofpoint.experimental.discovery.client.ServiceTypeFactory.serviceType;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class TestAnnouncer
 {
-    private final ServiceType serviceType = serviceType("foo", "pool");
+    private final ServiceType serviceType = serviceType("foo");
     private Announcer announcer;
     private InMemoryDiscoveryClient discoveryClient;
     private ServiceAnnouncement serviceAnnouncement;
@@ -33,7 +32,7 @@ public class TestAnnouncer
     {
         nodeInfo = new NodeInfo("test");
         discoveryClient = new InMemoryDiscoveryClient(nodeInfo, new Duration(1, TimeUnit.MILLISECONDS));
-        serviceAnnouncement = ServiceAnnouncement.serviceAnnouncement(serviceType.value()).setPool(serviceType.pool()).addProperty("a", "apple").build();
+        serviceAnnouncement = ServiceAnnouncement.serviceAnnouncement(serviceType.value()).setPool("pool").addProperty("a", "apple").build();
         announcer = new Announcer(discoveryClient, ImmutableSet.of(serviceAnnouncement));
     }
 
@@ -106,7 +105,7 @@ public class TestAnnouncer
 
         announcer.start();
 
-        ServiceAnnouncement newAnnouncement = ServiceAnnouncement.serviceAnnouncement(serviceType.value()).setPool(serviceType.pool()).addProperty("a", "apple").build();
+        ServiceAnnouncement newAnnouncement = ServiceAnnouncement.serviceAnnouncement(serviceType.value()).setPool("pool").addProperty("a", "apple").build();
         announcer.addServiceAnnouncement(newAnnouncement);
 
         Thread.sleep(100);
@@ -129,7 +128,7 @@ public class TestAnnouncer
 
     private void assertAnnounced(ServiceAnnouncement... serviceAnnouncements)
     {
-        ServiceDescriptors serviceDescriptors = discoveryClient.getServices(serviceType).checkedGet();
+        ServiceDescriptors serviceDescriptors = discoveryClient.getServices(serviceType.value(), "pool").checkedGet();
 
         List<ServiceDescriptor> descriptors = serviceDescriptors.getServiceDescriptors();
         assertEquals(descriptors.size(), serviceAnnouncements.length);
@@ -144,7 +143,7 @@ public class TestAnnouncer
             ServiceDescriptor serviceDescriptor = descriptorMap.get(serviceAnnouncement.getId());
             assertNotNull(serviceDescriptor, "No descriptor for announcement " + serviceAnnouncement.getId());
             assertEquals(serviceDescriptor.getType(), serviceType.value());
-            assertEquals(serviceDescriptor.getPool(), serviceType.pool());
+            assertEquals(serviceDescriptor.getPool(), "pool");
             assertEquals(serviceDescriptor.getId(), serviceAnnouncement.getId());
             assertEquals(serviceDescriptor.getProperties(), serviceAnnouncement.getProperties());
             assertEquals(serviceDescriptor.getNodeId(), nodeInfo.getNodeId());

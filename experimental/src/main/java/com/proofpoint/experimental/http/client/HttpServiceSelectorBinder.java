@@ -34,6 +34,6 @@ public class HttpServiceSelectorBinder
     {
         Preconditions.checkNotNull(serviceType, "serviceType is null");
         discoveryBinder.bindSelector(serviceType);
-        binder.bind(HttpServiceSelector.class).annotatedWith(serviceType).toProvider(new HttpServiceSelectorProvider(serviceType));
+        binder.bind(HttpServiceSelector.class).annotatedWith(serviceType).toProvider(new HttpServiceSelectorProvider(serviceType.value()));
     }
 }

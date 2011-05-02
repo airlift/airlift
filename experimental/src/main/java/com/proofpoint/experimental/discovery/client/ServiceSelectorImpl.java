@@ -24,18 +24,21 @@ public class ServiceSelectorImpl implements ServiceSelector
     private final static Logger log = Logger.get(ServiceSelectorImpl.class);
     private static final Random random = new SecureRandom();
 
-    private final ServiceType type;
+    private final String type;
+    private final String pool;
     private final DiscoveryClient client;
     private final AtomicReference<ServiceDescriptors> serviceDescriptors = new AtomicReference<ServiceDescriptors>();
     private final ScheduledExecutorService executor;
 
-    public ServiceSelectorImpl(ServiceType type, DiscoveryClient client, ScheduledExecutorService executor)
+    public ServiceSelectorImpl(String type, ServiceSelectorConfig selectorConfig, DiscoveryClient client, ScheduledExecutorService executor)
     {
         Preconditions.checkNotNull(type, "type is null");
+        Preconditions.checkNotNull(selectorConfig, "selectorConfig is null");
         Preconditions.checkNotNull(client, "client is null");
         Preconditions.checkNotNull(executor, "executor is null");
 
         this.type = type;
+        this.pool = selectorConfig.getPool();
         this.client = client;
         this.executor = executor;
     }
@@ -57,11 +60,23 @@ public class ServiceSelectorImpl implements ServiceSelector
     }
 
     @Override
+    public String getType()
+    {
+        return type;
+    }
+
+    @Override
+    public String getPool()
+    {
+        return pool;
+    }
+
+    @Override
     public ServiceDescriptor selectService()
     {
         List<ServiceDescriptor> services = selectAllServices();
         if (services.isEmpty()) {
-            throw new IllegalStateException(format("No %s services from pool %s available", type.value(), type.pool()));
+            throw new IllegalStateException(format("No %s services from pool %s available", type, pool));
         }
         int index = random.nextInt(services.size());
         return services.get(index);
@@ -88,7 +103,7 @@ public class ServiceSelectorImpl implements ServiceSelector
             {
                 final CheckedFuture<ServiceDescriptors, DiscoveryException> future;
                 if (oldDescriptors == null) {
-                    future = client.getServices(type);
+                    future = client.getServices(type, pool);
                 }
                 else {
                     future = client.refreshServices(oldDescriptors);

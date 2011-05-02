@@ -74,17 +74,18 @@ public class InMemoryDiscoveryClient implements DiscoveryClient
     }
 
     @Override
-    public CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(ServiceType type)
+    public CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(String type, String pool)
     {
         Preconditions.checkNotNull(type, "type is null");
+        Preconditions.checkNotNull(pool, "pool is null");
 
         ImmutableList.Builder<ServiceDescriptor> builder = ImmutableList.builder();
         for (ServiceDescriptor serviceDescriptor : this.announcements.get()) {
-            if (serviceDescriptor.getType().equals(type.value()) && serviceDescriptor.getPool().equals(type.pool())) {
+            if (serviceDescriptor.getType().equals(type) && serviceDescriptor.getPool().equals(pool)) {
                 builder.add(serviceDescriptor);
             }
         }
-        return Futures.immediateCheckedFuture(new ServiceDescriptors(type, builder.build(), maxAge, UUID.randomUUID().toString()));
+        return Futures.immediateCheckedFuture(new ServiceDescriptors(type, pool, builder.build(), maxAge, UUID.randomUUID().toString()));
     }
 
     @Override
@@ -92,6 +93,6 @@ public class InMemoryDiscoveryClient implements DiscoveryClient
     {
         Preconditions.checkNotNull(serviceDescriptors, "serviceDescriptors is null");
 
-        return getServices(serviceDescriptors.getType());
+        return getServices(serviceDescriptors.getType(), serviceDescriptors.getPool());
     }
 }

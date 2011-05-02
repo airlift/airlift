@@ -17,7 +17,7 @@ public interface DiscoveryClient
 
     CheckedFuture<Void, DiscoveryException> unannounce();
 
-    CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(ServiceType type);
+    CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(String type, String pool);
 
     CheckedFuture<ServiceDescriptors, DiscoveryException> refreshServices(ServiceDescriptors serviceDescriptors);
 

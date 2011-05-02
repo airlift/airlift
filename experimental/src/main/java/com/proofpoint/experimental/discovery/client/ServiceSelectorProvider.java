@@ -2,18 +2,23 @@ package com.proofpoint.experimental.discovery.client;
 
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Provider;
 
 import java.util.concurrent.ScheduledExecutorService;
 
+import static com.proofpoint.experimental.discovery.client.ServiceTypeFactory.serviceType;
+
 public class ServiceSelectorProvider
         implements Provider<ServiceSelector>
 {
-    private final ServiceType type;
+    private final String type;
     private DiscoveryClient client;
     private ScheduledExecutorService executor;
+    private Injector injector;
 
-    public ServiceSelectorProvider(ServiceType type)
+    public ServiceSelectorProvider(String type)
     {
         Preconditions.checkNotNull(type);
         this.type = type;
@@ -33,12 +38,23 @@ public class ServiceSelectorProvider
         this.executor = executor;
     }
 
+    @Inject
+    public void setInjector(Injector injector)
+    {
+        this.injector = injector;
+    }
+
     public ServiceSelector get()
     {
-        Preconditions.checkState(client != null);
+        Preconditions.checkNotNull(client, "client is null");
         Preconditions.checkNotNull(executor, "executor is null");
-        ServiceSelectorImpl serviceSelector = new ServiceSelectorImpl(type, client, executor);
+        Preconditions.checkNotNull(injector, "injector is null");
+
+        ServiceSelectorConfig selectorConfig = injector.getInstance(Key.get(ServiceSelectorConfig.class, serviceType(type)));
+
+        ServiceSelectorImpl serviceSelector = new ServiceSelectorImpl(type, selectorConfig, client, executor);
         serviceSelector.start();
+
         return serviceSelector;
     }
 

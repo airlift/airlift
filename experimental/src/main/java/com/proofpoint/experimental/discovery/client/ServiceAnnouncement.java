@@ -98,7 +98,7 @@ public class ServiceAnnouncement
     public static class ServiceAnnouncementBuilder
     {
         private final String type;
-        private String pool = ServiceType.DEFAULT_POOL;
+        private String pool = ServiceSelectorConfig.DEFAULT_POOL;
 
         private ImmutableMap.Builder<String, String> properties = ImmutableMap.builder();
 

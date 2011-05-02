@@ -15,8 +15,5 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @BindingAnnotation
 public @interface ServiceType
 {
-    static final String DEFAULT_POOL = "general";
-
     String value();
-    String pool() default DEFAULT_POOL;
 }
