@@ -25,10 +25,13 @@ public class HttpServiceSelector
     public URI selectHttpService()
     {
         List<ServiceDescriptor> serviceDescriptors = Lists.newArrayList(serviceSelector.selectAllServices());
+        if (serviceDescriptors.isEmpty()) {
+            throw new IllegalStateException(format("No '%s' services from pool '%s' are available", serviceSelector.getType(), serviceSelector.getPool()));
+        }
         Collections.shuffle(serviceDescriptors);
 
+        // favor https over http
         for (ServiceDescriptor serviceDescriptor : serviceDescriptors) {
-            // favor https over http
             String https = serviceDescriptor.getProperties().get("https");
             if (https != null) {
                 try {
@@ -37,6 +40,8 @@ public class HttpServiceSelector
                 catch (URISyntaxException ignored) {
                 }
             }
+        }
+        for (ServiceDescriptor serviceDescriptor : serviceDescriptors) {
             String http = serviceDescriptor.getProperties().get("http");
             if (http != null) {
                 try {
@@ -46,6 +51,6 @@ public class HttpServiceSelector
                 }
             }
         }
-        throw new IllegalStateException(format("No %s services from pool %s available", serviceSelector.getType(), serviceSelector.getPool()));
+        throw new IllegalStateException(format("No '%s' services from pool '%s' with a http or https property available", serviceSelector.getType(), serviceSelector.getPool()));
     }
 }
