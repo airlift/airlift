@@ -20,6 +20,7 @@ import static org.testng.Assert.fail;
 
 public class TestAnnouncer
 {
+    public static final Duration MAX_AGE = new Duration(1, TimeUnit.MILLISECONDS);
     private final ServiceType serviceType = serviceType("foo");
     private Announcer announcer;
     private InMemoryDiscoveryClient discoveryClient;
@@ -31,7 +32,7 @@ public class TestAnnouncer
             throws Exception
     {
         nodeInfo = new NodeInfo("test");
-        discoveryClient = new InMemoryDiscoveryClient(nodeInfo, new Duration(1, TimeUnit.MILLISECONDS));
+        discoveryClient = new InMemoryDiscoveryClient(nodeInfo, MAX_AGE);
         serviceAnnouncement = ServiceAnnouncement.serviceAnnouncement(serviceType.value()).setPool("pool").addProperty("a", "apple").build();
         announcer = new Announcer(discoveryClient, ImmutableSet.of(serviceAnnouncement));
     }
@@ -129,6 +130,11 @@ public class TestAnnouncer
     private void assertAnnounced(ServiceAnnouncement... serviceAnnouncements)
     {
         ServiceDescriptors serviceDescriptors = discoveryClient.getServices(serviceType.value(), "pool").checkedGet();
+
+        assertEquals(serviceDescriptors.getType(), serviceType.value());
+        assertEquals(serviceDescriptors.getPool(), "pool");
+        assertNotNull(serviceDescriptors.getETag());
+        assertEquals(serviceDescriptors.getMaxAge(), MAX_AGE);
 
         List<ServiceDescriptor> descriptors = serviceDescriptors.getServiceDescriptors();
         assertEquals(descriptors.size(), serviceAnnouncements.length);

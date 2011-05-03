@@ -2,6 +2,7 @@ package com.proofpoint.experimental.discovery.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Resources;
 import com.proofpoint.experimental.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
 import com.proofpoint.experimental.json.JsonCodec;
@@ -45,6 +46,12 @@ public class TestServiceAnnouncement
         assertEquals(announcement.getType(), type);
         assertEquals(announcement.getPool(), pool);
         assertEquals(announcement.getProperties(), properties);
+    }
+
+    @Test
+    public void testToString()
+    {
+        assertNotNull(serviceAnnouncement("foo").build());
     }
 
     @Test

@@ -15,6 +15,7 @@ import static com.proofpoint.experimental.json.JsonCodec.jsonCodec;
 import static com.proofpoint.experimental.json.JsonCodec.mapJsonCodec;
 import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 
 public class TestAnnouncement
 {
@@ -41,6 +42,17 @@ public class TestAnnouncement
         services.get(0).put("id", Iterables.getOnlyElement(announcement.getServices()).getId().toString());
 
         assertEquals(actual, expected);
+    }
+
+    @Test
+    public void testToString()
+    {
+        assertNotNull(new Announcement("environment", "node", "location", ImmutableSet.of(
+                serviceAnnouncement("foo")
+                        .addProperty("http", "http://localhost:8080")
+                        .addProperty("jmx", "jmx://localhost:1234")
+                        .build())
+        ));
     }
 
     @Test
