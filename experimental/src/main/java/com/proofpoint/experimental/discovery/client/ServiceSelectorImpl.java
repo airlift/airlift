@@ -14,8 +14,10 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static java.lang.String.format;
 
@@ -29,6 +31,9 @@ public class ServiceSelectorImpl implements ServiceSelector
     private final DiscoveryClient client;
     private final AtomicReference<ServiceDescriptors> serviceDescriptors = new AtomicReference<ServiceDescriptors>();
     private final ScheduledExecutorService executor;
+
+    private final ReentrantLock lock = new ReentrantLock();
+    private ScheduledFuture<?> restartRefreshSchedule;
 
     public ServiceSelectorImpl(String type, ServiceSelectorConfig selectorConfig, DiscoveryClient client, ScheduledExecutorService executor)
     {
@@ -46,17 +51,31 @@ public class ServiceSelectorImpl implements ServiceSelector
     @PostConstruct
     public void start()
     {
-        // make sure update runs at least every minutes
-        // this will help the system restart if a task
-        // hangs or dies without being rescheduled
-        executor.scheduleWithFixedDelay(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                scheduleRefresh(new Duration(0, TimeUnit.SECONDS));
+        lock.lock();
+        try {
+            // already running?
+            if (restartRefreshSchedule != null) {
+                return;
             }
-        }, 0, 1, TimeUnit.MINUTES);
+
+            // make sure update runs at least every minutes
+            // this will help the system restart if a task
+            // hangs or dies without being rescheduled
+            restartRefreshSchedule = executor.scheduleWithFixedDelay(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    scheduleRefresh(new Duration(0, TimeUnit.SECONDS));
+                }
+            }, 1, 1, TimeUnit.MINUTES);
+        }
+        finally {
+            lock.unlock();
+        }
+
+        // refresh immediately
+        refresh();
     }
 
     @Override
@@ -92,48 +111,59 @@ public class ServiceSelectorImpl implements ServiceSelector
         return serviceDescriptors.getServiceDescriptors();
     }
 
-    private void scheduleRefresh(Duration delay)
+    private void refresh()
     {
         final ServiceDescriptors oldDescriptors = this.serviceDescriptors.get();
+
+        final CheckedFuture<ServiceDescriptors, DiscoveryException> future;
+        if (oldDescriptors == null) {
+            future = client.getServices(type, pool);
+        }
+        else {
+            future = client.refreshServices(oldDescriptors);
+        }
+
+        future.addListener(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try {
+                    ServiceDescriptors newDescriptors = future.checkedGet();
+                    boolean updated = serviceDescriptors.compareAndSet(oldDescriptors, newDescriptors);
+                    if (updated) {
+                        scheduleRefresh(newDescriptors.getMaxAge());
+                    }
+                }
+                catch (DiscoveryException e) {
+                    if (Throwables.getRootCause(e) instanceof ConnectException) {
+                        log.debug(e, "Can not connect to discovery server");
+                    } else {
+                        log.error(e);
+                    }
+                }
+            }
+        }, executor);
+    }
+
+    private void scheduleRefresh(Duration delay)
+    {
+        // already stopped?  avoids rejection exception
+        if (executor.isShutdown()) {
+            return;
+        }
         executor.schedule(new Callable<Void>()
         {
             @Override
             public Void call()
                     throws Exception
             {
-                final CheckedFuture<ServiceDescriptors, DiscoveryException> future;
-                if (oldDescriptors == null) {
-                    future = client.getServices(type, pool);
-                }
-                else {
-                    future = client.refreshServices(oldDescriptors);
-                }
-
-                future.addListener(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        try {
-                            ServiceDescriptors newDescriptors = future.checkedGet();
-                            boolean updated = serviceDescriptors.compareAndSet(oldDescriptors, newDescriptors);
-                            if (updated) {
-                                scheduleRefresh(newDescriptors.getMaxAge());
-                            }
-                        }
-                        catch (DiscoveryException e) {
-                            if (Throwables.getRootCause(e) instanceof ConnectException) {
-                                log.debug(e, "Can not connect to discovery server");
-                            } else {
-                                log.error(e);
-                            }
-                        }
-                    }
-                }, executor);
+                refresh();
 
                 return null;
 
             }
+
         }, (long) delay.toMillis(), TimeUnit.MILLISECONDS);
     }
 }
