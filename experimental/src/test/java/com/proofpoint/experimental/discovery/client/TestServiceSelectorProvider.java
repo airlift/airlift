@@ -5,7 +5,7 @@ import org.testng.annotations.Test;
 
 import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
 
-public class ServiceSelectorProviderTest
+public class TestServiceSelectorProvider
 {
     @Test
     public void testEquivalence()
