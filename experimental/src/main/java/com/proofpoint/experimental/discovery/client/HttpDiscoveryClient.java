@@ -24,12 +24,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.proofpoint.experimental.discovery.client.DiscoveryFutures.toDiscoveryFuture;
 import static java.lang.String.format;
 import static javax.ws.rs.core.Response.Status.NOT_MODIFIED;
 import static javax.ws.rs.core.Response.Status.CREATED;
@@ -237,38 +237,6 @@ public class HttpDiscoveryClient implements DiscoveryClient
             sb.append('}');
             return sb.toString();
         }
-    }
-
-
-    private static <T> CheckedFuture<T, DiscoveryException> toDiscoveryFuture(final String name, ListenableFuture<T> future)
-    {
-        return Futures.makeChecked(future, new Function<Exception, DiscoveryException>()
-        {
-            @Override
-            public DiscoveryException apply(Exception e)
-            {
-                if (e instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
-                    return new DiscoveryException(name + " was interrupted");
-                }
-                if (e instanceof CancellationException) {
-                    return new DiscoveryException(name + " was canceled");
-                }
-
-                Throwable cause = e;
-                if (e instanceof ExecutionException) {
-                    if (e.getCause() != null) {
-                        cause = e.getCause();
-                    }
-                }
-
-                if (cause instanceof DiscoveryException) {
-                    return (DiscoveryException) cause;
-                }
-
-                return new DiscoveryException(name + " failed", cause);
-            }
-        });
     }
 
     private static <T> ListenableFuture<T> toGuavaListenableFuture(final com.ning.http.client.ListenableFuture<T> asyncClientFuture)
