@@ -30,7 +30,7 @@ public class HttpServiceSelectorBinder
         bindSelector(serviceType(type));
     }
 
-    private void bindSelector(ServiceType serviceType)
+    public void bindSelector(ServiceType serviceType)
     {
         Preconditions.checkNotNull(serviceType, "serviceType is null");
         discoveryBinder.bindSelector(serviceType);
