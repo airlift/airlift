@@ -33,7 +33,7 @@ public class Announcer
     private final AtomicLong currentJob = new AtomicLong();
 
     private final ReentrantLock lock = new ReentrantLock();
-    private ScheduledFuture<?> announcementSchedule;
+    private ScheduledFuture<?> restartAnnouncementSchedule;
 
     @Inject
     public Announcer(DiscoveryClient client, Set<ServiceAnnouncement> serviceAnnouncements)
@@ -56,17 +56,14 @@ public class Announcer
             Preconditions.checkState(!executor.isShutdown(), "Announcer has been destroyed");
 
             // already running?
-            if (announcementSchedule != null) {
+            if (restartAnnouncementSchedule != null) {
                 return;
             }
-
-            // announce immediately
-            announce();
 
             // make sure update runs at least every minutes
             // this will help the system restart if a task
             // hangs or dies without being rescheduled
-            announcementSchedule = executor.scheduleWithFixedDelay(new Runnable()
+            restartAnnouncementSchedule = executor.scheduleWithFixedDelay(new Runnable()
             {
                 @Override
                 public void run()
@@ -78,13 +75,16 @@ public class Announcer
         finally {
             lock.unlock();
         }
+
+        // announce immediately
+        announce();
     }
 
     public void destroy()
     {
+        // cancel scheduled jobs
         lock.lock();
         try {
-            // cancel everything
             executor.shutdownNow();
             try {
                 executor.awaitTermination(30, TimeUnit.SECONDS);
@@ -92,15 +92,17 @@ public class Announcer
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
+        }
+        finally {
+            lock.unlock();
+        }
 
-            // unannounce
+        // unannounce
+        try {
             client.unannounce().checkedGet();
         }
         catch (DiscoveryException e) {
             log.error(e);
-        }
-        finally {
-            lock.unlock();
         }
     }
 
