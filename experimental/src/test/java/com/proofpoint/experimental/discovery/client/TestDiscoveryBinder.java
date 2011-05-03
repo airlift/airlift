@@ -1,0 +1,204 @@
+package com.proofpoint.experimental.discovery.client;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.Binder;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Key;
+import com.google.inject.Module;
+import com.google.inject.Provider;
+import com.google.inject.TypeLiteral;
+import com.proofpoint.configuration.ConfigurationFactory;
+import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.node.testing.TestingNodeModule;
+import org.testng.Assert;
+import org.testng.annotations.Test;
+
+import java.util.Map;
+import java.util.Set;
+
+import static com.proofpoint.experimental.discovery.client.DiscoveryBinder.discoveryBinder;
+import static com.proofpoint.experimental.discovery.client.ServiceTypes.serviceType;
+
+public class TestDiscoveryBinder
+{
+
+    @Test
+    public void testBindSelector()
+            throws Exception
+    {
+        Injector injector = Guice.createInjector(
+                new TestModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        discoveryBinder(binder).bindServiceAnnouncement(new ServiceAnnouncementProvider().get());
+                    }
+                }
+        );
+
+        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() { }));
+        Assert.assertEquals(announcements, ImmutableSet.of(ANNOUNCEMENT));
+    }
+
+    @Test
+    public void testBindSelectorProviderClass()
+            throws Exception
+    {
+        Injector injector = Guice.createInjector(
+                new TestModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        discoveryBinder(binder).bindServiceAnnouncement(ServiceAnnouncementProvider.class);
+                    }
+                }
+        );
+
+        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() { }));
+        Assert.assertEquals(announcements, ImmutableSet.of(ANNOUNCEMENT));
+    }
+
+    @Test
+    public void testBindSelectorProviderInstance()
+            throws Exception
+    {
+        Injector injector = Guice.createInjector(
+                new TestModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        discoveryBinder(binder).bindServiceAnnouncement(new ServiceAnnouncementProvider());
+                    }
+                }
+        );
+
+        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() { }));
+        Assert.assertEquals(announcements, ImmutableSet.of(ANNOUNCEMENT));
+    }
+
+    @Test
+    public void testBindSelectorString()
+            throws Exception
+    {
+        Injector injector = Guice.createInjector(
+                new TestModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        discoveryBinder(binder).bindSelector("apple");
+                    }
+                }
+        );
+
+        assertCanCreateServiceSelector(injector, "apple", ServiceSelectorConfig.DEFAULT_POOL);
+    }
+
+    @Test
+    public void testBindSelectorAnnotation()
+            throws Exception
+    {
+        Injector injector = Guice.createInjector(
+                new TestModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        discoveryBinder(binder).bindSelector(serviceType("apple"));
+                    }
+                }
+        );
+
+        assertCanCreateServiceSelector(injector, "apple", ServiceSelectorConfig.DEFAULT_POOL);
+    }
+
+    @Test
+    public void testBindSelectorStringWithPool()
+            throws Exception
+    {
+        Injector injector = Guice.createInjector(
+                new TestModule(ImmutableMap.of("discovery.apple.pool", "apple-pool")),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        discoveryBinder(binder).bindSelector("apple");
+                    }
+                }
+        );
+
+        assertCanCreateServiceSelector(injector, "apple", "apple-pool");
+    }
+
+    @Test
+    public void testBindSelectorAnnotationWithPool()
+            throws Exception
+    {
+        Injector injector = Guice.createInjector(
+                new TestModule(ImmutableMap.of("discovery.apple.pool", "apple-pool")),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        discoveryBinder(binder).bindSelector(serviceType("apple"));
+                    }
+                }
+        );
+
+        assertCanCreateServiceSelector(injector, "apple", "apple-pool");
+    }
+
+    private void assertCanCreateServiceSelector(Injector injector, String expectedType, String expectedPool)
+    {
+        ServiceSelector actualServiceSelector = injector.getInstance(Key.get(ServiceSelector.class, serviceType(expectedType)));
+        Assert.assertNotNull(actualServiceSelector);
+        Assert.assertEquals(actualServiceSelector.getType(), expectedType);
+        Assert.assertEquals(actualServiceSelector.getPool(), expectedPool);
+    }
+
+    private static class TestModule implements Module
+    {
+        private Map<String,String> configProperties;
+
+        private TestModule()
+        {
+            configProperties = ImmutableMap.of();
+        }
+
+        private TestModule(Map<String, String> configProperties)
+        {
+            this.configProperties = ImmutableMap.copyOf(configProperties);
+        }
+
+        @Override
+        public void configure(Binder binder)
+        {
+            binder.install(new ConfigurationModule(new ConfigurationFactory(configProperties)));
+            binder.install(new TestingNodeModule());
+            binder.install(new InMemoryDiscoveryModule());
+        }
+    }
+
+    private static final ServiceAnnouncement ANNOUNCEMENT = ServiceAnnouncement.serviceAnnouncement("apple").addProperty("a", "apple").setPool("pool").build();
+
+    private static class ServiceAnnouncementProvider implements Provider<ServiceAnnouncement>
+    {
+        @Override
+        public ServiceAnnouncement get()
+        {
+            return ANNOUNCEMENT;
+        }
+    }
+}
