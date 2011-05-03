@@ -85,6 +85,11 @@ public class InMemoryDiscoveryClient implements DiscoveryClient
                 builder.add(serviceDescriptor);
             }
         }
+        for (ServiceDescriptor serviceDescriptor : this.discovered.values()) {
+            if (serviceDescriptor.getType().equals(type) && serviceDescriptor.getPool().equals(pool)) {
+                builder.add(serviceDescriptor);
+            }
+        }
         return Futures.immediateCheckedFuture(new ServiceDescriptors(type, pool, builder.build(), maxAge, UUID.randomUUID().toString()));
     }
 
