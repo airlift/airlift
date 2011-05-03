@@ -22,7 +22,7 @@ class ServiceTypeImpl
 
     public String toString()
     {
-        return String.format("@%s(%s)", ServiceType.class.getName(), value);
+        return String.format("@%s(value=%s)", ServiceType.class.getName(), value);
     }
 
     @Override

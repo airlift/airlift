@@ -7,7 +7,7 @@ import com.google.inject.Key;
 import com.google.inject.Provider;
 import com.proofpoint.experimental.discovery.client.ServiceSelector;
 
-import static com.proofpoint.experimental.discovery.client.ServiceTypeFactory.serviceType;
+import static com.proofpoint.experimental.discovery.client.ServiceTypes.serviceType;
 
 public class HttpServiceSelectorProvider
         implements Provider<HttpServiceSelector>

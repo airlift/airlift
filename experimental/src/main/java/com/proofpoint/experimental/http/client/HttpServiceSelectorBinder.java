@@ -6,7 +6,7 @@ import com.proofpoint.experimental.discovery.client.DiscoveryBinder;
 import com.proofpoint.experimental.discovery.client.ServiceType;
 
 import static com.proofpoint.experimental.discovery.client.DiscoveryBinder.discoveryBinder;
-import static com.proofpoint.experimental.discovery.client.ServiceTypeFactory.serviceType;
+import static com.proofpoint.experimental.discovery.client.ServiceTypes.serviceType;
 
 public class HttpServiceSelectorBinder
 {

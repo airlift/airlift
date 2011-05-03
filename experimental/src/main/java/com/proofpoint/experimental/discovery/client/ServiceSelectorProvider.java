@@ -8,7 +8,7 @@ import com.google.inject.Provider;
 
 import java.util.concurrent.ScheduledExecutorService;
 
-import static com.proofpoint.experimental.discovery.client.ServiceTypeFactory.serviceType;
+import static com.proofpoint.experimental.discovery.client.ServiceTypes.serviceType;
 
 public class ServiceSelectorProvider
         implements Provider<ServiceSelector>

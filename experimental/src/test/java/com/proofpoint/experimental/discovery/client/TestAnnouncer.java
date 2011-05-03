@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static com.proofpoint.experimental.discovery.client.ServiceTypeFactory.serviceType;
+import static com.proofpoint.experimental.discovery.client.ServiceTypes.serviceType;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;

@@ -6,7 +6,6 @@ import com.proofpoint.units.Duration;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static com.proofpoint.experimental.discovery.client.ServiceTypeFactory.serviceType;
 import static java.lang.String.format;
 
 public interface DiscoveryClient

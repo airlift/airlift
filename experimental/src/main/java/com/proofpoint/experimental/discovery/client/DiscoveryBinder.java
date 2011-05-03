@@ -6,7 +6,7 @@ import com.google.inject.Provider;
 import com.google.inject.multibindings.Multibinder;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
-import static com.proofpoint.experimental.discovery.client.ServiceTypeFactory.serviceType;
+import static com.proofpoint.experimental.discovery.client.ServiceTypes.serviceType;
 
 public class DiscoveryBinder
 {
