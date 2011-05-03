@@ -1,12 +1,14 @@
 package com.proofpoint.experimental.discovery.client;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Provider;
 
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeoutException;
 
 import static com.proofpoint.experimental.discovery.client.ServiceTypes.serviceType;
 
@@ -53,7 +55,12 @@ public class ServiceSelectorProvider
         ServiceSelectorConfig selectorConfig = injector.getInstance(Key.get(ServiceSelectorConfig.class, serviceType(type)));
 
         ServiceSelectorImpl serviceSelector = new ServiceSelectorImpl(type, selectorConfig, client, executor);
-        serviceSelector.start();
+        try {
+            serviceSelector.start();
+        }
+        catch (TimeoutException e) {
+            throw Throwables.propagate(e);
+        }
 
         return serviceSelector;
     }

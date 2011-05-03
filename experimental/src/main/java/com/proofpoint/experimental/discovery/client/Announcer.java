@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.proofpoint.log.Logger;
@@ -20,8 +21,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static com.proofpoint.experimental.discovery.client.DiscoveryFutures.toDiscoveryFuture;
 
 public class Announcer
 {
@@ -49,6 +53,7 @@ public class Announcer
     }
 
     public void start()
+            throws TimeoutException
     {
         lock.lock();
         try {
@@ -77,7 +82,7 @@ public class Announcer
         }
 
         // announce immediately
-        announce();
+        announce().checkedGet(30, TimeUnit.SECONDS);
     }
 
     public void destroy()
@@ -117,11 +122,12 @@ public class Announcer
         announcements.remove(serviceId);
     }
 
-    private void announce()
+    private CheckedFuture<Void, DiscoveryException> announce()
     {
         final long jobId = currentJob.get();
         final CheckedFuture<Duration, DiscoveryException> future = client.announce(ImmutableSet.copyOf(announcements.values()));
 
+        final SettableFuture<Void> isDone = SettableFuture.create();
         future.addListener(new Runnable()
         {
             @Override
@@ -141,8 +147,12 @@ public class Announcer
                         log.error(e);
                     }
                 }
+                finally {
+                    isDone.set(null);
+                }
             }
         }, executor);
+        return toDiscoveryFuture("announce", isDone);
     }
 
     private void scheduleAnnouncement(Duration delay)

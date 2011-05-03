@@ -74,6 +74,7 @@ public class TestServiceSelectorImpl
 
     @Test
     public void testStartedEmpty()
+            throws Exception
     {
         ServiceSelectorImpl serviceSelector = new ServiceSelectorImpl("type",
                 new ServiceSelectorConfig().setPool("pool"),

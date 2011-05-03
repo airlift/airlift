@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.CheckedFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import com.proofpoint.log.Logger;
 import com.proofpoint.units.Duration;
 
@@ -16,9 +17,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.proofpoint.experimental.discovery.client.DiscoveryFutures.toDiscoveryFuture;
 import static java.lang.String.format;
 
 public class ServiceSelectorImpl implements ServiceSelector
@@ -50,6 +53,7 @@ public class ServiceSelectorImpl implements ServiceSelector
 
     @PostConstruct
     public void start()
+            throws TimeoutException
     {
         lock.lock();
         try {
@@ -75,7 +79,7 @@ public class ServiceSelectorImpl implements ServiceSelector
         }
 
         // refresh immediately
-        refresh();
+        refresh().checkedGet(30, TimeUnit.SECONDS);
     }
 
     @Override
@@ -111,7 +115,7 @@ public class ServiceSelectorImpl implements ServiceSelector
         return serviceDescriptors.getServiceDescriptors();
     }
 
-    private void refresh()
+    private CheckedFuture<Void, DiscoveryException> refresh()
     {
         final ServiceDescriptors oldDescriptors = this.serviceDescriptors.get();
 
@@ -123,6 +127,7 @@ public class ServiceSelectorImpl implements ServiceSelector
             future = client.refreshServices(oldDescriptors);
         }
 
+        final SettableFuture<Void> isDone = SettableFuture.create();
         future.addListener(new Runnable()
         {
             @Override
@@ -142,8 +147,12 @@ public class ServiceSelectorImpl implements ServiceSelector
                         log.error(e);
                     }
                 }
+                finally {
+                    isDone.set(null);
+                }
             }
         }, executor);
+        return toDiscoveryFuture("refresh", isDone);
     }
 
     private void scheduleRefresh(Duration delay)
