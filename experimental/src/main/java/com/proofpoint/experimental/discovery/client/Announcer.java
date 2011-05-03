@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.proofpoint.log.Logger;
 import com.proofpoint.units.Duration;
@@ -44,7 +45,7 @@ public class Announcer
         for (ServiceAnnouncement serviceAnnouncement : serviceAnnouncements) {
             announcements.put(serviceAnnouncement.getId(), serviceAnnouncement);
         }
-        executor = MoreExecutors.getExitingScheduledExecutorService(new ScheduledThreadPoolExecutor(10));
+        executor = MoreExecutors.getExitingScheduledExecutorService(new ScheduledThreadPoolExecutor(10, new ThreadFactoryBuilder().setNameFormat("Announcer-%s").build()));
     }
 
     public void start()
@@ -84,7 +85,6 @@ public class Announcer
         lock.lock();
         try {
             // cancel everything
-            announcementSchedule = null;
             executor.shutdownNow();
             try {
                 executor.awaitTermination(30, TimeUnit.SECONDS);
