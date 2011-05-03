@@ -37,7 +37,7 @@ public class HttpServiceSelector
                 catch (URISyntaxException ignored) {
                 }
             }
-            String http = serviceDescriptor.getProperties().get("https");
+            String http = serviceDescriptor.getProperties().get("http");
             if (http != null) {
                 try {
                     return new URI(http);
