@@ -44,5 +44,6 @@ public class Main
                 new MainModule());
 
         Injector injector = app.strictConfig().initialize();
-        injector.getInstance(Announcer.class).start();    }
+        injector.getInstance(Announcer.class).start();
+    }
 }
