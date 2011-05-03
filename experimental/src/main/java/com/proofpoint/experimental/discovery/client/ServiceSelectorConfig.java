@@ -17,8 +17,9 @@ public class ServiceSelectorConfig
     }
 
     @Config("pool")
-    public void setPool(String pool)
+    public ServiceSelectorConfig setPool(String pool)
     {
         this.pool = pool;
+        return this;
     }
 }
