@@ -1,5 +1,6 @@
 package com.proofpoint.experimental.http.client;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
@@ -17,11 +18,11 @@ import org.testng.annotations.Test;
 
 import java.net.URI;
 
+import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.proofpoint.experimental.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static com.proofpoint.experimental.discovery.client.ServiceTypes.serviceType;
 import static com.proofpoint.experimental.http.client.HttpServiceSelectorBinder.httpServiceSelectorBinder;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.fail;
 
 public class TestHttpServiceSelectorBinder
 {
@@ -46,7 +47,7 @@ public class TestHttpServiceSelectorBinder
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", "fake://server-http").build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertEquals(selector.selectHttpService(), URI.create("fake://server-http"));
+        assertEquals(getOnlyElement(selector.selectHttpService()), URI.create("fake://server-http"));
     }
 
     @Test
@@ -70,7 +71,7 @@ public class TestHttpServiceSelectorBinder
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", "fake://server-http").build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertEquals(selector.selectHttpService(), URI.create("fake://server-http"));
+        assertEquals(getOnlyElement(selector.selectHttpService()), URI.create("fake://server-http"));
     }
 
     @Test
@@ -94,7 +95,7 @@ public class TestHttpServiceSelectorBinder
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("https", "fake://server-https").build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertEquals(selector.selectHttpService(), URI.create("fake://server-https"));
+        assertEquals(getOnlyElement(selector.selectHttpService()), URI.create("fake://server-https"));
     }
 
     @Test
@@ -115,11 +116,11 @@ public class TestHttpServiceSelectorBinder
         );
 
         InMemoryDiscoveryClient discoveryClient = (InMemoryDiscoveryClient) injector.getInstance(DiscoveryClient.class);
-        discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", "fake://server-http").build()));
-        discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("https", "fake://server-https").build()));
+        discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", "fake://server-http").build(),
+                serviceAnnouncement("apple").addProperty("https", "fake://server-https").build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertEquals(selector.selectHttpService(), URI.create("fake://server-https"));
+        assertEquals(selector.selectHttpService(), ImmutableList.of(URI.create("fake://server-https"), URI.create("fake://server-http")));
     }
 
     @Test
@@ -143,12 +144,7 @@ public class TestHttpServiceSelectorBinder
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("foo", "fake://server-https").build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        try {
-            selector.selectHttpService();
-            fail("Expected IllegalStateException");
-        }
-        catch (IllegalStateException expected) {
-        }
+        assertEquals(selector.selectHttpService(), ImmutableList.of());
     }
 
 
@@ -174,11 +170,6 @@ public class TestHttpServiceSelectorBinder
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("https", ":::INVALID:::").build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        try {
-            selector.selectHttpService();
-            fail("Expected IllegalStateException");
-        }
-        catch (IllegalStateException expected) {
-        }
+        assertEquals(selector.selectHttpService(), ImmutableList.of());
     }
 }

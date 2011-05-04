@@ -10,9 +10,7 @@ import com.proofpoint.units.Duration;
 
 import javax.annotation.PostConstruct;
 import java.net.ConnectException;
-import java.security.SecureRandom;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -22,12 +20,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.proofpoint.experimental.discovery.client.DiscoveryFutures.toDiscoveryFuture;
-import static java.lang.String.format;
 
 public class ServiceSelectorImpl implements ServiceSelector
 {
     private final static Logger log = Logger.get(ServiceSelectorImpl.class);
-    private static final Random random = new SecureRandom();
 
     private final String type;
     private final String pool;
@@ -92,17 +88,6 @@ public class ServiceSelectorImpl implements ServiceSelector
     public String getPool()
     {
         return pool;
-    }
-
-    @Override
-    public ServiceDescriptor selectService()
-    {
-        List<ServiceDescriptor> services = selectAllServices();
-        if (services.isEmpty()) {
-            throw new IllegalStateException(format("No %s services from pool %s available", type, pool));
-        }
-        int index = random.nextInt(services.size());
-        return services.get(index);
     }
 
     @Override

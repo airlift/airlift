@@ -64,12 +64,6 @@ public class TestServiceSelectorImpl
                 executor);
 
         Assert.assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
-        try {
-            serviceSelector.selectService();
-            fail("Expected IllegalStateException");
-        }
-        catch (IllegalStateException expected) {
-        }
     }
 
     @Test
@@ -84,12 +78,6 @@ public class TestServiceSelectorImpl
         serviceSelector.start();
 
         Assert.assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
-        try {
-            serviceSelector.selectService();
-            fail("Expected IllegalStateException");
-        }
-        catch (IllegalStateException expected) {
-        }
     }
 
     @Test
@@ -107,12 +95,6 @@ public class TestServiceSelectorImpl
                 executor);
 
         Assert.assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
-        try {
-            serviceSelector.selectService();
-            fail("Expected IllegalStateException");
-        }
-        catch (IllegalStateException expected) {
-        }
     }
 
     @Test
@@ -135,6 +117,5 @@ public class TestServiceSelectorImpl
         Thread.sleep(100);
 
         Assertions.assertEqualsIgnoreOrder(serviceSelector.selectAllServices(), ImmutableList.of(APPLE_1_SERVICE, APPLE_2_SERVICE));
-        Assert.assertTrue(ImmutableList.of(APPLE_1_SERVICE, APPLE_2_SERVICE).contains(serviceSelector.selectService()));
     }
 }

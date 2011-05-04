@@ -1,6 +1,7 @@
 package com.proofpoint.experimental.http.client;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.proofpoint.experimental.discovery.client.ServiceDescriptor;
 import com.proofpoint.experimental.discovery.client.ServiceSelector;
@@ -9,8 +10,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
-
-import static java.lang.String.format;
 
 public class HttpServiceSelector
 {
@@ -22,35 +21,40 @@ public class HttpServiceSelector
         this.serviceSelector = serviceSelector;
     }
 
-    public URI selectHttpService()
+    public List<URI> selectHttpService()
     {
         List<ServiceDescriptor> serviceDescriptors = Lists.newArrayList(serviceSelector.selectAllServices());
         if (serviceDescriptors.isEmpty()) {
-            throw new IllegalStateException(format("No '%s' services from pool '%s' are available", serviceSelector.getType(), serviceSelector.getPool()));
+            return ImmutableList.of();
         }
-        Collections.shuffle(serviceDescriptors);
 
         // favor https over http
+        List<URI> httpsUri = Lists.newArrayList();
         for (ServiceDescriptor serviceDescriptor : serviceDescriptors) {
             String https = serviceDescriptor.getProperties().get("https");
             if (https != null) {
                 try {
-                    return new URI(https);
+                    httpsUri.add(new URI(https));
                 }
                 catch (URISyntaxException ignored) {
                 }
             }
         }
+        List<URI> httpUri = Lists.newArrayList();
         for (ServiceDescriptor serviceDescriptor : serviceDescriptors) {
             String http = serviceDescriptor.getProperties().get("http");
             if (http != null) {
                 try {
-                    return new URI(http);
+                    httpUri.add(new URI(http));
                 }
                 catch (URISyntaxException ignored) {
                 }
             }
         }
-        throw new IllegalStateException(format("No '%s' services from pool '%s' with a http or https property available", serviceSelector.getType(), serviceSelector.getPool()));
+
+        // return random(https) + random(http)
+        Collections.shuffle(httpsUri);
+        Collections.shuffle(httpUri);
+        return ImmutableList.<URI>builder().addAll(httpsUri).addAll(httpUri).build();
     }
 }

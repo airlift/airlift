@@ -21,6 +21,7 @@ import org.codehaus.jackson.map.module.SimpleModule;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -94,24 +95,28 @@ public class HttpEventClient implements EventClient
 
     @Override
     public <T> Future<Void> post(EventGenerator<T> eventGenerator)
-            throws IllegalArgumentException
     {
         Preconditions.checkNotNull(eventGenerator, "eventGenerator is null");
 
-        try {
-            Request request = new RequestBuilder("POST")
-                    .setUrl(serviceSelector.selectHttpService().toString())
-                    .setHeader("Content-Type", "application/json")
-                    .setBody(new JsonEntityWriter<T>(objectMapper, registeredTypes, eventGenerator))
-                    .build();
+        // todo this doesn't really work due to returning the future which can fail without being retried
+        // also this code tries all servers instead of a fixed number
+        for (URI uri : serviceSelector.selectHttpService()) {
+            try {
+                Request request = new RequestBuilder("POST")
+                        .setUrl(uri.toString())
+                        .setHeader("Content-Type", "application/json")
+                        .setBody(new JsonEntityWriter<T>(objectMapper, registeredTypes, eventGenerator))
+                        .build();
+                return new FutureResponse(client.prepareRequest(request).execute());
+            }
+            catch (Exception e) {
+                // todo not noisy enough
+                log.debug(e, "Posting event failed");
+            }
+        }
 
-            return new FutureResponse(client.prepareRequest(request).execute());
-        }
-        catch (Exception e) {
-            // todo not noisy enough
-            log.debug(e, "Posting event failed");
-            return Futures.immediateFuture(null);
-        }
+        log.debug("Event(s) not posted");
+        return Futures.immediateFuture(null);
     }
 
     private static class FutureResponse implements Future<Void>

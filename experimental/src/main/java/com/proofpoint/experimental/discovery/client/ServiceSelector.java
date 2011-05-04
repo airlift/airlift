@@ -6,6 +6,5 @@ public interface ServiceSelector
 {
     String getType();
     String getPool();
-    ServiceDescriptor selectService();
     List<ServiceDescriptor> selectAllServices();
 }
