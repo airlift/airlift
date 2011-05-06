@@ -21,9 +21,9 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static com.proofpoint.experimental.discovery.client.DiscoveryFutures.toDiscoveryFuture;
 
-public class ServiceSelectorImpl implements ServiceSelector
+public class CachingServiceSelector implements ServiceSelector
 {
-    private final static Logger log = Logger.get(ServiceSelectorImpl.class);
+    private final static Logger log = Logger.get(CachingServiceSelector.class);
 
     private final String type;
     private final String pool;
@@ -34,7 +34,7 @@ public class ServiceSelectorImpl implements ServiceSelector
     private final ReentrantLock lock = new ReentrantLock();
     private ScheduledFuture<?> restartRefreshSchedule;
 
-    public ServiceSelectorImpl(String type, ServiceSelectorConfig selectorConfig, DiscoveryClient client, ScheduledExecutorService executor)
+    public CachingServiceSelector(String type, ServiceSelectorConfig selectorConfig, DiscoveryClient client, ScheduledExecutorService executor)
     {
         Preconditions.checkNotNull(type, "type is null");
         Preconditions.checkNotNull(selectorConfig, "selectorConfig is null");

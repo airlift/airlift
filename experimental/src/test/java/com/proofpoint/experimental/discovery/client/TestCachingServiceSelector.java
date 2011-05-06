@@ -3,6 +3,7 @@ package com.proofpoint.experimental.discovery.client;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.proofpoint.experimental.discovery.client.testing.InMemoryDiscoveryClient;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.testing.Assertions;
 import org.testng.Assert;
@@ -15,9 +16,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static com.google.common.util.concurrent.MoreExecutors.getExitingScheduledExecutorService;
-import static org.testng.Assert.fail;
 
-public class TestServiceSelectorImpl
+public class TestCachingServiceSelector
 {
     private static final ServiceDescriptor APPLE_1_SERVICE = new ServiceDescriptor(UUID.randomUUID(), "node-A", "apple", "pool", "location", ImmutableMap.of("a", "apple"));
     private static final ServiceDescriptor APPLE_2_SERVICE = new ServiceDescriptor(UUID.randomUUID(), "node-B", "apple", "pool", "location", ImmutableMap.of("a", "apple"));
@@ -46,7 +46,7 @@ public class TestServiceSelectorImpl
     @Test
     public void testBasics()
     {
-        ServiceSelectorImpl serviceSelector = new ServiceSelectorImpl("type",
+        CachingServiceSelector serviceSelector = new CachingServiceSelector("type",
                 new ServiceSelectorConfig().setPool("pool"),
                 new InMemoryDiscoveryClient(nodeInfo),
                 executor);
@@ -58,7 +58,7 @@ public class TestServiceSelectorImpl
     @Test
     public void testNotStartedEmpty()
     {
-        ServiceSelectorImpl serviceSelector = new ServiceSelectorImpl("type",
+        CachingServiceSelector serviceSelector = new CachingServiceSelector("type",
                 new ServiceSelectorConfig().setPool("pool"),
                 new InMemoryDiscoveryClient(nodeInfo),
                 executor);
@@ -70,7 +70,7 @@ public class TestServiceSelectorImpl
     public void testStartedEmpty()
             throws Exception
     {
-        ServiceSelectorImpl serviceSelector = new ServiceSelectorImpl("type",
+        CachingServiceSelector serviceSelector = new CachingServiceSelector("type",
                 new ServiceSelectorConfig().setPool("pool"),
                 new InMemoryDiscoveryClient(nodeInfo),
                 executor);
@@ -89,7 +89,7 @@ public class TestServiceSelectorImpl
         discoveryClient.addDiscoveredService(DIFFERENT_TYPE);
         discoveryClient.addDiscoveredService(DIFFERENT_POOL);
 
-        ServiceSelectorImpl serviceSelector = new ServiceSelectorImpl("apple",
+        CachingServiceSelector serviceSelector = new CachingServiceSelector("apple",
                 new ServiceSelectorConfig().setPool("pool"),
                 discoveryClient,
                 executor);
@@ -107,7 +107,7 @@ public class TestServiceSelectorImpl
         discoveryClient.addDiscoveredService(DIFFERENT_TYPE);
         discoveryClient.addDiscoveredService(DIFFERENT_POOL);
 
-        ServiceSelectorImpl serviceSelector = new ServiceSelectorImpl("apple",
+        CachingServiceSelector serviceSelector = new CachingServiceSelector("apple",
                 new ServiceSelectorConfig().setPool("pool"),
                 discoveryClient,
                 executor);

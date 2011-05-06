@@ -1,4 +1,4 @@
-package com.proofpoint.experimental.discovery.client;
+package com.proofpoint.experimental.discovery.client.testing;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -7,6 +7,11 @@ import com.google.common.collect.MapMaker;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
+import com.proofpoint.experimental.discovery.client.DiscoveryClient;
+import com.proofpoint.experimental.discovery.client.DiscoveryException;
+import com.proofpoint.experimental.discovery.client.ServiceAnnouncement;
+import com.proofpoint.experimental.discovery.client.ServiceDescriptor;
+import com.proofpoint.experimental.discovery.client.ServiceDescriptors;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.units.Duration;
 

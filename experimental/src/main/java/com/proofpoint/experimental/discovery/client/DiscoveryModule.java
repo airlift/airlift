@@ -8,6 +8,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.proofpoint.experimental.discovery.client.HttpDiscoveryClient.ServiceDescriptorsRepresentation;
+import com.proofpoint.experimental.discovery.client.testing.SimpleServiceSelectorFactory;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -32,6 +33,7 @@ public class DiscoveryModule implements Module
         // service announcements are bound, which is legal for processes that don't have public services
         Multibinder.newSetBinder(binder, ServiceAnnouncement.class);
 
+        binder.bind(ServiceSelectorFactory.class).to(CachingServiceSelectorFactory.class).in(Scopes.SINGLETON);
     }
 
     @Provides

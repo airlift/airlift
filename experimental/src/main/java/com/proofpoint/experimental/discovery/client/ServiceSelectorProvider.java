@@ -1,14 +1,10 @@
 package com.proofpoint.experimental.discovery.client;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Provider;
-
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeoutException;
 
 import static com.proofpoint.experimental.discovery.client.ServiceTypes.serviceType;
 
@@ -16,52 +12,37 @@ public class ServiceSelectorProvider
         implements Provider<ServiceSelector>
 {
     private final String type;
-    private DiscoveryClient client;
-    private ScheduledExecutorService executor;
+    private ServiceSelectorFactory serviceSelectorFactory;
     private Injector injector;
 
     public ServiceSelectorProvider(String type)
     {
-        Preconditions.checkNotNull(type);
+        Preconditions.checkNotNull(type, "type is null");
         this.type = type;
-    }
-
-    @Inject
-    public void setClient(DiscoveryClient client)
-    {
-        Preconditions.checkNotNull(client, "client is null");
-        this.client = client;
-    }
-
-    @Inject
-    public void setExecutor(@ForDiscoverClient ScheduledExecutorService executor)
-    {
-        Preconditions.checkNotNull(executor, "executor is null");
-        this.executor = executor;
     }
 
     @Inject
     public void setInjector(Injector injector)
     {
+        Preconditions.checkNotNull(injector, "injector is null");
         this.injector = injector;
+    }
+
+    @Inject
+    public void setServiceSelectorFactory(ServiceSelectorFactory serviceSelectorFactory)
+    {
+        Preconditions.checkNotNull(serviceSelectorFactory, "serviceSelectorFactory is null");
+        this.serviceSelectorFactory = serviceSelectorFactory;
     }
 
     public ServiceSelector get()
     {
-        Preconditions.checkNotNull(client, "client is null");
-        Preconditions.checkNotNull(executor, "executor is null");
+        Preconditions.checkNotNull(serviceSelectorFactory, "serviceSelectorFactory is null");
         Preconditions.checkNotNull(injector, "injector is null");
 
         ServiceSelectorConfig selectorConfig = injector.getInstance(Key.get(ServiceSelectorConfig.class, serviceType(type)));
 
-        ServiceSelectorImpl serviceSelector = new ServiceSelectorImpl(type, selectorConfig, client, executor);
-        try {
-            serviceSelector.start();
-        }
-        catch (TimeoutException e) {
-            throw Throwables.propagate(e);
-        }
-
+        ServiceSelector serviceSelector = serviceSelectorFactory.createServiceSelector(type, selectorConfig);
         return serviceSelector;
     }
 

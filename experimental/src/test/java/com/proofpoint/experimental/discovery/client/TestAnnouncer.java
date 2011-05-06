@@ -2,6 +2,7 @@ package com.proofpoint.experimental.discovery.client;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.proofpoint.experimental.discovery.client.testing.InMemoryDiscoveryClient;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.units.Duration;
 import org.testng.annotations.AfterMethod;

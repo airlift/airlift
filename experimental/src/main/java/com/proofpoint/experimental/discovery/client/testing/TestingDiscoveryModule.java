@@ -1,4 +1,4 @@
-package com.proofpoint.experimental.discovery.client;
+package com.proofpoint.experimental.discovery.client.testing;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -7,13 +7,19 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
+import com.proofpoint.experimental.discovery.client.Announcer;
+import com.proofpoint.experimental.discovery.client.DiscoveryClient;
+import com.proofpoint.experimental.discovery.client.DiscoveryClientConfig;
+import com.proofpoint.experimental.discovery.client.ForDiscoverClient;
+import com.proofpoint.experimental.discovery.client.ServiceAnnouncement;
+import com.proofpoint.experimental.discovery.client.ServiceSelectorFactory;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 
-public class InMemoryDiscoveryModule implements Module
+public class TestingDiscoveryModule implements Module
 {
     @Override
     public void configure(Binder binder)
@@ -28,6 +34,7 @@ public class InMemoryDiscoveryModule implements Module
         // service announcements are bound, which is legal for processes that don't have public services
         Multibinder.newSetBinder(binder, ServiceAnnouncement.class);
 
+        binder.bind(ServiceSelectorFactory.class).to(SimpleServiceSelectorFactory.class).in(Scopes.SINGLETON);
     }
 
     @Provides

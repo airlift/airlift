@@ -11,6 +11,7 @@ import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.experimental.discovery.client.testing.TestingDiscoveryModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -187,7 +188,7 @@ public class TestDiscoveryBinder
         {
             binder.install(new ConfigurationModule(new ConfigurationFactory(configProperties)));
             binder.install(new TestingNodeModule());
-            binder.install(new InMemoryDiscoveryModule());
+            binder.install(new TestingDiscoveryModule());
         }
     }
 
