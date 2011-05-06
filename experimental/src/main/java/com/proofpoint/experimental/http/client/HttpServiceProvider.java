@@ -9,13 +9,13 @@ import com.proofpoint.experimental.discovery.client.ServiceSelector;
 
 import static com.proofpoint.experimental.discovery.client.ServiceTypes.serviceType;
 
-public class HttpServiceSelectorProvider
+public class HttpServiceProvider
         implements Provider<HttpServiceSelector>
 {
     private final String type;
     private Injector injector;
 
-    public HttpServiceSelectorProvider(String type)
+    public HttpServiceProvider(String type)
     {
         Preconditions.checkNotNull(type);
         this.type = type;
@@ -33,7 +33,7 @@ public class HttpServiceSelectorProvider
 
         ServiceSelector serviceSelector = injector.getInstance(Key.get(ServiceSelector.class, serviceType(type)));
 
-        HttpServiceSelector httpServiceSelector = new HttpServiceSelector(serviceSelector);
+        HttpServiceSelector httpServiceSelector = new HttpServiceSelectorImpl(serviceSelector);
         return httpServiceSelector;
     }
 
@@ -47,7 +47,7 @@ public class HttpServiceSelectorProvider
             return false;
         }
 
-        HttpServiceSelectorProvider that = (HttpServiceSelectorProvider) o;
+        HttpServiceProvider that = (HttpServiceProvider) o;
 
         if (!type.equals(that.type)) {
             return false;

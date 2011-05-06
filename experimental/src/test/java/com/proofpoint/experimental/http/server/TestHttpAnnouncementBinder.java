@@ -11,7 +11,7 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.experimental.discovery.client.InMemoryDiscoveryModule;
+import com.proofpoint.experimental.discovery.client.testing.TestingDiscoveryModule;
 import com.proofpoint.experimental.discovery.client.ServiceAnnouncement;
 import com.proofpoint.http.server.HttpServerConfig;
 import com.proofpoint.http.server.HttpServerInfo;
@@ -155,7 +155,7 @@ public class TestHttpAnnouncementBinder
         {
             binder.install(new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())));
             binder.install(new TestingNodeModule());
-            binder.install(new InMemoryDiscoveryModule());
+            binder.install(new TestingDiscoveryModule());
             binder.bind(HttpServerConfig.class).toInstance(httpServerConfig);
             binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
         }

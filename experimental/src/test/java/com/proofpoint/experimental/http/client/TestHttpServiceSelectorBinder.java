@@ -11,8 +11,8 @@ import com.google.inject.Module;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.experimental.discovery.client.DiscoveryClient;
-import com.proofpoint.experimental.discovery.client.InMemoryDiscoveryClient;
-import com.proofpoint.experimental.discovery.client.InMemoryDiscoveryModule;
+import com.proofpoint.experimental.discovery.client.testing.InMemoryDiscoveryClient;
+import com.proofpoint.experimental.discovery.client.testing.TestingDiscoveryModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import org.testng.annotations.Test;
 
@@ -32,7 +32,7 @@ public class TestHttpServiceSelectorBinder
         Injector injector = Guice.createInjector(
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
                 new TestingNodeModule(),
-                new InMemoryDiscoveryModule(),
+                new TestingDiscoveryModule(),
                 new Module()
                 {
                     @Override
@@ -56,7 +56,7 @@ public class TestHttpServiceSelectorBinder
         Injector injector = Guice.createInjector(
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
                 new TestingNodeModule(),
-                new InMemoryDiscoveryModule(),
+                new TestingDiscoveryModule(),
                 new Module()
                 {
                     @Override
@@ -80,7 +80,7 @@ public class TestHttpServiceSelectorBinder
         Injector injector = Guice.createInjector(
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
                 new TestingNodeModule(),
-                new InMemoryDiscoveryModule(),
+                new TestingDiscoveryModule(),
                 new Module()
                 {
                     @Override
@@ -104,7 +104,7 @@ public class TestHttpServiceSelectorBinder
         Injector injector = Guice.createInjector(
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
                 new TestingNodeModule(),
-                new InMemoryDiscoveryModule(),
+                new TestingDiscoveryModule(),
                 new Module()
                 {
                     @Override
@@ -129,7 +129,7 @@ public class TestHttpServiceSelectorBinder
         Injector injector = Guice.createInjector(
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
                 new TestingNodeModule(),
-                new InMemoryDiscoveryModule(),
+                new TestingDiscoveryModule(),
                 new Module()
                 {
                     @Override
@@ -154,7 +154,7 @@ public class TestHttpServiceSelectorBinder
         Injector injector = Guice.createInjector(
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
                 new TestingNodeModule(),
-                new InMemoryDiscoveryModule(),
+                new TestingDiscoveryModule(),
                 new Module()
                 {
                     @Override
