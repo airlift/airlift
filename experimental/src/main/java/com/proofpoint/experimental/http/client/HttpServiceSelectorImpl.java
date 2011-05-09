@@ -22,6 +22,18 @@ public class HttpServiceSelectorImpl implements HttpServiceSelector
     }
 
     @Override
+    public String getType()
+    {
+        return serviceSelector.getType();
+    }
+
+    @Override
+    public String getPool()
+    {
+        return serviceSelector.getPool();
+    }
+
+    @Override
     public List<URI> selectHttpService()
     {
         List<ServiceDescriptor> serviceDescriptors = Lists.newArrayList(serviceSelector.selectAllServices());
