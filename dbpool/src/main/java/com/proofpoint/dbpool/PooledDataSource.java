@@ -28,14 +28,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * This class is not complete yet.
  */
-class PooledDataSource extends ManagedDataSource
+abstract class PooledDataSource extends ManagedDataSource
 {
     private final AtomicBoolean disposed = new AtomicBoolean();
     private final Deque<PooledConnection> pool = new LinkedBlockingDeque<PooledConnection>();
 
     PooledDataSource(ConnectionPoolDataSource dataSource, int maxConnections, Duration maxConnectionWait)
     {
-        super(dataSource, maxConnections, maxConnectionWait);
+        super(maxConnections, maxConnectionWait);
     }
 
     public void dispose()

@@ -16,6 +16,7 @@
 package com.proofpoint.dbpool;
 
 import com.proofpoint.configuration.Config;
+import com.proofpoint.configuration.DefunctConfig;
 import com.proofpoint.units.Duration;
 
 import java.util.concurrent.TimeUnit;
@@ -26,8 +27,6 @@ import java.util.concurrent.TimeUnit;
  * The configuration options can be chained as follows:<br>
  * {@code
  *     ManagedDataSourceConfig config = new ManagedDataSourceConfig()
- *             .setUsername("username")
- *             .setPassword("password")
  *             .setMaxConnections(20)
  *             .setMaxConnectionWait(new Duration(20, TimeUnit.MILLISECONDS));
  * }
@@ -39,36 +38,11 @@ import java.util.concurrent.TimeUnit;
  * the Class as follows:</br>
  * {@code MyDataSourceConfig extends ManagedDataSourceConfig<MyDataSourceConfig>}
  */
+@DefunctConfig({"db.username", "db.password"})
 public class ManagedDataSourceConfig<T extends ManagedDataSourceConfig<T>>
 {
-    private String username;
-    private String password;
     private int maxConnections = 10;
     private Duration maxConnectionWait = new Duration(500, TimeUnit.MILLISECONDS);
-
-    public String getUsername()
-    {
-        return username;
-    }
-
-    @Config("db.username")
-    public T setUsername(String username)
-    {
-        this.username = username;
-        return (T) this;
-    }
-
-    public String getPassword()
-    {
-        return password;
-    }
-
-    @Config("db.password")
-    public T setPassword(String password)
-    {
-        this.password = password;
-        return (T) this;
-    }
 
     /**
      * Gets the maximum number of concurrent connections allowed by the data

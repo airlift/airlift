@@ -21,6 +21,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
+import com.proofpoint.experimental.discovery.client.ServiceSelector;
 import org.weakref.jmx.guice.MBeanModule;
 
 import javax.sql.DataSource;
@@ -29,23 +30,25 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
+import static com.proofpoint.experimental.discovery.client.DiscoveryBinder.discoveryBinder;
+import static com.proofpoint.experimental.discovery.client.ServiceTypes.serviceType;
 
 public class MySqlDataSourceModule extends MBeanModule
 {
     private final Class<? extends Annotation> annotation;
     private final List<Class<? extends Annotation>> aliases;
-    private final String propertyPrefix;
+    private final String type;
 
-    public MySqlDataSourceModule(String propertyPrefix, Class<? extends Annotation> annotation, Class<? extends Annotation>... aliases)
+    public MySqlDataSourceModule(String type, Class<? extends Annotation> annotation, Class<? extends Annotation>... aliases)
     {
         if (annotation == null) {
             throw new NullPointerException("annotation is null");
         }
-        if (propertyPrefix == null) {
-            throw new NullPointerException("propertyPrefix is null");
+        if (type == null) {
+            throw new NullPointerException("type is null");
         }
         this.annotation = annotation;
-        this.propertyPrefix = propertyPrefix;
+        this.type = type;
         if (aliases != null) {
             this.aliases = ImmutableList.copyOf(aliases);
         }
@@ -58,26 +61,31 @@ public class MySqlDataSourceModule extends MBeanModule
     public void configureMBeans()
     {
         // bind the configuration
-        bindConfig(binder()).annotatedWith(annotation).prefixedWith(propertyPrefix).to(MySqlDataSourceConfig.class);
+        bindConfig(binder()).annotatedWith(annotation).prefixedWith(type).to(MySqlDataSourceConfig.class);
+
+        // bind the service selector
+        discoveryBinder(binder()).bindSelector(type);
 
         // Bind the datasource
-        bind(DataSource.class).annotatedWith(annotation).toProvider(new MySqlDataSourceProvider(annotation)).in(Scopes.SINGLETON);
+        bind(DataSource.class).annotatedWith(annotation).toProvider(new MySqlDataSourceProvider(type, annotation)).in(Scopes.SINGLETON);
         export(DataSource.class).annotatedWith(annotation).withGeneratedName();
 
         // Bind aliases
         Key<DataSource> key = Key.get(DataSource.class, annotation);
-        for (Class<? extends Annotation> alise : aliases) {
-            bind(DataSource.class).annotatedWith(alise).to(key);
+        for (Class<? extends Annotation> alias : aliases) {
+            bind(DataSource.class).annotatedWith(alias).to(key);
         }
     }
 
     private static class MySqlDataSourceProvider implements Provider<MySqlDataSource>
     {
+        private final String type;
         private final Class<? extends Annotation> annotation;
         private Injector injector;
 
-        private MySqlDataSourceProvider(Class<? extends Annotation> annotation)
+        private MySqlDataSourceProvider(String type, Class<? extends Annotation> annotation)
         {
+            this.type = type;
             this.annotation = annotation;
         }
 
@@ -92,7 +100,8 @@ public class MySqlDataSourceModule extends MBeanModule
         public MySqlDataSource get()
         {
             MySqlDataSourceConfig config = injector.getInstance(Key.get(MySqlDataSourceConfig.class, annotation));
-            return new MySqlDataSource(config);
+            ServiceSelector serviceSelector = injector.getInstance(Key.get(ServiceSelector.class, serviceType(type)));
+            return new MySqlDataSource(serviceSelector, config);
         }
     }
 }

@@ -38,9 +38,11 @@ import static com.proofpoint.testing.Assertions.assertGreaterThan;
 import static com.proofpoint.testing.Assertions.assertInstanceOf;
 import static com.proofpoint.units.Duration.nanosSince;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -51,7 +53,7 @@ public class ManagedDataSourceTest
     public void testBasic()
             throws Exception
     {
-        ManagedDataSource dataSource = new ManagedDataSource(new MockConnectionPoolDataSource(), 1, new Duration(10, MILLISECONDS));
+        ManagedDataSource dataSource = new MockManagedDataSource(1, new Duration(10, MILLISECONDS));
         assertEquals(dataSource.getConnectionsActive(), 0);
         assertEquals(dataSource.getStats().getCheckout().getCount(), 0);
         assertEquals(dataSource.getStats().getCreate().getCount(), 0);
@@ -80,7 +82,7 @@ public class ManagedDataSourceTest
             throws Exception
     {
         // datasource server to 1 connection and only wait 1 ms for a connection
-        ManagedDataSource dataSource = new ManagedDataSource(new MockConnectionPoolDataSource(), 1, new Duration(10, MILLISECONDS));
+        ManagedDataSource dataSource = new MockManagedDataSource(1, new Duration(10, MILLISECONDS));
         assertEquals(dataSource.getMaxConnectionWaitMillis(), 10);
 
         // checkout a connection
@@ -146,7 +148,7 @@ public class ManagedDataSourceTest
             throws Exception
     {
         // datasource server to 1 connection and only wait 1 ms for a connection
-        ManagedDataSource dataSource = new ManagedDataSource(new MockConnectionPoolDataSource(), 1, new Duration(1, MILLISECONDS));
+        ManagedDataSource dataSource = new MockManagedDataSource(1, new Duration(1, MILLISECONDS));
         assertEquals(dataSource.getMaxConnections(), 1);
 
         // checkout a connection
@@ -239,7 +241,7 @@ public class ManagedDataSourceTest
             throws Exception
     {
         // datasource server to 1 connection and only wait 1 ms for a connection
-        final ManagedDataSource dataSource = new ManagedDataSource(new MockConnectionPoolDataSource(), 1, new Duration(5000, MILLISECONDS));
+        final ManagedDataSource dataSource = new MockManagedDataSource(1, new Duration(5000, MILLISECONDS));
         assertEquals(dataSource.getMaxConnectionWaitMillis(), 5000);
 
         // checkout a connection
@@ -292,7 +294,7 @@ public class ManagedDataSourceTest
     public void testIdempotentClose()
             throws Exception
     {
-        ManagedDataSource dataSource = new ManagedDataSource(new MockConnectionPoolDataSource(), 10, new Duration(10, MILLISECONDS));
+        ManagedDataSource dataSource = new MockManagedDataSource(10, new Duration(10, MILLISECONDS));
         List<MockConnection> connections = new ArrayList<MockConnection>();
         for (int i = 0; i < 10; i++) {
             MockConnection connection = (MockConnection) dataSource.getConnection();
@@ -319,7 +321,7 @@ public class ManagedDataSourceTest
     public void testConnectionException()
             throws Exception
     {
-        ManagedDataSource dataSource = new ManagedDataSource(new MockConnectionPoolDataSource(), 1, new Duration(10, MILLISECONDS));
+        ManagedDataSource dataSource = new MockManagedDataSource(1, new Duration(10, MILLISECONDS));
         MockConnection connection = (MockConnection) dataSource.getConnection();
         assertNotNull(connection);
         assertEquals(dataSource.getConnectionsActive(), 1);
@@ -331,7 +333,7 @@ public class ManagedDataSourceTest
     public void testCreateException()
     {
         MockConnectionPoolDataSource mockConnectionPoolDataSource = new MockConnectionPoolDataSource();
-        ManagedDataSource dataSource = new ManagedDataSource(mockConnectionPoolDataSource, 1, new Duration(10, MILLISECONDS));
+        ManagedDataSource dataSource = new MockManagedDataSource(mockConnectionPoolDataSource, 1, new Duration(10, MILLISECONDS));
         mockConnectionPoolDataSource.createException = new SQLException();
 
         assertEquals(dataSource.getConnectionsActive(), 0);
@@ -351,7 +353,7 @@ public class ManagedDataSourceTest
             throws SQLException
     {
         MockConnectionPoolDataSource mockConnectionPoolDataSource = new MockConnectionPoolDataSource();
-        ManagedDataSource dataSource = new ManagedDataSource(mockConnectionPoolDataSource, 1, new Duration(10, MILLISECONDS));
+        ManagedDataSource dataSource = new MockManagedDataSource(1, new Duration(10, MILLISECONDS));
         mockConnectionPoolDataSource.closeException = new SQLException();
 
         assertEquals(dataSource.getConnectionsActive(), 0);
@@ -375,7 +377,7 @@ public class ManagedDataSourceTest
             throws SQLException
     {
         MockConnectionPoolDataSource mockConnectionPoolDataSource = new MockConnectionPoolDataSource();
-        ManagedDataSource dataSource = new ManagedDataSource(mockConnectionPoolDataSource, 1, new Duration(10, MILLISECONDS));
+        ManagedDataSource dataSource = new MockManagedDataSource(1, new Duration(10, MILLISECONDS));
         mockConnectionPoolDataSource.closeException = new SQLException();
 
         assertEquals(dataSource.getConnectionsActive(), 0);
@@ -392,37 +394,54 @@ public class ManagedDataSourceTest
     }
 
     @Test
-    public void testLogWriter()
+    public void testLogWriterIsNeverSet()
             throws SQLException
     {
         MockConnectionPoolDataSource mockConnectionPoolDataSource = new MockConnectionPoolDataSource();
-        mockConnectionPoolDataSource.logWriter = new PrintWriter(new StringWriter());
-        ManagedDataSource dataSource = new ManagedDataSource(mockConnectionPoolDataSource, 1, new Duration(10, MILLISECONDS));
-        assertSame(dataSource.getLogWriter(), mockConnectionPoolDataSource.logWriter);
+        PrintWriter expectedLogWriter = new PrintWriter(new StringWriter());
+        mockConnectionPoolDataSource.logWriter = expectedLogWriter;
+        ManagedDataSource dataSource = new MockManagedDataSource(mockConnectionPoolDataSource, 1, new Duration(10, MILLISECONDS));
+
+        // data source log writer should start with null
+        assertNull(dataSource.getLogWriter());
+
+        // set the writer
         PrintWriter newWriter = new PrintWriter(new StringWriter());
         dataSource.setLogWriter(newWriter);
-        assertSame(mockConnectionPoolDataSource.logWriter, newWriter);
+
+        // data source log writer should still be null
+        assertNull(dataSource.getLogWriter());
+        // core data source should remain unaffected
+        assertSame(mockConnectionPoolDataSource.logWriter, expectedLogWriter);
     }
 
     @Test
-    public void testLoginTimeout()
+    public void testLoginTimeoutIsNeverSet()
             throws SQLException
     {
         MockConnectionPoolDataSource mockConnectionPoolDataSource = new MockConnectionPoolDataSource();
         mockConnectionPoolDataSource.loginTimeout = 42;
-        ManagedDataSource dataSource = new ManagedDataSource(mockConnectionPoolDataSource, 1, new Duration(10, MILLISECONDS));
-        assertEquals(dataSource.getLoginTimeout(), mockConnectionPoolDataSource.loginTimeout);
+        ManagedDataSource dataSource = new MockManagedDataSource(mockConnectionPoolDataSource, 1, new Duration(5, SECONDS));
+
+        // login timeout should always be max connection wait
+        assertEquals(dataSource.getLoginTimeout(), 5);
+
+        // set to a new value
         int newTimeout = 12345;
-        dataSource.setLoginTimeout(12345);
-        assertEquals(mockConnectionPoolDataSource.loginTimeout, newTimeout);
+        dataSource.setLoginTimeout(newTimeout);
+
+        // data source timeout should still be max connection wait
+        assertEquals(dataSource.getLoginTimeout(), 5);
+
+        // core data source should remain unaffected
+        assertEquals(mockConnectionPoolDataSource.loginTimeout, 42);
     }
 
     @Test
     public void testWrapper()
             throws SQLException
     {
-        MockConnectionPoolDataSource mockConnectionPoolDataSource = new MockConnectionPoolDataSource();
-        ManagedDataSource dataSource = new ManagedDataSource(mockConnectionPoolDataSource, 1, new Duration(10, MILLISECONDS));
+        ManagedDataSource dataSource = new MockManagedDataSource(1, new Duration(10, MILLISECONDS));
         assertTrue(dataSource.isWrapperFor(ManagedDataSource.class));
         assertTrue(dataSource.isWrapperFor(DataSource.class));
         assertTrue(dataSource.isWrapperFor(Object.class));
@@ -464,8 +483,7 @@ public class ManagedDataSourceTest
     public void testGetConnectionUsernamePassword()
             throws SQLException
     {
-        MockConnectionPoolDataSource mockConnectionPoolDataSource = new MockConnectionPoolDataSource();
-        ManagedDataSource dataSource = new ManagedDataSource(mockConnectionPoolDataSource, 1, new Duration(10, MILLISECONDS));
+        ManagedDataSource dataSource = new MockManagedDataSource(1, new Duration(10, MILLISECONDS));
         try {
             dataSource.getConnection("username", "password");
             fail("Expected SQLException");

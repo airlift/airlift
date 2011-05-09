@@ -16,31 +16,88 @@
 package com.proofpoint.dbpool;
 
 import com.mysql.jdbc.jdbc2.optional.MysqlConnectionPoolDataSource;
+import com.proofpoint.experimental.discovery.client.ServiceDescriptor;
+import com.proofpoint.experimental.discovery.client.ServiceSelector;
+import com.proofpoint.log.Logger;
 
-import static java.lang.Math.ceil;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import javax.sql.PooledConnection;
+import java.sql.SQLException;
+import java.util.UUID;
 
 public class MySqlDataSource extends ManagedDataSource
 {
-    public MySqlDataSource(MySqlDataSourceConfig config)
+    private final ServiceSelector serviceSelector;
+    private final int defaultFetchSize;
+    private UUID currentServer;
+    private MysqlConnectionPoolDataSource dataSource;
+
+    public MySqlDataSource(ServiceSelector serviceSelector, MySqlDataSourceConfig config)
     {
-        super(createMySQLConnectionPoolDataSource(config),
-                config.getMaxConnections(),
-                config.getMaxConnectionWait());
+        super(config.getMaxConnections(), config.getMaxConnectionWait());
+
+        this.serviceSelector = serviceSelector;
+        this.defaultFetchSize = config.getDefaultFetchSize();
     }
 
-    private static MysqlConnectionPoolDataSource createMySQLConnectionPoolDataSource(MySqlDataSourceConfig config)
+    protected PooledConnection createConnectionInternal()
+            throws SQLException
     {
-        MysqlConnectionPoolDataSource dataSource = new MysqlConnectionPoolDataSource();
-        dataSource.setServerName(config.getHost());
-        dataSource.setUser(config.getUsername());
-        dataSource.setPassword(config.getPassword());
-        dataSource.setPort(config.getPort());
-        dataSource.setDatabaseName(config.getDatabaseName());
-        dataSource.setConnectTimeout((int) ceil(config.getMaxConnectionWait().convertTo(SECONDS)));
-        dataSource.setInitialTimeout((int) ceil(config.getMaxConnectionWait().convertTo(SECONDS)));
-        dataSource.setDefaultFetchSize(config.getDefaultFetchSize());
-        dataSource.setUseSSL(config.getUseSsl());
-        return dataSource;
+        // attempt to get a connection from the current datasource if we have one
+        SQLException lastException = null;
+        if (dataSource != null) {
+            try {
+                return dataSource.getPooledConnection();
+            }
+            catch (SQLException e) {
+                lastException = e;
+            }
+        }
+
+        // drop reference to current datasource
+        dataSource = null;
+
+        // attempt to create a connection to each mysql server (except for the one that we know is bad)
+        for (ServiceDescriptor serviceDescriptor : serviceSelector.selectAllServices()) {
+            // skip the current server since it is having problems
+            if (serviceDescriptor.getId().equals(currentServer)) {
+                continue;
+            }
+
+            // skip bogus announcements
+            String jdbcUrl = serviceDescriptor.getProperties().get("jdbc");
+            if (jdbcUrl == null) {
+                continue;
+            }
+
+            try {
+                log.error("Connecting to %s", jdbcUrl);
+                MysqlConnectionPoolDataSource dataSource = new MysqlConnectionPoolDataSource();
+                dataSource.setUrl(jdbcUrl);
+                dataSource.setConnectTimeout(getLoginTimeout());
+                dataSource.setInitialTimeout(getLoginTimeout());
+                dataSource.setDefaultFetchSize(defaultFetchSize);
+
+                PooledConnection connection = dataSource.getPooledConnection();
+
+                // that worked so save the datasource and server id
+                this.dataSource = dataSource;
+                this.currentServer = serviceDescriptor.getId();
+                return connection;
+            }
+            catch (SQLException e) {
+                lastException = e;
+            }
+        }
+
+        // no servers found, clear the current server id since we no longer have a server at all
+        currentServer = null;
+
+        // throw the last exception we got
+        if (lastException != null) {
+            throw lastException;
+        }
+        throw new SQLException(String.format("No mysql servers of type '%s' available in pool '%s'", serviceSelector.getType(), serviceSelector.getPool()));
     }
+
+    private static final Logger log = Logger.get(MySqlDataSource.class);
 }

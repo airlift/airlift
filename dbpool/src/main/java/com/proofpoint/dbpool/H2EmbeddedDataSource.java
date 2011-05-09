@@ -23,6 +23,7 @@ import com.proofpoint.dbpool.H2EmbeddedDataSourceConfig.Cipher;
 import org.h2.jdbcx.JdbcDataSource;
 import org.h2.util.ScriptReader;
 
+import javax.sql.PooledConnection;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.Reader;
@@ -36,27 +37,52 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class H2EmbeddedDataSource extends ManagedDataSource
 {
+    private final JdbcDataSource dataSource;
+
     @Inject
     public H2EmbeddedDataSource(H2EmbeddedDataSourceConfig config)
             throws Exception
     {
-        super(createH2EmbeddedConnectionPoolDataSource(config),
-                config.getMaxConnections(),
-                config.getMaxConnectionWait());
+        super(config.getMaxConnections(), config.getMaxConnectionWait());
 
         Preconditions.checkNotNull(config.getFilename());
         if (config.getFilename().isEmpty()) {
             throw new IllegalArgumentException("filename is empty");
         }
 
+        // build jdbc url connection string
+        StringBuilder jdbcUrlBuilder = new StringBuilder()
+                .append("jdbc:h2:").append(config.getFilename())
+                .append(";ALLOW_LITERALS=").append(config.getAllowLiterals())
+                .append(";CACHE_SIZE=").append(config.getCacheSize());
+
+        if (config.getCipher() != Cipher.NONE) {
+            jdbcUrlBuilder.append(";CIPHER=").append(config.getCipher());
+        }
+
+        String jdbcUrl = jdbcUrlBuilder.toString();
+
+        // create dataSource
+        dataSource = new JdbcDataSource();
+        dataSource.setURL(jdbcUrl);
+        dataSource.setUser("sa");
+        if (config.getCipher() != Cipher.NONE) {
+            dataSource.setPassword(config.getFilePassword() + " ");
+        }
+        else {
+            dataSource.setPassword("");
+        }
+        dataSource.setLoginTimeout((int) ceil(config.getMaxConnectionWait().convertTo(SECONDS)));
+
+        // connect to database and initialize database
         Connection connection = getConnection();
         try {
             setConfig(connection, "CACHE_SIZE", config.getCacheSize());
             setConfig(connection, "COMPRESS_LOB", config.getCompressLob());
             setConfig(connection, "DB_CLOSE_DELAY ", "-1");
 
+            // find init script
             String fileName = config.getInitScript();
-
             File file = new File(fileName);
             URL url;
             if (file.exists()) {
@@ -70,6 +96,7 @@ public class H2EmbeddedDataSource extends ManagedDataSource
                 throw new FileNotFoundException(fileName);
             }
 
+            // execute init script
             Reader reader = Resources.newReaderSupplier(url, Charsets.UTF_8).getInput();
             try {
                 ScriptReader scriptReader = new ScriptReader(reader);
@@ -89,36 +116,14 @@ public class H2EmbeddedDataSource extends ManagedDataSource
         }
     }
 
-    private static JdbcDataSource createH2EmbeddedConnectionPoolDataSource(H2EmbeddedDataSourceConfig config)
-            throws Exception
+    @Override
+    protected PooledConnection createConnectionInternal()
+            throws SQLException
     {
-
-        StringBuilder urlBuilder = new StringBuilder()
-                .append("jdbc:h2:").append(config.getFilename())
-                .append(";ALLOW_LITERALS=").append(config.getAllowLiterals())
-                .append(";CACHE_SIZE=").append(config.getCacheSize());
-
-        if (config.getCipher() != Cipher.NONE) {
-            urlBuilder.append(";CIPHER=").append(config.getCipher());
-        }
-
-        String url = urlBuilder.toString();
-
-        JdbcDataSource dataSource = new JdbcDataSource();
-        dataSource.setURL(url);
-        dataSource.setUser(config.getUsername());
-        if (config.getCipher() != Cipher.NONE) {
-            dataSource.setPassword(config.getFilePassword() + " " + config.getPassword());
-        }
-        else {
-            dataSource.setPassword(config.getPassword());
-        }
-        dataSource.setLoginTimeout((int) ceil(config.getMaxConnectionWait().convertTo(SECONDS)));
-
-        return dataSource;
+        return dataSource.getPooledConnection();
     }
 
-    private void setConfig(Connection connection, String name, Object value)
+    private static void setConfig(Connection connection, String name, Object value)
             throws SQLException
     {
         Statement statement = connection.createStatement();
@@ -135,7 +140,7 @@ public class H2EmbeddedDataSource extends ManagedDataSource
     }
 
 
-    private void executeCommand(Connection connection, String command)
+    private static void executeCommand(Connection connection, String command)
             throws SQLException
     {
         Statement statement = connection.createStatement();

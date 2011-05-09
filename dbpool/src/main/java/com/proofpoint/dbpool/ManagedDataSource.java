@@ -21,7 +21,6 @@ import org.weakref.jmx.Managed;
 
 import javax.sql.ConnectionEvent;
 import javax.sql.ConnectionEventListener;
-import javax.sql.ConnectionPoolDataSource;
 import javax.sql.DataSource;
 import javax.sql.PooledConnection;
 import java.io.PrintWriter;
@@ -34,25 +33,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.proofpoint.units.Duration.nanosSince;
 import static java.lang.Math.ceil;
 
-public class ManagedDataSource implements DataSource
+public abstract class ManagedDataSource implements DataSource
 {
-    private final ConnectionPoolDataSource dataSource;
     private final ManagedSemaphore semaphore;
     private final AtomicInteger maxConnectionWaitMillis = new AtomicInteger(100);
     private final ManagedDataSourceStats stats = new ManagedDataSourceStats();
 
-    public ManagedDataSource(ConnectionPoolDataSource dataSource, int maxConnections, Duration maxConnectionWait)
+    public ManagedDataSource(int maxConnections, Duration maxConnectionWait)
     {
-        if (dataSource == null) {
-            throw new NullPointerException("dataSource is null");
-        }
         if (maxConnections < 1) {
             throw new IllegalArgumentException("maxConnections must be at least 1: maxConnections=" + maxConnections);
         }
         if (maxConnectionWait == null) {
             throw new NullPointerException("maxConnectionWait is null");
         }
-        this.dataSource = dataSource;
         semaphore = new ManagedSemaphore(maxConnections);
         maxConnectionWaitMillis.set((int) ceil(maxConnectionWait.toMillis()));
     }
@@ -89,7 +83,7 @@ public class ManagedDataSource implements DataSource
         try {
             // todo do not create on caller's thread
             long start = System.nanoTime();
-            PooledConnection pooledConnection = dataSource.getPooledConnection();
+            PooledConnection pooledConnection = createConnectionInternal();
             Connection connection = prepareConnection(pooledConnection);
             stats.connectionCreated(nanosSince(start));
 
@@ -103,6 +97,9 @@ public class ManagedDataSource implements DataSource
             }
         }
     }
+
+    protected abstract PooledConnection createConnectionInternal()
+            throws SQLException;
 
     protected Connection prepareConnection(PooledConnection pooledConnection)
             throws SQLException
@@ -180,29 +177,28 @@ public class ManagedDataSource implements DataSource
     public PrintWriter getLogWriter()
             throws SQLException
     {
-        return dataSource.getLogWriter();
+        return null;
     }
 
     @Override
     public void setLogWriter(PrintWriter out)
             throws SQLException
     {
-        dataSource.setLogWriter(out);
     }
 
     @Override
     public int getLoginTimeout()
             throws SQLException
     {
-        return dataSource.getLoginTimeout();
+        return (int) ceil(getMaxConnectionWaitMillis() / 1000.0);
     }
 
     @Override
     public void setLoginTimeout(int seconds)
             throws SQLException
     {
-        dataSource.setLoginTimeout(seconds);
     }
+
 
     @Override
     public boolean isWrapperFor(Class<?> iface)

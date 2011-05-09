@@ -58,12 +58,6 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2Embedd
     private long maxLengthInplaceLob = 1024;
     private long maxMemoryRows = 10000;
 
-    public H2EmbeddedDataSourceConfig()
-    {
-        setUsername("sa");
-        setPassword("");
-    }
-
     /**
      * Database filename
      */
