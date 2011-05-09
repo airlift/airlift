@@ -12,6 +12,7 @@ import com.google.inject.Inject;
 import com.proofpoint.log.Logger;
 import com.proofpoint.units.Duration;
 
+import javax.annotation.PreDestroy;
 import java.net.ConnectException;
 import java.util.Set;
 import java.util.UUID;
@@ -85,6 +86,7 @@ public class Announcer
         announce().checkedGet(30, TimeUnit.SECONDS);
     }
 
+    @PreDestroy
     public void destroy()
     {
         // cancel scheduled jobs
