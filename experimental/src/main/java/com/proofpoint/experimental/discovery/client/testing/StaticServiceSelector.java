@@ -2,10 +2,13 @@ package com.proofpoint.experimental.discovery.client.testing;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.proofpoint.experimental.discovery.client.ServiceDescriptor;
 import com.proofpoint.experimental.discovery.client.ServiceSelector;
 
 import java.util.List;
+
+import static com.proofpoint.experimental.discovery.client.ServiceSelectorConfig.DEFAULT_POOL;
 
 public class StaticServiceSelector implements ServiceSelector
 {
@@ -13,18 +16,30 @@ public class StaticServiceSelector implements ServiceSelector
     private final String pool;
     private final List<ServiceDescriptor> serviceDescriptors;
 
-    public StaticServiceSelector(ServiceDescriptor serviceDescriptor, ServiceDescriptor... serviceDescriptors)
+    public StaticServiceSelector(ServiceDescriptor... serviceDescriptors)
     {
-        Preconditions.checkNotNull(serviceDescriptor, "serviceDescriptor is null");
+        this(ImmutableList.copyOf(serviceDescriptors));
+    }
+
+    public StaticServiceSelector(Iterable<ServiceDescriptor> serviceDescriptors)
+    {
         Preconditions.checkNotNull(serviceDescriptors, "serviceDescriptors is null");
 
-        this.type = serviceDescriptor.getType();
-        this.pool = serviceDescriptor.getPool();
+        ServiceDescriptor serviceDescriptor = Iterables.getFirst(serviceDescriptors, null);
+        if (serviceDescriptor != null) {
+            this.type = serviceDescriptor.getType();
+            this.pool = serviceDescriptor.getPool();
+        }
+        else {
+            this.type = "unknown";
+            this.pool = DEFAULT_POOL;
+        }
+
         for (ServiceDescriptor descriptor : serviceDescriptors) {
             Preconditions.checkArgument(descriptor.getType().equals(type));
             Preconditions.checkArgument(descriptor.getPool().equals(pool));
         }
-        this.serviceDescriptors = ImmutableList.<ServiceDescriptor>builder().add(serviceDescriptor).add(serviceDescriptors).build();
+        this.serviceDescriptors = ImmutableList.copyOf(serviceDescriptors);
     }
 
     @Override
