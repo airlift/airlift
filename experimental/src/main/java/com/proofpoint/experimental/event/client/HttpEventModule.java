@@ -5,6 +5,8 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClientConfig;
 
@@ -19,6 +21,9 @@ public class HttpEventModule implements Module
         binder.bind(EventClient.class).to(HttpEventClient.class).in(Scopes.SINGLETON);
         bindConfig(binder).to(HttpEventClientConfig.class);
         httpServiceSelectorBinder(binder).bindSelector("event");
+
+        // Kick off the binding of Set<EventTypeMetadata> in case no events are bound
+        Multibinder.newSetBinder(binder, new TypeLiteral<EventTypeMetadata<?>>() {});
     }
 
     @Provides

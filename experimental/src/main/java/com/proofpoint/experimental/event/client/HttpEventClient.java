@@ -50,7 +50,6 @@ public class HttpEventClient implements EventClient
         Preconditions.checkNotNull(objectMapper, "objectMapper is null");
         Preconditions.checkNotNull(client, "client is null");
         Preconditions.checkNotNull(eventTypes, "types is null");
-        Preconditions.checkArgument(!eventTypes.isEmpty(), "types is empty");
 
         this.serviceSelector = serviceSelector;
         this.objectMapper = objectMapper;
