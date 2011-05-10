@@ -40,7 +40,7 @@
             <outputDirectory>lib/</outputDirectory>
             <outputFileNameMapping>${artifact.artifactId}-${artifact.baseVersion}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
             <includes>
-                <include>*:jar</include>
+                <include>*:jar:*</include>
             </includes>
         </dependencySet>
         <dependencySet>
