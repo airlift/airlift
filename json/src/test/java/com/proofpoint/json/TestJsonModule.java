@@ -59,6 +59,18 @@ public class TestJsonModule
     }
 
     @Test
+    public void testJsonCodecFactoryBinding()
+            throws Exception
+    {
+        Injector injector = Guice.createInjector(new JsonModule());
+        JsonCodecFactory codecFactory = injector.getInstance(JsonCodecFactory.class);
+
+        Person.validatePersonJsonCodec(codecFactory.jsonCodec(Person.class));
+        Person.validatePersonListJsonCodec(codecFactory.listJsonCodec(Person.class));
+        Person.validatePersonMapJsonCodec(codecFactory.mapJsonCodec(String.class, Person.class));
+    }
+
+    @Test
     public void testSetup()
             throws Exception
     {

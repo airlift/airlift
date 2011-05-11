@@ -15,9 +15,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
-            <artifactId>jaxrs</artifactId>
-            <version>0.41-SNAPSHOT</version>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-server</artifactId>
+            <version>1.3</version>
         </dependency>
 
         <dependency>
@@ -25,6 +25,12 @@
             <artifactId>testing</artifactId>
             <version>0.41-SNAPSHOT</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>discovery-experimental</artifactId>
+            <version>0.41-SNAPSHOT</version>
         </dependency>
 
         <dependency>

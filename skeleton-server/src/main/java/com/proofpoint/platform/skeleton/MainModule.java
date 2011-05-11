@@ -17,7 +17,7 @@ package com.proofpoint.platform.skeleton;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
-import com.proofpoint.experimental.discovery.client.DiscoveryBinder;
+import com.proofpoint.discovery.client.DiscoveryBinder;
 
 public class MainModule
         implements Module

@@ -231,6 +231,7 @@
         <module>jmx</module>
         <module>bootstrap</module>
         <module>configuration</module>
+        <module>discovery</module>
         <module>stats</module>
         <module>units</module>
         <module>dbpool</module>

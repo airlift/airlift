@@ -11,7 +11,7 @@ import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClientConfig;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
-import static com.proofpoint.experimental.discovery.client.DiscoveryBinder.discoveryBinder;
+import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
 
 public class HttpEventModule implements Module
 {

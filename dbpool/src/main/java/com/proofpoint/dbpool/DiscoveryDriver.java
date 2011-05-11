@@ -18,11 +18,11 @@ import com.google.inject.Injector;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationLoader;
 import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.experimental.discovery.client.CachingServiceSelector;
-import com.proofpoint.experimental.discovery.client.DiscoveryClient;
-import com.proofpoint.experimental.discovery.client.DiscoveryModule;
-import com.proofpoint.experimental.discovery.client.ServiceSelectorConfig;
-import com.proofpoint.experimental.json.JsonModule;
+import com.proofpoint.discovery.client.CachingServiceSelector;
+import com.proofpoint.discovery.client.DiscoveryClient;
+import com.proofpoint.discovery.client.DiscoveryModule;
+import com.proofpoint.discovery.client.ServiceSelectorConfig;
+import com.proofpoint.json.JsonModule;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeModule;
 

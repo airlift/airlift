@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.proofpoint.experimental.discovery.client.DiscoveryBinder;
+import com.proofpoint.discovery.client.DiscoveryBinder;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;

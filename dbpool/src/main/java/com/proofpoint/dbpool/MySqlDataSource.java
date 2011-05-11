@@ -16,8 +16,8 @@
 package com.proofpoint.dbpool;
 
 import com.mysql.jdbc.jdbc2.optional.MysqlConnectionPoolDataSource;
-import com.proofpoint.experimental.discovery.client.ServiceDescriptor;
-import com.proofpoint.experimental.discovery.client.ServiceSelector;
+import com.proofpoint.discovery.client.ServiceDescriptor;
+import com.proofpoint.discovery.client.ServiceSelector;
 
 import javax.sql.PooledConnection;
 import java.sql.SQLException;

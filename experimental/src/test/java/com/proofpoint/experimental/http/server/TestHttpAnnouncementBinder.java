@@ -11,9 +11,9 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.experimental.discovery.client.DiscoveryBinder;
-import com.proofpoint.experimental.discovery.client.testing.TestingDiscoveryModule;
-import com.proofpoint.experimental.discovery.client.ServiceAnnouncement;
+import com.proofpoint.discovery.client.DiscoveryBinder;
+import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
+import com.proofpoint.discovery.client.ServiceAnnouncement;
 import com.proofpoint.http.server.HttpServerConfig;
 import com.proofpoint.http.server.HttpServerInfo;
 import com.proofpoint.node.NodeInfo;
@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
 
 import java.util.Set;
 
-import static com.proofpoint.experimental.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static com.proofpoint.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 
 public class TestHttpAnnouncementBinder
 {

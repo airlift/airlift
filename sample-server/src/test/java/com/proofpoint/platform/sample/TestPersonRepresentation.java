@@ -17,10 +17,10 @@ package com.proofpoint.platform.sample;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
-import com.proofpoint.experimental.json.JsonCodec;
+import com.proofpoint.json.JsonCodec;
 import org.testng.annotations.Test;
 
-import static com.proofpoint.experimental.json.JsonCodec.jsonCodec;
+import static com.proofpoint.json.JsonCodec.jsonCodec;
 import static org.testng.Assert.assertEquals;
 
 public class TestPersonRepresentation

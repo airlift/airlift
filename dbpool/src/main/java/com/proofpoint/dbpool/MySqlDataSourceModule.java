@@ -21,7 +21,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
-import com.proofpoint.experimental.discovery.client.ServiceSelector;
+import com.proofpoint.discovery.client.ServiceSelector;
 import org.weakref.jmx.guice.MBeanModule;
 
 import javax.sql.DataSource;
@@ -30,8 +30,8 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
-import static com.proofpoint.experimental.discovery.client.DiscoveryBinder.discoveryBinder;
-import static com.proofpoint.experimental.discovery.client.ServiceTypes.serviceType;
+import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
+import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
 
 public class MySqlDataSourceModule extends MBeanModule
 {

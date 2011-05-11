@@ -21,15 +21,15 @@ import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.experimental.discovery.client.ServiceAnnouncement;
+import com.proofpoint.discovery.client.ServiceAnnouncement;
 import org.weakref.jmx.guice.ExportBuilder;
 import org.weakref.jmx.guice.MBeanModule;
 
 import javax.management.MBeanServer;
 import java.lang.management.ManagementFactory;
 
-import static com.proofpoint.experimental.discovery.client.DiscoveryBinder.discoveryBinder;
-import static com.proofpoint.experimental.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
+import static com.proofpoint.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 
 public class JmxModule
         implements Module

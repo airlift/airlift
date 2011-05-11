@@ -18,7 +18,7 @@ package com.proofpoint.platform.sample;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.proofpoint.experimental.discovery.client.DiscoveryBinder;
+import com.proofpoint.discovery.client.DiscoveryBinder;
 import org.weakref.jmx.guice.MBeanModule;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
