@@ -1,6 +1,7 @@
-package com.proofpoint.experimental.units;
+package com.proofpoint.units;
 
 import com.proofpoint.units.Duration;
+import com.proofpoint.units.MinDuration;
 
 import javax.validation.Payload;
 import java.lang.annotation.Annotation;

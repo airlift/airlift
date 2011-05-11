@@ -1,6 +1,4 @@
-package com.proofpoint.experimental.units;
-
-import com.proofpoint.units.Duration;
+package com.proofpoint.units;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;

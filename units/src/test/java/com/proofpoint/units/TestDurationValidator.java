@@ -1,8 +1,7 @@
-package com.proofpoint.experimental.units;
+package com.proofpoint.units;
 
 import com.google.common.base.Throwables;
 import com.proofpoint.testing.Assertions;
-import com.proofpoint.units.Duration;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

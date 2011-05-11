@@ -1,4 +1,4 @@
-package com.proofpoint.experimental.units;
+package com.proofpoint.units;
 
 import javax.validation.Constraint;
 import javax.validation.Payload;
@@ -13,12 +13,11 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Target( { METHOD, ANNOTATION_TYPE })
 @Retention(RUNTIME)
 @Documented
-@Constraint(validatedBy = MinDurationValidator.class)
-public @interface MinDuration
+@Constraint(validatedBy = MaxDurationValidator.class)
+public @interface MaxDuration
 {
     String value();
-    String message() default "{com.proofpoint.experimental.units.MinDuration.message}";
+    String message() default "{com.proofpoint.units.MaxDuration.message}";
     Class<?>[] groups() default { };
     Class<? extends Payload>[] payload() default { };
 }
-
