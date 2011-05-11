@@ -15,8 +15,6 @@ import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
-import static com.google.common.util.concurrent.MoreExecutors.getExitingScheduledExecutorService;
-
 public class TestCachingServiceSelector
 {
     private static final ServiceDescriptor APPLE_1_SERVICE = new ServiceDescriptor(UUID.randomUUID(), "node-A", "apple", "pool", "location", ImmutableMap.of("a", "apple"));
@@ -31,8 +29,8 @@ public class TestCachingServiceSelector
     protected void setUp()
             throws Exception
     {
-        executor = getExitingScheduledExecutorService(new ScheduledThreadPoolExecutor(10,
-                new ThreadFactoryBuilder().setNameFormat("Discovery-%s").build()));
+        executor = new ScheduledThreadPoolExecutor(10,
+                new ThreadFactoryBuilder().setNameFormat("Discovery-%s").setDaemon(true).build());
         nodeInfo = new NodeInfo("environment");
     }
 

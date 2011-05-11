@@ -5,7 +5,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
 import com.google.common.util.concurrent.CheckedFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
@@ -50,7 +49,7 @@ public class Announcer
         for (ServiceAnnouncement serviceAnnouncement : serviceAnnouncements) {
             announcements.put(serviceAnnouncement.getId(), serviceAnnouncement);
         }
-        executor = MoreExecutors.getExitingScheduledExecutorService(new ScheduledThreadPoolExecutor(10, new ThreadFactoryBuilder().setNameFormat("Announcer-%s").build()));
+        executor = new ScheduledThreadPoolExecutor(10, new ThreadFactoryBuilder().setNameFormat("Announcer-%s").setDaemon(true).build());
     }
 
     public void start()

@@ -12,7 +12,6 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -50,9 +49,8 @@ public class DiscoveryDriver implements Driver
     private static final String URL_PREFIX = "jdbc:discovery:";
     private static final Object lock = new Object();
     private static final DiscoveryDriver DISCOVERY_DRIVER = new DiscoveryDriver();
-    private static final ScheduledExecutorService executorService = MoreExecutors.getExitingScheduledExecutorService(
-            new ScheduledThreadPoolExecutor(10, new ThreadFactoryBuilder().setNameFormat("DatabaseDiscovery-%s").build())
-    );
+    private static final ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(10,
+            new ThreadFactoryBuilder().setNameFormat("DatabaseDiscovery-%s").setDaemon(true).build());
 
     private static DiscoveryClient discoveryClient;
     private static boolean registered;

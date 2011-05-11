@@ -1,6 +1,5 @@
 package com.proofpoint.experimental.discovery.client.testing;
 
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -41,7 +40,6 @@ public class TestingDiscoveryModule implements Module
     @ForDiscoverClient
     public ScheduledExecutorService createDiscoveryExecutor()
     {
-        ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(10, new ThreadFactoryBuilder().setNameFormat("Discovery-%s").build());
-        return MoreExecutors.getExitingScheduledExecutorService(executor);
+        return new ScheduledThreadPoolExecutor(10, new ThreadFactoryBuilder().setNameFormat("Discovery-%s").setDaemon(true).build());
     }
 }
