@@ -2,10 +2,14 @@ package com.proofpoint.experimental.discovery.client;
 
 import com.google.common.base.Preconditions;
 import com.google.inject.Binder;
+import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.multibindings.Multibinder;
+import com.proofpoint.experimental.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
+import com.proofpoint.http.server.HttpServerInfo;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
+import static com.proofpoint.experimental.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static com.proofpoint.experimental.discovery.client.ServiceTypes.serviceType;
 
 public class DiscoveryBinder
@@ -19,7 +23,7 @@ public class DiscoveryBinder
     private final Multibinder<ServiceAnnouncement> serviceAnnouncementBinder;
     private final Binder binder;
 
-    private DiscoveryBinder(Binder binder)
+    protected DiscoveryBinder(Binder binder)
     {
         Preconditions.checkNotNull(binder, "binder is null");
         this.binder = binder;
@@ -55,5 +59,54 @@ public class DiscoveryBinder
     {
         Preconditions.checkNotNull(announcementProviderClass, "announcementProviderClass is null");
         serviceAnnouncementBinder.addBinding().toProvider(announcementProviderClass);
+    }
+
+    public ServiceAnnouncementBuilder bindHttpAnnouncement(String type)
+    {
+        ServiceAnnouncementBuilder serviceAnnouncementBuilder = serviceAnnouncement(type);
+        bindServiceAnnouncement(new HttpAnnouncementProvider(serviceAnnouncementBuilder));
+        return serviceAnnouncementBuilder;
+    }
+
+    public void bindHttpSelector(String type)
+    {
+        Preconditions.checkNotNull(type, "type is null");
+        bindHttpSelector(serviceType(type));
+    }
+
+    public void bindHttpSelector(ServiceType serviceType)
+    {
+        Preconditions.checkNotNull(serviceType, "serviceType is null");
+        bindSelector(serviceType);
+        binder.bind(HttpServiceSelector.class).annotatedWith(serviceType).toProvider(new HttpServiceSelectorProvider(serviceType.value()));
+    }
+
+    static class HttpAnnouncementProvider implements Provider<ServiceAnnouncement>
+    {
+        private final ServiceAnnouncementBuilder builder;
+        private HttpServerInfo httpServerInfo;
+
+        public HttpAnnouncementProvider(ServiceAnnouncementBuilder serviceAnnouncementBuilder)
+        {
+            builder = serviceAnnouncementBuilder;
+        }
+
+        @Inject
+        public void setHttpServerInfo(HttpServerInfo httpServerInfo)
+        {
+            this.httpServerInfo = httpServerInfo;
+        }
+
+        @Override
+        public ServiceAnnouncement get()
+        {
+            if (httpServerInfo.getHttpUri() != null) {
+                builder.addProperty("http", httpServerInfo.getHttpUri().toString());
+            }
+            if (httpServerInfo.getHttpsUri() != null) {
+                builder.addProperty("https", httpServerInfo.getHttpsUri().toString());
+            }
+            return builder.build();
+        }
     }
 }

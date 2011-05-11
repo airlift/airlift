@@ -1,10 +1,8 @@
-package com.proofpoint.experimental.http.client;
+package com.proofpoint.experimental.discovery.client;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.proofpoint.experimental.discovery.client.ServiceDescriptor;
-import com.proofpoint.experimental.discovery.client.ServiceSelector;
 
 import java.net.URI;
 import java.net.URISyntaxException;

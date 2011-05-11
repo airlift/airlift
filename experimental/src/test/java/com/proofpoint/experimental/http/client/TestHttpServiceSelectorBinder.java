@@ -11,6 +11,7 @@ import com.google.inject.Module;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.experimental.discovery.client.DiscoveryClient;
+import com.proofpoint.experimental.discovery.client.HttpServiceSelector;
 import com.proofpoint.experimental.discovery.client.testing.InMemoryDiscoveryClient;
 import com.proofpoint.experimental.discovery.client.testing.TestingDiscoveryModule;
 import com.proofpoint.node.testing.TestingNodeModule;
@@ -19,9 +20,9 @@ import org.testng.annotations.Test;
 import java.net.URI;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
+import static com.proofpoint.experimental.discovery.client.DiscoveryBinder.discoveryBinder;
 import static com.proofpoint.experimental.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static com.proofpoint.experimental.discovery.client.ServiceTypes.serviceType;
-import static com.proofpoint.experimental.http.client.HttpServiceSelectorBinder.httpServiceSelectorBinder;
 import static org.testng.Assert.assertEquals;
 
 public class TestHttpServiceSelectorBinder
@@ -38,7 +39,7 @@ public class TestHttpServiceSelectorBinder
                     @Override
                     public void configure(Binder binder)
                     {
-                        httpServiceSelectorBinder(binder).bindSelector("apple");
+                        discoveryBinder(binder).bindHttpSelector("apple");
                     }
                 }
         );
@@ -62,7 +63,7 @@ public class TestHttpServiceSelectorBinder
                     @Override
                     public void configure(Binder binder)
                     {
-                        httpServiceSelectorBinder(binder).bindSelector(serviceType("apple"));
+                        discoveryBinder(binder).bindHttpSelector(serviceType("apple"));
                     }
                 }
         );
@@ -86,7 +87,7 @@ public class TestHttpServiceSelectorBinder
                     @Override
                     public void configure(Binder binder)
                     {
-                        httpServiceSelectorBinder(binder).bindSelector("apple");
+                        discoveryBinder(binder).bindHttpSelector("apple");
                     }
                 }
         );
@@ -110,7 +111,7 @@ public class TestHttpServiceSelectorBinder
                     @Override
                     public void configure(Binder binder)
                     {
-                        httpServiceSelectorBinder(binder).bindSelector("apple");
+                        discoveryBinder(binder).bindHttpSelector("apple");
                     }
                 }
         );
@@ -135,7 +136,7 @@ public class TestHttpServiceSelectorBinder
                     @Override
                     public void configure(Binder binder)
                     {
-                        httpServiceSelectorBinder(binder).bindSelector("apple");
+                        discoveryBinder(binder).bindHttpSelector("apple");
                     }
                 }
         );
@@ -160,7 +161,7 @@ public class TestHttpServiceSelectorBinder
                     @Override
                     public void configure(Binder binder)
                     {
-                        httpServiceSelectorBinder(binder).bindSelector("apple");
+                        discoveryBinder(binder).bindHttpSelector("apple");
                     }
                 }
         );

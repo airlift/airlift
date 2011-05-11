@@ -11,6 +11,7 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.experimental.discovery.client.DiscoveryBinder;
 import com.proofpoint.experimental.discovery.client.testing.TestingDiscoveryModule;
 import com.proofpoint.experimental.discovery.client.ServiceAnnouncement;
 import com.proofpoint.http.server.HttpServerConfig;
@@ -23,7 +24,6 @@ import org.testng.annotations.Test;
 import java.util.Set;
 
 import static com.proofpoint.experimental.discovery.client.ServiceAnnouncement.serviceAnnouncement;
-import static com.proofpoint.experimental.http.server.HttpAnnouncementBinder.httpAnnouncementBinder;
 
 public class TestHttpAnnouncementBinder
 {
@@ -37,7 +37,7 @@ public class TestHttpAnnouncementBinder
                     @Override
                     public void configure(Binder binder)
                     {
-                        httpAnnouncementBinder(binder).bindHttpAnnouncement("apple");
+                        DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("apple");
                     }
                 }
         );
@@ -62,7 +62,7 @@ public class TestHttpAnnouncementBinder
                     @Override
                     public void configure(Binder binder)
                     {
-                        httpAnnouncementBinder(binder).bindHttpAnnouncement("apple");
+                        DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("apple");
                     }
                 }
         );
@@ -87,7 +87,7 @@ public class TestHttpAnnouncementBinder
                     @Override
                     public void configure(Binder binder)
                     {
-                        httpAnnouncementBinder(binder).bindHttpAnnouncement("apple").setPool("apple-pool");
+                        DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("apple").setPool("apple-pool");
                     }
                 }
         );
@@ -114,7 +114,7 @@ public class TestHttpAnnouncementBinder
                     @Override
                     public void configure(Binder binder)
                     {
-                        httpAnnouncementBinder(binder).bindHttpAnnouncement("apple").addProperty("a", "apple");
+                        DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("apple").addProperty("a", "apple");
                     }
                 }
         );

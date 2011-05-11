@@ -1,21 +1,20 @@
-package com.proofpoint.experimental.http.client;
+package com.proofpoint.experimental.discovery.client;
 
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Provider;
-import com.proofpoint.experimental.discovery.client.ServiceSelector;
 
 import static com.proofpoint.experimental.discovery.client.ServiceTypes.serviceType;
 
-public class HttpServiceProvider
+class HttpServiceSelectorProvider
         implements Provider<HttpServiceSelector>
 {
     private final String type;
     private Injector injector;
 
-    public HttpServiceProvider(String type)
+    public HttpServiceSelectorProvider(String type)
     {
         Preconditions.checkNotNull(type);
         this.type = type;
@@ -47,7 +46,7 @@ public class HttpServiceProvider
             return false;
         }
 
-        HttpServiceProvider that = (HttpServiceProvider) o;
+        HttpServiceSelectorProvider that = (HttpServiceSelectorProvider) o;
 
         if (!type.equals(that.type)) {
             return false;

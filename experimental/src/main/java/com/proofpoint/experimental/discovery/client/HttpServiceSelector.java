@@ -1,4 +1,4 @@
-package com.proofpoint.experimental.http.client;
+package com.proofpoint.experimental.discovery.client;
 
 import java.net.URI;
 import java.util.List;

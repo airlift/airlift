@@ -1,7 +1,8 @@
-package com.proofpoint.experimental.http.client;
+package com.proofpoint.experimental.discovery.client.testing;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.proofpoint.experimental.discovery.client.HttpServiceSelector;
 
 import java.net.URI;
 import java.util.List;

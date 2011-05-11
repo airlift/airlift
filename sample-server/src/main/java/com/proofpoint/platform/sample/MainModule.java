@@ -18,11 +18,11 @@ package com.proofpoint.platform.sample;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
+import com.proofpoint.experimental.discovery.client.DiscoveryBinder;
 import org.weakref.jmx.guice.MBeanModule;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.experimental.event.client.EventBinder.eventBinder;
-import static com.proofpoint.experimental.http.server.HttpAnnouncementBinder.httpAnnouncementBinder;
 
 public class MainModule
         implements Module
@@ -41,6 +41,6 @@ public class MainModule
         bindConfig(binder).to(StoreConfig.class);
         eventBinder(binder).bindEventClient(PersonEvent.class);
 
-        httpAnnouncementBinder(binder).bindHttpAnnouncement("person");
+        DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("person");
     }
 }
