@@ -24,6 +24,7 @@ Options
 * TODO verify: make sure component can run within provided environment and with the given config.
 * start (run as daemon)
 * stop (stop gracefully)
+* restart (restart gracefully)
 * kill (hard stop)
 * status (check status of daemon)
 
@@ -141,7 +142,7 @@ def build_cmd_line(options)
   jar_path = File.join(install_path, 'lib', 'main.jar')
 
   command =<<-CMD
-    java #{jvm_properties} -Dconfig=#{config_path} #{log_option} #{log_levels_option} -jar #{jar_path}
+    java #{jvm_properties} -Duser.home=#{options[:data_dir]} #{options[:system_properties].join(" ")} -Dconfig=#{config_path} #{log_option} #{log_levels_option} -jar #{jar_path}
   CMD
 
   puts command if options[:verbose]
@@ -150,7 +151,7 @@ def build_cmd_line(options)
 end
 
 def run(options)
-  Dir.chdir(options[:install_path])
+  Dir.chdir(options[:data_dir])
   exec(build_cmd_line(options))
 end
 
@@ -169,7 +170,7 @@ def start(options)
     STDERR.close
 
     Process.setsid
-    Dir.chdir(options[:install_path])
+    Dir.chdir(options[:data_dir])
 
     exec(command)
   end
@@ -198,6 +199,15 @@ def stop(options)
   pid_file.clear
 
   return :success, "Stopped #{pid}"
+end
+
+def restart(options)
+  code, message = stop(options)
+  if code != :success then
+    return code, message
+  else
+    start(options)
+  end
 end
 
 def kill(options)
@@ -234,7 +244,7 @@ def status(options)
   end
 end
 
-commands = [:run, :start, :stop, :kill, :status]
+commands = [:run, :start, :stop, :restart, :kill, :status]
 install_path = Pathname.new(__FILE__).parent.parent.expand_path
 
 # initialize defaults
@@ -242,12 +252,14 @@ options = {
         :pid_file => File.join(install_path, 'var', 'run', 'launcher.pid'),
         :jvm_config_path => File.join(install_path, 'etc', 'jvm.config'),
         :config_path => File.join(install_path, 'etc', 'config.properties'),
+        :data_dir => install_path,
         :log_path => File.join(install_path, 'var', 'log', 'launcher.log'),
         :log_levels_path => File.join(install_path, 'etc', 'log.config'),
-        :install_path => install_path
+        :install_path => install_path,
+        :system_properties => []
         }
 
-option_parser = OptionParser.new do |opts|
+option_parser = OptionParser.new(:unknown_options_action => :collect) do |opts|
   banner = <<-BANNER
     Usage: #{File.basename($0)} [options] <command>
 
@@ -270,6 +282,10 @@ option_parser = OptionParser.new do |opts|
     options[:config_path] = Pathname.new(v).expand_path
   end
 
+  opts.on("--data DIR", "Defaults to INSTALL_PATH") do |v|
+    options[:data_dir] = Pathname.new(v).expand_path
+  end
+
   opts.on("--pid-file FILE", "Defaults to INSTALL_PATH/var/run/launcher.pid") do |v|
     options[:pid_file] = Pathname.new(v).expand_path
   end
@@ -280,6 +296,13 @@ option_parser = OptionParser.new do |opts|
 
   opts.on("--log-levels-file FILE", "Defaults to INSTALL_PATH/etc/log.config") do |v|
     options[:log_levels_path] = Pathname.new(v).expand_path
+  end
+
+  opts.on("-D<name>=<value>", "Sets a Java System property") do |v|
+    if v.start_with?("config=") then
+      raise("Config can not be passed in a -D argument.  Use --config instead")
+    end
+    options[:system_properties] << "-D#{v}"
   end
 
   opts.on('-h', '--help', 'Display this screen') do
@@ -332,4 +355,3 @@ rescue CommandError => e
   puts e.code if options[:verbose]
   exit error_codes[e.code]
 end
-
