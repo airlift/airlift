@@ -20,7 +20,7 @@ public class TestNodeInfo
         String nodeId = "nodeId";
         InetAddress publicIp = InetAddresses.forString("10.0.0.22");
 
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, nodeId, publicIp);
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, nodeId, publicIp, null);
         Assert.assertEquals(nodeInfo.getEnvironment(), ENVIRONMENT);
         Assert.assertEquals(nodeInfo.getPool(), POOL);
         Assert.assertEquals(nodeInfo.getNodeId(), nodeId);
@@ -39,12 +39,12 @@ public class TestNodeInfo
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testInvalidEnvironment()
     {
-        new NodeInfo("ENV", POOL, null, null);
+        new NodeInfo("ENV", POOL, null, null, null);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testInvalidPool()
     {
-        new NodeInfo(ENVIRONMENT, "POOL", null, null);
+        new NodeInfo(ENVIRONMENT, "POOL", null, null, null);
     }
 }

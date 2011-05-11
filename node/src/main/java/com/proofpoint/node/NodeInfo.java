@@ -23,6 +23,7 @@ public class NodeInfo
     private final String environment;
     private final String pool;
     private final String nodeId;
+    private final String location;
     private final String instanceId = UUID.randomUUID().toString();
     private final InetAddress publicIp;
     private final InetAddress bindIp;
@@ -36,10 +37,10 @@ public class NodeInfo
     @Inject
     public NodeInfo(NodeConfig config)
     {
-        this(config.getEnvironment(), config.getPool(), config.getNodeId(), config.getNodeIp());
+        this(config.getEnvironment(), config.getPool(), config.getNodeId(), config.getNodeIp(), config.getLocation());
     }
 
-    public NodeInfo(String environment, String pool, String nodeId, InetAddress nodeIp)
+    public NodeInfo(String environment, String pool, String nodeId, InetAddress nodeIp, String location)
     {
         Preconditions.checkNotNull(environment, "environment is null");
         Preconditions.checkNotNull(pool, "pool is null");
@@ -54,6 +55,13 @@ public class NodeInfo
         }
         else {
             this.nodeId = UUID.randomUUID().toString();
+        }
+
+        if (location != null) {
+            this.location = location;
+        }
+        else {
+            this.location = "/" + this.nodeId;
         }
 
         if (nodeIp != null) {
@@ -92,6 +100,15 @@ public class NodeInfo
     public String getNodeId()
     {
         return nodeId;
+    }
+
+    /**
+     * Location of this JavaVM.
+     */
+    @Managed
+    public String getLocation()
+    {
+        return location;
     }
 
     /**

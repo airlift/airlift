@@ -16,6 +16,7 @@ public class NodeConfig
     private String environment;
     private String pool = "general";
     private String nodeId;
+    private String location;
     private InetAddress nodeIp;
 
     @NotNull
@@ -55,6 +56,18 @@ public class NodeConfig
     public NodeConfig setNodeId(String nodeId)
     {
         this.nodeId = nodeId;
+        return this;
+    }
+
+    public String getLocation()
+    {
+        return location;
+    }
+
+    @Config("node.location")
+    public NodeConfig setLocation(String location)
+    {
+        this.location = location;
         return this;
     }
 

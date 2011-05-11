@@ -16,7 +16,6 @@ public class Announcement
     {
         Preconditions.checkNotNull(environment, "environment is null");
         Preconditions.checkNotNull(nodeId, "nodeId is null");
-        Preconditions.checkNotNull(location, "location is null");
         Preconditions.checkNotNull(services, "services is null");
         Preconditions.checkArgument(!services.isEmpty(), "services is empty");
 

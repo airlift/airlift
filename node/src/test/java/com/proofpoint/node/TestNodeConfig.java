@@ -16,7 +16,8 @@ public class TestNodeConfig
                 .setEnvironment(null)
                 .setPool("general")
                 .setNodeId(null)
-                .setNodeIp((String) null));
+                .setNodeIp((String) null)
+                .setLocation(null));
     }
 
     @Test
@@ -27,13 +28,15 @@ public class TestNodeConfig
                 .put("node.pool", "pool")
                 .put("node.id", "nodeId")
                 .put("node.ip", "10.9.8.7")
+                .put("node.location", "location")
                 .build();
 
         NodeConfig expected = new NodeConfig()
                 .setEnvironment("environment")
                 .setPool("pool")
                 .setNodeId("nodeId")
-                .setNodeIp(InetAddresses.forString("10.9.8.7"));
+                .setNodeIp(InetAddresses.forString("10.9.8.7"))
+                .setLocation("location");
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

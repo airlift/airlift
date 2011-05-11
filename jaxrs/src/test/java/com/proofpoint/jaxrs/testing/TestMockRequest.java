@@ -17,7 +17,6 @@ package com.proofpoint.jaxrs.testing;
 
 import com.google.common.collect.ImmutableList;
 import com.proofpoint.jaxrs.testing.MockRequest.ConditionalRequestBuilder;
-import junit.framework.TestCase;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -39,7 +38,7 @@ import static java.util.Locale.US;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
 import static javax.ws.rs.core.MediaType.TEXT_XML_TYPE;
 
-public class TestMockRequest extends TestCase
+public class TestMockRequest
 {
     @DataProvider(name = "requestBuilders")
     private Object[][] getRequestBuilders()
