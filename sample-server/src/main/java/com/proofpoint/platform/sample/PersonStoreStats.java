@@ -15,7 +15,7 @@
  */
 package com.proofpoint.platform.sample;
 
-import com.proofpoint.experimental.event.client.EventClient;
+import com.proofpoint.event.client.EventClient;
 import org.weakref.jmx.Managed;
 
 import java.util.concurrent.atomic.AtomicLong;

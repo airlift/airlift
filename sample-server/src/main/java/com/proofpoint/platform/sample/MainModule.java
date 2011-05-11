@@ -22,7 +22,7 @@ import com.proofpoint.discovery.client.DiscoveryBinder;
 import org.weakref.jmx.guice.MBeanModule;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
-import static com.proofpoint.experimental.event.client.EventBinder.eventBinder;
+import static com.proofpoint.event.client.EventBinder.eventBinder;
 
 public class MainModule
         implements Module

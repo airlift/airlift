@@ -19,17 +19,13 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.MapMaker;
 import com.google.inject.Inject;
-import com.proofpoint.experimental.event.client.EventClient;
+import com.proofpoint.event.client.EventClient;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-
-import static com.proofpoint.platform.sample.PersonEvent.personAdded;
-import static com.proofpoint.platform.sample.PersonEvent.personRemoved;
-import static com.proofpoint.platform.sample.PersonEvent.personUpdated;
 
 public class PersonStore
 {

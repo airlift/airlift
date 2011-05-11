@@ -1,8 +1,8 @@
 package com.proofpoint.platform.sample;
 
 import com.google.common.base.Preconditions;
-import com.proofpoint.experimental.event.client.EventField;
-import com.proofpoint.experimental.event.client.EventType;
+import com.proofpoint.event.client.EventField;
+import com.proofpoint.event.client.EventType;
 
 @EventType("test:type=person")
 public class PersonEvent

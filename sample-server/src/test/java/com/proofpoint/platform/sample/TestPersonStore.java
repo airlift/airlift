@@ -16,7 +16,7 @@
 package com.proofpoint.platform.sample;
 
 import com.google.common.collect.ImmutableList;
-import com.proofpoint.experimental.event.client.InMemoryEventClient;
+import com.proofpoint.event.client.InMemoryEventClient;
 import com.proofpoint.units.Duration;
 import org.testng.Assert;
 import org.testng.annotations.Test;

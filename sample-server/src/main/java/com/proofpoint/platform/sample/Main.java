@@ -19,7 +19,7 @@ import com.google.inject.Injector;
 import com.proofpoint.bootstrap.Bootstrap;
 import com.proofpoint.discovery.client.Announcer;
 import com.proofpoint.discovery.client.DiscoveryModule;
-import com.proofpoint.experimental.event.client.HttpEventModule;
+import com.proofpoint.event.client.HttpEventModule;
 import com.proofpoint.experimental.jmx.JmxHttpModule;
 import com.proofpoint.json.JsonModule;
 import com.proofpoint.http.server.HttpServerModule;

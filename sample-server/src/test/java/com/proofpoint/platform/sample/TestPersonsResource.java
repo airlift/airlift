@@ -15,8 +15,8 @@
  */
 package com.proofpoint.platform.sample;
 
-import com.proofpoint.experimental.event.client.InMemoryEventClient;
-import com.proofpoint.experimental.event.client.NullEventClient;
+import com.proofpoint.event.client.InMemoryEventClient;
+import com.proofpoint.event.client.NullEventClient;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 

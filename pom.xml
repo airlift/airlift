@@ -225,6 +225,7 @@
         <module>packaging</module>
         <module>log</module>
         <module>node</module>
+        <module>event</module>
         <module>json</module>
         <module>http-server</module>
         <module>jaxrs</module>
