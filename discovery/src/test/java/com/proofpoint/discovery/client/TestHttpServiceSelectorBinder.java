@@ -1,4 +1,4 @@
-package com.proofpoint.experimental.http.client;
+package com.proofpoint.discovery.client;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
