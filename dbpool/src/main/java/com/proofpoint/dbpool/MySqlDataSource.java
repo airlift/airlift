@@ -18,7 +18,6 @@ package com.proofpoint.dbpool;
 import com.mysql.jdbc.jdbc2.optional.MysqlConnectionPoolDataSource;
 import com.proofpoint.experimental.discovery.client.ServiceDescriptor;
 import com.proofpoint.experimental.discovery.client.ServiceSelector;
-import com.proofpoint.log.Logger;
 
 import javax.sql.PooledConnection;
 import java.sql.SQLException;
@@ -70,7 +69,6 @@ public class MySqlDataSource extends ManagedDataSource
             }
 
             try {
-                log.error("Connecting to %s", jdbcUrl);
                 MysqlConnectionPoolDataSource dataSource = new MysqlConnectionPoolDataSource();
                 dataSource.setUrl(jdbcUrl);
                 dataSource.setConnectTimeout(getLoginTimeout());
@@ -98,6 +96,4 @@ public class MySqlDataSource extends ManagedDataSource
         }
         throw new SQLException(String.format("No mysql servers of type '%s' available in pool '%s'", serviceSelector.getType(), serviceSelector.getPool()));
     }
-
-    private static final Logger log = Logger.get(MySqlDataSource.class);
 }
