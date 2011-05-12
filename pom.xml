@@ -236,6 +236,7 @@
         <module>stats</module>
         <module>units</module>
         <module>dbpool</module>
+        <module>dbpool-no-dep</module>
         <module>rest-server-base</module>
         <module>sample-server</module>
         <module>skeleton-server</module>
