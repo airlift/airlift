@@ -13,7 +13,7 @@ public class Announcement
     private final String pool;
     private final Set<ServiceAnnouncement> services;
 
-    public Announcement(String environment, String nodeId, String location, String pool, Set<ServiceAnnouncement> services)
+    public Announcement(String environment, String nodeId, String pool, String location, Set<ServiceAnnouncement> services)
     {
         Preconditions.checkNotNull(environment, "environment is null");
         Preconditions.checkNotNull(nodeId, "nodeId is null");
