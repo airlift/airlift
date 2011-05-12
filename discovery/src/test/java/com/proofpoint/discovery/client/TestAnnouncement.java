@@ -26,7 +26,7 @@ public class TestAnnouncement
     public void testJsonEncode()
             throws Exception
     {
-        Announcement announcement = new Announcement("environment", "node", "location", ImmutableSet.of(
+        Announcement announcement = new Announcement("environment", "node", "location", "pool", ImmutableSet.of(
                 serviceAnnouncement("foo")
                         .addProperty("http", "http://localhost:8080")
                         .addProperty("jmx", "jmx://localhost:1234")
@@ -47,7 +47,7 @@ public class TestAnnouncement
     @Test
     public void testToString()
     {
-        assertNotNull(new Announcement("environment", "node", "location", ImmutableSet.of(
+        assertNotNull(new Announcement("environment", "node", "location", "pool", ImmutableSet.of(
                 serviceAnnouncement("foo")
                         .addProperty("http", "http://localhost:8080")
                         .addProperty("jmx", "jmx://localhost:1234")
@@ -60,16 +60,16 @@ public class TestAnnouncement
     {
         equivalenceTester()
                 .addEquivalentGroup(
-                        new Announcement("environment", "node-A", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
-                        new Announcement("ENVIRONMENT", "node-A", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
-                        new Announcement("environment", "node-A", "LOCATION", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
-                        new Announcement("environment", "node-A", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("FOO").build()))
+                        new Announcement("environment", "node-A", "location", "pool", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
+                        new Announcement("ENVIRONMENT", "node-A", "location", "pool", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
+                        new Announcement("environment", "node-A", "LOCATION", "pool", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
+                        new Announcement("environment", "node-A", "location", "pool", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("FOO").build()))
                 )
                 .addEquivalentGroup(
-                        new Announcement("environment", "node-B", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
-                        new Announcement("environment-X", "node-B", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
-                        new Announcement("environment", "node-B", "location-X", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
-                        new Announcement("environment", "node-B", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("bar").build()))
+                        new Announcement("environment", "node-B", "location", "pool", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
+                        new Announcement("environment-X", "node-B", "location", "pool", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
+                        new Announcement("environment", "node-B", "location-X", "pool", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
+                        new Announcement("environment", "node-B", "location", "pool", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("bar").build()))
                 )
                 .check();
     }

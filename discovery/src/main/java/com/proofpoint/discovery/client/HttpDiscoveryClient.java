@@ -72,7 +72,7 @@ public class HttpDiscoveryClient implements DiscoveryClient
 
         ListenableFuture<Duration> durationFuture;
         try {
-            Announcement announcement = new Announcement(nodeInfo.getEnvironment(), nodeInfo.getNodeId(), nodeInfo.getLocation(), services);
+            Announcement announcement = new Announcement(nodeInfo.getEnvironment(), nodeInfo.getNodeId(), nodeInfo.getLocation(), nodeInfo.getPool(), services);
             String json = announcementCodec.toJson(announcement);
             ListenableFuture<Response> future = toGuavaListenableFuture(
                     client.preparePut(discoveryServiceURI + "/v1/announcement/" + nodeInfo.getNodeId())

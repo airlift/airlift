@@ -65,7 +65,7 @@ public class InMemoryDiscoveryClient implements DiscoveryClient
 
         ImmutableSet.Builder<ServiceDescriptor> builder = ImmutableSet.builder();
         for (ServiceAnnouncement service : services) {
-            builder.add(new ServiceDescriptor(service.getId(), nodeInfo.getNodeId(), service.getType(), service.getPool(), null, service.getProperties()));
+            builder.add(new ServiceDescriptor(service.getId(), nodeInfo.getNodeId(), service.getType(), nodeInfo.getPool(), null, service.getProperties()));
         }
         announcements.set(builder.build());
         return Futures.immediateCheckedFuture(maxAge);

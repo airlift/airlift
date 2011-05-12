@@ -9,7 +9,6 @@ import org.testng.annotations.Test;
 import java.util.Map;
 
 import static com.proofpoint.discovery.client.ServiceAnnouncement.serviceAnnouncement;
-import static com.proofpoint.discovery.client.ServiceSelectorConfig.DEFAULT_POOL;
 import static com.proofpoint.json.JsonCodec.jsonCodec;
 import static com.proofpoint.json.JsonCodec.mapJsonCodec;
 import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
@@ -24,25 +23,22 @@ public class TestServiceAnnouncement
     @Test
     public void testBuilder()
     {
-        assertAnnouncement(serviceAnnouncement("foo").build(), "foo", DEFAULT_POOL, ImmutableMap.<String, String>of());
-        assertAnnouncement(serviceAnnouncement("foo").setPool("pool").build(), "foo", "pool", ImmutableMap.<String, String>of());
+        assertAnnouncement(serviceAnnouncement("foo").build(), "foo", ImmutableMap.<String, String>of());
+        assertAnnouncement(serviceAnnouncement("foo").build(), "foo", ImmutableMap.<String, String>of());
 
-        assertAnnouncement(serviceAnnouncement("foo").setPool("pool").addProperty("a", "apple").build(),
+        assertAnnouncement(serviceAnnouncement("foo").addProperty("a", "apple").build(),
                 "foo",
-                "pool",
                 ImmutableMap.of("a", "apple"));
 
         assertAnnouncement(serviceAnnouncement("foo").addProperties(ImmutableMap.of("a", "apple", "b", "banana")).build(),
                 "foo",
-                DEFAULT_POOL,
                 ImmutableMap.of("a", "apple", "b", "banana"));
     }
 
-    private void assertAnnouncement(ServiceAnnouncement announcement, String type, String pool, Map<String, String> properties)
+    private void assertAnnouncement(ServiceAnnouncement announcement, String type, Map<String, String> properties)
     {
         assertNotNull(announcement.getId());
         assertEquals(announcement.getType(), type);
-        assertEquals(announcement.getPool(), pool);
         assertEquals(announcement.getProperties(), properties);
     }
 

@@ -87,14 +87,13 @@ public class TestHttpAnnouncementBinder
                     @Override
                     public void configure(Binder binder)
                     {
-                        DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("apple").setPool("apple-pool");
+                        DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("apple");
                     }
                 }
         );
 
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
         ServiceAnnouncement announcement = serviceAnnouncement("apple")
-                .setPool("apple-pool")
                 .addProperty("http", "http://" + nodeInfo.getPublicIp().getHostAddress() + ":4444")
                 .addProperty("https", "https://" + nodeInfo.getPublicIp().getHostAddress() + ":5555")
                 .build();
@@ -137,7 +136,6 @@ public class TestHttpAnnouncementBinder
         Assert.assertEquals(actualAnnouncements.size(), 1);
         ServiceAnnouncement announcement = Iterables.getOnlyElement(actualAnnouncements);
         Assert.assertEquals(announcement.getType(), expected.getType());
-        Assert.assertEquals(announcement.getPool(), expected.getPool());
         Assert.assertEquals(announcement.getProperties(), expected.getProperties());
     }
 

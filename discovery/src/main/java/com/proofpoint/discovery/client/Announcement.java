@@ -10,18 +10,21 @@ public class Announcement
     private final String environment;
     private final String nodeId;
     private final String location;
+    private final String pool;
     private final Set<ServiceAnnouncement> services;
 
-    public Announcement(String environment, String nodeId, String location, Set<ServiceAnnouncement> services)
+    public Announcement(String environment, String nodeId, String location, String pool, Set<ServiceAnnouncement> services)
     {
         Preconditions.checkNotNull(environment, "environment is null");
         Preconditions.checkNotNull(nodeId, "nodeId is null");
         Preconditions.checkNotNull(services, "services is null");
+        Preconditions.checkNotNull(pool, "pool is null");
         Preconditions.checkArgument(!services.isEmpty(), "services is empty");
 
         this.environment = environment;
         this.nodeId = nodeId;
         this.location = location;
+        this.pool = pool;
         this.services = services;
     }
 
@@ -41,6 +44,12 @@ public class Announcement
     public String getLocation()
     {
         return location;
+    }
+
+    @JsonProperty
+    public String getPool()
+    {
+        return pool;
     }
 
     @JsonProperty
@@ -77,12 +86,12 @@ public class Announcement
     @Override
     public String toString()
     {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("Announcement");
-        sb.append("{nodeId=").append(nodeId);
-        sb.append(", location='").append(location).append('\'');
-        sb.append(", services=").append(services);
-        sb.append('}');
-        return sb.toString();
+        return "Announcement{" +
+                "environment='" + environment + '\'' +
+                ", nodeId='" + nodeId + '\'' +
+                ", location='" + location + '\'' +
+                ", pool='" + pool + '\'' +
+                ", services=" + services +
+                '}';
     }
 }

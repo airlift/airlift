@@ -192,7 +192,7 @@ public class TestDiscoveryBinder
         }
     }
 
-    private static final ServiceAnnouncement ANNOUNCEMENT = ServiceAnnouncement.serviceAnnouncement("apple").addProperty("a", "apple").setPool("pool").build();
+    private static final ServiceAnnouncement ANNOUNCEMENT = ServiceAnnouncement.serviceAnnouncement("apple").addProperty("a", "apple").build();
 
     private static class ServiceAnnouncementProvider implements Provider<ServiceAnnouncement>
     {

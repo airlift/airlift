@@ -11,20 +11,14 @@ public class ServiceAnnouncement
 {
     private final UUID id = UUID.randomUUID();
     private final String type;
-    private final String pool;
     private final Map<String, String> properties;
 
-    private ServiceAnnouncement(
-            String type,
-            String pool,
-            Map<String, String> properties)
+    private ServiceAnnouncement(String type, Map<String, String> properties)
     {
         Preconditions.checkNotNull(type, "type is null");
-        Preconditions.checkNotNull(pool, "pool is null");
         Preconditions.checkNotNull(properties, "properties is null");
 
         this.type = type;
-        this.pool = pool;
         this.properties = ImmutableMap.copyOf(properties);
     }
 
@@ -38,12 +32,6 @@ public class ServiceAnnouncement
     public String getType()
     {
         return type;
-    }
-
-    @JsonProperty
-    public String getPool()
-    {
-        return pool;
     }
 
     @JsonProperty
@@ -84,7 +72,6 @@ public class ServiceAnnouncement
         sb.append("ServiceDescriptor");
         sb.append("{id=").append(id);
         sb.append(", type='").append(type).append('\'');
-        sb.append(", pool='").append(pool).append('\'');
         sb.append(", properties=").append(properties);
         sb.append('}');
         return sb.toString();
@@ -98,20 +85,12 @@ public class ServiceAnnouncement
     public static class ServiceAnnouncementBuilder
     {
         private final String type;
-        private String pool = ServiceSelectorConfig.DEFAULT_POOL;
 
         private ImmutableMap.Builder<String, String> properties = ImmutableMap.builder();
 
         private ServiceAnnouncementBuilder(String type)
         {
             this.type = type;
-        }
-
-        public ServiceAnnouncementBuilder setPool(String pool)
-        {
-            Preconditions.checkNotNull(pool, "pool is null");
-            this.pool = pool;
-            return this;
         }
 
         public ServiceAnnouncementBuilder addProperty(String key, String value)
@@ -131,7 +110,7 @@ public class ServiceAnnouncement
 
         public ServiceAnnouncement build()
         {
-            return new ServiceAnnouncement(type, pool, properties.build());
+            return new ServiceAnnouncement(type, properties.build());
         }
     }
 }

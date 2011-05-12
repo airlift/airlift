@@ -2,11 +2,11 @@
     "environment" : "environment",
     "nodeId" : "node",
     "location" : "location",
+    "pool" : "pool",
     "services" : [
         {
             "id" : "244971a5-5eda-4b09-b798-2e29a0971d09",
             "type" : "foo",
-            "pool" : "general",
             "properties" : {
                 "http" : "http://localhost:8080",
                 "jmx" : "jmx://localhost:1234"

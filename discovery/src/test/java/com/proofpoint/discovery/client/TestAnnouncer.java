@@ -3,6 +3,7 @@ package com.proofpoint.discovery.client;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.proofpoint.discovery.client.testing.InMemoryDiscoveryClient;
+import com.proofpoint.node.NodeConfig;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.units.Duration;
 import org.testng.annotations.AfterMethod;
@@ -32,9 +33,9 @@ public class TestAnnouncer
     protected void setUp()
             throws Exception
     {
-        nodeInfo = new NodeInfo("test");
+        nodeInfo = new NodeInfo(new NodeConfig().setEnvironment("test").setPool("pool"));
         discoveryClient = new InMemoryDiscoveryClient(nodeInfo, MAX_AGE);
-        serviceAnnouncement = ServiceAnnouncement.serviceAnnouncement(serviceType.value()).setPool("pool").addProperty("a", "apple").build();
+        serviceAnnouncement = ServiceAnnouncement.serviceAnnouncement(serviceType.value()).addProperty("a", "apple").build();
         announcer = new Announcer(discoveryClient, ImmutableSet.of(serviceAnnouncement));
     }
 
@@ -107,7 +108,7 @@ public class TestAnnouncer
 
         announcer.start();
 
-        ServiceAnnouncement newAnnouncement = ServiceAnnouncement.serviceAnnouncement(serviceType.value()).setPool("pool").addProperty("a", "apple").build();
+        ServiceAnnouncement newAnnouncement = ServiceAnnouncement.serviceAnnouncement(serviceType.value()).addProperty("a", "apple").build();
         announcer.addServiceAnnouncement(newAnnouncement);
 
         Thread.sleep(100);
