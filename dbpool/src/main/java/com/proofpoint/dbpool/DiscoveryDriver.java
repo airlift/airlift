@@ -36,6 +36,7 @@ import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -303,7 +304,7 @@ public class DiscoveryDriver implements Driver
                     type = poolType.get(0);
                 }
 
-                Builder<String, String> builder = ImmutableMap.builder();
+                Map<String, String> builder = new HashMap<String, String>();
                 builder.putAll(properties);
 
                 String queryString = uri.getRawQuery();
@@ -325,7 +326,7 @@ public class DiscoveryDriver implements Driver
                     }
                 }
 
-                this.properties = builder.build();
+                this.properties = ImmutableMap.copyOf(builder);
             }
             catch (Exception e) {
                 throw new RuntimeException(new SQLException(String.format("Invalid connection url '%s'", url)));
