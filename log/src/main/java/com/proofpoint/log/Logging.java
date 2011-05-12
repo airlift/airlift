@@ -25,6 +25,7 @@ import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.status.Status;
 import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.File;
 import java.io.FileReader;
@@ -158,7 +159,7 @@ public class Logging
         for (Handler handler : javaRootLogger.getHandlers()) {
             javaRootLogger.removeHandler(handler);
         }
-        javaRootLogger.addHandler(new JavaLoggingToSlf4JHandler());
+        javaRootLogger.addHandler(new SLF4JBridgeHandler());
     }
 
     public void setLevels(File file)
