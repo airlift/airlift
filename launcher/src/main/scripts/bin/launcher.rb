@@ -249,11 +249,9 @@ install_path = Pathname.new(__FILE__).parent.parent.expand_path
 
 # initialize defaults
 options = {
-        :pid_file => File.join(install_path, 'var', 'run', 'launcher.pid'),
         :jvm_config_path => File.join(install_path, 'etc', 'jvm.config'),
         :config_path => File.join(install_path, 'etc', 'config.properties'),
         :data_dir => install_path,
-        :log_path => File.join(install_path, 'var', 'log', 'launcher.log'),
         :log_levels_path => File.join(install_path, 'etc', 'log.config'),
         :install_path => install_path,
         :system_properties => []
@@ -312,6 +310,14 @@ option_parser = OptionParser.new(:unknown_options_action => :collect) do |opts|
 end
 
 option_parser.parse!(ARGV)
+
+if options[:log_path].nil? then
+  options[:log_path] =  File.join(options[:data_dir], 'var', 'log', 'launcher.log')
+end
+
+if options[:pid_file].nil? then
+  options[:pid_file] =  File.join(options[:data_dir], 'var', 'run', 'launcher.pid')
+end
 
 puts options.map { |k, v| "#{k}=#{v}"}.join("\n") if options[:verbose]
 
