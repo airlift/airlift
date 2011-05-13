@@ -15,6 +15,8 @@
  */
 package com.proofpoint.units;
 
+import com.google.common.base.Preconditions;
+
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,18 +33,10 @@ public final class Duration implements Comparable<Duration>
 
     public Duration(double value, TimeUnit timeUnit)
     {
-        if (Double.isInfinite(value)) {
-            throw new IllegalArgumentException("value is infinite");
-        }
-        if (Double.isNaN(value)) {
-            throw new IllegalArgumentException("value is not a number");
-        }
-        if (value < 0) {
-            throw new IllegalArgumentException("value is negative");
-        }
-        if (timeUnit == null) {
-            throw new NullPointerException("timeUnit is null");
-        }
+        Preconditions.checkArgument(!Double.isInfinite(value), "value is infinite");
+        Preconditions.checkArgument(!Double.isNaN(value), "value is not a number");
+        Preconditions.checkArgument(value >= 0, "value is negative");
+        Preconditions.checkNotNull(timeUnit, "timeUnit is null");
 
         double conversionFactor = millisPerTimeUnit(timeUnit);
         millis = value * conversionFactor;
@@ -172,13 +166,8 @@ public final class Duration implements Comparable<Duration>
     public static Duration valueOf(String duration)
             throws IllegalArgumentException
     {
-        if (duration == null) {
-            throw new NullPointerException("duration is null");
-        }
-
-        if (duration.isEmpty()) {
-            throw new IllegalArgumentException("duration is empty");
-        }
+        Preconditions.checkNotNull(duration, "duration is null");
+        Preconditions.checkArgument(!duration.isEmpty(), "duration is empty");
 
         // Parse the duration string
         Matcher matcher = DURATION_PATTERN.matcher(duration);
