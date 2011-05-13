@@ -1,6 +1,6 @@
 * 0.41
 
- - Removed support for building RPMs
+- Removed support for building RPMs
 - Launcher now requires MRI Ruby 1.9.2+
 - Launcher script now supports arbitrary properties using -Dname=value
 - Launcher script now supports restart command
