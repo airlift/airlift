@@ -15,6 +15,10 @@
 # limitations under the License.
 #
 
+if RUBY_VERSION < "1.9" || RUBY_ENGINE != "ruby" then
+  puts "MRI Ruby 1.9+ is required. Current version is #{RUBY_VERSION} [#{RUBY_PLATFORM}]"
+  exit 99
+end
 
 =begin
 
@@ -151,8 +155,9 @@ def build_cmd_line(options)
 end
 
 def run(options)
-  Dir.chdir(options[:data_dir])
-  exec(build_cmd_line(options))
+  exec(build_cmd_line(options),
+      :chdir=>options[:data_dir]
+  )
 end
 
 def start(options)
@@ -164,15 +169,14 @@ def start(options)
   options[:daemon] = true
   command = build_cmd_line(options)
 
-  puts command
+  puts command if options[:verbose]
   pid = fork do
-    STDOUT.close
-    STDERR.close
-
     Process.setsid
-    Dir.chdir(options[:data_dir])
-
-    exec(command)
+    spawn(command,
+      :chdir=>options[:data_dir],
+      :out=>"/dev/null",
+      :err=>"/dev/null"
+    )
   end
   Process.detach(pid)
 
@@ -180,6 +184,7 @@ def start(options)
 
   return :success, "Started as #{pid}"
 end
+
 
 def stop(options)
   pid_file = Pid.new(options[:pid_file])
