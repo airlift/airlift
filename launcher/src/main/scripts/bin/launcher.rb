@@ -170,14 +170,11 @@ def start(options)
   command = build_cmd_line(options)
 
   puts command if options[:verbose]
-  pid = fork do
-    Process.setsid
-    spawn(command,
-      :chdir=>options[:data_dir],
-      :out=>"/dev/null",
-      :err=>"/dev/null"
-    )
-  end
+  pid = spawn(command,
+    :chdir => options[:data_dir],
+    :out => "/dev/null",
+    :err => "/dev/null"
+  )
   Process.detach(pid)
 
   pid_file.save(pid)
