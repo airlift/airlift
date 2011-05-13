@@ -5,13 +5,13 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>dbpool-no-dep</artifactId>
     <packaging>jar</packaging>
-    <version>0.41-SNAPSHOT</version>
+    <version>0.41</version>
     <name>dbpool-no-dep</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.41-SNAPSHOT</version>
+        <version>0.41</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -19,7 +19,7 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>dbpool</artifactId>
-            <version>0.41-SNAPSHOT</version>
+            <version>0.41</version>
         </dependency>
     </dependencies>
 
