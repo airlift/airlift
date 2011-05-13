@@ -146,7 +146,7 @@ def build_cmd_line(options)
   jar_path = File.join(install_path, 'lib', 'main.jar')
 
   command =<<-CMD
-    java #{jvm_properties} -Duser.home=#{options[:data_dir]} #{options[:system_properties].join(" ")} -Dconfig=#{config_path} #{log_option} #{log_levels_option} -jar #{jar_path}
+    java #{jvm_properties} #{options[:system_properties].join(" ")} -Dconfig=#{config_path} #{log_option} #{log_levels_option} -jar #{jar_path}
   CMD
 
   puts command if options[:verbose]
