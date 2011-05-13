@@ -51,7 +51,7 @@ public class TestAssertions
     {
         try {
             Assertions.assertContains(actual, expected);
-            Assert.fail("Expected AssertionError");
+            Assert.fail("Expected AssertionError"); // TODO: bug... this will throw AssertionError
         }
         catch (AssertionError e) {
             verifyExceptionMessage(e, null, actual, expected);
