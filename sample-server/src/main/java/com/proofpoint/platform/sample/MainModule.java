@@ -22,6 +22,7 @@ import com.proofpoint.discovery.client.DiscoveryBinder;
 import org.weakref.jmx.guice.MBeanModule;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
+import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
 import static com.proofpoint.event.client.EventBinder.eventBinder;
 
 public class MainModule
@@ -41,6 +42,6 @@ public class MainModule
         bindConfig(binder).to(StoreConfig.class);
         eventBinder(binder).bindEventClient(PersonEvent.class);
 
-        DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("person");
+        discoveryBinder(binder).bindHttpAnnouncement("person");
     }
 }
