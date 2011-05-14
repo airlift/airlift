@@ -2,6 +2,7 @@ package com.proofpoint.cassandra;
 
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.testing.ConfigAssertions;
+import com.proofpoint.experimental.units.DataSize;
 import org.testng.annotations.Test;
 
 import javax.validation.constraints.Max;
@@ -22,7 +23,9 @@ public class TestCassandraServerConfig
                                                         .setDirectory(null)
                                                         .setSeeds(null)
                                                         .setRpcPort(9160)
-                                                        .setStoragePort(7000));
+                                                        .setStoragePort(7000)
+                                                        .setInMemoryCompactionLimit(new DataSize(8, DataSize.Unit.MEGABYTE))
+                                                        .setColumnIndexSize(new DataSize(16, DataSize.Unit.KILOBYTE)));
     }
 
     @Test
@@ -34,6 +37,8 @@ public class TestCassandraServerConfig
                 .put("cassandra.seeds", "10.0.0.1")
                 .put("cassandra.rpc-port", "1500")
                 .put("cassandra.storage-port", "1501")
+                .put("cassandra.in-memory-compaction-limit", "64 MB")
+                .put("cassandra.column-index-size", "30 kB")
                 .build();
 
         CassandraServerConfig expected = new CassandraServerConfig()
@@ -41,7 +46,9 @@ public class TestCassandraServerConfig
                 .setDirectory(new File("/tmp"))
                 .setSeeds("10.0.0.1")
                 .setRpcPort(1500)
-                .setStoragePort(1501);
+                .setStoragePort(1501)
+                .setInMemoryCompactionLimit(new DataSize(64, DataSize.Unit.MEGABYTE))
+                .setColumnIndexSize(new DataSize(30, DataSize.Unit.KILOBYTE));
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }
@@ -99,4 +106,23 @@ public class TestCassandraServerConfig
 
         assertFailsValidation(config, "seeds", "may not be null", NotNull.class);
     }
+
+    @Test
+    public void testValidatesNotNullInMemoryCompactionLimit()
+    {
+        CassandraServerConfig config = new CassandraServerConfig()
+                .setInMemoryCompactionLimit(null);
+
+        assertFailsValidation(config, "inMemoryCompactionLimit", "may not be null", NotNull.class);
+    }
+
+    @Test
+    public void testValidatesNotNullColumnIndexSize()
+    {
+        CassandraServerConfig config = new CassandraServerConfig()
+                .setColumnIndexSize(null);
+
+        assertFailsValidation(config, "columnIndexSize", "may not be null", NotNull.class);
+    }
+
 }

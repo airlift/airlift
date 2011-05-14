@@ -4,6 +4,7 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.common.net.InetAddresses;
+import com.proofpoint.experimental.units.DataSize;
 import com.proofpoint.node.NodeInfo;
 import org.apache.cassandra.config.ConfigurationException;
 import org.apache.cassandra.thrift.CassandraDaemon;
@@ -53,11 +54,11 @@ public class EmbeddedCassandraServer
                 .put("rpc_port", config.getRpcPort())
                 .put("endpoint_snitch", "org.apache.cassandra.locator.SimpleSnitch") // TODO: make configurable
                 .put("request_scheduler", "org.apache.cassandra.scheduler.NoScheduler")
-                .put("in_memory_compaction_limit_in_mb", 8)
+                .put("in_memory_compaction_limit_in_mb", (int) config.getInMemoryCompactionLimit().getValue(DataSize.Unit.MEGABYTE))
                 .put("sliced_buffer_size_in_kb", 64)
                 .put("thrift_framed_transport_size_in_mb", 3)
                 .put("thrift_max_message_length_in_mb", 4)
-                .put("column_index_size_in_kb", 16)
+                .put("column_index_size_in_kb", (int) config.getColumnIndexSize().getValue(DataSize.Unit.KILOBYTE))
                 .build();
 
         File configFile = new File(directory, "config.yaml");
