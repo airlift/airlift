@@ -1,0 +1,224 @@
+package com.proofpoint.experimental.units;
+
+import com.google.common.collect.ImmutableList;
+import com.proofpoint.testing.EquivalenceTester;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
+
+import java.util.List;
+
+import static com.proofpoint.experimental.units.DataSize.Unit.BYTE;
+import static com.proofpoint.experimental.units.DataSize.Unit.GIGABYTE;
+import static com.proofpoint.experimental.units.DataSize.Unit.KILOBYTE;
+import static com.proofpoint.experimental.units.DataSize.Unit.MEGABYTE;
+import static com.proofpoint.experimental.units.DataSize.Unit.PETABYTE;
+import static com.proofpoint.experimental.units.DataSize.Unit.TERABYTE;
+import static com.proofpoint.testing.EquivalenceTester.comparisonTester;
+import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
+import static org.testng.Assert.assertEquals;
+
+public class TestDataSize
+{
+    @Test(dataProvider = "conversions")
+    public void testConversions(DataSize.Unit unit, DataSize.Unit toUnit, double factor)
+    {
+        DataSize size = new DataSize(1, unit).convertTo(toUnit);
+        assertEquals(size.getUnit(), toUnit);
+        assertEquals(size.getValue(), factor);
+
+        assertEquals(size.getValue(toUnit), factor);
+    }
+
+    @Test
+    public void testEquivalence()
+    {
+        comparisonTester()
+                .addLesserGroup(group(0))
+                .addGreaterGroup(group(1))
+                .addGreaterGroup(group(123352))
+                .addGreaterGroup(group(Long.MAX_VALUE))
+                .check();
+    }
+
+    private Iterable<DataSize> group(double bytes)
+    {
+        return ImmutableList.of(
+                new DataSize(bytes, BYTE),
+                new DataSize(bytes / 1024, KILOBYTE),
+                new DataSize(bytes / 1024 / 1024, MEGABYTE),
+                new DataSize(bytes / 1024 / 1024 / 1024, GIGABYTE),
+                new DataSize(bytes / 1024 / 1024 / 1024 / 1024, TERABYTE),
+                new DataSize(bytes / 1024 / 1024 / 1024 / 1024 / 1024, PETABYTE)
+        );
+    }
+
+    @Test(dataProvider = "printedValues")
+    public void testToString(String expectedString, double value, DataSize.Unit unit)
+    {
+        assertEquals(new DataSize(value, unit).toString(), expectedString);
+    }
+
+    @Test(dataProvider = "parseableValues")
+    public void testValueOf(String string, double expectedValue, DataSize.Unit expectedUnit)
+    {
+        DataSize size = DataSize.valueOf(string);
+
+        assertEquals(size.getUnit(), expectedUnit);
+        assertEquals(size.getValue(), expectedValue);
+    }
+
+    @Test(expectedExceptions = NullPointerException.class, expectedExceptionsMessageRegExp = "size is null")
+    public void testValueOfRejectsNull()
+    {
+        DataSize.valueOf(null);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "size is empty")
+    public void testValueOfRejectsEmptyString()
+    {
+        DataSize.valueOf("");
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Unknown unit: kg")
+    public void testValueOfRejectsInvalidUnit()
+    {
+        DataSize.valueOf("1.234 kg");
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "size is not a valid.*")
+    public void testValueOfRejectsInvalidNumber()
+    {
+        DataSize.valueOf("1.2x4 B");
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "size is negative")
+    public void testConstructorRejectsNegativeSize()
+    {
+        new DataSize(-1, BYTE);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "size is infinite")
+    public void testConstructorRejectsInfiniteSize()
+    {
+        new DataSize(Double.POSITIVE_INFINITY, BYTE);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "size is infinite")
+    public void testConstructorRejectsInfiniteSize2()
+    {
+        new DataSize(Double.NEGATIVE_INFINITY, BYTE);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "size is not a number")
+    public void testConstructorRejectsNaN()
+    {
+        new DataSize(Double.NaN, BYTE);
+    }
+
+    @Test(expectedExceptions = NullPointerException.class, expectedExceptionsMessageRegExp = "unit is null")
+    public void testConstructorRejectsNullUnit()
+    {
+        new DataSize(1, null);
+    }
+
+
+    @DataProvider(name = "parseableValues", parallel = true)
+    private Object[][] parseableValues()
+    {
+        return new Object[][] {
+                // spaces
+                new Object[] { "1234 B", 1234, BYTE },
+                new Object[] { "1234 kB", 1234, KILOBYTE },
+                new Object[] { "1234 MB", 1234, MEGABYTE },
+                new Object[] { "1234 GB", 1234, GIGABYTE },
+                new Object[] { "1234 TB", 1234, TERABYTE },
+                new Object[] { "1234 PB", 1234, PETABYTE },
+                new Object[] { "1234.567 B", 1234.567, BYTE },
+                new Object[] { "1234.567 kB", 1234.567, KILOBYTE },
+                new Object[] { "1234.567 MB", 1234.567, MEGABYTE },
+                new Object[] { "1234.567 GB", 1234.567, GIGABYTE },
+                new Object[] { "1234.567 TB", 1234.567, TERABYTE },
+                new Object[] { "1234.567 PB", 1234.567, PETABYTE },
+                // no spaces
+                new Object[] { "1234B", 1234, BYTE },
+                new Object[] { "1234kB", 1234, KILOBYTE },
+                new Object[] { "1234MB", 1234, MEGABYTE },
+                new Object[] { "1234GB", 1234, GIGABYTE },
+                new Object[] { "1234TB", 1234, TERABYTE },
+                new Object[] { "1234PB", 1234, PETABYTE },
+                new Object[] { "1234.567B", 1234.567, BYTE },
+                new Object[] { "1234.567kB", 1234.567, KILOBYTE },
+                new Object[] { "1234.567MB", 1234.567, MEGABYTE },
+                new Object[] { "1234.567GB", 1234.567, GIGABYTE },
+                new Object[] { "1234.567TB", 1234.567, TERABYTE },
+                new Object[] { "1234.567PB", 1234.567, PETABYTE }
+        };
+    }
+
+    @DataProvider(name = "printedValues", parallel = true)
+    private Object[][] printedValues()
+    {
+        return new Object[][] {
+                new Object[] { "1234B", 1234, BYTE },
+                new Object[] { "1234kB", 1234, KILOBYTE },
+                new Object[] { "1234MB", 1234, MEGABYTE },
+                new Object[] { "1234GB", 1234, GIGABYTE },
+                new Object[] { "1234TB", 1234, TERABYTE },
+                new Object[] { "1234PB", 1234, PETABYTE },
+                new Object[] { "1234.567B", 1234.567, BYTE },
+                new Object[] { "1234.567kB", 1234.567, KILOBYTE },
+                new Object[] { "1234.567MB", 1234.567, MEGABYTE },
+                new Object[] { "1234.567GB", 1234.567, GIGABYTE },
+                new Object[] { "1234.567TB", 1234.567, TERABYTE },
+                new Object[] { "1234.567PB", 1234.567, PETABYTE }
+        };
+    }
+
+    @DataProvider(name = "conversions", parallel = true)
+    private Object[][] conversions()
+    {
+        return new Object[][] {
+                new Object[] { BYTE, BYTE, 1 },
+                new Object[] { BYTE, KILOBYTE, 1.0 / 1024 },
+                new Object[] { BYTE, MEGABYTE, 1.0 / 1024 / 1024 },
+                new Object[] { BYTE, GIGABYTE, 1.0 / 1024 / 1024 / 1024 },
+                new Object[] { BYTE, TERABYTE, 1.0 / 1024 / 1024 / 1024 / 1024 },
+                new Object[] { BYTE, PETABYTE, 1.0 / 1024 / 1024 / 1024 / 1024 / 1024 },
+
+                new Object[] { KILOBYTE, BYTE, 1024 },
+                new Object[] { KILOBYTE, KILOBYTE, 1 },
+                new Object[] { KILOBYTE, MEGABYTE, 1.0 / 1024 },
+                new Object[] { KILOBYTE, GIGABYTE, 1.0 / 1024 / 1024 },
+                new Object[] { KILOBYTE, TERABYTE, 1.0 / 1024 / 1024 / 1024 },
+                new Object[] { KILOBYTE, PETABYTE, 1.0 / 1024 / 1024 / 1024 / 1024 },
+
+                new Object[] { MEGABYTE, BYTE, 1024 * 1024 },
+                new Object[] { MEGABYTE, KILOBYTE, 1024 },
+                new Object[] { MEGABYTE, MEGABYTE, 1 },
+                new Object[] { MEGABYTE, GIGABYTE, 1.0 / 1024 },
+                new Object[] { MEGABYTE, TERABYTE, 1.0 / 1024 / 1024 },
+                new Object[] { MEGABYTE, PETABYTE, 1.0 / 1024 / 1024 / 1024 },
+
+                new Object[] { GIGABYTE, BYTE, 1024 * 1024 * 1024 },
+                new Object[] { GIGABYTE, KILOBYTE, 1024 * 1024 },
+                new Object[] { GIGABYTE, MEGABYTE, 1024 },
+                new Object[] { GIGABYTE, GIGABYTE, 1 },
+                new Object[] { GIGABYTE, TERABYTE, 1.0 / 1024 },
+                new Object[] { GIGABYTE, PETABYTE, 1.0 / 1024 / 1024 },
+
+                new Object[] { TERABYTE, BYTE, 1024L * 1024 * 1024 * 1024 },
+                new Object[] { TERABYTE, KILOBYTE, 1024 * 1024 * 1024 },
+                new Object[] { TERABYTE, MEGABYTE, 1024 * 1024 },
+                new Object[] { TERABYTE, GIGABYTE, 1024 },
+                new Object[] { TERABYTE, TERABYTE, 1 },
+                new Object[] { TERABYTE, PETABYTE, 1.0 / 1024 },
+
+                new Object[] { PETABYTE, BYTE, 1024L * 1024 * 1024 * 1024 * 1024 },
+                new Object[] { PETABYTE, KILOBYTE, 1024L * 1024 * 1024 * 1024 },
+                new Object[] { PETABYTE, MEGABYTE, 1024 * 1024 * 1024 },
+                new Object[] { PETABYTE, GIGABYTE, 1024 * 1024 },
+                new Object[] { PETABYTE, TERABYTE, 1024 },
+                new Object[] { PETABYTE, PETABYTE, 1 },
+        };
+    }
+}
