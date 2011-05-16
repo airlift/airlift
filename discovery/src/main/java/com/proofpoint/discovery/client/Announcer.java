@@ -108,7 +108,12 @@ public class Announcer
             client.unannounce().checkedGet();
         }
         catch (DiscoveryException e) {
-            log.error(e);
+            if (Throwables.getRootCause(e) instanceof ConnectException) {
+                log.debug(e, "Can not connect to discovery server for unannounce");
+            }
+            else {
+                log.error(e);
+            }
         }
     }
 
