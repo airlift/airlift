@@ -28,7 +28,6 @@ public class ServiceDescriptor
             @JsonProperty("properties") Map<String, String> properties)
     {
         Preconditions.checkNotNull(id, "id is null");
-        Preconditions.checkNotNull(nodeId, "nodeId is null");
         Preconditions.checkNotNull(type, "type is null");
         Preconditions.checkNotNull(pool, "pool is null");
         Preconditions.checkNotNull(properties, "properties is null");
