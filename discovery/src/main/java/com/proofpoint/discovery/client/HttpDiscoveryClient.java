@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static com.proofpoint.discovery.client.DiscoveryFutures.toDiscoveryFuture;
+import static com.proofpoint.json.JsonCodec.jsonCodec;
 import static java.lang.String.format;
 import static javax.ws.rs.core.Response.Status.NOT_MODIFIED;
 import static javax.ws.rs.core.Response.Status.CREATED;
@@ -45,6 +46,12 @@ public class HttpDiscoveryClient implements DiscoveryClient
     private final AsyncHttpClient client;
     private final JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec;
     private final JsonCodec<Announcement> announcementCodec;
+
+    public HttpDiscoveryClient(DiscoveryClientConfig config,
+            NodeInfo nodeInfo)
+    {
+        this(config, nodeInfo, jsonCodec(ServiceDescriptorsRepresentation.class), jsonCodec(Announcement.class));
+    }
 
     @Inject
     public HttpDiscoveryClient(DiscoveryClientConfig config,
@@ -201,7 +208,7 @@ public class HttpDiscoveryClient implements DiscoveryClient
         return DEFAULT_DELAY;
     }
 
-    static class ServiceDescriptorsRepresentation
+    public static class ServiceDescriptorsRepresentation
     {
         private final String environment;
         private final List<ServiceDescriptor> serviceDescriptors;
