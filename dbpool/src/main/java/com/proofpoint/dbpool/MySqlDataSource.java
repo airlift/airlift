@@ -71,8 +71,9 @@ public class MySqlDataSource extends ManagedDataSource
             try {
                 MysqlConnectionPoolDataSource dataSource = new MysqlConnectionPoolDataSource();
                 dataSource.setUrl(jdbcUrl);
-                dataSource.setConnectTimeout(getLoginTimeout());
-                dataSource.setInitialTimeout(getLoginTimeout());
+                // these are in MS *not* seconds like everything else in JDBC
+                dataSource.setConnectTimeout(getMaxConnectionWaitMillis());
+                dataSource.setInitialTimeout(getMaxConnectionWaitMillis());
                 dataSource.setDefaultFetchSize(defaultFetchSize);
 
                 PooledConnection connection = dataSource.getPooledConnection();
