@@ -329,6 +329,7 @@
                                 <manifest>
                                     <mainClass>${main-class}</mainClass>
                                     <addClasspath>true</addClasspath>
+                                    <useUniqueVersions>false</useUniqueVersions>
                                 </manifest>
                                 <manifestEntries>
                                     <Implementation-Version>${project.version}</Implementation-Version>
