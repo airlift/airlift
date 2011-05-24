@@ -2,6 +2,10 @@ package com.proofpoint.cassandra;
 
 import com.proofpoint.configuration.Config;
 import com.proofpoint.experimental.units.DataSize;
+import org.apache.cassandra.dht.ByteOrderedPartitioner;
+import org.apache.cassandra.dht.CollatingOrderPreservingPartitioner;
+import org.apache.cassandra.dht.OrderPreservingPartitioner;
+import org.apache.cassandra.dht.RandomPartitioner;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -17,6 +21,7 @@ public class CassandraServerConfig
     private String seeds;
     private DataSize inMemoryCompactionLimit = new DataSize(8, DataSize.Unit.MEGABYTE);
     private DataSize columnIndexSize = new DataSize(16, DataSize.Unit.KILOBYTE);
+    private Partitioner partitioner = Partitioner.RANDOM;
 
 
     @Config("cassandra.cluster-name")
@@ -31,7 +36,6 @@ public class CassandraServerConfig
     {
         return clusterName;
     }
-
 
     @Config("cassandra.directory")
     public CassandraServerConfig setDirectory(File directory)
@@ -113,4 +117,40 @@ public class CassandraServerConfig
     {
         return columnIndexSize;
     }
+
+
+    @Config("cassandra.partitioner")
+    public CassandraServerConfig setPartitioner(Partitioner partitioner)
+    {
+        this.partitioner = partitioner;
+        return this;
+    }
+
+    @NotNull
+    public Partitioner getPartitioner()
+    {
+        return partitioner;
+    }
+
+    public static enum Partitioner
+    {
+        RANDOM(RandomPartitioner.class),
+        ORDER_PRESERVING(OrderPreservingPartitioner.class),
+        BYTE_ORDERED(ByteOrderedPartitioner.class),
+        COLLATING_ORDER_PRESERVING(CollatingOrderPreservingPartitioner.class);
+
+        private Class clazz;
+
+        private Partitioner(Class clazz)
+        {
+
+            this.clazz = clazz;
+        }
+
+        public Class getClazz()
+        {
+            return clazz;
+        }
+    }
+
 }
