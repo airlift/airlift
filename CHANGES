@@ -1,3 +1,12 @@
+* 0.42
+
+- [Experimental] Embedded cassandra server and testing utilities
+- [Experimental] Added DataSize (similar to Duration)
+- [Experimental] Added ValidationAssertions.assertValidates and assertFailsValidation
+- [Bug] Discovery client fails when consuming static announcements
+- [Bug] MySQL connection timeouts using the wrong unit (ms vs s) 
+- [Bug] Jar manifest using the wrong file names when building snapshot versions
+
 * 0.41
 
 - Removed support for building RPMs
