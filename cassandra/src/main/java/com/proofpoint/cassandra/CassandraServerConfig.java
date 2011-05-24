@@ -17,6 +17,7 @@ public class CassandraServerConfig
     private String seeds;
     private DataSize inMemoryCompactionLimit = new DataSize(8, DataSize.Unit.MEGABYTE);
     private DataSize columnIndexSize = new DataSize(16, DataSize.Unit.KILOBYTE);
+    private String partitioner = "org.apache.cassandra.dht.RandomPartitioner";
 
 
     @Config("cassandra.cluster-name")
@@ -31,7 +32,6 @@ public class CassandraServerConfig
     {
         return clusterName;
     }
-
 
     @Config("cassandra.directory")
     public CassandraServerConfig setDirectory(File directory)
@@ -113,4 +113,19 @@ public class CassandraServerConfig
     {
         return columnIndexSize;
     }
+
+
+    @Config("cassandra.partitioner")
+    public CassandraServerConfig setPartitioner(String partitioner)
+    {
+        this.partitioner = partitioner;
+        return this;
+    }
+
+    @NotNull
+    public String getPartitioner()
+    {
+        return partitioner;
+    }
+
 }

@@ -40,7 +40,7 @@ public class EmbeddedCassandraServer
                 .put("cluster_name", config.getClusterName())
                 .put("auto_bootstrap", "false")
                 .put("hinted_handoff_enabled", "true")
-                .put("partitioner", "org.apache.cassandra.dht.RandomPartitioner") // TODO: make configurable
+                .put("partitioner", config.getPartitioner())
                 .put("data_file_directories", asList(new File(directory, "data").getAbsolutePath()))
                 .put("commitlog_directory", new File(directory, "commitlog").getAbsolutePath())
                 .put("saved_caches_directory", new File(directory, "saved_caches").getAbsolutePath())

@@ -25,7 +25,8 @@ public class TestCassandraServerConfig
                                                         .setRpcPort(9160)
                                                         .setStoragePort(7000)
                                                         .setInMemoryCompactionLimit(new DataSize(8, DataSize.Unit.MEGABYTE))
-                                                        .setColumnIndexSize(new DataSize(16, DataSize.Unit.KILOBYTE)));
+                                                        .setColumnIndexSize(new DataSize(16, DataSize.Unit.KILOBYTE))
+                                                        .setPartitioner("org.apache.cassandra.dht.RandomPartitioner"));
     }
 
     @Test
@@ -39,6 +40,7 @@ public class TestCassandraServerConfig
                 .put("cassandra.storage-port", "1501")
                 .put("cassandra.in-memory-compaction-limit", "64 MB")
                 .put("cassandra.column-index-size", "30 kB")
+                .put("cassandra.partitioner", "org.apache.cassandra.dht.OrderPreservingPartitioner")
                 .build();
 
         CassandraServerConfig expected = new CassandraServerConfig()
@@ -48,7 +50,8 @@ public class TestCassandraServerConfig
                 .setRpcPort(1500)
                 .setStoragePort(1501)
                 .setInMemoryCompactionLimit(new DataSize(64, DataSize.Unit.MEGABYTE))
-                .setColumnIndexSize(new DataSize(30, DataSize.Unit.KILOBYTE));
+                .setColumnIndexSize(new DataSize(30, DataSize.Unit.KILOBYTE))
+                .setPartitioner("org.apache.cassandra.dht.OrderPreservingPartitioner");
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }
@@ -123,6 +126,15 @@ public class TestCassandraServerConfig
                 .setColumnIndexSize(null);
 
         assertFailsValidation(config, "columnIndexSize", "may not be null", NotNull.class);
+    }
+
+    @Test
+    public void testValidatesNotNullPartitioner()
+    {
+        CassandraServerConfig config = new CassandraServerConfig()
+                .setPartitioner(null);
+
+        assertFailsValidation(config, "partitioner", "may not be null", NotNull.class);
     }
 
 }
