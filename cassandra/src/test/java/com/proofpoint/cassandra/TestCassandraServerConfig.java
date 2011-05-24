@@ -26,7 +26,7 @@ public class TestCassandraServerConfig
                                                         .setStoragePort(7000)
                                                         .setInMemoryCompactionLimit(new DataSize(8, DataSize.Unit.MEGABYTE))
                                                         .setColumnIndexSize(new DataSize(16, DataSize.Unit.KILOBYTE))
-                                                        .setPartitioner("org.apache.cassandra.dht.RandomPartitioner"));
+                                                        .setPartitioner(CassandraServerConfig.Partitioner.RANDOM));
     }
 
     @Test
@@ -40,7 +40,7 @@ public class TestCassandraServerConfig
                 .put("cassandra.storage-port", "1501")
                 .put("cassandra.in-memory-compaction-limit", "64 MB")
                 .put("cassandra.column-index-size", "30 kB")
-                .put("cassandra.partitioner", "org.apache.cassandra.dht.OrderPreservingPartitioner")
+                .put("cassandra.partitioner", "ORDER_PRESERVING")
                 .build();
 
         CassandraServerConfig expected = new CassandraServerConfig()
@@ -51,7 +51,7 @@ public class TestCassandraServerConfig
                 .setStoragePort(1501)
                 .setInMemoryCompactionLimit(new DataSize(64, DataSize.Unit.MEGABYTE))
                 .setColumnIndexSize(new DataSize(30, DataSize.Unit.KILOBYTE))
-                .setPartitioner("org.apache.cassandra.dht.OrderPreservingPartitioner");
+                .setPartitioner(CassandraServerConfig.Partitioner.ORDER_PRESERVING);
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }
