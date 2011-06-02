@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.proofpoint.platform</groupId>
+    <artifactId>rack</artifactId>
+    <packaging>jar</packaging>
+    <version>0.43-SNAPSHOT</version>
+    <name>rack</name>
+
+    <parent>
+        <groupId>com.proofpoint.platform</groupId>
+        <artifactId>platform</artifactId>
+        <version>0.43-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.jruby</groupId>
+            <artifactId>jruby-complete</artifactId>
+            <version>1.6.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
+            <version>3.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>http-server</artifactId>
+            <version>0.43-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.rubygems</groupId>
+            <artifactId>rack</artifactId>
+            <version>1.3.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>bootstrap</artifactId>
+            <version>0.43-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+            <version>2.5</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>testing</artifactId>
+            <version>0.43-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>1.8.5</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.rubygems</groupId>
+            <artifactId>sinatra</artifactId>
+            <version>1.2.6</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.ning</groupId>
+            <artifactId>async-http-client</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>${basedir}/src/main/ruby</directory>
+                <includes>
+                    <include>**/*.rb</include>
+                </includes>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+
