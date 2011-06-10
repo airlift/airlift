@@ -15,6 +15,7 @@
  */
 package com.proofpoint.rack;
 
+import com.google.common.collect.ImmutableList;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -27,6 +28,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Random;
 
 import static org.mockito.Mockito.mock;
@@ -130,6 +132,7 @@ public class TestRackServlet
         when(request.getQueryString()).thenReturn(queryString);
         when(request.getServerName()).thenReturn("TestServer");
         when(request.getServerPort()).thenReturn(new Random().nextInt());
+        when(request.getHeaderNames()).thenReturn(Collections.enumeration(ImmutableList.of()));
 
         final StringBuilder outputBuilder = new StringBuilder();
         ServletOutputStream outputStream = new ServletOutputStream()

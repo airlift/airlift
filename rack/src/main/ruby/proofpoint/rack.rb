@@ -54,20 +54,8 @@ module Proofpoint
         rack_env['CONTENT_TYPE'] = servlet_request.content_type unless servlet_request.content_type.nil?
         rack_env['CONTENT_LENGTH']  = servlet_request.content_length unless servlet_request.content_length.nil?
 
-        # header_names is an Enumeration, so this sucks, but it's the lesser of all evils imho.
-        request_header_names = servlet_request.header_names
-        unless request_header_names.nil?
-          while request_header_names.has_more_elements
-            header_name = request_header_names.next_element
-            unless header_name =~ /^Content-(Type|Length)$/i
-              header_values = servlet_request.get_headers(header_name)
-              header_value_array = Array.new
-              while header_values.has_more_elements
-                header_value_array.push(header_values.next_element)
-              end
-              rack_env["HTTP_#{header_name.upcase.gsub(/-/,'_')}"] = header_value_array.join(',')
-            end
-          end
+        servlet_request.header_names.select { |name| name !~ /^Content-(Type|Length)$/i }.each do |name|
+            rack_env["HTTP_#{name.upcase.gsub(/-/,'_')}"] = servlet_request.get_headers(name).to_a.join(',')
         end
 
         response_status, response_headers, response_body = @app.call(rack_env)
