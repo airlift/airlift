@@ -25,6 +25,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.proofpoint.discovery.client.DiscoveryClient.DEFAULT_DELAY;
 import static com.proofpoint.discovery.client.DiscoveryFutures.toDiscoveryFuture;
 
 public class Announcer
@@ -139,22 +140,23 @@ public class Announcer
             @Override
             public void run()
             {
-                try {
-                    if (currentJob.compareAndSet(jobId, jobId + 1)) {
-                        Duration duration = future.checkedGet();
+                if (currentJob.compareAndSet(jobId, jobId + 1)) {
+                    Duration duration = DEFAULT_DELAY;
+                    try {
+                        duration = future.checkedGet();
+                    }
+                    catch (DiscoveryException e) {
+                        if (Throwables.getRootCause(e) instanceof ConnectException) {
+                            log.debug(e, "Can not connect to discovery server");
+                        }
+                        else {
+                            log.error(e);
+                        }
+                    }
+                    finally {
                         scheduleAnnouncement(duration);
+                        isDone.set(null);
                     }
-                }
-                catch (DiscoveryException e) {
-                    if (Throwables.getRootCause(e) instanceof ConnectException) {
-                        log.debug(e, "Can not connect to discovery server");
-                    }
-                    else {
-                        log.error(e);
-                    }
-                }
-                finally {
-                    isDone.set(null);
                 }
             }
         }, executor);

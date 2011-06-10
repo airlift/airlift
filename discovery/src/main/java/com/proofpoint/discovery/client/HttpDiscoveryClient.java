@@ -33,13 +33,10 @@ import static com.proofpoint.discovery.client.DiscoveryFutures.toDiscoveryFuture
 import static com.proofpoint.json.JsonCodec.jsonCodec;
 import static java.lang.String.format;
 import static javax.ws.rs.core.Response.Status.NOT_MODIFIED;
-import static javax.ws.rs.core.Response.Status.CREATED;
-import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
 
 public class HttpDiscoveryClient implements DiscoveryClient
 {
-
     private final String environment;
     private final URI discoveryServiceURI;
     private final NodeInfo nodeInfo;
@@ -94,7 +91,7 @@ public class HttpDiscoveryClient implements DiscoveryClient
                 {
                     Duration maxAge = extractMaxAge(response);
                     int statusCode = response.getStatusCode();
-                    if (OK.getStatusCode() != statusCode && CREATED.getStatusCode() != statusCode && NO_CONTENT.getStatusCode() != statusCode) {
+                    if (!isSuccess(statusCode)) {
                         throw new DiscoveryException(String.format("Announcement failed with status code %s", statusCode));
                     }
 
@@ -108,6 +105,11 @@ public class HttpDiscoveryClient implements DiscoveryClient
         }
 
         return toDiscoveryFuture("Announcement", durationFuture);
+    }
+
+    private boolean isSuccess(int statusCode)
+    {
+        return statusCode / 100 == 2;
     }
 
     @Override
