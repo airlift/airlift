@@ -220,6 +220,7 @@
     </build>
 
     <modules>
+        <module>rack</module>
         <module>testing</module>
         <module>launcher</module>
         <module>packaging</module>
