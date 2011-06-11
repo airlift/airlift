@@ -15,7 +15,13 @@
  */
 package com.proofpoint.rack;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.OutputStreamAppender;
 import com.google.common.collect.ImmutableList;
+import com.proofpoint.testing.Assertions;
+import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -27,7 +33,9 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Collections;
 import java.util.Random;
 
@@ -48,12 +56,34 @@ public class TestRackServlet
     }
 
     @Test
-    public void testSimpleRequest()
+    public void testSimpleRequestWithLogging()
             throws IOException, ServletException
     {
         String expectedMessage = "FooBarBaz";
 
+        OutputStream stream = new ByteArrayOutputStream();
+
+        ch.qos.logback.classic.Logger rackLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("helloworldsinatra.rb:HEAD /name-echo");
+        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+
+        PatternLayoutEncoder encoder = new PatternLayoutEncoder();
+        encoder.setPattern("%m%n");
+        encoder.setContext(context);
+        encoder.start();
+
+        OutputStreamAppender<ILoggingEvent> streamAppender = new OutputStreamAppender<ILoggingEvent>();
+        streamAppender.setContext(context);
+        streamAppender.setEncoder(encoder);
+        streamAppender.setOutputStream(stream); // needs to happen after setEncoder()
+        streamAppender.start();
+
+        rackLogger.addAppender(streamAppender);
+
         assertEquals(performRequest("name=" + expectedMessage, "/name-echo", "", "GET"), expectedMessage);
+
+        streamAppender.stop();
+
+        Assertions.assertContains(stream.toString(), "name-echo was called with " + expectedMessage);
     }
 
     @Test

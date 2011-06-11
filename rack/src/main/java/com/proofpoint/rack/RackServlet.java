@@ -17,7 +17,6 @@ package com.proofpoint.rack;
 
 import com.google.common.base.Preconditions;
 import com.google.common.io.Resources;
-import com.proofpoint.log.Logger;
 import org.jruby.Ruby;
 import org.jruby.RubyInstanceConfig;
 import org.jruby.RubyObjectAdapter;
@@ -46,8 +45,6 @@ public class RackServlet
     private final IRubyObject rackApplication;
     private final Ruby runtime;
     private final RubyObjectAdapter adapter = JavaEmbedUtils.newObjectAdapter();
-    //Passed into the underlying application that rack starts up.
-    private static final Logger rackApplicationLogger = Logger.get(RackServlet.class.toString() + " Rack Application");
 
     @Inject
     public RackServlet(RackServletConfig config)
@@ -70,8 +67,7 @@ public class RackServlet
         URL rackScriptLocation = Resources.getResource(config.getRackConfigPath());
 
         rackApplication = adapter.callMethod(builder, "build", new IRubyObject[] {
-                javaToRuby(runtime, rackScriptLocation.getPath()),
-                javaToRuby(runtime, rackApplicationLogger)
+                javaToRuby(runtime, rackScriptLocation.getPath())
         });
     }
 

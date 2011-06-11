@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+require 'java'
 require 'rubygems'
 require 'rack'
 require 'rack/rewindable_input'
@@ -21,16 +21,24 @@ require 'forwardable'
 module Proofpoint
   module RackServer
     class Builder
-      def build(filename, logger)
+      def build(filename)
         rack_app, options_ignored = Rack::Builder.parse_file filename
-        return ServletAdapter.new(rack_app, logger)
+        # Sets up the logger for rails apps
+        if rack_app.respond_to? :configure
+          begin
+            rack_app.configure { Rails.logger = RackLogger.new }
+          rescue
+            # Ignore exceptions here, if we can't set the logger like this, it isn't rails, and therefore it will properly use the rack logger.
+          end
+        end
+        return ServletAdapter.new(rack_app)
       end
     end
 
     class ServletAdapter
-      def initialize(app, logger)
+      def initialize(app)
         @app = app
-        @logger = RackLogger.new(logger)
+        @logger = RackLogger.new
         @errors = java::lang::System::err.to_io # TODO: write to logger
       end
 
@@ -54,8 +62,8 @@ module Proofpoint
         rack_env['CONTENT_TYPE'] = servlet_request.content_type unless servlet_request.content_type.nil?
         rack_env['CONTENT_LENGTH']  = servlet_request.content_length unless servlet_request.content_length.nil?
 
-        servlet_request.header_names.select { |name| name !~ /^Content-(Type|Length)$/i }.each do |name|
-            rack_env["HTTP_#{name.upcase.gsub(/-/,'_')}"] = servlet_request.get_headers(name).to_a.join(',')
+        servlet_request.header_names.reject { |name| name =~ /^Content-(Type|Length)$/i }.each do |name|
+          rack_env["HTTP_#{name.upcase.gsub(/-/,'_')}"] = servlet_request.get_headers(name).to_a.join(',')
         end
 
         response_status, response_headers, response_body = @app.call(rack_env)
@@ -68,27 +76,43 @@ module Proofpoint
             when /^Content-Length$/i
               servlet_response.content_length = header_value.to_i
             else
-              header_value.to_s.split("\n").each { |split_value| servlet_response.add_header(header_name.to_s, split_value) }
+              servlet_response.add_header(header_name.to_s, header_value.to_s)
           end
         end
 
         response_stream = servlet_response.output_stream
         response_body.each { |part| response_stream.write(part.to_java_bytes) }
-        response_stream.flush
+        return response_stream.flush
       end
     end
 
     class RackLogger
-
       extend Forwardable
 
-      def_delegators :@logger,:debug,:info,:warn,:error
+      def_delegators :get_logger, :debug, :info, :warn, :error
+      alias_method :fatal, :error
 
-      alias_method :fatal,:error
-
-      def initialize(logger)
-        @logger = logger
+      def get_logger
+        call_stack = caller(0)
+        this_file = call_stack.first.split(':').first
+        caller_call = call_stack.reject { |call| call =~ /#{this_file}\:|Forwardable/i }.first
+        return com::proofpoint::log.Logger.get(caller_call.split(':').first.split('/').last + ":" + caller_call.split('`').last.chomp("'"))
       end
+
+      def debug?
+        return get_logger.is_debug_enabled
+      end
+
+      def info?
+        return get_logger.is_info_enabled
+      end
+
+      def warn?
+        return true
+      end
+      alias_method :error?, :warn?
+      alias_method :fatal?, :error?
+
     end
   end
 end

@@ -16,6 +16,8 @@
 require 'sinatra'
 
 get "/name-echo" do
+  logger = request.logger
+  logger.debug "name-echo was called with #{params[:name]}"
   return "#{params[:name]}"
 end
 
