@@ -22,7 +22,7 @@ import javax.validation.constraints.NotNull;
 
 public class RackServletConfig
 {
-    //Finds the one and only config.ru if you only have one, otherwise, you gotta set this.
+    //Defaults to assuming config.ru is in the root.
     private String rackConfigPath = "config.ru";
 
     @NotNull

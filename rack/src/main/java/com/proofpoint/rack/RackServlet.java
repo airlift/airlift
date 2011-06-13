@@ -31,6 +31,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -64,10 +65,12 @@ public class RackServlet
 
         IRubyObject builder = runtime.evalScriptlet("Proofpoint::RackServer::Builder.new");
 
-        URL rackScriptLocation = Resources.getResource(config.getRackConfigPath());
+        String rackScriptLocation = config.getRackConfigPath();
+
+        Preconditions.checkArgument(new File(rackScriptLocation).exists(), "Could not find rack script specified by [" + rackScriptLocation + "]");
 
         rackApplication = adapter.callMethod(builder, "build", new IRubyObject[] {
-                javaToRuby(runtime, rackScriptLocation.getPath())
+                javaToRuby(runtime, rackScriptLocation)
         });
     }
 

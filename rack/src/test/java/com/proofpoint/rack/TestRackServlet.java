@@ -52,7 +52,7 @@ public class TestRackServlet
     public void setup()
             throws IOException
     {
-        servlet = new RackServlet(new RackServletConfig());
+        servlet = new RackServlet(new RackServletConfig().setRackConfigPath("src/test/resources/config.ru"));
     }
 
     @Test
