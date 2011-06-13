@@ -18,6 +18,7 @@ package com.proofpoint.rack;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.testing.ConfigAssertions;
+import com.proofpoint.testing.Assertions;
 import org.testng.annotations.Test;
 
 import javax.validation.ConstraintViolation;
@@ -27,8 +28,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import static org.testng.AssertJUnit.assertEquals;
 
 public class TestRackServletConfig
 {
@@ -42,13 +41,9 @@ public class TestRackServletConfig
     @Test
     public void testExplicitPropertyMappings()
     {
-        Map<String, String> properties
-                = ImmutableMap.<String, String>builder()
-                .put("rackserver.rack-config-path", "rack-configuration.ru")
-                .build();
+        Map<String, String> properties = ImmutableMap.of("rackserver.rack-config-path", "rack-configuration.ru");
 
-        RackServletConfig expected = new RackServletConfig()
-                .setRackConfigPath("rack-configuration.ru");
+        RackServletConfig expected = new RackServletConfig().setRackConfigPath("rack-configuration.ru");
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }
@@ -56,8 +51,9 @@ public class TestRackServletConfig
     @Test
     public void testValidConfig()
     {
-        RackServletConfig config = new RackServletConfig();
-        assertEquals(0, getBeanValidationErrors(config).size());
+        RackServletConfig config = new RackServletConfig().setRackConfigPath(null);
+        Assertions.assertEqualsIgnoreOrder(getBeanValidationErrors(config), ImmutableList.of("rackConfigPath may not be null"));
+
     }
 
     private static List<String> getBeanValidationErrors(RackServletConfig config)
