@@ -45,7 +45,7 @@ public class TestRackModule
                 new TestingNodeModule(),
                 new ConfigurationModule(new ConfigurationFactory(
                         ImmutableMap.<String, String>builder()
-                                .put("rackserver.rack_config_path", "src/test/resources/config.ru")
+                                .put("rackserver.rack-config-path", "src/test/resources/config.ru")
                                 .build()
                 )));
 

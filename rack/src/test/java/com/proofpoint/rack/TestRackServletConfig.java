@@ -44,7 +44,7 @@ public class TestRackServletConfig
     {
         Map<String, String> properties
                 = ImmutableMap.<String, String>builder()
-                .put("rackserver.rack_config_path", "rack-configuration.ru")
+                .put("rackserver.rack-config-path", "rack-configuration.ru")
                 .build();
 
         RackServletConfig expected = new RackServletConfig()
