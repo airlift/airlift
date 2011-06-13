@@ -77,7 +77,11 @@ public class RackServlet
     private RubyInstanceConfig createRuntimeConfig()
     {
         RubyInstanceConfig config = new RubyInstanceConfig();
-        config.setClassCache(JavaEmbedUtils.createClassCache(Thread.currentThread().getContextClassLoader()));
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        if (classLoader == null) {
+            classLoader = ClassLoader.getSystemClassLoader();
+        }
+        config.setClassCache(JavaEmbedUtils.createClassCache(classLoader));
 
         URL resource = RubyInstanceConfig.class.getResource("/META-INF/jruby.home");
         if (resource != null && resource.getProtocol().equals("jar")) {
