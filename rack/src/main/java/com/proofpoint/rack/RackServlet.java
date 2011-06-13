@@ -47,6 +47,9 @@ public class RackServlet
     private final Ruby runtime;
     private final RubyObjectAdapter adapter = JavaEmbedUtils.newObjectAdapter();
 
+    //Servlet config to support the convention of getServletConfig/init
+    private ServletConfig servletConfig = null;
+
     @Inject
     public RackServlet(RackServletConfig config)
             throws IOException
@@ -100,6 +103,7 @@ public class RackServlet
     public void init(ServletConfig servletConfig)
             throws ServletException
     {
+        this.servletConfig = servletConfig;
     }
 
     @Override
@@ -122,18 +126,17 @@ public class RackServlet
     @Override
     public ServletConfig getServletConfig()
     {
-        throw new UnsupportedOperationException();
+        return servletConfig;
     }
 
     @Override
     public String getServletInfo()
     {
-        throw new UnsupportedOperationException();
+        return "RackServlet, a servlet for running rack applications.  Copyright 2010 Proofpoint, Inc.";
     }
 
     @Override
     public void destroy()
     {
-        throw new UnsupportedOperationException();
     }
 }
