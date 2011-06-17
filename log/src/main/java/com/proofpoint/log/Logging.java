@@ -91,8 +91,8 @@ public class Logging
 
     private void redirectStdStreamsToSlf4j()
     {
-        System.setOut(new PrintStream(new LoggingOutputStream(LoggerFactory.getLogger("stdout"))));
-        System.setErr(new PrintStream(new LoggingOutputStream(LoggerFactory.getLogger("stderr"))));
+        System.setOut(new PrintStream(new LoggingOutputStream(LoggerFactory.getLogger("stdout")), true));
+        System.setErr(new PrintStream(new LoggingOutputStream(LoggerFactory.getLogger("stderr")), true));
     }
 
     private void redirectSlf4jTo(OutputStream stream)
