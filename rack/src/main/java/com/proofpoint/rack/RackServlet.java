@@ -16,6 +16,7 @@
 package com.proofpoint.rack;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import org.jruby.Ruby;
 import org.jruby.RubyInstanceConfig;
@@ -36,7 +37,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
 
 import static org.jruby.javasupport.JavaEmbedUtils.javaToRuby;
 
@@ -56,7 +56,12 @@ public class RackServlet
     {
         Preconditions.checkNotNull(config);
 
-        runtime = JavaEmbedUtils.initialize(new ArrayList(), createRuntimeConfig());
+        File rackScriptFile = new File(config.getRackConfigPath());
+
+        Preconditions.checkArgument(rackScriptFile.exists(), "Could not find rack script specified by [" + config.getRackConfigPath()
+                + "] and resolved to [" + rackScriptFile.getAbsolutePath() + "]");
+
+        runtime = JavaEmbedUtils.initialize(ImmutableList.of(rackScriptFile.getParentFile().getCanonicalPath()), createRuntimeConfig());
 
         InputStream stream = Resources.getResource("proofpoint/rack.rb").openStream();
         try {
@@ -68,12 +73,8 @@ public class RackServlet
 
         IRubyObject builder = runtime.evalScriptlet("Proofpoint::RackServer::Builder.new");
 
-        String rackScriptLocation = config.getRackConfigPath();
-
-        Preconditions.checkArgument(new File(rackScriptLocation).exists(), "Could not find rack script specified by [" + rackScriptLocation + "]");
-
         rackApplication = adapter.callMethod(builder, "build", new IRubyObject[] {
-                javaToRuby(runtime, rackScriptLocation)
+                javaToRuby(runtime, rackScriptFile.getCanonicalPath())
         });
     }
 

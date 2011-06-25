@@ -32,7 +32,7 @@ public class RackServletConfig
     }
 
     @Config("rackserver.rack-config-path")
-    @ConfigDescription("A path segment to the rack application configuration file, uses Resources, so a partial path that is unique is valid (e.g. proofpoint/app/config.ru)")
+    @ConfigDescription("A path to the rack application configuration file")
     public RackServletConfig setRackConfigPath(String rackConfigPath)
     {
         this.rackConfigPath = rackConfigPath;
