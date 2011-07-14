@@ -73,6 +73,8 @@ public class TestCassandraServerSetup
         String cfName = "abc";
         String key = "12345";
 
+        setupCluster();
+
         // create keyspace
         assertNull(cluster.describeKeyspace(ksName));
         cluster.addKeyspace(new ThriftKsDef(ksName));
