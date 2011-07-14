@@ -23,6 +23,7 @@ public class CassandraServerSetup
     private static File tempDir;
     private static EmbeddedCassandraServer server;
     private static int rpcPort;
+    private static NodeInfo nodeInfo;
 
     public static void tryInitialize()
             throws IOException, TTransportException, ConfigurationException, InterruptedException
@@ -39,7 +40,7 @@ public class CassandraServerSetup
                     .setClusterName("megacluster")
                     .setDirectory(tempDir);
 
-            NodeInfo nodeInfo = new NodeInfo("testing");
+            nodeInfo = new NodeInfo("testing");
 
             server = new EmbeddedCassandraServer(config, nodeInfo);
             server.start();
@@ -63,7 +64,7 @@ public class CassandraServerSetup
     public static CassandraServerInfo getServerInfo()
     {
         Preconditions.checkState(initialized.get(), "Embedded Cassandra instance not yet initialized. Make sure to call tryInitialize() before calling this method.");
-        return new CassandraServerInfo(rpcPort);
+        return new CassandraServerInfo(nodeInfo.getBindIp(), rpcPort);
     }
 
     private static int findUnusedPort()
