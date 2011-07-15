@@ -1,33 +1,121 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>platform</artifactId>
         <groupId>com.proofpoint.platform</groupId>
         <version>0.44-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>sample-server-archetype-builder</artifactId>
 
+    <properties>
+        <server-name>sample-server</server-name>
+    </properties>
+
     <build>
         <plugins>
+            <!-- This all super lame but works around a ton of bugs/limitations in the archetype plugin -->
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-archetype-plugin</artifactId>
-                <version>2.1-pp-11</version>
-                <configuration>
-                    <archetypeExcludedExtentions>**/*.iml</archetypeExcludedExtentions>
-                    <!-- need to override the default output directory (target/generated-sources/archetype)
-                         because IDEA likes to load everything under generated-sources into the classpath. -->
-                    <outputDirectory>${project.build.directory}/archetype-sources</outputDirectory>
-                    <sourceDirectory>${project.parent.basedir}/sample-server</sourceDirectory>
-                </configuration>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.6</version>
                 <executions>
                     <execution>
-                        <id>create-archetype</id>
+                        <id>make-clean-copy-of-project</id>
+                        <phase>generate-sources</phase>
+                        <configuration>
+                            <target>
+                                <mkdir dir="${project.build.directory}/project"/>
+
+                                <copy todir="${project.build.directory}/project">
+                                    <fileset dir="${project.basedir}/../${server-name}">
+                                        <include name="src/**"/>
+                                        <include name="etc/**"/>
+                                        <include name="pom.xml"/>
+                                        <include name=".gitignore"/>
+                                        <include name="README.txt"/>
+                                    </fileset>
+                                </copy>
+
+                                <delete dir="${project.build.directory}/project-copy"/>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-invoker-plugin</artifactId>
+                <version>1.5</version>
+                <executions>
+                    <execution>
+                        <id>generate-archetype</id>
                         <phase>generate-sources</phase>
                         <goals>
-                            <goal>create-from-project</goal>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <pomIncludes>
+                                <pomInclude>pom.xml</pomInclude>
+                            </pomIncludes>
+
+                            <projectsDirectory>${project.build.directory}/project</projectsDirectory>
+
+                            <!-- LAME: we have to copy again to avoid the interpolated-pom.xml file appearing in the archetype -->
+                            <cloneProjectsTo>${project.build.directory}/project-copy</cloneProjectsTo>
+
+                            <!-- LAME: we have to disable logging to void log file from appearing in the archetype -->
+                            <noLog>true</noLog>
+                            <streamLogs>true</streamLogs>
+
+                            <goals>
+                                <goal>org.apache.maven.plugins:maven-archetype-plugin:2.0:create-from-project</goal>
+                            </goals>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.6</version>
+                <executions>
+                    <execution>
+                        <id>munge-generated-pom</id>
+                        <phase>process-sources</phase>
+                        <configuration>
+                            <target>
+                                <move toDir="${project.build.directory}/archetype">
+                                    <fileset dir="${project.build.directory}/project-copy/target/generated-sources/archetype"/>
+                                </move>
+
+                                <replace file="${project.build.directory}/archetype/src/main/resources/archetype-resources/pom.xml">
+                                    <replacefilter>
+                                        <replacetoken><![CDATA[<relativePath>../rest-server-base/pom.xml</relativePath>]]></replacetoken>
+                                        <replacevalue></replacevalue>
+                                    </replacefilter>
+                                    <replacefilter>
+                                        <replacetoken><![CDATA[<main-class>com.proofpoint.platform.sample.Main</main-class>]]></replacetoken>
+                                        <replacevalue><![CDATA[<main-class>${package}.Main</main-class>]]></replacevalue>
+                                    </replacefilter>
+                                    <!-- King of the lame:  can't have a literal ${artifictId} in a value anywhere in a pom or it gets interpolated so split the property across two replacements -->
+                                    <replacefilter>
+                                        <replacetoken><![CDATA[<name>]]></replacetoken>
+                                        <replacevalue><![CDATA[<name>${]]></replacevalue>
+                                    </replacefilter>
+                                    <replacefilter>
+                                        <replacetoken><![CDATA[${server-name}</name>]]></replacetoken>
+                                        <replacevalue><![CDATA[artifactId}</name>]]></replacevalue>
+                                    </replacefilter>
+                                </replace>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -37,11 +125,10 @@
                 <artifactId>maven-invoker-plugin</artifactId>
                 <version>1.5</version>
                 <configuration>
-                    <debug>true</debug>
                     <pomIncludes>
-                        <pomInclude>archetype-sources/pom.xml</pomInclude>
+                        <pomInclude>pom.xml</pomInclude>
                     </pomIncludes>
-                    <projectsDirectory>${project.build.directory}</projectsDirectory>
+                    <projectsDirectory>${project.build.directory}/archetype</projectsDirectory>
                 </configuration>
                 <executions>
                     <execution>
