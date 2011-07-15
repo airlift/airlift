@@ -43,7 +43,7 @@ public class EmbeddedCassandraDaemon
     private int listenPort;
     private InetAddress listenAddr;
     private ThriftServer server;
-    private volatile boolean isRunning;
+    private boolean isRunning;
 
     @Override
     public void init(String[] arguments)
@@ -79,27 +79,43 @@ public class EmbeddedCassandraDaemon
     @Override
     public void startRPCServer()
     {
-        if (!isRunning) {
-            log.info("Cassandra starting...");
-            startServer();
-            isRunning = true;
+        synchronized (this) {
+            if (!isRunning) {
+                log.info("Cassandra starting...");
+                server = new ThriftServer(listenAddr, listenPort);
+                server.start();
+
+                isRunning = true;
+            }
         }
     }
 
     @Override
     public void stopRPCServer()
     {
-        if (isRunning) {
-            log.info("Cassandra shutting down...");
-            stopServer();
-            isRunning = false;
+        synchronized (this) {
+            if (isRunning) {
+                log.info("Cassandra shutting down...");
+                server.stopServer();
+                try {
+                    server.join();
+                }
+                catch (InterruptedException e) {
+                    log.error(e, "Interrupted while waiting for thrift server to stop");
+                    Thread.currentThread().interrupt();
+                }
+
+                isRunning = false;
+            }
         }
     }
 
     @Override
     public boolean isRPCServerRunning()
     {
-        return isRunning;
+        synchronized (this) {
+            return isRunning;
+        }
     }
 
     @Override
@@ -175,23 +191,6 @@ public class EmbeddedCassandraDaemon
         // start server internals
         StorageService.instance.registerDaemon(this);
         StorageService.instance.initServer();
-    }
-
-    private void startServer()
-    {
-        server = new ThriftServer(listenAddr, listenPort);
-        server.start();
-    }
-
-    private void stopServer()
-    {
-        server.stopServer();
-        try {
-            server.join();
-        }
-        catch (InterruptedException e) {
-            log.error(e, "Interrupted while waiting for thrift server to stop");
-        }
     }
 
     /**
