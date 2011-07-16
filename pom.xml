@@ -342,6 +342,7 @@
 
     <modules>
         <module>rack</module>
+        <module>rack-packaging-plugin</module>
         <module>testing</module>
         <module>launcher</module>
         <module>packaging</module>
