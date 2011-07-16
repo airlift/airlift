@@ -8,6 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>skeleton-server-archetype-builder</artifactId>
+    <packaging>pom</packaging>
 
     <properties>
         <server-name>skeleton-server</server-name>

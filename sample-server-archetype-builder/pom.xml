@@ -11,6 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>sample-server-archetype-builder</artifactId>
+    <packaging>pom</packaging>
 
     <properties>
         <server-name>sample-server</server-name>
