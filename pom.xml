@@ -40,6 +40,11 @@
             <email>dain@iq80.com</email>
         </developer>
         <developer>
+            <id>electrum</id>
+            <name>David Phillips</name>
+            <email>david@acz.org</email>
+        </developer>
+        <developer>
             <id>randgalt</id>
             <name>Jordan Zimmerman</name>
             <email>jordan@proofpoint.com</email>
