@@ -3,6 +3,7 @@ package com.proofpoint.cassandra;
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.testing.ConfigAssertions;
 import com.proofpoint.experimental.units.DataSize;
+import com.proofpoint.units.Duration;
 import org.testng.annotations.Test;
 
 import javax.validation.constraints.Max;
@@ -10,6 +11,7 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static com.proofpoint.experimental.testing.ValidationAssertions.assertFailsValidation;
 
@@ -24,6 +26,7 @@ public class TestCassandraServerConfig
                                                         .setSeeds(null)
                                                         .setRpcPort(9160)
                                                         .setStoragePort(7000)
+                                                        .setRpcTimeout(new Duration(2, TimeUnit.SECONDS))
                                                         .setInMemoryCompactionLimit(new DataSize(8, DataSize.Unit.MEGABYTE))
                                                         .setColumnIndexSize(new DataSize(16, DataSize.Unit.KILOBYTE))
                                                         .setPartitioner(CassandraServerConfig.Partitioner.RANDOM));
@@ -38,6 +41,7 @@ public class TestCassandraServerConfig
                 .put("cassandra.seeds", "10.0.0.1")
                 .put("cassandra.rpc-port", "1500")
                 .put("cassandra.storage-port", "1501")
+                .put("cassandra.rpc-timeout", "9s")
                 .put("cassandra.in-memory-compaction-limit", "64 MB")
                 .put("cassandra.column-index-size", "30 kB")
                 .put("cassandra.partitioner", "ORDER_PRESERVING")
@@ -49,6 +53,7 @@ public class TestCassandraServerConfig
                 .setSeeds("10.0.0.1")
                 .setRpcPort(1500)
                 .setStoragePort(1501)
+                .setRpcTimeout(new Duration(9, TimeUnit.SECONDS))
                 .setInMemoryCompactionLimit(new DataSize(64, DataSize.Unit.MEGABYTE))
                 .setColumnIndexSize(new DataSize(30, DataSize.Unit.KILOBYTE))
                 .setPartitioner(CassandraServerConfig.Partitioner.ORDER_PRESERVING);
