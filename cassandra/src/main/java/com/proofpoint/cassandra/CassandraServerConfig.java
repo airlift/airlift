@@ -2,6 +2,7 @@ package com.proofpoint.cassandra;
 
 import com.proofpoint.configuration.Config;
 import com.proofpoint.experimental.units.DataSize;
+import com.proofpoint.units.Duration;
 import org.apache.cassandra.dht.ByteOrderedPartitioner;
 import org.apache.cassandra.dht.CollatingOrderPreservingPartitioner;
 import org.apache.cassandra.dht.OrderPreservingPartitioner;
@@ -11,6 +12,7 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 public class CassandraServerConfig
 {
@@ -18,6 +20,7 @@ public class CassandraServerConfig
     private File directory;
     private int rpcPort = 9160;
     private int storagePort = 7000;
+    private Duration rpcTimeout = new Duration(2, TimeUnit.SECONDS);
     private String seeds;
     private DataSize inMemoryCompactionLimit = new DataSize(8, DataSize.Unit.MEGABYTE);
     private DataSize columnIndexSize = new DataSize(16, DataSize.Unit.KILOBYTE);
@@ -76,6 +79,19 @@ public class CassandraServerConfig
     public int getStoragePort()
     {
         return storagePort;
+    }
+
+    @Config("cassandra.rpc-timeout")
+    public CassandraServerConfig setRpcTimeout(Duration rpcTimeout)
+    {
+        this.rpcTimeout = rpcTimeout;
+        return this;
+    }
+
+    @NotNull
+    public Duration getRpcTimeout()
+    {
+        return rpcTimeout;
     }
 
     @Config("cassandra.seeds")
