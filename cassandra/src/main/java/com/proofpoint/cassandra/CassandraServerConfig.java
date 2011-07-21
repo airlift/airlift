@@ -25,7 +25,7 @@ public class CassandraServerConfig
     private DataSize inMemoryCompactionLimit = new DataSize(8, DataSize.Unit.MEGABYTE);
     private DataSize columnIndexSize = new DataSize(16, DataSize.Unit.KILOBYTE);
     private Partitioner partitioner = Partitioner.RANDOM;
-
+    private DataSize memtableTotalSpace = new DataSize(Runtime.getRuntime().maxMemory() / (3 * 1048576), DataSize.Unit.MEGABYTE);
 
     @Config("cassandra.cluster-name")
     public CassandraServerConfig setClusterName(String clusterName)
@@ -147,6 +147,20 @@ public class CassandraServerConfig
     {
         return partitioner;
     }
+
+    @Config("cassandra.memtable-total-space")
+    public CassandraServerConfig setMemtableTotalSpace(DataSize memtableTotalSpace)
+    {
+        this.memtableTotalSpace = memtableTotalSpace;
+        return this;
+    }
+
+    @NotNull
+    public DataSize getMemtableTotalSpace()
+    {
+        return memtableTotalSpace;
+    }
+
 
     public static enum Partitioner
     {

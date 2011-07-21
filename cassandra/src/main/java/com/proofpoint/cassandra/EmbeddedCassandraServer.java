@@ -73,6 +73,7 @@ public class EmbeddedCassandraServer
                 .put("seed_provider", seedProvider)
                 .put("encryption_options", ImmutableMap.of("internode_encryption", "none"))
                 .put("rpc_timeout_in_ms", (int) config.getRpcTimeout().toMillis())
+                .put("memtable_total_space_in_mb", (int) config.getMemtableTotalSpace().getValue(DataSize.Unit.MEGABYTE))
                 .build();
 
         File configFile = new File(directory, "config.yaml");

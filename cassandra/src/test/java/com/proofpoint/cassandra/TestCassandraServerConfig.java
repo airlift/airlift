@@ -3,6 +3,7 @@ package com.proofpoint.cassandra;
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.testing.ConfigAssertions;
 import com.proofpoint.experimental.units.DataSize;
+import com.proofpoint.experimental.units.DataSize.Unit;
 import com.proofpoint.units.Duration;
 import org.testng.annotations.Test;
 
@@ -21,15 +22,16 @@ public class TestCassandraServerConfig
     public void testDefaults()
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(CassandraServerConfig.class)
-                                                        .setClusterName("cluster")
-                                                        .setDirectory(null)
-                                                        .setSeeds(null)
-                                                        .setRpcPort(9160)
-                                                        .setStoragePort(7000)
-                                                        .setRpcTimeout(new Duration(2, TimeUnit.SECONDS))
-                                                        .setInMemoryCompactionLimit(new DataSize(8, DataSize.Unit.MEGABYTE))
-                                                        .setColumnIndexSize(new DataSize(16, DataSize.Unit.KILOBYTE))
-                                                        .setPartitioner(CassandraServerConfig.Partitioner.RANDOM));
+                .setClusterName("cluster")
+                .setDirectory(null)
+                .setSeeds(null)
+                .setRpcPort(9160)
+                .setStoragePort(7000)
+                .setRpcTimeout(new Duration(2, TimeUnit.SECONDS))
+                .setInMemoryCompactionLimit(new DataSize(8, DataSize.Unit.MEGABYTE))
+                .setColumnIndexSize(new DataSize(16, DataSize.Unit.KILOBYTE))
+                .setPartitioner(CassandraServerConfig.Partitioner.RANDOM)
+                .setMemtableTotalSpace(new DataSize(Runtime.getRuntime().maxMemory() / (3 * 1048576), DataSize.Unit.MEGABYTE)));
     }
 
     @Test
@@ -45,6 +47,7 @@ public class TestCassandraServerConfig
                 .put("cassandra.in-memory-compaction-limit", "64 MB")
                 .put("cassandra.column-index-size", "30 kB")
                 .put("cassandra.partitioner", "ORDER_PRESERVING")
+                .put("cassandra.memtable-total-space", "10 MB")
                 .build();
 
         CassandraServerConfig expected = new CassandraServerConfig()
@@ -56,7 +59,8 @@ public class TestCassandraServerConfig
                 .setRpcTimeout(new Duration(9, TimeUnit.SECONDS))
                 .setInMemoryCompactionLimit(new DataSize(64, DataSize.Unit.MEGABYTE))
                 .setColumnIndexSize(new DataSize(30, DataSize.Unit.KILOBYTE))
-                .setPartitioner(CassandraServerConfig.Partitioner.ORDER_PRESERVING);
+                .setPartitioner(CassandraServerConfig.Partitioner.ORDER_PRESERVING)
+                .setMemtableTotalSpace(new DataSize(10, Unit.MEGABYTE));
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }
