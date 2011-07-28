@@ -21,12 +21,21 @@ require 'forwardable'
 module Proofpoint
   module RackServer
     class Builder
+      def initialize
+        @logger = com::proofpoint::log.Logger.get('Proofpoint::RackServer::Builder')
+      end
+
       def build(filename)
         rack_app, options_ignored = Rack::Builder.parse_file filename
         # Sets up the logger for rails apps
         if rack_app.respond_to? :configure
           begin
-            rack_app.configure { Rails.logger = RackLogger.new }
+            rack_app.configure do
+              require 'rails'
+              Rails.logger = RackLogger.new
+            end
+          rescue LoadError => e
+            @logger.warn "Rails doesn't look like it's properly configured, exception caught requiring the rails gem : #{e.message}"
           rescue
             # Ignore exceptions here, if we can't set the logger like this, it isn't rails, and therefore it will properly use the rack logger.
           end
