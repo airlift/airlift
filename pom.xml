@@ -344,6 +344,7 @@
         <module>rack</module>
         <module>rack-launcher</module>
         <module>rack-packaging</module>
+        <module>rack-server-base</module>
         <module>testing</module>
         <module>launcher</module>
         <module>packaging</module>
