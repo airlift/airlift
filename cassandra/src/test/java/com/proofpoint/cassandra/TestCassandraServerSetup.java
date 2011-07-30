@@ -17,6 +17,7 @@ import me.prettyprint.hector.api.Cluster;
 import me.prettyprint.hector.api.Keyspace;
 import me.prettyprint.hector.api.factory.HFactory;
 import org.apache.cassandra.config.ConfigurationException;
+import org.apache.cassandra.dht.ByteOrderedPartitioner;
 import org.apache.cassandra.dht.RandomPartitioner;
 import org.apache.thrift.transport.TTransportException;
 import org.testng.annotations.AfterSuite;
@@ -63,7 +64,7 @@ public class TestCassandraServerSetup
     {
         setupCluster();
         assertEquals(cluster.describeClusterName(), "megacluster");
-        assertEquals(cluster.describePartitioner(), RandomPartitioner.class.getName());
+        assertEquals(cluster.describePartitioner(), ByteOrderedPartitioner.class.getName());
     }
 
     @Test

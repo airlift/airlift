@@ -34,6 +34,7 @@ public class CassandraServerSetup
             rpcPort = findUnusedPort();
             tempDir = Files.createTempDir();
             CassandraServerConfig config = new CassandraServerConfig()
+                    .setPartitioner(CassandraServerConfig.Partitioner.BYTE_ORDERED)
                     .setSeeds("localhost")
                     .setStoragePort(findUnusedPort())
                     .setRpcPort(rpcPort)
