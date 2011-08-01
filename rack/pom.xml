@@ -5,7 +5,8 @@
     <artifactId>rack-experimental</artifactId>
     <packaging>jar</packaging>
     <version>0.44-SNAPSHOT</version>
-    <name>The Platform Rack Server</name>
+    <name>rack</name>
+    <description>The Platform Rack Server</description>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>

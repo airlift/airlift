@@ -5,7 +5,8 @@
     <artifactId>rack-launcher-experimental</artifactId>
     <packaging>jar</packaging>
     <version>0.44-SNAPSHOT</version>
-    <name>Launcher Script for the Platform Rack Server</name>
+    <name>rack-launcher</name>
+    <description>Launcher Script for the Platform Rack Server</description>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>

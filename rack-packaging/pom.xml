@@ -4,7 +4,8 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>rack-packaging-experimental</artifactId>
     <version>0.44-SNAPSHOT</version>
-    <name>Assembly for building a galaxy binary for the Platform Rack Server</name>
+    <name>rack-packaging</name>
+    <description>Assembly for building a galaxy binary for the Platform Rack Server</description>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>

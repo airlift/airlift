@@ -6,7 +6,7 @@
     <artifactId>rack-server-base-experimental</artifactId>
     <version>0.44-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>Proofpoint Platform Rack Server base POM</name>
+    <name>rack-server-base</name>
     <description>Proofpoint Platform Rack Server base POM</description>
     <url>http://github.com/proofpoint/platform</url>
 
