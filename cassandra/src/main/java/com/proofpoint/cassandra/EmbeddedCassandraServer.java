@@ -18,8 +18,11 @@ import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -27,7 +30,6 @@ import static java.util.Arrays.asList;
 public class EmbeddedCassandraServer
 {
     private final CassandraDaemon cassandra;
-    private final Thread thread;
     private final InetAddress rpcAddress;
     private final int rpcPort;
 
@@ -83,33 +85,49 @@ public class EmbeddedCassandraServer
 
         cassandra = new EmbeddedCassandraDaemon();
         cassandra.init(null);
-
-        thread = new Thread(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                try {
-                    cassandra.start();
-                }
-                catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }, "EmbeddedCassandra");
-        thread.setDaemon(true);
     }
 
     @PostConstruct
     public void start()
     {
-        thread.start();
+        try {
+            cassandra.start();
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        waitForListener();
+    }
+
+    void waitForListener()
+    {
+        InetSocketAddress testAddress = new InetSocketAddress(rpcAddress, rpcPort);
+        int remainingMilliseconds = 5000;
+        final long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(remainingMilliseconds);
+        do {
+            try {
+                Socket testSocket = new Socket();
+                testSocket.connect(testAddress, remainingMilliseconds);
+                testSocket.close();
+                return;
+            }
+            catch (IOException e) {
+                try {
+                    TimeUnit.MILLISECONDS.sleep(100);
+                }
+                catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException(interrupted);
+                }
+            }
+            remainingMilliseconds = (int)(TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime()));
+        } while (remainingMilliseconds > 0);
     }
 
     @PreDestroy
     public void stop()
     {
-        thread.interrupt();
         cassandra.stop();
     }
 
