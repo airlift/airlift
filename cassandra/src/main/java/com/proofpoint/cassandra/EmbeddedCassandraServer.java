@@ -7,6 +7,7 @@ import com.google.common.io.Files;
 import com.google.common.net.InetAddresses;
 import com.proofpoint.experimental.units.DataSize;
 import com.proofpoint.node.NodeInfo;
+import com.proofpoint.units.Duration;
 import org.apache.cassandra.config.ConfigurationException;
 import org.apache.cassandra.service.CassandraDaemon;
 import org.apache.thrift.transport.TTransportException;
@@ -103,26 +104,27 @@ public class EmbeddedCassandraServer
     void waitForListener()
     {
         InetSocketAddress testAddress = new InetSocketAddress(rpcAddress, rpcPort);
-        int remainingMilliseconds = 5000;
-        final long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(remainingMilliseconds);
-        do {
+
+        long start = System.nanoTime();
+
+        while (Duration.nanosSince(start).toMillis() < TimeUnit.MINUTES.toMillis(1)) {
             try {
                 Socket testSocket = new Socket();
-                testSocket.connect(testAddress, remainingMilliseconds);
+                testSocket.connect(testAddress, (int) TimeUnit.SECONDS.toMillis(1));
                 testSocket.close();
+
                 return;
             }
             catch (IOException e) {
                 try {
-                    TimeUnit.MILLISECONDS.sleep(100);
+                    TimeUnit.SECONDS.sleep(1);
                 }
                 catch (InterruptedException interrupted) {
                     Thread.currentThread().interrupt();
                     throw new RuntimeException(interrupted);
                 }
             }
-            remainingMilliseconds = (int)(TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime()));
-        } while (remainingMilliseconds > 0);
+        }
     }
 
     @PreDestroy
