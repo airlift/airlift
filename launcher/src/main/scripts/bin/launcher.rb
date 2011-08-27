@@ -66,10 +66,10 @@ def load_lines(file)
 end
 
 def load_node_config(file)
-  load_lines(file).map do |line|
-    k, v = line.split('=').map(&:strip)
-    "-D#{k}=#{v}"
-  end.join(' ')
+  entries = load_lines(file).map do |line|
+    k, v = line.split('=', 2).map(&:strip)
+  end
+  Hash[entries]
 end
 
 def strip(string)
@@ -125,19 +125,21 @@ def build_cmd_line(options)
   install_path = Pathname.new(__FILE__).parent.parent.expand_path
 
   log_option = if options[:daemon]
-    "-Dlog.output-file=#{options[:log_path]}"
+    "'-Dlog.output-file=#{options[:log_path]}'"
   else
     ""
   end
 
   log_levels_option = if File.exists?(options[:log_levels_path])
-    "-Dlog.levels-file=#{options[:log_levels_path]}"
+    "'-Dlog.levels-file=#{options[:log_levels_path]}'"
   else
     "" # ignore if levels file does not exist. TODO: should only ignore if using default & complain if user-provided file does not exist or has issues
   end
 
   node_config_path = options[:node_config_path]
-  raise CommandError.new(:config_missing, "Node config file is missing: #{node_config_path}") unless File.exists?(node_config_path)
+  if File.exists?(node_config_path)
+    load_node_config(node_config_path).map { |k, v| options[:system_properties][k] ||= v }
+  end
 
   config_path = options[:config_path]
   raise CommandError.new(:config_missing, "Config file is missing: #{config_path}") unless File.exists?(config_path)
@@ -145,15 +147,20 @@ def build_cmd_line(options)
   jvm_config_path = options[:jvm_config_path]
   raise CommandError.new(:config_missing, "JVM config file is missing: #{jvm_config_path}") unless File.exists?(jvm_config_path)
 
-  node_properties = load_node_config(node_config_path)
-
   jvm_properties = load_lines(jvm_config_path).join(' ')
 
   jar_path = File.join(install_path, 'lib', 'main.jar')
 
+  system_properties = options[:system_properties].map do |k, v|
+    s = "-D#{k}=#{v}"
+    s = s.gsub("'","\'\\\\'\'")
+    "'#{s}'"
+  end
+  system_properties = system_properties.join(' ')
+
   # TODO: fix lack of escape handling by building an array
   command =<<-CMD
-    java #{jvm_properties} #{node_properties} -Dconfig=#{config_path} #{log_option} #{log_levels_option} -jar #{jar_path}
+    java #{jvm_properties} #{system_properties} '-Dconfig=#{config_path}' #{log_option} #{log_levels_option} -jar '#{jar_path}'
   CMD
 
   puts command if options[:verbose]
@@ -264,6 +271,7 @@ options = {
         :data_dir => install_path,
         :log_levels_path => File.join(install_path, 'etc', 'log.config'),
         :install_path => install_path,
+        :system_properties => {},
         }
 
 option_parser = OptionParser.new(:unknown_options_action => :collect) do |opts|
@@ -307,6 +315,14 @@ option_parser = OptionParser.new(:unknown_options_action => :collect) do |opts|
 
   opts.on("--log-levels-file FILE", "Defaults to INSTALL_PATH/etc/log.config") do |v|
     options[:log_levels_path] = Pathname.new(v).expand_path
+  end
+
+  opts.on("-D<name>=<value>", "Sets a Java System property") do |v|
+    if v.start_with?("config=") then
+      raise("Config can not be passed in a -D argument.  Use --config instead")
+    end
+    property_key, property_value = v.split('=', 2).map(&:strip)
+    options[:system_properties][property_key] = property_value
   end
 
   opts.on('-h', '--help', 'Display this screen') do
