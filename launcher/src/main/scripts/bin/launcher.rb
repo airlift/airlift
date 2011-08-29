@@ -121,6 +121,11 @@ class CommandError < RuntimeError
   end
 end
 
+def escape(string)
+  string = string.gsub("'", %q('\\\''))
+  "'#{string}'"
+end
+  
 def build_cmd_line(options)
   install_path = Pathname.new(__FILE__).parent.parent.expand_path
 
@@ -136,11 +141,6 @@ def build_cmd_line(options)
     "" # ignore if levels file does not exist. TODO: should only ignore if using default & complain if user-provided file does not exist or has issues
   end
 
-  node_config_path = options[:node_config_path]
-  if File.exists?(node_config_path)
-    load_node_config(node_config_path).map { |k, v| options[:system_properties][k] ||= v }
-  end
-
   config_path = options[:config_path]
   raise CommandError.new(:config_missing, "Config file is missing: #{config_path}") unless File.exists?(config_path)
 
@@ -151,12 +151,12 @@ def build_cmd_line(options)
 
   jar_path = File.join(install_path, 'lib', 'main.jar')
 
-  system_properties = options[:system_properties].map do |k, v|
-    s = "-D#{k}=#{v}"
-    s = s.gsub("'","\'\\\\'\'")
-    "'#{s}'"
-  end
-  system_properties = system_properties.join(' ')
+  properties = {}
+  properties = load_node_config(options[:node_config_path]) if File.exists?(options[:node_config_path])
+  system_properties = properties.merge(options[:system_properties]).
+                                 map { |k, v| "-D#{k}=#{v}" }.
+                                 map { |v| escape(v) }.
+                                 join(' ')
 
   # TODO: fix lack of escape handling by building an array
   command =<<-CMD
