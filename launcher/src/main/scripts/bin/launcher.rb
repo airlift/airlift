@@ -265,7 +265,7 @@ install_path = Pathname.new(__FILE__).parent.parent.expand_path
 
 # initialize defaults
 options = {
-        :node_config_path => File.join(install_path, 'env', 'node.config'),
+        :node_config_path => File.join(install_path, 'etc', 'node.config'),
         :jvm_config_path => File.join(install_path, 'etc', 'jvm.config'),
         :config_path => File.join(install_path, 'etc', 'config.properties'),
         :data_dir => install_path,
