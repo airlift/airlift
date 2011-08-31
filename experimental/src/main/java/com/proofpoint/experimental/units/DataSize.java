@@ -26,6 +26,15 @@ public class DataSize
         this.unit = unit;
     }
 
+    public long toBytes()
+    {
+        double bytes = getValue(Unit.BYTE);
+        if (bytes > Long.MAX_VALUE) {
+            throw new IllegalStateException("size is too large to be represented in bytes as a long");
+        }
+        return (long) bytes;
+    }
+
     public double getValue()
     {
         return value;
