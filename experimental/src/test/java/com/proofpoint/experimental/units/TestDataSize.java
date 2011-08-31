@@ -150,6 +150,35 @@ public class TestDataSize
         new DataSize(9000, PETABYTE).toBytes();
     }
 
+    @Test
+    public void testRoundTo()
+    {
+        assertEquals(new DataSize(0, BYTE).roundTo(BYTE), 0);
+        assertEquals(new DataSize(0.5, BYTE).roundTo(BYTE), 1);
+        assertEquals(new DataSize((42 * 1024) + 511, BYTE).roundTo(KILOBYTE), 42);
+        assertEquals(new DataSize((42 * 1024) + 512, BYTE).roundTo(KILOBYTE), 43);
+        assertEquals(new DataSize(513, TERABYTE).roundTo(PETABYTE), 1);
+        assertEquals(new DataSize(9000L * 1024 * 1024 * 1024 * 1024, KILOBYTE).roundTo(PETABYTE), 9000);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "size is too large .*")
+    public void testRoundToTooLarge()
+    {
+        new DataSize(Long.MAX_VALUE + 1024.0001, BYTE).roundTo(BYTE);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "size is too large .*")
+    public void testRoundToTooLarge2()
+    {
+        new DataSize(9000, PETABYTE).roundTo(BYTE);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "size is too large .*")
+    public void testRoundToTooLarge3()
+    {
+        new DataSize(9000 * 1024, PETABYTE).roundTo(KILOBYTE);
+    }
+
 
     @DataProvider(name = "parseableValues", parallel = true)
     private Object[][] parseableValues()

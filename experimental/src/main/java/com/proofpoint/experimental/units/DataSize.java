@@ -50,6 +50,15 @@ public class DataSize
         return value * (this.unit.getFactor() * 1.0 / unit.getFactor());
     }
 
+    public long roundTo(Unit unit)
+    {
+        double rounded = Math.floor(getValue(unit) + 0.5d);
+        if (rounded > Long.MAX_VALUE) {
+            throw new IllegalArgumentException("size is too large to be represented in requested unit as a long");
+        }
+        return (long) rounded;
+    }
+
     public DataSize convertTo(Unit unit)
     {
         return new DataSize(getValue(unit), unit);
