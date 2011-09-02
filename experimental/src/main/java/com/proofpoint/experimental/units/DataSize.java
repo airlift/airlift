@@ -26,6 +26,15 @@ public class DataSize
         this.unit = unit;
     }
 
+    public long toBytes()
+    {
+        double bytes = getValue(Unit.BYTE);
+        if (bytes > Long.MAX_VALUE) {
+            throw new IllegalStateException("size is too large to be represented in bytes as a long");
+        }
+        return (long) bytes;
+    }
+
     public double getValue()
     {
         return value;
@@ -39,6 +48,15 @@ public class DataSize
     public double getValue(Unit unit)
     {
         return value * (this.unit.getFactor() * 1.0 / unit.getFactor());
+    }
+
+    public long roundTo(Unit unit)
+    {
+        double rounded = Math.floor(getValue(unit) + 0.5d);
+        if (rounded > Long.MAX_VALUE) {
+            throw new IllegalArgumentException("size is too large to be represented in requested unit as a long");
+        }
+        return (long) rounded;
     }
 
     public DataSize convertTo(Unit unit)

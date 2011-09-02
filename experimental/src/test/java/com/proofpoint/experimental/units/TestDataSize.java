@@ -121,6 +121,64 @@ public class TestDataSize
         new DataSize(1, null);
     }
 
+    @Test
+    public void testToBytes()
+    {
+        assertEquals(new DataSize(0, BYTE).toBytes(), 0);
+        assertEquals(new DataSize(0, MEGABYTE).toBytes(), 0);
+        assertEquals(new DataSize(1, BYTE).toBytes(), 1);
+        assertEquals(new DataSize(1, KILOBYTE).toBytes(), 1024);
+        assertEquals(new DataSize(42, MEGABYTE).toBytes(), 42L * 1024 * 1024);
+        assertEquals(new DataSize(0.037, KILOBYTE).toBytes(), 37);
+        assertEquals(new DataSize(1, TERABYTE).toBytes(), 1024L * 1024 * 1024 * 1024);
+        assertEquals(new DataSize(1, PETABYTE).toBytes(), 1024L * 1024 * 1024 * 1024 * 1024);
+        assertEquals(new DataSize(1024, PETABYTE).toBytes(), 1024L * 1024 * 1024 * 1024 * 1024 * 1024);
+        assertEquals(new DataSize(8191, PETABYTE).toBytes(), 8191L * 1024 * 1024 * 1024 * 1024 * 1024);
+        assertEquals(new DataSize(Long.MAX_VALUE, BYTE).toBytes(), Long.MAX_VALUE);
+        assertEquals(new DataSize(Long.MAX_VALUE / 1024.0, KILOBYTE).toBytes(), Long.MAX_VALUE);
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "size is too large .*")
+    public void testToBytesTooLarge()
+    {
+        new DataSize(Long.MAX_VALUE + 1024.0001, BYTE).toBytes(); // smallest value that overflows
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "size is too large .*")
+    public void testToBytesTooLarge2()
+    {
+        new DataSize(9000, PETABYTE).toBytes();
+    }
+
+    @Test
+    public void testRoundTo()
+    {
+        assertEquals(new DataSize(0, BYTE).roundTo(BYTE), 0);
+        assertEquals(new DataSize(0.5, BYTE).roundTo(BYTE), 1);
+        assertEquals(new DataSize((42 * 1024) + 511, BYTE).roundTo(KILOBYTE), 42);
+        assertEquals(new DataSize((42 * 1024) + 512, BYTE).roundTo(KILOBYTE), 43);
+        assertEquals(new DataSize(513, TERABYTE).roundTo(PETABYTE), 1);
+        assertEquals(new DataSize(9000L * 1024 * 1024 * 1024 * 1024, KILOBYTE).roundTo(PETABYTE), 9000);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "size is too large .*")
+    public void testRoundToTooLarge()
+    {
+        new DataSize(Long.MAX_VALUE + 1024.0001, BYTE).roundTo(BYTE);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "size is too large .*")
+    public void testRoundToTooLarge2()
+    {
+        new DataSize(9000, PETABYTE).roundTo(BYTE);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "size is too large .*")
+    public void testRoundToTooLarge3()
+    {
+        new DataSize(9000 * 1024, PETABYTE).roundTo(KILOBYTE);
+    }
+
 
     @DataProvider(name = "parseableValues", parallel = true)
     private Object[][] parseableValues()
