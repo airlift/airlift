@@ -1,0 +1,32 @@
+[
+    {
+        "type":"FixedDummy",
+        "uuid":"8e248a16-da86-11e0-9e77-9fc96e21a396",
+        "host":"localhost",
+        "timestamp":"2011-09-09T01:35:28.333Z",
+        "data":{
+            "intValue":5678,
+            "stringValue":"foo"
+        }
+    },
+    {
+        "type":"FixedDummy",
+        "uuid":"94ac328a-da86-11e0-afe9-d30a5b7c4f68",
+        "host":"localhost",
+        "timestamp":"2011-09-09T01:43:18.123Z",
+        "data":{
+            "intValue":1,
+            "stringValue":"bar"
+        }
+    },
+    {
+        "type":"FixedDummy",
+        "uuid":"a30671a6-da86-11e0-bc43-971987242263",
+        "host":"localhost",
+        "timestamp":"2011-09-09T01:45:55.555Z",
+        "data":{
+            "intValue":1234,
+            "stringValue":"hello"
+        }
+    }
+]

@@ -18,6 +18,8 @@ public class HttpEventModule implements Module
     @Override
     public void configure(Binder binder)
     {
+        binder.bind(JsonEventWriter.class).in(Scopes.SINGLETON);
+
         binder.bind(EventClient.class).to(HttpEventClient.class).in(Scopes.SINGLETON);
         bindConfig(binder).to(HttpEventClientConfig.class);
         discoveryBinder(binder).bindHttpSelector("event");

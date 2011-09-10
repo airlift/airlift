@@ -56,21 +56,21 @@ class EventJsonSerializerV2<T>
         jsonGenerator.writeStringField("type", eventTypeMetadata.getTypeName());
 
         if (eventTypeMetadata.getUuidField() != null) {
-            writeJsonField(eventTypeMetadata.getUuidField(), jsonGenerator, event);
+            eventTypeMetadata.getUuidField().writeField(jsonGenerator, event);
         }
         else {
             jsonGenerator.writeStringField("uuid", UUID.randomUUID().toString());
         }
 
         if (eventTypeMetadata.getHostField() != null) {
-            writeJsonField(eventTypeMetadata.getHostField(), jsonGenerator, event);
+            eventTypeMetadata.getHostField().writeField(jsonGenerator, event);
         }
         else {
             jsonGenerator.writeStringField("host", hostName);
         }
 
         if (eventTypeMetadata.getTimestampField() != null) {
-            writeJsonField(eventTypeMetadata.getTimestampField(), jsonGenerator, event);
+            eventTypeMetadata.getTimestampField().writeField(jsonGenerator, event);
         }
         else {
             jsonGenerator.writeFieldName("timestamp");
@@ -79,18 +79,11 @@ class EventJsonSerializerV2<T>
 
         jsonGenerator.writeObjectFieldStart("data");
         for (EventFieldMetadata field : eventTypeMetadata.getFields().values()) {
-            writeJsonField(field, jsonGenerator, event);
+            field.writeField(jsonGenerator, event);
         }
         jsonGenerator.writeEndObject();
 
         jsonGenerator.writeEndObject();
         jsonGenerator.flush();
-    }
-
-    private void writeJsonField(EventFieldMetadata fieldMetadata, JsonGenerator jsonGenerator, Object event)
-            throws IOException
-    {
-        jsonGenerator.writeFieldName(fieldMetadata.getName());
-        fieldMetadata.writeFieldValue(jsonGenerator, event);
     }
 }

@@ -101,23 +101,37 @@ class EventTypeMetadata<T>
 
             EventField eventField = method.getAnnotation(EventField.class);
             String fieldName = eventField.value();
-            if (fieldName.isEmpty()) {
-                String methodName = method.getName();
-                if (methodName.length() > 3 && methodName.startsWith("get")) {
-                    fieldName = methodName.substring(3);
+            String v1FieldName = null;
+            if (eventField.fieldMapping() != EventField.EventFieldMapping.DATA) {
+                // validate special fields
+                if (!fieldName.isEmpty()) {
+                    addError("@%s method [%s] has a value and non-DATA fieldMapping (%s)", EventField.class.getSimpleName(), method.toGenericString(), eventField.fieldMapping());
                 }
-                else if (methodName.length() > 2 && methodName.startsWith("is")) {
-                    fieldName = methodName.substring(2);
+                fieldName = eventField.fieldMapping().name().toLowerCase();
+            }
+            else {
+                if (fieldName.isEmpty()) {
+                    String methodName = method.getName();
+                    if (methodName.length() > 3 && methodName.startsWith("get")) {
+                        fieldName = methodName.substring(3);
+                    }
+                    else if (methodName.length() > 2 && methodName.startsWith("is")) {
+                        fieldName = methodName.substring(2);
+                    }
+                    else {
+                        fieldName = methodName;
+                    }
                 }
-                else {
-                    fieldName = methodName;
+                // always lowercase the first letter, even for user specified names
+                v1FieldName = fieldName;
+                fieldName = fieldName.substring(0, 1).toLowerCase() + fieldName.substring(1);
+                if (fields.containsKey(fieldName)) {
+                    addError("Event class [%s] Multiple methods are annotated for @% field [%s]", eventClass.getName(), EventField.class.getSimpleName(), fieldName);
+                    continue;
                 }
             }
-            if (fields.containsKey(fieldName)) {
-                addError("Event class [%s] Multiple methods are annotated for @% field [%s]", eventClass.getName(), EventField.class.getSimpleName(), fieldName);
-                continue;
-            }
-            EventFieldMetadata eventFieldMetadata = new EventFieldMetadata(fieldName, method, EventDataType.byType.get(method.getReturnType()));
+
+            EventFieldMetadata eventFieldMetadata = new EventFieldMetadata(fieldName, v1FieldName, method, EventDataType.byType.get(method.getReturnType()));
             switch (eventField.fieldMapping()) {
                 case HOST:
                     hostFields.add(eventFieldMetadata);
@@ -301,37 +315,23 @@ class EventTypeMetadata<T>
     static class EventFieldMetadata
     {
         private final String name;
+        private final String v1Name;
         private final Method method;
         private final EventDataType eventDataType;
 
-        private EventFieldMetadata(String name, Method method, EventDataType eventDataType)
+        private EventFieldMetadata(String name, String v1Name, Method method, EventDataType eventDataType)
         {
             this.name = name;
+            this.v1Name = v1Name;
             this.method = method;
             this.eventDataType = eventDataType;
         }
 
-        public String getName()
+        private Object getValue(Object event)
+                throws InvalidEventException
         {
-            return name;
-        }
-
-        public Method getMethod()
-        {
-            return method;
-        }
-
-        public EventDataType getEventDataType()
-        {
-            return eventDataType;
-        }
-
-        void writeFieldValue(JsonGenerator jsonGenerator, Object event)
-                throws IOException
-        {
-            Object value;
             try {
-                value = method.invoke(event);
+                return method.invoke(event);
             }
             catch (IllegalAccessException e) {
                 throw new InvalidEventException(e, "Unexpected exception reading event field %s", name);
@@ -346,8 +346,27 @@ class EventTypeMetadata<T>
                         name,
                         method.toGenericString());
             }
+        }
 
-            getEventDataType().writeFieldValue(jsonGenerator, value);
+        public void writeField(JsonGenerator jsonGenerator, Object event)
+                throws IOException
+        {
+            Object value = getValue(event);
+            if (value != null) {
+                jsonGenerator.writeFieldName(name);
+                eventDataType.writeFieldValue(jsonGenerator, value);
+            }
+        }
+
+        public void writeFieldV1(JsonGenerator jsonGenerator, Object event)
+                throws IOException
+        {
+            Object value = getValue(event);
+            if (value != null) {
+                jsonGenerator.writeStringField("name", v1Name);
+                jsonGenerator.writeFieldName("value");
+                eventDataType.writeFieldValue(jsonGenerator, value);
+            }
         }
     }
 
@@ -524,9 +543,7 @@ class EventTypeMetadata<T>
 
         private static void validateFieldValueType(Object value, Class<?> expectedType)
         {
-            if (value == null) {
-                return;
-            }
+            Preconditions.checkNotNull(value, "value is null");
             Preconditions.checkArgument(expectedType.isInstance(value),
                     "Expected 'value' to be a " + expectedType.getSimpleName() +
                             " but it is a " + value.getClass().getName());

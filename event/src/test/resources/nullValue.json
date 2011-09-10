@@ -1,0 +1,11 @@
+[
+    {
+        "type":"FixedDummy",
+        "uuid":"1ea8ca34-db36-11e0-b76f-8b7d505ab1ad",
+        "host":"localhost",
+        "timestamp":"2011-09-09T01:59:59.999Z",
+        "data":{
+            "intValue":123
+        }
+    }
+]

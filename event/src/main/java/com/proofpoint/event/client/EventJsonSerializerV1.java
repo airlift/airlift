@@ -81,8 +81,6 @@ class EventJsonSerializerV1<T> extends JsonSerializer<T>
     private void writeJsonField(EventFieldMetadata fieldMetadata, JsonGenerator jsonGenerator, Object event)
             throws IOException
     {
-        jsonGenerator.writeStringField("name", fieldMetadata.getName());
-        jsonGenerator.writeFieldName("value");
-        fieldMetadata.writeFieldValue(jsonGenerator, event);
+        fieldMetadata.writeFieldV1(jsonGenerator, event);
     }
 }
