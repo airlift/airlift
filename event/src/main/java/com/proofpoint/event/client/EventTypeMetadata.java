@@ -9,6 +9,8 @@ import com.google.common.primitives.Primitives;
 import com.google.inject.ConfigurationException;
 import org.codehaus.jackson.JsonGenerator;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 
 import java.io.IOException;
@@ -450,7 +452,7 @@ class EventTypeMetadata<T>
                             throws IOException
                     {
                         validateFieldValueType(value, DateTime.class);
-                        jsonGenerator.writeString(ISODateTimeFormat.dateTime().print((DateTime) value));
+                        jsonGenerator.writeString(ISO_DATETIME_FORMAT.print((DateTime) value));
                     }
                 },
 
@@ -483,6 +485,8 @@ class EventTypeMetadata<T>
                         jsonGenerator.writeString(value.toString());
                     }
                 };
+
+        private static final DateTimeFormatter ISO_DATETIME_FORMAT = ISODateTimeFormat.dateTime().withZone(DateTimeZone.UTC);
 
         public static final Map<Class<?>, EventDataType> byType;
 

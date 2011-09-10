@@ -6,8 +6,6 @@ import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.JsonSerializer;
 import org.codehaus.jackson.map.SerializerProvider;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.format.ISODateTimeFormat;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -75,7 +73,8 @@ class EventJsonSerializerV2<T>
             writeJsonField(eventTypeMetadata.getTimestampField(), jsonGenerator, event);
         }
         else {
-            jsonGenerator.writeStringField("timestamp", ISODateTimeFormat.dateTime().print(new DateTime().withZone(DateTimeZone.UTC)));
+            jsonGenerator.writeFieldName("timestamp");
+            EventTypeMetadata.EventDataType.DATETIME.writeFieldValue(jsonGenerator, new DateTime());
         }
 
         jsonGenerator.writeObjectFieldStart("data");
