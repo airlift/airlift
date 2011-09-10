@@ -45,7 +45,6 @@ class EventTypeMetadata<T>
         return new EventTypeMetadata<T>(eventClass);
     }
 
-    
     private final Class<T> eventClass;
     private final String typeName;
     private final EventFieldMetadata uuidField;
@@ -56,11 +55,9 @@ class EventTypeMetadata<T>
 
     private EventTypeMetadata(Class<T> eventClass)
     {
-        Preconditions.checkNotNull(eventClass, "type is null");
+        Preconditions.checkNotNull(eventClass, "eventClass is null");
 
         this.eventClass = eventClass;
-
-        // validate event class
 
         // get type name from annotation or class name
         String typeName = eventClass.getSimpleName();
@@ -87,8 +84,7 @@ class EventTypeMetadata<T>
                 continue;
             }
             EventDataType eventDataType = EventDataType.byType.get(method.getReturnType());
-            if (eventDataType == null)
-            {
+            if (eventDataType == null) {
                 addError("@%s method [%s] return type [%s] is not supported", EventField.class.getSimpleName(), method.toGenericString(), method.getReturnType());
                 continue;
             }
@@ -122,9 +118,11 @@ class EventTypeMetadata<T>
                 case UUID:
                     uuidFields.add(eventFieldMetadata);
                     break;
-                default:
+                case DATA:
                     fields.put(fieldName, eventFieldMetadata);
                     break;
+                default:
+                    throw new AssertionError("unhandled fieldMapping type: " + eventField.fieldMapping());
             }
         }
 
@@ -143,17 +141,17 @@ class EventTypeMetadata<T>
         }
 
         if (!uuidFields.isEmpty() && uuidFields.size() > 1) {
-            addError("Event class [%s] Multiple methods are annotated for @%(fieldMapping=%s)", eventClass.getName(), EventField.class.getSimpleName(), EventField.EventFieldMapping.UUID);
+            addError("Event class [%s] Multiple methods are annotated for @%s(fieldMapping=%s)", eventClass.getName(), EventField.class.getSimpleName(), EventField.EventFieldMapping.UUID);
         }
         this.uuidField = Iterables.getFirst(uuidFields, null);
 
         if (!timestampFields.isEmpty() && timestampFields.size() > 1) {
-            addError("Event class [%s] Multiple methods are annotated for @%(fieldMapping=%s)", eventClass.getName(), EventField.class.getSimpleName(), EventField.EventFieldMapping.TIMESTAMP);
+            addError("Event class [%s] Multiple methods are annotated for @%s(fieldMapping=%s)", eventClass.getName(), EventField.class.getSimpleName(), EventField.EventFieldMapping.TIMESTAMP);
         }
         this.timestampField = Iterables.getFirst(timestampFields, null);
 
         if (!hostFields.isEmpty() && hostFields.size() > 1) {
-            addError("Event class [%s] Multiple methods are annotated for @%(fieldMapping=%s)", eventClass.getName(), EventField.class.getSimpleName(), EventField.EventFieldMapping.HOST);
+            addError("Event class [%s] Multiple methods are annotated for @%s(fieldMapping=%s)", eventClass.getName(), EventField.class.getSimpleName(), EventField.EventFieldMapping.HOST);
         }
         this.hostField = Iterables.getFirst(hostFields, null);
 
@@ -203,6 +201,7 @@ class EventTypeMetadata<T>
      * Find methods that are tagged with a given annotation somewhere in the hierarchy
      *
      * @param configClass the class to analyze
+     * @param annotation the annotation to find
      * @return a map that associates a concrete method to the actual method tagged
      *         (which may belong to a different class in class hierarchy)
      */
@@ -263,6 +262,7 @@ class EventTypeMetadata<T>
         errors.add(message);
     }
 
+    @SuppressWarnings("RedundantIfStatement")
     @Override
     public boolean equals(Object o)
     {
@@ -332,7 +332,7 @@ class EventTypeMetadata<T>
                     cause = e;
                 }
                 throw new InvalidEventException(cause,
-                        "Unable to get value of event field %s: Exception occurred while invoking %s",
+                        "Unable to get value of event field %s: Exception occurred while invoking [%s]",
                         name,
                         method.toGenericString());
             }
@@ -341,7 +341,7 @@ class EventTypeMetadata<T>
         }
     }
 
-    @SuppressWarnings({"UnusedDeclaration"})
+    @SuppressWarnings("UnusedDeclaration")
     static enum EventDataType
     {
         STRING(String.class)
@@ -482,7 +482,7 @@ class EventTypeMetadata<T>
                         validateFieldValueType(value, java.util.UUID.class);
                         jsonGenerator.writeString(value.toString());
                     }
-                },;
+                };
 
         public static final Map<Class<?>, EventDataType> byType;
 

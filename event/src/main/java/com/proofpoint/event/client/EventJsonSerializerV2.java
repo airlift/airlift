@@ -14,7 +14,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.UUID;
 
-class EventJsonSerializerV2<T> extends JsonSerializer<T>
+class EventJsonSerializerV2<T>
+        extends JsonSerializer<T>
 {
     private final EventTypeMetadata<T> eventTypeMetadata;
     private final String hostName;
@@ -36,7 +37,8 @@ class EventJsonSerializerV2<T> extends JsonSerializer<T>
             catch (UnknownHostException e) {
                 throw new IllegalArgumentException("Unable to determine local host name");
             }
-        } else {
+        }
+        else {
             hostName = null;
         }
     }
@@ -57,13 +59,15 @@ class EventJsonSerializerV2<T> extends JsonSerializer<T>
 
         if (eventTypeMetadata.getUuidField() != null) {
             writeJsonField(eventTypeMetadata.getUuidField(), jsonGenerator, event);
-        } else {
+        }
+        else {
             jsonGenerator.writeStringField("uuid", UUID.randomUUID().toString());
         }
 
         if (eventTypeMetadata.getHostField() != null) {
             writeJsonField(eventTypeMetadata.getHostField(), jsonGenerator, event);
-        } else {
+        }
+        else {
             jsonGenerator.writeStringField("host", hostName);
         }
 

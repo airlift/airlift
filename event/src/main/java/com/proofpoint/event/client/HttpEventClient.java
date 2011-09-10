@@ -1,4 +1,5 @@
 package com.proofpoint.event.client;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
@@ -29,7 +30,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class HttpEventClient implements EventClient
+public class HttpEventClient
+        implements EventClient
 {
     private static final Logger log = Logger.get(HttpEventClient.class);
 
@@ -118,7 +120,8 @@ public class HttpEventClient implements EventClient
         return Futures.immediateFuture(null);
     }
 
-    private static class FutureResponse implements Future<Void>
+    private static class FutureResponse
+            implements Future<Void>
     {
         private final Future<Response> delegate;
 
@@ -153,7 +156,7 @@ public class HttpEventClient implements EventClient
                 try {
                     body = response.getResponseBody();
                 }
-                catch(IOException ignored) {
+                catch (IOException ignored) {
                 }
                 log.error("Posting event failed: status_code=%d status_line=%s body=%s", statusCode, response.getStatusText(), body);
             }
@@ -178,7 +181,8 @@ public class HttpEventClient implements EventClient
         }
     }
 
-    private static class JsonEntityWriter<T> implements EntityWriter
+    private static class JsonEntityWriter<T>
+            implements EntityWriter
     {
         private final ObjectMapper objectMapper;
         private final Set<Class<?>> registeredTypes;
