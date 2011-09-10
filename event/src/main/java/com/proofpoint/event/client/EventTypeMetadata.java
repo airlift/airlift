@@ -4,9 +4,9 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Primitives;
-import com.google.inject.ConfigurationException;
 import org.codehaus.jackson.JsonGenerator;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -24,25 +24,33 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Maps.newTreeMap;
 
 class EventTypeMetadata<T>
 {
-    static <T> EventTypeMetadata<T> getValidEventTypeMetadata(Class<T> eventClass) throws ConfigurationException
+    public static Set<EventTypeMetadata<?>> getValidEventTypeMetaDataSet(Class<?>... eventClasses)
+    {
+        ImmutableSet.Builder<EventTypeMetadata<?>> set = ImmutableSet.builder();
+        for (Class<?> eventClass : eventClasses) {
+            set.add(getValidEventTypeMetadata(eventClass));
+        }
+        return set.build();
+    }
+
+    public static <T> EventTypeMetadata<T> getValidEventTypeMetadata(Class<T> eventClass)
     {
         EventTypeMetadata<T> metadata = getEventTypeMetadata(eventClass);
-
-        List<String> errors = metadata.getErrors();
-        if (!errors.isEmpty()) {
-            throw new IllegalArgumentException(String.format("Invalid event class [%s]:%n%s", eventClass.getName(), Joiner.on('\n').join(errors)));
+        if (!metadata.getErrors().isEmpty()) {
+            String errors = Joiner.on('\n').join(metadata.getErrors());
+            throw new IllegalArgumentException(String.format("Invalid event class [%s]:%n%s", eventClass.getName(), errors));
         }
-
         return metadata;
     }
 
-    static <T> EventTypeMetadata<T> getEventTypeMetadata(Class<T> eventClass)
+    public static <T> EventTypeMetadata<T> getEventTypeMetadata(Class<T> eventClass)
     {
         return new EventTypeMetadata<T>(eventClass);
     }
