@@ -77,6 +77,7 @@ public class HttpEventClientConfig
         return this;
     }
 
+    @Deprecated
     @Min(1)
     @Max(2)
     public int getJsonVersion()
@@ -84,6 +85,7 @@ public class HttpEventClientConfig
         return jsonVersion;
     }
 
+    @Deprecated
     @Config("collector.json-version")
     @ConfigDescription("JSON format version supported by collector")
     public HttpEventClientConfig setJsonVersion(int jsonVersion)
