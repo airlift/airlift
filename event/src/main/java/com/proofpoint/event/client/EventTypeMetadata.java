@@ -20,14 +20,13 @@ import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Maps.newTreeMap;
+import static com.proofpoint.event.client.AnnotationUtils.findAnnotatedMethods;
 
 class EventTypeMetadata<T>
 {
@@ -219,65 +218,6 @@ class EventTypeMetadata<T>
     public Map<String, EventFieldMetadata> getFields()
     {
         return fields;
-    }
-
-    /**
-     * Find methods that are tagged with a given annotation somewhere in the hierarchy
-     *
-     * @param configClass the class to analyze
-     * @param annotation the annotation to find
-     * @return a map that associates a concrete method to the actual method tagged
-     *         (which may belong to a different class in class hierarchy)
-     */
-    private static Collection<Method> findAnnotatedMethods(Class<?> configClass, Class<? extends java.lang.annotation.Annotation> annotation)
-    {
-        List<Method> result = new ArrayList<Method>();
-
-        // gather all publicly available methods
-        // this returns everything, even if it's declared in a parent
-        for (Method method : configClass.getMethods()) {
-            // skip methods that are used internally by the vm for implementing covariance, etc
-            if (method.isSynthetic() || method.isBridge() || Modifier.isStatic(method.getModifiers())) {
-                continue;
-            }
-
-            // look for annotations recursively in super-classes or interfaces
-            Method managedMethod = findAnnotatedMethod(configClass, annotation, method.getName(), method.getParameterTypes());
-            if (managedMethod != null) {
-                result.add(managedMethod);
-            }
-        }
-
-        return result;
-    }
-
-    public static Method findAnnotatedMethod(Class<?> configClass, Class<? extends java.lang.annotation.Annotation> annotation, String methodName, Class<?>... paramTypes)
-    {
-        try {
-            Method method = configClass.getDeclaredMethod(methodName, paramTypes);
-            if (method != null && method.isAnnotationPresent(annotation)) {
-                return method;
-            }
-        }
-        catch (NoSuchMethodException e) {
-            // ignore
-        }
-
-        if (configClass.getSuperclass() != null) {
-            Method managedMethod = findAnnotatedMethod(configClass.getSuperclass(), annotation, methodName, paramTypes);
-            if (managedMethod != null) {
-                return managedMethod;
-            }
-        }
-
-        for (Class<?> iface : configClass.getInterfaces()) {
-            Method managedMethod = findAnnotatedMethod(iface, annotation, methodName, paramTypes);
-            if (managedMethod != null) {
-                return managedMethod;
-            }
-        }
-
-        return null;
     }
 
     public void addError(String format, Object... args)
