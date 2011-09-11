@@ -6,20 +6,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.primitives.Primitives;
-import org.codehaus.jackson.JsonGenerator;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +16,7 @@ import java.util.Set;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Maps.newTreeMap;
 import static com.proofpoint.event.client.AnnotationUtils.findAnnotatedMethods;
+import static com.proofpoint.event.client.EventDataType.getEventDataType;
 
 class EventTypeMetadata<T>
 {
@@ -92,7 +82,7 @@ class EventTypeMetadata<T>
                 addError("@%s method [%s] does not have zero parameters", EventField.class.getSimpleName(), method.toGenericString());
                 continue;
             }
-            EventDataType eventDataType = EventDataType.byType.get(method.getReturnType());
+            EventDataType eventDataType = getEventDataType(method.getReturnType());
             if (eventDataType == null) {
                 addError("@%s method [%s] return type [%s] is not supported", EventField.class.getSimpleName(), method.toGenericString(), method.getReturnType());
                 continue;
@@ -130,7 +120,7 @@ class EventTypeMetadata<T>
                 }
             }
 
-            EventFieldMetadata eventFieldMetadata = new EventFieldMetadata(fieldName, v1FieldName, method, EventDataType.byType.get(method.getReturnType()));
+            EventFieldMetadata eventFieldMetadata = new EventFieldMetadata(fieldName, v1FieldName, method, getEventDataType(method.getReturnType()));
             switch (eventField.fieldMapping()) {
                 case HOST:
                     hostFields.add(eventFieldMetadata);
@@ -250,246 +240,5 @@ class EventTypeMetadata<T>
     public int hashCode()
     {
         return eventClass != null ? eventClass.hashCode() : 0;
-    }
-
-    static class EventFieldMetadata
-    {
-        private final String name;
-        private final String v1Name;
-        private final Method method;
-        private final EventDataType eventDataType;
-
-        private EventFieldMetadata(String name, String v1Name, Method method, EventDataType eventDataType)
-        {
-            this.name = name;
-            this.v1Name = v1Name;
-            this.method = method;
-            this.eventDataType = eventDataType;
-        }
-
-        private Object getValue(Object event)
-                throws InvalidEventException
-        {
-            try {
-                return method.invoke(event);
-            }
-            catch (IllegalAccessException e) {
-                throw new InvalidEventException(e, "Unexpected exception reading event field %s", name);
-            }
-            catch (InvocationTargetException e) {
-                Throwable cause = e.getCause();
-                if (cause == null) {
-                    cause = e;
-                }
-                throw new InvalidEventException(cause,
-                        "Unable to get value of event field %s: Exception occurred while invoking [%s]",
-                        name,
-                        method.toGenericString());
-            }
-        }
-
-        public void writeField(JsonGenerator jsonGenerator, Object event)
-                throws IOException
-        {
-            Object value = getValue(event);
-            if (value != null) {
-                jsonGenerator.writeFieldName(name);
-                eventDataType.writeFieldValue(jsonGenerator, value);
-            }
-        }
-
-        public void writeFieldV1(JsonGenerator jsonGenerator, Object event)
-                throws IOException
-        {
-            Object value = getValue(event);
-            if (value != null) {
-                jsonGenerator.writeStringField("name", v1Name);
-                jsonGenerator.writeFieldName("value");
-                eventDataType.writeFieldValue(jsonGenerator, value);
-            }
-        }
-    }
-
-    @SuppressWarnings("UnusedDeclaration")
-    static enum EventDataType
-    {
-        STRING(String.class)
-                {
-                    public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                            throws IOException
-                    {
-                        validateFieldValueType(value, String.class);
-                        jsonGenerator.writeString((String) value);
-                    }
-                },
-
-        BOOLEAN(Boolean.class)
-                {
-                    public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                            throws IOException
-                    {
-                        validateFieldValueType(value, Boolean.class);
-                        jsonGenerator.writeBoolean((Boolean) value);
-                    }
-                },
-
-        BYTE(Byte.class)
-                {
-                    public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                            throws IOException
-                    {
-                        validateFieldValueType(value, Byte.class);
-                        jsonGenerator.writeNumber((Byte) value);
-                    }
-                },
-
-        SHORT(Short.class)
-                {
-                    public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                            throws IOException
-                    {
-                        validateFieldValueType(value, Short.class);
-                        jsonGenerator.writeNumber((Short) value);
-                    }
-                },
-
-        INTEGER(Integer.class)
-                {
-                    public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                            throws IOException
-                    {
-                        validateFieldValueType(value, Integer.class);
-                        jsonGenerator.writeNumber((Integer) value);
-                    }
-                },
-
-        LONG(Long.class)
-                {
-                    public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                            throws IOException
-                    {
-                        validateFieldValueType(value, Long.class);
-                        jsonGenerator.writeNumber((Long) value);
-                    }
-                },
-
-        FLOAT(Float.class)
-                {
-                    public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                            throws IOException
-                    {
-                        validateFieldValueType(value, Float.class);
-                        jsonGenerator.writeNumber((Float) value);
-                    }
-                },
-
-        DOUBLE(Double.class)
-                {
-                    public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                            throws IOException
-                    {
-                        validateFieldValueType(value, Double.class);
-                        jsonGenerator.writeNumber((Double) value);
-                    }
-                },
-
-        BIG_DECIMAL(BigDecimal.class)
-                {
-                    public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                            throws IOException
-                    {
-                        validateFieldValueType(value, BigDecimal.class);
-                        jsonGenerator.writeNumber((BigDecimal) value);
-                    }
-                },
-
-        BIG_INTEGER(BigInteger.class)
-                {
-                    public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                            throws IOException
-                    {
-                        validateFieldValueType(value, BigInteger.class);
-                        jsonGenerator.writeNumber(new BigDecimal((BigInteger) value));
-                    }
-                },
-
-        DATETIME(DateTime.class)
-                {
-                    public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                            throws IOException
-                    {
-                        validateFieldValueType(value, DateTime.class);
-                        jsonGenerator.writeString(ISO_DATETIME_FORMAT.print((DateTime) value));
-                    }
-                },
-
-        ENUM(Enum.class)
-                {
-                    public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                            throws IOException
-                    {
-                        validateFieldValueType(value, Enum.class);
-                        jsonGenerator.writeString(value.toString());
-                    }
-                },
-
-        INET_ADDRESS(InetAddress.class)
-                {
-                    public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                            throws IOException
-                    {
-                        validateFieldValueType(value, InetAddress.class);
-                        jsonGenerator.writeString(((InetAddress) value).getHostAddress());
-                    }
-                },
-
-        UUID(java.util.UUID.class)
-                {
-                    public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                            throws IOException
-                    {
-                        validateFieldValueType(value, java.util.UUID.class);
-                        jsonGenerator.writeString(value.toString());
-                    }
-                };
-
-        private static final DateTimeFormatter ISO_DATETIME_FORMAT = ISODateTimeFormat.dateTime().withZone(DateTimeZone.UTC);
-
-        public static final Map<Class<?>, EventDataType> byType;
-
-        static {
-            ImmutableMap.Builder<Class<?>, EventDataType> builder = ImmutableMap.builder();
-            for (EventDataType eventDataType : EventDataType.values()) {
-                Class<?> dataType = eventDataType.getType();
-                builder.put(dataType, eventDataType);
-                if (Primitives.isWrapperType(dataType)) {
-                    builder.put(Primitives.unwrap(dataType), eventDataType);
-                }
-            }
-            byType = builder.build();
-        }
-
-        private final Class<?> type;
-
-        private EventDataType(Class<?> type)
-        {
-            this.type = type;
-        }
-
-        public Class<?> getType()
-        {
-            return type;
-        }
-
-        private static void validateFieldValueType(Object value, Class<?> expectedType)
-        {
-            Preconditions.checkNotNull(value, "value is null");
-            Preconditions.checkArgument(expectedType.isInstance(value),
-                    "Expected 'value' to be a " + expectedType.getSimpleName() +
-                            " but it is a " + value.getClass().getName());
-        }
-
-        public abstract void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                throws IOException;
     }
 }

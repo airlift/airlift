@@ -1,7 +1,6 @@
 package com.proofpoint.event.client;
 
 import com.google.common.base.Preconditions;
-import com.proofpoint.event.client.EventTypeMetadata.EventFieldMetadata;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.JsonSerializer;
 import org.codehaus.jackson.map.SerializerProvider;
