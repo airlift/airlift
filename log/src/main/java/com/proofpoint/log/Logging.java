@@ -194,8 +194,8 @@ public class Logging
         // these .tmp files are log files that are about to be compressed.
         // This method recovers them so that they aren't orphaned
 
-        File    logPathFile = new File(logPath).getParentFile();
-        File[]  tempFiles = logPathFile.listFiles(new FilenameFilter()
+        File logPathFile = new File(logPath).getParentFile();
+        File[] tempFiles = logPathFile.listFiles(new FilenameFilter()
         {
             @Override
             public boolean accept(File dir, String name)
@@ -204,11 +204,11 @@ public class Logging
             }
         });
 
-        if ( tempFiles != null ) {
-            for ( File tempFile : tempFiles ) {
-                String      newName = tempFile.getName().substring(0, tempFile.getName().length() - TEMP_FILE_EXTENSION.length());
-                File        newFile = new File(tempFile.getParent(), newName + LOG_FILE_EXTENSION);
-                if ( tempFile.renameTo(newFile) ) {
+        if (tempFiles != null) {
+            for (File tempFile : tempFiles) {
+                String newName = tempFile.getName().substring(0, tempFile.getName().length() - TEMP_FILE_EXTENSION.length());
+                File newFile = new File(tempFile.getParent(), newName + LOG_FILE_EXTENSION);
+                if (tempFile.renameTo(newFile)) {
                     log.info("Recovered temp file: ", tempFile);
                 }
                 else {
