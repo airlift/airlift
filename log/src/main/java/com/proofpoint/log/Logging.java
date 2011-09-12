@@ -209,7 +209,7 @@ public class Logging
                 String newName = tempFile.getName().substring(0, tempFile.getName().length() - TEMP_FILE_EXTENSION.length());
                 File newFile = new File(tempFile.getParent(), newName + LOG_FILE_EXTENSION);
                 if (tempFile.renameTo(newFile)) {
-                    log.info("Recovered temp file: ", tempFile);
+                    log.info("Recovered temp file: %s", tempFile);
                 }
                 else {
                     log.warn("Could not rename temp file [%s] to [%s]", tempFile, newFile);
