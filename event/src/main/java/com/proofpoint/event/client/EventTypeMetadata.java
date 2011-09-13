@@ -100,16 +100,7 @@ class EventTypeMetadata<T>
             }
             else {
                 if (fieldName.isEmpty()) {
-                    String methodName = method.getName();
-                    if (methodName.length() > 3 && methodName.startsWith("get")) {
-                        fieldName = methodName.substring(3);
-                    }
-                    else if (methodName.length() > 2 && methodName.startsWith("is")) {
-                        fieldName = methodName.substring(2);
-                    }
-                    else {
-                        fieldName = methodName;
-                    }
+                    fieldName = extractRawNameFromGetter(method);
                 }
                 // always lowercase the first letter, even for user specified names
                 v1FieldName = fieldName;
@@ -139,19 +130,7 @@ class EventTypeMetadata<T>
             }
         }
 
-        // find invalid event methods not skipped by findEventMethods()
-        for (Class<?> clazz = eventClass; (clazz != null) && !clazz.equals(Object.class); clazz = clazz.getSuperclass()) {
-            for (Method method : clazz.getDeclaredMethods()) {
-                if (method.isAnnotationPresent(EventField.class)) {
-                    if (!Modifier.isPublic(method.getModifiers())) {
-                        addError("@%s method [%s] is not public", EventField.class.getSimpleName(), method.toGenericString());
-                    }
-                    if (Modifier.isStatic(method.getModifiers())) {
-                        addError("@%s method [%s] is static", EventField.class.getSimpleName(), method.toGenericString());
-                    }
-                }
-            }
-        }
+        findInvalidMethods(eventClass);
 
         if (!uuidFields.isEmpty() && uuidFields.size() > 1) {
             addError("Event class [%s] Multiple methods are annotated for @%s(fieldMapping=%s)", eventClass.getName(), EventField.class.getSimpleName(), EventField.EventFieldMapping.UUID);
@@ -173,6 +152,35 @@ class EventTypeMetadata<T>
         if (getErrors().isEmpty() && this.fields.isEmpty()) {
             addError("Event class [%s] does not have any @%s annotations", eventClass.getName(), EventField.class.getSimpleName());
         }
+    }
+
+    private void findInvalidMethods(Class<T> eventClass)
+    {
+        // find invalid methods that were skipped by findAnnotatedMethods()
+        for (Class<?> clazz = eventClass; clazz != null; clazz = clazz.getSuperclass()) {
+            for (Method method : clazz.getDeclaredMethods()) {
+                if (method.isAnnotationPresent(EventField.class)) {
+                    if (!Modifier.isPublic(method.getModifiers())) {
+                        addError("@%s method [%s] is not public", EventField.class.getSimpleName(), method.toGenericString());
+                    }
+                    if (Modifier.isStatic(method.getModifiers())) {
+                        addError("@%s method [%s] is static", EventField.class.getSimpleName(), method.toGenericString());
+                    }
+                }
+            }
+        }
+    }
+
+    private static String extractRawNameFromGetter(Method method)
+    {
+        String name = method.getName();
+        if (name.length() > 3 && name.startsWith("get")) {
+            return name.substring(3);
+        }
+        if (name.length() > 2 && name.startsWith("is")) {
+            return name.substring(2);
+        }
+        return name;
     }
 
     List<String> getErrors()
