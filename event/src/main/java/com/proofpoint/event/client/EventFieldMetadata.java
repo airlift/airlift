@@ -5,9 +5,18 @@ import org.codehaus.jackson.JsonGenerator;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Comparator;
 
 class EventFieldMetadata
 {
+    public static final Comparator<EventFieldMetadata> NAME_COMPARATOR = new Comparator<EventFieldMetadata>()
+    {
+        public int compare(EventFieldMetadata a, EventFieldMetadata b)
+        {
+            return a.name.compareTo(b.name);
+        }
+    };
+
     private final String name;
     private final String v1Name;
     private final Method method;

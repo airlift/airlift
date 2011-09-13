@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Ordering;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -167,7 +168,7 @@ class EventTypeMetadata<T>
         }
         this.hostField = Iterables.getFirst(hostFields, null);
 
-        this.fields = ImmutableList.copyOf(fields.values());
+        this.fields = Ordering.from(EventFieldMetadata.NAME_COMPARATOR).immutableSortedCopy(fields.values());
 
         if (getErrors().isEmpty() && this.fields.isEmpty()) {
             addError("Event class [%s] does not have any @%s annotations", eventClass.getName(), EventField.class.getSimpleName());
