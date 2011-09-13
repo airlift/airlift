@@ -17,6 +17,11 @@ public @interface EventField
         DATA,
         HOST,
         TIMESTAMP,
-        UUID
+        UUID;
+
+        public String getFieldName()
+        {
+            return name().toLowerCase();
+        }
     }
 }

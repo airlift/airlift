@@ -96,7 +96,7 @@ class EventTypeMetadata<T>
                 if (!fieldName.isEmpty()) {
                     addError("@%s method [%s] has a value and non-DATA fieldMapping (%s)", EventField.class.getSimpleName(), method.toGenericString(), eventField.fieldMapping());
                 }
-                fieldName = eventField.fieldMapping().name().toLowerCase();
+                fieldName = eventField.fieldMapping().getFieldName();
             }
             else {
                 if (fieldName.isEmpty()) {
