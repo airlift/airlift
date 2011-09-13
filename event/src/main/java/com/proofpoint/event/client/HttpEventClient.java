@@ -1,6 +1,7 @@
 package com.proofpoint.event.client;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
 import com.ning.http.client.AsyncHttpClient;
@@ -11,6 +12,7 @@ import com.ning.http.client.RequestBuilder;
 import com.ning.http.client.Response;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.ServiceType;
+import com.proofpoint.event.EventSubmissionFailedException;
 import com.proofpoint.log.Logger;
 
 import javax.servlet.http.HttpServletResponse;
@@ -18,11 +20,14 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import static java.lang.String.format;
 
 public class HttpEventClient
         implements EventClient
@@ -89,9 +94,17 @@ public class HttpEventClient
     {
         Preconditions.checkNotNull(eventGenerator, "eventGenerator is null");
 
+        List<URI> uris = serviceSelector.selectHttpService();
+
+        if (uris.isEmpty()) {
+            return Futures.immediateFailedFuture(new ServiceUnavailableException(serviceSelector.getType(), serviceSelector.getPool()));
+        }
+
+        ImmutableMap.Builder<URI, Exception> exceptions = ImmutableMap.builder();
+
         // todo this doesn't really work due to returning the future which can fail without being retried
         // also this code tries all servers instead of a fixed number
-        for (URI uri : serviceSelector.selectHttpService()) {
+        for (URI uri : uris) {
             try {
                 String uriString = resolveUri(uri).toString();
                 Request request = new RequestBuilder("POST")
@@ -102,13 +115,17 @@ public class HttpEventClient
                 return new FutureResponse(client.prepareRequest(request).execute(), uriString);
             }
             catch (Exception e) {
+                exceptions.put(uri, e);
+
                 // todo not noisy enough
                 log.debug(e, "Posting event failed");
             }
         }
 
         log.debug("Event(s) not posted");
-        return Futures.immediateFuture(null);
+        return Futures.immediateFailedFuture(new EventSubmissionFailedException(
+                format("Failed to submit events to service=[%s], pool [%s]", serviceSelector.getType(), serviceSelector.getPool()),
+                exceptions.build()));
     }
 
     private URI resolveUri(URI uri)
