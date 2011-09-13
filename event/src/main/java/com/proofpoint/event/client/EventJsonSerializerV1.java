@@ -66,7 +66,7 @@ class EventJsonSerializerV1<T> extends JsonSerializer<T>
         }
 
         jsonGenerator.writeArrayFieldStart("data");
-        for (EventFieldMetadata field : eventTypeMetadata.getFields().values()) {
+        for (EventFieldMetadata field : eventTypeMetadata.getFields()) {
             jsonGenerator.writeStartObject();
             writeJsonField(field, jsonGenerator, event);
             jsonGenerator.writeEndObject();

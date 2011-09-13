@@ -3,7 +3,6 @@ package com.proofpoint.event.client;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
@@ -49,7 +48,7 @@ class EventTypeMetadata<T>
     private final EventFieldMetadata uuidField;
     private final EventFieldMetadata timestampField;
     private final EventFieldMetadata hostField;
-    private final Map<String, EventFieldMetadata> fields;
+    private final List<EventFieldMetadata> fields;
     private final List<String> errors = newArrayList();
 
     private EventTypeMetadata(Class<T> eventClass)
@@ -168,7 +167,7 @@ class EventTypeMetadata<T>
         }
         this.hostField = Iterables.getFirst(hostFields, null);
 
-        this.fields = ImmutableMap.copyOf(fields);
+        this.fields = ImmutableList.copyOf(fields.values());
 
         if (getErrors().isEmpty() && this.fields.isEmpty()) {
             addError("Event class [%s] does not have any @%s annotations", eventClass.getName(), EventField.class.getSimpleName());
@@ -205,7 +204,7 @@ class EventTypeMetadata<T>
         return hostField;
     }
 
-    public Map<String, EventFieldMetadata> getFields()
+    public List<EventFieldMetadata> getFields()
     {
         return fields;
     }

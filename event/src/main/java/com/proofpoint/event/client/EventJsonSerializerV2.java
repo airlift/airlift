@@ -77,7 +77,7 @@ class EventJsonSerializerV2<T>
         }
 
         jsonGenerator.writeObjectFieldStart("data");
-        for (EventFieldMetadata field : eventTypeMetadata.getFields().values()) {
+        for (EventFieldMetadata field : eventTypeMetadata.getFields()) {
             field.writeField(jsonGenerator, event);
         }
         jsonGenerator.writeEndObject();
