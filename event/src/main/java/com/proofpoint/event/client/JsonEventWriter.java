@@ -59,9 +59,7 @@ public class JsonEventWriter
                     throws IOException
             {
                 if (!registeredTypes.contains(event.getClass())) {
-                    throw new RuntimeException(
-                            String.format("Event type %s has not been registered as an event",
-                                    event.getClass().getSimpleName()));
+                    throw new InvalidEventException("Event class [%s] has not been registered as an event", event.getClass().getName());
                 }
                 jsonGenerator.writeObject(event);
             }
