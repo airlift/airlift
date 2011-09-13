@@ -23,9 +23,6 @@ end
 =begin
 
 Options
-* TODO install: invoked after package is deployed. Component should only make changes to resources it owns (i.e., no "touching" of environment or external services)
-* TODO config
-* TODO verify: make sure component can run within provided environment and with the given config.
 * start (run as daemon)
 * stop (stop gracefully)
 * restart (restart gracefully)
