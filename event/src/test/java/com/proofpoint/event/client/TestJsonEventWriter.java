@@ -2,6 +2,8 @@ package com.proofpoint.event.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.NullOutputStream;
+import com.proofpoint.event.client.NestedDummyEventClass.NestedPart;
 import com.proofpoint.json.ObjectMapperProvider;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.joda.time.DateTime;
@@ -13,6 +15,7 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.proofpoint.event.client.ChainedCircularEventClass.ChainedPart;
 import static com.proofpoint.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 import static org.testng.Assert.assertEquals;
 
@@ -25,7 +28,8 @@ public class TestJsonEventWriter
             throws Exception
     {
         ObjectMapper objectMapper = new ObjectMapperProvider().get();
-        Set<EventTypeMetadata<?>> eventTypes = getValidEventTypeMetaDataSet(FixedDummyEventClass.class);
+        Set<EventTypeMetadata<?>> eventTypes = getValidEventTypeMetaDataSet(
+                FixedDummyEventClass.class, NestedDummyEventClass.class, CircularEventClass.class, ChainedCircularEventClass.class);
         eventWriter = new JsonEventWriter(objectMapper, eventTypes, new HttpEventClientConfig());
     }
 
@@ -46,7 +50,44 @@ public class TestJsonEventWriter
         assertEventJson(createEventGenerator(ImmutableList.of(event)), "nullValue.json");
     }
 
-    private void assertEventJson(EventClient.EventGenerator<FixedDummyEventClass> events, String resource)
+    @Test
+    public void testNestedEvent()
+            throws Exception
+    {
+        NestedDummyEventClass nestedEvent = new NestedDummyEventClass(
+                "localhost", new DateTime("2011-09-09T01:48:08.888Z"), UUID.fromString("6b598c2a-0a95-4f3f-9298-5a4d70ca13fc"), 9999, "nested",
+                ImmutableList.of("abc", "xyz"),
+                new NestedPart("first", new NestedPart("second", new NestedPart("third", null))),
+                ImmutableList.of(new NestedPart("listFirst", new NestedPart("listSecond", null)), new NestedPart("listThird", null))
+        );
+
+        assertEventJson(createEventGenerator(ImmutableList.of(nestedEvent)), "nested.json");
+    }
+
+    @Test(expectedExceptions = InvalidEventException.class, expectedExceptionsMessageRegExp = "Cycle detected in event data:.*")
+    public void testCircularEvent()
+            throws Exception
+    {
+        eventWriter.writeEvents(createEventGenerator(ImmutableList.of(new CircularEventClass())), new NullOutputStream());
+    }
+
+    @Test(expectedExceptions = InvalidEventException.class, expectedExceptionsMessageRegExp = "Cycle detected in event data:.*")
+    public void testChainedCircularEvent()
+            throws Exception
+    {
+        ChainedPart a = new ChainedPart("a");
+        ChainedPart b = new ChainedPart("b");
+        ChainedPart c = new ChainedPart("c");
+        a.setPart(b);
+        b.setPart(c);
+        c.setPart(a);
+
+        ChainedCircularEventClass event = new ChainedCircularEventClass(a);
+
+        eventWriter.writeEvents(createEventGenerator(ImmutableList.of(event)), new NullOutputStream());
+    }
+
+    private void assertEventJson(EventClient.EventGenerator<?> events, String resource)
             throws Exception
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();

@@ -1,0 +1,33 @@
+[
+    {
+        "type":"NestedDummy",
+        "uuid":"6b598c2a-0a95-4f3f-9298-5a4d70ca13fc",
+        "host":"localhost",
+        "timestamp":"2011-09-09T01:48:08.888Z",
+        "data":{
+            "intValue":9999,
+            "nestedPart":{
+                "name":"first",
+                "part":{
+                    "name":"second",
+                    "part":{
+                        "name":"third"
+                    }
+                }
+            },
+            "nestedParts":[
+                {
+                    "name":"listFirst",
+                    "part":{
+                        "name":"listSecond"
+                    }
+                },
+                {
+                    "name":"listThird"
+                }
+            ],
+            "stringValue":"nested",
+            "strings":["abc","xyz"]
+        }
+    }
+]

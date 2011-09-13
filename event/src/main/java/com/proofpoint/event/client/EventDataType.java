@@ -191,7 +191,7 @@ enum EventDataType
         return type;
     }
 
-    private static void validateFieldValueType(Object value, Class<?> expectedType)
+    static void validateFieldValueType(Object value, Class<?> expectedType)
     {
         Preconditions.checkNotNull(value, "value is null");
         Preconditions.checkArgument(expectedType.isInstance(value),

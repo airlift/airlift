@@ -5,10 +5,13 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,6 +20,7 @@ import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Maps.newTreeMap;
 import static com.proofpoint.event.client.AnnotationUtils.findAnnotatedMethods;
 import static com.proofpoint.event.client.EventDataType.getEventDataType;
+import static com.proofpoint.event.client.TypeParameterUtils.getTypeParameters;
 
 class EventTypeMetadata<T>
 {
@@ -41,7 +45,7 @@ class EventTypeMetadata<T>
 
     public static <T> EventTypeMetadata<T> getEventTypeMetadata(Class<T> eventClass)
     {
-        return new EventTypeMetadata<T>(eventClass);
+        return new EventTypeMetadata<T>(eventClass, Lists.<String>newArrayList(), Maps.<Class<?>, EventTypeMetadata<?>>newHashMap(), false);
     }
 
     private final Class<T> eventClass;
@@ -50,22 +54,33 @@ class EventTypeMetadata<T>
     private final EventFieldMetadata timestampField;
     private final EventFieldMetadata hostField;
     private final List<EventFieldMetadata> fields;
-    private final List<String> errors = newArrayList();
+    private final List<String> errors;
 
-    private EventTypeMetadata(Class<T> eventClass)
+    private EventTypeMetadata(Class<T> eventClass, List<String> errors, Map<Class<?>, EventTypeMetadata<?>> metadataClasses, boolean nestedEvent)
     {
         Preconditions.checkNotNull(eventClass, "eventClass is null");
+        Preconditions.checkNotNull(errors, "errors is null");
+        Preconditions.checkNotNull(metadataClasses, "metadataClasses is null");
+        Preconditions.checkState(!metadataClasses.containsKey(eventClass), "metadataClasses contains eventClass");
 
         this.eventClass = eventClass;
+        this.errors = errors;
+
+        // handle cycles in the object graph
+        // these values must not be used until after construction
+        metadataClasses.put(eventClass, this);
 
         // get type name from annotation or class name
         String typeName = eventClass.getSimpleName();
         if (!eventClass.isAnnotationPresent(EventType.class)) {
-            addError("Event class [%s] is not annotated with @%s", eventClass.getName(), EventType.class.getSimpleName());
+            addClassError("is not annotated with @%s", EventType.class.getSimpleName());
         }
         else {
             EventType typeAnnotation = eventClass.getAnnotation(EventType.class);
             if (!typeAnnotation.value().isEmpty()) {
+                if (nestedEvent) {
+                    addClassError("specifies an event name but is used as a nested event");
+                }
                 typeName = typeAnnotation.value();
             }
         }
@@ -76,25 +91,52 @@ class EventTypeMetadata<T>
         List<EventFieldMetadata> timestampFields = newArrayList();
         List<EventFieldMetadata> hostFields = newArrayList();
         Map<String, EventFieldMetadata> fields = newTreeMap();
+
         for (Method method : findAnnotatedMethods(eventClass, EventField.class)) {
             // validate method
             if (method.getParameterTypes().length != 0) {
-                addError("@%s method [%s] does not have zero parameters", EventField.class.getSimpleName(), method.toGenericString());
+                addMethodError("does not have zero parameters", method);
                 continue;
             }
-            EventDataType eventDataType = getEventDataType(method.getReturnType());
-            if (eventDataType == null) {
-                addError("@%s method [%s] return type [%s] is not supported", EventField.class.getSimpleName(), method.toGenericString(), method.getReturnType());
-                continue;
+
+            Class<?> dataType = method.getReturnType();
+            boolean iterable = false;
+
+            if (isIterable(method.getReturnType())) {
+                dataType = getIterableType(method);
+                if (dataType == null) {
+                    continue;
+                }
+                iterable = true;
+            }
+
+            EventDataType eventDataType = null;
+            EventTypeMetadata<?> nestedType = null;
+
+            if (isNestedEvent(dataType)) {
+                nestedType = getNestedEventTypeMetadata(dataType, metadataClasses);
+            }
+            else {
+                eventDataType = getEventDataType(dataType);
+                if (eventDataType == null) {
+                    addMethodError("%s type [%s] is not supported", method, (iterable ? "iterable" : "return"), dataType);
+                    continue;
+                }
             }
 
             EventField eventField = method.getAnnotation(EventField.class);
             String fieldName = eventField.value();
             String v1FieldName = null;
+
             if (eventField.fieldMapping() != EventField.EventFieldMapping.DATA) {
                 // validate special fields
+                if (nestedEvent) {
+                    addMethodError("non-DATA fieldMapping (%s) not allowed for nested event", method, eventField.fieldMapping());
+                    continue;
+                }
                 if (!fieldName.isEmpty()) {
-                    addError("@%s method [%s] has a value and non-DATA fieldMapping (%s)", EventField.class.getSimpleName(), method.toGenericString(), eventField.fieldMapping());
+                    addMethodError("has a value and non-DATA fieldMapping (%s)", method, eventField.fieldMapping());
+                    continue;
                 }
                 fieldName = eventField.fieldMapping().getFieldName();
             }
@@ -106,12 +148,12 @@ class EventTypeMetadata<T>
                 v1FieldName = fieldName;
                 fieldName = fieldName.substring(0, 1).toLowerCase() + fieldName.substring(1);
                 if (fields.containsKey(fieldName)) {
-                    addError("Event class [%s] Multiple methods are annotated for @% field [%s]", eventClass.getName(), EventField.class.getSimpleName(), fieldName);
+                    addClassError("Multiple methods are annotated for @X field [%s]", fieldName);
                     continue;
                 }
             }
 
-            EventFieldMetadata eventFieldMetadata = new EventFieldMetadata(fieldName, v1FieldName, method, getEventDataType(method.getReturnType()));
+            EventFieldMetadata eventFieldMetadata = new EventFieldMetadata(fieldName, v1FieldName, method, eventDataType, nestedType, iterable);
             switch (eventField.fieldMapping()) {
                 case HOST:
                     hostFields.add(eventFieldMetadata);
@@ -133,25 +175,56 @@ class EventTypeMetadata<T>
         findInvalidMethods(eventClass);
 
         if (!uuidFields.isEmpty() && uuidFields.size() > 1) {
-            addError("Event class [%s] Multiple methods are annotated for @%s(fieldMapping=%s)", eventClass.getName(), EventField.class.getSimpleName(), EventField.EventFieldMapping.UUID);
+            addClassError("Multiple methods are annotated for @X(fieldMapping=%s)", EventField.EventFieldMapping.UUID);
         }
         this.uuidField = Iterables.getFirst(uuidFields, null);
 
         if (!timestampFields.isEmpty() && timestampFields.size() > 1) {
-            addError("Event class [%s] Multiple methods are annotated for @%s(fieldMapping=%s)", eventClass.getName(), EventField.class.getSimpleName(), EventField.EventFieldMapping.TIMESTAMP);
+            addClassError("Multiple methods are annotated for @X(fieldMapping=%s)", EventField.EventFieldMapping.TIMESTAMP);
         }
         this.timestampField = Iterables.getFirst(timestampFields, null);
 
         if (!hostFields.isEmpty() && hostFields.size() > 1) {
-            addError("Event class [%s] Multiple methods are annotated for @%s(fieldMapping=%s)", eventClass.getName(), EventField.class.getSimpleName(), EventField.EventFieldMapping.HOST);
+            addClassError("Multiple methods are annotated for @X(fieldMapping=%s)", EventField.EventFieldMapping.HOST);
         }
         this.hostField = Iterables.getFirst(hostFields, null);
 
         this.fields = Ordering.from(EventFieldMetadata.NAME_COMPARATOR).immutableSortedCopy(fields.values());
 
         if (getErrors().isEmpty() && this.fields.isEmpty()) {
-            addError("Event class [%s] does not have any @%s annotations", eventClass.getName(), EventField.class.getSimpleName());
+            addClassError("does not have any @X annotations");
         }
+    }
+
+    private Class<?> getIterableType(Method method)
+    {
+        Type[] types = getTypeParameters(Iterable.class, method.getGenericReturnType());
+        if ((types == null) || (types.length != 1)) {
+            addMethodError("Unable to get type parameter for iterable [%s]", method, method.getGenericReturnType());
+            return null;
+        }
+        Type type = types[0];
+        if (!(type instanceof Class)) {
+            addMethodError("Iterable type parameter [%s] must be an exact type", method, type);
+            return null;
+        }
+        if (isIterable((Class<?>) type)) {
+            addMethodError("Iterable of iterable is not supported", method);
+            return null;
+        }
+        return (Class<?>) type;
+    }
+
+    @SuppressWarnings("unchecked")
+    private EventTypeMetadata<?> getNestedEventTypeMetadata(Class<?> eventClass, Map<Class<?>, EventTypeMetadata<?>> metadataClasses)
+    {
+        EventTypeMetadata<?> metadata = metadataClasses.get(eventClass);
+        if (metadata != null) {
+            return metadata;
+        }
+
+        // the constructor adds itself to the list of classes
+        return new EventTypeMetadata(eventClass, errors, metadataClasses, true);
     }
 
     private void findInvalidMethods(Class<T> eventClass)
@@ -161,10 +234,10 @@ class EventTypeMetadata<T>
             for (Method method : clazz.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(EventField.class)) {
                     if (!Modifier.isPublic(method.getModifiers())) {
-                        addError("@%s method [%s] is not public", EventField.class.getSimpleName(), method.toGenericString());
+                        addMethodError("is not public", method);
                     }
                     if (Modifier.isStatic(method.getModifiers())) {
-                        addError("@%s method [%s] is static", EventField.class.getSimpleName(), method.toGenericString());
+                        addMethodError("is static", method);
                     }
                 }
             }
@@ -181,6 +254,16 @@ class EventTypeMetadata<T>
             return name.substring(2);
         }
         return name;
+    }
+
+    private static boolean isIterable(Class<?> type)
+    {
+        return Iterable.class.isAssignableFrom(type);
+    }
+
+    private static boolean isNestedEvent(Class<?> type)
+    {
+        return type.isAnnotationPresent(EventType.class);
     }
 
     List<String> getErrors()
@@ -218,9 +301,17 @@ class EventTypeMetadata<T>
         return fields;
     }
 
-    public void addError(String format, Object... args)
+    public void addMethodError(String format, Method method, Object... args)
+    {
+        String prefix = String.format("@X method [%s] ", method.toGenericString());
+        addClassError(prefix + format, args);
+    }
+
+    public void addClassError(String format, Object... args)
     {
         String message = String.format(format, args);
+        message = String.format("Event class [%s] %s", eventClass, message);
+        message = message.replace("@X", EventField.class.getSimpleName());
         errors.add(message);
     }
 
