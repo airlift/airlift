@@ -23,6 +23,7 @@ public class HttpEventModule implements Module
         binder.bind(EventClient.class).to(HttpEventClient.class).in(Scopes.SINGLETON);
         bindConfig(binder).to(HttpEventClientConfig.class);
         discoveryBinder(binder).bindHttpSelector("event");
+        discoveryBinder(binder).bindHttpSelector("collector");
 
         // Kick off the binding of Set<EventTypeMetadata> in case no events are bound
         Multibinder.newSetBinder(binder, new TypeLiteral<EventTypeMetadata<?>>() {});

@@ -32,18 +32,30 @@ public class HttpEventClient
     private final HttpServiceSelector serviceSelector;
     private final AsyncHttpClient client;
     private final JsonEventWriter eventWriter;
+    private final int version;
 
     @Inject
-    public HttpEventClient(@ServiceType("event") HttpServiceSelector serviceSelector,
+    public HttpEventClient(
+            @ServiceType("event") HttpServiceSelector v1ServiceSelector,
+            @ServiceType("collector") HttpServiceSelector serviceSelector,
             @ForEventClient AsyncHttpClient client,
-            JsonEventWriter eventWriter)
+            JsonEventWriter eventWriter,
+            HttpEventClientConfig config)
     {
         Preconditions.checkNotNull(serviceSelector, "serviceSelector is null");
+        Preconditions.checkNotNull(v1ServiceSelector, "v1ServiceSelector is null");
         Preconditions.checkNotNull(client, "client is null");
 
-        this.serviceSelector = serviceSelector;
         this.client = client;
         this.eventWriter = eventWriter;
+        this.version = config.getJsonVersion();
+
+        if (version == 1) {
+            this.serviceSelector = v1ServiceSelector;
+        }
+        else {
+            this.serviceSelector = serviceSelector;
+        }
     }
 
     @Override
@@ -81,7 +93,7 @@ public class HttpEventClient
         // also this code tries all servers instead of a fixed number
         for (URI uri : serviceSelector.selectHttpService()) {
             try {
-                String uriString = uri.toString();
+                String uriString = resolveUri(uri).toString();
                 Request request = new RequestBuilder("POST")
                         .setUrl(uriString)
                         .setHeader("Content-Type", "application/json")
@@ -97,6 +109,15 @@ public class HttpEventClient
 
         log.debug("Event(s) not posted");
         return Futures.immediateFuture(null);
+    }
+
+    private URI resolveUri(URI uri)
+    {
+        if (version == 1) {
+            return uri;
+        }
+
+        return uri.resolve("/v2/event");
     }
 
     private static class FutureResponse implements Future<Void>, Runnable
