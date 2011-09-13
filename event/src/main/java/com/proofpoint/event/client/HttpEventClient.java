@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
 import com.ning.http.client.AsyncHttpClient;
+import com.ning.http.client.ListenableFuture;
 import com.ning.http.client.Request;
 import com.ning.http.client.Request.EntityWriter;
 import com.ning.http.client.RequestBuilder;
@@ -18,6 +19,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -79,12 +81,13 @@ public class HttpEventClient
         // also this code tries all servers instead of a fixed number
         for (URI uri : serviceSelector.selectHttpService()) {
             try {
+                String uriString = uri.toString();
                 Request request = new RequestBuilder("POST")
-                        .setUrl(uri.toString())
+                        .setUrl(uriString)
                         .setHeader("Content-Type", "application/json")
                         .setBody(new JsonEntityWriter<T>(eventWriter, eventGenerator))
                         .build();
-                return new FutureResponse(client.prepareRequest(request).execute());
+                return new FutureResponse(client.prepareRequest(request).execute(), uriString);
             }
             catch (Exception e) {
                 // todo not noisy enough
@@ -96,22 +99,32 @@ public class HttpEventClient
         return Futures.immediateFuture(null);
     }
 
-    private static class FutureResponse
-            implements Future<Void>
+    private static class FutureResponse implements Future<Void>, Runnable
     {
-        private final Future<Response> delegate;
+        private static final Executor statusLoggerExecutor = new Executor()
+        {
+            @Override
+            public void execute(Runnable command)
+            {
+                command.run();
+            }
+        };
+        
+        private final ListenableFuture<Response> delegate;
+        private final String uri;
 
-        public FutureResponse(Future<Response> delegate)
+        public FutureResponse(ListenableFuture<Response> delegate, String uri)
         {
             this.delegate = delegate;
+            this.uri = uri;
+            delegate.addListener(this, statusLoggerExecutor);
         }
 
         @Override
         public Void get()
                 throws InterruptedException, ExecutionException
         {
-            Response response = delegate.get();
-            handleHttpResponse(response);
+            delegate.get();
             return null;
         }
 
@@ -119,23 +132,8 @@ public class HttpEventClient
         public Void get(long timeout, TimeUnit unit)
                 throws InterruptedException, ExecutionException, TimeoutException
         {
-            Response response = delegate.get(timeout, unit);
-            handleHttpResponse(response);
+            delegate.get(timeout, unit);
             return null;
-        }
-
-        private void handleHttpResponse(Response response)
-        {
-            int statusCode = response.getStatusCode();
-            if (statusCode != HttpServletResponse.SC_OK && statusCode != HttpServletResponse.SC_ACCEPTED) {
-                String body = "<empty>";
-                try {
-                    body = response.getResponseBody();
-                }
-                catch (IOException ignored) {
-                }
-                log.error("Posting event failed: status_code=%d status_line=%s body=%s", statusCode, response.getStatusText(), body);
-            }
         }
 
         @Override
@@ -154,6 +152,34 @@ public class HttpEventClient
         public boolean isDone()
         {
             return delegate.isDone();
+        }
+        
+        //Invoked as a result of ListenableFuture.addListener(this, ...)
+        //Expected to execute quickly on a Future<Response> that has completed.
+        @Override
+        public void run()
+        {
+            try {
+                Response response = delegate.get();
+                int statusCode = response.getStatusCode();
+                if (statusCode != HttpServletResponse.SC_OK && statusCode != HttpServletResponse.SC_ACCEPTED) {
+                    try {
+                        log.debug("Posting event to %s failed: status_code=%d status_line=%s body=%s", uri, statusCode, response.getStatusText(), response.getResponseBody());
+                    }
+                    catch (IOException bodyError) {
+                        log.debug("Posting event to %s failed: status_code=%d status_line=%s error=%s", uri, statusCode, response.getStatusText(), bodyError.getMessage());
+                    }
+                }
+            }
+            catch (Exception unexpectedError) {
+                log.debug(unexpectedError, "Posting event to %s failed", uri);
+            }
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Event post to " + uri + (isDone() ? " (done)" : "");
         }
     }
 
