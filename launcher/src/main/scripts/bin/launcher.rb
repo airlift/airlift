@@ -181,7 +181,7 @@ def start(options)
   command = build_cmd_line(options)
 
   puts command if options[:verbose]
-  pid = spawn(command,
+  pid = spawn("exec #{command}",
     :chdir => options[:data_dir],
     :out => "/dev/null",
     :err => "/dev/null"
