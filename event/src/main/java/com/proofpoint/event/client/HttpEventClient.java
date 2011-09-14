@@ -121,7 +121,7 @@ public class HttpEventClient
                     public Void apply(Response response)
                     {
                         int statusCode = response.getStatusCode();
-                        if (statusCode != HttpServletResponse.SC_OK && statusCode != HttpServletResponse.SC_ACCEPTED) {
+                        if (statusCode < 200 || statusCode > 299) {
                             try {
                                 log.debug("Posting event to %s failed: status_code=%d status_line=%s body=%s", uri, statusCode, response.getStatusText(), response.getResponseBody());
                             }
