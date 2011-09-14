@@ -84,6 +84,9 @@ class EventTypeMetadata<T>
                 typeName = typeAnnotation.value();
             }
         }
+        if (!isValidLegacyEventName(typeName)) {
+            addClassError("Event name is invalid");
+        }
         this.typeName = typeName;
 
         // build event field metadata
@@ -152,6 +155,10 @@ class EventTypeMetadata<T>
                 // always lowercase the first letter, even for user specified names
                 v1FieldName = fieldName;
                 fieldName = fieldName.substring(0, 1).toLowerCase() + fieldName.substring(1);
+                if (!isValidName(fieldName)) {
+                    addMethodError("Field name is invalid [%s]", method, fieldName);
+                    continue;
+                }
                 if (fields.containsKey(fieldName)) {
                     addClassError("Multiple methods are annotated for @X field [%s]", fieldName);
                     continue;
@@ -269,6 +276,17 @@ class EventTypeMetadata<T>
     private static boolean isNestedEvent(Class<?> type)
     {
         return type.isAnnotationPresent(EventType.class);
+    }
+
+    private static boolean isValidName(String name)
+    {
+        return name.matches("[A-Za-z][A-Za-z0-9]*");
+    }
+
+    private static boolean isValidLegacyEventName(String name)
+    {
+        // TODO: remove when V1 is gone
+        return name.matches("[A-Za-z0-9.:=, -]*");
     }
 
     List<String> getErrors()
