@@ -102,8 +102,9 @@ class EventTypeMetadata<T>
             Class<?> dataType = method.getReturnType();
             boolean iterable = false;
 
+            // extract iterable type and replace data type with it
             if (isIterable(method.getReturnType())) {
-                dataType = getIterableType(method);
+                dataType = extractIterableType(method);
                 if (dataType == null) {
                     continue;
                 }
@@ -130,6 +131,10 @@ class EventTypeMetadata<T>
 
             if (eventField.fieldMapping() != EventField.EventFieldMapping.DATA) {
                 // validate special fields
+                if (iterable) {
+                    addMethodError("non-DATA fieldMapping (%s) not allowed for iterable", method, eventField.fieldMapping());
+                    continue;
+                }
                 if (nestedEvent) {
                     addMethodError("non-DATA fieldMapping (%s) not allowed for nested event", method, eventField.fieldMapping());
                     continue;
@@ -196,7 +201,7 @@ class EventTypeMetadata<T>
         }
     }
 
-    private Class<?> getIterableType(Method method)
+    private Class<?> extractIterableType(Method method)
     {
         Type[] types = getTypeParameters(Iterable.class, method.getGenericReturnType());
         if ((types == null) || (types.length != 1)) {
