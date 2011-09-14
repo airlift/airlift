@@ -1,11 +1,12 @@
 package com.proofpoint.event.client;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
 import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.ListenableFuture;
 import com.ning.http.client.Request;
 import com.ning.http.client.Request.EntityWriter;
 import com.ning.http.client.RequestBuilder;
@@ -104,7 +105,7 @@ public class HttpEventClient
 
         // todo this doesn't really work due to returning the future which can fail without being retried
         // also this code tries all servers instead of a fixed number
-        for (URI uri : uris) {
+        for (final URI uri : uris) {
             try {
                 String uriString = resolveUri(uri).toString();
                 Request request = new RequestBuilder("POST")
@@ -112,7 +113,25 @@ public class HttpEventClient
                         .setHeader("Content-Type", "application/json")
                         .setBody(new JsonEntityWriter<T>(eventWriter, eventGenerator))
                         .build();
-                return new FutureResponse(client.prepareRequest(request).execute(), uriString);
+
+                ListenableFuture<Response> future = toGuavaListenableFuture(client.prepareRequest(request).execute());
+
+                return Futures.transform(future, new Function<Response, Void>()
+                {
+                    public Void apply(Response response)
+                    {
+                        int statusCode = response.getStatusCode();
+                        if (statusCode != HttpServletResponse.SC_OK && statusCode != HttpServletResponse.SC_ACCEPTED) {
+                            try {
+                                log.debug("Posting event to %s failed: status_code=%d status_line=%s body=%s", uri, statusCode, response.getStatusText(), response.getResponseBody());
+                            }
+                            catch (IOException bodyError) {
+                                log.debug("Posting event to %s failed: status_code=%d status_line=%s error=%s", uri, statusCode, response.getStatusText(), bodyError.getMessage());
+                            }
+                        }
+                        return null;
+                    }
+                });
             }
             catch (Exception e) {
                 exceptions.put(uri, e);
@@ -137,88 +156,49 @@ public class HttpEventClient
         return uri.resolve("/v2/event");
     }
 
-    private static class FutureResponse implements Future<Void>, Runnable
+    // TODO: copied from com.proofpoint.discovery.client.HttpDiscoveryClient -- factor out?
+    private static <T> com.google.common.util.concurrent.ListenableFuture<T> toGuavaListenableFuture(final com.ning.http.client.ListenableFuture<T> asyncClientFuture)
     {
-        private static final Executor statusLoggerExecutor = new Executor()
+        return new com.google.common.util.concurrent.ListenableFuture<T>()
         {
             @Override
-            public void execute(Runnable command)
+            public boolean cancel(boolean mayInterruptIfRunning)
             {
-                command.run();
+                return asyncClientFuture.cancel(mayInterruptIfRunning);
+            }
+
+            @Override
+            public void addListener(Runnable listener, Executor executor)
+            {
+                asyncClientFuture.addListener(listener, executor);
+            }
+
+            @Override
+            public boolean isCancelled()
+            {
+                return asyncClientFuture.isCancelled();
+            }
+
+            @Override
+            public boolean isDone()
+            {
+                return asyncClientFuture.isDone();
+            }
+
+            @Override
+            public T get()
+                    throws InterruptedException, ExecutionException
+            {
+                return asyncClientFuture.get();
+            }
+
+            @Override
+            public T get(long timeout, TimeUnit timeUnit)
+                    throws InterruptedException, ExecutionException, TimeoutException
+            {
+                return asyncClientFuture.get(timeout, timeUnit);
             }
         };
-        
-        private final ListenableFuture<Response> delegate;
-        private final String uri;
-
-        public FutureResponse(ListenableFuture<Response> delegate, String uri)
-        {
-            this.delegate = delegate;
-            this.uri = uri;
-            delegate.addListener(this, statusLoggerExecutor);
-        }
-
-        @Override
-        public Void get()
-                throws InterruptedException, ExecutionException
-        {
-            delegate.get();
-            return null;
-        }
-
-        @Override
-        public Void get(long timeout, TimeUnit unit)
-                throws InterruptedException, ExecutionException, TimeoutException
-        {
-            delegate.get(timeout, unit);
-            return null;
-        }
-
-        @Override
-        public boolean cancel(boolean mayInterruptIfRunning)
-        {
-            return delegate.cancel(mayInterruptIfRunning);
-        }
-
-        @Override
-        public boolean isCancelled()
-        {
-            return delegate.isCancelled();
-        }
-
-        @Override
-        public boolean isDone()
-        {
-            return delegate.isDone();
-        }
-        
-        //Invoked as a result of ListenableFuture.addListener(this, ...)
-        //Expected to execute quickly on a Future<Response> that has completed.
-        @Override
-        public void run()
-        {
-            try {
-                Response response = delegate.get();
-                int statusCode = response.getStatusCode();
-                if (statusCode != HttpServletResponse.SC_OK && statusCode != HttpServletResponse.SC_ACCEPTED) {
-                    try {
-                        log.debug("Posting event to %s failed: status_code=%d status_line=%s body=%s", uri, statusCode, response.getStatusText(), response.getResponseBody());
-                    }
-                    catch (IOException bodyError) {
-                        log.debug("Posting event to %s failed: status_code=%d status_line=%s error=%s", uri, statusCode, response.getStatusText(), bodyError.getMessage());
-                    }
-                }
-            }
-            catch (Exception unexpectedError) {
-                log.debug(unexpectedError, "Posting event to %s failed", uri);
-            }
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Event post to " + uri + (isDone() ? " (done)" : "");
-        }
     }
 
     private static class JsonEntityWriter<T>
