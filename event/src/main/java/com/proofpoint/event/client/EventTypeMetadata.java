@@ -2,14 +2,12 @@ package com.proofpoint.event.client;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Supplier;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.proofpoint.event.client.EventField.EventFieldMapping;
 
@@ -79,7 +77,7 @@ class EventTypeMetadata<T>
         this.typeName = extractTypeName(eventClass, nestedEvent);
 
         // build event field metadata
-        Multimap<EventFieldMapping, EventFieldMetadata> specialFields = newArrayListEnumMultimap(EventFieldMapping.class);
+        Multimap<EventFieldMapping, EventFieldMetadata> specialFields = ArrayListMultimap.create();
         Map<String, EventFieldMetadata> fields = newTreeMap();
 
         for (Method method : findAnnotatedMethods(eventClass, EventField.class)) {
@@ -356,16 +354,5 @@ class EventTypeMetadata<T>
     public int hashCode()
     {
         return eventClass != null ? eventClass.hashCode() : 0;
-    }
-
-    private static <K extends Enum<K>, V> ListMultimap<K, V> newArrayListEnumMultimap(Class<K> keyType)
-    {
-        return Multimaps.newListMultimap(Maps.<K, Collection<V>>newEnumMap(keyType), new Supplier<List<V>>()
-        {
-            public List<V> get()
-            {
-                return Lists.newArrayList();
-            }
-        });
     }
 }
