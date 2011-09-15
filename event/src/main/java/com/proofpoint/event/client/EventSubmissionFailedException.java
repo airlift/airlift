@@ -1,4 +1,4 @@
-package com.proofpoint.event;
+package com.proofpoint.event.client;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
@@ -10,15 +10,16 @@ import java.util.Map;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.notNull;
 import static com.google.common.collect.Iterables.find;
+import static java.lang.String.format;
 
 public class EventSubmissionFailedException
     extends RuntimeException
 {
     private final Map<URI, Throwable> causes;
 
-    public EventSubmissionFailedException(String message, Map<URI, ? extends Throwable> causes)
+    public EventSubmissionFailedException(String type, String pool, Map<URI, ? extends Throwable> causes)
     {
-        super(message);
+        super(format("Failed to submit events to service=[%s], pool [%s]", type, pool));
 
         Preconditions.checkNotNull(causes, "causes is null");
 

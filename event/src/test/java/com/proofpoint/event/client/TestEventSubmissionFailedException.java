@@ -2,7 +2,6 @@ package com.proofpoint.event.client;
 
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Ordering;
-import com.proofpoint.event.EventSubmissionFailedException;
 import org.testng.annotations.Test;
 
 import java.net.URI;
@@ -12,6 +11,7 @@ import java.util.Map;
 import static com.google.common.collect.ImmutableMap.of;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertTrue;
 
 public class TestEventSubmissionFailedException
 {
@@ -19,13 +19,13 @@ public class TestEventSubmissionFailedException
     public void testRejectsNull()
     {
         //noinspection ThrowableInstanceNeverThrown
-        new EventSubmissionFailedException("foo", null);
+        new EventSubmissionFailedException("service", "type", null);
     }
 
     @Test
     public void testEmptyCause()
     {
-        EventSubmissionFailedException e = new EventSubmissionFailedException("foo", Collections.<URI, Exception>emptyMap());
+        EventSubmissionFailedException e = new EventSubmissionFailedException("service", "type", Collections.<URI, Exception>emptyMap());
 
         assertNull(e.getCause());
     }
@@ -34,9 +34,18 @@ public class TestEventSubmissionFailedException
     public void testSingleCause()
     {
         RuntimeException cause = new RuntimeException();
-        EventSubmissionFailedException e = new EventSubmissionFailedException("foo", of(URI.create("/"), cause));
+        EventSubmissionFailedException e = new EventSubmissionFailedException("service", "type", of(URI.create("/"), cause));
 
         assertSame(e.getCause(), cause);
+    }
+
+    @Test
+    public void testMessageMentionsServiceAndType()
+    {
+        EventSubmissionFailedException e = new EventSubmissionFailedException("serviceX", "typeY", Collections.<URI, Throwable>emptyMap());
+
+        assertTrue(e.getMessage().contains("serviceX"));
+        assertTrue(e.getMessage().contains("typeY"));
     }
 
     @Test
@@ -52,7 +61,7 @@ public class TestEventSubmissionFailedException
             .put(uri2, cause2)
             .build();
 
-        EventSubmissionFailedException e = new EventSubmissionFailedException("foo", causes);
+        EventSubmissionFailedException e = new EventSubmissionFailedException("service", "type", causes);
 
         assertSame(e.getCause(), cause1);
     }

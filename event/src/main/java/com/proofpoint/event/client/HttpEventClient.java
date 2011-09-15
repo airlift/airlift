@@ -13,7 +13,6 @@ import com.ning.http.client.RequestBuilder;
 import com.ning.http.client.Response;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.ServiceType;
-import com.proofpoint.event.EventSubmissionFailedException;
 import com.proofpoint.log.Logger;
 
 import javax.servlet.http.HttpServletResponse;
@@ -142,9 +141,7 @@ public class HttpEventClient
         }
 
         log.debug("Event(s) not posted");
-        return Futures.immediateFailedFuture(new EventSubmissionFailedException(
-                format("Failed to submit events to service=[%s], pool [%s]", serviceSelector.getType(), serviceSelector.getPool()),
-                exceptions.build()));
+        return Futures.immediateFailedFuture(new EventSubmissionFailedException(serviceSelector.getType(), serviceSelector.getPool(), exceptions.build()));
     }
 
     private URI resolveUri(URI uri)
