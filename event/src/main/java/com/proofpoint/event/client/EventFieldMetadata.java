@@ -5,13 +5,13 @@ import com.google.common.collect.Lists;
 import org.codehaus.jackson.JsonGenerator;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayDeque;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 
+import static com.google.common.base.Objects.firstNonNull;
 import static com.proofpoint.event.client.EventDataType.validateFieldValueType;
 
 class EventFieldMetadata
@@ -44,24 +44,16 @@ class EventFieldMetadata
         this.iterable = iterable;
     }
 
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored") // IDEA-74322
     private Object getValue(Object event)
             throws InvalidEventException
     {
         try {
             return method.invoke(event);
         }
-        catch (IllegalAccessException e) {
-            throw new InvalidEventException(e, "Unexpected exception reading event field %s", name);
-        }
-        catch (InvocationTargetException e) {
-            Throwable cause = e.getCause();
-            if (cause == null) {
-                cause = e;
-            }
-            throw new InvalidEventException(cause,
-                    "Unable to get value of event field %s: Exception occurred while invoking [%s]",
-                    name,
-                    method.toGenericString());
+        catch (Exception e) {
+            throw new InvalidEventException(firstNonNull(e.getCause(), e),
+                    "Unable to get value of event field %s: Exception occurred while invoking [%s]", name, method.toGenericString());
         }
     }
 
