@@ -2,21 +2,26 @@ package com.proofpoint.event.client;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
+import com.proofpoint.event.client.EventField.EventFieldMapping;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.google.common.collect.Lists.newArrayList;
+import static com.google.common.collect.Iterables.getFirst;
 import static com.google.common.collect.Maps.newTreeMap;
 import static com.proofpoint.event.client.AnnotationUtils.findAnnotatedMethods;
 import static com.proofpoint.event.client.EventDataType.getEventDataType;
@@ -90,9 +95,7 @@ class EventTypeMetadata<T>
         this.typeName = typeName;
 
         // build event field metadata
-        List<EventFieldMetadata> uuidFields = newArrayList();
-        List<EventFieldMetadata> timestampFields = newArrayList();
-        List<EventFieldMetadata> hostFields = newArrayList();
+        Multimap<EventFieldMapping, EventFieldMetadata> specialFields = newArrayListEnumMultimap(EventFieldMapping.class);
         Map<String, EventFieldMetadata> fields = newTreeMap();
 
         for (Method method : findAnnotatedMethods(eventClass, EventField.class)) {
@@ -132,7 +135,7 @@ class EventTypeMetadata<T>
             String fieldName = eventField.value();
             String v1FieldName = null;
 
-            if (eventField.fieldMapping() != EventField.EventFieldMapping.DATA) {
+            if (eventField.fieldMapping() != EventFieldMapping.DATA) {
                 // validate special fields
                 if (iterable) {
                     addMethodError("non-DATA fieldMapping (%s) not allowed for iterable", method, eventField.fieldMapping());
@@ -166,40 +169,25 @@ class EventTypeMetadata<T>
             }
 
             EventFieldMetadata eventFieldMetadata = new EventFieldMetadata(fieldName, v1FieldName, method, eventDataType, nestedType, iterable);
-            switch (eventField.fieldMapping()) {
-                case HOST:
-                    hostFields.add(eventFieldMetadata);
-                    break;
-                case TIMESTAMP:
-                    timestampFields.add(eventFieldMetadata);
-                    break;
-                case UUID:
-                    uuidFields.add(eventFieldMetadata);
-                    break;
-                case DATA:
-                    fields.put(fieldName, eventFieldMetadata);
-                    break;
-                default:
-                    throw new AssertionError("unhandled fieldMapping type: " + eventField.fieldMapping());
+            if (eventField.fieldMapping() == EventFieldMapping.DATA) {
+                fields.put(fieldName, eventFieldMetadata);
+            }
+            else {
+                specialFields.put(eventField.fieldMapping(), eventFieldMetadata);
             }
         }
 
         findInvalidMethods(eventClass);
 
-        if (!uuidFields.isEmpty() && uuidFields.size() > 1) {
-            addClassError("Multiple methods are annotated for @X(fieldMapping=%s)", EventField.EventFieldMapping.UUID);
+        for (EventFieldMapping mapping : EventFieldMapping.values()) {
+            if ((mapping != EventFieldMapping.DATA) && (specialFields.get(mapping).size() > 1)) {
+                addClassError("Multiple methods are annotated for @X(fieldMapping=%s)", mapping);
+            }
         }
-        this.uuidField = Iterables.getFirst(uuidFields, null);
 
-        if (!timestampFields.isEmpty() && timestampFields.size() > 1) {
-            addClassError("Multiple methods are annotated for @X(fieldMapping=%s)", EventField.EventFieldMapping.TIMESTAMP);
-        }
-        this.timestampField = Iterables.getFirst(timestampFields, null);
-
-        if (!hostFields.isEmpty() && hostFields.size() > 1) {
-            addClassError("Multiple methods are annotated for @X(fieldMapping=%s)", EventField.EventFieldMapping.HOST);
-        }
-        this.hostField = Iterables.getFirst(hostFields, null);
+        this.uuidField = getFirst(specialFields.get(EventFieldMapping.UUID), null);
+        this.timestampField = getFirst(specialFields.get(EventFieldMapping.TIMESTAMP), null);
+        this.hostField = getFirst(specialFields.get(EventFieldMapping.HOST), null);
 
         this.fields = Ordering.from(EventFieldMetadata.NAME_COMPARATOR).immutableSortedCopy(fields.values());
 
@@ -362,5 +350,16 @@ class EventTypeMetadata<T>
     public int hashCode()
     {
         return eventClass != null ? eventClass.hashCode() : 0;
+    }
+
+    private static <K extends Enum<K>, V> ListMultimap<K, V> newArrayListEnumMultimap(Class<K> keyType)
+    {
+        return Multimaps.newListMultimap(Maps.<K, Collection<V>>newEnumMap(keyType), new Supplier<List<V>>()
+        {
+            public List<V> get()
+            {
+                return Lists.newArrayList();
+            }
+        });
     }
 }
