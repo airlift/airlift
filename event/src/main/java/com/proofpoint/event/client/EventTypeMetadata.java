@@ -75,24 +75,8 @@ class EventTypeMetadata<T>
         // these values must not be used until after construction
         metadataClasses.put(eventClass, this);
 
-        // get type name from annotation or class name
-        String typeName = eventClass.getSimpleName();
-        if (!eventClass.isAnnotationPresent(EventType.class)) {
-            addClassError("is not annotated with @%s", EventType.class.getSimpleName());
-        }
-        else {
-            EventType typeAnnotation = eventClass.getAnnotation(EventType.class);
-            if (!typeAnnotation.value().isEmpty()) {
-                if (nestedEvent) {
-                    addClassError("specifies an event name but is used as a nested event");
-                }
-                typeName = typeAnnotation.value();
-            }
-        }
-        if (!isValidLegacyEventName(typeName)) {
-            addClassError("Event name is invalid");
-        }
-        this.typeName = typeName;
+        // get type name from annotation
+        this.typeName = extractTypeName(eventClass, nestedEvent);
 
         // build event field metadata
         Multimap<EventFieldMapping, EventFieldMetadata> specialFields = newArrayListEnumMultimap(EventFieldMapping.class);
@@ -194,6 +178,28 @@ class EventTypeMetadata<T>
         if (getErrors().isEmpty() && this.fields.isEmpty()) {
             addClassError("does not have any @X annotations");
         }
+    }
+
+    private String extractTypeName(Class<T> eventClass, boolean nestedEvent)
+    {
+        EventType typeAnnotation = eventClass.getAnnotation(EventType.class);
+        if (typeAnnotation == null) {
+            addClassError("is not annotated with @%s", EventType.class.getSimpleName());
+            return null;
+        }
+        String typeName = typeAnnotation.value();
+        if (nestedEvent) {
+            if (!typeName.isEmpty()) {
+                addClassError("specifies an event name but is used as a nested event");
+            }
+        }
+        else if (typeName.isEmpty()) {
+            addClassError("does not specify an event name");
+        }
+        else if (!isValidLegacyEventName(typeName)) {
+            addClassError("Event name is invalid [%s]", typeName);
+        }
+        return typeName;
     }
 
     private Class<?> extractIterableType(Method method)

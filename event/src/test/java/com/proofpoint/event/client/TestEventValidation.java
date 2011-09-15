@@ -28,6 +28,45 @@ public class TestEventValidation
         assertInvalidEvent(TestEvent.class, "Event name is invalid");
     }
 
+    @Test
+    public void testMissingEventTypeAnnotation()
+    {
+        class TestEvent
+        {}
+
+        assertInvalidEvent(TestEvent.class, "is not annotated with");
+    }
+
+    @Test
+    public void testMissingEventTypeName()
+    {
+        @EventType
+        class TestEvent
+        {}
+
+        assertInvalidEvent(TestEvent.class, "does not specify an event name");
+    }
+
+    @Test
+    public void testEventTypeNameForNestedEvent()
+    {
+        @EventType("Test")
+        class TestEvent
+        {
+            @EventType("Nested")
+            class Nested
+            {}
+
+            @EventField
+            public Nested getNested()
+            {
+                return null;
+            }
+        }
+
+        assertInvalidEvent(TestEvent.class, "specifies an event name but is used as a nested event");
+    }
+
     private static void assertInvalidEvent(Class<?> eventClass, String errorPart)
     {
         EventTypeMetadata<?> metadata = getEventTypeMetadata(eventClass);
