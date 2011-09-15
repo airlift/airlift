@@ -161,9 +161,9 @@ class EventTypeMetadata<T>
 
         findInvalidMethods(eventClass);
 
-        for (EventFieldMapping mapping : EventFieldMapping.values()) {
-            if ((mapping != EventFieldMapping.DATA) && (specialFields.get(mapping).size() > 1)) {
-                addClassError("Multiple methods are annotated for @X(fieldMapping=%s)", mapping);
+        for (Map.Entry<EventFieldMapping, Collection<EventFieldMetadata>> entry : specialFields.asMap().entrySet()) {
+            if (entry.getValue().size() > 1) {
+                addClassError("Multiple methods are annotated for @X(fieldMapping=%s)", entry.getValue());
             }
         }
 
