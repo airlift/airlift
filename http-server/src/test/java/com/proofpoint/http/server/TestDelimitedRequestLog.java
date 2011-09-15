@@ -78,6 +78,7 @@ public class TestDelimitedRequestLog
         final String method = "GET";
         final int status = 200;
         final long contentLength = 32311;
+        final long requestSize = 5432;
         final HttpURI uri = new HttpURI("http://www.example.com/aaa+bbb/ccc?param=hello%20there&other=true");
 
 
@@ -97,6 +98,7 @@ public class TestDelimitedRequestLog
         when(request.getUri()).thenReturn(uri);
         when(request.getUserPrincipal()).thenReturn(principal);
         when(request.getMethod()).thenReturn(method);
+        when(request.getContentRead()).thenReturn(requestSize);
         when(response.getStatus()).thenReturn(status);
         when(response.getContentCount()).thenReturn(contentLength);
 
@@ -104,8 +106,8 @@ public class TestDelimitedRequestLog
         logger.stop();
 
         String actual = Files.toString(file, Charsets.UTF_8);
-        String expected = String.format("%s\t%s\t%s\t%s\t%s\t%s\t%d\t%d\t%d\n",
-                isoFormatter.print(timestamp), ip, method, uri, user, agent, status, contentLength, requestTime);
+        String expected = String.format("%s\t%s\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%d\n",
+                isoFormatter.print(timestamp), ip, method, uri, user, agent, status, requestSize, contentLength, requestTime);
         Assert.assertEquals(actual, expected);
     }
 }

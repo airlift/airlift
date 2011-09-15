@@ -81,6 +81,8 @@ class DelimitedRequestLog
                 .append('\t')
                 .append(response.getStatus())
                 .append('\t')
+                .append(request.getContentRead())
+                .append('\t')
                 .append(response.getContentCount())
                 .append('\t')
                 .append(getRequestTime(request))
