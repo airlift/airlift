@@ -71,11 +71,7 @@ class EventFieldMetadata
             jsonGenerator.writeFieldName(name);
             if (iterable) {
                 validateFieldValueType(value, Iterable.class);
-                jsonGenerator.writeStartArray();
-                for (Object item : (Iterable<?>) value) {
-                    writeFieldValue(jsonGenerator, item, objectStack);
-                }
-                jsonGenerator.writeEndArray();
+                writeArray(jsonGenerator, (Iterable<?>) value, objectStack);
             }
             else {
                 writeFieldValue(jsonGenerator, value, objectStack);
@@ -91,19 +87,41 @@ class EventFieldMetadata
         }
         else {
             validateFieldValueType(value, nestedType.getEventClass());
-            for (Object o : objectStack) {
-                if (value == o) {
-                    List<Object> path = Lists.reverse(Lists.newArrayList(objectStack));
-                    throw new InvalidEventException("Cycle detected in event data: %s", path);
-                }
+            writeObject(jsonGenerator, value, objectStack);
+        }
+    }
+
+    private void writeArray(JsonGenerator jsonGenerator, Iterable<?> value, Deque<Object> objectStack)
+            throws IOException
+    {
+        jsonGenerator.writeStartArray();
+        for (Object item : value) {
+            writeFieldValue(jsonGenerator, item, objectStack);
+        }
+        jsonGenerator.writeEndArray();
+    }
+
+    private void writeObject(JsonGenerator jsonGenerator, Object value, Deque<Object> objectStack)
+            throws IOException
+    {
+        checkForCycles(value, objectStack);
+        objectStack.push(value);
+        jsonGenerator.writeStartObject();
+        for (EventFieldMetadata field : nestedType.getFields()) {
+            field.writeField(jsonGenerator, value, objectStack);
+        }
+        jsonGenerator.writeEndObject();
+        objectStack.pop();
+    }
+
+    private static void checkForCycles(Object value, Deque<Object> objectStack)
+            throws InvalidEventException
+    {
+        for (Object o : objectStack) {
+            if (value == o) {
+                List<Object> path = Lists.reverse(Lists.newArrayList(objectStack));
+                throw new InvalidEventException("Cycle detected in event data: %s", path);
             }
-            objectStack.push(value);
-            jsonGenerator.writeStartObject();
-            for (EventFieldMetadata field : nestedType.getFields()) {
-                field.writeField(jsonGenerator, value, objectStack);
-            }
-            jsonGenerator.writeEndObject();
-            objectStack.pop();
         }
     }
 
