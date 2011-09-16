@@ -98,6 +98,7 @@ public class HttpServer
             httpsConnector.setPassword(config.getKeystorePassword());
             httpsConnector.setMaxIdleTime((int) config.getNetworkMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
             httpsConnector.setHost(nodeInfo.getBindIp().getHostAddress());
+            httpsConnector.setAllowRenegotiate(true);
 
             server.addConnector(httpsConnector);
         }
