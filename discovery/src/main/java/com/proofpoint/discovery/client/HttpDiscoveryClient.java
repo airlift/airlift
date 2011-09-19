@@ -92,7 +92,7 @@ public class HttpDiscoveryClient implements DiscoveryClient
                     Duration maxAge = extractMaxAge(response);
                     int statusCode = response.getStatusCode();
                     if (!isSuccess(statusCode)) {
-                        throw new DiscoveryException(String.format("Announcement failed with status code %s", statusCode));
+                        throw new DiscoveryException(String.format("Announcement failed with status code %s: %s", statusCode, getBodyForError(response)));
                     }
 
                     return maxAge;
@@ -110,6 +110,16 @@ public class HttpDiscoveryClient implements DiscoveryClient
     private boolean isSuccess(int statusCode)
     {
         return statusCode / 100 == 2;
+    }
+
+    private static String getBodyForError(Response response)
+    {
+        try {
+            return response.getResponseBody();
+        }
+        catch (IOException e) {
+            return "(error getting body)";
+        }
     }
 
     @Override
