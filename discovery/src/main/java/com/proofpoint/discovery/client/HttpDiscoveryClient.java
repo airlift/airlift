@@ -166,7 +166,7 @@ public class HttpDiscoveryClient implements DiscoveryClient
                             }
 
                             if (OK.getStatusCode() != response.getStatusCode()) {
-                                throw new DiscoveryException(format("Lookup of %s failed with status code %s", serviceDescriptors.getType(), response.getStatusCode()));
+                                throw new DiscoveryException(format("Lookup of %s failed with status code %s", type, response.getStatusCode()));
                             }
 
 
