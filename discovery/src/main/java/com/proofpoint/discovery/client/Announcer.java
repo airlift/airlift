@@ -1,7 +1,6 @@
 package com.proofpoint.discovery.client;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
 import com.google.common.util.concurrent.CheckedFuture;
@@ -22,6 +21,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -36,6 +36,7 @@ public class Announcer
     private final DiscoveryClient client;
     private final ScheduledExecutorService executor;
     private final AtomicLong currentJob = new AtomicLong();
+    private final AtomicBoolean serverUp = new AtomicBoolean(true);
 
     private final ReentrantLock lock = new ReentrantLock();
     private ScheduledFuture<?> restartAnnouncementSchedule;
@@ -109,8 +110,8 @@ public class Announcer
             client.unannounce().checkedGet();
         }
         catch (DiscoveryException e) {
-            if (Throwables.getRootCause(e) instanceof ConnectException) {
-                log.debug(e, "Can not connect to discovery server for unannounce");
+            if (e.getCause() instanceof ConnectException) {
+                log.error("Cannot connect to discovery server for unannounce: %s", e.getCause().getMessage());
             }
             else {
                 log.error(e);
@@ -144,10 +145,15 @@ public class Announcer
                     Duration duration = DEFAULT_DELAY;
                     try {
                         duration = future.checkedGet();
+                        if (serverUp.compareAndSet(false, true)) {
+                            log.info("Discovery server connect succeeded for announce");
+                        }
                     }
                     catch (DiscoveryException e) {
-                        if (Throwables.getRootCause(e) instanceof ConnectException) {
-                            log.debug(e, "Can not connect to discovery server");
+                        if (e.getCause() instanceof ConnectException) {
+                            if (serverUp.compareAndSet(true, false)) {
+                                log.error("Cannot connect to discovery server for announce: %s", e.getCause().getMessage());
+                            }
                         }
                         else {
                             log.error(e);
