@@ -286,7 +286,7 @@ option_parser = OptionParser.new(:unknown_options_action => :collect) do |opts|
     options[:verbose] = true
   end
 
-  opts.on("--node-config FILE", "Defaults to INSTALL_PATH/env/node.config") do |v|
+  opts.on("--node-config FILE", "Defaults to INSTALL_PATH/etc/node.config") do |v|
     options[:node_config_path] = Pathname.new(v).expand_path
   end
 
