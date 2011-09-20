@@ -13,6 +13,7 @@ import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.ServiceType;
 import com.proofpoint.log.Logger;
 
+import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -62,6 +63,11 @@ public class HttpEventClient
             workerThreads = 16;
         }
         executor = Executors.newFixedThreadPool(workerThreads, new ThreadFactoryBuilder().setNameFormat("http-event-client-%s").build());
+    }
+
+    @PreDestroy
+    public void destroy() {
+        executor.shutdownNow();
     }
 
     @Override

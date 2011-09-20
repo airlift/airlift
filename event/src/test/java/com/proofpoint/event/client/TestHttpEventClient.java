@@ -46,13 +46,14 @@ import static org.testng.Assert.assertNull;
 public class TestHttpEventClient
 {
     private DummyServlet servlet;
+    private HttpEventClient client;
     private TestingHttpServer server;
 
     @Test(expectedExceptions = ServiceUnavailableException.class, expectedExceptionsMessageRegExp = ".*is not available.*")
     public void testFutureFailsWhenServiceUnavailable()
             throws ExecutionException, InterruptedException
     {
-        HttpEventClient client = newEventClient(Collections.<URI>emptyList());
+        client = newEventClient(Collections.<URI>emptyList());
 
         try {
             client.post(new FixedDummyEventClass("host", new DateTime(), UUID.randomUUID(), 1, "foo")).get();
@@ -66,7 +67,7 @@ public class TestHttpEventClient
     public void testCallSucceedsWhenServiceUnavailable()
             throws ExecutionException, InterruptedException
     {
-        HttpEventClient client = newEventClient(Collections.<URI>emptyList());
+        client = newEventClient(Collections.<URI>emptyList());
 
         client.post(new FixedDummyEventClass("host", new DateTime(), UUID.randomUUID(), 1, "foo"));
 
@@ -78,7 +79,7 @@ public class TestHttpEventClient
     public void testReceivesEvent()
             throws ExecutionException, InterruptedException, IOException
     {
-        HttpEventClient client = newEventClient(asList(server.getBaseUrl()));
+        client = newEventClient(asList(server.getBaseUrl()));
 
         client.post(TestingUtils.getEvents()).get();
 
@@ -90,7 +91,7 @@ public class TestHttpEventClient
     public void loadTest()
             throws ExecutionException, InterruptedException, IOException
     {
-        HttpEventClient client = newEventClient(asList(server.getBaseUrl()));
+        client = newEventClient(asList(server.getBaseUrl()));
 
         List<Future<Void>> futures = newArrayList();
         for (int i = 0; i < 1000; i++) {
@@ -119,6 +120,10 @@ public class TestHttpEventClient
             throws Exception
     {
         server.stop();
+        if (client != null) {
+            client.destroy();
+            client = null;
+        }
     }
 
     private HttpEventClient newEventClient(List<URI> v2Uris)
