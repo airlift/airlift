@@ -9,6 +9,7 @@ import com.google.inject.TypeLiteral;
 import com.ning.http.client.AsyncHttpClient;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.testing.StaticHttpServiceSelector;
+import com.proofpoint.http.server.HttpServerModule;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
@@ -33,7 +34,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
+import static com.google.common.collect.Lists.newArrayList;
 import static com.proofpoint.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 import static com.proofpoint.event.client.TestingUtils.getNormalizedJson;
 import static java.util.Arrays.asList;
@@ -83,6 +86,25 @@ public class TestHttpEventClient
         assertEquals(servlet.lastBody, getNormalizedJson("events.json"));
     }
 
+    @Test
+    public void loadTest()
+            throws ExecutionException, InterruptedException, IOException
+    {
+        HttpEventClient client = newEventClient(asList(server.getBaseUrl()));
+
+        List<Future<Void>> futures = newArrayList();
+        for (int i = 0; i < 1000; i++) {
+            futures.add(client.post(TestingUtils.getEvents()));
+        }
+
+        for (Future<Void> future : futures) {
+            future.get();
+            System.out.println("future " + future);
+        }
+        assertEquals(servlet.lastPath, "/v2/event");
+        assertEquals(servlet.lastBody, getNormalizedJson("events.json"));
+    }
+
     @BeforeMethod
     public void setup()
             throws Exception
@@ -105,11 +127,11 @@ public class TestHttpEventClient
         HttpServiceSelector v2Selector = new StaticHttpServiceSelector("collector", "general", v2Uris);
 
         HttpEventClientConfig config = new HttpEventClientConfig();
+
         Set<EventTypeMetadata<?>> eventTypes = getValidEventTypeMetaDataSet(FixedDummyEventClass.class);
         JsonEventWriter eventWriter = new JsonEventWriter(new ObjectMapperProvider().get(), eventTypes, config);
-        AsyncHttpClient httpClient = new AsyncHttpClient();
 
-        return new HttpEventClient(v1Selector, v2Selector, httpClient, eventWriter, config);
+        return new HttpEventClient(v1Selector, v2Selector, eventWriter, config);
     }
 
     private TestingHttpServer createServer(final DummyServlet servlet)

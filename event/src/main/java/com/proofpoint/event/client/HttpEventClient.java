@@ -1,32 +1,31 @@
 package com.proofpoint.event.client;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.CharStreams;
+import com.google.common.io.Closeables;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListenableFutureTask;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.Request;
 import com.ning.http.client.Request.EntityWriter;
-import com.ning.http.client.RequestBuilder;
-import com.ning.http.client.Response;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.ServiceType;
 import com.proofpoint.log.Logger;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import static java.lang.String.format;
 
 public class HttpEventClient
         implements EventClient
@@ -34,23 +33,20 @@ public class HttpEventClient
     private static final Logger log = Logger.get(HttpEventClient.class);
 
     private final HttpServiceSelector serviceSelector;
-    private final AsyncHttpClient client;
     private final JsonEventWriter eventWriter;
     private final int version;
+    private ExecutorService executor;
 
     @Inject
     public HttpEventClient(
             @ServiceType("event") HttpServiceSelector v1ServiceSelector,
             @ServiceType("collector") HttpServiceSelector serviceSelector,
-            @ForEventClient AsyncHttpClient client,
             JsonEventWriter eventWriter,
             HttpEventClientConfig config)
     {
         Preconditions.checkNotNull(serviceSelector, "serviceSelector is null");
         Preconditions.checkNotNull(v1ServiceSelector, "v1ServiceSelector is null");
-        Preconditions.checkNotNull(client, "client is null");
 
-        this.client = client;
         this.eventWriter = eventWriter;
         this.version = config.getJsonVersion();
 
@@ -60,6 +56,12 @@ public class HttpEventClient
         else {
             this.serviceSelector = serviceSelector;
         }
+
+        int workerThreads = config.getMaxConnections();
+        if (workerThreads <= 0) {
+            workerThreads = 16;
+        }
+        executor = Executors.newFixedThreadPool(workerThreads, new ThreadFactoryBuilder().setNameFormat("http-event-client-%s").build());
     }
 
     @Override
@@ -105,31 +107,11 @@ public class HttpEventClient
         // also this code tries all servers instead of a fixed number
         for (final URI uri : uris) {
             try {
-                String uriString = resolveUri(uri).toString();
-                Request request = new RequestBuilder("POST")
-                        .setUrl(uriString)
-                        .setHeader("Content-Type", "application/json")
-                        .setBody(new JsonEntityWriter<T>(eventWriter, eventGenerator))
-                        .build();
-
-                ListenableFuture<Response> future = toGuavaListenableFuture(client.prepareRequest(request).execute());
-
-                return Futures.transform(future, new Function<Response, Void>()
-                {
-                    public Void apply(Response response)
-                    {
-                        int statusCode = response.getStatusCode();
-                        if (statusCode < 200 || statusCode > 299) {
-                            try {
-                                log.debug("Posting event to %s failed: status_code=%d status_line=%s body=%s", uri, statusCode, response.getStatusText(), response.getResponseBody());
-                            }
-                            catch (IOException bodyError) {
-                                log.debug("Posting event to %s failed: status_code=%d status_line=%s error=%s", uri, statusCode, response.getStatusText(), bodyError.getMessage());
-                            }
-                        }
-                        return null;
-                    }
-                });
+                URL url = resolveUri(uri).toURL();
+                PostEventTask postEventTask = new PostEventTask(url, new JsonEntityWriter<T>(eventWriter, eventGenerator));
+                ListenableFutureTask<Void> futureTask = new ListenableFutureTask<Void>(postEventTask);
+                executor.execute(futureTask);
+                return futureTask;
             }
             catch (Exception e) {
                 exceptions.put(uri, e);
@@ -152,51 +134,6 @@ public class HttpEventClient
         return uri.resolve("/v2/event");
     }
 
-    // TODO: copied from com.proofpoint.discovery.client.HttpDiscoveryClient -- factor out?
-    private static <T> com.google.common.util.concurrent.ListenableFuture<T> toGuavaListenableFuture(final com.ning.http.client.ListenableFuture<T> asyncClientFuture)
-    {
-        return new com.google.common.util.concurrent.ListenableFuture<T>()
-        {
-            @Override
-            public boolean cancel(boolean mayInterruptIfRunning)
-            {
-                return asyncClientFuture.cancel(mayInterruptIfRunning);
-            }
-
-            @Override
-            public void addListener(Runnable listener, Executor executor)
-            {
-                asyncClientFuture.addListener(listener, executor);
-            }
-
-            @Override
-            public boolean isCancelled()
-            {
-                return asyncClientFuture.isCancelled();
-            }
-
-            @Override
-            public boolean isDone()
-            {
-                return asyncClientFuture.isDone();
-            }
-
-            @Override
-            public T get()
-                    throws InterruptedException, ExecutionException
-            {
-                return asyncClientFuture.get();
-            }
-
-            @Override
-            public T get(long timeout, TimeUnit timeUnit)
-                    throws InterruptedException, ExecutionException, TimeoutException
-            {
-                return asyncClientFuture.get(timeout, timeUnit);
-            }
-        };
-    }
-
     private static class JsonEntityWriter<T>
             implements EntityWriter
     {
@@ -216,6 +153,58 @@ public class HttpEventClient
                 throws IOException
         {
             eventWriter.writeEvents(events, out);
+        }
+    }
+
+    private static class PostEventTask implements Callable<Void>
+    {
+        private final URL url;
+        private final EntityWriter eventWriter;
+
+        private PostEventTask(URL url, EntityWriter eventWriter)
+        {
+            this.url = url;
+            this.eventWriter = eventWriter;
+        }
+
+        @Override
+        public Void call()
+                throws Exception
+        {
+            OutputStream outputStream = null;
+            InputStream inputStream = null;
+            try {
+                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("POST");
+                urlConnection.setRequestProperty("Content-Type", "application/json");
+                urlConnection.setChunkedStreamingMode(4096);
+                urlConnection.setDoOutput(true);
+                outputStream = urlConnection.getOutputStream();
+                eventWriter.writeEntity(outputStream);
+                outputStream.close();
+
+                // Get the response
+                int statusCode = urlConnection.getResponseCode();
+                if (statusCode < 200 || statusCode > 299) {
+                    try {
+                        inputStream = urlConnection.getInputStream();
+                        String responseBody = CharStreams.toString(new InputStreamReader(inputStream));
+                        log.debug("Posting event to %s failed: status_code=%d status_line=%s body=%s", url, statusCode, urlConnection.getResponseMessage(), responseBody);
+                    }
+                    catch (IOException bodyError) {
+                        log.debug("Posting event to %s failed: status_code=%d status_line=%s error=%s",
+                                url,
+                                statusCode,
+                                urlConnection.getResponseMessage(),
+                                bodyError.getMessage());
+                    }
+                }
+            }
+            finally {
+                Closeables.closeQuietly(outputStream);
+                Closeables.closeQuietly(inputStream);
+            }
+            return null;
         }
     }
 }
