@@ -1,7 +1,6 @@
 package com.proofpoint.discovery.client;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -16,6 +15,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -30,6 +30,7 @@ public class CachingServiceSelector implements ServiceSelector
     private final DiscoveryClient client;
     private final AtomicReference<ServiceDescriptors> serviceDescriptors = new AtomicReference<ServiceDescriptors>();
     private final ScheduledExecutorService executor;
+    private final AtomicBoolean serverUp = new AtomicBoolean(true);
 
     private final ReentrantLock lock = new ReentrantLock();
     private ScheduledFuture<?> restartRefreshSchedule;
@@ -124,10 +125,15 @@ public class CachingServiceSelector implements ServiceSelector
                     if (updated) {
                         scheduleRefresh(newDescriptors.getMaxAge());
                     }
+                    if (serverUp.compareAndSet(false, true)) {
+                        log.info("Discovery server connect succeeded for refresh (%s/%s)", type, pool);
+                    }
                 }
                 catch (DiscoveryException e) {
-                    if (Throwables.getRootCause(e) instanceof ConnectException) {
-                        log.debug(e, "Can not connect to discovery server");
+                    if (e.getCause() instanceof ConnectException) {
+                        if (serverUp.compareAndSet(true, false)) {
+                            log.error("Cannot connect to discovery server for refresh: %s", e.getCause().getMessage());
+                        }
                     } else {
                         log.error(e);
                     }
