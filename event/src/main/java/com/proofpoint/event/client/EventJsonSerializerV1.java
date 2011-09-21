@@ -53,19 +53,11 @@ class EventJsonSerializerV1<T>
 
         jsonGenerator.writeArrayFieldStart("data");
         for (EventFieldMetadata field : eventTypeMetadata.getFields()) {
-            jsonGenerator.writeStartObject();
-            writeJsonField(field, jsonGenerator, event);
-            jsonGenerator.writeEndObject();
+            field.writeFieldV1(jsonGenerator, event);
         }
         jsonGenerator.writeEndArray();
 
         jsonGenerator.writeEndObject();
         jsonGenerator.flush();
-    }
-
-    private void writeJsonField(EventFieldMetadata fieldMetadata, JsonGenerator jsonGenerator, Object event)
-            throws IOException
-    {
-        fieldMetadata.writeFieldV1(jsonGenerator, event);
     }
 }
