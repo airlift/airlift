@@ -1,0 +1,186 @@
+Platform 0.44, Sept 20th 2011
+
+* oss.sonatype.org
+
+We are pleased to announce that starting with this release, all artifacts will
+be published at oss.sonatype.org and will hopefully be synced to Maven Central.
+Since the process for accepting artifacts into Maven Central starts only after
+a release has been tagged, we can not guarantee this release will ultimately
+be pushed to Maven Central.
+
+* HttpServer
+
+We have added the request size to the http server log.  The new log line format
+follows:
+
+  timeStamp remoteAddress method uri user agent status contentRead contentCount requestTime
+
+As a comparison the previous log line format was:
+
+  timeStamp remoteAddress method uri user agent status contentCount requestTime
+
+Additionally, we have reenabled SSL renegotiation since the underlying JVM bug
+has been fixed.
+
+* Launcher script
+
+Starting with this release, the preferred method for passing node specific
+information (e.g., id, environment, and pool) to a server is the --node-config
+command line option.  The argument to this option must point to a file
+containing key-value pairs encoded as 'key=value'.  The properties in this file
+are simply added to the Java command line as -D parameters when launching the
+server.  Parameters can still be passed to the server using -D parameters on
+the launcher, and these will override any parameters in the node config file.
+
+* JRuby on Rails
+
+It is now possible to package a Rails application just like any other Java
+platform application.  The packaged application will use the platform http
+server, logging, and over time we will extend the integration to support other
+platform services.  An instructional guide is currently under review and will
+be included soon.
+
+
+and run rack applications, such as rails, using the
+platform http server.  The platform logger is automatically provided to rack and rails, and other
+platform facilities can be used from within JRuby.  Simply set
+rack-server-base-experimental as your parent pom, and you gain many of the same
+features that exist in the rest-server-base parent pom.  An instructional guide is
+currently under review and will be included soon.
+
+* Event Client v2
+
+The event client for the event v2 protocol has been mostly rewritten to fix
+various bugs and annoyances.  Additionally, we have have expanded the allowed
+event fields to include java.util.Iterable and nested simple event types.  For
+Iterable, any supported type is allowed for the elements except Iterable.
+Nested event types, can be any event type without a special field (e.g.,
+timestamp, uuid, or host) since these are only allowed in the envelope
+of the protocol.  For a full example see:
+
+  com.proofpoint.event.client.NestedDummyEventClass
+
+* Embedded Cassandra
+
+Cassandra has been upgraded to 0.8.5 which addresses many internal bugs (see
+https://svn.apache.org/repos/asf/cassandra/tags/cassandra-0.8.5/CHANGES.txt
+for more information).  Additional, work has been on startup reliability and
+timeout configuration.
+
+One backwards incompatible change is the default partitioner is now
+ByteOrderedPartitioner instead of RandomPartitioner since most of our
+application are using range queries.
+
+* AsyncHttpClient
+
+We have upgraded AsyncHttpClient to version 1.6.5, but since this version still
+contains a memory leak we have removed it from the event client.  We are
+several evaluating long term solutions to the memory leak and hope to have one
+implemented in the next release.
+
+* DataSize helper methods
+
+The toBytes() and roundTo(Unit) helper method have been added to DataSize for
+easily converting the size to a long.  These methods will throw an exception if
+the size is bigger than a long in the specified unit.
+
+* Removed Discovery JDBC
+
+The experimental discovery based JDBC driver has been removed.  This was
+originally introduced for supporting database discovery to rails, but this
+feature has been rewritten in much simpler pure Ruby.
+
+* Bug fixes
+    - System out and err redirect to logging does not flush
+    - Fixed race condition in embedded Cassandra lifecycle
+    - Fixed error reporting in event client
+    - Fixed launcher issues with spawn using 'sh -c' on Linux
+
+
+
+
+Platform 0.43, Jun 10th 2011
+
+* JRuby on Rails integration
+
+We've started the work support JRuby on Rails in the platform by adding a
+servlet based implementation of Rack.  Work will continue in future releases.
+
+
+* Bug fixes
+    - Discovery client fails to reschedule refresh job in some cases
+
+
+
+
+Platform 0.42, May 24th 2011
+
+* Embedded Cassandra and testing utilities
+
+The code is part of the cassandra-experimental module
+(com.proofpoint.platform:cassandra-experimental:0.42). The server is enabled by
+adding CassandraModule to your Guice injector. Configuration for the server is
+encapsulated in CassandraServerConfig. Code that needs to talk to the cassandra
+server (e.g., Hector) should depend on CassandraServerInfo, which exposes a
+method for obtaining the RPC port that Cassandra listens on.
+
+Here's an example of how to run a simple server with an embedded cassandra instance:
+
+
+       Bootstrap bootstrap = new Bootstrap(new NodeModule(), new CassandraModule());
+
+       try {
+           Injector injector = bootstrap.initialize();
+           CassandraServerInfo info = injector.getInstance(CassandraServerInfo.class);
+           log.info("Cassandra server listening on port " + info.getRpcPort());
+       }
+       catch (Throwable e) {
+           log.error(e);
+           // Cassandra creates non-daemon threads that will prevent the vm from shutting down
+           System.exit(1);
+       }
+
+
+
+We've also added some utilities to simplify unit testing of code that talks to
+Cassandra. It is important to keep in mind that due to how Cassandra is
+written, there can only be one embedded instance per VM, and it can only be
+started once during the lifetime of the VM.
+
+To use Cassandra in unit tests, use CassandraServerSetup to initialize the
+embedded instance. This should be done in @BeforeSuite and @AfterSuite methods
+that call CassandraServerSetup.tryInitialize() and tryShutdown(), respectively.
+It's important that this be done in every class that contains cassandra-based
+tests. Otherwise, the initialization code  will only run if you include the
+class with these methods in your unit test execution. TryInitialize() and
+tryShutdown() are designed to properly handle calls from multiple
+@Before/AfterSuite methods.
+
+The server will be bound to a random port which can be obtained through the
+CassandraServerInfo object. To get this object use either
+CassandraServerSetup.getServerInfo() or TestingCassandraModule if your tests
+require Guice.
+
+* DataSize
+
+We've introduced a DataSize class to the experimental module for dealing with
+units of data in human-readable form (similar to Duration). It supports B, kB,
+MB, GB, TB, PB and can handle conversions between these units. It's also fully
+compatible with the configuration system.
+
+* ValidationAssertions
+
+We've also added some utilities to the experimental module to make easier to
+test code that uses Bean Validation Framework annotations.
+ValidationAssertions.assertValidates() and assertFailsValidation() can be used
+to test that an object passes or fails validations as specified by its
+annotations. Here's an example on how to use assertFailsValidation():
+
+        assertFailsValidation(config, "maxAge", "may not be null", NotNull.class)
+
+* Bug fixes
+
+The following issues have been fixed:
+	- Discovery client fails when consuming static announcements
+	- MySQL connection timeouts using the wrong unit (ms vs s)
+	- Jar manifest using the wrong file names when building snapshot versions

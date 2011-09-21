@@ -1,3 +1,28 @@
+*0.44
+- Releases and snapshots are now published to oss.sonatype.org
+- HttpServer now allows SSL renegotiation (underlying issue has been fixed in JVM)
+- Record request size in http log
+- Launcher now supports --node-config for passing node specific data from Galaxy Agent
+- Upgrade to async-http-client 1.6.5
+- [Experimental] Rewrote event client v2 serialization and deprecated v1
+- [Experimental] Added support for nested and iterable event fields in v2
+- [Experimental] Changed event client to use java.net.URL instead of AsyncHttpClient due to memory leak
+- [Experimental] Upgraded embedded Cassandra to 0.8.5
+- [Experimental] Changed default Cassandra partitioner to BYTE_ORDERED
+- [Experimental] Added rpc timeout configuration support for embedded Cassandra
+- [Experimental] Moved experimental discovery based JDBC driver to pure Ruby
+- [Experimental] Removed experimental dbpool-no-dep jar
+- [Experimental] JRuby on Rails platform integration and galaxy packaging
+- [Experimental] Added toBytes and roundTo methods to DataSize
+- [Bug] System out and err redirect to logging does not flush
+- [Bug] Fixed race condition in embedded Cassandra lifecycle
+- [Bug] Fixed error reporting in event client
+- [Bug] Fixed launcher issues with spawn using 'sh -c' on Linux
+
+* 0.43
+- [Experimental] Added rack servlet for integration with JRuby on Rails
+- [Bug] Discovery client fails to reschedule refresh job in some cases
+
 * 0.42
 
 - [Experimental] Embedded cassandra server and testing utilities
