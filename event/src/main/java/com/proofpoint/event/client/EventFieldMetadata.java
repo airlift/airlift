@@ -132,9 +132,11 @@ class EventFieldMetadata
         Preconditions.checkState(nestedType == null, "nested types not supported for JSON V1");
         Object value = getValue(event);
         if (value != null) {
+            jsonGenerator.writeStartObject();
             jsonGenerator.writeStringField("name", v1Name);
             jsonGenerator.writeFieldName("value");
             eventDataType.writeFieldValue(jsonGenerator, value);
+            jsonGenerator.writeEndObject();
         }
     }
 }
