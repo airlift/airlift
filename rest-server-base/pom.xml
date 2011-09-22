@@ -27,6 +27,12 @@
         <sonatypeOssDistMgmtSnapshotsUrl>https://oss.sonatype.org/content/repositories/snapshots/</sonatypeOssDistMgmtSnapshotsUrl>
     </properties>
 
+    <scm>
+        <connection>scm:git:git://github.com/proofpoint/platform.git</connection>
+        <developerConnection>scm:git:git@github.com:proofpoint/platform.git</developerConnection>
+        <url>http://github.com/proofpoint/platform/tree/master</url>
+    </scm>
+
     <prerequisites>
         <maven>3.0</maven>
     </prerequisites>
@@ -540,6 +546,10 @@
                                 </goals>
                             </execution>
                         </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
                     </plugin>
                 </plugins>
             </build>
