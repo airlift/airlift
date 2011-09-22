@@ -113,6 +113,55 @@
                                         <replacevalue><![CDATA[artifactId}</name>]]></replacevalue>
                                     </replacefilter>
                                 </replace>
+
+                                <fixcrlf file="${project.build.directory}/archetype/pom.xml" eol="unix" />
+                                <replace file="${project.build.directory}/archetype/pom.xml">
+                                    <replacefilter>
+                                        <replacetoken><![CDATA[<build>]]></replacetoken>
+                                        <replacevalue><![CDATA[
+  <description>Sample server archetype</description>
+  <url>http://github.com/proofpoint/platform</url>
+
+  <inceptionYear>2010</inceptionYear>
+  <organization>
+    <name>Proofpoint, Inc.</name>
+    <url>http://www.proofpoint.com</url>
+  </organization>
+  <licenses>
+    <license>
+      <name>Apache License 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>dain</id>
+      <name>Dain Sundstrom</name>
+      <email>dain@iq80.com</email>
+    </developer>
+    <developer>
+      <id>randgalt</id>
+      <name>Jordan Zimmerman</name>
+      <email>jordan@proofpoint.com</email>
+    </developer>
+    <developer>
+      <id>mtraverso</id>
+      <name>Martin Traverso</name>
+      <email>mtraverso@gmail.com</email>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git://github.com/proofpoint/platform.git</connection>
+    <developerConnection>scm:git:git@github.com:proofpoint/platform.git</developerConnection>
+    <url>http://github.com/proofpoint/platform/tree/master</url>
+  </scm>
+
+  <build>]]></replacevalue>
+                                    </replacefilter>
+                                </replace>
                             </target>
                         </configuration>
                         <goals>
