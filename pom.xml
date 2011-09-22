@@ -292,6 +292,7 @@
                         <pushChanges>false</pushChanges>
                         <preparationGoals>clean install</preparationGoals>
                         <autoVersionSubmodules>true</autoVersionSubmodules>
+                        <connectionUrl>scm:git:${project.basedir}</connectionUrl>
                     </configuration>
                 </plugin>
 
