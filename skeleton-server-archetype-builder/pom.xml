@@ -3,7 +3,7 @@
     <parent>
         <artifactId>platform</artifactId>
         <groupId>com.proofpoint.platform</groupId>
-        <version>0.44-SNAPSHOT</version>
+        <version>0.44</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -26,19 +26,19 @@
                         <phase>generate-sources</phase>
                         <configuration>
                             <target>
-                                <mkdir dir="${project.build.directory}/project"/>
+                                <mkdir dir="${project.build.directory}/project" />
 
                                 <copy todir="${project.build.directory}/project">
                                     <fileset dir="${project.basedir}/../${server-name}">
-                                        <include name="src/**"/>
-                                        <include name="etc/**"/>
-                                        <include name="pom.xml"/>
-                                        <include name=".gitignore"/>
-                                        <include name="README.txt"/>
+                                        <include name="src/**" />
+                                        <include name="etc/**" />
+                                        <include name="pom.xml" />
+                                        <include name=".gitignore" />
+                                        <include name="README.txt" />
                                     </fileset>
                                 </copy>
 
-                                <delete dir="${project.build.directory}/project-copy"/>
+                                <delete dir="${project.build.directory}/project-copy" />
                             </target>
                         </configuration>
                         <goals>
@@ -88,13 +88,13 @@
                         <configuration>
                             <target>
                                 <move toDir="${project.build.directory}/archetype">
-                                    <fileset dir="${project.build.directory}/project-copy/target/generated-sources/archetype"/>
+                                    <fileset dir="${project.build.directory}/project-copy/target/generated-sources/archetype" />
                                 </move>
 
                                 <replace file="${project.build.directory}/archetype/src/main/resources/archetype-resources/pom.xml">
                                     <replacefilter>
                                         <replacetoken><![CDATA[<relativePath>../rest-server-base/pom.xml</relativePath>]]></replacetoken>
-                                        <replacevalue></replacevalue>
+                                        <replacevalue />
                                     </replacefilter>
                                     <replacefilter>
                                         <replacetoken><![CDATA[<main-class>com.proofpoint.platform.sample.Main</main-class>]]></replacetoken>

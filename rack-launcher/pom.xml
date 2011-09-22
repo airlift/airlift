@@ -4,14 +4,14 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>rack-launcher-experimental</artifactId>
     <packaging>jar</packaging>
-    <version>0.44-SNAPSHOT</version>
+    <version>0.44</version>
     <name>rack-launcher</name>
     <description>Launcher Script for the Platform Rack Server</description>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.44-SNAPSHOT</version>
+        <version>0.44</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     
