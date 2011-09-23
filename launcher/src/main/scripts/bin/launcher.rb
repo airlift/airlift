@@ -33,6 +33,7 @@ Custom commands (for dev & debugging convenience)
 * run (run in foreground)
 
 Expects config under "etc":
+  node.properties
   jvm.config
   config.properties
 
@@ -62,7 +63,7 @@ def load_lines(file)
   end
 end
 
-def load_node_config(file)
+def load_node_properties(file)
   entries = load_lines(file).map do |line|
     k, v = line.split('=', 2).map(&:strip)
   end
@@ -149,7 +150,7 @@ def build_cmd_line(options)
   jar_path = File.join(install_path, 'lib', 'main.jar')
 
   properties = {}
-  properties = load_node_config(options[:node_config_path]) if File.exists?(options[:node_config_path])
+  properties = load_node_properties(options[:node_properties_path]) if File.exists?(options[:node_properties_path])
   system_properties = properties.merge(options[:system_properties]).
                                  map { |k, v| "-D#{k}=#{v}" }.
                                  map { |v| escape(v) }.
@@ -262,7 +263,7 @@ install_path = Pathname.new(__FILE__).parent.parent.expand_path
 
 # initialize defaults
 options = {
-        :node_config_path => File.join(install_path, 'etc', 'node.config'),
+        :node_properties_path => File.join(install_path, 'etc', 'node.properties'),
         :jvm_config_path => File.join(install_path, 'etc', 'jvm.config'),
         :config_path => File.join(install_path, 'etc', 'config.properties'),
         :data_dir => install_path,
@@ -286,8 +287,8 @@ option_parser = OptionParser.new(:unknown_options_action => :collect) do |opts|
     options[:verbose] = true
   end
 
-  opts.on("--node-config FILE", "Defaults to INSTALL_PATH/etc/node.config") do |v|
-    options[:node_config_path] = Pathname.new(v).expand_path
+  opts.on("--node-config FILE", "Defaults to INSTALL_PATH/etc/node.properties") do |v|
+    options[:node_properties_path] = Pathname.new(v).expand_path
   end
 
   opts.on("--jvm-config FILE", "Defaults to INSTALL_PATH/etc/jvm.config") do |v|
