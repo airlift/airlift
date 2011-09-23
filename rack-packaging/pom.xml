@@ -3,14 +3,14 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>rack-packaging-experimental</artifactId>
-    <version>0.45</version>
+    <version>0.46-SNAPSHOT</version>
     <name>rack-packaging</name>
     <description>Assembly for building a galaxy binary for the Platform Rack Server</description>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.45</version>
+        <version>0.46-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 </project>
