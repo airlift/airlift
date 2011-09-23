@@ -63,7 +63,7 @@ def load_lines(file)
   end
 end
 
-def load_node_properties(file)
+def load_properties(file)
   entries = load_lines(file).map do |line|
     k, v = line.split('=', 2).map(&:strip)
   end
@@ -123,7 +123,17 @@ def escape(string)
   string = string.gsub("'", %q('\\\''))
   "'#{string}'"
 end
-  
+
+def merge_node_properties(options)
+  properties = {}
+  properties = load_properties(options[:node_properties_path]) if File.exists?(options[:node_properties_path])
+
+  options[:system_properties] = properties.merge(options[:system_properties])
+  options[:data_dir] = properties['node.data-dir'] unless properties['node.data-dir'].nil?
+
+  options
+end
+
 def build_cmd_line(options)
   install_path = Pathname.new(__FILE__).parent.parent.expand_path
 
@@ -149,12 +159,10 @@ def build_cmd_line(options)
 
   jar_path = File.join(install_path, 'lib', 'main.jar')
 
-  properties = {}
-  properties = load_node_properties(options[:node_properties_path]) if File.exists?(options[:node_properties_path])
-  system_properties = properties.merge(options[:system_properties]).
-                                 map { |k, v| "-D#{k}=#{v}" }.
-                                 map { |v| escape(v) }.
-                                 join(' ')
+  system_properties = options[:system_properties].
+                         map { |k, v| "-D#{k}=#{v}" }.
+                         map { |v| escape(v) }.
+                         join(' ')
 
   # TODO: fix lack of escape handling by building an array
   command =<<-CMD
@@ -303,11 +311,11 @@ option_parser = OptionParser.new(:unknown_options_action => :collect) do |opts|
     options[:data_dir] = Pathname.new(v).expand_path
   end
 
-  opts.on("--pid-file FILE", "Defaults to INSTALL_PATH/var/run/launcher.pid") do |v|
+  opts.on("--pid-file FILE", "Defaults to DATA_DIR/var/run/launcher.pid") do |v|
     options[:pid_file] = Pathname.new(v).expand_path
   end
 
-  opts.on("--log-file FILE", "Defaults to INSTALL_PATH/var/log/launcher.log (daemon only)") do |v|
+  opts.on("--log-file FILE", "Defaults to DATA_DIR/var/log/launcher.log (daemon only)") do |v|
     options[:log_path] = Pathname.new(v).expand_path
   end
 
@@ -330,6 +338,8 @@ option_parser = OptionParser.new(:unknown_options_action => :collect) do |opts|
 end
 
 option_parser.parse!(ARGV)
+
+options = merge_node_properties(options)
 
 if options[:log_path].nil? then
   options[:log_path] =  File.join(options[:data_dir], 'var', 'log', 'launcher.log')
