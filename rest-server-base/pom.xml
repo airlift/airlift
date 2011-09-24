@@ -56,17 +56,6 @@
     </prerequisites>
 
     <repositories>
-        <repository>
-            <id>sonatype-nexus-snapshots</id>
-            <name>Sonatype Nexus Snapshots</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
         <!-- TODO remove when jersey is in maven central -->
         <repository>
             <id>maven2-repository.dev.java.net</id>
