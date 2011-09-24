@@ -75,19 +75,6 @@
         </repository>
     </repositories>
 
-    <distributionManagement>
-        <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <name>Sonatype Nexus Snapshots</name>
-            <url>${sonatypeOssDistMgmtSnapshotsUrl}</url>
-        </snapshotRepository>
-        <repository>
-            <id>sonatype-nexus-staging</id>
-            <name>Nexus Release Repository</name>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
-
     <build>
         <pluginManagement>
             <plugins>
@@ -541,7 +528,47 @@
                         <configuration>
                             <mavenExecutorId>forked-path</mavenExecutorId>
                             <useReleaseProfile>false</useReleaseProfile>
-                            <arguments>-Psonatype-oss-release</arguments>
+                            <pushChanges>false</pushChanges>
+                            <localCheckout>true</localCheckout>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>parent-project-profile</id>
+            <activation>
+                <file>
+                    <exists>profile-activate-72946194395.do.not.remove</exists>
+                </file>
+            </activation>
+
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>sonatype-nexus-snapshots</id>
+                    <name>Sonatype Nexus Snapshots</name>
+                    <url>${sonatypeOssDistMgmtSnapshotsUrl}</url>
+                </snapshotRepository>
+                <repository>
+                    <id>sonatype-nexus-staging</id>
+                    <name>Nexus Release Repository</name>
+                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                </repository>
+            </distributionManagement>
+
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-release-plugin</artifactId>
+                        <version>2.2.1</version>
+                        <configuration>
+                            <mavenExecutorId>forked-path</mavenExecutorId>
+                            <useReleaseProfile>false</useReleaseProfile>
+                            <pushChanges>false</pushChanges>
+                            <localCheckout>true</localCheckout>
+                            <preparationGoals>clean install</preparationGoals>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -549,6 +576,12 @@
         </profile>
         <profile>
             <id>sonatype-oss-release</id>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>true</value>
+                </property>
+            </activation>
             <build>
                 <plugins>
                     <plugin>
