@@ -92,6 +92,14 @@
                                     <fileset dir="${project.build.directory}/project-copy/target/generated-sources/archetype" />
                                 </move>
 
+                                <!-- Remove distribution management section -->
+                                <echo message="&lt;distributionManagement&gt;.*&lt;/distributionManagement&gt;"/>
+                                <replaceregexp file="${project.build.directory}/archetype/src/main/resources/archetype-resources/pom.xml"
+                                               match="&lt;distributionManagement&gt;.*&lt;/distributionManagement&gt;"
+                                               replace=""
+                                               flags="ms"
+                                        />
+
                                 <replace file="${project.build.directory}/archetype/src/main/resources/archetype-resources/pom.xml">
                                     <replacefilter>
                                         <replacetoken><![CDATA[<relativePath>../rest-server-base/pom.xml</relativePath>]]></replacetoken>
