@@ -3,7 +3,7 @@
     <parent>
         <artifactId>platform</artifactId>
         <groupId>com.proofpoint.platform</groupId>
-        <version>0.46-SNAPSHOT</version>
+        <version>0.46</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -92,11 +92,7 @@
                                 </move>
 
                                 <!-- Remove distribution management section -->
-                                <replaceregexp file="${project.build.directory}/archetype/src/main/resources/archetype-resources/pom.xml"
-                                               match="&lt;distributionManagement&gt;.*&lt;/distributionManagement&gt;"
-                                               replace=""
-                                               flags="ms"
-                                        />
+                                <replaceregexp file="${project.build.directory}/archetype/src/main/resources/archetype-resources/pom.xml" match="&lt;distributionManagement&gt;.*&lt;/distributionManagement&gt;" replace="" flags="ms" />
 
                                 <replace file="${project.build.directory}/archetype/src/main/resources/archetype-resources/pom.xml">
                                     <replacefilter>
