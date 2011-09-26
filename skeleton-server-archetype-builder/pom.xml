@@ -241,12 +241,6 @@
     <profiles>
         <profile>
             <id>sonatype-oss-release</id>
-            <activation>
-                <property>
-                    <name>performRelease</name>
-                    <value>true</value>
-                </property>
-            </activation>
             <build>
                 <plugins>
                     <plugin>

@@ -275,6 +275,7 @@
                     <version>2.2.1</version>
                     <configuration>
                         <mavenExecutorId>forked-path</mavenExecutorId>
+                        <arguments>-Psonatype-oss-release</arguments>
                         <useReleaseProfile>false</useReleaseProfile>
                         <pushChanges>false</pushChanges>
                         <localCheckout>true</localCheckout>
@@ -306,12 +307,6 @@
     <profiles>
         <profile>
             <id>sonatype-oss-release</id>
-            <activation>
-                <property>
-                    <name>performRelease</name>
-                    <value>true</value>
-                </property>
-            </activation>
             <build>
                 <plugins>
                     <plugin>
