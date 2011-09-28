@@ -61,8 +61,8 @@ public class HttpClient
                 }
 
                 urlConnection.setChunkedStreamingMode(4096);
+                urlConnection.setDoOutput(true);
                 if (request.getBodyGenerator() != null) {
-                    urlConnection.setDoOutput(true);
                     outputStream = urlConnection.getOutputStream();
                     request.getBodyGenerator().write(outputStream);
                     outputStream.close();
