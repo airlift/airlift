@@ -2,11 +2,14 @@ package com.proofpoint.event.client;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
 
+import java.io.IOException;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Future;
 
 import static com.google.common.collect.Lists.newArrayList;
 
@@ -15,31 +18,26 @@ public class InMemoryEventClient implements EventClient
     private final List<Object> events = newArrayList();
 
     @Override
-    public <T> Future<Void> post(T... events)
+    public <T> CheckedFuture<Void, ? extends RuntimeException> post(T... events)
             throws IllegalArgumentException
     {
         return post(Arrays.asList(events));
     }
 
     @Override
-    public <T> Future<Void> post(Iterable<T> events)
+    public <T> CheckedFuture<Void, ? extends RuntimeException> post(Iterable<T> events)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(events, "event is null");
-        try {
-            for (T event : events) {
-                Preconditions.checkNotNull(event, "event is null");
-                this.events.add(event);
-            }
+        for (T event : events) {
+            Preconditions.checkNotNull(event, "event is null");
+            this.events.add(event);
         }
-        catch (Exception e) {
-            return Futures.immediateFailedFuture(e);
-        }
-        return Futures.immediateFuture(null);
+        return Futures.immediateCheckedFuture(null);
     }
 
     @Override
-    public <T> Future<Void> post(EventGenerator<T> eventGenerator)
+    public <T> CheckedFuture<Void, ? extends RuntimeException> post(EventGenerator<T> eventGenerator)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(eventGenerator, "eventGenerator is null");
@@ -54,10 +52,10 @@ public class InMemoryEventClient implements EventClient
                 }
             });
         }
-        catch (Exception e) {
-            Futures.immediateFailedFuture(e);
+        catch (IOException e) {
+            return Futures.immediateFailedCheckedFuture(new EventSubmissionFailedException("event", "general", ImmutableMap.of(URI.create("in-memory://"), e)));
         }
-        return Futures.immediateFuture(null);
+        return Futures.immediateCheckedFuture(null);
     }
 
     public List<Object> getEvents()

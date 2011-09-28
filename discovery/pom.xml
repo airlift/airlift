@@ -16,6 +16,11 @@
     <dependencies>
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
+            <artifactId>http-client-experimental</artifactId>
+            <version>0.47-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
             <artifactId>jaxrs</artifactId>
             <version>0.47-SNAPSHOT</version>
         </dependency>

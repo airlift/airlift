@@ -9,6 +9,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClientConfig;
+import com.proofpoint.http.client.HttpClientModule;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
@@ -25,27 +26,10 @@ public class HttpEventModule implements Module
         discoveryBinder(binder).bindHttpSelector("event");
         discoveryBinder(binder).bindHttpSelector("collector");
 
+        // bind the http client
+        binder.install(new HttpClientModule("event", ForEventClient.class));
+
         // Kick off the binding of Set<EventTypeMetadata> in case no events are bound
         Multibinder.newSetBinder(binder, new TypeLiteral<EventTypeMetadata<?>>() {});
-    }
-
-    @Provides
-    @ForEventClient
-    public AsyncHttpClient eventHttpClient(HttpEventClientConfig httpEventClientConfig)
-    {
-        Preconditions.checkNotNull(httpEventClientConfig, "httpEventClientConfig is null");
-
-        // Build HTTP client config
-        AsyncHttpClientConfig.Builder configBuilder = new AsyncHttpClientConfig.Builder()
-                .setConnectionTimeoutInMs((int) httpEventClientConfig.getConnectTimeout().toMillis())
-                .setMaximumConnectionsTotal(httpEventClientConfig.getMaxConnections())
-                .setRequestTimeoutInMs((int) httpEventClientConfig.getRequestTimeout().toMillis());
-
-        if (httpEventClientConfig.isCompress()) {
-            configBuilder.setRequestCompressionLevel(6);
-        }
-
-        // Create client
-        return new AsyncHttpClient(configBuilder.build());
     }
 }

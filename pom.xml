@@ -344,6 +344,7 @@
         <module>node</module>
         <module>event</module>
         <module>json</module>
+        <module>http-client</module>
         <module>http-server</module>
         <module>jaxrs</module>
         <module>jmx</module>

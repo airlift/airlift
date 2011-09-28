@@ -6,10 +6,9 @@ import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
-import com.ning.http.client.AsyncHttpClient;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.testing.StaticHttpServiceSelector;
-import com.proofpoint.http.server.HttpServerModule;
+import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
@@ -34,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static com.google.common.collect.Lists.newArrayList;
@@ -94,7 +94,7 @@ public class TestHttpEventClient
         client = newEventClient(asList(server.getBaseUrl()));
 
         List<Future<Void>> futures = newArrayList();
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 100; i++) {
             futures.add(client.post(TestingUtils.getEvents()));
         }
 
@@ -136,7 +136,7 @@ public class TestHttpEventClient
         Set<EventTypeMetadata<?>> eventTypes = getValidEventTypeMetaDataSet(FixedDummyEventClass.class);
         JsonEventWriter eventWriter = new JsonEventWriter(new ObjectMapperProvider().get(), eventTypes, config);
 
-        return new HttpEventClient(v1Selector, v2Selector, eventWriter, config);
+        return new HttpEventClient(v1Selector, v2Selector, eventWriter, config, new HttpClient(Executors.newCachedThreadPool()));
     }
 
     private TestingHttpServer createServer(final DummyServlet servlet)
@@ -153,7 +153,9 @@ public class TestHttpEventClient
                                 .annotatedWith(TheServlet.class)
                                 .toInstance(servlet);
 
-                        binder.bind(new TypeLiteral<Map<String, String>>() { })
+                        binder.bind(new TypeLiteral<Map<String, String>>()
+                        {
+                        })
                                 .annotatedWith(TheServlet.class)
                                 .toInstance(Collections.<String, String>emptyMap());
                     }

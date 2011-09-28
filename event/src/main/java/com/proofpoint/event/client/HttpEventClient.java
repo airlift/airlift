@@ -3,30 +3,33 @@ package com.proofpoint.event.client;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
-import com.google.common.io.Closeables;
+import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFutureTask;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
-import com.ning.http.client.Request.EntityWriter;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.ServiceType;
+import com.proofpoint.http.client.BodyGenerator;
+import com.proofpoint.http.client.HttpClient;
+import com.proofpoint.http.client.Request;
+import com.proofpoint.http.client.Response;
+import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.log.Logger;
 
 import javax.annotation.PreDestroy;
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import static com.proofpoint.http.client.RequestBuilder.preparePost;
 
 public class HttpEventClient
         implements EventClient
@@ -37,19 +40,23 @@ public class HttpEventClient
     private final JsonEventWriter eventWriter;
     private final int version;
     private ExecutorService executor;
+    private final HttpClient httpClient;
 
     @Inject
     public HttpEventClient(
             @ServiceType("event") HttpServiceSelector v1ServiceSelector,
             @ServiceType("collector") HttpServiceSelector serviceSelector,
             JsonEventWriter eventWriter,
-            HttpEventClientConfig config)
+            HttpEventClientConfig config,
+            @ForEventClient HttpClient httpClient)
     {
         Preconditions.checkNotNull(serviceSelector, "serviceSelector is null");
         Preconditions.checkNotNull(v1ServiceSelector, "v1ServiceSelector is null");
+        Preconditions.checkNotNull(httpClient, "httpClient is null");
 
         this.eventWriter = eventWriter;
         this.version = config.getJsonVersion();
+        this.httpClient = httpClient;
 
         if (version == 1) {
             this.serviceSelector = v1ServiceSelector;
@@ -71,7 +78,7 @@ public class HttpEventClient
     }
 
     @Override
-    public <T> Future<Void> post(T... event)
+    public <T> CheckedFuture<Void, ? extends RuntimeException> post(T... event)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(event, "event is null");
@@ -79,7 +86,7 @@ public class HttpEventClient
     }
 
     @Override
-    public <T> Future<Void> post(final Iterable<T> events)
+    public <T> CheckedFuture<Void, ? extends RuntimeException> post(final Iterable<T> events)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(events, "eventsSupplier is null");
@@ -97,38 +104,23 @@ public class HttpEventClient
     }
 
     @Override
-    public <T> Future<Void> post(EventGenerator<T> eventGenerator)
+    public <T> CheckedFuture<Void, ? extends RuntimeException> post(EventGenerator<T> eventGenerator)
     {
         Preconditions.checkNotNull(eventGenerator, "eventGenerator is null");
 
         List<URI> uris = serviceSelector.selectHttpService();
 
         if (uris.isEmpty()) {
-            return Futures.immediateFailedFuture(new ServiceUnavailableException(serviceSelector.getType(), serviceSelector.getPool()));
+            return Futures.immediateFailedCheckedFuture(new ServiceUnavailableException(serviceSelector.getType(), serviceSelector.getPool()));
         }
-
-        ImmutableMap.Builder<URI, Exception> exceptions = ImmutableMap.builder();
 
         // todo this doesn't really work due to returning the future which can fail without being retried
-        // also this code tries all servers instead of a fixed number
-        for (final URI uri : uris) {
-            try {
-                URL url = resolveUri(uri).toURL();
-                PostEventTask postEventTask = new PostEventTask(url, new JsonEntityWriter<T>(eventWriter, eventGenerator));
-                ListenableFutureTask<Void> futureTask = new ListenableFutureTask<Void>(postEventTask);
-                executor.execute(futureTask);
-                return futureTask;
-            }
-            catch (Exception e) {
-                exceptions.put(uri, e);
-
-                // todo not noisy enough
-                log.debug(e, "Posting event failed");
-            }
-        }
-
-        log.debug("Event(s) not posted");
-        return Futures.immediateFailedFuture(new EventSubmissionFailedException(serviceSelector.getType(), serviceSelector.getPool(), exceptions.build()));
+        Request request = preparePost()
+                .setUri(resolveUri(uris.get(0)))
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setBodyGenerator(new JsonEntityWriter<T>(eventWriter, eventGenerator))
+                .build();
+        return httpClient.execute(request, new EventResponseHandler(serviceSelector.getType(), serviceSelector.getPool()));
     }
 
     private URI resolveUri(URI uri)
@@ -141,7 +133,7 @@ public class HttpEventClient
     }
 
     private static class JsonEntityWriter<T>
-            implements EntityWriter
+            implements BodyGenerator
     {
         private final JsonEventWriter eventWriter;
         private final EventGenerator<T> events;
@@ -155,60 +147,53 @@ public class HttpEventClient
         }
 
         @Override
-        public void writeEntity(final OutputStream out)
-                throws IOException
+        public void write(OutputStream out)
+                throws Exception
         {
             eventWriter.writeEvents(events, out);
         }
     }
 
-    private static class PostEventTask implements Callable<Void>
+    private static class EventResponseHandler implements ResponseHandler<Void, EventSubmissionFailedException>
     {
-        private final URL url;
-        private final EntityWriter eventWriter;
+        private final String type;
+        private final String pool;
 
-        private PostEventTask(URL url, EntityWriter eventWriter)
+        public EventResponseHandler(String type, String pool)
         {
-            this.url = url;
-            this.eventWriter = eventWriter;
+            Preconditions.checkNotNull(type, "type is null");
+            Preconditions.checkNotNull(pool, "pool is null");
+
+            this.type = type;
+            this.pool = pool;
         }
 
         @Override
-        public Void call()
-                throws Exception
+        public EventSubmissionFailedException handleException(Request request, Exception exception)
         {
-            OutputStream outputStream = null;
-            InputStream inputStream = null;
-            try {
-                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestMethod("POST");
-                urlConnection.setRequestProperty("Content-Type", "application/json");
-                urlConnection.setChunkedStreamingMode(4096);
-                urlConnection.setDoOutput(true);
-                outputStream = urlConnection.getOutputStream();
-                eventWriter.writeEntity(outputStream);
-                outputStream.close();
+            log.debug("Posting event to %s failed", request.getUri());
+            return new EventSubmissionFailedException(type, pool, ImmutableMap.of(request.getUri(), exception));
+        }
 
-                // Get the response
-                int statusCode = urlConnection.getResponseCode();
-                if (statusCode < 200 || statusCode > 299) {
-                    try {
-                        inputStream = urlConnection.getInputStream();
-                        String responseBody = CharStreams.toString(new InputStreamReader(inputStream));
-                        log.debug("Posting event to %s failed: status_code=%d status_line=%s body=%s", url, statusCode, urlConnection.getResponseMessage(), responseBody);
-                    }
-                    catch (IOException bodyError) {
-                        log.debug("Posting event to %s failed: status_code=%d status_line=%s error=%s",
-                                url,
-                                statusCode,
-                                urlConnection.getResponseMessage(),
-                                bodyError.getMessage());
-                    }
-                }
+        @Override
+        public Void handle(Request request, Response response)
+        {
+            int statusCode = response.getStatusCode();
+            if (statusCode >= 200 && statusCode <= 299) {
+                return null;
             }
-            finally {
-                Closeables.closeQuietly(outputStream);
-                Closeables.closeQuietly(inputStream);
+
+            try {
+                InputStream inputStream = response.getInputStream();
+                String responseBody = CharStreams.toString(new InputStreamReader(inputStream));
+                log.debug("Posting event to %s failed: status_code=%d status_line=%s body=%s", request.getUri(), statusCode, response.getStatusMessage(), responseBody);
+            }
+            catch (IOException bodyError) {
+                log.debug("Posting event to %s failed: status_code=%d status_line=%s error=%s",
+                        request.getUri(),
+                        statusCode,
+                        response.getStatusMessage(),
+                        bodyError.getMessage());
             }
             return null;
         }
