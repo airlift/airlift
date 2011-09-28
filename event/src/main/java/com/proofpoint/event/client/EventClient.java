@@ -7,13 +7,13 @@ import java.util.concurrent.Future;
 
 public interface EventClient
 {
-    <T> CheckedFuture<Void, ? extends RuntimeException> post(T... event)
+    <T> CheckedFuture<Void, RuntimeException> post(T... event)
             throws IllegalArgumentException;
 
-    <T> CheckedFuture<Void, ? extends RuntimeException> post(Iterable<T> events)
+    <T> CheckedFuture<Void, RuntimeException> post(Iterable<T> events)
             throws IllegalArgumentException;
 
-    <T> CheckedFuture<Void, ? extends RuntimeException> post(EventGenerator<T> eventGenerator)
+    <T> CheckedFuture<Void, RuntimeException> post(EventGenerator<T> eventGenerator)
             throws IllegalArgumentException;
 
     public interface EventGenerator<T>

@@ -11,7 +11,7 @@ import java.util.Arrays;
 public class NullEventClient implements EventClient
 {
     @Override
-    public <T> CheckedFuture<Void, ? extends RuntimeException> post(T... events)
+    public <T> CheckedFuture<Void, RuntimeException> post(T... events)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(events, "event is null");
@@ -19,7 +19,7 @@ public class NullEventClient implements EventClient
     }
 
     @Override
-    public <T> CheckedFuture<Void, ? extends RuntimeException> post(Iterable<T> events)
+    public <T> CheckedFuture<Void, RuntimeException> post(Iterable<T> events)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(events, "event is null");
@@ -30,7 +30,7 @@ public class NullEventClient implements EventClient
     }
 
     @Override
-    public <T> CheckedFuture<Void, ? extends RuntimeException> post(EventGenerator<T> eventGenerator)
+    public <T> CheckedFuture<Void, RuntimeException> post(EventGenerator<T> eventGenerator)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(eventGenerator, "eventGenerator is null");
@@ -45,7 +45,7 @@ public class NullEventClient implements EventClient
             });
         }
         catch (Exception e) {
-            return Futures.immediateFailedCheckedFuture(new EventSubmissionFailedException("event", "general", ImmutableMap.of(URI.create("null://"), e)));
+            return Futures.<Void, RuntimeException>immediateFailedCheckedFuture(new EventSubmissionFailedException("event", "general", ImmutableMap.of(URI.create("null://"), e)));
         }
         return Futures.immediateCheckedFuture(null);
     }

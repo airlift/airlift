@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import static com.proofpoint.http.client.RequestBuilder.preparePost;
 
@@ -78,7 +77,7 @@ public class HttpEventClient
     }
 
     @Override
-    public <T> CheckedFuture<Void, ? extends RuntimeException> post(T... event)
+    public <T> CheckedFuture<Void, RuntimeException> post(T... event)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(event, "event is null");
@@ -86,7 +85,7 @@ public class HttpEventClient
     }
 
     @Override
-    public <T> CheckedFuture<Void, ? extends RuntimeException> post(final Iterable<T> events)
+    public <T> CheckedFuture<Void, RuntimeException> post(final Iterable<T> events)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(events, "eventsSupplier is null");
@@ -104,14 +103,14 @@ public class HttpEventClient
     }
 
     @Override
-    public <T> CheckedFuture<Void, ? extends RuntimeException> post(EventGenerator<T> eventGenerator)
+    public <T> CheckedFuture<Void, RuntimeException> post(EventGenerator<T> eventGenerator)
     {
         Preconditions.checkNotNull(eventGenerator, "eventGenerator is null");
 
         List<URI> uris = serviceSelector.selectHttpService();
 
         if (uris.isEmpty()) {
-            return Futures.immediateFailedCheckedFuture(new ServiceUnavailableException(serviceSelector.getType(), serviceSelector.getPool()));
+            return Futures.<Void, RuntimeException>immediateFailedCheckedFuture(new ServiceUnavailableException(serviceSelector.getType(), serviceSelector.getPool()));
         }
 
         // todo this doesn't really work due to returning the future which can fail without being retried
@@ -154,7 +153,7 @@ public class HttpEventClient
         }
     }
 
-    private static class EventResponseHandler implements ResponseHandler<Void, EventSubmissionFailedException>
+    private static class EventResponseHandler implements ResponseHandler<Void, RuntimeException>
     {
         private final String type;
         private final String pool;
