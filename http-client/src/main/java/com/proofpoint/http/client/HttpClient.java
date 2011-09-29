@@ -60,9 +60,9 @@ public class HttpClient
                     urlConnection.setRequestProperty(entry.getKey(), entry.getValue());
                 }
 
-                urlConnection.setChunkedStreamingMode(4096);
-                urlConnection.setDoOutput(true);
                 if (request.getBodyGenerator() != null) {
+                    urlConnection.setDoOutput(true);
+                    urlConnection.setChunkedStreamingMode(4096);
                     outputStream = urlConnection.getOutputStream();
                     request.getBodyGenerator().write(outputStream);
                     outputStream.close();
