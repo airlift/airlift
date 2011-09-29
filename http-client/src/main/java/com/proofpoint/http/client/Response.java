@@ -50,7 +50,9 @@ public class Response
         if (headers == null) {
             ImmutableListMultimap.Builder<String, String> builder = ImmutableListMultimap.builder();
             for (Entry<String, List<String>> entry : connection.getHeaderFields().entrySet()) {
-                builder.putAll(entry.getKey(), entry.getValue());
+                if (entry.getKey() != null) { // HttpUrlConnection returns an header entry for the status line with null key
+                    builder.putAll(entry.getKey(), entry.getValue());
+                }
             }
             this.headers = builder.build();
         }
