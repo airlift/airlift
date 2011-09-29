@@ -4,14 +4,14 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>rack-experimental</artifactId>
     <packaging>jar</packaging>
-    <version>0.47</version>
+    <version>0.48-SNAPSHOT</version>
     <name>rack</name>
     <description>The Platform Rack Server</description>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.47</version>
+        <version>0.48-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -31,13 +31,13 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>http-server</artifactId>
-            <version>0.47</version>
+            <version>0.48-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>bootstrap</artifactId>
-            <version>0.47</version>
+            <version>0.48-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -49,7 +49,7 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>testing</artifactId>
-            <version>0.47</version>
+            <version>0.48-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
 
