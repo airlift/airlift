@@ -1,4 +1,12 @@
-*0.44
+* 0.47
+- [Bug] Fixed memory leaks in DiscoveryClient and EventClient due to AsyncHttpClient
+- [Experimental] Added simplified HttpClient based in java.net.URL
+
+* 0.46
+- Launcher script now symlinks etc directory from install dir to data dir
+- Launcher now looks for etc/node.properties instead of etc/node.config
+
+* 0.45
 - Releases and snapshots are now published to oss.sonatype.org
 - HttpServer now allows SSL renegotiation (underlying issue has been fixed in JVM)
 - Record request size in http log
@@ -18,6 +26,9 @@
 - [Bug] Fixed race condition in embedded Cassandra lifecycle
 - [Bug] Fixed error reporting in event client
 - [Bug] Fixed launcher issues with spawn using 'sh -c' on Linux
+
+* 0.44 [BAD]
+- This is a bad release.  Do not use.
 
 * 0.43
 - [Experimental] Added rack servlet for integration with JRuby on Rails

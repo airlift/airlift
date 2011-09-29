@@ -1,12 +1,44 @@
-Platform 0.44, Sept 20th 2011
+Platform 0.47, Sept 29th 2011
+
+* EventClient and DiscoveryClient
+
+After running some of our servers under load, we have found major memory leaks
+in EventClient and DiscoveryClient due to the AsyncHttpClient.  Unfortunately,
+these leaks are difficult to fix due to the complexity of this code base, so we
+have replaced the use of AsyncHttpClient in these libraries with the
+experimental http client.
+
+* HttpClient
+
+We have written a vastly simplified event client interface that supports only the
+features needed by EventClient and DiscoveryClient.  The current
+implementation uses java.net.URL internally but we expect this to change.  This
+code base is under active development and should not be used outside of the
+platform until it is stabilizes.
+
+Platform 0.46, Sept 26th 2011
+
+* Launcher script
+
+This release addresses one of the recent problems we've had with our servers
+running in Galaxy.  Galaxy splits the installation directory, which contains
+our configuration files, from the data directory where the Java process runs.
+This split makes it easy for Galaxy to upgrade servers without losing
+persistent server data, but this split means it is impossible for the Java
+program to locate configuration files in the installation etc directory.  We
+have fixed this problem by having the launcher script symlink the etc
+directory from the installation directory into the data directory, so the Java
+process can find the configuration using a relative path.
+
+
+Platform 0.45, Sept 22th 2011
 
 * oss.sonatype.org
 
-We are pleased to announce that starting with this release, all artifacts will
-be published at oss.sonatype.org and will hopefully be synced to Maven Central.
-Since the process for accepting artifacts into Maven Central starts only after
-a release has been tagged, we can not guarantee this release will ultimately
-be pushed to Maven Central.
+We are pleased to announce that starting with this release, all artifacts are
+published to Maven Central.  You can search for our artifacts here:
+
+  http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.proofpoint.platform%22
 
 * HttpServer
 
@@ -97,7 +129,11 @@ feature has been rewritten in much simpler pure Ruby.
     - Fixed launcher issues with spawn using 'sh -c' on Linux
 
 
+Platform 0.44, Sept 22th 2011
 
+* Bad release
+
+Don't use this release, it is bad.
 
 Platform 0.43, Jun 10th 2011
 
