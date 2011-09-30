@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
 import com.google.common.util.concurrent.CheckedFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.proofpoint.log.Logger;
@@ -14,19 +13,14 @@ import javax.annotation.PreDestroy;
 import java.net.ConnectException;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static com.proofpoint.discovery.client.DiscoveryClient.DEFAULT_DELAY;
-import static com.proofpoint.discovery.client.DiscoveryFutures.toDiscoveryFuture;
 
 public class Announcer
 {
@@ -35,11 +29,9 @@ public class Announcer
 
     private final DiscoveryClient client;
     private final ScheduledExecutorService executor;
-    private final AtomicLong currentJob = new AtomicLong();
     private final AtomicBoolean serverUp = new AtomicBoolean(true);
+    private final AtomicBoolean started = new AtomicBoolean(false);
 
-    private final ReentrantLock lock = new ReentrantLock();
-    private ScheduledFuture<?> restartAnnouncementSchedule;
 
     @Inject
     public Announcer(DiscoveryClient client, Set<ServiceAnnouncement> serviceAnnouncements)
@@ -57,52 +49,22 @@ public class Announcer
     public void start()
             throws TimeoutException
     {
-        lock.lock();
-        try {
-            // already destroyed?
-            Preconditions.checkState(!executor.isShutdown(), "Announcer has been destroyed");
-
-            // already running?
-            if (restartAnnouncementSchedule != null) {
-                return;
-            }
-
-            // make sure update runs at least every minutes
-            // this will help the system restart if a task
-            // hangs or dies without being rescheduled
-            restartAnnouncementSchedule = executor.scheduleWithFixedDelay(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    announce();
-                }
-            }, 1, 1, TimeUnit.MINUTES);
+        Preconditions.checkState(!executor.isShutdown(), "Announcer has been destroyed");
+        if (started.compareAndSet(false, true)) {
+            // announce immediately
+            announce().checkedGet(30, TimeUnit.SECONDS);
         }
-        finally {
-            lock.unlock();
-        }
-
-        // announce immediately
-        announce().checkedGet(30, TimeUnit.SECONDS);
     }
 
     @PreDestroy
     public void destroy()
     {
-        // cancel scheduled jobs
-        lock.lock();
+        executor.shutdownNow();
         try {
-            executor.shutdownNow();
-            try {
-                executor.awaitTermination(30, TimeUnit.SECONDS);
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            executor.awaitTermination(30, TimeUnit.SECONDS);
         }
-        finally {
-            lock.unlock();
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
 
         // unannounce
@@ -130,61 +92,53 @@ public class Announcer
         announcements.remove(serviceId);
     }
 
-    private CheckedFuture<Void, DiscoveryException> announce()
+    private CheckedFuture<Duration, DiscoveryException> announce()
     {
-        final long jobId = currentJob.get();
         final CheckedFuture<Duration, DiscoveryException> future = client.announce(ImmutableSet.copyOf(announcements.values()));
 
-        final SettableFuture<Void> isDone = SettableFuture.create();
         future.addListener(new Runnable()
         {
             @Override
             public void run()
             {
-                if (currentJob.compareAndSet(jobId, jobId + 1)) {
-                    Duration duration = DEFAULT_DELAY;
-                    try {
-                        duration = future.checkedGet();
-                        if (serverUp.compareAndSet(false, true)) {
-                            log.info("Discovery server connect succeeded for announce");
+                Duration duration = DEFAULT_DELAY;
+                try {
+                    duration = future.checkedGet();
+                    if (serverUp.compareAndSet(false, true)) {
+                        log.info("Discovery server connect succeeded for announce");
+                    }
+                }
+                catch (DiscoveryException e) {
+                    if (e.getCause() instanceof ConnectException) {
+                        if (serverUp.compareAndSet(true, false)) {
+                            log.error("Cannot connect to discovery server for announce: %s", e.getCause().getMessage());
                         }
                     }
-                    catch (DiscoveryException e) {
-                        if (e.getCause() instanceof ConnectException) {
-                            if (serverUp.compareAndSet(true, false)) {
-                                log.error("Cannot connect to discovery server for announce: %s", e.getCause().getMessage());
-                            }
-                        }
-                        else {
-                            log.error(e);
-                        }
+                    else {
+                        log.error(e);
                     }
-                    finally {
-                        scheduleAnnouncement(duration);
-                        isDone.set(null);
-                    }
+                }
+                finally {
+                    scheduleNextAnnouncement(duration);
                 }
             }
         }, executor);
-        return toDiscoveryFuture("announce", isDone);
+
+        return future;
     }
 
-    private void scheduleAnnouncement(Duration delay)
+    private void scheduleNextAnnouncement(Duration delay)
     {
         // already stopped?  avoids rejection exception
         if (executor.isShutdown()) {
             return;
         }
-        executor.schedule(new Callable<Void>()
-        {
+        executor.schedule(new Runnable() {
             @Override
-            public Void call()
-                    throws Exception
+            public void run()
             {
                 announce();
-
-                return null;
             }
-        }, (long) delay.toMillis(), TimeUnit.MILLISECONDS);
+        }, (long) (delay.toMillis() * 0.8), TimeUnit.MILLISECONDS);
     }
 }

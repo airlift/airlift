@@ -3,23 +3,19 @@ package com.proofpoint.discovery.client;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.CheckedFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import com.proofpoint.log.Logger;
 import com.proofpoint.units.Duration;
 
 import javax.annotation.PostConstruct;
 import java.net.ConnectException;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
 
-import static com.proofpoint.discovery.client.DiscoveryFutures.toDiscoveryFuture;
+import static com.proofpoint.discovery.client.DiscoveryClient.DEFAULT_DELAY;
 
 public class CachingServiceSelector implements ServiceSelector
 {
@@ -32,8 +28,7 @@ public class CachingServiceSelector implements ServiceSelector
     private final ScheduledExecutorService executor;
     private final AtomicBoolean serverUp = new AtomicBoolean(true);
 
-    private final ReentrantLock lock = new ReentrantLock();
-    private ScheduledFuture<?> restartRefreshSchedule;
+    private final AtomicBoolean started = new AtomicBoolean(false);
 
     public CachingServiceSelector(String type, ServiceSelectorConfig selectorConfig, DiscoveryClient client, ScheduledExecutorService executor)
     {
@@ -52,31 +47,11 @@ public class CachingServiceSelector implements ServiceSelector
     public void start()
             throws TimeoutException
     {
-        lock.lock();
-        try {
-            // already running?
-            if (restartRefreshSchedule != null) {
-                return;
-            }
+        if (started.compareAndSet(false, true)) {
+            Preconditions.checkState(!executor.isShutdown(), "CachingServiceSelector has been destroyed");
 
-            // make sure update runs at least every minutes
-            // this will help the system restart if a task
-            // hangs or dies without being rescheduled
-            restartRefreshSchedule = executor.scheduleWithFixedDelay(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    scheduleRefresh(new Duration(0, TimeUnit.SECONDS));
-                }
-            }, 1, 1, TimeUnit.MINUTES);
+            refresh().checkedGet(30, TimeUnit.SECONDS);
         }
-        finally {
-            lock.unlock();
-        }
-
-        // refresh immediately
-        refresh().checkedGet(30, TimeUnit.SECONDS);
     }
 
     @Override
@@ -101,7 +76,7 @@ public class CachingServiceSelector implements ServiceSelector
         return serviceDescriptors.getServiceDescriptors();
     }
 
-    private CheckedFuture<Void, DiscoveryException> refresh()
+    private CheckedFuture<ServiceDescriptors, DiscoveryException> refresh()
     {
         final ServiceDescriptors oldDescriptors = this.serviceDescriptors.get();
 
@@ -113,18 +88,16 @@ public class CachingServiceSelector implements ServiceSelector
             future = client.refreshServices(oldDescriptors);
         }
 
-        final SettableFuture<Void> isDone = SettableFuture.create();
         future.addListener(new Runnable()
         {
             @Override
             public void run()
             {
+                Duration delay = DEFAULT_DELAY;
                 try {
                     ServiceDescriptors newDescriptors = future.checkedGet();
-                    boolean updated = serviceDescriptors.compareAndSet(oldDescriptors, newDescriptors);
-                    if (updated) {
-                        scheduleRefresh(newDescriptors.getMaxAge());
-                    }
+                    delay = newDescriptors.getMaxAge();
+                    serviceDescriptors.set(newDescriptors);
                     if (serverUp.compareAndSet(false, true)) {
                         log.info("Discovery server connect succeeded for refresh (%s/%s)", type, pool);
                     }
@@ -139,12 +112,14 @@ public class CachingServiceSelector implements ServiceSelector
                     }
                 }
                 finally {
-                    isDone.set(null);
+                    scheduleRefresh(delay);
                 }
             }
         }, executor);
-        return toDiscoveryFuture("refresh", isDone);
+
+        return future;
     }
+
 
     private void scheduleRefresh(Duration delay)
     {
@@ -152,20 +127,11 @@ public class CachingServiceSelector implements ServiceSelector
         if (executor.isShutdown()) {
             return;
         }
-        executor.schedule(new Callable<Void>()
-        {
+        executor.schedule(new Runnable() {
             @Override
-            public Void call()
-                    throws Exception
+            public void run()
             {
-                try {
-                    refresh();
-                }
-                catch (Exception e) {
-                    log.error(e, "Failed to refresh");
-                }
-
-                return null;
+                refresh();
             }
         }, (long) delay.toMillis(), TimeUnit.MILLISECONDS);
     }
