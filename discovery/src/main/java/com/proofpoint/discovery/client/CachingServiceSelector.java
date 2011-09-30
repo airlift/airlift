@@ -158,12 +158,15 @@ public class CachingServiceSelector implements ServiceSelector
             public Void call()
                     throws Exception
             {
-                refresh();
+                try {
+                    refresh();
+                }
+                catch (Exception e) {
+                    log.error(e, "Failed to refresh");
+                }
 
                 return null;
-
             }
-
         }, (long) delay.toMillis(), TimeUnit.MILLISECONDS);
     }
 }
