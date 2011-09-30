@@ -146,7 +146,7 @@ public class HttpDiscoveryClient implements DiscoveryClient
         Preconditions.checkNotNull(type, "type is null");
 
         RequestBuilder requestBuilder = prepareGet().setUri(URI.create(discoveryServiceURI + "/v1/service/" + type + "/" + pool));
-        if (serviceDescriptors != null) {
+        if (serviceDescriptors != null && serviceDescriptors.getETag() != null) {
             requestBuilder.setHeader(HttpHeaders.ETAG, serviceDescriptors.getETag());
         }
         return httpClient.execute(requestBuilder.build(), new DiscoveryResponseHandler<ServiceDescriptors>(format("Lookup of %s", type))
