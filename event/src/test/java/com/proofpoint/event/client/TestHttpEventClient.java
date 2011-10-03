@@ -121,10 +121,6 @@ public class TestHttpEventClient
             throws Exception
     {
         server.stop();
-        if (client != null) {
-            client.destroy();
-            client = null;
-        }
     }
 
     private HttpEventClient newEventClient(List<URI> v2Uris)

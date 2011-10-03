@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.ServiceType;
@@ -17,7 +16,6 @@ import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeInfo;
 
-import javax.annotation.PreDestroy;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,8 +24,6 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static com.proofpoint.http.client.RequestBuilder.preparePost;
 
@@ -39,7 +35,6 @@ public class HttpEventClient
     private final HttpServiceSelector serviceSelector;
     private final JsonEventWriter eventWriter;
     private final int version;
-    private ExecutorService executor;
     private final HttpClient httpClient;
     private final NodeInfo nodeInfo;
 
@@ -73,12 +68,6 @@ public class HttpEventClient
         if (workerThreads <= 0) {
             workerThreads = 16;
         }
-        executor = Executors.newFixedThreadPool(workerThreads, new ThreadFactoryBuilder().setNameFormat("http-event-client-%s").build());
-    }
-
-    @PreDestroy
-    public void destroy() {
-        executor.shutdownNow();
     }
 
     @Override
