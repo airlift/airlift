@@ -50,7 +50,12 @@ public class CachingServiceSelector implements ServiceSelector
         if (started.compareAndSet(false, true)) {
             Preconditions.checkState(!executor.isShutdown(), "CachingServiceSelector has been destroyed");
 
-            refresh().checkedGet(30, TimeUnit.SECONDS);
+            // if discovery is available, get the initial set of servers before starting
+            try {
+                refresh().checkedGet(30, TimeUnit.SECONDS);
+            }
+            catch (Exception ignored) {
+            }
         }
     }
 
