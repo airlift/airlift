@@ -82,6 +82,7 @@ public class HttpDiscoveryClient implements DiscoveryClient
         Announcement announcement = new Announcement(nodeInfo.getEnvironment(), nodeInfo.getNodeId(), nodeInfo.getPool(), nodeInfo.getLocation(), services);
         Request request = preparePut()
                 .setUri(URI.create(discoveryServiceURI + "/v1/announcement/" + nodeInfo.getNodeId()))
+                .setHeader("User-Agent", nodeInfo.getNodeId())
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setBodyGenerator(jsonBodyGenerator(announcementCodec, announcement))
                 .build();
@@ -122,6 +123,7 @@ public class HttpDiscoveryClient implements DiscoveryClient
     {
         Request request = prepareDelete()
                 .setUri(URI.create(discoveryServiceURI + "/v1/announcement/" + nodeInfo.getNodeId()))
+                .setHeader("User-Agent", nodeInfo.getNodeId())
                 .build();
         return httpClient.execute(request, new DiscoveryResponseHandler<Void>("Unannouncement"));
     }
@@ -145,7 +147,9 @@ public class HttpDiscoveryClient implements DiscoveryClient
     {
         Preconditions.checkNotNull(type, "type is null");
 
-        RequestBuilder requestBuilder = prepareGet().setUri(URI.create(discoveryServiceURI + "/v1/service/" + type + "/" + pool));
+        RequestBuilder requestBuilder = prepareGet()
+                .setUri(URI.create(discoveryServiceURI + "/v1/service/" + type + "/" + pool))
+                .setHeader("User-Agent", nodeInfo.getNodeId());
         if (serviceDescriptors != null && serviceDescriptors.getETag() != null) {
             requestBuilder.setHeader(HttpHeaders.ETAG, serviceDescriptors.getETag());
         }

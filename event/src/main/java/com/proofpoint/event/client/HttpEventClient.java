@@ -15,6 +15,7 @@ import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.log.Logger;
+import com.proofpoint.node.NodeInfo;
 
 import javax.annotation.PreDestroy;
 import javax.ws.rs.core.MediaType;
@@ -40,21 +41,25 @@ public class HttpEventClient
     private final int version;
     private ExecutorService executor;
     private final HttpClient httpClient;
+    private final NodeInfo nodeInfo;
 
     @Inject
     public HttpEventClient(
             @ServiceType("event") HttpServiceSelector v1ServiceSelector,
             @ServiceType("collector") HttpServiceSelector serviceSelector,
             JsonEventWriter eventWriter,
+            NodeInfo nodeInfo,
             HttpEventClientConfig config,
             @ForEventClient HttpClient httpClient)
     {
         Preconditions.checkNotNull(serviceSelector, "serviceSelector is null");
         Preconditions.checkNotNull(v1ServiceSelector, "v1ServiceSelector is null");
+        Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
         Preconditions.checkNotNull(httpClient, "httpClient is null");
 
         this.eventWriter = eventWriter;
         this.version = config.getJsonVersion();
+        this.nodeInfo = nodeInfo;
         this.httpClient = httpClient;
 
         if (version == 1) {
@@ -116,6 +121,7 @@ public class HttpEventClient
         // todo this doesn't really work due to returning the future which can fail without being retried
         Request request = preparePost()
                 .setUri(resolveUri(uris.get(0)))
+                .setHeader("User-Agent", nodeInfo.getNodeId())
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setBodyGenerator(new JsonEntityWriter<T>(eventWriter, eventGenerator))
                 .build();
