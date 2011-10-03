@@ -128,7 +128,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>1.0</version>
+                <version>1.0.1</version>
                 <executions>
                     <execution>
                         <id>enforce-versions</id>
@@ -143,6 +143,15 @@
                                 <requireJavaVersion>
                                     <version>1.6</version>
                                 </requireJavaVersion>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <exclude>com.google.collections:google-collections</exclude>
+                                        <exclude>com.google.guava:guava</exclude>
+                                    </excludes>
+                                    <includes>
+                                        <include>com.google.guava:guava:[10.0,)</include>
+                                    </includes>
+                                </bannedDependencies>
                             </rules>
                         </configuration>
                     </execution>
