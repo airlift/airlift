@@ -151,6 +151,12 @@
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
+                <artifactId>jmx-http-rpc-experimental</artifactId>
+                <version>0.48-SNAPSHOT</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.proofpoint.platform</groupId>
                 <artifactId>launcher</artifactId>
                 <version>0.48-SNAPSHOT</version>
                 <classifier>bin</classifier>
