@@ -55,7 +55,7 @@ public class HttpJmxConnector implements JMXConnector, JMXAddressable
 
         // only http and https URLs are allowed
         String protocol = jmxServiceUrl.getProtocol();
-        if (!"http".equals(protocol) && !"https".equals(protocol)) {
+        if (!"http".equalsIgnoreCase(protocol) && !"https".equalsIgnoreCase(protocol)) {
             throw new MalformedURLException(jmxServiceUrl.toString());
         }
 
