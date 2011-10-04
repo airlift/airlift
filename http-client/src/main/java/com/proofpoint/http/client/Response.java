@@ -62,6 +62,12 @@ public class Response
     public InputStream getInputStream()
             throws IOException
     {
-        return connection.getInputStream();
+        // Yes, the URL APIs are this dumb.
+        if (statusCode < 400) {
+            return connection.getInputStream();
+        }
+        else {
+            return connection.getErrorStream();
+        }
     }
 }
