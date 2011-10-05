@@ -41,10 +41,12 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.management.MBeanServer;
+import javax.servlet.DispatcherType;
 import javax.servlet.Servlet;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -139,9 +141,9 @@ public class HttpServer
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         // -- gzip response filter
-        context.addFilter(GzipFilter.class, "/*", FilterMapping.DEFAULT);
+        context.addFilter(GzipFilter.class, "/*", null);
         // -- gzip request filter
-        context.addFilter(GZipRequestFilter.class, "/*", FilterMapping.DEFAULT);
+        context.addFilter(GZipRequestFilter.class, "/*", null);
         // -- security handler
         if (loginService != null) {
             SecurityHandler securityHandler = createSecurityHandler(loginService);

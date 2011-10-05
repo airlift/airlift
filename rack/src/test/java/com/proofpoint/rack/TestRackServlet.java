@@ -162,7 +162,7 @@ public class TestRackServlet
         when(request.getQueryString()).thenReturn(queryString);
         when(request.getServerName()).thenReturn("TestServer");
         when(request.getServerPort()).thenReturn(new Random().nextInt());
-        when(request.getHeaderNames()).thenReturn(Collections.enumeration(ImmutableList.of()));
+        when(request.getHeaderNames()).thenReturn(Collections.enumeration(ImmutableList.<String>of()));
 
         final StringBuilder outputBuilder = new StringBuilder();
         ServletOutputStream outputStream = new ServletOutputStream()

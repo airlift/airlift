@@ -70,14 +70,14 @@ class GZipRequestWrapper
     }
 
     @Override
-    public Enumeration<?> getHeaderNames()
+    public Enumeration<String> getHeaderNames()
     {
         // TODO: filter out content-length & content-coding
         return request.getHeaderNames();
     }
 
     @Override
-    public Enumeration<?> getHeaders(String name)
+    public Enumeration<String> getHeaders(String name)
     {
         // TODO: filter out content-length & content-coding
         return request.getHeaders(name);

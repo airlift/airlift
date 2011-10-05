@@ -66,32 +66,32 @@
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
-            <version>7.1.6.v20100715</version>
+            <version>8.0.1.v20110908</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-util</artifactId>
-            <version>7.1.6.v20100715</version>
+            <version>8.0.1.v20110908</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-servlet</artifactId>
-            <version>7.1.6.v20100715</version>
+            <version>8.0.1.v20110908</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-servlets</artifactId>
-            <version>7.1.6.v20100715</version>
+            <version>8.0.1.v20110908</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-security</artifactId>
-            <version>7.1.6.v20100715</version>
+            <version>8.0.1.v20110908</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-jmx</artifactId>
-            <version>7.1.6.v20100715</version>
+            <version>8.0.1.v20110908</version>
         </dependency>
 
         <dependency>
