@@ -69,7 +69,7 @@ public class HttpJmxConnector implements JMXConnector, JMXAddressable
         // port
         int port = jmxServiceUrl.getPort();
         if (port == 0) {
-            if ("http".equals(protocol)) {
+            if ("http".equalsIgnoreCase(protocol)) {
                 port = 80;
             }
             else {
