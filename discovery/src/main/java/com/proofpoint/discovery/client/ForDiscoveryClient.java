@@ -13,6 +13,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 @Target({FIELD, PARAMETER, METHOD})
 @BindingAnnotation
-public @interface ForDiscoverClient
+public @interface ForDiscoveryClient
 {
 }

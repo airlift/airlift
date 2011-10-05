@@ -9,7 +9,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.proofpoint.discovery.client.Announcer;
 import com.proofpoint.discovery.client.DiscoveryClient;
 import com.proofpoint.discovery.client.DiscoveryClientConfig;
-import com.proofpoint.discovery.client.ForDiscoverClient;
+import com.proofpoint.discovery.client.ForDiscoveryClient;
 import com.proofpoint.discovery.client.ServiceAnnouncement;
 import com.proofpoint.discovery.client.ServiceSelectorFactory;
 
@@ -37,7 +37,7 @@ public class TestingDiscoveryModule implements Module
     }
 
     @Provides
-    @ForDiscoverClient
+    @ForDiscoveryClient
     public ScheduledExecutorService createDiscoveryExecutor()
     {
         return new ScheduledThreadPoolExecutor(10, new ThreadFactoryBuilder().setNameFormat("Discovery-%s").setDaemon(true).build());

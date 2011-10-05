@@ -58,7 +58,7 @@ public class HttpDiscoveryClient implements DiscoveryClient
             NodeInfo nodeInfo,
             JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec,
             JsonCodec<Announcement> announcementCodec,
-            @ForDiscoverClient HttpClient httpClient)
+            @ForDiscoveryClient HttpClient httpClient)
     {
         Preconditions.checkNotNull(config, "config is null");
         Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");

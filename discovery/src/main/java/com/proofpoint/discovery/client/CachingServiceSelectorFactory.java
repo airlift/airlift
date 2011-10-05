@@ -3,14 +3,9 @@ package com.proofpoint.discovery.client;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.Provider;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
-
-import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
 
 public class CachingServiceSelectorFactory implements ServiceSelectorFactory
 {
@@ -18,7 +13,7 @@ public class CachingServiceSelectorFactory implements ServiceSelectorFactory
     private final ScheduledExecutorService executor;
 
     @Inject
-    public CachingServiceSelectorFactory(DiscoveryClient client, @ForDiscoverClient ScheduledExecutorService executor)
+    public CachingServiceSelectorFactory(DiscoveryClient client, @ForDiscoveryClient ScheduledExecutorService executor)
     {
         Preconditions.checkNotNull(client, "client is null");
         Preconditions.checkNotNull(executor, "executor is null");

@@ -27,7 +27,7 @@ public class DiscoveryModule implements Module
         jsonCodecBinder(binder).bindJsonCodec(Announcement.class);
 
         // bind the http client
-        binder.install(new HttpClientModule("discovery", ForDiscoverClient.class));
+        binder.install(new HttpClientModule("discovery", ForDiscoveryClient.class));
 
         // bind announcer
         binder.bind(Announcer.class).in(Scopes.SINGLETON);
@@ -39,7 +39,7 @@ public class DiscoveryModule implements Module
     }
 
     @Provides
-    @ForDiscoverClient
+    @ForDiscoveryClient
     public ScheduledExecutorService createDiscoveryExecutor()
     {
         return new ScheduledThreadPoolExecutor(10, new ThreadFactoryBuilder().setNameFormat("Discovery-%s").setDaemon(true).build());
