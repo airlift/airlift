@@ -98,6 +98,9 @@ class Pid
     rescue Errno::ESRCH
       puts "Process #{pid} not running" if @options[:verbose]
       false
+    rescue Errno::EPERM
+      puts "Process #{pid} not visible" if @options[:verbose]
+      false
     end
   end
 
