@@ -41,12 +41,6 @@
         </dependency>
 
         <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-            <version>2.5</version>
-        </dependency>
-
-        <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>testing</artifactId>
             <version>0.48-SNAPSHOT</version>
