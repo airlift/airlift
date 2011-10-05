@@ -2,7 +2,9 @@ package com.proofpoint.http.client;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Lists;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,7 +53,7 @@ public class Response
             ImmutableListMultimap.Builder<String, String> builder = ImmutableListMultimap.builder();
             for (Entry<String, List<String>> entry : connection.getHeaderFields().entrySet()) {
                 if (entry.getKey() != null) { // HttpUrlConnection returns an header entry for the status line with null key
-                    builder.putAll(entry.getKey(), entry.getValue());
+                    builder.putAll(entry.getKey(), Lists.reverse(entry.getValue()));
                 }
             }
             this.headers = builder.build();

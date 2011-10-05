@@ -57,7 +57,7 @@ public class HttpClient
                 HttpURLConnection urlConnection = (HttpURLConnection) request.getUri().toURL().openConnection(Proxy.NO_PROXY);
                 urlConnection.setRequestMethod(request.getMethod());
                 for (Entry<String, String> entry : request.getHeaders().entries()) {
-                    urlConnection.setRequestProperty(entry.getKey(), entry.getValue());
+                    urlConnection.addRequestProperty(entry.getKey(), entry.getValue());
                 }
 
                 if (request.getBodyGenerator() != null) {
