@@ -1,3 +1,12 @@
+* 0.48
+- Upgrade to Guava 10.0 - older version are now banned
+- Upgrade to Hector 0.8.0-2
+- Upgrade to Jersey 1.9.1
+- Upgrade to Jetty 8.0.1
+- [Experimental] Added http based JMX remote connector
+- [Experimental] User agent if http client is now node.id to make debugging easier
+- [Bug] removed broken discovery and event fail-safe logic
+
 * 0.47
 - [Bug] Fixed memory leaks in DiscoveryClient and EventClient due to AsyncHttpClient
 - [Experimental] Added simplified HttpClient based in java.net.URL

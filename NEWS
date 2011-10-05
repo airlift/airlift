@@ -1,3 +1,41 @@
+Platform 0.48, not released
+
+* Library Upgrades
+
+In this release we have upgraded the following dependencies
+
+  - Guava 10.0
+  - Hector 0.8.0-2
+  - Jersey 1.9.1
+  - Jetty 8.0.1
+
+Note: we have banned all prior versions of Guava since the former versioning
+names are not understood by maven and can result in invalid combinations of
+dependencies.
+
+* Jmx over HTTP
+
+One of the major problems we have with supporting our servers in a production
+environment is accessing JMX through the firewall.  JMX uses RMI by default
+and RMI binds to two random ports, so we can run multiple servers on the same
+instance.  This configuration annoyance is compounded by the bidirectional
+nature of the RMI protocol.  When an RMI object is published, it encodes the
+local address of the server on which the object is running.  In EC2, each
+server has a private IP for use within EC2 and a public address which we use for
+connecting from out side of EC2.  Since the RMI object can only contain one
+address, we must choose between JMX being internally or externally accessible.
+
+We have eliminated both of these problems by writing a HTTP based JMX Remoteing
+(JSR 160) connector. To add this to your server, simply add the JmxHttpRpcModule
+to the Guice modules.  The following command will connect jvisualvm to the server:
+
+  jvisualvm --cp:a jmx-http-rpc-experimental.jar \
+      --openjmx service:jmx:http://<host>:<port>
+
+Note: You must install the VisualVM-MBean plugin to see mbeans in jvisualvm
+
+
+
 Platform 0.47, Sept 29th 2011
 
 * EventClient and DiscoveryClient
