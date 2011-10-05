@@ -5,7 +5,7 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>platform</artifactId>
     <packaging>pom</packaging>
-    <version>0.48</version>
+    <version>0.49-SNAPSHOT</version>
     <name>platform</name>
     <description>Proofpoint platform</description>
     <url>http://github.com/proofpoint/platform</url>
