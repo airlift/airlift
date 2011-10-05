@@ -42,6 +42,6 @@ public class DiscoveryModule implements Module
     @ForDiscoveryClient
     public ScheduledExecutorService createDiscoveryExecutor()
     {
-        return new ScheduledThreadPoolExecutor(10, new ThreadFactoryBuilder().setNameFormat("Discovery-%s").setDaemon(true).build());
+        return new ScheduledThreadPoolExecutor(5, new ThreadFactoryBuilder().setNameFormat("Discovery-%s").setDaemon(true).build());
     }
 }

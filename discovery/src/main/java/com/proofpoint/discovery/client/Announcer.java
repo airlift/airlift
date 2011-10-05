@@ -43,7 +43,7 @@ public class Announcer
         for (ServiceAnnouncement serviceAnnouncement : serviceAnnouncements) {
             announcements.put(serviceAnnouncement.getId(), serviceAnnouncement);
         }
-        executor = new ScheduledThreadPoolExecutor(10, new ThreadFactoryBuilder().setNameFormat("Announcer-%s").setDaemon(true).build());
+        executor = new ScheduledThreadPoolExecutor(5, new ThreadFactoryBuilder().setNameFormat("Announcer-%s").setDaemon(true).build());
     }
 
     public void start()
