@@ -11,10 +11,13 @@ import com.proofpoint.discovery.client.ServiceType;
 import com.proofpoint.http.client.BodyGenerator;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
+import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeInfo;
+import org.weakref.jmx.Flatten;
+import org.weakref.jmx.Managed;
 
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
@@ -68,6 +71,13 @@ public class HttpEventClient
         if (workerThreads <= 0) {
             workerThreads = 16;
         }
+    }
+
+    @Flatten
+    @Managed
+    public RequestStats getStats()
+    {
+        return httpClient.getStats();
     }
 
     @Override

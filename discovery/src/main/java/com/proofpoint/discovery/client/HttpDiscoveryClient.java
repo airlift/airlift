@@ -9,6 +9,7 @@ import com.google.inject.Inject;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestBuilder;
+import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.json.JsonCodec;
@@ -16,6 +17,8 @@ import com.proofpoint.node.NodeInfo;
 import com.proofpoint.units.Duration;
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonProperty;
+import org.weakref.jmx.Flatten;
+import org.weakref.jmx.Managed;
 
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.HttpHeaders;
@@ -72,6 +75,13 @@ public class HttpDiscoveryClient implements DiscoveryClient
         this.serviceDescriptorsCodec = serviceDescriptorsCodec;
         this.announcementCodec = announcementCodec;
         this.httpClient = httpClient;
+    }
+
+    @Flatten
+    @Managed
+    public RequestStats getStats()
+    {
+        return httpClient.getStats();
     }
 
     @Override

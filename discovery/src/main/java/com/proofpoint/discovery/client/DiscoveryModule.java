@@ -14,6 +14,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.json.JsonCodecBinder.jsonCodecBinder;
+import static org.weakref.jmx.guice.MBeanModule.newExporter;
 
 public class DiscoveryModule implements Module
 {
@@ -22,6 +23,7 @@ public class DiscoveryModule implements Module
     {
         // bind discovery client and dependencies
         binder.bind(DiscoveryClient.class).to(HttpDiscoveryClient.class).in(Scopes.SINGLETON);
+        newExporter(binder).export(DiscoveryClient.class).withGeneratedName();
         bindConfig(binder).to(DiscoveryClientConfig.class);
         jsonCodecBinder(binder).bindJsonCodec(ServiceDescriptorsRepresentation.class);
         jsonCodecBinder(binder).bindJsonCodec(Announcement.class);

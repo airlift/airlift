@@ -2,13 +2,16 @@ package com.proofpoint.http.client;
 
 import com.google.common.base.Preconditions;
 import com.google.common.io.Closeables;
+import com.google.common.io.CountingOutputStream;
 import com.google.common.util.concurrent.AbstractCheckedFuture;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListenableFutureTask;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.proofpoint.units.Duration;
+import org.weakref.jmx.Flatten;
+import org.weakref.jmx.Managed;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.Proxy;
 import java.util.Map.Entry;
@@ -18,11 +21,19 @@ import java.util.concurrent.ExecutorService;
 
 public class HttpClient
 {
-    private final ExecutorService executor;
+    private final ListeningExecutorService executor;
+    private final RequestStats stats = new RequestStats();
 
     public HttpClient(ExecutorService executor)
     {
-        this.executor = executor;
+        this.executor = MoreExecutors.listeningDecorator(executor);
+    }
+
+    @Managed
+    @Flatten
+    public RequestStats getStats()
+    {
+        return stats;
     }
 
     public <T, E extends Exception> CheckedFuture<T, E> execute(Request request, ResponseHandler<T, E> responseHandler)
@@ -31,16 +42,16 @@ public class HttpClient
         Preconditions.checkNotNull(request, "request is null");
         Preconditions.checkNotNull(responseHandler, "responseHandler is null");
 
-        // todo replace with ListeningExecutorService in Guava r10
-        ListenableFutureTask<T> listenableFutureTask = new ListenableFutureTask<T>(new HttpExecution<T>(request, responseHandler));
-        executor.execute(listenableFutureTask);
-        return new ResponseFuture<T, E>(request, responseHandler, listenableFutureTask);
+        ListenableFuture<T> listenableFuture = executor.submit(new HttpExecution<T>(request, responseHandler));
+        return new ResponseFuture<T, E>(request, responseHandler, listenableFuture);
     }
 
     private class HttpExecution<T> implements Callable<T>
     {
         private final Request request;
         private final ResponseHandler<T, ?> responseHandler;
+        private final long created = System.nanoTime();
+
 
         public HttpExecution(Request request, ResponseHandler<T, ?> responseHandler)
         {
@@ -51,8 +62,11 @@ public class HttpClient
         public T call()
                 throws Exception
         {
-            OutputStream outputStream = null;
-            InputStream inputStream = null;
+            Duration schedulingDelay = Duration.nanosSince(created);
+            long requestStart = System.nanoTime();
+
+            CountingOutputStream outputStream = null;
+            Response response = null;
             try {
                 HttpURLConnection urlConnection = (HttpURLConnection) request.getUri().toURL().openConnection(Proxy.NO_PROXY);
                 urlConnection.setRequestMethod(request.getMethod());
@@ -63,25 +77,36 @@ public class HttpClient
                 if (request.getBodyGenerator() != null) {
                     urlConnection.setDoOutput(true);
                     urlConnection.setChunkedStreamingMode(4096);
-                    outputStream = urlConnection.getOutputStream();
+                    outputStream = new CountingOutputStream(urlConnection.getOutputStream());
                     request.getBodyGenerator().write(outputStream);
                     outputStream.close();
                 }
 
                 // Get the response
-                Response response = new Response(urlConnection);
+                response = new Response(urlConnection);
+                Duration requestProcessingTime = Duration.nanosSince(requestStart);
+                long responseStart = System.nanoTime();
                 try {
                     return responseHandler.handle(request, response);
                 }
                 catch (Exception e) {
                     throw new ExceptionFromResponseHandler(e);
+                } finally {
+                    Duration responseProcessingTime = Duration.nanosSince(responseStart);
+                    long bytesWritten = outputStream != null ? outputStream.getCount() : 0;
+                    stats.record(request.getMethod(),
+                            response.getStatusCode(),
+                            bytesWritten,
+                            response.getBytesRead(),
+                            schedulingDelay,
+                            requestProcessingTime,
+                            responseProcessingTime);
                 }
             }
             finally {
                 Closeables.closeQuietly(outputStream);
-                Closeables.closeQuietly(inputStream);
+                Response.dispose(response);
             }
-
         }
     }
 

@@ -2,9 +2,10 @@ package com.proofpoint.http.client;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.io.Closeables;
+import com.google.common.io.CountingInputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,6 +19,7 @@ public class Response
     private final int statusCode;
     private final String statusMessage;
     private ListMultimap<String, String> headers;
+    private CountingInputStream inputStream;
 
     public Response(HttpURLConnection connection)
             throws IOException
@@ -61,15 +63,34 @@ public class Response
         return headers;
     }
 
+    public long getBytesRead()
+    {
+        if (inputStream == null) {
+            return 0;
+        }
+        return inputStream.getCount();
+    }
+
     public InputStream getInputStream()
             throws IOException
     {
-        // Yes, the URL APIs are this dumb.
-        if (statusCode < 400) {
-            return connection.getInputStream();
+        if (inputStream == null) {
+            // Yes, the URL APIs are this dumb.
+            if (statusCode < 400) {
+                inputStream = new CountingInputStream(connection.getInputStream());
+            }
+            else {
+                inputStream = new CountingInputStream(connection.getErrorStream());
+            }
         }
-        else {
-            return connection.getErrorStream();
+        return inputStream;
+    }
+
+    static void dispose(Response response)
+    {
+        if (response != null) {
+            Closeables.closeQuietly(response.inputStream);
+            response.inputStream = null;
         }
     }
 }
