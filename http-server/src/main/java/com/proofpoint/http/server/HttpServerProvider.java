@@ -42,19 +42,22 @@ public class HttpServerProvider
     private Map<String, String> servletInitParameters = ImmutableMap.of();
     private MBeanServer mbeanServer;
     private LoginService loginService;
+    private final RequestStats stats;
 
     @Inject
-    public HttpServerProvider(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config, @TheServlet Servlet theServlet)
+    public HttpServerProvider(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config, @TheServlet Servlet theServlet, RequestStats stats)
     {
         Preconditions.checkNotNull(httpServerInfo, "httpServerInfo is null");
         Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
         Preconditions.checkNotNull(config, "config is null");
         Preconditions.checkNotNull(theServlet, "theServlet is null");
+        Preconditions.checkNotNull(stats, "stats is null");
 
         this.httpServerInfo = httpServerInfo;
         this.nodeInfo = nodeInfo;
         this.config = config;
         this.theServlet = theServlet;
+        this.stats = stats;
     }
 
     @Inject(optional = true)
@@ -78,7 +81,7 @@ public class HttpServerProvider
     public HttpServer get()
     {
         try {
-            HttpServer httpServer = new HttpServer(httpServerInfo, nodeInfo, config, theServlet, servletInitParameters, mbeanServer, loginService);
+            HttpServer httpServer = new HttpServer(httpServerInfo, nodeInfo, config, theServlet, servletInitParameters, mbeanServer, loginService, stats);
             httpServer.start();
             return httpServer;
         }

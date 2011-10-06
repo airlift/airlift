@@ -168,7 +168,7 @@ public class TestHttpServerProvider
     private void createServer()
     {
         HashLoginServiceProvider loginServiceProvider = new HashLoginServiceProvider(config);
-        HttpServerProvider serverProvider = new HttpServerProvider(httpServerInfo, nodeInfo, config, new DummyServlet());
+        HttpServerProvider serverProvider = new HttpServerProvider(httpServerInfo, nodeInfo, config, new DummyServlet(), new RequestStats());
         serverProvider.setLoginService(loginServiceProvider.get());
         server = serverProvider.get();
     }

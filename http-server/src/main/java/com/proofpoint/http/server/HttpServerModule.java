@@ -21,6 +21,8 @@ import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.proofpoint.configuration.ConfigurationModule;
 import org.eclipse.jetty.security.LoginService;
+import org.weakref.jmx.MBeanExporter;
+import org.weakref.jmx.guice.MBeanModule;
 
 /**
  * Provides a fully configured instance of an http server,
@@ -54,6 +56,9 @@ public class HttpServerModule
 
         binder.bind(HttpServer.class).toProvider(HttpServerProvider.class).in(Scopes.SINGLETON);
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
+        binder.bind(RequestStats.class).in(Scopes.SINGLETON);
+
+        MBeanModule.newExporter(binder).export(RequestStats.class).withGeneratedName();
 
         ConfigurationModule.bindConfig(binder).to(HttpServerConfig.class);
     }

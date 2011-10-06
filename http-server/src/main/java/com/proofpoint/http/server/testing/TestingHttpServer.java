@@ -19,6 +19,7 @@ import com.google.inject.Inject;
 import com.proofpoint.http.server.HttpServer;
 import com.proofpoint.http.server.HttpServerConfig;
 import com.proofpoint.http.server.HttpServerInfo;
+import com.proofpoint.http.server.RequestStats;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.node.NodeInfo;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
@@ -46,7 +47,8 @@ public class TestingHttpServer extends HttpServer
                 servlet,
                 initParameters,
                 null,
-                null);
+                null,
+                new RequestStats());
         this.httpServerInfo = httpServerInfo;
     }
 

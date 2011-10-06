@@ -27,6 +27,7 @@ import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
@@ -56,8 +57,15 @@ public class HttpServer
 {
     private final Server server;
 
-    public HttpServer(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config, Servlet theServlet, Map<String, String> parameters, MBeanServer mbeanServer, LoginService loginService)
-            throws IOException
+    public HttpServer(HttpServerInfo httpServerInfo,
+            NodeInfo nodeInfo,
+            HttpServerConfig config,
+            Servlet theServlet,
+            Map<String, String> parameters,
+            MBeanServer mbeanServer,
+            LoginService loginService,
+            RequestStats stats)
+        throws IOException
     {
         Preconditions.checkNotNull(httpServerInfo, "httpServerInfo is null");
         Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
@@ -128,6 +136,10 @@ public class HttpServer
         if (logHandler != null) {
             handlers.addHandler(logHandler);
         }
+
+        RequestLogHandler statsRecorder = new RequestLogHandler();
+        statsRecorder.setRequestLog(new StatsRecordingHandler(stats));
+        handlers.addHandler(statsRecorder);
 
         // add handlers to Jetty
         StatisticsHandler statsHandler = new StatisticsHandler();
