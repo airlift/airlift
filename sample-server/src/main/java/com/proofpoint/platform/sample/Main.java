@@ -26,11 +26,14 @@ import com.proofpoint.json.JsonModule;
 import com.proofpoint.http.server.HttpServerModule;
 import com.proofpoint.jaxrs.JaxrsModule;
 import com.proofpoint.jmx.JmxModule;
+import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeModule;
 import org.weakref.jmx.guice.MBeanModule;
 
 public class Main
 {
+    private final static Logger log = Logger.get(Main.class);
+
     public static void main(String[] args)
             throws Exception
     {
@@ -47,7 +50,13 @@ public class Main
                 new HttpEventModule(),
                 new MainModule());
 
-        Injector injector = app.strictConfig().initialize();
-        injector.getInstance(Announcer.class).start();
+        try {
+            Injector injector = app.strictConfig().initialize();
+            injector.getInstance(Announcer.class).start();
+        }
+        catch (Exception e) {
+            log.error(e);
+            System.exit(1);
+        }
     }
 }
