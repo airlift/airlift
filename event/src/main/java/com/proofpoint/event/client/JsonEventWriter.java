@@ -20,7 +20,7 @@ import static com.proofpoint.event.client.EventJsonSerializer.createEventJsonSer
 public class JsonEventWriter
 {
     private final ObjectMapper objectMapper;
-    private final Map<Class<?>, JsonSerializer> serializers;
+    private final Map<Class<?>, JsonSerializer<?>> serializers;
 
     @Inject
     public JsonEventWriter(ObjectMapper objectMapper, Set<EventTypeMetadata<?>> eventTypes, HttpEventClientConfig config)
@@ -31,7 +31,7 @@ public class JsonEventWriter
 
         this.objectMapper = objectMapper;
 
-        ImmutableMap.Builder<Class<?>, JsonSerializer> serializerBuilder = ImmutableMap.builder();
+        ImmutableMap.Builder<Class<?>, JsonSerializer<?>> serializerBuilder = ImmutableMap.builder();
 
         for (EventTypeMetadata<?> eventType : eventTypes) {
             serializerBuilder.put(eventType.getEventClass(), createEventJsonSerializer(eventType, config.getJsonVersion()));
@@ -56,7 +56,7 @@ public class JsonEventWriter
             public void post(T event)
                     throws IOException
             {
-                JsonSerializer<T> serializer = serializers.get(event.getClass());
+                JsonSerializer<T> serializer = getSerializer(event);
                 if (serializer == null) {
                     throw new InvalidEventException("Event class [%s] has not been registered as an event", event.getClass().getName());
                 }
@@ -67,5 +67,11 @@ public class JsonEventWriter
 
         jsonGenerator.writeEndArray();
         jsonGenerator.flush();
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> JsonSerializer<T> getSerializer(T event)
+    {
+        return (JsonSerializer<T>) serializers.get(event.getClass());
     }
 }
