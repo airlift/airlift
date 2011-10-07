@@ -9,6 +9,7 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.jaxrs.JaxrsModule;
@@ -55,8 +56,7 @@ public class TestMBeanServerResource
                 new TestingNodeModule(),
                 new TestingHttpServerModule(),
                 new JsonModule(),
-                new JaxrsModule(),
-                new JmxHttpRpcModule(),
+                new JmxHttpRpcModule(TheServlet.class),
                 new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())),
                 new Module()
                 {
