@@ -58,7 +58,7 @@ public class RackServlet
 
         File rackScriptFile = new File(config.getRackConfigPath());
 
-        Preconditions.checkArgument(rackScriptFile.exists(), "Could not find rack script specified by [" + config.getRackConfigPath()
+        Preconditions.checkArgument(rackScriptFile.canRead(), "Could not find rack script specified by [" + config.getRackConfigPath()
                 + "] and resolved to [" + rackScriptFile.getAbsolutePath() + "]");
 
         runtime = JavaEmbedUtils.initialize(ImmutableList.of(rackScriptFile.getParentFile().getCanonicalPath()), createRuntimeConfig());

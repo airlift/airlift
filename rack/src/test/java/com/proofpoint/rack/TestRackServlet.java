@@ -15,6 +15,7 @@
  */
 package com.proofpoint.rack;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -65,6 +66,7 @@ public class TestRackServlet
         OutputStream stream = new ByteArrayOutputStream();
 
         ch.qos.logback.classic.Logger rackLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("helloworldsinatra.rb:HEAD /name-echo");
+        rackLogger.setLevel(Level.ALL);
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
 
         PatternLayoutEncoder encoder = new PatternLayoutEncoder();
