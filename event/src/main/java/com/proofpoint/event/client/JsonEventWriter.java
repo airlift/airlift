@@ -1,17 +1,18 @@
 package com.proofpoint.event.client;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.codehaus.jackson.JsonEncoding;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.Version;
+import org.codehaus.jackson.map.JsonSerializer;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.module.SimpleModule;
 
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Map;
 import java.util.Set;
 
 import static com.proofpoint.event.client.EventJsonSerializer.createEventJsonSerializer;
@@ -19,7 +20,7 @@ import static com.proofpoint.event.client.EventJsonSerializer.createEventJsonSer
 public class JsonEventWriter
 {
     private final ObjectMapper objectMapper;
-    private final Set<Class<?>> registeredTypes;
+    private final Map<Class<?>, JsonSerializer> serializers;
 
     @Inject
     public JsonEventWriter(ObjectMapper objectMapper, Set<EventTypeMetadata<?>> eventTypes, HttpEventClientConfig config)
@@ -30,15 +31,12 @@ public class JsonEventWriter
 
         this.objectMapper = objectMapper;
 
-        ImmutableSet.Builder<Class<?>> typeRegistrations = ImmutableSet.builder();
+        ImmutableMap.Builder<Class<?>, JsonSerializer> serializerBuilder = ImmutableMap.builder();
 
-        SimpleModule eventModule = new SimpleModule("JsonEvent", new Version(1, 0, 0, null));
         for (EventTypeMetadata<?> eventType : eventTypes) {
-            eventModule.addSerializer(createEventJsonSerializer(eventType, config.getJsonVersion()));
-            typeRegistrations.add(eventType.getEventClass());
+            serializerBuilder.put(eventType.getEventClass(), createEventJsonSerializer(eventType, config.getJsonVersion()));
         }
-        objectMapper.registerModule(eventModule);
-        this.registeredTypes = typeRegistrations.build();
+        this.serializers = serializerBuilder.build();
     }
 
     public <T> void writeEvents(EventClient.EventGenerator<T> events, OutputStream out)
@@ -58,10 +56,12 @@ public class JsonEventWriter
             public void post(T event)
                     throws IOException
             {
-                if (!registeredTypes.contains(event.getClass())) {
+                JsonSerializer<T> serializer = serializers.get(event.getClass());
+                if (serializer == null) {
                     throw new InvalidEventException("Event class [%s] has not been registered as an event", event.getClass().getName());
                 }
-                jsonGenerator.writeObject(event);
+
+                serializer.serialize(event, jsonGenerator, null);
             }
         });
 
