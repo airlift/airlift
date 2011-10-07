@@ -16,6 +16,7 @@
 package com.proofpoint.rack;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.Resources;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.ning.http.client.AsyncHttpClient;
@@ -45,9 +46,9 @@ public class TestRackModule
                 new TestingNodeModule(),
                 new ConfigurationModule(new ConfigurationFactory(
                         ImmutableMap.<String, String>builder()
-                                .put("rackserver.rack-config-path", "src/test/resources/config.ru")
-                                .build()
-                )));
+                                .put("rackserver.rack-config-path", Resources.getResource("config.ru").getFile())
+                                        .build()
+                                )));
 
         server = injector.getInstance(TestingHttpServer.class);
         server.start();

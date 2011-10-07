@@ -20,6 +20,7 @@ import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.OutputStreamAppender;
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.Resources;
 import com.proofpoint.testing.Assertions;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeMethod;
@@ -52,7 +53,7 @@ public class TestRackServlet
     public void setup()
             throws IOException
     {
-        servlet = new RackServlet(new RackServletConfig().setRackConfigPath("src/test/resources/config.ru"));
+        servlet = new RackServlet(new RackServletConfig().setRackConfigPath(Resources.getResource("config.ru").getPath()));
     }
 
     @Test
