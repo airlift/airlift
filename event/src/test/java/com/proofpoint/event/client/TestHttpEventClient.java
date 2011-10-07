@@ -12,7 +12,6 @@ import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
-import com.proofpoint.json.ObjectMapperProvider;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.node.testing.TestingNodeModule;
 import org.joda.time.DateTime;
@@ -131,7 +130,7 @@ public class TestHttpEventClient
         HttpEventClientConfig config = new HttpEventClientConfig();
 
         Set<EventTypeMetadata<?>> eventTypes = getValidEventTypeMetaDataSet(FixedDummyEventClass.class);
-        JsonEventWriter eventWriter = new JsonEventWriter(new ObjectMapperProvider().get(), eventTypes, config);
+        JsonEventWriter eventWriter = new JsonEventWriter(eventTypes, config);
 
         return new HttpEventClient(v1Selector, v2Selector, eventWriter, new NodeInfo("test"), config, new HttpClient(Executors.newCachedThreadPool()));
     }

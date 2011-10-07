@@ -4,8 +4,6 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.NullOutputStream;
 import com.proofpoint.event.client.NestedDummyEventClass.NestedPart;
-import com.proofpoint.json.ObjectMapperProvider;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.joda.time.DateTime;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -27,10 +25,9 @@ public class TestJsonEventWriter
     public void setup()
             throws Exception
     {
-        ObjectMapper objectMapper = new ObjectMapperProvider().get();
         Set<EventTypeMetadata<?>> eventTypes = getValidEventTypeMetaDataSet(
                 FixedDummyEventClass.class, NestedDummyEventClass.class, CircularEventClass.class, ChainedCircularEventClass.class);
-        eventWriter = new JsonEventWriter(objectMapper, eventTypes, new HttpEventClientConfig());
+        eventWriter = new JsonEventWriter(eventTypes, new HttpEventClientConfig());
     }
 
     @Test

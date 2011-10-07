@@ -2,12 +2,10 @@ package com.proofpoint.event.client;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.codehaus.jackson.JsonEncoding;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.JsonSerializer;
-import org.codehaus.jackson.map.ObjectMapper;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -19,17 +17,16 @@ import static com.proofpoint.event.client.EventJsonSerializer.createEventJsonSer
 
 public class JsonEventWriter
 {
-    private final ObjectMapper objectMapper;
+    private final JsonFactory jsonFactory;
     private final Map<Class<?>, JsonSerializer<?>> serializers;
 
     @Inject
-    public JsonEventWriter(ObjectMapper objectMapper, Set<EventTypeMetadata<?>> eventTypes, HttpEventClientConfig config)
+    public JsonEventWriter(Set<EventTypeMetadata<?>> eventTypes, HttpEventClientConfig config)
     {
-        Preconditions.checkNotNull(objectMapper, "objectMapper is null");
         Preconditions.checkNotNull(eventTypes, "eventTypes is null");
         Preconditions.checkNotNull(config, "config is null");
 
-        this.objectMapper = objectMapper;
+        this.jsonFactory = new JsonFactory();
 
         ImmutableMap.Builder<Class<?>, JsonSerializer<?>> serializerBuilder = ImmutableMap.builder();
 
@@ -45,7 +42,6 @@ public class JsonEventWriter
         Preconditions.checkNotNull(events, "events is null");
         Preconditions.checkNotNull(out, "out is null");
 
-        JsonFactory jsonFactory = objectMapper.getJsonFactory();
         final JsonGenerator jsonGenerator = jsonFactory.createJsonGenerator(out, JsonEncoding.UTF8);
 
         jsonGenerator.writeStartArray();
