@@ -40,6 +40,8 @@ public class HttpServerProvider
     private final HttpServerConfig config;
     private final Servlet theServlet;
     private Map<String, String> servletInitParameters = ImmutableMap.of();
+    private Servlet theAdminServlet;
+    private Map<String, String> adminServletInitParameters = ImmutableMap.of();
     private MBeanServer mbeanServer;
     private LoginService loginService;
     private final RequestStats stats;
@@ -67,6 +69,18 @@ public class HttpServerProvider
     }
 
     @Inject(optional = true)
+    public void setTheAdminServlet(@TheAdminServlet Servlet theAdminServlet)
+    {
+        this.theAdminServlet = theAdminServlet;
+    }
+
+    @Inject(optional = true)
+    public void setAdminServletInitParameters(@TheAdminServlet Map<String, String> parameters)
+    {
+        this.adminServletInitParameters = ImmutableMap.copyOf(parameters);
+    }
+
+    @Inject(optional = true)
     public void setMBeanServer(MBeanServer server)
     {
         mbeanServer = server;
@@ -81,7 +95,7 @@ public class HttpServerProvider
     public HttpServer get()
     {
         try {
-            HttpServer httpServer = new HttpServer(httpServerInfo, nodeInfo, config, theServlet, servletInitParameters, mbeanServer, loginService, stats);
+            HttpServer httpServer = new HttpServer(httpServerInfo, nodeInfo, config, theServlet, servletInitParameters, theAdminServlet, adminServletInitParameters, mbeanServer, loginService, stats);
             httpServer.start();
             return httpServer;
         }

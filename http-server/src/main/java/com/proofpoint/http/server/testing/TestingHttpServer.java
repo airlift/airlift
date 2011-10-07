@@ -48,6 +48,8 @@ public class TestingHttpServer extends HttpServer
                 initParameters,
                 null,
                 null,
+                null,
+                null,
                 new RequestStats());
         this.httpServerInfo = httpServerInfo;
     }

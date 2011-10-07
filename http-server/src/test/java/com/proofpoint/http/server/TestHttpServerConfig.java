@@ -42,6 +42,8 @@ public class TestHttpServerConfig
                 .setThreadMaxIdleTime(new Duration(1, TimeUnit.MINUTES))
                 .setNetworkMaxIdleTime(new Duration(200, TimeUnit.SECONDS))
                 .setUserAuthFile(null)
+                .setAdminEnabled(true)
+                .setAdminPort(0)
         );
     }
 
@@ -62,6 +64,8 @@ public class TestHttpServerConfig
                 .put("http-server.threads.max-idle-time", "10m")
                 .put("http-server.net.max-idle-time", "20m")
                 .put("http-server.auth.users-file", "/auth")
+                .put("http-server.admin.enabled", "false")
+                .put("http-server.admin.port", "3")
                 .build();
 
         HttpServerConfig expected = new HttpServerConfig()
@@ -77,7 +81,9 @@ public class TestHttpServerConfig
                 .setMaxThreads(500)
                 .setThreadMaxIdleTime(new Duration(10, TimeUnit.MINUTES))
                 .setNetworkMaxIdleTime(new Duration(20, TimeUnit.MINUTES))
-                .setUserAuthFile("/auth");
+                .setUserAuthFile("/auth")
+                .setAdminEnabled(false)
+                .setAdminPort(3);
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

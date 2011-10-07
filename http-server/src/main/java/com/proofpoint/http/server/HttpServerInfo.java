@@ -13,6 +13,7 @@ public class HttpServerInfo
 {
     private final URI httpUri;
     private final URI httpsUri;
+    private final URI adminUri;
 
     @Inject
     public HttpServerInfo(HttpServerConfig config, NodeInfo nodeInfo)
@@ -30,6 +31,18 @@ public class HttpServerInfo
         else {
             httpsUri = null;
         }
+
+
+        if (config.isAdminEnabled()) {
+            if (config.isHttpsEnabled()) {
+                adminUri = buildUri("https", nodeInfo, config.getAdminPort());
+            } else {
+                adminUri = buildUri("http", nodeInfo, config.getAdminPort());
+            }
+        }
+        else {
+            adminUri = null;
+        }
     }
 
     public URI getHttpUri()
@@ -40,6 +53,11 @@ public class HttpServerInfo
     public URI getHttpsUri()
     {
         return httpsUri;
+    }
+
+    public URI getAdminUri()
+    {
+        return adminUri;
     }
 
     private static URI buildUri(String scheme, NodeInfo nodeInfo, int port)

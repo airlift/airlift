@@ -27,13 +27,12 @@ import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
-import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.GzipFilter;
@@ -42,12 +41,10 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.management.MBeanServer;
-import javax.servlet.DispatcherType;
 import javax.servlet.Servlet;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -57,11 +54,14 @@ public class HttpServer
 {
     private final Server server;
 
+    @SuppressWarnings({"deprecation"})
     public HttpServer(HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
             Servlet theServlet,
             Map<String, String> parameters,
+            Servlet theAdminServlet,
+            Map<String, String> adminParameters,
             MBeanServer mbeanServer,
             LoginService loginService,
             RequestStats stats)
@@ -90,6 +90,7 @@ public class HttpServer
         SelectChannelConnector httpConnector;
         if (config.isHttpEnabled()) {
             httpConnector = new SelectChannelConnector();
+            httpConnector.setName("http");
             httpConnector.setPort(httpServerInfo.getHttpUri().getPort());
             httpConnector.setMaxIdleTime((int) config.getNetworkMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
             httpConnector.setStatsOn(true);
@@ -102,6 +103,7 @@ public class HttpServer
         SslSelectChannelConnector httpsConnector;
         if (config.isHttpsEnabled()) {
             httpsConnector = new SslSelectChannelConnector();
+            httpsConnector.setName("https");
             httpsConnector.setPort(httpServerInfo.getHttpsUri().getPort());
             httpsConnector.setStatsOn(true);
             httpsConnector.setKeystore(config.getKeystorePath());
@@ -111,6 +113,26 @@ public class HttpServer
             httpsConnector.setAllowRenegotiate(true);
 
             server.addConnector(httpsConnector);
+        }
+
+        // set up NIO-based Admin connector
+        SelectChannelConnector adminConnector;
+        if (theAdminServlet != null && config.isAdminEnabled()) {
+            if (config.isHttpsEnabled()) {
+                SslSelectChannelConnector connector = new SslSelectChannelConnector();
+                connector.setKeystore(config.getKeystorePath());
+                connector.setPassword(config.getKeystorePassword());
+                connector.setAllowRenegotiate(true);
+                adminConnector = connector;
+            } else {
+                adminConnector = new SelectChannelConnector();
+            }
+            adminConnector.setName("admin");
+            adminConnector.setPort(httpServerInfo.getAdminUri().getPort());
+            adminConnector.setMaxIdleTime((int) config.getNetworkMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
+            adminConnector.setStatsOn(true);
+            adminConnector.setHost(nodeInfo.getBindIp().getHostAddress());
+            server.addConnector(adminConnector);
         }
 
         QueuedThreadPool threadPool = new QueuedThreadPool(config.getMaxThreads());
@@ -129,9 +151,11 @@ public class HttpServer
          *           |       |--- security handler
          *           |       |--- the servlet (normally GuiceContainer)
          *           |--- log handler
+         *    |-- admin context handler
+         *           \ --- the admin servlet
          */
         HandlerCollection handlers = new HandlerCollection();
-        handlers.addHandler(createServletContext(theServlet, parameters, loginService));
+        handlers.addHandler(createServletContext(theServlet, parameters, loginService, "http", "https"));
         RequestLogHandler logHandler = createLogHandler(config);
         if (logHandler != null) {
             handlers.addHandler(logHandler);
@@ -144,12 +168,18 @@ public class HttpServer
         // add handlers to Jetty
         StatisticsHandler statsHandler = new StatisticsHandler();
         statsHandler.setHandler(handlers);
-        server.setHandler(statsHandler);
+
+        HandlerList rootHandlers = new HandlerList();
+        if (theAdminServlet != null && config.isAdminEnabled()) {
+            rootHandlers.addHandler(createServletContext(theAdminServlet, adminParameters, loginService, "admin"));
+        }
+        rootHandlers.addHandler(statsHandler);
+        server.setHandler(rootHandlers);
 
         this.server = server;
     }
 
-    private static ServletContextHandler createServletContext(Servlet theServlet, Map<String, String> parameters, LoginService loginService)
+    private static ServletContextHandler createServletContext(Servlet theServlet, Map<String, String> parameters, LoginService loginService, String... connectorNames)
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         // -- gzip response filter
@@ -165,6 +195,7 @@ public class HttpServer
         ServletHolder servletHolder = new ServletHolder(theServlet);
         servletHolder.setInitParameters(ImmutableMap.copyOf(parameters));
         context.addServlet(servletHolder, "/*");
+        context.setConnectorNames(connectorNames);
         return context;
     }
 

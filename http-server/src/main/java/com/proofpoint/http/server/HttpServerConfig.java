@@ -41,6 +41,9 @@ public class HttpServerConfig
 
     private String userAuthFile;
 
+    private boolean adminEnabled = true;
+    private int adminPort = 0;
+
     public boolean isHttpEnabled()
     {
         return httpEnabled;
@@ -226,5 +229,29 @@ public class HttpServerConfig
     public HttpServerConfig setNetworkMaxIdleTimeInMs(int millis)
     {
         return setNetworkMaxIdleTime(new Duration(millis, TimeUnit.MILLISECONDS));
+    }
+
+    public boolean isAdminEnabled()
+    {
+        return adminEnabled;
+    }
+
+    @Config("http-server.admin.enabled")
+    public HttpServerConfig setAdminEnabled(boolean adminEnabled)
+    {
+        this.adminEnabled = adminEnabled;
+        return this;
+    }
+
+    public int getAdminPort()
+    {
+        return adminPort;
+    }
+
+    @Config("http-server.admin.port")
+    public HttpServerConfig setAdminPort(int adminPort)
+    {
+        this.adminPort = adminPort;
+        return this;
     }
 }
