@@ -2,13 +2,15 @@ package com.proofpoint.discovery.client.testing;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Binder;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.proofpoint.discovery.client.Announcer;
-import com.proofpoint.discovery.client.DiscoveryClient;
+import com.proofpoint.discovery.client.DiscoveryAnnouncementClient;
 import com.proofpoint.discovery.client.DiscoveryClientConfig;
+import com.proofpoint.discovery.client.DiscoveryLookupClient;
 import com.proofpoint.discovery.client.ForDiscoveryClient;
 import com.proofpoint.discovery.client.ServiceAnnouncement;
 import com.proofpoint.discovery.client.ServiceSelectorFactory;
@@ -24,7 +26,9 @@ public class TestingDiscoveryModule implements Module
     public void configure(Binder binder)
     {
         // bind discovery client and dependencies
-        binder.bind(DiscoveryClient.class).to(InMemoryDiscoveryClient.class).in(Scopes.SINGLETON);
+        binder.bind(InMemoryDiscoveryClient.class).in(Scopes.SINGLETON);
+        binder.bind(DiscoveryAnnouncementClient.class).to(Key.get(InMemoryDiscoveryClient.class)).in(Scopes.SINGLETON);
+        binder.bind(DiscoveryLookupClient.class).to(Key.get(InMemoryDiscoveryClient.class)).in(Scopes.SINGLETON);
         bindConfig(binder).to(DiscoveryClientConfig.class);
 
         // bind announcer

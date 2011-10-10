@@ -15,7 +15,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.proofpoint.discovery.client.DiscoveryClient.DEFAULT_DELAY;
+import static com.proofpoint.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
 
 public class CachingServiceSelector implements ServiceSelector
 {
@@ -23,23 +23,23 @@ public class CachingServiceSelector implements ServiceSelector
 
     private final String type;
     private final String pool;
-    private final DiscoveryClient client;
+    private final DiscoveryLookupClient lookupClient;
     private final AtomicReference<ServiceDescriptors> serviceDescriptors = new AtomicReference<ServiceDescriptors>();
     private final ScheduledExecutorService executor;
     private final AtomicBoolean serverUp = new AtomicBoolean(true);
 
     private final AtomicBoolean started = new AtomicBoolean(false);
 
-    public CachingServiceSelector(String type, ServiceSelectorConfig selectorConfig, DiscoveryClient client, ScheduledExecutorService executor)
+    public CachingServiceSelector(String type, ServiceSelectorConfig selectorConfig, DiscoveryLookupClient lookupClient, ScheduledExecutorService executor)
     {
         Preconditions.checkNotNull(type, "type is null");
         Preconditions.checkNotNull(selectorConfig, "selectorConfig is null");
-        Preconditions.checkNotNull(client, "client is null");
+        Preconditions.checkNotNull(lookupClient, "client is null");
         Preconditions.checkNotNull(executor, "executor is null");
 
         this.type = type;
         this.pool = selectorConfig.getPool();
-        this.client = client;
+        this.lookupClient = lookupClient;
         this.executor = executor;
     }
 
@@ -87,10 +87,10 @@ public class CachingServiceSelector implements ServiceSelector
 
         final CheckedFuture<ServiceDescriptors, DiscoveryException> future;
         if (oldDescriptors == null) {
-            future = client.getServices(type, pool);
+            future = lookupClient.getServices(type, pool);
         }
         else {
-            future = client.refreshServices(oldDescriptors);
+            future = lookupClient.refreshServices(oldDescriptors);
         }
 
         future.addListener(new Runnable()

@@ -7,8 +7,9 @@ import com.google.common.collect.MapMaker;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
-import com.proofpoint.discovery.client.DiscoveryClient;
+import com.proofpoint.discovery.client.DiscoveryAnnouncementClient;
 import com.proofpoint.discovery.client.DiscoveryException;
+import com.proofpoint.discovery.client.DiscoveryLookupClient;
 import com.proofpoint.discovery.client.ServiceAnnouncement;
 import com.proofpoint.discovery.client.ServiceDescriptor;
 import com.proofpoint.discovery.client.ServiceDescriptors;
@@ -20,7 +21,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class InMemoryDiscoveryClient implements DiscoveryClient
+public class InMemoryDiscoveryClient implements DiscoveryAnnouncementClient, DiscoveryLookupClient
 {
     private final AtomicReference<Set<ServiceDescriptor>> announcements = new AtomicReference<Set<ServiceDescriptor>>(ImmutableSet.<ServiceDescriptor>of());
     private final ConcurrentMap<UUID, ServiceDescriptor> discovered = new MapMaker().makeMap();

@@ -20,26 +20,26 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.proofpoint.discovery.client.DiscoveryClient.DEFAULT_DELAY;
+import static com.proofpoint.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
 
 public class Announcer
 {
     private final static Logger log = Logger.get(Announcer.class);
     private final ConcurrentMap<UUID, ServiceAnnouncement> announcements = new MapMaker().makeMap();
 
-    private final DiscoveryClient client;
+    private final DiscoveryAnnouncementClient announcementClient;
     private final ScheduledExecutorService executor;
     private final AtomicBoolean serverUp = new AtomicBoolean(true);
     private final AtomicBoolean started = new AtomicBoolean(false);
 
 
     @Inject
-    public Announcer(DiscoveryClient client, Set<ServiceAnnouncement> serviceAnnouncements)
+    public Announcer(DiscoveryAnnouncementClient announcementClient, Set<ServiceAnnouncement> serviceAnnouncements)
     {
-        Preconditions.checkNotNull(client, "client is null");
+        Preconditions.checkNotNull(announcementClient, "client is null");
         Preconditions.checkNotNull(serviceAnnouncements, "serviceAnnouncements is null");
 
-        this.client = client;
+        this.announcementClient = announcementClient;
         for (ServiceAnnouncement serviceAnnouncement : serviceAnnouncements) {
             announcements.put(serviceAnnouncement.getId(), serviceAnnouncement);
         }
@@ -73,7 +73,7 @@ public class Announcer
 
         // unannounce
         try {
-            client.unannounce().checkedGet();
+            announcementClient.unannounce().checkedGet();
         }
         catch (DiscoveryException e) {
             if (e.getCause() instanceof ConnectException) {
@@ -98,7 +98,7 @@ public class Announcer
 
     private CheckedFuture<Duration, DiscoveryException> announce()
     {
-        final CheckedFuture<Duration, DiscoveryException> future = client.announce(ImmutableSet.copyOf(announcements.values()));
+        final CheckedFuture<Duration, DiscoveryException> future = announcementClient.announce(ImmutableSet.copyOf(announcements.values()));
 
         future.addListener(new Runnable()
         {

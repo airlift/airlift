@@ -9,15 +9,15 @@ import java.util.concurrent.TimeoutException;
 
 public class CachingServiceSelectorFactory implements ServiceSelectorFactory
 {
-    private final DiscoveryClient client;
+    private final DiscoveryLookupClient lookupClient;
     private final ScheduledExecutorService executor;
 
     @Inject
-    public CachingServiceSelectorFactory(DiscoveryClient client, @ForDiscoveryClient ScheduledExecutorService executor)
+    public CachingServiceSelectorFactory(DiscoveryLookupClient lookupClient, @ForDiscoveryClient ScheduledExecutorService executor)
     {
-        Preconditions.checkNotNull(client, "client is null");
+        Preconditions.checkNotNull(lookupClient, "client is null");
         Preconditions.checkNotNull(executor, "executor is null");
-        this.client = client;
+        this.lookupClient = lookupClient;
         this.executor = executor;
     }
 
@@ -26,7 +26,7 @@ public class CachingServiceSelectorFactory implements ServiceSelectorFactory
         Preconditions.checkNotNull(type, "type is null");
         Preconditions.checkNotNull(selectorConfig, "selectorConfig is null");
 
-        CachingServiceSelector serviceSelector = new CachingServiceSelector(type, selectorConfig, client, executor);
+        CachingServiceSelector serviceSelector = new CachingServiceSelector(type, selectorConfig, lookupClient, executor);
         try {
             serviceSelector.start();
         }

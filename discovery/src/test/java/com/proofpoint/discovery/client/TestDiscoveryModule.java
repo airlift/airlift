@@ -23,8 +23,9 @@ public class TestDiscoveryModule
                 new DiscoveryModule()
         );
 
-        // should produce a DiscoveryClient
-        Assert.assertNotNull(injector.getInstance(DiscoveryClient.class));
+        // should produce a discovery announcement client and a lookup client
+        Assert.assertNotNull(injector.getInstance(DiscoveryAnnouncementClient.class));
+        Assert.assertNotNull(injector.getInstance(DiscoveryLookupClient.class));
         // should produce an Announcer
         Assert.assertNotNull(injector.getInstance(Announcer.class));
     }

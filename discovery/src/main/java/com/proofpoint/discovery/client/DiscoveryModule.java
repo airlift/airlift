@@ -21,8 +21,8 @@ public class DiscoveryModule implements Module
     public void configure(Binder binder)
     {
         // bind discovery client and dependencies
-        binder.bind(DiscoveryClient.class).to(HttpDiscoveryClient.class).in(Scopes.SINGLETON);
-        newExporter(binder).export(DiscoveryClient.class).withGeneratedName();
+        binder.bind(DiscoveryLookupClient.class).to(HttpDiscoveryLookupClient.class).in(Scopes.SINGLETON);
+        binder.bind(DiscoveryAnnouncementClient.class).to(HttpDiscoveryAnnouncementClient.class).in(Scopes.SINGLETON);
         bindConfig(binder).to(DiscoveryClientConfig.class);
         jsonCodecBinder(binder).bindJsonCodec(ServiceDescriptorsRepresentation.class);
         jsonCodecBinder(binder).bindJsonCodec(Announcement.class);
