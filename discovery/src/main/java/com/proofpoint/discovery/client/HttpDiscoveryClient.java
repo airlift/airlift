@@ -2,7 +2,6 @@ package com.proofpoint.discovery.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.inject.Inject;
@@ -15,8 +14,6 @@ import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.json.JsonCodec;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.units.Duration;
-import org.codehaus.jackson.annotate.JsonCreator;
-import org.codehaus.jackson.annotate.JsonProperty;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
@@ -26,7 +23,6 @@ import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
@@ -213,44 +209,6 @@ public class HttpDiscoveryClient implements DiscoveryClient
             }
         }
         return DEFAULT_DELAY;
-    }
-
-    public static class ServiceDescriptorsRepresentation
-    {
-        private final String environment;
-        private final List<ServiceDescriptor> serviceDescriptors;
-
-        @JsonCreator
-        public ServiceDescriptorsRepresentation(
-                @JsonProperty("environment") String environment,
-                @JsonProperty("services") List<ServiceDescriptor> serviceDescriptors)
-        {
-            Preconditions.checkNotNull(serviceDescriptors);
-            Preconditions.checkNotNull(environment);
-            this.environment = environment;
-            this.serviceDescriptors = ImmutableList.copyOf(serviceDescriptors);
-        }
-
-        public String getEnvironment()
-        {
-            return environment;
-        }
-
-        public List<ServiceDescriptor> getServiceDescriptors()
-        {
-            return serviceDescriptors;
-        }
-
-        @Override
-        public String toString()
-        {
-            final StringBuilder sb = new StringBuilder();
-            sb.append("ServiceDescriptorsRepresentation");
-            sb.append("{environment='").append(environment).append('\'');
-            sb.append(", serviceDescriptorList=").append(serviceDescriptors);
-            sb.append('}');
-            return sb.toString();
-        }
     }
 
     private class DiscoveryResponseHandler<T> implements ResponseHandler<T, DiscoveryException>

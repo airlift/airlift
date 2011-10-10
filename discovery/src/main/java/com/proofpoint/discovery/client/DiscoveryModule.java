@@ -6,7 +6,6 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.proofpoint.discovery.client.HttpDiscoveryClient.ServiceDescriptorsRepresentation;
 import com.proofpoint.http.client.HttpClientModule;
 
 import java.util.concurrent.ScheduledExecutorService;

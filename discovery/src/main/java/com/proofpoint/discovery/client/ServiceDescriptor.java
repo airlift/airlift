@@ -27,9 +27,6 @@ public class ServiceDescriptor
             @JsonProperty("location") String location,
             @JsonProperty("properties") Map<String, String> properties)
     {
-        Preconditions.checkNotNull(id, "id is null");
-        Preconditions.checkNotNull(type, "type is null");
-        Preconditions.checkNotNull(pool, "pool is null");
         Preconditions.checkNotNull(properties, "properties is null");
 
         this.id = id;
@@ -40,31 +37,37 @@ public class ServiceDescriptor
         this.properties = ImmutableMap.copyOf(properties);
     }
 
+    @JsonProperty
     public UUID getId()
     {
         return id;
     }
 
+    @JsonProperty
     public String getNodeId()
     {
         return nodeId;
     }
 
+    @JsonProperty
     public String getType()
     {
         return type;
     }
 
+    @JsonProperty
     public String getPool()
     {
         return pool;
     }
 
+    @JsonProperty
     public String getLocation()
     {
         return location;
     }
 
+    @JsonProperty
     public Map<String, String> getProperties()
     {
         return properties;
