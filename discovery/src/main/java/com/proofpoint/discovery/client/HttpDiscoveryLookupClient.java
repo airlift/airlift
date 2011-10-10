@@ -4,6 +4,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.CheckedFuture;
+import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
@@ -17,6 +18,7 @@ import com.proofpoint.units.Duration;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
+import javax.inject.Provider;
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
@@ -34,25 +36,25 @@ import static javax.ws.rs.core.Response.Status.OK;
 public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
 {
     private final String environment;
-    private final URI discoveryServiceURI;
+    private final Provider<URI> discoveryServiceURI;
     private final NodeInfo nodeInfo;
     private final JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec;
     private final HttpClient httpClient;
 
     @Inject
-    public HttpDiscoveryLookupClient(DiscoveryClientConfig config,
+    public HttpDiscoveryLookupClient(@ForDiscoveryClient Provider<URI> discoveryServiceURI,
             NodeInfo nodeInfo,
             JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec,
             @ForDiscoveryClient HttpClient httpClient)
     {
-        Preconditions.checkNotNull(config, "config is null");
+        Preconditions.checkNotNull(discoveryServiceURI, "discoveryServiceURI is null");
         Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
         Preconditions.checkNotNull(serviceDescriptorsCodec, "serviceDescriptorsCodec is null");
         Preconditions.checkNotNull(httpClient, "httpClient is null");
 
         this.nodeInfo = nodeInfo;
         this.environment = nodeInfo.getEnvironment();
-        this.discoveryServiceURI = config.getDiscoveryServiceURI();
+        this.discoveryServiceURI = discoveryServiceURI;
         this.serviceDescriptorsCodec = serviceDescriptorsCodec;
         this.httpClient = httpClient;
     }
@@ -83,8 +85,13 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
     {
         Preconditions.checkNotNull(type, "type is null");
 
+        URI uri = discoveryServiceURI.get();
+        if (uri == null) {
+            return Futures.immediateFailedCheckedFuture(new DiscoveryException("No discovery servers are available"));
+        }
+
         RequestBuilder requestBuilder = prepareGet()
-                .setUri(URI.create(discoveryServiceURI + "/v1/service/" + type + "/" + pool))
+                .setUri(URI.create(uri + "/v1/service/" + type + "/" + pool))
                 .setHeader("User-Agent", nodeInfo.getNodeId());
         if (serviceDescriptors != null && serviceDescriptors.getETag() != null) {
             requestBuilder.setHeader(HttpHeaders.ETAG, serviceDescriptors.getETag());

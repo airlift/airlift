@@ -3,14 +3,13 @@ package com.proofpoint.discovery.client;
 import com.proofpoint.configuration.Config;
 import com.proofpoint.configuration.ConfigDescription;
 
-import javax.validation.constraints.NotNull;
 import java.net.URI;
 
 public class DiscoveryClientConfig
 {
     private URI discoveryServiceURI;
 
-    @NotNull
+    @Deprecated
     public URI getDiscoveryServiceURI()
     {
         return discoveryServiceURI;
@@ -18,6 +17,7 @@ public class DiscoveryClientConfig
 
     @Config("discovery.uri")
     @ConfigDescription("Discovery service base URI")
+    @Deprecated
     public DiscoveryClientConfig setDiscoveryServiceURI(URI uri)
     {
         this.discoveryServiceURI = uri;

@@ -4,6 +4,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.CheckedFuture;
+import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
@@ -13,6 +14,7 @@ import com.proofpoint.json.JsonCodec;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.units.Duration;
 
+import javax.inject.Provider;
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -29,24 +31,24 @@ import static com.proofpoint.http.client.RequestBuilder.preparePut;
 
 public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementClient
 {
-    private final URI discoveryServiceURI;
+    private final Provider<URI> discoveryServiceURI;
     private final NodeInfo nodeInfo;
     private final JsonCodec<Announcement> announcementCodec;
     private final HttpClient httpClient;
 
     @Inject
-    public HttpDiscoveryAnnouncementClient(DiscoveryClientConfig config,
+    public HttpDiscoveryAnnouncementClient(@ForDiscoveryClient Provider<URI> discoveryServiceURI,
             NodeInfo nodeInfo,
             JsonCodec<Announcement> announcementCodec,
             @ForDiscoveryClient HttpClient httpClient)
     {
-        Preconditions.checkNotNull(config, "config is null");
+        Preconditions.checkNotNull(discoveryServiceURI, "discoveryServiceURI is null");
         Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
         Preconditions.checkNotNull(announcementCodec, "announcementCodec is null");
         Preconditions.checkNotNull(httpClient, "httpClient is null");
 
         this.nodeInfo = nodeInfo;
-        this.discoveryServiceURI = config.getDiscoveryServiceURI();
+        this.discoveryServiceURI = discoveryServiceURI;
         this.announcementCodec = announcementCodec;
         this.httpClient = httpClient;
     }
@@ -56,9 +58,14 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
     {
         Preconditions.checkNotNull(services, "services is null");
 
+        URI uri = discoveryServiceURI.get();
+        if (uri == null) {
+            return Futures.immediateFailedCheckedFuture(new DiscoveryException("No discovery servers are available"));
+        }
+
         Announcement announcement = new Announcement(nodeInfo.getEnvironment(), nodeInfo.getNodeId(), nodeInfo.getPool(), nodeInfo.getLocation(), services);
         Request request = preparePut()
-                .setUri(URI.create(discoveryServiceURI + "/v1/announcement/" + nodeInfo.getNodeId()))
+                .setUri(URI.create(uri + "/v1/announcement/" + nodeInfo.getNodeId()))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setBodyGenerator(jsonBodyGenerator(announcementCodec, announcement))
@@ -98,8 +105,13 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
     @Override
     public CheckedFuture<Void, DiscoveryException> unannounce()
     {
+        URI uri = discoveryServiceURI.get();
+        if (uri == null) {
+            return Futures.immediateFailedCheckedFuture(new DiscoveryException("No discovery servers are available"));
+        }
+
         Request request = prepareDelete()
-                .setUri(URI.create(discoveryServiceURI + "/v1/announcement/" + nodeInfo.getNodeId()))
+                .setUri(URI.create(uri + "/v1/announcement/" + nodeInfo.getNodeId()))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
                 .build();
         return httpClient.execute(request, new DiscoveryResponseHandler<Void>("Unannouncement"));

@@ -7,7 +7,6 @@ import com.proofpoint.log.Logger;
 import com.proofpoint.units.Duration;
 
 import javax.annotation.PostConstruct;
-import java.net.ConnectException;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -108,13 +107,10 @@ public class CachingServiceSelector implements ServiceSelector
                     }
                 }
                 catch (DiscoveryException e) {
-                    if (e.getCause() instanceof ConnectException) {
-                        if (serverUp.compareAndSet(true, false)) {
-                            log.error("Cannot connect to discovery server for refresh: %s", e.getCause().getMessage());
-                        }
-                    } else {
-                        log.error(e);
+                    if (serverUp.compareAndSet(true, false)) {
+                        log.error("Cannot connect to discovery server for refresh (%s/%s): %s", type, pool, e.getMessage());
                     }
+                    log.debug(e, "Cannot connect to discovery server for refresh (%s/%s): %s", type, pool);
                 }
                 finally {
                     scheduleRefresh(delay);

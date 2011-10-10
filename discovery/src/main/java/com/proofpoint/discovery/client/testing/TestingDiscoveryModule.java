@@ -9,7 +9,6 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.proofpoint.discovery.client.Announcer;
 import com.proofpoint.discovery.client.DiscoveryAnnouncementClient;
-import com.proofpoint.discovery.client.DiscoveryClientConfig;
 import com.proofpoint.discovery.client.DiscoveryLookupClient;
 import com.proofpoint.discovery.client.ForDiscoveryClient;
 import com.proofpoint.discovery.client.ServiceAnnouncement;
@@ -29,7 +28,6 @@ public class TestingDiscoveryModule implements Module
         binder.bind(InMemoryDiscoveryClient.class).in(Scopes.SINGLETON);
         binder.bind(DiscoveryAnnouncementClient.class).to(Key.get(InMemoryDiscoveryClient.class)).in(Scopes.SINGLETON);
         binder.bind(DiscoveryLookupClient.class).to(Key.get(InMemoryDiscoveryClient.class)).in(Scopes.SINGLETON);
-        bindConfig(binder).to(DiscoveryClientConfig.class);
 
         // bind announcer
         binder.bind(Announcer.class).in(Scopes.SINGLETON);

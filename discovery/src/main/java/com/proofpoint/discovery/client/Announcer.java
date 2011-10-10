@@ -113,14 +113,10 @@ public class Announcer
                     }
                 }
                 catch (DiscoveryException e) {
-                    if (e.getCause() instanceof ConnectException) {
-                        if (serverUp.compareAndSet(true, false)) {
-                            log.error("Cannot connect to discovery server for announce: %s", e.getCause().getMessage());
-                        }
+                    if (serverUp.compareAndSet(true, false)) {
+                        log.error("Cannot connect to discovery server for announce: %s", e.getMessage());
                     }
-                    else {
-                        log.error(e);
-                    }
+                    log.debug(e, "Cannot connect to discovery server for announce");
                 }
                 finally {
                     scheduleNextAnnouncement(duration);
