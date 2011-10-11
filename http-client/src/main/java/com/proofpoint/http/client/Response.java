@@ -20,6 +20,7 @@ public class Response
     private final String statusMessage;
     private ListMultimap<String, String> headers;
     private CountingInputStream inputStream;
+    private boolean disposed = false;
 
     public Response(HttpURLConnection connection)
             throws IOException
@@ -32,16 +33,20 @@ public class Response
 
     public int getStatusCode()
     {
+        Preconditions.checkState(!disposed, "connection closed");
         return statusCode;
     }
 
     public String getStatusMessage()
     {
+        Preconditions.checkState(!disposed, "connection closed");
         return statusMessage;
     }
 
     public String getHeader(String name)
     {
+        Preconditions.checkState(!disposed, "connection closed");
+
         List<String> values = getHeaders().get(name);
         if (values.isEmpty()) {
             return null;
@@ -51,6 +56,8 @@ public class Response
 
     public ListMultimap<String, String> getHeaders()
     {
+        Preconditions.checkState(!disposed, "connection closed");
+
         if (headers == null) {
             ImmutableListMultimap.Builder<String, String> builder = ImmutableListMultimap.builder();
             for (Entry<String, List<String>> entry : connection.getHeaderFields().entrySet()) {
@@ -65,6 +72,8 @@ public class Response
 
     public long getBytesRead()
     {
+        Preconditions.checkState(!disposed, "connection closed");
+
         if (inputStream == null) {
             return 0;
         }
@@ -74,23 +83,68 @@ public class Response
     public InputStream getInputStream()
             throws IOException
     {
+        Preconditions.checkState(!disposed, "connection closed");
+
+        return getInputStreamInternal();
+    }
+
+    private InputStream getInputStreamInternal()
+            throws IOException
+    {
         if (inputStream == null) {
             // Yes, the URL APIs are this dumb.
-            if (statusCode < 400) {
-                inputStream = new CountingInputStream(connection.getInputStream());
+            IOException problem = null;
+            InputStream in = null;
+            try {
+                in = connection.getInputStream();
             }
-            else {
-                inputStream = new CountingInputStream(connection.getErrorStream());
+            catch (IOException e) {
+                problem = e;
             }
+
+            if (in == null) {
+                in = connection.getErrorStream();
+            }
+            if (in == null) {
+                throw new IOException("No input stream", problem);
+            }
+            inputStream = new CountingInputStream(in);
         }
         return inputStream;
+    }
+
+    /**
+     * This buffer is shared by all threads for the dispose process.
+     * This is ok since no one ever reads from this buffer.
+     */
+    private final static byte[] junk = new byte[4096];
+
+    public void dispose()
+    {
+        if (disposed) {
+            return;
+        }
+
+        InputStream inputStream = null;
+        try {
+            // consume all input so connection can be reused
+            inputStream = getInputStreamInternal();
+            while (inputStream.read(junk) >= 0) {
+            }
+        }
+        catch (IOException ignored) {
+        }
+        finally {
+            Closeables.closeQuietly(inputStream);
+            this.inputStream = null;
+            disposed = true;
+        }
     }
 
     static void dispose(Response response)
     {
         if (response != null) {
-            Closeables.closeQuietly(response.inputStream);
-            response.inputStream = null;
+            response.dispose();
         }
     }
 }
