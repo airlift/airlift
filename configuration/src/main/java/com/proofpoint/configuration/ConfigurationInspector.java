@@ -22,7 +22,6 @@ import com.google.inject.Key;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
 
 import java.lang.reflect.Method;
-import java.util.Map.Entry;
 import java.util.SortedSet;
 
 public class ConfigurationInspector
@@ -30,8 +29,7 @@ public class ConfigurationInspector
     public SortedSet<ConfigRecord<?>> inspect(ConfigurationFactory configurationFactory)
     {
         ImmutableSortedSet.Builder<ConfigRecord<?>> builder = ImmutableSortedSet.naturalOrder();
-        for (Entry<ConfigurationProvider<?>, Object> entry : configurationFactory.getInstanceCache().entrySet()) {
-            ConfigurationProvider<?> configurationProvider = entry.getKey();
+        for (ConfigurationProvider<?> configurationProvider : configurationFactory.getConfigurationProviders()) {
             builder.add(ConfigRecord.createConfigRecord(configurationProvider));
         }
 
@@ -88,7 +86,14 @@ public class ConfigurationInspector
 
             ConfigurationMetadata<T> metadata = configurationProvider.getConfigurationMetadata();
 
-            T instance = configurationProvider.get();
+            T instance = null;
+            try {
+                instance = configurationProvider.get();
+            }
+            catch (Throwable ignored) {
+                // provider could blow up for any reason, which is fine for this code
+                // this is catch throwable because we may get an AssertionError
+            }
             T defaults = newDefaultInstance(metadata);
 
             String prefix = configurationProvider.getPrefix();
@@ -241,7 +246,7 @@ public class ConfigurationInspector
         @Override
         public String toString()
         {
-            final StringBuffer sb = new StringBuffer();
+            final StringBuilder sb = new StringBuilder();
             sb.append("ConfigAttribute");
             sb.append("{attributeName='").append(attributeName).append('\'');
             sb.append(", propertyName='").append(propertyName).append('\'');

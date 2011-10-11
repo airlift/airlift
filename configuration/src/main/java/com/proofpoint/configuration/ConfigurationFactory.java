@@ -15,14 +15,22 @@
  */
 package com.proofpoint.configuration;
 
+import com.google.common.annotations.Beta;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.MapMaker;
-import com.google.common.collect.Sets;
+import com.google.inject.Binding;
 import com.google.inject.ConfigurationException;
+import com.google.inject.Module;
+import com.google.inject.Provider;
+import com.google.inject.spi.DefaultElementVisitor;
+import com.google.inject.spi.Element;
 import com.google.inject.spi.Message;
+import com.google.inject.spi.ProviderInstanceBinding;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
 
 import javax.validation.ConstraintViolation;
@@ -31,6 +39,8 @@ import javax.validation.Validator;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,7 +55,8 @@ public class ConfigurationFactory
     private final Problems.Monitor monitor;
     private final ConcurrentMap<Class<?>, ConfigurationMetadata<?>> metadataCache;
     private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<ConfigurationProvider<?>, Object>();
-    private final Set<String> usedProperties = Sets.newTreeSet();
+    private final Set<String> usedProperties = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+    private final Set<ConfigurationProvider<?>> registeredProviders = Collections.newSetFromMap(new ConcurrentHashMap<ConfigurationProvider<?>, Boolean>());
 
     public ConfigurationFactory(Map<String, String> properties)
     {
@@ -72,14 +83,33 @@ public class ConfigurationFactory
         return properties;
     }
 
+    /**
+     * Marks the specified property as consumed.
+     */
+    @Beta
+    public void consumeProperty(String property)
+    {
+        Preconditions.checkNotNull(property, "property is null");
+        usedProperties.add(property);
+    }
+
     public Set<String> getUsedProperties()
     {
         return ImmutableSortedSet.copyOf(usedProperties);
     }
 
-    Map<ConfigurationProvider<?>, Object> getInstanceCache()
+    /**
+     * Registers all configuration classes in the module so they can be part of configuration inspection.
+     */
+    @Beta
+    public void registerConfigurationClasses(Module module)
     {
-        return ImmutableMap.copyOf(instanceCache);
+        registeredProviders.addAll(getAllProviders(module));
+    }
+
+    Iterable<ConfigurationProvider<?>> getConfigurationProviders()
+    {
+        return ImmutableList.copyOf(registeredProviders);
     }
 
     public <T> T build(Class<T> configClass)
@@ -93,6 +123,7 @@ public class ConfigurationFactory
     <T> T build(ConfigurationProvider<T> configurationProvider, WarningsMonitor warningsMonitor)
     {
         Preconditions.checkNotNull(configurationProvider, "configurationProvider");
+        registeredProviders.add(configurationProvider);
 
         // check for a prebuilt instance
         T instance = (T) instanceCache.get(configurationProvider);
@@ -331,5 +362,31 @@ public class ConfigurationFactory
             this.instance = instance;
             this.problems = problems;
         }
+    }
+
+    private List<ConfigurationProvider<?>> getAllProviders(Module... modules)
+    {
+        final List<ConfigurationProvider<?>> providers = Lists.newArrayList();
+
+        ElementsIterator elementsIterator = new ElementsIterator(modules);
+        for (final Element element : elementsIterator) {
+            element.acceptVisitor(new DefaultElementVisitor<Void>()
+            {
+                public <T> Void visit(Binding<T> binding)
+                {
+                    // look for ConfigurationProviders...
+                    if (binding instanceof ProviderInstanceBinding) {
+                        ProviderInstanceBinding<?> providerInstanceBinding = (ProviderInstanceBinding<?>) binding;
+                        Provider<?> provider = providerInstanceBinding.getProviderInstance();
+                        if (provider instanceof ConfigurationProvider) {
+                            ConfigurationProvider<?> configurationProvider = (ConfigurationProvider<?>) provider;
+                            providers.add(configurationProvider);
+                        }
+                    }
+                    return null;
+                }
+            });
+        }
+        return providers;
     }
 }

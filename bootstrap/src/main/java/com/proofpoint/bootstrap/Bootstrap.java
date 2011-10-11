@@ -27,6 +27,7 @@ import com.google.inject.Module;
 import com.google.inject.Stage;
 import com.google.inject.spi.Message;
 import com.proofpoint.bootstrap.LoggingWriter.Type;
+import com.proofpoint.configuration.ConfigurationAwareModule;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationInspector;
 import com.proofpoint.configuration.ConfigurationInspector.ConfigAttribute;
@@ -122,6 +123,14 @@ public class Bootstrap
                 log.warn(message);
             }
         };
+
+        // initialize configuration factory
+        for (Module module : modules) {
+            if (module instanceof ConfigurationAwareModule) {
+                ConfigurationAwareModule configurationAwareModule = (ConfigurationAwareModule) module;
+                configurationAwareModule.setConfigurationFactory(configurationFactory);
+            }
+        }
 
         // Validate configuration
         ConfigurationValidator configurationValidator = new ConfigurationValidator(configurationFactory, warningsMonitor);
