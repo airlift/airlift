@@ -13,6 +13,7 @@ import com.proofpoint.discovery.client.DiscoveryLookupClient;
 import com.proofpoint.discovery.client.ServiceAnnouncement;
 import com.proofpoint.discovery.client.ServiceDescriptor;
 import com.proofpoint.discovery.client.ServiceDescriptors;
+import com.proofpoint.discovery.client.ServiceState;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.units.Duration;
 
@@ -66,7 +67,7 @@ public class InMemoryDiscoveryClient implements DiscoveryAnnouncementClient, Dis
 
         ImmutableSet.Builder<ServiceDescriptor> builder = ImmutableSet.builder();
         for (ServiceAnnouncement service : services) {
-            builder.add(new ServiceDescriptor(service.getId(), nodeInfo.getNodeId(), service.getType(), nodeInfo.getPool(), null, service.getProperties()));
+            builder.add(new ServiceDescriptor(service.getId(), nodeInfo.getNodeId(), service.getType(), nodeInfo.getPool(), null, ServiceState.RUNNING, service.getProperties()));
         }
         announcements.set(builder.build());
         return Futures.immediateCheckedFuture(maxAge);

@@ -26,7 +26,7 @@ public class TestServiceDescriptor
                 "type",
                 "pool",
                 "location",
-                ImmutableMap.of("a", "apple", "b", "banana"));
+                ServiceState.RUNNING, ImmutableMap.of("a", "apple", "b", "banana"));
 
         String json = Resources.toString(Resources.getResource("service-descriptor.json"), Charsets.UTF_8);
         ServiceDescriptor actual = serviceDescriptorCodec.fromJson(json);
@@ -48,7 +48,7 @@ public class TestServiceDescriptor
                 "type",
                 "pool",
                 "location",
-                ImmutableMap.of("a", "apple", "b", "banana")));
+                ServiceState.RUNNING, ImmutableMap.of("a", "apple", "b", "banana")));
     }
 
     @Test
@@ -58,22 +58,22 @@ public class TestServiceDescriptor
         UUID serviceB = UUID.randomUUID();
         equivalenceTester()
                 .addEquivalentGroup(
-                        new ServiceDescriptor(serviceA, "node", "type", "pool", "location", ImmutableMap.of("a", "apple")),
-                        new ServiceDescriptor(serviceA, "node-X", "type", "pool", "location", ImmutableMap.of("a", "apple")),
-                        new ServiceDescriptor(serviceA, "node", "type-X", "pool", "location", ImmutableMap.of("a", "apple")),
-                        new ServiceDescriptor(serviceA, "node", "type", "pool-X", "location", ImmutableMap.of("a", "apple")),
-                        new ServiceDescriptor(serviceA, "node", "type", "pool", "location-X", ImmutableMap.of("a", "apple")),
-                        new ServiceDescriptor(serviceA, "node", "type", "pool", "location", ImmutableMap.of("a-X", "apple")),
-                        new ServiceDescriptor(serviceA, "node", "type", "pool", "location", ImmutableMap.of("a", "apple-X"))
+                        new ServiceDescriptor(serviceA, "node", "type", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("a", "apple")),
+                        new ServiceDescriptor(serviceA, "node-X", "type", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("a", "apple")),
+                        new ServiceDescriptor(serviceA, "node", "type-X", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("a", "apple")),
+                        new ServiceDescriptor(serviceA, "node", "type", "pool-X", "location", ServiceState.RUNNING, ImmutableMap.of("a", "apple")),
+                        new ServiceDescriptor(serviceA, "node", "type", "pool", "location-X", ServiceState.RUNNING, ImmutableMap.of("a", "apple")),
+                        new ServiceDescriptor(serviceA, "node", "type", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("a-X", "apple")),
+                        new ServiceDescriptor(serviceA, "node", "type", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("a", "apple-X"))
                 )
                 .addEquivalentGroup(
-                        new ServiceDescriptor(serviceB, "node", "type", "pool", "location", ImmutableMap.of("a", "apple")),
-                        new ServiceDescriptor(serviceB, "node-X", "type", "pool", "location", ImmutableMap.of("a", "apple")),
-                        new ServiceDescriptor(serviceB, "node", "type-X", "pool", "location", ImmutableMap.of("a", "apple")),
-                        new ServiceDescriptor(serviceB, "node", "type", "pool-X", "location", ImmutableMap.of("a", "apple")),
-                        new ServiceDescriptor(serviceB, "node", "type", "pool", "location-X", ImmutableMap.of("a", "apple")),
-                        new ServiceDescriptor(serviceB, "node", "type", "pool", "location", ImmutableMap.of("a-X", "apple")),
-                        new ServiceDescriptor(serviceB, "node", "type", "pool", "location", ImmutableMap.of("a", "apple-X"))
+                        new ServiceDescriptor(serviceB, "node", "type", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("a", "apple")),
+                        new ServiceDescriptor(serviceB, "node-X", "type", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("a", "apple")),
+                        new ServiceDescriptor(serviceB, "node", "type-X", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("a", "apple")),
+                        new ServiceDescriptor(serviceB, "node", "type", "pool-X", "location", ServiceState.RUNNING, ImmutableMap.of("a", "apple")),
+                        new ServiceDescriptor(serviceB, "node", "type", "pool", "location-X", ServiceState.RUNNING, ImmutableMap.of("a", "apple")),
+                        new ServiceDescriptor(serviceB, "node", "type", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("a-X", "apple")),
+                        new ServiceDescriptor(serviceB, "node", "type", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("a", "apple-X"))
                 )
                 .check();
     }

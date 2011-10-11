@@ -16,6 +16,7 @@ public class ServiceDescriptor
     private final String type;
     private final String pool;
     private final String location;
+    private final ServiceState state;
     private final Map<String, String> properties;
 
     @JsonCreator
@@ -25,6 +26,7 @@ public class ServiceDescriptor
             @JsonProperty("type") String type,
             @JsonProperty("pool") String pool,
             @JsonProperty("location") String location,
+            @JsonProperty("state") ServiceState state,
             @JsonProperty("properties") Map<String, String> properties)
     {
         Preconditions.checkNotNull(properties, "properties is null");
@@ -34,6 +36,7 @@ public class ServiceDescriptor
         this.type = type;
         this.pool = pool;
         this.location = location;
+        this.state = state;
         this.properties = ImmutableMap.copyOf(properties);
     }
 
@@ -65,6 +68,12 @@ public class ServiceDescriptor
     public String getLocation()
     {
         return location;
+    }
+
+    @JsonProperty
+    public ServiceState getState()
+    {
+        return state;
     }
 
     @JsonProperty
@@ -108,6 +117,7 @@ public class ServiceDescriptor
         sb.append(", type='").append(type).append('\'');
         sb.append(", pool='").append(pool).append('\'');
         sb.append(", location='").append(location).append('\'');
+        sb.append(", state='").append(state).append('\'');
         sb.append(", properties=").append(properties);
         sb.append('}');
         return sb.toString();
@@ -126,6 +136,7 @@ public class ServiceDescriptor
         private String type;
         private String pool = ServiceSelectorConfig.DEFAULT_POOL;
         private String location;
+        private ServiceState state;
 
         private ImmutableMap.Builder<String, String> properties = ImmutableMap.builder();
 
@@ -171,6 +182,13 @@ public class ServiceDescriptor
             return this;
         }
 
+        public ServiceDescriptorBuilder setState(ServiceState state)
+        {
+            Preconditions.checkNotNull(state, "state is null");
+            this.state = state;
+            return this;
+        }
+
         public ServiceDescriptorBuilder addProperty(String key, String value)
         {
             Preconditions.checkNotNull(key, "key is null");
@@ -188,7 +206,7 @@ public class ServiceDescriptor
 
         public ServiceDescriptor build()
         {
-            return new ServiceDescriptor(id, nodeId, type, pool, location, properties.build());
+            return new ServiceDescriptor(id, nodeId, type, pool, location, state, properties.build());
         }
     }
 }
