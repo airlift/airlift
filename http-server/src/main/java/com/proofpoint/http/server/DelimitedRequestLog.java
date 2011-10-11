@@ -32,7 +32,7 @@ class DelimitedRequestLog
         implements RequestLog
 {
     // Tab-separated
-    // Time, ip, method, url, user, agent, response code, response length, response time
+    // Time, ip, method, url, user, agent, response code, request length, response length, response time
 
     private final RolloverFileOutputStream out;
     private final Writer writer;
