@@ -58,6 +58,10 @@ public class DiscoveryModule implements Module
     {
         Iterable<ServiceDescriptor> discovery = serviceInventory.getServiceDescriptors("discovery");
         for (ServiceDescriptor descriptor : discovery) {
+            if (descriptor.getState() != ServiceState.RUNNING) {
+                continue;
+            }
+
             try {
                 return new URI(descriptor.getProperties().get("https"));
             } catch (Exception e) {
