@@ -19,6 +19,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import org.jruby.Ruby;
+import org.jruby.RubyHash;
 import org.jruby.RubyInstanceConfig;
 import org.jruby.RubyObjectAdapter;
 import org.jruby.javasupport.JavaEmbedUtils;
@@ -62,6 +63,11 @@ public class RackServlet
                 + "] and resolved to [" + rackScriptFile.getAbsolutePath() + "]");
 
         runtime = JavaEmbedUtils.initialize(ImmutableList.of(rackScriptFile.getParentFile().getCanonicalPath()), createRuntimeConfig());
+
+        // don't inherit system settings for gems
+        RubyHash env = runtime.evalScriptlet("ENV").convertToHash();
+        env.remove("GEM_HOME");
+        env.remove("GEM_PATH");
 
         InputStream stream = Resources.getResource("proofpoint/rack.rb").openStream();
         try {
