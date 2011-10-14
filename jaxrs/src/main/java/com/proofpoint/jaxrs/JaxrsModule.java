@@ -15,44 +15,34 @@
  */
 package com.proofpoint.jaxrs;
 
-import com.google.inject.Binder;
 import com.google.inject.Key;
-import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.proofpoint.http.server.TheServlet;
+import com.google.inject.servlet.ServletModule;
 import com.sun.jersey.core.util.FeaturesAndProperties;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
 import com.sun.jersey.spi.MessageBodyWorkers;
 import com.sun.jersey.spi.container.ExceptionMapperContext;
 import com.sun.jersey.spi.container.WebApplication;
 
-import javax.servlet.Servlet;
 import javax.ws.rs.ext.Providers;
 import java.util.HashMap;
 import java.util.Map;
 
-public class JaxrsModule implements Module
+public class JaxrsModule extends ServletModule
 {
     @Override
-    public void configure(Binder binder)
+    protected void configureServlets()
     {
-        binder.requireExplicitBindings();
-        binder.disableCircularProxies();
+        binder().requireExplicitBindings();
+        binder().disableCircularProxies();
 
-        binder.bind(GuiceContainer.class).in(Scopes.SINGLETON);
-        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(Key.get(GuiceContainer.class));
-        binder.bind(JsonMapper.class).in(Scopes.SINGLETON);
-    }
+        Map<String, String> params = new HashMap<String, String>();
+        params.put("com.sun.jersey.spi.container.ContainerRequestFilters", OverrideMethodFilter.class.getName());
+        bind(GuiceContainer.class).in(Scopes.SINGLETON);
+        serve("/*").with(Key.get(GuiceContainer.class), params);
 
-    @Provides
-    @TheServlet
-    public Map<String, String> createTheServletParams()
-    {
-        Map<String, String> initParams = new HashMap<String, String>();
-        initParams.put("com.sun.jersey.spi.container.ContainerRequestFilters", OverrideMethodFilter.class.getName());
-
-        return initParams;
+        bind(JsonMapper.class).in(Scopes.SINGLETON);
     }
 
     @Provides

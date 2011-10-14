@@ -15,37 +15,21 @@
  */
 package com.proofpoint.rack;
 
-import com.google.inject.Binder;
-import com.google.inject.Module;
-import com.google.inject.Provides;
+import com.google.inject.Key;
 import com.google.inject.Scopes;
+import com.google.inject.servlet.ServletModule;
 import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.http.server.TheServlet;
 
-import javax.servlet.Servlet;
-import java.util.Collections;
-import java.util.Map;
-
-public class RackModule implements Module
+public class RackModule extends ServletModule
 {
     @Override
-    public void configure(Binder binder)
+    public void configureServlets()
     {
-        binder.requireExplicitBindings();
-        binder.disableCircularProxies();
+        binder().requireExplicitBindings();
+        binder().disableCircularProxies();
 
-        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(RackServlet.class).in(Scopes.SINGLETON);
-        ConfigurationModule.bindConfig(binder).to(RackServletConfig.class);
-    }
-
-    /**
-     * This is a provider that is expected by our http-server module, so it doesn't serve any purpose for us right now, it just allows Guice to create it's bindings.
-     * @return an empty map
-     */
-    @Provides
-    @TheServlet
-    public Map<String, String> createTheServletParams()
-    {
-        return Collections.<String,String>emptyMap();
+        bind(RackServlet.class).in(Scopes.SINGLETON);
+        serve("/*").with(Key.get(RackServlet.class));
+        ConfigurationModule.bindConfig(binder()).to(RackServletConfig.class);
     }
 }

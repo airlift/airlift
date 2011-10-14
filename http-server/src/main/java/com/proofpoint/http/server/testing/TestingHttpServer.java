@@ -20,14 +20,11 @@ import com.proofpoint.http.server.HttpServer;
 import com.proofpoint.http.server.HttpServerConfig;
 import com.proofpoint.http.server.HttpServerInfo;
 import com.proofpoint.http.server.RequestStats;
-import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.node.NodeInfo;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 
-import javax.servlet.Servlet;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Map;
 
 /**
  * HTTP server that binds to localhost on a random port
@@ -38,14 +35,12 @@ public class TestingHttpServer extends HttpServer
     private final HttpServerInfo httpServerInfo;
 
     @Inject
-    public TestingHttpServer(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config, @TheServlet Servlet servlet, @TheServlet Map<String, String> initParameters)
+    public TestingHttpServer(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config)
             throws IOException
     {
         super(httpServerInfo,
                 nodeInfo,
                 config,
-                servlet,
-                initParameters,
                 null,
                 null,
                 null,

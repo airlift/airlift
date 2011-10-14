@@ -16,11 +16,18 @@
 package com.proofpoint.http.server.testing;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Scopes;
+import com.google.inject.servlet.ServletModule;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
+import com.proofpoint.configuration.ConfigurationFactory;
+import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.http.server.HttpServerConfig;
 import com.proofpoint.http.server.HttpServerInfo;
 import com.proofpoint.node.NodeInfo;
+import com.proofpoint.node.NodeModule;
 import org.testng.annotations.Test;
 
 import javax.servlet.ServletConfig;
@@ -29,7 +36,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -43,9 +49,27 @@ public class TestTestingHttpServer
     public void testInitialization()
             throws Exception
     {
-        DummyServlet servlet = new DummyServlet();
-        Map<String, String> params = ImmutableMap.of("sampleInitParameter", "the value");
-        TestingHttpServer server = createTestingHttpServer(servlet, params);
+        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("node.environment", "test")
+                .put("http-server.http.port", "0")
+                .build();
+
+        ConfigurationFactory configFactory = new ConfigurationFactory(properties);
+        Injector injector = Guice.createInjector(new TestingHttpServerModule(),
+                new NodeModule(),
+                new ConfigurationModule(configFactory),
+                new ServletModule()
+                {
+                    @Override
+                    public void configureServlets()
+                    {
+                        bind(DummyServlet.class).in(Scopes.SINGLETON);
+                        serve("/*").with(DummyServlet.class, ImmutableMap.of("sampleInitParameter", "the value"));
+                    }
+                });
+
+        TestingHttpServer server = injector.getInstance(TestingHttpServer.class);
+        DummyServlet servlet = injector.getInstance(DummyServlet.class);
 
         try {
             server.start();
@@ -61,12 +85,32 @@ public class TestTestingHttpServer
     public void testRequest()
             throws Exception
     {
-        DummyServlet servlet = new DummyServlet();
         TestingHttpServer server = null;
         AsyncHttpClient client = null;
 
         try {
-            server = createTestingHttpServer(servlet, Collections.<String, String>emptyMap());
+            Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                    .put("node.environment", "test")
+                    .put("http-server.http.port", "0")
+                    .build();
+
+            ConfigurationFactory configFactory = new ConfigurationFactory(properties);
+            Injector injector = Guice.createInjector(new TestingHttpServerModule(),
+                    new NodeModule(),
+                    new ConfigurationModule(configFactory),
+                    new ServletModule()
+                    {
+                        @Override
+                        public void configureServlets()
+                        {
+                            bind(DummyServlet.class).in(Scopes.SINGLETON);
+                            serve("/*").with(DummyServlet.class, ImmutableMap.of("sampleInitParameter", "the value"));
+                        }
+                    });
+
+            server = injector.getInstance(TestingHttpServer.class);
+            DummyServlet servlet = injector.getInstance(DummyServlet.class);
+
             client = new AsyncHttpClient();
 
             server.start();
@@ -89,13 +133,13 @@ public class TestTestingHttpServer
         }
     }
 
-    private TestingHttpServer createTestingHttpServer(DummyServlet servlet, Map<String, String> params)
+    private TestingHttpServer createTestingHttpServer()
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params);
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config);
     }
 
     private void closeQuietly(TestingHttpServer server)

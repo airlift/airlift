@@ -16,11 +16,19 @@
 package com.proofpoint.http.server;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Scopes;
+import com.google.inject.servlet.ServletModule;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
 import com.ning.http.util.Base64;
-import com.proofpoint.node.NodeInfo;
+import com.proofpoint.configuration.ConfigurationFactory;
+import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.node.NodeModule;
+import org.eclipse.jetty.security.LoginService;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -29,6 +37,9 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static org.testng.Assert.assertEquals;
@@ -39,20 +50,14 @@ public class TestHttpServerProvider
 {
     private HttpServer server;
     private File tempDir;
-    private NodeInfo nodeInfo;
-    private HttpServerConfig config;
     private HttpServerInfo httpServerInfo;
+    private int httpPort = -1;
 
     @BeforeMethod
     public void setup()
             throws IOException
     {
         tempDir = Files.createTempDir().getCanonicalFile(); // getCanonicalFile needed to get around Issue 365 (http://code.google.com/p/guava-libraries/issues/detail?id=365)
-        config = new HttpServerConfig()
-                .setHttpPort(0)
-                .setLogPath(new File(tempDir, "http-request.log").getAbsolutePath());
-        nodeInfo = new NodeInfo("test");
-        httpServerInfo = new HttpServerInfo(config, nodeInfo);
     }
 
     @AfterMethod
@@ -73,7 +78,7 @@ public class TestHttpServerProvider
     public void testHttp()
             throws Exception
     {
-        createServer();
+        createServer(true);
         server.start();
 
         AsyncHttpClient client = new AsyncHttpClient();
@@ -88,14 +93,12 @@ public class TestHttpServerProvider
     public void testHttpIsDisabled()
             throws Exception
     {
-        config.setHttpEnabled(false);
-
-        createServer();
+        createServer(false);
         server.start();
 
         AsyncHttpClient client = new AsyncHttpClient();
         try {
-            Response response = client.prepareGet("http://localhost:" + config.getHttpPort() + "/")
+            Response response = client.prepareGet("http://localhost:" + httpPort + "/")
                     .execute()
                     .get();
 
@@ -108,21 +111,11 @@ public class TestHttpServerProvider
         }
     }
 
-    public void testHttps()
-    {
-        // TODO
-    }
-
     @Test
     public void testAuth()
             throws Exception
     {
-        File file = File.createTempFile("auth", ".properties", tempDir);
-        Files.write("user: password", file, Charsets.UTF_8);
-
-        config.setUserAuthFile(file.getAbsolutePath());
-
-        createServer();
+        createServer(true);
         server.start();
 
         AsyncHttpClient client = new AsyncHttpClient();
@@ -135,41 +128,46 @@ public class TestHttpServerProvider
         assertEquals(response.getResponseBody(), "user");
     }
 
-    public void testJMX()
+    private void createServer(boolean httpEnabled)
+            throws Exception
     {
-        // TODO
-    }
+        ServerSocket socket = new ServerSocket();
+        try {
+            socket.bind(new InetSocketAddress(0));
+            httpPort = socket.getLocalPort();
+        }
+        finally {
+            socket.close();
+        }
 
-    public void testStats()
-    {
-        // TODO
-    }
+        File file = File.createTempFile("auth", ".properties", tempDir);
+        Files.write("user: password", file, Charsets.UTF_8);
 
-    public void testGzipRequest()
-    {
-        // TODO
-    }
+        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("node.environment", "test")
+                .put("http-server.http.port", String.valueOf(httpPort))
+                .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
+                .put("http-server.http.enabled", String.valueOf(httpEnabled))
+                .put("http-server.auth.users-file", file.getAbsolutePath())
+                .build();
 
-    public void testGzipResponse()
-    {
-        // TODO
-    }
+        ConfigurationFactory configFactory = new ConfigurationFactory(properties);
+        Injector injector = Guice.createInjector(new HttpServerModule(),
+                new NodeModule(),
+                new ConfigurationModule(configFactory),
+                new ServletModule()
+                {
+                    @Override
+                    public void configureServlets()
+                    {
+                        bind(DummyServlet.class).in(Scopes.SINGLETON);
+                        bind(LoginService.class).toProvider(HashLoginServiceProvider.class);
+                        serve("/*").with(DummyServlet.class);
+                    }
+                });
 
-    public void testLogPathIsNotFile()
-    {
-        // TODO
-    }
-
-    public void testLogPathParentCannotBeCreated()
-    {
-        // TODO
-    }
-
-    private void createServer()
-    {
-        HashLoginServiceProvider loginServiceProvider = new HashLoginServiceProvider(config);
-        HttpServerProvider serverProvider = new HttpServerProvider(httpServerInfo, nodeInfo, config, new DummyServlet(), new RequestStats());
-        serverProvider.setLoginService(loginServiceProvider.get());
-        server = serverProvider.get();
+        server = injector.getInstance(HttpServer.class);
+        httpServerInfo = injector.getInstance(HttpServerInfo.class);
+        server.start();
     }
 }
