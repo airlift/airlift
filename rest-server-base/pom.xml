@@ -568,6 +568,7 @@
                             <pushChanges>false</pushChanges>
                             <localCheckout>true</localCheckout>
                             <preparationGoals>clean install</preparationGoals>
+                            <tagNameFormat>@{project.version}</tagNameFormat>
                         </configuration>
                     </plugin>
                 </plugins>
