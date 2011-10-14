@@ -24,6 +24,7 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.status.Status;
+import ch.qos.logback.core.status.StatusChecker;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
@@ -240,7 +241,8 @@ public class Logging
             }
         }
 
-        if (root.getLoggerContext().getStatusManager().getLevel() == Status.ERROR) {
+        StatusChecker checker = new StatusChecker(root.getLoggerContext());
+        if (checker.getHighestLevel(0) == Status.ERROR) {
             throw new RuntimeException("Error initializing logger, aborting");
         }
 
