@@ -1,3 +1,15 @@
+* 0.49
+
+- Upgrade to Jetty 8.0.3. Fixes critical bug where the http server leaks connections and file descriptors
+- Sign artifacts for projects that inherit from rest-server-base and rack-server-base-experimental
+- Optimize event serializer under high-concurrency
+- [Experimental] Discovery client now bootstraps itself by calling out to an optional service inventory API
+- [Experimental] Http server and client now expose request stats over JMX
+- [Experimental] Support for conditional module binding
+- [Experimental] Http-based JMX connector listens on an alternate admin port
+- [Bug] Http client now consumes all unread input, otherwise keep-alive doesn't work
+- [Bug] RackServlet inherited GEM_HOME and GEM_PATH environment variables
+
 * 0.48
 - Upgrade to Guava 10.0 - older version are now banned
 - Upgrade to Hector 0.8.0-2

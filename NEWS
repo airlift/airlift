@@ -1,3 +1,110 @@
+Platform 0.49, Oct 14th 2011
+
+* Library Upgrades
+
+In this release we have upgraded the following dependencies
+
+  - Jetty 8.0.3
+  - Jackson 1.9.1
+
+* Http server critical bugs
+
+There are a number of bugs in versions of Jetty prior to 8.0.3 that can cause
+the server to spin in a busy loop when using SSL or leak file descriptors under
+certain conditions.
+
+* Admin port
+
+The http-based jmx connector now runs on an alternate admin port to avoid polluting
+the request logs and stats when monitoring the server through jmx. For backwards
+compatibility, the http listener is bound to a random port. The binding can be
+overriden via the http-server.admin.port property and can be turned off via
+http-server.admin.enabled.
+
+* Service inventory
+
+Discovery client now finds the location of available discovery servers by calling
+out to a service inventory API. The location of the service inventory API is specified
+via the service-inventory.uri configuration property and is provided automatically
+when deploying with recent snapshot versions of Galaxy.
+
+This feature is experimental, so the old discovery.uri property is still supported.
+
+* PGP signing of artifacts
+
+Projects that inherit from rest-server-base are now automatically signed with PGP on
+release. To get this working, the release machine and account needs to have a PGP key
+and agent configured.
+
+See http://www.sonatype.com/people/2010/01/how-to-generate-pgp-signatures-with-maven/
+for more information.
+
+* Http server request stats
+
+The http server now exposes additional request stats via JMX under an mbean named
+com.proofpoint.http:name=RequestStats.
+
+The available stats include:
+- Request count
+    - Total
+    - 1-minute, 5-minute and 15-minute exponentially-weighted moving average requests
+      per second
+- Bytes Read/Written to connection
+    - Total (since server start)
+    - Exponentially-weighted per-request mean, min, max, percentiles (50, 90, 99, 99.9)
+      with a bias towards the past 5 minutes
+    - 1-minute, 5-minute and 15-minute exponentially-weighted moving average bytes
+      per second
+- Request time (ms)
+    - Total (since server start)
+    - Exponentially-weighted per-request mean, min, max, percentiles (50, 90, 99, 99.9)
+      with a bias towards the past 5 minutes
+    - 1-minute, 5-minute and 15-minute exponentially-weighted moving average bytes
+      per second
+
+* Http client request stats
+
+Event and discovery clients now expose http request stats via JMX under the
+com.proofpoint.discovery.client:name=DiscoveryClient and
+com.proofpoint.event.client:name=EventClient mbeans.
+
+The available stats include:
+- Request count
+    - Total
+    - 1-minute, 5-minute and 15-minute exponentially-weighted moving average requests
+      per second
+- Bytes Read/Written to connection
+    - Total (since server start)
+    - Exponentially-weighted per-request mean, min, max, percentiles (50, 90, 99, 99.9)
+      with a bias towards the past 5 minutes
+    - 1-minute, 5-minute and 15-minute exponentially-weighted moving average bytes
+      per second
+- Request scheduling time (ms) -- time for request to get picked up by an available worker thread.
+    - Total (since server start)
+    - Exponentially-weighted per-request mean, min, max, percentiles (50, 90, 99, 99.9)
+      with a bias towards the past 5 minutes
+    - 1-minute, 5-minute and 15-minute exponentially-weighted moving average bytes
+      per second
+- Scheduling time (ms) -- time for request to get picked up by an available worker thread.
+    - Total (since server start)
+    - Exponentially-weighted per-request mean, min, max, percentiles (50, 90, 99, 99.9)
+      with a bias towards the past 5 minutes
+    - 1-minute, 5-minute and 15-minute exponentially-weighted moving average bytes
+      per second
+- Request time (ms) -- time to send request data to remote server
+    - Total (since server start)
+    - Exponentially-weighted per-request mean, min, max, percentiles (50, 90, 99, 99.9)
+      with a bias towards the past 5 minutes
+    - 1-minute, 5-minute and 15-minute exponentially-weighted moving average bytes
+      per second
+- Response time (ms) -- time to read response
+    - Total (since server start)
+    - Exponentially-weighted per-request mean, min, max, percentiles (50, 90, 99, 99.9)
+      with a bias towards the past 5 minutes
+    - 1-minute, 5-minute and 15-minute exponentially-weighted moving average bytes
+      per second
+
+
 Platform 0.48, Oct 5th 2011
 
 * Library Upgrades
