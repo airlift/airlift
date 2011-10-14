@@ -54,7 +54,7 @@ public class Main
             Injector injector = app.strictConfig().initialize();
             injector.getInstance(Announcer.class).start();
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             log.error(e);
             System.exit(1);
         }
