@@ -120,6 +120,13 @@
                 <artifactId>async-http-client</artifactId>
                 <version>1.6.5</version>
             </dependency>
+
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>10.0.1</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -149,7 +156,7 @@
                                         <exclude>com.google.guava:guava</exclude>
                                     </excludes>
                                     <includes>
-                                        <include>com.google.guava:guava:[10.0,)</include>
+                                        <include>com.google.guava:guava:[10.0.1,)</include>
                                     </includes>
                                 </bannedDependencies>
                             </rules>
