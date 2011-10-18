@@ -26,6 +26,7 @@ import com.proofpoint.json.JsonModule;
 import com.proofpoint.http.server.HttpServerModule;
 import com.proofpoint.jaxrs.JaxrsModule;
 import com.proofpoint.jmx.JmxModule;
+import com.proofpoint.log.LogJmxModule;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeModule;
 import org.weakref.jmx.guice.MBeanModule;
@@ -47,6 +48,7 @@ public class Main
                 new JmxModule(),
                 new JmxHttpModule(),
                 new JmxHttpRpcModule(),
+                new LogJmxModule(),
                 new HttpEventModule(),
                 new MainModule());
 

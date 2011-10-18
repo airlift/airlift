@@ -1,3 +1,6 @@
+* 0.50-SNAPSHOT
+- [Experimental] Log levels can be configured via JMX
+
 * 0.49
 
 - Upgrade to Jetty 8.0.3. Fixes critical bug where the http server leaks connections and file descriptors

@@ -1,3 +1,13 @@
+Platform 0.50-SNAPSHOT
+
+* Log configuration via JMX
+
+Log levels can now be configured via JMX under an mbean named
+com.proofpoint.log:name=Logging. Enable this by adding LogJmxModule to your
+Guice modules. The AllLevels attribute returns all explicitly configured
+loggers (it excludes those with an inherited level).
+
+
 Platform 0.49, Oct 14th 2011
 
 * Library Upgrades
