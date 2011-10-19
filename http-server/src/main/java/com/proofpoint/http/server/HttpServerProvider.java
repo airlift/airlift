@@ -38,6 +38,8 @@ public class HttpServerProvider
     private final HttpServerInfo httpServerInfo;
     private final NodeInfo nodeInfo;
     private final HttpServerConfig config;
+    private final Servlet theServlet;
+    private Map<String, String> servletInitParameters = ImmutableMap.of();
     private Servlet theAdminServlet;
     private Map<String, String> adminServletInitParameters = ImmutableMap.of();
     private MBeanServer mbeanServer;
@@ -45,17 +47,25 @@ public class HttpServerProvider
     private final RequestStats stats;
 
     @Inject
-    public HttpServerProvider(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config, RequestStats stats)
+    public HttpServerProvider(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config, @TheServlet Servlet theServlet, RequestStats stats)
     {
         Preconditions.checkNotNull(httpServerInfo, "httpServerInfo is null");
         Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
         Preconditions.checkNotNull(config, "config is null");
+        Preconditions.checkNotNull(theServlet, "theServlet is null");
         Preconditions.checkNotNull(stats, "stats is null");
 
         this.httpServerInfo = httpServerInfo;
         this.nodeInfo = nodeInfo;
         this.config = config;
+        this.theServlet = theServlet;
         this.stats = stats;
+    }
+
+    @Inject(optional = true)
+    public void setServletInitParameters(@TheServlet Map<String, String> parameters)
+    {
+        this.servletInitParameters = ImmutableMap.copyOf(parameters);
     }
 
     @Inject(optional = true)
@@ -85,7 +95,7 @@ public class HttpServerProvider
     public HttpServer get()
     {
         try {
-            HttpServer httpServer = new HttpServer(httpServerInfo, nodeInfo, config, theAdminServlet, adminServletInitParameters, mbeanServer, loginService, stats);
+            HttpServer httpServer = new HttpServer(httpServerInfo, nodeInfo, config, theServlet, servletInitParameters, theAdminServlet, adminServletInitParameters, mbeanServer, loginService, stats);
             httpServer.start();
             return httpServer;
         }

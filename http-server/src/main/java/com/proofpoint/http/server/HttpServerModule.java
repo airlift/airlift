@@ -17,8 +17,11 @@ package com.proofpoint.http.server;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.proofpoint.configuration.ConfigurationModule;
+import org.eclipse.jetty.security.LoginService;
+import org.weakref.jmx.MBeanExporter;
 import org.weakref.jmx.guice.MBeanModule;
 
 /**

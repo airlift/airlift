@@ -3,16 +3,20 @@ package com.proofpoint.http.client;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.google.inject.servlet.ServletModule;
+import com.google.inject.TypeLiteral;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.json.JsonModule;
@@ -22,6 +26,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -30,6 +35,7 @@ import javax.servlet.http.HttpUtils;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Executors;
 
@@ -49,18 +55,20 @@ public class HttpClientTest
                 new TestingHttpServerModule(),
                 new JsonModule(),
                 new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())),
-                new ServletModule()
+                new Module()
                 {
                     @Override
-                    public void configureServlets()
+                    public void configure(Binder binder)
                     {
-                        bind(EchoServlet.class).in(Scopes.SINGLETON);
-                        serve("/*").with(Key.get(EchoServlet.class));
+                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(EchoServlet.class).in(Scopes.SINGLETON);
+                        binder.bind(new TypeLiteral<Map<String, String>>()
+                        {
+                        }).annotatedWith(TheServlet.class).toInstance(ImmutableMap.<String, String>of());
                     }
                 });
 
         server = injector.getInstance(TestingHttpServer.class);
-        servlet = injector.getInstance(EchoServlet.class);
+        servlet = (EchoServlet) injector.getInstance(Key.get(Servlet.class, TheServlet.class));
         server.start();
         httpClient = new HttpClient(Executors.newCachedThreadPool(new ThreadFactoryBuilder().setDaemon(true).build()));
     }

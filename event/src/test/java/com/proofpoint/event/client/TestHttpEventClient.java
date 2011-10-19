@@ -2,12 +2,14 @@ package com.proofpoint.event.client;
 
 import com.google.common.base.Throwables;
 import com.google.common.io.CharStreams;
+import com.google.inject.Binder;
 import com.google.inject.Guice;
-import com.google.inject.Key;
-import com.google.inject.servlet.ServletModule;
+import com.google.inject.Module;
+import com.google.inject.TypeLiteral;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.testing.StaticHttpServiceSelector;
 import com.proofpoint.http.client.HttpClient;
+import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.node.NodeInfo;
@@ -17,6 +19,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -26,6 +29,7 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -136,13 +140,20 @@ public class TestHttpEventClient
         return Guice.createInjector(
                 new TestingNodeModule(),
                 new TestingHttpServerModule(),
-                new ServletModule()
+                new Module()
                 {
                     @Override
-                    public void configureServlets()
+                    public void configure(Binder binder)
                     {
-                        bind(HttpServlet.class).toInstance(servlet);
-                        serve("/*").with(Key.get(HttpServlet.class));
+                        binder.bind(Servlet.class)
+                                .annotatedWith(TheServlet.class)
+                                .toInstance(servlet);
+
+                        binder.bind(new TypeLiteral<Map<String, String>>()
+                        {
+                        })
+                                .annotatedWith(TheServlet.class)
+                                .toInstance(Collections.<String, String>emptyMap());
                     }
                 })
                 .getInstance(TestingHttpServer.class);

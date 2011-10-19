@@ -17,11 +17,10 @@ package com.proofpoint.http.server;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
+import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.Scopes;
-import com.google.inject.servlet.ServletModule;
+import com.google.inject.Module;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.node.NodeInfo;
@@ -30,6 +29,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.servlet.Servlet;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -70,13 +70,12 @@ public class TestHttpServerModule
         Injector injector = Guice.createInjector(new HttpServerModule(),
                 new NodeModule(),
                 new ConfigurationModule(configFactory),
-                new ServletModule()
+                new Module()
                 {
                     @Override
-                    public void configureServlets()
+                    public void configure(Binder binder)
                     {
-                        bind(DummyServlet.class).in(Scopes.SINGLETON);
-                        serve("/*").with(DummyServlet.class);
+                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
                     }
                 });
 
@@ -98,13 +97,12 @@ public class TestHttpServerModule
         Injector injector = Guice.createInjector(new HttpServerModule(),
                 new NodeModule(),
                 new ConfigurationModule(configFactory),
-                new ServletModule()
+                new Module()
                 {
                     @Override
-                    public void configureServlets()
+                    public void configure(Binder binder)
                     {
-                        bind(DummyServlet.class).in(Scopes.SINGLETON);
-                        serve("/*").with(DummyServlet.class);
+                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
                     }
                 });
 

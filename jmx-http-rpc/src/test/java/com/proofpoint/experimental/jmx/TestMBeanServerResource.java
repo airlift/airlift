@@ -2,17 +2,18 @@ package com.proofpoint.experimental.jmx;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Key;
+import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.google.inject.servlet.ServletModule;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
-import com.proofpoint.jmx.http.rpc.HttpMBeanServerCredentials;
-import com.proofpoint.jmx.http.rpc.MBeanServerServlet;
+import com.proofpoint.jaxrs.JaxrsModule;
+import com.proofpoint.jmx.http.rpc.JmxHttpRpcModule;
 import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import org.testng.annotations.AfterMethod;
@@ -55,18 +56,15 @@ public class TestMBeanServerResource
                 new TestingNodeModule(),
                 new TestingHttpServerModule(),
                 new JsonModule(),
+                new JmxHttpRpcModule(TheServlet.class),
                 new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())),
-                new ServletModule()
+                new Module()
                 {
                     @Override
-                    public void configureServlets()
+                    public void configure(Binder binder)
                     {
-                        bind(MBeanServer.class).toInstance(platformMBeanServer);
-                        bind(TestMBean.class).in(Scopes.SINGLETON);
-
-                        bind(MBeanServerServlet.class).in(Scopes.SINGLETON);
-                        serve("/*").with(Key.get(MBeanServerServlet.class));
-                        bind(HttpMBeanServerCredentials.class).toInstance(new HttpMBeanServerCredentials(null, null));
+                        binder.bind(MBeanServer.class).toInstance(platformMBeanServer);
+                        binder.bind(TestMBean.class).in(Scopes.SINGLETON);
                     }
                 });
 
@@ -80,7 +78,7 @@ public class TestMBeanServerResource
 
         JMXConnector connect = JMXConnectorFactory.connect(
                 new JMXServiceURL("service:jmx:" + server.getBaseUrl()),
-                ImmutableMap.of(JMXConnector.CREDENTIALS, new String[]{"foo", "bar"}));
+                ImmutableMap.of(JMXConnector.CREDENTIALS, new String[] {"foo", "bar"}));
         mbeanServerConnection = connect.getMBeanServerConnection();
 
     }

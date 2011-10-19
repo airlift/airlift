@@ -17,7 +17,6 @@ package com.proofpoint.http.server;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.servlet.GuiceFilter;
 import com.proofpoint.node.NodeInfo;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.jmx.MBeanContainer;
@@ -34,7 +33,6 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
-import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.GzipFilter;
@@ -60,6 +58,8 @@ public class HttpServer
     public HttpServer(HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
+            Servlet theServlet,
+            Map<String, String> parameters,
             Servlet theAdminServlet,
             Map<String, String> adminParameters,
             MBeanServer mbeanServer,
@@ -70,6 +70,7 @@ public class HttpServer
         Preconditions.checkNotNull(httpServerInfo, "httpServerInfo is null");
         Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
         Preconditions.checkNotNull(config, "config is null");
+        Preconditions.checkNotNull(theServlet, "theServlet is null");
 
         Server server = new Server();
 
@@ -154,13 +155,7 @@ public class HttpServer
          *           \ --- the admin servlet
          */
         HandlerCollection handlers = new HandlerCollection();
-
-        // Guice servlet filter
-        ServletContextHandler servletContext = createServletContext(loginService, "http", "https");
-        servletContext.addFilter(GuiceFilter.class, "/*", null);
-        servletContext.addServlet(DefaultServlet.class, "/");
-
-        handlers.addHandler(servletContext);
+        handlers.addHandler(createServletContext(theServlet, parameters, loginService, "http", "https"));
         RequestLogHandler logHandler = createLogHandler(config);
         if (logHandler != null) {
             handlers.addHandler(logHandler);
@@ -176,13 +171,7 @@ public class HttpServer
 
         HandlerList rootHandlers = new HandlerList();
         if (theAdminServlet != null && config.isAdminEnabled()) {
-            ServletContextHandler adminContext = createServletContext(loginService, "admin");
-            // admin servlet
-            ServletHolder servletHolder = new ServletHolder(theAdminServlet);
-            servletHolder.setInitParameters(ImmutableMap.copyOf(adminParameters));
-            adminContext.addServlet(servletHolder, "/*");
-
-            rootHandlers.addHandler(adminContext);
+            rootHandlers.addHandler(createServletContext(theAdminServlet, adminParameters, loginService, "admin"));
         }
         rootHandlers.addHandler(statsHandler);
         server.setHandler(rootHandlers);
@@ -190,7 +179,7 @@ public class HttpServer
         this.server = server;
     }
 
-    private static ServletContextHandler createServletContext(LoginService loginService, String... connectorNames)
+    private static ServletContextHandler createServletContext(Servlet theServlet, Map<String, String> parameters, LoginService loginService, String... connectorNames)
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         // -- gzip response filter
@@ -202,7 +191,10 @@ public class HttpServer
             SecurityHandler securityHandler = createSecurityHandler(loginService);
             context.setSecurityHandler(securityHandler);
         }
-        // bind this context the specified names only
+        // -- the servlet
+        ServletHolder servletHolder = new ServletHolder(theServlet);
+        servletHolder.setInitParameters(ImmutableMap.copyOf(parameters));
+        context.addServlet(servletHolder, "/*");
         context.setConnectorNames(connectorNames);
         return context;
     }
