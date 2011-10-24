@@ -17,12 +17,12 @@ package com.proofpoint.http.server;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
-import com.google.inject.Provider;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
 import com.proofpoint.configuration.ConfigurationModule;
-import org.eclipse.jetty.security.LoginService;
-import org.weakref.jmx.MBeanExporter;
 import org.weakref.jmx.guice.MBeanModule;
+
+import javax.servlet.Filter;
 
 /**
  * Provides a fully configured instance of an http server,
@@ -57,6 +57,8 @@ public class HttpServerModule
         binder.bind(HttpServer.class).toProvider(HttpServerProvider.class).in(Scopes.SINGLETON);
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
         binder.bind(RequestStats.class).in(Scopes.SINGLETON);
+        Multibinder.newSetBinder(binder, Filter.class, TheServlet.class);
+        Multibinder.newSetBinder(binder, Filter.class, TheAdminServlet.class);
 
         MBeanModule.newExporter(binder).export(RequestStats.class).withGeneratedName();
 

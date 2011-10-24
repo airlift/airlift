@@ -15,6 +15,7 @@
  */
 package com.proofpoint.http.server.testing;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.proofpoint.http.server.HttpServer;
 import com.proofpoint.http.server.HttpServerConfig;
@@ -24,6 +25,7 @@ import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.node.NodeInfo;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 
+import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import java.io.IOException;
 import java.net.URI;
@@ -46,8 +48,10 @@ public class TestingHttpServer extends HttpServer
                 config,
                 servlet,
                 initParameters,
+                ImmutableSet.<Filter>of(),
                 null,
                 null,
+                ImmutableSet.<Filter>of(),
                 null,
                 null,
                 new RequestStats());

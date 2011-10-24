@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.GzipFilter;
@@ -41,11 +42,13 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.management.MBeanServer;
+import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
@@ -60,8 +63,10 @@ public class HttpServer
             HttpServerConfig config,
             Servlet theServlet,
             Map<String, String> parameters,
+            Set<Filter> filters,
             Servlet theAdminServlet,
             Map<String, String> adminParameters,
+            Set<Filter> adminFilters,
             MBeanServer mbeanServer,
             LoginService loginService,
             RequestStats stats)
@@ -149,13 +154,14 @@ public class HttpServer
          *           |       |--- gzip response filter
          *           |       |--- gzip request filter
          *           |       |--- security handler
+         *           |       |--- user provided filters
          *           |       |--- the servlet (normally GuiceContainer)
          *           |--- log handler
          *    |-- admin context handler
          *           \ --- the admin servlet
          */
         HandlerCollection handlers = new HandlerCollection();
-        handlers.addHandler(createServletContext(theServlet, parameters, loginService, "http", "https"));
+        handlers.addHandler(createServletContext(theServlet, parameters, filters, loginService, "http", "https"));
         RequestLogHandler logHandler = createLogHandler(config);
         if (logHandler != null) {
             handlers.addHandler(logHandler);
@@ -171,7 +177,7 @@ public class HttpServer
 
         HandlerList rootHandlers = new HandlerList();
         if (theAdminServlet != null && config.isAdminEnabled()) {
-            rootHandlers.addHandler(createServletContext(theAdminServlet, adminParameters, loginService, "admin"));
+            rootHandlers.addHandler(createServletContext(theAdminServlet, adminParameters, adminFilters, loginService, "admin"));
         }
         rootHandlers.addHandler(statsHandler);
         server.setHandler(rootHandlers);
@@ -179,7 +185,11 @@ public class HttpServer
         this.server = server;
     }
 
-    private static ServletContextHandler createServletContext(Servlet theServlet, Map<String, String> parameters, LoginService loginService, String... connectorNames)
+    private static ServletContextHandler createServletContext(Servlet theServlet,
+            Map<String, String> parameters,
+            Set<Filter> filters,
+            LoginService loginService,
+            String... connectorNames)
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         // -- gzip response filter
@@ -190,6 +200,10 @@ public class HttpServer
         if (loginService != null) {
             SecurityHandler securityHandler = createSecurityHandler(loginService);
             context.setSecurityHandler(securityHandler);
+        }
+        // -- user provided filters
+        for (Filter filter : filters) {
+            context.addFilter(new FilterHolder(filter), "/*", null);
         }
         // -- the servlet
         ServletHolder servletHolder = new ServletHolder(theServlet);

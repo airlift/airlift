@@ -16,6 +16,7 @@
 package com.proofpoint.http.server;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
@@ -25,6 +26,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.servlet.Filter;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
@@ -85,6 +87,22 @@ public class TestHttpServerProvider
     }
 
     @Test
+    public void testFilter()
+            throws Exception
+    {
+        createServer();
+        server.start();
+
+        AsyncHttpClient client = new AsyncHttpClient();
+        Response response = client.prepareGet(httpServerInfo.getHttpUri().resolve("/filter").toString())
+                .execute()
+                .get();
+
+        assertEquals(response.getStatusCode(), HttpServletResponse.SC_PAYMENT_REQUIRED);
+        assertEquals(response.getStatusText(), "filtered");
+    }
+
+    @Test
     public void testHttpIsDisabled()
             throws Exception
     {
@@ -106,11 +124,6 @@ public class TestHttpServerProvider
         catch (ExecutionException e) {
             assertTrue(e.getCause() instanceof ConnectException);
         }
-    }
-
-    public void testHttps()
-    {
-        // TODO
     }
 
     @Test
@@ -135,40 +148,16 @@ public class TestHttpServerProvider
         assertEquals(response.getResponseBody(), "user");
     }
 
-    public void testJMX()
-    {
-        // TODO
-    }
-
-    public void testStats()
-    {
-        // TODO
-    }
-
-    public void testGzipRequest()
-    {
-        // TODO
-    }
-
-    public void testGzipResponse()
-    {
-        // TODO
-    }
-
-    public void testLogPathIsNotFile()
-    {
-        // TODO
-    }
-
-    public void testLogPathParentCannotBeCreated()
-    {
-        // TODO
-    }
-
     private void createServer()
     {
         HashLoginServiceProvider loginServiceProvider = new HashLoginServiceProvider(config);
-        HttpServerProvider serverProvider = new HttpServerProvider(httpServerInfo, nodeInfo, config, new DummyServlet(), new RequestStats());
+        HttpServerProvider serverProvider = new HttpServerProvider(httpServerInfo,
+                nodeInfo,
+                config,
+                new DummyServlet(),
+                ImmutableSet.<Filter>of(new DummyFilter()),
+                ImmutableSet.<Filter>of(),
+                new RequestStats());
         serverProvider.setLoginService(loginServiceProvider.get());
         server = serverProvider.get();
     }

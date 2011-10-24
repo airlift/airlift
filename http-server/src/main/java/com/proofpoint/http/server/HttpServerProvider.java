@@ -25,8 +25,10 @@ import org.eclipse.jetty.security.LoginService;
 
 import javax.annotation.Nullable;
 import javax.management.MBeanServer;
+import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Provides an instance of a Jetty server ready to be configured with
@@ -45,20 +47,32 @@ public class HttpServerProvider
     private MBeanServer mbeanServer;
     private LoginService loginService;
     private final RequestStats stats;
+    private final Set<Filter> filters;
+    private final Set<Filter> adminFilters;
 
     @Inject
-    public HttpServerProvider(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config, @TheServlet Servlet theServlet, RequestStats stats)
+    public HttpServerProvider(HttpServerInfo httpServerInfo,
+            NodeInfo nodeInfo,
+            HttpServerConfig config,
+            @TheServlet Servlet theServlet,
+            @TheServlet Set<Filter> filters,
+            @TheAdminServlet Set<Filter> adminFilters,
+            RequestStats stats)
     {
         Preconditions.checkNotNull(httpServerInfo, "httpServerInfo is null");
         Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
         Preconditions.checkNotNull(config, "config is null");
         Preconditions.checkNotNull(theServlet, "theServlet is null");
+        Preconditions.checkNotNull(filters, "filters is null");
+        Preconditions.checkNotNull(adminFilters, "adminFilters is null");
         Preconditions.checkNotNull(stats, "stats is null");
 
         this.httpServerInfo = httpServerInfo;
         this.nodeInfo = nodeInfo;
         this.config = config;
         this.theServlet = theServlet;
+        this.filters = filters;
+        this.adminFilters = adminFilters;
         this.stats = stats;
     }
 
@@ -95,7 +109,18 @@ public class HttpServerProvider
     public HttpServer get()
     {
         try {
-            HttpServer httpServer = new HttpServer(httpServerInfo, nodeInfo, config, theServlet, servletInitParameters, theAdminServlet, adminServletInitParameters, mbeanServer, loginService, stats);
+            HttpServer httpServer = new HttpServer(httpServerInfo,
+                    nodeInfo,
+                    config,
+                    theServlet,
+                    servletInitParameters,
+                    filters,
+                    theAdminServlet,
+                    adminServletInitParameters,
+                    adminFilters,
+                    mbeanServer,
+                    loginService,
+                    stats);
             httpServer.start();
             return httpServer;
         }

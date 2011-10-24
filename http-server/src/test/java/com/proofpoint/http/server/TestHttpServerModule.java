@@ -21,6 +21,10 @@ import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
+import com.ning.http.client.AsyncHttpClient;
+import com.ning.http.client.Response;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.node.NodeInfo;
@@ -29,7 +33,9 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.servlet.Filter;
 import javax.servlet.Servlet;
+import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -121,5 +127,53 @@ public class TestHttpServerModule
         catch (Exception e) {
             server.stop();
         }
+    }
+
+    @Test
+    public void testServer()
+            throws Exception
+    {
+        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("node.environment", "test")
+                .put("http-server.http.port", "0")
+                .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
+                .build();
+
+        ConfigurationFactory configFactory = new ConfigurationFactory(properties);
+        Injector injector = Guice.createInjector(new HttpServerModule(),
+                new NodeModule(),
+                new ConfigurationModule(configFactory),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
+                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
+                        Multibinder.newSetBinder(binder, Filter.class, TheServlet.class).addBinding().to(DummyFilter.class).in(Scopes.SINGLETON);
+                    }
+                });
+
+        HttpServerInfo httpServerInfo = injector.getInstance(HttpServerInfo.class);
+
+        HttpServer server = injector.getInstance(HttpServer.class);
+        server.start();
+
+        AsyncHttpClient client = new AsyncHttpClient();
+
+        // test servlet bound correctly
+        Response response = client.prepareGet(httpServerInfo.getHttpUri().toString())
+                .execute()
+                .get();
+
+        assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+
+        // test filter bound correctly
+        response = client.prepareGet(httpServerInfo.getHttpUri().resolve("/filter").toString())
+                .execute()
+                .get();
+
+        assertEquals(response.getStatusCode(), HttpServletResponse.SC_PAYMENT_REQUIRED);
+        assertEquals(response.getStatusText(), "filtered");
     }
 }
