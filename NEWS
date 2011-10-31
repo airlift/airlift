@@ -1,5 +1,17 @@
 Platform 0.50-SNAPSHOT
 
+* Library Upgrades
+
+In this release we have upgraded the following dependencies
+
+  - Guava 10.0.1
+  - TestNG 6.2.1
+  - Joda time 2.0
+  - CGlib 2.2.2
+  - Hibernate validation 4.2.0.Final
+  - log4j-over-slf4j 1.6.2
+  - Logback 0.9.30
+
 * Log configuration via JMX
 
 Log levels can now be configured via JMX under an mbean named

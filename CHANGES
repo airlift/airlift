@@ -1,4 +1,12 @@
 * 0.50-SNAPSHOT
+
+- Upgrade to Guava 10.0.1
+- Upgrade to TestNG 6.2.1
+- Upgrade to Joda time 2.0
+- Upgrade to CGlib 2.2.2
+- Upgrade to Hibernate validation 4.2.0.Final
+- Upgrade to log4j-over-slf4j 1.6.2
+- Upgrade to Logback 0.9.30
 - [Experimental] Log levels can be configured via JMX
 
 * 0.49
