@@ -17,6 +17,7 @@ package com.proofpoint.http.server;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
+import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -82,7 +83,8 @@ public class TestDelimitedRequestLog
         final HttpURI uri = new HttpURI("http://www.example.com/aaa+bbb/ccc?param=hello%20there&other=true");
 
 
-        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1)
+        final TraceTokenManager tokenManager = new TraceTokenManager();
+        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, tokenManager)
         {
             @Override
             protected long getRequestTime(Request request)
@@ -102,12 +104,13 @@ public class TestDelimitedRequestLog
         when(response.getStatus()).thenReturn(status);
         when(response.getContentCount()).thenReturn(contentLength);
 
+        tokenManager.createAndRegisterNewRequestToken();
         logger.log(request, response);
         logger.stop();
 
         String actual = Files.toString(file, Charsets.UTF_8);
-        String expected = String.format("%s\t%s\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%d\n",
-                isoFormatter.print(timestamp), ip, method, uri, user, agent, status, requestSize, contentLength, requestTime);
+        String expected = String.format("%s\t%s\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%d\t%s\n",
+                isoFormatter.print(timestamp), ip, method, uri, user, agent, status, requestSize, contentLength, requestTime, tokenManager.getCurrentRequestToken());
         Assert.assertEquals(actual, expected);
     }
 }

@@ -1,4 +1,18 @@
-Platform 0.50-SNAPSHOT
+Platform 0.51-SNAPSHOT
+
+* Trace token support for http requests
+
+The http server can now deal with request trace tokens passed in via a 
+request header (X-Proofpoint-TraceToken). The trace token is recorded
+in the request logs and is made available to application code via a
+TraceTokenManager object. If no token is provided, a new one is created
+automatically.
+ 
+To enable this functionality, simply add a dependency to
+com.proofpoint.platform:trace-token and add TraceTokenModule to the list of 
+guice modules for your application.
+
+Platform 0.50
 
 * Library Upgrades
 

@@ -1,4 +1,8 @@
-* 0.50-SNAPSHOT
+* 0.51-SNAPSHOT
+
+- [Experimental] Trace token support in http server
+
+* 0.50
 
 - Upgrade to Guava 10.0.1
 - Upgrade to TestNG 6.2.1

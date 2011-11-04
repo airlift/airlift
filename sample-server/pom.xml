@@ -78,6 +78,11 @@
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
+            <artifactId>trace-token</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
             <artifactId>jaxrs</artifactId>
         </dependency>
 

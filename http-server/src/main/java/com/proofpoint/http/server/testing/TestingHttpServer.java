@@ -23,6 +23,7 @@ import com.proofpoint.http.server.HttpServerInfo;
 import com.proofpoint.http.server.RequestStats;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.node.NodeInfo;
+import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 
 import javax.servlet.Filter;
@@ -54,12 +55,13 @@ public class TestingHttpServer extends HttpServer
                 ImmutableSet.<Filter>of(),
                 null,
                 null,
+                new TraceTokenManager(),
                 new RequestStats());
         this.httpServerInfo = httpServerInfo;
     }
 
     @Override
-    public RequestLogHandler createLogHandler(HttpServerConfig config)
+    public RequestLogHandler createLogHandler(HttpServerConfig config, TraceTokenManager tokenManager)
             throws IOException
     {
         return null;

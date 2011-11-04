@@ -92,6 +92,11 @@
         </dependency>
 
         <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>trace-token</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.codehaus.jackson</groupId>
             <artifactId>jackson-jaxrs</artifactId>
         </dependency>

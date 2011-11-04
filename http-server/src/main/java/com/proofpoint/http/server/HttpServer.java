@@ -18,6 +18,7 @@ package com.proofpoint.http.server;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.node.NodeInfo;
+import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.ConstraintMapping;
@@ -69,6 +70,7 @@ public class HttpServer
             Set<Filter> adminFilters,
             MBeanServer mbeanServer,
             LoginService loginService,
+            TraceTokenManager tokenManager,
             RequestStats stats)
         throws IOException
     {
@@ -151,6 +153,7 @@ public class HttpServer
          * server
          *    |--- statistics handler
          *           |--- context handler
+         *           |       |--- trace token filter
          *           |       |--- gzip response filter
          *           |       |--- gzip request filter
          *           |       |--- security handler
@@ -161,8 +164,8 @@ public class HttpServer
          *           \ --- the admin servlet
          */
         HandlerCollection handlers = new HandlerCollection();
-        handlers.addHandler(createServletContext(theServlet, parameters, filters, loginService, "http", "https"));
-        RequestLogHandler logHandler = createLogHandler(config);
+        handlers.addHandler(createServletContext(theServlet, parameters, filters, tokenManager, loginService, "http", "https"));
+        RequestLogHandler logHandler = createLogHandler(config, tokenManager);
         if (logHandler != null) {
             handlers.addHandler(logHandler);
         }
@@ -177,7 +180,7 @@ public class HttpServer
 
         HandlerList rootHandlers = new HandlerList();
         if (theAdminServlet != null && config.isAdminEnabled()) {
-            rootHandlers.addHandler(createServletContext(theAdminServlet, adminParameters, adminFilters, loginService, "admin"));
+            rootHandlers.addHandler(createServletContext(theAdminServlet, adminParameters, adminFilters, tokenManager, loginService, "admin"));
         }
         rootHandlers.addHandler(statsHandler);
         server.setHandler(rootHandlers);
@@ -188,10 +191,16 @@ public class HttpServer
     private static ServletContextHandler createServletContext(Servlet theServlet,
             Map<String, String> parameters,
             Set<Filter> filters,
+            TraceTokenManager tokenManager,
             LoginService loginService,
             String... connectorNames)
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
+
+        if (tokenManager != null) {
+            context.addFilter(new FilterHolder(new TraceTokenFilter(tokenManager)), "/*", null);
+        }
+
         // -- gzip response filter
         context.addFilter(GzipFilter.class, "/*", null);
         // -- gzip request filter
@@ -231,7 +240,7 @@ public class HttpServer
         return securityHandler;
     }
 
-    protected RequestLogHandler createLogHandler(HttpServerConfig config)
+    protected RequestLogHandler createLogHandler(HttpServerConfig config, TraceTokenManager tokenManager)
             throws IOException
     {
         // TODO: use custom (more easily-parseable) format
@@ -249,7 +258,7 @@ public class HttpServer
         }
 
 
-        RequestLog requestLog = new DelimitedRequestLog(config.getLogPath(), (int) config.getLogRetentionTime().convertTo(TimeUnit.DAYS));
+        RequestLog requestLog = new DelimitedRequestLog(config.getLogPath(), (int) config.getLogRetentionTime().convertTo(TimeUnit.DAYS), tokenManager);
         logHandler.setRequestLog(requestLog);
 
         return logHandler;

@@ -15,6 +15,7 @@
  */
 package com.proofpoint.http.server;
 
+import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
@@ -38,11 +39,13 @@ class DelimitedRequestLog
     private final Writer writer;
 
     private final DateTimeFormatter isoFormatter;
+    private final TraceTokenManager traceTokenManager;
 
 
-    public DelimitedRequestLog(String filename, int retainDays)
+    public DelimitedRequestLog(String filename, int retainDays, TraceTokenManager traceTokenManager)
             throws IOException
     {
+        this.traceTokenManager = traceTokenManager;
         out = new RolloverFileOutputStream(filename, true, retainDays);
         writer = new OutputStreamWriter(out);
 
@@ -67,6 +70,11 @@ class DelimitedRequestLog
             agent = "";
         }
 
+        String token = "";
+        if (traceTokenManager != null) {
+            token = traceTokenManager.getCurrentRequestToken();
+        }
+
         builder.append(isoFormatter.print(request.getTimeStamp()))
                 .append('\t')
                 .append(request.getRemoteAddr()) // TODO: handle X-Forwarded-For
@@ -86,6 +94,8 @@ class DelimitedRequestLog
                 .append(response.getContentCount())
                 .append('\t')
                 .append(getRequestTime(request))
+                .append('\t')
+                .append(token)
                 .append('\n');
 
         String line = builder.toString();
