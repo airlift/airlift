@@ -106,7 +106,7 @@ public class HttpServiceInventory
         return Iterables.filter(getServiceDescriptors(), new Predicate<ServiceDescriptor>()
         {
             @Override
-            public boolean apply(@Nullable ServiceDescriptor serviceDescriptor)
+            public boolean apply(ServiceDescriptor serviceDescriptor)
             {
                 return serviceDescriptor.getType().equals(type);
             }
@@ -118,7 +118,7 @@ public class HttpServiceInventory
         return Iterables.filter(getServiceDescriptors(), new Predicate<ServiceDescriptor>()
         {
             @Override
-            public boolean apply(@Nullable ServiceDescriptor serviceDescriptor)
+            public boolean apply(ServiceDescriptor serviceDescriptor)
             {
                 return serviceDescriptor.getType().equals(type) &&
                         serviceDescriptor.getPool().equals(pool);
