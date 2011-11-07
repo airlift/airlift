@@ -110,7 +110,7 @@ public class HttpClient
         }
     }
 
-    private class ResponseFuture<T, E extends Exception> extends AbstractCheckedFuture<T, E>
+    private static class ResponseFuture<T, E extends Exception> extends AbstractCheckedFuture<T, E>
     {
         private final Request request;
         private final ResponseHandler<T, E> responseHandler;
