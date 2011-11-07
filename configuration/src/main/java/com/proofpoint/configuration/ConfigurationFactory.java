@@ -282,7 +282,7 @@ public class ConfigurationFactory
     {
         // Get the property value
         String name = prefix + injectionPoint.getProperty();
-        String value = injectionPoint == null ? null : properties.get(name);
+        String value = properties.get(name);
 
         if (value == null) {
             return null;
