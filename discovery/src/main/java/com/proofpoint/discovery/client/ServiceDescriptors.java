@@ -35,7 +35,6 @@ public class ServiceDescriptors
             String eTag)
     {
         Preconditions.checkNotNull(type, "type is null");
-        Preconditions.checkNotNull(pool, "pool is null");
         Preconditions.checkNotNull(serviceDescriptors, "serviceDescriptors is null");
         Preconditions.checkNotNull(maxAge, "maxAge is null");
 
@@ -47,7 +46,7 @@ public class ServiceDescriptors
 
         // verify service descriptors match expected type
         for (ServiceDescriptor serviceDescriptor : this.serviceDescriptors) {
-            if (!type.equals(serviceDescriptor.getType()) || !pool.equals(serviceDescriptor.getPool())) {
+            if (!type.equals(serviceDescriptor.getType()) || (pool != null && !pool.equals(serviceDescriptor.getPool()))) {
                 throw new DiscoveryException(format("Expected %s service descriptor from pool %s, but was %s service descriptor from pool %s",
                         type,
                         pool,

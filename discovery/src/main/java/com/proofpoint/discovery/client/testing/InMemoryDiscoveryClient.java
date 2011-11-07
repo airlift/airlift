@@ -81,6 +81,25 @@ public class InMemoryDiscoveryClient implements DiscoveryAnnouncementClient, Dis
     }
 
     @Override
+    public CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(String type)
+    {
+        Preconditions.checkNotNull(type, "type is null");
+
+        ImmutableList.Builder<ServiceDescriptor> builder = ImmutableList.builder();
+        for (ServiceDescriptor serviceDescriptor : this.announcements.get()) {
+            if (serviceDescriptor.getType().equals(type)) {
+                builder.add(serviceDescriptor);
+            }
+        }
+        for (ServiceDescriptor serviceDescriptor : this.discovered.values()) {
+            if (serviceDescriptor.getType().equals(type)) {
+                builder.add(serviceDescriptor);
+            }
+        }
+        return Futures.immediateCheckedFuture(new ServiceDescriptors(type, null, builder.build(), maxAge, UUID.randomUUID().toString()));
+    }
+
+    @Override
     public CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(String type, String pool)
     {
         Preconditions.checkNotNull(type, "type is null");

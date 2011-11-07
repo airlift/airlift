@@ -67,6 +67,13 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
     }
 
     @Override
+    public CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(String type)
+    {
+        Preconditions.checkNotNull(type, "type is null");
+        return lookup(type, null, null);
+    }
+
+    @Override
     public CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(String type, String pool)
     {
         Preconditions.checkNotNull(type, "type is null");
@@ -90,8 +97,13 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
             return Futures.immediateFailedCheckedFuture(new DiscoveryException("No discovery servers are available"));
         }
 
+        uri = URI.create(uri + "/v1/service/" + type + "/");
+        if (pool != null) {
+            uri = uri.resolve(pool);
+        }
+
         RequestBuilder requestBuilder = prepareGet()
-                .setUri(URI.create(uri + "/v1/service/" + type + "/" + pool))
+                .setUri(uri)
                 .setHeader("User-Agent", nodeInfo.getNodeId());
         if (serviceDescriptors != null && serviceDescriptors.getETag() != null) {
             requestBuilder.setHeader(HttpHeaders.ETAG, serviceDescriptors.getETag());
