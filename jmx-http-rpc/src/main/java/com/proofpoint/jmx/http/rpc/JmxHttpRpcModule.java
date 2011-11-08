@@ -12,6 +12,7 @@ import com.proofpoint.discovery.client.ServiceAnnouncement;
 import com.proofpoint.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
 import com.proofpoint.http.server.HttpServerInfo;
 import com.proofpoint.http.server.TheAdminServlet;
+import com.proofpoint.node.NodeInfo;
 
 import javax.servlet.Servlet;
 
@@ -47,7 +48,7 @@ public class JmxHttpRpcModule implements Module
         binder.bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(bindingAnnotation).toInstance(ImmutableMap.<String, String>of());
 
         ServiceAnnouncementBuilder serviceAnnouncementBuilder = serviceAnnouncement("jmx-http-rpc");
-        discoveryBinder(binder).bindServiceAnnouncement(new HttpAdminAnnouncementProvider(serviceAnnouncementBuilder));
+        discoveryBinder(binder).bindServiceAnnouncement(new JmxHttpRpcAnnouncementProvider(serviceAnnouncementBuilder));
 
         bindConfig(binder).to(JmxHttpRpcConfig.class);
     }
@@ -59,12 +60,13 @@ public class JmxHttpRpcModule implements Module
     }
 
 
-    static class HttpAdminAnnouncementProvider implements Provider<ServiceAnnouncement>
+    static class JmxHttpRpcAnnouncementProvider implements Provider<ServiceAnnouncement>
     {
         private final ServiceAnnouncementBuilder builder;
         private HttpServerInfo httpServerInfo;
+        private NodeInfo nodeInfo;
 
-        public HttpAdminAnnouncementProvider(ServiceAnnouncementBuilder serviceAnnouncementBuilder)
+        public JmxHttpRpcAnnouncementProvider(ServiceAnnouncementBuilder serviceAnnouncementBuilder)
         {
             builder = serviceAnnouncementBuilder;
         }
@@ -73,6 +75,12 @@ public class JmxHttpRpcModule implements Module
         public synchronized void setHttpServerInfo(HttpServerInfo httpServerInfo)
         {
             this.httpServerInfo = httpServerInfo;
+        }
+
+        @Inject
+        public synchronized void setNodeInfo(NodeInfo nodeInfo)
+        {
+            this.nodeInfo = nodeInfo;
         }
 
         @Override
@@ -85,6 +93,12 @@ public class JmxHttpRpcModule implements Module
                 } else if (adminUri.getScheme().equals("https")) {
                     builder.addProperty("https", adminUri.toString());
                 }
+            }
+            if (nodeInfo.getBinarySpec() != null) {
+                builder.addProperty("binary", nodeInfo.getBinarySpec());
+            }
+            if (nodeInfo.getConfigSpec() != null) {
+                builder.addProperty("config", nodeInfo.getConfigSpec());
             }
             return builder.build();
         }

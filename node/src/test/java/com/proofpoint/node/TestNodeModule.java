@@ -24,6 +24,9 @@ public class TestNodeModule
         Assert.assertEquals(nodeInfo.getEnvironment(), "environment");
         Assert.assertEquals(nodeInfo.getPool(), "general");
         Assert.assertNotNull(nodeInfo.getNodeId());
+        Assert.assertNotNull(nodeInfo.getLocation());
+        Assert.assertNull(nodeInfo.getBinarySpec());
+        Assert.assertNull(nodeInfo.getConfigSpec());
         Assert.assertNotNull(nodeInfo.getInstanceId());
 
         Assertions.assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
@@ -46,12 +49,18 @@ public class TestNodeModule
         String environment = "environment";
         String pool = "pool";
         String nodeId = "nodeId";
+        String location = "location";
+        String binarySpec = "binary";
+        String configSpec = "config";
         String publicIp = "10.0.0.22";
         ConfigurationFactory configFactory = new ConfigurationFactory(ImmutableMap.<String, String>builder()
                 .put("node.environment", environment)
                 .put("node.pool", pool)
                 .put("node.id", nodeId)
                 .put("node.ip", publicIp)
+                .put("node.location", location)
+                .put("node.binary-spec", binarySpec)
+                .put("node.config-spec", configSpec)
                 .build()
         );
 
@@ -61,6 +70,9 @@ public class TestNodeModule
         Assert.assertEquals(nodeInfo.getEnvironment(), environment);
         Assert.assertEquals(nodeInfo.getPool(), pool);
         Assert.assertEquals(nodeInfo.getNodeId(), nodeId);
+        Assert.assertEquals(nodeInfo.getLocation(), location);
+        Assert.assertEquals(nodeInfo.getBinarySpec(), binarySpec);
+        Assert.assertEquals(nodeInfo.getConfigSpec(), configSpec);
         Assert.assertNotNull(nodeInfo.getInstanceId());
 
         Assertions.assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());

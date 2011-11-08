@@ -17,7 +17,9 @@ public class TestNodeConfig
                 .setPool("general")
                 .setNodeId(null)
                 .setNodeIp((String) null)
-                .setLocation(null));
+                .setLocation(null)
+                .setBinarySpec(null)
+                .setConfigSpec(null));
     }
 
     @Test
@@ -29,6 +31,8 @@ public class TestNodeConfig
                 .put("node.id", "nodeId")
                 .put("node.ip", "10.9.8.7")
                 .put("node.location", "location")
+                .put("node.binary-spec", "binary")
+                .put("node.config-spec", "config")
                 .build();
 
         NodeConfig expected = new NodeConfig()
@@ -36,7 +40,9 @@ public class TestNodeConfig
                 .setPool("pool")
                 .setNodeId("nodeId")
                 .setNodeIp(InetAddresses.forString("10.9.8.7"))
-                .setLocation("location");
+                .setLocation("location")
+                .setBinarySpec("binary")
+                .setConfigSpec("config");
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

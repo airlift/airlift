@@ -18,6 +18,8 @@ public class NodeConfig
     private String nodeId;
     private String location;
     private InetAddress nodeIp;
+    private String binarySpec;
+    private String configSpec;
 
     @NotNull
     @Pattern(regexp = ENV_REGEXP, message = "is malformed")
@@ -89,6 +91,30 @@ public class NodeConfig
         if (nodeIp != null) {
             this.nodeIp = InetAddresses.forString(nodeIp);
         }
+        return this;
+    }
+
+    public String getBinarySpec()
+    {
+        return binarySpec;
+    }
+
+    @Config("node.binary-spec")
+    public NodeConfig setBinarySpec(String binarySpec)
+    {
+        this.binarySpec = binarySpec;
+        return this;
+    }
+
+    public String getConfigSpec()
+    {
+        return configSpec;
+    }
+
+    @Config("node.config-spec")
+    public NodeConfig setConfigSpec(String configSpec)
+    {
+        this.configSpec = configSpec;
         return this;
     }
 }

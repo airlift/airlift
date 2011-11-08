@@ -24,6 +24,8 @@ public class NodeInfo
     private final String pool;
     private final String nodeId;
     private final String location;
+    private final String binarySpec;
+    private final String configSpec;
     private final String instanceId = UUID.randomUUID().toString();
     private final InetAddress publicIp;
     private final InetAddress bindIp;
@@ -37,10 +39,10 @@ public class NodeInfo
     @Inject
     public NodeInfo(NodeConfig config)
     {
-        this(config.getEnvironment(), config.getPool(), config.getNodeId(), config.getNodeIp(), config.getLocation());
+        this(config.getEnvironment(), config.getPool(), config.getNodeId(), config.getNodeIp(), config.getLocation(), config.getBinarySpec(), config.getConfigSpec());
     }
 
-    public NodeInfo(String environment, String pool, String nodeId, InetAddress nodeIp, String location)
+    public NodeInfo(String environment, String pool, String nodeId, InetAddress nodeIp, String location, String binarySpec, String configSpec)
     {
         Preconditions.checkNotNull(environment, "environment is null");
         Preconditions.checkNotNull(pool, "pool is null");
@@ -63,6 +65,9 @@ public class NodeInfo
         else {
             this.location = "/" + this.nodeId;
         }
+
+        this.binarySpec = binarySpec;
+        this.configSpec = configSpec;
 
         if (nodeIp != null) {
             this.publicIp = nodeIp;
@@ -109,6 +114,24 @@ public class NodeInfo
     public String getLocation()
     {
         return location;
+    }
+
+    /**
+     * Binary this JavaVM is running.
+     */
+    @Managed
+    public String getBinarySpec()
+    {
+        return binarySpec;
+    }
+
+    /**
+     * Configuration this JavaVM is running.
+     */
+    @Managed
+    public String getConfigSpec()
+    {
+        return configSpec;
     }
 
     /**

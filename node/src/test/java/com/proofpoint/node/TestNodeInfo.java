@@ -18,12 +18,18 @@ public class TestNodeInfo
         long testStartTime = System.currentTimeMillis();
 
         String nodeId = "nodeId";
+        String location = "location";
+        String binarySpec = "binary";
+        String configSpec = "config";
         InetAddress publicIp = InetAddresses.forString("10.0.0.22");
 
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, nodeId, publicIp, null);
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, nodeId, publicIp, location, binarySpec, configSpec);
         Assert.assertEquals(nodeInfo.getEnvironment(), ENVIRONMENT);
         Assert.assertEquals(nodeInfo.getPool(), POOL);
         Assert.assertEquals(nodeInfo.getNodeId(), nodeId);
+        Assert.assertEquals(nodeInfo.getLocation(), location);
+        Assert.assertEquals(nodeInfo.getBinarySpec(), binarySpec);
+        Assert.assertEquals(nodeInfo.getConfigSpec(), configSpec);
         Assert.assertNotNull(nodeInfo.getInstanceId());
 
         Assertions.assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
@@ -39,12 +45,12 @@ public class TestNodeInfo
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testInvalidEnvironment()
     {
-        new NodeInfo("ENV", POOL, null, null, null);
+        new NodeInfo("ENV", POOL, null, null, null, null, null);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testInvalidPool()
     {
-        new NodeInfo(ENVIRONMENT, "POOL", null, null, null);
+        new NodeInfo(ENVIRONMENT, "POOL", null, null, null, null, null);
     }
 }
