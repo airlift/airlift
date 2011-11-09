@@ -1,8 +1,12 @@
 package com.proofpoint.event.client;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
 import org.joda.time.DateTime;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @SuppressWarnings("UnusedDeclaration")
@@ -42,6 +46,36 @@ public class NestedDummyEventClass
     public List<NestedPart> getNestedParts()
     {
         return nestedParts;
+    }
+
+    @EventField
+    public Map<String, String> getNamedStrings()
+    {
+        ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
+        for (String s : strings) {
+            builder.put(s, s);
+        }
+        return builder.build();
+    }
+
+    @EventField
+    public Multimap<String,String> getNamedStringList()
+    {
+        ImmutableMultimap.Builder<String, String> builder = ImmutableMultimap.builder();
+        for (String s : strings) {
+            builder.putAll(s, s, s, s); // three copies
+        }
+        return builder.build();
+    }
+
+    @EventField
+    public Map<String, NestedPart> getNamedParts()
+    {
+        ImmutableMap.Builder<String, NestedPart> builder = ImmutableMap.builder();
+        for (NestedPart part : nestedParts) {
+            builder.put(part.getName(), part);
+        }
+        return builder.build();
     }
 
     @EventType

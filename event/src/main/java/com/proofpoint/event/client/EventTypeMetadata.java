@@ -23,6 +23,7 @@ import static com.google.common.collect.Iterables.getFirst;
 import static com.google.common.collect.Maps.newTreeMap;
 import static com.proofpoint.event.client.AnnotationUtils.findAnnotatedMethods;
 import static com.proofpoint.event.client.EventDataType.getEventDataType;
+import static com.proofpoint.event.client.EventFieldMetadata.ContainerType;
 import static com.proofpoint.event.client.TypeParameterUtils.getTypeParameters;
 
 class EventTypeMetadata<T>
@@ -88,15 +89,24 @@ class EventTypeMetadata<T>
             }
 
             Class<?> dataType = method.getReturnType();
-            boolean iterable = false;
+            ContainerType containerType = null;
 
-            // extract iterable type and replace data type with it
-            if (isIterable(method.getReturnType())) {
+            // extract container type and replace data type with it
+            if (isIterable(dataType)) {
                 dataType = extractIterableType(method);
-                if (dataType == null) {
-                    continue;
-                }
-                iterable = true;
+                containerType = ContainerType.ITERABLE;
+            }
+            else if (isMap(dataType)) {
+                dataType = extractMapType(method, Map.class);
+                containerType = ContainerType.MAP;
+            }
+            else if (isMultimap(dataType)) {
+                dataType = extractMapType(method, Multimap.class);
+                containerType = ContainerType.MULTIMAP;
+            }
+
+            if (dataType == null) {
+                continue;
             }
 
             EventDataType eventDataType = null;
@@ -108,7 +118,8 @@ class EventTypeMetadata<T>
             else {
                 eventDataType = getEventDataType(dataType);
                 if (eventDataType == null) {
-                    addMethodError("%s type [%s] is not supported", method, (iterable ? "iterable" : "return"), dataType);
+                    Object typeSource = (containerType != null) ? containerType : "return";
+                    addMethodError("%s type [%s] is not supported", method, typeSource, dataType);
                     continue;
                 }
             }
@@ -119,8 +130,8 @@ class EventTypeMetadata<T>
 
             if (eventField.fieldMapping() != EventFieldMapping.DATA) {
                 // validate special fields
-                if (iterable) {
-                    addMethodError("non-DATA fieldMapping (%s) not allowed for iterable", method, eventField.fieldMapping());
+                if (containerType != null) {
+                    addMethodError("non-DATA fieldMapping (%s) not allowed for %s", method, eventField.fieldMapping(), containerType);
                     continue;
                 }
                 if (nestedEvent) {
@@ -150,7 +161,7 @@ class EventTypeMetadata<T>
                 }
             }
 
-            EventFieldMetadata eventFieldMetadata = new EventFieldMetadata(fieldName, v1FieldName, method, eventDataType, nestedType, iterable);
+            EventFieldMetadata eventFieldMetadata = new EventFieldMetadata(fieldName, v1FieldName, method, eventDataType, nestedType, containerType);
             if (eventField.fieldMapping() == EventFieldMapping.DATA) {
                 fields.put(fieldName, eventFieldMetadata);
             }
@@ -219,6 +230,34 @@ class EventTypeMetadata<T>
         return (Class<?>) type;
     }
 
+    private Class<?> extractMapType(Method method, Class<?> mapClass)
+    {
+        String className = mapClass.getSimpleName();
+        Type[] types = getTypeParameters(mapClass, method.getGenericReturnType());
+        if ((types == null) || (types.length != 2)) {
+            addMethodError("Unable to get type parameter for %s [%s]", method, className, method.getGenericReturnType());
+            return null;
+        }
+        Type keyType = types[0];
+        Type valueType = types[1];
+        if (!(keyType instanceof Class)) {
+            addMethodError("%s key type parameter [%s] must be an exact type", method, className, keyType);
+            return null;
+        }
+        if (!(valueType instanceof Class)) {
+            addMethodError("%s value type parameter [%s] must be an exact type", method, className, valueType);
+            return null;
+        }
+        if (!isString((Class<?>) keyType)) {
+            addMethodError("%s key type parameter [%s] must be a String", method, className, keyType);
+        }
+        if (isIterable((Class<?>) valueType)) {
+            addMethodError("%s value type parameter [%s] cannot be iterable", method, className, valueType);
+            return null;
+        }
+        return (Class<?>) valueType;
+    }
+
     @SuppressWarnings("unchecked")
     private EventTypeMetadata<?> getNestedEventTypeMetadata(Class<?> eventClass, Map<Class<?>, EventTypeMetadata<?>> metadataClasses)
     {
@@ -260,9 +299,24 @@ class EventTypeMetadata<T>
         return name;
     }
 
+    private static boolean isString(Class<?> type)
+    {
+        return String.class.isAssignableFrom(type);
+    }
+
     private static boolean isIterable(Class<?> type)
     {
         return Iterable.class.isAssignableFrom(type);
+    }
+
+    private static boolean isMap(Class<?> type)
+    {
+        return Map.class.isAssignableFrom(type);
+    }
+
+    private static boolean isMultimap(Class<?> type)
+    {
+        return Multimap.class.isAssignableFrom(type);
     }
 
     private static boolean isNestedEvent(Class<?> type)

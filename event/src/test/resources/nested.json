@@ -6,6 +6,25 @@
         "timestamp":"2011-09-09T01:48:08.888Z",
         "data":{
             "intValue":9999,
+            "namedParts":{
+                "listFirst":{
+                    "name":"listFirst",
+                    "part":{
+                        "name":"listSecond"
+                    }
+                },
+                "listThird":{
+                    "name":"listThird"
+                }
+            },
+            "namedStringList":{
+                "abc":["abc","abc","abc"],
+                "xyz":["xyz","xyz","xyz"]
+            },
+            "namedStrings":{
+                "abc":"abc",
+                "xyz":"xyz"
+            },
             "nestedPart":{
                 "name":"first",
                 "part":{

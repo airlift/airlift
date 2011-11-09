@@ -1,6 +1,7 @@
 * 0.51-SNAPSHOT
 
 - [Experimental] Trace token support in http server
+- Support Map and Multimap for event fields
 
 * 0.50
 

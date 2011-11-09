@@ -12,6 +12,14 @@ To enable this functionality, simply add a dependency to
 com.proofpoint.platform:trace-token and add TraceTokenModule to the list of 
 guice modules for your application.
 
+* Event fields support Map and Multimap
+
+In addition to Iterable, the event client now supports event fields of type
+java.util.Map and com.google.common.collect.Multimap. The map key type must
+be java.lang.String, while the value type can be any standard supported type
+or nested type (i.e. any type that is supported by Iterable).
+
+
 Platform 0.50
 
 * Library Upgrades
