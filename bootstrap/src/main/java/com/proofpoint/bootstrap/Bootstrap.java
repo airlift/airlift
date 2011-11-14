@@ -142,6 +142,9 @@ public class Bootstrap
         unusedProperties.putAll(configFileProperties);
         unusedProperties.keySet().removeAll(configurationFactory.getUsedProperties());
 
+        // Log effective configuration
+        logConfiguration(configurationFactory, unusedProperties);
+
         // system modules
         Builder<Module> moduleList = ImmutableList.builder();
         moduleList.add(new LifeCycleModule());
@@ -187,9 +190,6 @@ public class Bootstrap
 
         // Create the life-cycle manager
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
-
-        // Log effective configuration
-        logConfiguration(configurationFactory, unusedProperties);
 
         // Log managed objects
         logJMX(injector);
