@@ -272,13 +272,21 @@ end
 commands = [:run, :start, :stop, :restart, :kill, :status]
 install_path = Pathname.new(__FILE__).parent.parent.expand_path
 
+legacy_log_properties_file = File.join(install_path, 'etc', 'log.config')
+log_properties_file = File.join(install_path, 'etc', 'log.properties')
+
+if (!File.readable?(log_properties_file) && File.readable?(legacy_log_properties_file))
+  log_properties_file = legacy_log_properties_file
+  warn "Did not find a log.properties, but found a log.config instead.  log.config is deprecated, please use log.properties."
+end
+
 # initialize defaults
 options = {
         :node_properties_path => File.join(install_path, 'etc', 'node.properties'),
         :jvm_config_path => File.join(install_path, 'etc', 'jvm.config'),
         :config_path => File.join(install_path, 'etc', 'config.properties'),
         :data_dir => install_path,
-        :log_levels_path => File.join(install_path, 'etc', 'log.config'),
+        :log_levels_path => log_properties_file,
         :install_path => install_path,
         :system_properties => {},
         }
