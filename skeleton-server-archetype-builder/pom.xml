@@ -3,7 +3,7 @@
     <parent>
         <artifactId>platform</artifactId>
         <groupId>com.proofpoint.platform</groupId>
-        <version>0.51</version>
+        <version>0.52-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
