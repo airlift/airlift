@@ -110,7 +110,7 @@ public class CachingServiceSelector implements ServiceSelector
                     if (serverUp.compareAndSet(true, false)) {
                         log.error("Cannot connect to discovery server for refresh (%s/%s): %s", type, pool, e.getMessage());
                     }
-                    log.debug(e, "Cannot connect to discovery server for refresh (%s/%s): %s", type, pool);
+                    log.debug(e, "Cannot connect to discovery server for refresh (%s/%s)", type, pool);
                 }
                 finally {
                     scheduleRefresh(delay);
