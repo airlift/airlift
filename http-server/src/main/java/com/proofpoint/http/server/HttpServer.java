@@ -80,6 +80,7 @@ public class HttpServer
         Preconditions.checkNotNull(theServlet, "theServlet is null");
 
         Server server = new Server();
+        server.setSendServerVersion(false);
 
         if (mbeanServer != null) {
             // export jmx mbeans if a server was provided
