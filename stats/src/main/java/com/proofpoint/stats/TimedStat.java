@@ -20,24 +20,17 @@ import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math.stat.descriptive.SynchronizedDescriptiveStatistics;
 import org.weakref.jmx.Managed;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class TimedStat
 {
-    private final DescriptiveStatistics timedStatistics;
-    private final AtomicLong count = new AtomicLong();
-
-    public TimedStat()
-    {
-        this(5000);
-    }
-
-    public TimedStat(int windowSize)
-    {
-        timedStatistics = new SynchronizedDescriptiveStatistics(windowSize);
-    }
+    private final AtomicLong sum = new AtomicLong(0);
+    private final AtomicLong count = new AtomicLong(0);
+    private final ExponentiallyDecayingSample sample = new ExponentiallyDecayingSample(1028, 0.015);
 
     @Managed
     public long getCount()
@@ -46,21 +39,34 @@ public class TimedStat
     }
 
     @Managed
+    public double getSum()
+    {
+        return sum.get();
+    }
+
+    @Managed
     public double getMin()
     {
-        return timedStatistics.getMin();
+        return Collections.min(sample.values());
     }
 
     @Managed
     public double getMax()
     {
-        return timedStatistics.getMax();
+        return Collections.max(sample.values());
     }
 
     @Managed
     public double getMean()
     {
-        return timedStatistics.getMean();
+        List<Long> values = sample.values();
+
+        long sum = 0;
+        for (long value : values) {
+            sum += value;
+        }
+
+        return sum * 1.0 / values.size();
     }
 
     @Managed
@@ -69,31 +75,31 @@ public class TimedStat
         if (percentile < 0 || percentile > 1) {
             throw new IllegalArgumentException("percentile must be between 0 and 1");
         }
-        return timedStatistics.getPercentile(percentile * 100);
+        return sample.percentiles(percentile)[0];
     }
 
     @Managed(description = "50th Percentile Measurement")
     public double getTP50()
     {
-        return timedStatistics.getPercentile(50);
+        return sample.percentiles(0.5)[0];
     }
 
     @Managed(description = "90th Percentile Measurement")
     public double getTP90()
     {
-        return timedStatistics.getPercentile(90);
+        return sample.percentiles(0.9)[0];
     }
 
     @Managed(description = "99th Percentile Measurement")
     public double getTP99()
     {
-        return timedStatistics.getPercentile(99);
+        return sample.percentiles(0.99)[0];
     }
 
     @Managed(description = "99.9th Percentile Measurement")
     public double getTP999()
     {
-        return timedStatistics.getPercentile(99.9);
+        return sample.percentiles(0.999)[0];
     }
 
     public void addValue(double value, TimeUnit timeUnit)
@@ -103,7 +109,8 @@ public class TimedStat
 
     public void addValue(Duration duration)
     {
-        timedStatistics.addValue(duration.toMillis());
+        sample.update((long) duration.toMillis());
+        sum.addAndGet((long) duration.toMillis());
         count.incrementAndGet();
     }
 
