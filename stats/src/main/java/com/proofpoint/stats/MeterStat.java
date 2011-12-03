@@ -57,7 +57,7 @@ public class MeterStat
         oneMinute.update(value);
         fiveMinute.update(value);
         fifteenMinute.update(value);
-        sum.incrementAndGet();
+        sum.addAndGet(value);
     }
 
     @Managed
