@@ -1,5 +1,6 @@
 package com.proofpoint.stats;
 
+import com.google.common.annotations.Beta;
 import org.weakref.jmx.Managed;
 
 import javax.annotation.PostConstruct;
@@ -9,6 +10,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+@Beta
 public class CounterStat
 {
     private final AtomicLong count = new AtomicLong(0);

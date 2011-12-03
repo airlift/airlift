@@ -1,5 +1,6 @@
 package com.proofpoint.stats;
 
+import com.google.common.annotations.Beta;
 import org.weakref.jmx.Managed;
 
 import javax.annotation.PostConstruct;
@@ -13,6 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.Math.floor;
 
+@Beta
 public class MeterStat
 {
     private final AtomicLong sum = new AtomicLong(0);
