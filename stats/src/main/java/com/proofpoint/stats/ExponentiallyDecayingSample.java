@@ -22,6 +22,7 @@ Copied from https://github.com/codahale/metrics
 package com.proofpoint.stats;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -188,10 +189,7 @@ class ExponentiallyDecayingSample
     public double[] percentiles(double... percentiles)
     {
         final double[] scores = new double[percentiles.length];
-        for (int i = 0; i < scores.length; i++) {
-            scores[i] = 0.0;
-
-        }
+        Arrays.fill(scores, Double.NaN);
 
         final List<Long> values = this.values();
         if (values.size() > 0) {

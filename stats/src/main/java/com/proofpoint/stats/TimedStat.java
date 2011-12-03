@@ -47,13 +47,23 @@ public class TimedStat
     @Managed
     public double getMin()
     {
-        return Collections.min(sample.values());
+        List<Long> values = sample.values();
+        if (!values.isEmpty()) {
+            return Collections.min(values);
+        }
+
+        return Double.NaN;
     }
 
     @Managed
     public double getMax()
     {
-        return Collections.max(sample.values());
+        List<Long> values = sample.values();
+        if (!values.isEmpty()) {
+            return Collections.max(values);
+        }
+
+        return Double.NaN;
     }
 
     @Managed
@@ -61,12 +71,16 @@ public class TimedStat
     {
         List<Long> values = sample.values();
 
-        long sum = 0;
-        for (long value : values) {
-            sum += value;
+        if (!values.isEmpty()) {
+            long sum = 0;
+            for (long value : values) {
+                sum += value;
+            }
+
+            return sum * 1.0 / values.size();
         }
 
-        return sum * 1.0 / values.size();
+        return Double.NaN;
     }
 
     @Managed
