@@ -114,25 +114,25 @@ public class MeterStat
         return fifteenMinute.rate(TimeUnit.SECONDS);
     }
 
-    @Managed
+    @Managed(description = "50th Percentile Measurement")
     public double getTP50()
     {
         return sample.percentiles(0.5)[0];
     }
 
-    @Managed
+    @Managed(description = "90th Percentile Measurement")
     public double getTP90()
     {
         return sample.percentiles(0.9)[0];
     }
 
-    @Managed
+    @Managed(description = "99th Percentile Measurement")
     public double getTP99()
     {
         return sample.percentiles(0.99)[0];
     }
 
-    @Managed
+    @Managed(description = "99.9th Percentile Measurement")
     public double getTP999()
     {
         return sample.percentiles(0.999)[0];
