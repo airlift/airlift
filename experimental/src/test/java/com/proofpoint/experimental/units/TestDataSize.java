@@ -29,6 +29,13 @@ public class TestDataSize
         assertEquals(size.getValue(toUnit), factor);
     }
 
+    @Test(dataProvider = "conversions")
+    public void testConvertToMostSuccinctDataSize(DataSize.Unit unit, DataSize.Unit toUnit, double factor)
+    {
+        DataSize size = new DataSize(factor, toUnit);
+        assertEquals(size.convertToMostSuccinctDataSize(), new DataSize(1, unit));
+    }
+
     @Test
     public void testEquivalence()
     {

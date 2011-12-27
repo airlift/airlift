@@ -64,6 +64,20 @@ public class DataSize
         return new DataSize(getValue(unit), unit);
     }
 
+    public DataSize convertToMostSuccinctDataSize()
+    {
+        Unit unitToUse = Unit.BYTE;
+        for(Unit unitToTest : Unit.values()) {
+            if (getValue(unitToTest) > 1) {
+                unitToUse = unitToTest;
+            }
+            else {
+                break;
+            }
+        }
+        return convertTo(unitToUse);
+    }
+
     public String toString()
     {
         if (floor(value) == value) {
@@ -128,6 +142,7 @@ public class DataSize
 
     public enum Unit
     {
+        //This order is important, it should be in increasing magnitude.
         BYTE(1L, "B"),
         KILOBYTE(1L << 10, "kB"),
         MEGABYTE(1L << 20, "MB"),
