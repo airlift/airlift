@@ -40,6 +40,8 @@
                 <exclude>.*.swp</exclude>
                 <exclude>.*.swo</exclude>
                 <exclude>log/**</exclude>
+                <exclude>tmp/**</exclude>
+                <exclude>.rvmrc</exclude>
             </excludes>
         </fileSet>
     </fileSets>
