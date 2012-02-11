@@ -63,7 +63,7 @@ public class EmbeddedCassandraServer
                 .put("commitlog_sync_period_in_ms", "10000") // TODO: make configurable
                 .put("disk_access_mode", "auto")
                 .put("storage_port", config.getStoragePort())
-                .put("listen_address", InetAddresses.toUriString(nodeInfo.getPublicIp()))
+                .put("listen_address", InetAddresses.toUriString(nodeInfo.getInternalIp()))
                 .put("rpc_address", InetAddresses.toUriString(rpcAddress))
                 .put("rpc_port", rpcPort)
                 .put("endpoint_snitch", "org.apache.cassandra.locator.SimpleSnitch") // TODO: make configurable

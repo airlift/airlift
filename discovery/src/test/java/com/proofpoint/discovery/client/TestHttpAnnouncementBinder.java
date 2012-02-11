@@ -11,9 +11,7 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.discovery.client.DiscoveryBinder;
 import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
-import com.proofpoint.discovery.client.ServiceAnnouncement;
 import com.proofpoint.http.server.HttpServerConfig;
 import com.proofpoint.http.server.HttpServerInfo;
 import com.proofpoint.node.NodeInfo;
@@ -44,7 +42,8 @@ public class TestHttpAnnouncementBinder
 
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
         ServiceAnnouncement announcement = serviceAnnouncement("apple")
-                .addProperty("http", "http://" + nodeInfo.getPublicIp().getHostAddress() + ":4444")
+                .addProperty("http", "http://" + nodeInfo.getInternalIp().getHostAddress() + ":4444")
+                .addProperty("http-external", "http://" + nodeInfo.getExternalAddress() + ":4444")
                 .build();
 
         Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() { }));
@@ -69,7 +68,8 @@ public class TestHttpAnnouncementBinder
 
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
         ServiceAnnouncement announcement = serviceAnnouncement("apple")
-                .addProperty("https", "https://" + nodeInfo.getPublicIp().getHostAddress() + ":5555")
+                .addProperty("https", "https://" + nodeInfo.getInternalIp().getHostAddress() + ":5555")
+                .addProperty("https-external", "https://" + nodeInfo.getExternalAddress() + ":5555")
                 .build();
 
         Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() { }));
@@ -94,8 +94,10 @@ public class TestHttpAnnouncementBinder
 
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
         ServiceAnnouncement announcement = serviceAnnouncement("apple")
-                .addProperty("http", "http://" + nodeInfo.getPublicIp().getHostAddress() + ":4444")
-                .addProperty("https", "https://" + nodeInfo.getPublicIp().getHostAddress() + ":5555")
+                .addProperty("http", "http://" + nodeInfo.getInternalIp().getHostAddress() + ":4444")
+                .addProperty("http-external", "http://" + nodeInfo.getExternalAddress() + ":4444")
+                .addProperty("https", "https://" + nodeInfo.getInternalIp().getHostAddress() + ":5555")
+                .addProperty("https-external", "https://" + nodeInfo.getExternalAddress() + ":5555")
                 .build();
 
         Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() { }));
@@ -121,8 +123,10 @@ public class TestHttpAnnouncementBinder
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
         ServiceAnnouncement announcement = serviceAnnouncement("apple")
                 .addProperty("a", "apple")
-                .addProperty("http", "http://" + nodeInfo.getPublicIp().getHostAddress() + ":4444")
-                .addProperty("https", "https://" + nodeInfo.getPublicIp().getHostAddress() + ":5555")
+                .addProperty("http", "http://" + nodeInfo.getInternalIp().getHostAddress() + ":4444")
+                .addProperty("http-external", "http://" + nodeInfo.getExternalAddress() + ":4444")
+                .addProperty("https", "https://" + nodeInfo.getInternalIp().getHostAddress() + ":5555")
+                .addProperty("https-external", "https://" + nodeInfo.getExternalAddress() + ":5555")
                 .build();
 
         Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() { }));

@@ -17,7 +17,9 @@ public class NodeConfig
     private String pool = "general";
     private String nodeId;
     private String location;
-    private InetAddress nodeIp;
+    private InetAddress nodeInternalIp;
+    private String nodeExternalAddress;
+    private InetAddress nodeBindIp;
     private String binarySpec;
     private String configSpec;
 
@@ -73,23 +75,55 @@ public class NodeConfig
         return this;
     }
 
-    public InetAddress getNodeIp()
+    public InetAddress getNodeInternalIp()
     {
-        return nodeIp;
+        return nodeInternalIp;
     }
 
-    public NodeConfig setNodeIp(InetAddress nodeIp)
+    public NodeConfig setNodeInternalIp(InetAddress nodeInternalIp)
     {
-        this.nodeIp = nodeIp;
+        this.nodeInternalIp = nodeInternalIp;
         return this;
     }
 
     @Config("node.ip")
     @LegacyConfig({"http-server.ip", "jetty.ip"})
-    public NodeConfig setNodeIp(String nodeIp)
+    public NodeConfig setNodeInternalIp(String nodeInternalIp)
     {
-        if (nodeIp != null) {
-            this.nodeIp = InetAddresses.forString(nodeIp);
+        if (nodeInternalIp != null) {
+            this.nodeInternalIp = InetAddresses.forString(nodeInternalIp);
+        }
+        return this;
+    }
+
+    public String getNodeExternalAddress()
+    {
+        return nodeExternalAddress;
+    }
+
+    @Config("node.external-address")
+    public NodeConfig setNodeExternalAddress(String nodeExternalAddress)
+    {
+        this.nodeExternalAddress = nodeExternalAddress;
+        return this;
+    }
+
+    public InetAddress getNodeBindIp()
+    {
+        return nodeBindIp;
+    }
+
+    public NodeConfig setNodeBindIp(InetAddress nodeBindIp)
+    {
+        this.nodeBindIp = nodeBindIp;
+        return this;
+    }
+
+    @Config("node.bind-ip")
+    public NodeConfig setNodeBindIp(String nodeBindIp)
+    {
+        if (nodeBindIp != null) {
+            this.nodeBindIp = InetAddresses.forString(nodeBindIp);
         }
         return this;
     }

@@ -90,8 +90,10 @@ public class JmxHttpRpcModule implements Module
                 URI adminUri = httpServerInfo.getAdminUri();
                 if (adminUri.getScheme().equals("http")) {
                     builder.addProperty("http", adminUri.toString());
+                    builder.addProperty("http-external", httpServerInfo.getAdminExternalUri().toString());
                 } else if (adminUri.getScheme().equals("https")) {
                     builder.addProperty("https", adminUri.toString());
+                    builder.addProperty("https-external", httpServerInfo.getAdminExternalUri().toString());
                 }
             }
             if (nodeInfo.getBinarySpec() != null) {

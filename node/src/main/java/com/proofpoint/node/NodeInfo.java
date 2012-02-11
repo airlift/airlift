@@ -27,7 +27,8 @@ public class NodeInfo
     private final String binarySpec;
     private final String configSpec;
     private final String instanceId = UUID.randomUUID().toString();
-    private final InetAddress publicIp;
+    private final InetAddress internalIp;
+    private final String externalAddress;
     private final InetAddress bindIp;
     private final long startTime = System.currentTimeMillis();
 
@@ -39,10 +40,27 @@ public class NodeInfo
     @Inject
     public NodeInfo(NodeConfig config)
     {
-        this(config.getEnvironment(), config.getPool(), config.getNodeId(), config.getNodeIp(), config.getLocation(), config.getBinarySpec(), config.getConfigSpec());
+        this(config.getEnvironment(),
+                config.getPool(),
+                config.getNodeId(),
+                config.getNodeInternalIp(),
+                config.getNodeBindIp(),
+                config.getNodeExternalAddress(),
+                config.getLocation(),
+                config.getBinarySpec(),
+                config.getConfigSpec()
+        );
     }
 
-    public NodeInfo(String environment, String pool, String nodeId, InetAddress nodeIp, String location, String binarySpec, String configSpec)
+    public NodeInfo(String environment,
+            String pool,
+            String nodeId,
+            InetAddress internalIp,
+            InetAddress bindIp,
+            String externalAddress,
+            String location,
+            String binarySpec,
+            String configSpec)
     {
         Preconditions.checkNotNull(environment, "environment is null");
         Preconditions.checkNotNull(pool, "pool is null");
@@ -69,13 +87,25 @@ public class NodeInfo
         this.binarySpec = binarySpec;
         this.configSpec = configSpec;
 
-        if (nodeIp != null) {
-            this.publicIp = nodeIp;
-            this.bindIp = nodeIp;
+        if (internalIp != null) {
+            this.internalIp = internalIp;
         }
         else {
-            this.publicIp = findPublicIp();
+            this.internalIp = findPublicIp();
+        }
+
+        if (bindIp != null) {
+            this.bindIp = bindIp;
+        }
+        else {
             this.bindIp = InetAddresses.fromInteger(0);
+        }
+
+        if (externalAddress != null) {
+            this.externalAddress = externalAddress;
+        }
+        else {
+            this.externalAddress = InetAddresses.toAddrString(this.internalIp);
         }
     }
 
@@ -144,20 +174,33 @@ public class NodeInfo
     }
 
     /**
-     * The public ip address the server should use when announcing its location to other machines.
+     * The internal network ip address the server should use when announcing its location to other machines.
+     * This ip address should available to all machines within the environment, but may not be globally routable.
      * If this is not set, the following algorithm is used to choose the public ip:
      * <ol>
-     *     <li>InetAddress.getLocalHost() if good IPv4</li>
-     *     <li>First good IPv4 address of an up network interface</li>
-     *     <li>First good IPv6 address of an up network interface</li>
-     *     <li>InetAddress.getLocalHost()</li>
+     * <li>InetAddress.getLocalHost() if good IPv4</li>
+     * <li>First good IPv4 address of an up network interface</li>
+     * <li>First good IPv6 address of an up network interface</li>
+     * <li>InetAddress.getLocalHost()</li>
      * </ol>
      * An address is considered good if it is not a loopback address, a multicast address, or an any-local-address address.
      */
     @Managed
-    public InetAddress getPublicIp()
+    public InetAddress getInternalIp()
     {
-        return publicIp;
+        return internalIp;
+    }
+
+    /**
+     * The address to use when contacting this server from an external network.  If possible, ip address should be globally
+     * routable.  The address is returned as a string because the name may not be resolvable from the local machine.
+     * <p/>
+     * If this is not set, the internal ip is used.
+     */
+    @Managed
+    public String getExternalAddress()
+    {
+        return externalAddress;
     }
 
     /**
@@ -183,11 +226,12 @@ public class NodeInfo
     @Override
     public String toString()
     {
-        final StringBuffer sb = new StringBuffer();
+        final StringBuilder sb = new StringBuilder();
         sb.append("NodeInfo");
         sb.append("{nodeId=").append(nodeId);
         sb.append(", instanceId=").append(instanceId);
-        sb.append(", publicIp=").append(publicIp);
+        sb.append(", internalIp=").append(internalIp);
+        sb.append(", externalAddress=").append(externalAddress);
         sb.append(", bindIp=").append(bindIp);
         sb.append(", startTime=").append(startTime);
         sb.append('}');
@@ -197,7 +241,7 @@ public class NodeInfo
     private static InetAddress findPublicIp()
     {
         // Check if local host address is a good v4 address
-        InetAddress localAddress;
+        InetAddress localAddress = null;
         try {
             localAddress = InetAddress.getLocalHost();
             if (isGoodV4Address(localAddress)) {
@@ -205,7 +249,14 @@ public class NodeInfo
             }
         }
         catch (UnknownHostException ignored) {
-            throw new AssertionError("Could not get local ip address");
+        }
+        if (localAddress == null) {
+            try {
+                localAddress = InetAddress.getByAddress(new byte[]{127, 0, 0, 1});
+            }
+            catch (UnknownHostException e) {
+                throw new AssertionError("Could not get local ip address");
+            }
         }
 
         // check all up network interfaces for a good v4 address

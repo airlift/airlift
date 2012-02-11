@@ -16,7 +16,9 @@ public class TestNodeConfig
                 .setEnvironment(null)
                 .setPool("general")
                 .setNodeId(null)
-                .setNodeIp((String) null)
+                .setNodeInternalIp((String) null)
+                .setNodeBindIp((String) null)
+                .setNodeExternalAddress(null)
                 .setLocation(null)
                 .setBinarySpec(null)
                 .setConfigSpec(null));
@@ -30,6 +32,8 @@ public class TestNodeConfig
                 .put("node.pool", "pool")
                 .put("node.id", "nodeId")
                 .put("node.ip", "10.9.8.7")
+                .put("node.bind-ip", "10.11.12.13")
+                .put("node.external-address", "external")
                 .put("node.location", "location")
                 .put("node.binary-spec", "binary")
                 .put("node.config-spec", "config")
@@ -39,7 +43,9 @@ public class TestNodeConfig
                 .setEnvironment("environment")
                 .setPool("pool")
                 .setNodeId("nodeId")
-                .setNodeIp(InetAddresses.forString("10.9.8.7"))
+                .setNodeInternalIp(InetAddresses.forString("10.9.8.7"))
+                .setNodeBindIp(InetAddresses.forString("10.11.12.13"))
+                .setNodeExternalAddress("external")
                 .setLocation("location")
                 .setBinarySpec("binary")
                 .setConfigSpec("config");
@@ -55,13 +61,17 @@ public class TestNodeConfig
                 .put("node.ip", "1.2.3.4")
                 .build();
 
-        Map<String, String> oldProperties = new ImmutableMap.Builder<String, String>()
+        Map<String, String> httpProperties = new ImmutableMap.Builder<String, String>()
                 .put("node.environment", "environment")
                 .put("http-server.ip", "1.2.3.4")
+                .build();
+
+        Map<String, String> jettyProperties = new ImmutableMap.Builder<String, String>()
+                .put("node.environment", "environment")
                 .put("jetty.ip", "1.2.3.4")
                 .build();
 
-        ConfigAssertions.assertDeprecatedEquivalence(NodeConfig.class, currentProperties, oldProperties);
+        ConfigAssertions.assertDeprecatedEquivalence(NodeConfig.class, currentProperties, httpProperties, jettyProperties);
     }
 
 }

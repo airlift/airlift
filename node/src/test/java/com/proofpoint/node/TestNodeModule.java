@@ -31,8 +31,8 @@ public class TestNodeModule
 
         Assertions.assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
 
-        Assert.assertNotNull(nodeInfo.getPublicIp());
-        Assert.assertFalse(nodeInfo.getPublicIp().isAnyLocalAddress());
+        Assert.assertNotNull(nodeInfo.getInternalIp());
+        Assert.assertFalse(nodeInfo.getInternalIp().isAnyLocalAddress());
         Assert.assertNotNull(nodeInfo.getBindIp());
         Assert.assertTrue(nodeInfo.getBindIp().isAnyLocalAddress());
         Assertions.assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
@@ -77,8 +77,8 @@ public class TestNodeModule
 
         Assertions.assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
 
-        Assert.assertEquals(nodeInfo.getPublicIp(), InetAddresses.forString(publicIp));
-        Assert.assertEquals(nodeInfo.getBindIp(), InetAddresses.forString(publicIp));
+        Assert.assertEquals(nodeInfo.getInternalIp(), InetAddresses.forString(publicIp));
+        Assert.assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
         Assertions.assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
 
         // make sure toString doesn't throw an exception

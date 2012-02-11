@@ -121,7 +121,7 @@ public class TestHttpServerModule
             assertNotNull(httpServerInfo);
             assertNotNull(httpServerInfo.getHttpUri());
             assertEquals(httpServerInfo.getHttpUri().getScheme(), "http");
-            assertEquals(httpServerInfo.getHttpUri().getHost(), nodeInfo.getPublicIp().getHostAddress());
+            assertEquals(httpServerInfo.getHttpUri().getHost(), nodeInfo.getInternalIp().getHostAddress());
             assertNull(httpServerInfo.getHttpsUri());
         }
         catch (Exception e) {
