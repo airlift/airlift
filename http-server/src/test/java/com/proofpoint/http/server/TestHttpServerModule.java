@@ -64,7 +64,7 @@ public class TestHttpServerModule
 
     @Test
     public void testCanConstructServer()
-            throws IOException
+            throws Exception
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("node.environment", "test")
@@ -159,21 +159,26 @@ public class TestHttpServerModule
         HttpServer server = injector.getInstance(HttpServer.class);
         server.start();
 
-        AsyncHttpClient client = new AsyncHttpClient();
+        try {
+            AsyncHttpClient client = new AsyncHttpClient();
 
-        // test servlet bound correctly
-        Response response = client.prepareGet(httpServerInfo.getHttpUri().toString())
-                .execute()
-                .get();
+            // test servlet bound correctly
+            Response response = client.prepareGet(httpServerInfo.getHttpUri().toString())
+                    .execute()
+                    .get();
 
-        assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
 
-        // test filter bound correctly
-        response = client.prepareGet(httpServerInfo.getHttpUri().resolve("/filter").toString())
-                .execute()
-                .get();
+            // test filter bound correctly
+            response = client.prepareGet(httpServerInfo.getHttpUri().resolve("/filter").toString())
+                    .execute()
+                    .get();
 
-        assertEquals(response.getStatusCode(), HttpServletResponse.SC_PAYMENT_REQUIRED);
-        assertEquals(response.getStatusText(), "filtered");
+            assertEquals(response.getStatusCode(), HttpServletResponse.SC_PAYMENT_REQUIRED);
+            assertEquals(response.getStatusText(), "filtered");
+        }
+        finally {
+            server.stop();
+        }
     }
 }

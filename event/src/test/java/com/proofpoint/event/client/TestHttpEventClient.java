@@ -119,7 +119,9 @@ public class TestHttpEventClient
     public void tearDown()
             throws Exception
     {
-        server.stop();
+        if (server != null) {
+            server.stop();
+        }
     }
 
     private HttpEventClient newEventClient(List<URI> v2Uris)

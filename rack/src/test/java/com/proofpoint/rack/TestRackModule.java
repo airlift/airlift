@@ -26,6 +26,7 @@ import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.node.testing.TestingNodeModule;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -53,6 +54,15 @@ public class TestRackModule
         server = injector.getInstance(TestingHttpServer.class);
         server.start();
         client = new AsyncHttpClient();
+    }
+
+    @AfterMethod
+    public void tearDown()
+            throws Exception
+    {
+        if (server != null) {
+            server.stop();
+        }
     }
 
     @Test
