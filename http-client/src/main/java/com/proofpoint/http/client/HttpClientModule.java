@@ -14,6 +14,7 @@ import javax.sql.DataSource;
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
@@ -84,7 +85,9 @@ public class HttpClientModule implements Module
         public HttpClient get()
         {
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
-            return new HttpClient(newFixedThreadPool(config.getWorkerThreads(), new ThreadFactoryBuilder().setNameFormat(name + "-http-client-%s").build()));
+            ExecutorService executor = newFixedThreadPool(config.getWorkerThreads(), new ThreadFactoryBuilder().setNameFormat(name + "-http-client-%s").build());
+
+            return new HttpClient(executor, config);
         }
     }
 }

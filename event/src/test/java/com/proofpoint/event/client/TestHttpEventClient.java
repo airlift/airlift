@@ -9,6 +9,7 @@ import com.google.inject.TypeLiteral;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.testing.StaticHttpServiceSelector;
 import com.proofpoint.http.client.HttpClient;
+import com.proofpoint.http.client.HttpClientConfig;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
@@ -134,7 +135,7 @@ public class TestHttpEventClient
         Set<EventTypeMetadata<?>> eventTypes = getValidEventTypeMetaDataSet(FixedDummyEventClass.class);
         JsonEventWriter eventWriter = new JsonEventWriter(eventTypes, config);
 
-        return new HttpEventClient(v1Selector, v2Selector, eventWriter, new NodeInfo("test"), config, new HttpClient(Executors.newCachedThreadPool()));
+        return new HttpEventClient(v1Selector, v2Selector, eventWriter, new NodeInfo("test"), config, new HttpClient(Executors.newCachedThreadPool(), new HttpClientConfig()));
     }
 
     private TestingHttpServer createServer(final DummyServlet servlet)

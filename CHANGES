@@ -5,6 +5,7 @@
 - Add server binary and config spec in jmx-http-rpc announcement
 - [Bug] Announce jmx-http-rpc on admin port instead of main port
 - [Bug] Add support for legacy log.config to launcher
+- Make http client connect and read timeout configurable
 
 * 0.50
 

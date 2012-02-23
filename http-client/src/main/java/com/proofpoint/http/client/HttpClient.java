@@ -23,10 +23,19 @@ public class HttpClient
 {
     private final ListeningExecutorService executor;
     private final RequestStats stats = new RequestStats();
+    private final Duration connectTimeout;
+    private final Duration readTimeout;
 
-    public HttpClient(ExecutorService executor)
+    public HttpClient(ExecutorService executor, HttpClientConfig config)
     {
+        Preconditions.checkNotNull(config, "config is null");
+        Preconditions.checkNotNull(config.getConnectTimeout(), "config.getConnectTimeout() is null");
+        Preconditions.checkNotNull(config.getReadTimeout(), "config.getReadTimeout() is null");
+
         this.executor = MoreExecutors.listeningDecorator(executor);
+
+        connectTimeout = config.getConnectTimeout();
+        readTimeout = config.getReadTimeout();
     }
 
     @Managed
@@ -69,6 +78,10 @@ public class HttpClient
             Response response = null;
             try {
                 HttpURLConnection urlConnection = (HttpURLConnection) request.getUri().toURL().openConnection(Proxy.NO_PROXY);
+
+                urlConnection.setConnectTimeout((int) connectTimeout.toMillis());
+                urlConnection.setReadTimeout((int) readTimeout.toMillis());
+
                 urlConnection.setRequestMethod(request.getMethod());
                 for (Entry<String, String> entry : request.getHeaders().entries()) {
                     urlConnection.addRequestProperty(entry.getKey(), entry.getValue());

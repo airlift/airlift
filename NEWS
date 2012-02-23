@@ -19,6 +19,12 @@ java.util.Map and com.google.common.collect.Multimap. The map key type must
 be java.lang.String, while the value type can be any standard supported type
 or nested type (i.e. any type that is supported by Iterable).
 
+* Configurable http client timeouts
+
+Connection and read timeouts for http client are now configurable. For Discovery client, use
+discovery.http-client.connect-timeout and discovery.http-client.read-timeout. For Event client,
+use event.http-client.connect-timeout and event.http-client.read-timeout.
+
 
 Platform 0.50
 

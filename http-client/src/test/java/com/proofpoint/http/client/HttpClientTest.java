@@ -21,6 +21,7 @@ import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.testing.TestingNodeModule;
+import com.proofpoint.units.Duration;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -33,11 +34,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpUtils;
 import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class HttpClientTest
 {
@@ -70,7 +75,7 @@ public class HttpClientTest
         server = injector.getInstance(TestingHttpServer.class);
         servlet = (EchoServlet) injector.getInstance(Key.get(Servlet.class, TheServlet.class));
         server.start();
-        httpClient = new HttpClient(Executors.newCachedThreadPool(new ThreadFactoryBuilder().setDaemon(true).build()));
+        httpClient = new HttpClient(Executors.newCachedThreadPool(new ThreadFactoryBuilder().setDaemon(true).build()), new HttpClientConfig());
     }
 
     @AfterMethod
@@ -280,6 +285,48 @@ public class HttpClientTest
         Assert.assertEquals(body, "body text");
     }
 
+    @Test(expectedExceptions = SocketTimeoutException.class)
+    public void testConnectTimeout()
+            throws Exception
+    {
+        ServerSocket serverSocket = new ServerSocket(0, 1);
+        // create one connection. The OS will auto-accept it because backlog for server socket == 1
+        Socket clientSocket = new Socket("localhost", serverSocket.getLocalPort());
+        
+        HttpClientConfig config = new HttpClientConfig();
+        config.setConnectTimeout(new Duration(5, TimeUnit.MILLISECONDS));
+        HttpClient client = new HttpClient(Executors.newCachedThreadPool(new ThreadFactoryBuilder().setDaemon(true).build()), config);
+
+        Request request = RequestBuilder.prepareGet()
+                .setUri(URI.create("http://localhost:" + serverSocket.getLocalPort() + "/"))
+                .build();
+
+        try {
+            client.execute(request, new ResponseToStringHandler()).checkedGet();
+        }
+        finally {
+            clientSocket.close();
+            serverSocket.close();
+        }
+    }
+    
+    @Test(expectedExceptions = SocketTimeoutException.class, expectedExceptionsMessageRegExp = "Read timed out")
+    public void testReadTimeout()
+            throws Exception
+    {
+        HttpClientConfig config = new HttpClientConfig()
+                .setReadTimeout(new Duration(200, TimeUnit.MILLISECONDS));
+
+        HttpClient client  = new HttpClient(Executors.newCachedThreadPool(new ThreadFactoryBuilder().setDaemon(true).build()), config);
+
+        URI uri = URI.create(server.getBaseUrl().toASCIIString() + "/?sleep=400");
+        Request request = RequestBuilder.prepareGet()
+                .setUri(uri)
+                .build();
+
+        client.execute(request, new ResponseToStringHandler()).checkedGet();
+    }
+    
     private static final class EchoServlet extends HttpServlet
     {
         private String requestMethod;
@@ -312,6 +359,17 @@ public class HttpClientTest
             for (Entry<String, String> entry : responseHeaders.entries()) {
                 response.addHeader(entry.getKey(), entry.getValue());
             }
+
+            try {
+                if (request.getParameter("sleep") != null) {
+                    Thread.sleep(Long.parseLong(request.getParameter("sleep")));
+                }
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+
             if (responseBody != null) {
                 response.getOutputStream().write(responseBody.getBytes(Charsets.UTF_8));
             }
