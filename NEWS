@@ -15,6 +15,11 @@ Connection and read timeouts for http client are now configurable. For Discovery
 discovery.http-client.connect-timeout and discovery.http-client.read-timeout. For Event client,
 use event.http-client.connect-timeout and event.http-client.read-timeout.
 
+* Add external address to node info
+
+Added node.external-address property to specify the external address (e.g., Internet routable)
+to the JVM. HTTP and JMX services are announced using the existing name and a '-external' name,
+so external clients can easily find the server.
 
 Platform 0.51
 

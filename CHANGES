@@ -1,7 +1,9 @@
-* 0.52-SNAPSHOT
+* 0.52
 
 - Use a separate thread pool for http server admin listener
 - Make http client connect and read timeout configurable
+- Add node.external-address property to specify external routable address
+- Server response header is not longer sent
 
 * 0.51
 
