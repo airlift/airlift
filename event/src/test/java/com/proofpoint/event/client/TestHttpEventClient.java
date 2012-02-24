@@ -15,6 +15,7 @@ import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.node.testing.TestingNodeModule;
+import com.proofpoint.units.Duration;
 import org.joda.time.DateTime;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -36,11 +37,13 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.proofpoint.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 import static com.proofpoint.event.client.TestingUtils.getNormalizedJson;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -135,7 +138,12 @@ public class TestHttpEventClient
         Set<EventTypeMetadata<?>> eventTypes = getValidEventTypeMetaDataSet(FixedDummyEventClass.class);
         JsonEventWriter eventWriter = new JsonEventWriter(eventTypes, config);
 
-        return new HttpEventClient(v1Selector, v2Selector, eventWriter, new NodeInfo("test"), config, new HttpClient(Executors.newCachedThreadPool(), new HttpClientConfig()));
+        return new HttpEventClient(v1Selector,
+                v2Selector,
+                eventWriter,
+                new NodeInfo("test"), config,
+                new HttpClient(Executors.newCachedThreadPool(),
+                new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))));
     }
 
     private TestingHttpServer createServer(final DummyServlet servlet)
