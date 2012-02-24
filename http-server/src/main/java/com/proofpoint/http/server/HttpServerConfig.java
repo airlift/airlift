@@ -19,6 +19,7 @@ import com.proofpoint.configuration.Config;
 import com.proofpoint.configuration.LegacyConfig;
 import com.proofpoint.units.Duration;
 
+import javax.validation.constraints.Min;
 import java.util.concurrent.TimeUnit;
 
 public class HttpServerConfig
@@ -43,6 +44,8 @@ public class HttpServerConfig
 
     private boolean adminEnabled = true;
     private int adminPort = 0;
+    private int adminMinThreads = 2;
+    private int adminMaxThreads = 20;
 
     public boolean isHttpEnabled()
     {
@@ -252,6 +255,31 @@ public class HttpServerConfig
     public HttpServerConfig setAdminPort(int adminPort)
     {
         this.adminPort = adminPort;
+        return this;
+    }
+
+    public int getAdminMinThreads()
+    {
+        return adminMinThreads;
+    }
+
+    @Config("http-server.admin.threads.min")
+    public HttpServerConfig setAdminMinThreads(int adminMinThreads)
+    {
+        this.adminMinThreads = adminMinThreads;
+        return this;
+    }
+
+    @Min(2)
+    public int getAdminMaxThreads()
+    {
+        return adminMaxThreads;
+    }
+
+    @Config("http-server.admin.threads.max")
+    public HttpServerConfig setAdminMaxThreads(int adminMaxThreads)
+    {
+        this.adminMaxThreads = adminMaxThreads;
         return this;
     }
 }

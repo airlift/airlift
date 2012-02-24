@@ -140,6 +140,12 @@ public class HttpServer
             adminConnector.setMaxIdleTime((int) config.getNetworkMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
             adminConnector.setStatsOn(true);
             adminConnector.setHost(nodeInfo.getBindIp().getHostAddress());
+
+            QueuedThreadPool adminThreadPool = new QueuedThreadPool(config.getAdminMaxThreads());
+            adminThreadPool.setMinThreads(config.getAdminMinThreads());
+            adminThreadPool.setMaxIdleTimeMs((int) config.getThreadMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
+            adminConnector.setThreadPool(adminThreadPool);
+
             server.addConnector(adminConnector);
         }
 
