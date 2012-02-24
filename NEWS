@@ -1,4 +1,22 @@
-Platform 0.51-SNAPSHOT
+Platform 0.52
+
+* Admin Http Server thread pool
+
+The thread pool for the admin http server (for jmx over http) listener has been
+separated from the main http thread pool to prevent DoS if all http threads in the main
+pool get stuck.
+
+The pool size can be controlled via the http-server.admin.threads.min and http-server.admin.threads.max
+configuration properties.
+
+* Configurable http client timeouts
+
+Connection and read timeouts for http client are now configurable. For Discovery client, use
+discovery.http-client.connect-timeout and discovery.http-client.read-timeout. For Event client,
+use event.http-client.connect-timeout and event.http-client.read-timeout.
+
+
+Platform 0.51
 
 * Trace token support for http requests
 
@@ -18,21 +36,6 @@ In addition to Iterable, the event client now supports event fields of type
 java.util.Map and com.google.common.collect.Multimap. The map key type must
 be java.lang.String, while the value type can be any standard supported type
 or nested type (i.e. any type that is supported by Iterable).
-
-* Admin Http Server thread pool
-
-The thread pool for the admin http server (for jmx over http) listener has been
-separated from the main http thread pool to prevent DoS if all http threads in the main
-pool get stuck.
-
-The pool size can be controlled via the http-server.admin.threads.min and http-server.admin.threads.max
-configuration properties.
-
-* Configurable http client timeouts
-
-Connection and read timeouts for http client are now configurable. For Discovery client, use
-discovery.http-client.connect-timeout and discovery.http-client.read-timeout. For Event client,
-use event.http-client.connect-timeout and event.http-client.read-timeout.
 
 
 Platform 0.50
