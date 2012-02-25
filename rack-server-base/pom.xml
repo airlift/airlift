@@ -138,6 +138,30 @@
 
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+
+                        <executions>
+                            <!-- TODO: devise a better approach to handling assets -->
+                            <execution>
+                                <id>precompile-assets</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target name="Precompile assets">
+                                        <exec executable="bundle" dir="${project.basedir}" failonerror="true">
+                                            <arg line="exec rake assets:precompile"/>
+                                        </exec>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-assembly-plugin</artifactId>
                         <version>2.2</version>
 
