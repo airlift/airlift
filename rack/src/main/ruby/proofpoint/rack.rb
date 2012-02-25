@@ -91,7 +91,10 @@ module Proofpoint
 
         response_stream = servlet_response.output_stream
         response_body.each { |part| response_stream.write(part.to_java_bytes) }
-        return response_stream.flush
+        response_stream.flush rescue nil
+
+      ensure
+        response_body.close if response_body.respond_to? :close
       end
     end
 
