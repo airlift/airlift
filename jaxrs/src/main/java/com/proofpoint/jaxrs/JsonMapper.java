@@ -28,6 +28,7 @@ import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -118,7 +119,7 @@ class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<Object>
         }
         catch (Exception e) {
             // we want to return a 400 for bad JSON but not for a real IO exception
-            if (e instanceof IOException && !(e instanceof JsonProcessingException)) {
+            if (e instanceof IOException && !(e instanceof JsonProcessingException) && !(e instanceof EOFException)) {
                 throw (IOException) e;
             }
 
