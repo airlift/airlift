@@ -128,3 +128,10 @@ module Proofpoint
     end
   end
 end
+
+# Fix bug in JRuby's handling of gems in jars (JRUBY-3986)
+class File
+  def self.mtime(path)
+    stat(path).mtime
+  end
+end
