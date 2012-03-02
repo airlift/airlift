@@ -126,4 +126,24 @@ public class TestRackModule
         assertEquals(responseGet.getResponseBody(), expected);
         assertEquals(responseGet.getStatusCode(), 200);
     }
+
+    @Test
+    public void testResponseIsClosed()
+            throws Throwable
+    {
+        Response response = client.prepareGet(server.getBaseUrl().resolve("/closable-response").toString())
+                .execute()
+                .get();
+
+        assertEquals(response.getResponseBody(), "hello");
+        assertEquals(response.getStatusCode(), 200);
+
+        response = client.prepareGet(server.getBaseUrl().resolve("/close-called").toString())
+                .execute()
+                .get();
+
+        System.err.println(response.getResponseBody());
+        assertEquals(response.getResponseBody(), "true");
+        assertEquals(response.getStatusCode(), 200);
+    }
 }

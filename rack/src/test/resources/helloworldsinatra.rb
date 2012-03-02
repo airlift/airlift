@@ -34,3 +34,26 @@ end
 get "/header-list-test" do
   return request.cookies.inspect
 end
+
+
+class ClosableResponse
+  def initialize
+    $closed = false
+  end
+
+  def each(&callback)
+    ['hello'].each(&callback)
+  end
+
+  def close
+    $closed = true
+  end
+end
+
+get "/closable-response" do
+  return [200, ClosableResponse.new]
+end
+
+get "/close-called" do
+  return $closed.to_s
+end
