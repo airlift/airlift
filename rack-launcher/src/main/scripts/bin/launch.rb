@@ -46,16 +46,6 @@ module Launch
       dir.parent.to_path
     end
 
-    def self.find_java_home
-      if File.executable?('/usr/libexec/java_home')
-        `/usr/libexec/java_home`.strip
-      else
-        path = Pathname.new('/usr/bin/java').realpath.dirname.parent.parent
-        raise 'Cannot find JAVA_HOME' unless path.join('bin', 'java').executable?
-        path.to_path
-      end
-    end
-
     def self.strip_heredoc(string)
       space = /(\s+)/.match(string)[1]
       string.gsub(/^#{space}/, '')
@@ -327,7 +317,6 @@ module Launch
         :data_dir => @install_path,
         :environment => {
           'PATH' => '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
-          'JAVA_HOME' => Util.find_java_home,
         }
       }
     end
