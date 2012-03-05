@@ -134,7 +134,7 @@
         <dependency>
             <groupId>com.ning</groupId>
             <artifactId>async-http-client</artifactId>
-            <scope>provided</scope>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>

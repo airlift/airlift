@@ -115,6 +115,7 @@
         <dependency>
             <groupId>com.ning</groupId>
             <artifactId>async-http-client</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <!-- for packaging -->
