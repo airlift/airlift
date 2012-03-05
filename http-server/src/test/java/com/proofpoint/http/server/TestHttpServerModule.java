@@ -27,6 +27,7 @@ import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.testing.FileUtils;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.node.NodeModule;
 import org.testng.annotations.AfterMethod;
@@ -59,7 +60,7 @@ public class TestHttpServerModule
     public void tearDown()
             throws IOException
     {
-        Files.deleteRecursively(tempDir);
+        FileUtils.deleteRecursively(tempDir);
     }
 
     @Test

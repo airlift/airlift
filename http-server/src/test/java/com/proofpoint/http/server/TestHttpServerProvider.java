@@ -21,6 +21,7 @@ import com.google.common.io.Files;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
 import com.ning.http.util.Base64;
+import com.proofpoint.testing.FileUtils;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import org.testng.annotations.AfterMethod;
@@ -68,7 +69,7 @@ public class TestHttpServerProvider
             }
         }
         finally {
-            Files.deleteRecursively(tempDir);
+            FileUtils.deleteRecursively(tempDir);
         }
     }
 

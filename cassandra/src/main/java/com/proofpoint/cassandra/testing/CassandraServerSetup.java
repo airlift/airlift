@@ -1,6 +1,7 @@
 package com.proofpoint.cassandra.testing;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 import com.proofpoint.cassandra.CassandraServerConfig;
 import com.proofpoint.cassandra.CassandraServerInfo;
@@ -53,12 +54,8 @@ public class CassandraServerSetup
     {
         if (shutdown.compareAndSet(false, true)) {
             server.stop();
-            try {
-                Files.deleteRecursively(tempDir);
-            }
-            catch (IOException e) {
-                // ignore
-            }
+
+            deleteRecursively(tempDir);
         }
     }
 
@@ -79,5 +76,60 @@ public class CassandraServerSetup
         finally {
             socket.close();
         }
+    }
+
+    //Copied from com.proofpoint.testing.FileUtils
+    private static boolean deleteDirectoryContents(File directory)
+    {
+        Preconditions.checkArgument(directory.isDirectory(), "Not a directory: %s", directory);
+
+        // Don't delete symbolic link directories
+        if (isSymbolicLink(directory)) {
+            return false;
+        }
+
+        boolean success = true;
+        for (File file : listFiles(directory)) {
+            success = deleteRecursively(file) && success;
+        }
+        return success;
+    }
+
+    //Copied from com.proofpoint.testing.FileUtils
+    private static boolean deleteRecursively(File file)
+    {
+        boolean success = true;
+        if (file.isDirectory()) {
+            success = deleteDirectoryContents(file);
+        }
+
+        return file.delete() && success;
+    }
+
+    //Copied from com.proofpoint.testing.FileUtils
+    private static boolean isSymbolicLink(File file)
+    {
+        try {
+            File canonicalFile = file.getCanonicalFile();
+            File absoluteFile = file.getAbsoluteFile();
+            // a symbolic link has a different name between the canonical and absolute path
+            return !canonicalFile.getName().equals(absoluteFile.getName()) ||
+                    // or the canonical parent path is not the same as the files parent path
+                    !canonicalFile.getParent().equals(absoluteFile.getParentFile().getCanonicalPath());
+        }
+        catch (IOException e) {
+            // error on the side of caution
+            return true;
+        }
+    }
+
+    //Copied from com.proofpoint.testing.FileUtils
+    private static ImmutableList<File> listFiles(File dir)
+    {
+        File[] files = dir.listFiles();
+        if (files == null) {
+            return ImmutableList.of();
+        }
+        return ImmutableList.copyOf(files);
     }
 }
