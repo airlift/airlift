@@ -22,6 +22,8 @@ import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
 import com.ning.http.util.Base64;
 import com.proofpoint.testing.FileUtils;
+import com.proofpoint.event.client.InMemoryEventClient;
+import com.proofpoint.event.client.NullEventClient;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import org.testng.annotations.AfterMethod;
@@ -159,7 +161,8 @@ public class TestHttpServerProvider
                 new DummyServlet(),
                 ImmutableSet.<Filter>of(new DummyFilter()),
                 ImmutableSet.<Filter>of(),
-                new RequestStats());
+                new RequestStats(),
+                new NullEventClient());
         serverProvider.setLoginService(loginServiceProvider.get());
         serverProvider.setTokenManager(new TraceTokenManager());
         server = serverProvider.get();

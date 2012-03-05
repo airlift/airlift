@@ -17,6 +17,7 @@ package com.proofpoint.http.server;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.proofpoint.event.client.EventClient;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.jmx.MBeanContainer;
@@ -71,7 +72,8 @@ public class HttpServer
             MBeanServer mbeanServer,
             LoginService loginService,
             TraceTokenManager tokenManager,
-            RequestStats stats)
+            RequestStats stats,
+            EventClient eventClient)
         throws IOException
     {
         Preconditions.checkNotNull(httpServerInfo, "httpServerInfo is null");
@@ -173,7 +175,7 @@ public class HttpServer
          */
         HandlerCollection handlers = new HandlerCollection();
         handlers.addHandler(createServletContext(theServlet, parameters, filters, tokenManager, loginService, "http", "https"));
-        RequestLogHandler logHandler = createLogHandler(config, tokenManager);
+        RequestLogHandler logHandler = createLogHandler(config, tokenManager, eventClient);
         if (logHandler != null) {
             handlers.addHandler(logHandler);
         }
@@ -205,6 +207,7 @@ public class HttpServer
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
 
+        context.addFilter(new FilterHolder(new TimingFilter()), "/*", null);
         if (tokenManager != null) {
             context.addFilter(new FilterHolder(new TraceTokenFilter(tokenManager)), "/*", null);
         }
@@ -248,7 +251,7 @@ public class HttpServer
         return securityHandler;
     }
 
-    protected RequestLogHandler createLogHandler(HttpServerConfig config, TraceTokenManager tokenManager)
+    protected RequestLogHandler createLogHandler(HttpServerConfig config, TraceTokenManager tokenManager, EventClient eventClient)
             throws IOException
     {
         // TODO: use custom (more easily-parseable) format
@@ -266,7 +269,7 @@ public class HttpServer
         }
 
 
-        RequestLog requestLog = new DelimitedRequestLog(config.getLogPath(), (int) config.getLogRetentionTime().convertTo(TimeUnit.DAYS), tokenManager);
+        RequestLog requestLog = new DelimitedRequestLog(config.getLogPath(), (int) config.getLogRetentionTime().convertTo(TimeUnit.DAYS), tokenManager, eventClient);
         logHandler.setRequestLog(requestLog);
 
         return logHandler;

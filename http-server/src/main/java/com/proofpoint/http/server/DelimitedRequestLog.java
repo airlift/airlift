@@ -15,6 +15,8 @@
  */
 package com.proofpoint.http.server;
 
+import com.google.common.base.Ticker;
+import com.proofpoint.event.client.EventClient;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
@@ -27,7 +29,8 @@ import org.joda.time.format.ISODateTimeFormat;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.security.Principal;
+
+import static com.proofpoint.http.server.HttpRequestEvent.createHttpRequestEvent;
 
 class DelimitedRequestLog
         implements RequestLog
@@ -40,12 +43,25 @@ class DelimitedRequestLog
 
     private final DateTimeFormatter isoFormatter;
     private final TraceTokenManager traceTokenManager;
+    private final EventClient eventClient;
+    private final Ticker ticker;
 
+    public DelimitedRequestLog(String filename, int retainDays, TraceTokenManager traceTokenManager, EventClient eventClient)
+            throws IOException
+    {
+        this(filename, retainDays, traceTokenManager, eventClient, Ticker.systemTicker());
+    }
 
-    public DelimitedRequestLog(String filename, int retainDays, TraceTokenManager traceTokenManager)
+    public DelimitedRequestLog(String filename,
+            int retainDays,
+            TraceTokenManager traceTokenManager,
+            EventClient eventClient,
+            Ticker ticker)
             throws IOException
     {
         this.traceTokenManager = traceTokenManager;
+        this.eventClient = eventClient;
+        this.ticker = ticker;
         out = new RolloverFileOutputStream(filename, true, retainDays);
         writer = new OutputStreamWriter(out);
 
@@ -57,45 +73,30 @@ class DelimitedRequestLog
 
     public void log(Request request, Response response)
     {
+        HttpRequestEvent event = createHttpRequestEvent(request, response, traceTokenManager, ticker);
+
         StringBuilder builder = new StringBuilder();
-
-        String user = "";
-        Principal principal = request.getUserPrincipal();
-        if (principal != null) {
-            user = principal.getName();
-        }
-
-        String agent = request.getHeader("User-Agent");
-        if (agent == null) {
-            agent = "";
-        }
-
-        String token = "";
-        if (traceTokenManager != null) {
-            token = traceTokenManager.getCurrentRequestToken();
-        }
-
-        builder.append(isoFormatter.print(request.getTimeStamp()))
+        builder.append(isoFormatter.print(event.getTimeStamp()))
                 .append('\t')
-                .append(request.getRemoteAddr()) // TODO: handle X-Forwarded-For
+                .append(event.getClientAddress())
                 .append('\t')
-                .append(request.getMethod().toUpperCase())
+                .append(event.getMethod())
                 .append('\t')
                 .append(request.getUri()) // TODO: escape
                 .append('\t')
-                .append(user)
+                .append(event.getUser())
                 .append('\t')
-                .append(agent) // TODO: escape
+                .append(event.getAgent()) // TODO: escape
                 .append('\t')
-                .append(response.getStatus())
+                .append(event.getResponseCode())
                 .append('\t')
-                .append(request.getContentRead())
+                .append(event.getRequestSize())
                 .append('\t')
-                .append(response.getContentCount())
+                .append(event.getResponseSize())
                 .append('\t')
-                .append(getRequestTime(request))
+                .append(event.getTimeToLastByte())
                 .append('\t')
-                .append(token)
+                .append(event.getTraceToken())
                 .append('\n');
 
         String line = builder.toString();
@@ -108,12 +109,8 @@ class DelimitedRequestLog
                 throw new RuntimeException(e);
             }
         }
-    }
 
-    protected long getRequestTime(Request request)
-    {
-        // TODO: use nanoseconds or floating point seconds
-        return System.currentTimeMillis() - request.getTimeStamp();
+        eventClient.post(event);
     }
 
     public void start()

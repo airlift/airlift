@@ -20,6 +20,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.proofpoint.event.client.EventClient;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.security.LoginService;
@@ -51,6 +52,7 @@ public class HttpServerProvider
     private final Set<Filter> filters;
     private final Set<Filter> adminFilters;
     private TraceTokenManager traceTokenManager;
+    private final EventClient eventClient;
 
     @Inject
     public HttpServerProvider(HttpServerInfo httpServerInfo,
@@ -59,7 +61,8 @@ public class HttpServerProvider
             @TheServlet Servlet theServlet,
             @TheServlet Set<Filter> filters,
             @TheAdminServlet Set<Filter> adminFilters,
-            RequestStats stats)
+            RequestStats stats,
+            EventClient eventClient)
     {
         Preconditions.checkNotNull(httpServerInfo, "httpServerInfo is null");
         Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
@@ -68,6 +71,7 @@ public class HttpServerProvider
         Preconditions.checkNotNull(filters, "filters is null");
         Preconditions.checkNotNull(adminFilters, "adminFilters is null");
         Preconditions.checkNotNull(stats, "stats is null");
+        Preconditions.checkNotNull(eventClient, "eventClient is null");
 
         this.httpServerInfo = httpServerInfo;
         this.nodeInfo = nodeInfo;
@@ -76,6 +80,7 @@ public class HttpServerProvider
         this.filters = filters;
         this.adminFilters = adminFilters;
         this.stats = stats;
+        this.eventClient = eventClient;
     }
 
     @Inject(optional = true)
@@ -129,7 +134,8 @@ public class HttpServerProvider
                     mbeanServer,
                     loginService,
                     traceTokenManager,
-                    stats);
+                    stats,
+                    eventClient);
             httpServer.start();
             return httpServer;
         }

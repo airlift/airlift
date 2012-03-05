@@ -27,9 +27,10 @@ import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.testing.FileUtils;
+import com.proofpoint.event.client.NullEventModule;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.node.NodeModule;
+import com.proofpoint.testing.FileUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -77,6 +78,7 @@ public class TestHttpServerModule
         Injector injector = Guice.createInjector(new HttpServerModule(),
                 new NodeModule(),
                 new ConfigurationModule(configFactory),
+                new NullEventModule(),
                 new Module()
                 {
                     @Override
@@ -104,6 +106,7 @@ public class TestHttpServerModule
         Injector injector = Guice.createInjector(new HttpServerModule(),
                 new NodeModule(),
                 new ConfigurationModule(configFactory),
+                new NullEventModule(),
                 new Module()
                 {
                     @Override
@@ -144,6 +147,7 @@ public class TestHttpServerModule
         Injector injector = Guice.createInjector(new HttpServerModule(),
                 new NodeModule(),
                 new ConfigurationModule(configFactory),
+                new NullEventModule(),
                 new Module()
                 {
                     @Override

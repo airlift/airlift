@@ -16,7 +16,11 @@
 package com.proofpoint.http.server;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
+import com.proofpoint.event.client.EventClient;
+import com.proofpoint.event.client.InMemoryEventClient;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
@@ -32,6 +36,8 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.security.Principal;
+import java.util.Collections;
+import java.util.List;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -70,12 +76,14 @@ public class TestDelimitedRequestLog
         final Response response = mock(Response.class);
         final Principal principal = mock(Principal.class);
 
-        final long requestTime = 3453;
+        final long dispatchTime = 123;
+        final long timeToFirstByte = 456;
+        final long timeToLastByte = 3453;
         final long now = System.currentTimeMillis();
-        final long timestamp = now - requestTime;
+        final long timestamp = now - timeToLastByte;
         final String user = "martin";
         final String agent = "HttpClient 4.0";
-        final String ip = "10.54.12.111";
+        final String ip = "4.4.4.4";
         final String method = "GET";
         final int status = 200;
         final long contentLength = 32311;
@@ -84,19 +92,22 @@ public class TestDelimitedRequestLog
 
 
         final TraceTokenManager tokenManager = new TraceTokenManager();
-        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, tokenManager)
-        {
+        InMemoryEventClient eventClient = new InMemoryEventClient();
+        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, tokenManager, eventClient, new Ticker() {
             @Override
-            protected long getRequestTime(Request request)
+            public long read()
             {
-                return requestTime;
+                return timestamp + timeToLastByte;
             }
-        };
+        });
 
         when(principal.getName()).thenReturn(user);
         when(request.getTimeStamp()).thenReturn(timestamp);
+        when(request.getDispatchTime()).thenReturn(timestamp + dispatchTime);
         when(request.getHeader("User-Agent")).thenReturn(agent);
-        when(request.getRemoteAddr()).thenReturn(ip);
+        when(request.getHeaders("X-FORWARDED-FOR")).thenReturn(Collections.enumeration(ImmutableList.of("1.1.1.1, 2.2.2.2", "3.3.3.3, " + ip)));
+        when(request.getAttribute(TimingFilter.FIRST_BYTE_TIME)).thenReturn(timestamp + timeToFirstByte);
+        when(request.getRemoteAddr()).thenReturn("9.9.9.9");
         when(request.getUri()).thenReturn(uri);
         when(request.getUserPrincipal()).thenReturn(principal);
         when(request.getMethod()).thenReturn(method);
@@ -108,9 +119,28 @@ public class TestDelimitedRequestLog
         logger.log(request, response);
         logger.stop();
 
+        List<Object> events = eventClient.getEvents();
+        Assert.assertEquals(events.size(), 1);
+        HttpRequestEvent event = (HttpRequestEvent) events.get(0);
+
+
+        Assert.assertEquals(event.getTimeStamp().getMillis(), timestamp);
+        Assert.assertEquals(event.getClientAddress(), ip);
+        Assert.assertEquals(event.getMethod(), method);
+        Assert.assertEquals(event.getRequestUri(), uri.toString());
+        Assert.assertEquals(event.getUser(), user);
+        Assert.assertEquals(event.getAgent(), agent);
+        Assert.assertEquals(event.getResponseCode(), status);
+        Assert.assertEquals(event.getRequestSize(), requestSize);
+        Assert.assertEquals(event.getResponseSize(), contentLength);
+        Assert.assertEquals(event.getTimeToDispatch(), dispatchTime);
+        Assert.assertEquals(event.getTimeToFirstByte(), timeToFirstByte);
+        Assert.assertEquals(event.getTimeToLastByte(), timeToLastByte);
+        Assert.assertEquals(event.getTraceToken(), tokenManager.getCurrentRequestToken());
+
         String actual = Files.toString(file, Charsets.UTF_8);
         String expected = String.format("%s\t%s\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%d\t%s\n",
-                isoFormatter.print(timestamp), ip, method, uri, user, agent, status, requestSize, contentLength, requestTime, tokenManager.getCurrentRequestToken());
+                isoFormatter.print(timestamp), ip, method, uri, user, agent, status, requestSize, contentLength, event.getTimeToLastByte(), tokenManager.getCurrentRequestToken());
         Assert.assertEquals(actual, expected);
     }
 }
