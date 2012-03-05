@@ -1,3 +1,12 @@
+Platform 0.53
+
+In this release we have upgraded the following dependencies
+
+  - Jetty 8.1.1
+
+Jetty 8.0.3 has a bug where connections will leak in CLOSE_WAIT state if clients hang up
+prematurely.
+
 Platform 0.52
 
 * Admin Http Server thread pool
