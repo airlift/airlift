@@ -6,7 +6,6 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.multibindings.Multibinder;
 import com.proofpoint.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
-import com.proofpoint.http.server.HttpServerInfo;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.discovery.client.ServiceAnnouncement.serviceAnnouncement;
@@ -84,7 +83,7 @@ public class DiscoveryBinder
     static class HttpAnnouncementProvider implements Provider<ServiceAnnouncement>
     {
         private final ServiceAnnouncementBuilder builder;
-        private HttpServerInfo httpServerInfo;
+        private AnnouncementHttpServerInfo httpServerInfo;
 
         public HttpAnnouncementProvider(ServiceAnnouncementBuilder serviceAnnouncementBuilder)
         {
@@ -92,7 +91,7 @@ public class DiscoveryBinder
         }
 
         @Inject
-        public void setHttpServerInfo(HttpServerInfo httpServerInfo)
+        public void setAnnouncementHttpServerInfo(AnnouncementHttpServerInfo httpServerInfo)
         {
             this.httpServerInfo = httpServerInfo;
         }

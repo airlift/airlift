@@ -12,7 +12,6 @@ import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
-import com.proofpoint.jaxrs.JaxrsModule;
 import com.proofpoint.jmx.http.rpc.JmxHttpRpcModule;
 import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.testing.TestingNodeModule;

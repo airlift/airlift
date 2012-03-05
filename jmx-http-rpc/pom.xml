@@ -28,6 +28,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>http-server</artifactId>
+            <version>0.55-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
             <version>3.0</version>

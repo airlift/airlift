@@ -20,6 +20,7 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.discovery.client.AnnouncementHttpServerInfo;
 import org.weakref.jmx.guice.MBeanModule;
 
 import javax.servlet.Filter;
@@ -63,5 +64,7 @@ public class HttpServerModule
         MBeanModule.newExporter(binder).export(RequestStats.class).withGeneratedName();
 
         ConfigurationModule.bindConfig(binder).to(HttpServerConfig.class);
+
+        binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class).in(Scopes.SINGLETON);
     }
 }

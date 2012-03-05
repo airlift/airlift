@@ -2,42 +2,38 @@ package com.proofpoint.event.client;
 
 import com.google.common.base.Throwables;
 import com.google.common.io.CharStreams;
-import com.google.inject.Binder;
-import com.google.inject.Guice;
-import com.google.inject.Module;
-import com.google.inject.TypeLiteral;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.testing.StaticHttpServiceSelector;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
-import com.proofpoint.http.server.TheServlet;
-import com.proofpoint.http.server.testing.TestingHttpServer;
-import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.node.NodeInfo;
-import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.units.Duration;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.joda.time.DateTime;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.proofpoint.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
@@ -51,7 +47,8 @@ public class TestHttpEventClient
 {
     private DummyServlet servlet;
     private HttpEventClient client;
-    private TestingHttpServer server;
+    private Server server;
+    private URI baseUri;
 
     @Test(expectedExceptions = ServiceUnavailableException.class, expectedExceptionsMessageRegExp = ".*is not available.*")
     public void testFutureFailsWhenServiceUnavailable()
@@ -83,7 +80,7 @@ public class TestHttpEventClient
     public void testReceivesEvent()
             throws ExecutionException, InterruptedException, IOException
     {
-        client = newEventClient(asList(server.getBaseUrl()));
+        client = newEventClient(asList(baseUri));
 
         client.post(TestingUtils.getEvents()).get();
 
@@ -95,7 +92,7 @@ public class TestHttpEventClient
     public void loadTest()
             throws ExecutionException, InterruptedException, IOException
     {
-        client = newEventClient(asList(server.getBaseUrl()));
+        client = newEventClient(asList(baseUri));
 
         List<Future<Void>> futures = newArrayList();
         for (int i = 0; i < 100; i++) {
@@ -143,31 +140,39 @@ public class TestHttpEventClient
                 eventWriter,
                 new NodeInfo("test"), config,
                 new HttpClient(Executors.newCachedThreadPool(),
-                new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))));
+                        new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))));
     }
 
-    private TestingHttpServer createServer(final DummyServlet servlet)
+    private Server createServer(final DummyServlet servlet)
+            throws Exception
     {
-        return Guice.createInjector(
-                new TestingNodeModule(),
-                new TestingHttpServerModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.bind(Servlet.class)
-                                .annotatedWith(TheServlet.class)
-                                .toInstance(servlet);
+        int port;
+        ServerSocket socket = new ServerSocket();
+        try {
+            socket.bind(new InetSocketAddress(0));
+            port = socket.getLocalPort();
+        }
+        finally {
+            socket.close();
+        }
+        baseUri = new URI("http", null, "127.0.0.1", port, null, null, null);
 
-                        binder.bind(new TypeLiteral<Map<String, String>>()
-                        {
-                        })
-                                .annotatedWith(TheServlet.class)
-                                .toInstance(Collections.<String, String>emptyMap());
-                    }
-                })
-                .getInstance(TestingHttpServer.class);
+        Server server = new Server();
+        server.setSendServerVersion(false);
+
+        SelectChannelConnector httpConnector;
+        httpConnector = new SelectChannelConnector();
+        httpConnector.setName("http");
+        httpConnector.setPort(port);
+        server.addConnector(httpConnector);
+
+        ServletHolder servletHolder = new ServletHolder(servlet);
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
+        context.addServlet(servletHolder, "/*");
+        HandlerCollection handlers = new HandlerCollection();
+        handlers.addHandler(context);
+        server.setHandler(handlers);
+        return server;
     }
 
     private static class DummyServlet

@@ -26,6 +26,11 @@ import com.proofpoint.http.server.HttpServerInfo;
 import com.proofpoint.http.server.TheServlet;
 
 import javax.servlet.Filter;
+import com.proofpoint.discovery.client.AnnouncementHttpServerInfo;
+import com.proofpoint.http.server.HttpServer;
+import com.proofpoint.http.server.HttpServerConfig;
+import com.proofpoint.http.server.HttpServerInfo;
+import com.proofpoint.http.server.LocalAnnouncementHttpServerInfo;
 
 public class TestingHttpServerModule
         implements Module
@@ -41,5 +46,6 @@ public class TestingHttpServerModule
         binder.bind(TestingHttpServer.class).in(Scopes.SINGLETON);
         binder.bind(HttpServer.class).to(Key.get(TestingHttpServer.class));
         Multibinder.newSetBinder(binder, Filter.class, TheServlet.class);
+        binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class);
     }
 }

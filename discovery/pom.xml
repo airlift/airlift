@@ -21,11 +21,6 @@
         </dependency>
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>jaxrs</artifactId>
-            <version>0.55-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.proofpoint.platform</groupId>
             <artifactId>configuration</artifactId>
             <version>0.55-SNAPSHOT</version>
         </dependency>
@@ -57,6 +52,12 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-core</artifactId>
+            <version>1.9.1</version>
         </dependency>
 
         <dependency>
