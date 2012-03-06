@@ -1,5 +1,6 @@
 package com.proofpoint.http.server;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Iterables;
@@ -55,17 +56,39 @@ public class HttpRequestEvent
             }
         }
 
+        String requestUri = null;
+        if (request.getUri() != null) {
+            requestUri = request.getUri().toString();
+        }
+
+        String method = request.getMethod();
+        if (method != null) {
+            method = method.toUpperCase();
+        }
+
+        String protocol = request.getHeader("X-FORWARDED-PROTO");
+        if (protocol == null) {
+            protocol = request.getProtocol();
+        }
+        if (protocol != null) {
+            protocol = protocol.toLowerCase();
+        }
+
         return new HttpRequestEvent(
                 new DateTime(request.getTimeStamp()),
                 token,
                 clientAddress,
-                request.getMethod().toUpperCase(),
-                request.getUri().toString(),
+                protocol,
+                method,
+                requestUri,
                 user,
                 request.getHeader("User-Agent"),
+                request.getHeader("Referer"),
                 request.getContentRead(),
+                request.getHeader("Content-Type"),
                 response.getContentCount(),
                 response.getStatus(),
+                response.getHeader("Content-Type"),
                 timeToDispatch,
                 timeToFirstByte,
                 timeToLastByte
@@ -75,13 +98,17 @@ public class HttpRequestEvent
     private final DateTime timeStamp;
     private final String traceToken;
     private final String clientAddress;
+    private final String protocol;
     private final String method;
     private final String requestUri;
     private final String user;
     private final String agent;
+    private final String referrer;
     private final long requestSize;
+    private final String requestContentType;
     private final long responseSize;
     private final int responseCode;
+    private final String responseContentType;
     private final long timeToDispatch;
     private final long timeToFirstByte;
     private final long timeToLastByte;
@@ -89,13 +116,17 @@ public class HttpRequestEvent
     public HttpRequestEvent(DateTime timeStamp,
             String traceToken,
             String clientAddress,
+            String protocol,
             String method,
             String requestUri,
             String user,
             String agent,
+            String referrer,
             long requestSize,
+            String requestContentType,
             long responseSize,
             int responseCode,
+            String responseContentType,
             long timeToDispatch,
             long timeToFirstByte,
             long timeToLastByte)
@@ -103,13 +134,17 @@ public class HttpRequestEvent
         this.timeStamp = timeStamp;
         this.traceToken = traceToken;
         this.clientAddress = clientAddress;
+        this.protocol = protocol;
         this.method = method;
         this.requestUri = requestUri;
         this.user = user;
         this.agent = agent;
+        this.referrer = referrer;
         this.requestSize = requestSize;
+        this.requestContentType = requestContentType;
         this.responseSize = responseSize;
         this.responseCode = responseCode;
+        this.responseContentType = responseContentType;
         this.timeToDispatch = timeToDispatch;
         this.timeToFirstByte = timeToFirstByte;
         this.timeToLastByte = timeToLastByte;
@@ -131,6 +166,12 @@ public class HttpRequestEvent
     public String getClientAddress()
     {
         return clientAddress;
+    }
+
+    @EventField
+    public String getProtocol()
+    {
+        return protocol;
     }
 
     @EventField
@@ -158,9 +199,21 @@ public class HttpRequestEvent
     }
 
     @EventField
+    public String getReferrer()
+    {
+        return referrer;
+    }
+
+    @EventField
     public long getRequestSize()
     {
         return requestSize;
+    }
+
+    @EventField
+    public String getRequestContentType()
+    {
+        return requestContentType;
     }
 
     @EventField
@@ -173,6 +226,12 @@ public class HttpRequestEvent
     public int getResponseCode()
     {
         return responseCode;
+    }
+
+    @EventField
+    public String getResponseContentType()
+    {
+        return responseContentType;
     }
 
     @EventField
