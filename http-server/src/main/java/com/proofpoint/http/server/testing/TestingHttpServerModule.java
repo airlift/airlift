@@ -19,9 +19,13 @@ import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
 import com.proofpoint.http.server.HttpServer;
 import com.proofpoint.http.server.HttpServerConfig;
 import com.proofpoint.http.server.HttpServerInfo;
+import com.proofpoint.http.server.TheServlet;
+
+import javax.servlet.Filter;
 
 public class TestingHttpServerModule
         implements Module
@@ -36,5 +40,6 @@ public class TestingHttpServerModule
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
         binder.bind(TestingHttpServer.class).in(Scopes.SINGLETON);
         binder.bind(HttpServer.class).to(Key.get(TestingHttpServer.class));
+        Multibinder.newSetBinder(binder, Filter.class, TheServlet.class);
     }
 }

@@ -31,6 +31,7 @@ import javax.servlet.Servlet;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * HTTP server that binds to localhost on a random port
@@ -40,8 +41,14 @@ public class TestingHttpServer extends HttpServer
 
     private final HttpServerInfo httpServerInfo;
 
-    @Inject
     public TestingHttpServer(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config, @TheServlet Servlet servlet, @TheServlet Map<String, String> initParameters)
+            throws IOException
+    {
+        this(httpServerInfo, nodeInfo, config, servlet, initParameters, ImmutableSet.<Filter>of());
+    }
+
+    @Inject
+    public TestingHttpServer(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config, @TheServlet Servlet servlet, @TheServlet Map<String, String> initParameters, @TheServlet Set<Filter> filters)
             throws IOException
     {
         super(httpServerInfo,
@@ -49,7 +56,7 @@ public class TestingHttpServer extends HttpServer
                 config,
                 servlet,
                 initParameters,
-                ImmutableSet.<Filter>of(),
+                ImmutableSet.copyOf(filters),
                 null,
                 null,
                 ImmutableSet.<Filter>of(),
