@@ -1,10 +1,9 @@
 package com.proofpoint.http.server;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
 import com.google.common.base.Ticker;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.proofpoint.event.client.EventField;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
@@ -47,14 +46,27 @@ public class HttpRequestEvent
 
         long timeToLastByte = max(ticker.read() - request.getTimeStamp(), 0);
 
-        String clientAddress = request.getRemoteAddr();
-        Enumeration<String> e = request.getHeaders("X-FORWARDED-FOR");
-        if (e != null) {
-            String forwardedFor = Iterators.getLast(Iterators.forEnumeration(e), null);
-            if (forwardedFor != null) {
-                clientAddress = Iterables.getLast(Splitter.on(',').trimResults().omitEmptyStrings().split(forwardedFor), clientAddress);
+        ImmutableList.Builder<String> builder = ImmutableList.builder();
+        if (request.getRemoteAddr() != null) {
+            builder.add(request.getRemoteAddr());
+        }
+        for (Enumeration<String> e = request.getHeaders("X-FORWARDED-FOR"); e != null && e.hasMoreElements(); ) {
+            String forwardedFor = e.nextElement();
+            builder.addAll(Splitter.on(',').trimResults().omitEmptyStrings().split(forwardedFor));
+        }
+        String clientAddress = null;
+        ImmutableList<String> clientAddresses = builder.build();
+        for (String address : Lists.reverse(clientAddresses)) {
+            try {
+                if (!Inet4Networks.isPrivateNetworkAddress(address)) {
+                    clientAddress = address;
+                    break;
+                }
+            }
+            catch (IllegalArgumentException ignored) {
             }
         }
+
 
         String requestUri = null;
         if (request.getUri() != null) {

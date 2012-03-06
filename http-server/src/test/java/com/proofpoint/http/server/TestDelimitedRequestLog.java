@@ -96,7 +96,8 @@ public class TestDelimitedRequestLog
 
         final TraceTokenManager tokenManager = new TraceTokenManager();
         InMemoryEventClient eventClient = new InMemoryEventClient();
-        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, tokenManager, eventClient, new Ticker() {
+        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, tokenManager, eventClient, new Ticker()
+        {
             @Override
             public long read()
             {
@@ -152,7 +153,17 @@ public class TestDelimitedRequestLog
 
         String actual = Files.toString(file, Charsets.UTF_8);
         String expected = String.format("%s\t%s\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%d\t%s\n",
-                isoFormatter.print(timestamp), ip, method, uri, user, agent, responseCode, requestSize, responseSize, event.getTimeToLastByte(), tokenManager.getCurrentRequestToken());
+                isoFormatter.print(timestamp),
+                ip,
+                method,
+                uri,
+                user,
+                agent,
+                responseCode,
+                requestSize,
+                responseSize,
+                event.getTimeToLastByte(),
+                tokenManager.getCurrentRequestToken());
         Assert.assertEquals(actual, expected);
     }
 
@@ -176,5 +187,50 @@ public class TestDelimitedRequestLog
         HttpRequestEvent event = (HttpRequestEvent) events.get(0);
 
         Assert.assertEquals(event.getProtocol(), protocol);
+    }
+
+    @Test
+    public void testNoXForwardedFor()
+            throws Exception
+    {
+        final Request request = mock(Request.class);
+        final Response response = mock(Response.class);
+        final String clientIp = "1.1.1.1";
+
+        when(request.getRemoteAddr()).thenReturn(clientIp);
+
+        InMemoryEventClient eventClient = new InMemoryEventClient();
+        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, null, eventClient, Ticker.systemTicker());
+        logger.log(request, response);
+        logger.stop();
+
+        List<Object> events = eventClient.getEvents();
+        Assert.assertEquals(events.size(), 1);
+        HttpRequestEvent event = (HttpRequestEvent) events.get(0);
+
+        Assert.assertEquals(event.getClientAddress(), clientIp);
+    }
+
+    @Test
+    public void testXForwardedForSkipPrivateAddresses()
+            throws Exception
+    {
+        final Request request = mock(Request.class);
+        final Response response = mock(Response.class);
+        final String clientIp = "1.1.1.1";
+
+        when(request.getRemoteAddr()).thenReturn("9.9.9.9");
+        when(request.getHeaders("X-FORWARDED-FOR")).thenReturn(Collections.enumeration(ImmutableList.of(clientIp, "192.168.1.2, 172.16.0.1", "169.254.1.2, 127.1.2.3", "10.1.2.3")));
+
+        InMemoryEventClient eventClient = new InMemoryEventClient();
+        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, null, eventClient, Ticker.systemTicker());
+        logger.log(request, response);
+        logger.stop();
+
+        List<Object> events = eventClient.getEvents();
+        Assert.assertEquals(events.size(), 1);
+        HttpRequestEvent event = (HttpRequestEvent) events.get(0);
+
+        Assert.assertEquals(event.getClientAddress(), clientIp);
     }
 }
