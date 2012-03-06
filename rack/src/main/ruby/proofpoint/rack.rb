@@ -62,7 +62,7 @@ module Proofpoint
                 'rack.url_scheme' => servlet_request.scheme,
                 'REQUEST_METHOD' => servlet_request.method,
                 'SCRIPT_NAME' => '',
-                'PATH_INFO' => servlet_request.path_info,
+                'PATH_INFO' => servlet_request.request_uri,
                 'QUERY_STRING' => (servlet_request.query_string || ""),
                 'SERVER_NAME' => servlet_request.server_name,
                 'SERVER_PORT' => servlet_request.server_port.to_s

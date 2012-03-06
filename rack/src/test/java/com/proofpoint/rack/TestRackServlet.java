@@ -161,7 +161,7 @@ public class TestRackServlet
 
         when(request.getScheme()).thenReturn("http");
         when(request.getMethod()).thenReturn(method);
-        when(request.getPathInfo()).thenReturn(path);
+        when(request.getRequestURI()).thenReturn(path);
         when(request.getQueryString()).thenReturn(queryString);
         when(request.getServerName()).thenReturn("TestServer");
         when(request.getServerPort()).thenReturn(new Random().nextInt());
