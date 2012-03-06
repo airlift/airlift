@@ -32,7 +32,7 @@ import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
 
-public class TestRackModule
+public class TestRackModuleSinatra
 {
     private AsyncHttpClient client;
     private TestingHttpServer server;
@@ -47,9 +47,9 @@ public class TestRackModule
                 new TestingNodeModule(),
                 new ConfigurationModule(new ConfigurationFactory(
                         ImmutableMap.<String, String>builder()
-                                .put("rackserver.rack-config-path", Resources.getResource("config.ru").getFile())
-                                        .build()
-                                )));
+                                .put("rackserver.rack-config-path", Resources.getResource("test/sinatra/config.ru").getFile())
+                                .build()
+                )));
 
         server = injector.getInstance(TestingHttpServer.class);
         server.start();

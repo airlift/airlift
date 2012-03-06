@@ -54,7 +54,7 @@ public class TestRackServlet
     public void setup()
             throws IOException
     {
-        servlet = new RackServlet(new RackServletConfig().setRackConfigPath(Resources.getResource("config.ru").getPath()));
+        servlet = new RackServlet(new RackServletConfig().setRackConfigPath(Resources.getResource("test/sinatra/config.ru").getPath()));
     }
 
     @Test
