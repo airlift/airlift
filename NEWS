@@ -1,3 +1,41 @@
+Platform 0.53
+
+* Rack packaging (JRuby on Rails)
+
+The rack packaging has been substantially updated with many changes:
+
+  - rewritten launcher that supports the new node config file
+  - support only Rails 3.1+ with asset pipeline
+  - add support for JMX over HTTP
+  - use Bundler to require dependencies when starting application
+  - no creation of .bundle directory when packaging gems
+  - various bug fixes including PATH_INFO, logging, locking, resources
+
+This release requires Rails 3.1+ rather than supporting arbitrary rack
+applications. It also requires the build machine to have a Ruby installation
+with all of the application gems installed. This is a temporary restriction
+and will be fixed in future releases.
+
+The build process runs "bundle exec rake assets:precompile". Please verify
+that this command succeeds before running the build. The following config
+change in config/application.rb is likely required to prevent the command
+from trying to connect to the configured production database:
+
+  # Only partially load application when precompiling assets
+  config.assets.initialize_on_precompile = false
+
+The following config changes are also required for production mode in
+config/environments/production.rb:
+
+  # Serve static assets directly from Rails
+  config.serve_static_assets = true
+
+  # Enable threaded mode
+  config.threadsafe!
+
+Future versions of the rack packaging may configure these automatically.
+
+
 Platform 0.52
 
 * Admin Http Server thread pool

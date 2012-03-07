@@ -1,3 +1,7 @@
+* 0.53
+
+- [Experimental] Update Rack packaging (JRuby on Rails) for Rails 3.1+
+
 * 0.52
 
 - Use a separate thread pool for http server admin listener
