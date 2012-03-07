@@ -151,20 +151,18 @@ public class TestTestingHttpServer
 
         try {
             Injector injector = Guice.createInjector(
-                new TestingNodeModule(),
-                new TestingHttpServerModule(),
-                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
+                    new TestingNodeModule(),
+                    new TestingHttpServerModule(),
+                    new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())),
+                    new Module()
                     {
-                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
-                        binder.bind(new TypeLiteral<Map<String, String>>()
+                        @Override
+                        public void configure(Binder binder)
                         {
-                        }).annotatedWith(TheServlet.class).toInstance(ImmutableMap.<String, String>of());
-                    }
-                });
+                            binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
+                            binder.bind(new TypeLiteral<Map<String, String>>(){}).annotatedWith(TheServlet.class).toInstance(ImmutableMap.<String, String>of());
+                        }
+                    });
 
             server = injector.getInstance(TestingHttpServer.class);
             server.start();
@@ -199,28 +197,27 @@ public class TestTestingHttpServer
 
         try {
             Injector injector = Guice.createInjector(
-                new TestingNodeModule(),
-                new TestingHttpServerModule(),
-                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
+                    new TestingNodeModule(),
+                    new TestingHttpServerModule(),
+                    new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())),
+                    new Module()
                     {
-                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
-                        binder.bind(new TypeLiteral<Map<String, String>>()
+                        @Override
+                        public void configure(Binder binder)
                         {
-                        }).annotatedWith(TheServlet.class).toInstance(ImmutableMap.<String, String>of());
-                    }
-                },
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
+                            binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
+                            binder.bind(new TypeLiteral<Map<String, String>>(){}).annotatedWith(TheServlet.class).toInstance(ImmutableMap.<String, String>of());
+                        }
+                    },
+                    new Module()
                     {
-                        Multibinder.newSetBinder(binder, Filter.class, TheServlet.class).addBinding().toInstance(filter);
+                        @Override
+                        public void configure(Binder binder)
+                        {
+                            Multibinder.newSetBinder(binder, Filter.class, TheServlet.class).addBinding().toInstance(filter);
+                        }
                     }
-                });
+            );
 
             server = injector.getInstance(TestingHttpServer.class);
             server.start();
@@ -316,7 +313,7 @@ public class TestTestingHttpServer
     }
 
     static class DummyFilter
-        implements Filter
+            implements Filter
     {
         private final AtomicInteger callCount = new AtomicInteger();
 
@@ -344,5 +341,4 @@ public class TestTestingHttpServer
         {
         }
     }
-
 }
