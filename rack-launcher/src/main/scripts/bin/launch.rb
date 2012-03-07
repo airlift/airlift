@@ -32,11 +32,6 @@ module Launch
     def self.find_install_path(file)
       path = Pathname.new(file)
 
-      base = path.basename('.rb')
-      unless base.to_path == 'launcher'
-        raise "Expected file '#{file}' basename to be 'launcher' not '#{base}'"
-      end
-
       dir = path.dirname.expand_path
       base = dir.basename
       unless base.to_path == 'bin'
