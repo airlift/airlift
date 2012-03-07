@@ -17,16 +17,27 @@ package com.proofpoint.http.server.testing;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.inject.Binder;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Module;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
+import com.proofpoint.configuration.ConfigurationFactory;
+import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.http.server.HttpServerConfig;
 import com.proofpoint.http.server.HttpServerInfo;
+import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.node.NodeInfo;
+import com.proofpoint.node.testing.TestingNodeModule;
 import org.testng.annotations.Test;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
+import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -111,6 +122,110 @@ public class TestTestingHttpServer
 
             server.start();
             assertGreaterThan(server.getPort(), 0);
+
+            Response response = client.prepareGet(format("http://localhost:%d/", server.getPort()))
+                    .execute()
+                    .get(1, TimeUnit.SECONDS);
+
+            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+            assertEquals(servlet.getCallCount(), 1);
+            assertEquals(filter.getCallCount(), 1);
+        }
+        finally {
+            if (server != null) {
+                closeQuietly(server);
+            }
+            if (client != null) {
+                closeQuietly(client);
+            }
+        }
+    }
+
+    @Test
+    public void testGuiceInjectionWithoutFilters()
+            throws Exception
+    {
+        TestingHttpServer server = null;
+        AsyncHttpClient client = null;
+        final DummyServlet servlet = new DummyServlet();
+
+        try {
+            Injector injector = Guice.createInjector(
+                new TestingNodeModule(),
+                new TestingHttpServerModule(),
+                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
+                        binder.bind(new TypeLiteral<Map<String, String>>()
+                        {
+                        }).annotatedWith(TheServlet.class).toInstance(ImmutableMap.<String, String>of());
+                    }
+                });
+
+            server = injector.getInstance(TestingHttpServer.class);
+            server.start();
+
+            client = new AsyncHttpClient();
+
+            Response response = client.prepareGet(format("http://localhost:%d/", server.getPort()))
+                    .execute()
+                    .get(1, TimeUnit.SECONDS);
+
+            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+            assertEquals(servlet.getCallCount(), 1);
+        }
+        finally {
+            if (server != null) {
+                closeQuietly(server);
+            }
+            if (client != null) {
+                closeQuietly(client);
+            }
+        }
+    }
+
+    @Test
+    public void testGuiceInjectionWithFilters()
+            throws Exception
+    {
+        TestingHttpServer server = null;
+        AsyncHttpClient client = null;
+        final DummyServlet servlet = new DummyServlet();
+        final DummyFilter filter = new DummyFilter();
+
+        try {
+            Injector injector = Guice.createInjector(
+                new TestingNodeModule(),
+                new TestingHttpServerModule(),
+                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
+                        binder.bind(new TypeLiteral<Map<String, String>>()
+                        {
+                        }).annotatedWith(TheServlet.class).toInstance(ImmutableMap.<String, String>of());
+                    }
+                },
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        Multibinder.newSetBinder(binder, Filter.class, TheServlet.class).addBinding().toInstance(filter);
+                    }
+                });
+
+            server = injector.getInstance(TestingHttpServer.class);
+            server.start();
+
+            client = new AsyncHttpClient();
 
             Response response = client.prepareGet(format("http://localhost:%d/", server.getPort()))
                     .execute()
