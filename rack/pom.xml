@@ -42,8 +42,27 @@
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
+            <artifactId>jmx</artifactId>
+            <version>0.53-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>jmx-http-rpc-experimental</artifactId>
+            <version>0.53-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
             <artifactId>testing</artifactId>
             <version>0.53-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-mapper-asl</artifactId>
+            <version>1.9.0</version>
             <scope>test</scope>
         </dependency>
 

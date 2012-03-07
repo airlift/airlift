@@ -27,7 +27,7 @@
             <directory>${basedir}</directory>
             <outputDirectory>rack/</outputDirectory>
             <excludes>
-                <exclude>Gemfile*</exclude> <!-- Rails and other frameworks try to bundle install on startup if they see a gemfile -->
+                <exclude>.bundle/**</exclude>
                 <exclude>target/**</exclude>
                 <exclude>*.iml</exclude>
                 <exclude>*.ipr</exclude>
@@ -40,6 +40,8 @@
                 <exclude>.*.swp</exclude>
                 <exclude>.*.swo</exclude>
                 <exclude>log/**</exclude>
+                <exclude>tmp/**</exclude>
+                <exclude>.rvmrc</exclude>
             </excludes>
         </fileSet>
     </fileSets>

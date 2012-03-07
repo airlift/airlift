@@ -26,14 +26,18 @@ import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.node.testing.TestingNodeModule;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
 
-public class TestRackModule
+public class TestRackModuleRaw
 {
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
     private AsyncHttpClient client;
     private TestingHttpServer server;
 
@@ -47,9 +51,9 @@ public class TestRackModule
                 new TestingNodeModule(),
                 new ConfigurationModule(new ConfigurationFactory(
                         ImmutableMap.<String, String>builder()
-                                .put("rackserver.rack-config-path", Resources.getResource("config.ru").getFile())
-                                        .build()
-                                )));
+                                .put("rackserver.rack-config-path", Resources.getResource("test/raw/config.ru").getFile())
+                                .build()
+                )));
 
         server = injector.getInstance(TestingHttpServer.class);
         server.start();
@@ -66,64 +70,39 @@ public class TestRackModule
     }
 
     @Test
-    public void testGet()
+    public void testBasicGet()
             throws Throwable
     {
-        String expected = "FooBarBaz";
-
-        Response response = client.prepareGet(server.getBaseUrl().resolve("/name-echo").toString())
-                .addQueryParameter("name", expected)
+        Response response = client.prepareGet(server.getBaseUrl().resolve("/foo").toString())
                 .execute()
                 .get();
 
-        assertEquals(response.getResponseBody(), expected);
         assertEquals(response.getStatusCode(), 200);
+        JsonNode tree = MAPPER.readTree(response.getResponseBody());
+
+        assertEquals(tree.get("REQUEST_METHOD").getTextValue(), "GET");
+        assertEquals(tree.get("SCRIPT_NAME").getTextValue(), "");
+        assertEquals(tree.get("PATH_INFO").getTextValue(), "/foo");
+        assertEquals(tree.get("QUERY_STRING").getTextValue(), "");
     }
 
     @Test
-    public void testGet404()
+    public void testGetWithEscaping()
             throws Throwable
     {
-        Response response = client.prepareGet(server.getBaseUrl().resolve("/nothing-here").toString())
+        String path = "/hello%2Fworld+bye";
+
+        Response response = client.prepareGet(server.getBaseUrl().resolve(path).toString())
+                .addQueryParameter("foo/bar", "123 999")
                 .execute()
                 .get();
 
-        assertEquals(response.getStatusCode(), 404);
-    }
-
-    @Test
-    public void testSettingCookiesResultsInACookieHashInRuby()
-            throws Throwable
-    {
-        Response response = client.prepareGet(server.getBaseUrl().resolve("/header-list-test").toString())
-                .addHeader("COOKIE", "Cookie1=Value1")
-                .addHeader("COOKIE", "Cookie2=Value2")
-                .execute()
-                .get();
-
-        assertEquals(response.getResponseBody(), "{\"Cookie1\"=>\"Value1\", \"Cookie2\"=>\"Value2\"}");
         assertEquals(response.getStatusCode(), 200);
-    }
+        JsonNode tree = MAPPER.readTree(response.getResponseBody());
 
-    @Test
-    public void testPostAndGet()
-            throws Throwable
-    {
-        String expected = "FooBarBaz";
-
-        Response responsePost = client.preparePost(server.getBaseUrl().resolve("/temp-store").toString())
-                .setBody(expected)
-                .execute()
-                .get();
-
-        assertEquals(responsePost.getResponseBody(), "");
-        assertEquals(responsePost.getStatusCode(), 201);
-
-        Response responseGet = client.prepareGet(server.getBaseUrl().resolve("/temp-store").toString())
-                .execute()
-                .get();
-
-        assertEquals(responseGet.getResponseBody(), expected);
-        assertEquals(responseGet.getStatusCode(), 200);
+        assertEquals(tree.get("REQUEST_METHOD").getTextValue(), "GET");
+        assertEquals(tree.get("SCRIPT_NAME").getTextValue(), "");
+        assertEquals(tree.get("PATH_INFO").getTextValue(), path);
+        assertEquals(tree.get("QUERY_STRING").getTextValue(), "foo%2Fbar=123%20999");
     }
 }

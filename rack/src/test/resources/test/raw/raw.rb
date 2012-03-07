@@ -13,24 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'sinatra'
+require 'json'
 
-get "/name-echo" do
-  logger = request.logger
-  logger.debug "name-echo was called with #{params[:name]}"
-  return "#{params[:name]}"
-end
-
-post "/temp-store" do
-  @@tmp = request.body.read
-  status 201
-  return ''
-end
-
-get "/temp-store" do
-  return @@tmp
-end
-
-get "/header-list-test" do
-  return request.cookies.inspect
+class Raw
+  def call(env)
+    [200, {'Content-Type' => 'text/plain'}, env.to_json]
+  end
 end

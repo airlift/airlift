@@ -16,7 +16,6 @@ require 'java'
 require 'rubygems'
 require 'rack'
 require 'rack/rewindable_input'
-require 'forwardable'
 
 module Proofpoint
   module RackServer
@@ -62,7 +61,7 @@ module Proofpoint
                 'rack.url_scheme' => servlet_request.scheme,
                 'REQUEST_METHOD' => servlet_request.method,
                 'SCRIPT_NAME' => '',
-                'PATH_INFO' => servlet_request.path_info,
+                'PATH_INFO' => servlet_request.request_uri,
                 'QUERY_STRING' => (servlet_request.query_string || ""),
                 'SERVER_NAME' => servlet_request.server_name,
                 'SERVER_PORT' => servlet_request.server_port.to_s
@@ -91,37 +90,62 @@ module Proofpoint
 
         response_stream = servlet_response.output_stream
         response_body.each { |part| response_stream.write(part.to_java_bytes) }
-        return response_stream.flush
+        response_stream.flush rescue nil
+
+      ensure
+        response_body.close if response_body.respond_to? :close
       end
     end
 
     class RackLogger
-      extend Forwardable
-
-      def_delegators :get_logger, :debug, :info, :warn, :error
-      alias_method :fatal, :error
-
       def get_logger
         call_stack = caller(0)
         this_file = call_stack.first.split(':').first
         caller_call = call_stack.reject { |call| call =~ /#{this_file}\:|Forwardable/i }.first
-        return com::proofpoint::log.Logger.get(caller_call.split(':').first.split('/').last + ":" + caller_call.split('`').last.chomp("'"))
+        caller_name = caller_call.split(':').first.split('/').last + ":" + caller_call.split('`').last.chomp("'")
+        com::proofpoint::log.Logger.get(caller_name)
       end
 
+      def debug(msg)
+        get_logger.debug('%s', msg)
+      end
+
+      def info(msg)
+        get_logger.info('%s', msg)
+      end
+
+      def warn(msg)
+        get_logger.warn('%s', msg)
+      end
+
+      def error(msg)
+        get_logger.error('%s', msg)
+      end
+
+      alias_method :fatal, :error
+
       def debug?
-        return get_logger.is_debug_enabled
+        get_logger.is_debug_enabled
       end
 
       def info?
-        return get_logger.is_info_enabled
+        get_logger.is_info_enabled
       end
 
+      # TODO: implement this method in platform logger
       def warn?
-        return true
+        true
       end
+
       alias_method :error?, :warn?
       alias_method :fatal?, :error?
-
     end
+  end
+end
+
+# Fix bug in JRuby's handling of gems in jars (JRUBY-3986)
+class File
+  def self.mtime(path)
+    stat(path).mtime
   end
 end

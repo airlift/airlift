@@ -125,13 +125,37 @@
                     <plugin>
                         <groupId>com.proofpoint.platform</groupId>
                         <artifactId>bundler-packaging-plugin</artifactId>
-                        <version>1.0</version>
+                        <version>1.1</version>
                         <executions>
                             <execution>
                                 <phase>package</phase>
                                 <goals>
                                     <goal>bundler-package</goal>
                                 </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+
+                        <executions>
+                            <!-- TODO: devise a better approach to handling assets -->
+                            <execution>
+                                <id>precompile-assets</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target name="Precompile assets">
+                                        <exec executable="bundle" dir="${project.basedir}" failonerror="true">
+                                            <arg line="exec rake assets:precompile"/>
+                                        </exec>
+                                    </target>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
