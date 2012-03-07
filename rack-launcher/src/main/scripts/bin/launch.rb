@@ -202,14 +202,12 @@ module Launch
         puts
       end
 
-      Pathname.new(@options[:log_path]).dirname.mkpath
-
       pid = Process.spawn(@options[:environment],
                           *command,
                           :chdir => @options[:data_dir],
                           :umask => 0027,
                           :in => '/dev/null',
-                          :out => [@options[:log_path], "a"],
+                          :out => '/dev/null',
                           :err => [:child, :out],
                           :unsetenv_others => true,
                           :pgroup => true)
