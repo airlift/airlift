@@ -42,7 +42,7 @@ module Launch
     end
 
     def self.strip_heredoc(string)
-      space = /(\s+)/.match(string)[1]
+      space = /\s+/.match(string)[0]
       string.gsub(/^#{space}/, '')
     end
 
