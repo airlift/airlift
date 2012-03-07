@@ -2,6 +2,7 @@
 
 - Upgrade to jetty 8.1.1 to fix connection leak when clients hang up prematurely
 - EOFException while reading a JSON request now results in a 400 instead of a 500
+- Add support for binding servlet filters into TestingHttpServer
 
 * 0.52
 

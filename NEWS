@@ -1,12 +1,18 @@
 Platform 0.53
 
-In this release we have upgraded the following dependencies
+* In this release we have upgraded the following dependencies
 
   - Jetty 8.1.1
   - Guava 11.0.2
 
 Jetty 8.0.3 has a bug where connections will leak in CLOSE_WAIT state if clients hang up
 prematurely.
+
+* Testing servlet filters
+
+When developing servlet filters for use with the platform HTTP server, it is now possible
+to test these filters inside the TestingHttpServer. Bind the TestingHttpServerModule into your
+test injector along with the module that binds your servlet filter. 
 
 Platform 0.52
 
