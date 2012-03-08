@@ -3,14 +3,14 @@
     <parent>
         <artifactId>platform</artifactId>
         <groupId>com.proofpoint.platform</groupId>
-        <version>0.53-SNAPSHOT</version>
+        <version>0.53</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>json</artifactId>
     <packaging>jar</packaging>
-    <version>0.53-SNAPSHOT</version>
+    <version>0.53</version>
 
 
     <dependencies>

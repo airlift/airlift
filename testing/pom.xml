@@ -5,11 +5,11 @@
     <artifactId>testing</artifactId>
     <packaging>jar</packaging>
     <name>testing</name>
-    <version>0.53-SNAPSHOT</version>
+    <version>0.53</version>
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.53-SNAPSHOT</version>
+        <version>0.53</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
