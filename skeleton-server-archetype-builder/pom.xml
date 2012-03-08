@@ -193,6 +193,7 @@
                         <pomInclude>pom.xml</pomInclude>
                     </pomIncludes>
                     <projectsDirectory>${project.build.directory}/archetype</projectsDirectory>
+                    <streamLogs>true</streamLogs>
                 </configuration>
                 <executions>
                     <execution>
