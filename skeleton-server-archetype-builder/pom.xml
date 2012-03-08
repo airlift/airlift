@@ -173,8 +173,11 @@
     </repository>
   </distributionManagement>
 
-  <build>
-            <plugins>
+    <profiles>
+        <profile>
+            <id>sonatype-oss-release</id>
+            <build>
+                <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
@@ -193,7 +196,11 @@
                         </executions>
                     </plugin>
                 </plugins>
-  ]]></replacevalue>
+            </build>
+        </profile>
+    </profiles>
+
+  <build>]]></replacevalue>
                                     </replacefilter>
                                 </replace>
                             </target>
@@ -267,6 +274,9 @@
                         <configuration>
                             <projectsDirectory>${project.build.directory}/archetype</projectsDirectory>
                             <streamLogs>true</streamLogs>
+                            <profiles>
+                                <profile>sonatype-oss-release</profile>
+                            </profiles>
                         </configuration>
                         <executions>
                             <execution>
