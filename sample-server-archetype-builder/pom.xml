@@ -174,7 +174,28 @@
     </repository>
   </distributionManagement>
 
-  <build>]]></replacevalue>
+  <build>
+        <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.4</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <useAgent>true</useAgent>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+
+  ]]></replacevalue>
                                     </replacefilter>
                                 </replace>
                             </target>
@@ -245,6 +266,10 @@
                     <plugin>
                         <artifactId>maven-invoker-plugin</artifactId>
                         <version>1.5</version>
+                        <configuration>
+                            <projectsDirectory>${project.build.directory}/archetype</projectsDirectory>
+                            <streamLogs>true</streamLogs>
+                        </configuration>
                         <executions>
                             <execution>
                                 <id>deploy-archetype</id>
@@ -254,8 +279,6 @@
                                 </goals>
                                 <configuration>
                                     <goals>
-                                        <goal>package</goal>
-                                        <goal>gpg:sign</goal>
                                         <goal>deploy</goal>
                                     </goals>
                                 </configuration>
