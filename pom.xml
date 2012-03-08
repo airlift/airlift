@@ -308,6 +308,9 @@
     <profiles>
         <profile>
             <id>sonatype-oss-release</id>
+            <properties>
+                <skipTests>true</skipTests> <!-- tests run in the preparation step of the release -->
+            </properties>
             <build>
                 <plugins>
                     <plugin>
