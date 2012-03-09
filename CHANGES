@@ -1,3 +1,7 @@
+* 0.54
+
+- [Bug] Don't use doclava in javadoc plugin for servers that use rest-server-base, it's buggy
+
 * 0.53
 
 - Upgrade to jetty 8.1.1 to fix connection leak when clients hang up prematurely
