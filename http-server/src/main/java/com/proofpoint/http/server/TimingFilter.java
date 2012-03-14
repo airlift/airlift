@@ -275,13 +275,11 @@ class TimingFilter
 
     private static class TimedPrintWriter extends PrintWriter
     {
-        private final PrintWriter delegate;
         private Long firstByteTime;
 
         private TimedPrintWriter(PrintWriter delegate)
         {
-            super(new NullOutputStream());
-            this.delegate = delegate;
+            super(delegate);
         }
 
         public Long getFirstByteTime()
@@ -296,184 +294,179 @@ class TimingFilter
             }
         }
 
-        public boolean checkError()
-        {
-            return delegate.checkError();
-        }
-
         @Override
         public void write(int c)
         {
             recordFirstByteTime();
-            delegate.write(c);
+            super.write(c);
         }
 
         @Override
         public void write(char[] buf, int off, int len)
         {
             recordFirstByteTime();
-            delegate.write(buf, off, len);
+            super.write(buf, off, len);
         }
 
         @Override
         public void write(char[] buf)
         {
             recordFirstByteTime();
-            delegate.write(buf);
+            super.write(buf);
         }
 
         @Override
         public void write(String s, int off, int len)
         {
             recordFirstByteTime();
-            delegate.write(s, off, len);
+            super.write(s, off, len);
         }
 
         @Override
         public void write(String s)
         {
             recordFirstByteTime();
-            delegate.write(s);
+            super.write(s);
         }
 
         @Override
         public void print(boolean b)
         {
             recordFirstByteTime();
-            delegate.print(b);
+            super.print(b);
         }
 
         @Override
         public void print(char c)
         {
             recordFirstByteTime();
-            delegate.print(c);
+            super.print(c);
         }
 
         @Override
         public void print(int i)
         {
             recordFirstByteTime();
-            delegate.print(i);
+            super.print(i);
         }
 
         @Override
         public void print(long l)
         {
             recordFirstByteTime();
-            delegate.print(l);
+            super.print(l);
         }
 
         @Override
         public void print(float f)
         {
             recordFirstByteTime();
-            delegate.print(f);
+            super.print(f);
         }
 
         @Override
         public void print(double d)
         {
             recordFirstByteTime();
-            delegate.print(d);
+            super.print(d);
         }
 
         @Override
         public void print(char[] s)
         {
             recordFirstByteTime();
-            delegate.print(s);
+            super.print(s);
         }
 
         @Override
         public void print(String s)
         {
             recordFirstByteTime();
-            delegate.print(s);
+            super.print(s);
         }
 
         @Override
         public void print(Object obj)
         {
             recordFirstByteTime();
-            delegate.print(obj);
+            super.print(obj);
         }
 
         @Override
         public void println()
         {
             recordFirstByteTime();
-            delegate.println();
+            super.println();
         }
 
         @Override
         public void println(boolean x)
         {
             recordFirstByteTime();
-            delegate.println(x);
+            super.println(x);
         }
 
         @Override
         public void println(char x)
         {
             recordFirstByteTime();
-            delegate.println(x);
+            super.println(x);
         }
 
         @Override
         public void println(int x)
         {
             recordFirstByteTime();
-            delegate.println(x);
+            super.println(x);
         }
 
         @Override
         public void println(long x)
         {
             recordFirstByteTime();
-            delegate.println(x);
+            super.println(x);
         }
 
         @Override
         public void println(float x)
         {
             recordFirstByteTime();
-            delegate.println(x);
+            super.println(x);
         }
 
         @Override
         public void println(double x)
         {
             recordFirstByteTime();
-            delegate.println(x);
+            super.println(x);
         }
 
         @Override
         public void println(char[] x)
         {
             recordFirstByteTime();
-            delegate.println(x);
+            super.println(x);
         }
 
         @Override
         public void println(String x)
         {
             recordFirstByteTime();
-            delegate.println(x);
+            super.println(x);
         }
 
         @Override
         public void println(Object x)
         {
             recordFirstByteTime();
-            delegate.println(x);
+            super.println(x);
         }
 
         @Override
         public PrintWriter printf(String format, Object... args)
         {
             recordFirstByteTime();
-            delegate.printf(format, args);
+            super.printf(format, args);
             return this;
         }
 
@@ -481,7 +474,7 @@ class TimingFilter
         public PrintWriter printf(Locale l, String format, Object... args)
         {
             recordFirstByteTime();
-            delegate.printf(l, format, args);
+            super.printf(l, format, args);
             return this;
         }
 
@@ -489,7 +482,7 @@ class TimingFilter
         public PrintWriter format(String format, Object... args)
         {
             recordFirstByteTime();
-            delegate.format(format, args);
+            super.format(format, args);
             return this;
         }
 
@@ -497,7 +490,7 @@ class TimingFilter
         public PrintWriter format(Locale l, String format, Object... args)
         {
             recordFirstByteTime();
-            delegate.format(l, format, args);
+            super.format(l, format, args);
             return this;
         }
 
@@ -505,7 +498,7 @@ class TimingFilter
         public PrintWriter append(CharSequence csq)
         {
             recordFirstByteTime();
-            delegate.append(csq);
+            super.append(csq);
             return this;
         }
 
@@ -513,7 +506,7 @@ class TimingFilter
         public PrintWriter append(CharSequence csq, int start, int end)
         {
             recordFirstByteTime();
-            delegate.append(csq, start, end);
+            super.append(csq, start, end);
             return this;
         }
 
@@ -521,20 +514,8 @@ class TimingFilter
         public PrintWriter append(char c)
         {
             recordFirstByteTime();
-            delegate.append(c);
+            super.append(c);
             return this;
-        }
-
-        @Override
-        public void flush()
-        {
-            delegate.flush();
-        }
-
-        @Override
-        public void close()
-        {
-            delegate.close();
         }
     }
 }
