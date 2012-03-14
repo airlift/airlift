@@ -1,7 +1,6 @@
 package com.proofpoint.http.server;
 
 import com.google.common.base.Splitter;
-import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.proofpoint.event.client.EventField;
@@ -18,7 +17,7 @@ import static java.lang.Math.max;
 
 public class HttpRequestEvent
 {
-    public static HttpRequestEvent createHttpRequestEvent(Request request, Response response, TraceTokenManager traceTokenManager, Ticker ticker)
+    public static HttpRequestEvent createHttpRequestEvent(Request request, Response response, TraceTokenManager traceTokenManager, long currentTimeInMillis)
     {
         String user = null;
         Principal principal = request.getUserPrincipal();
@@ -44,7 +43,7 @@ public class HttpRequestEvent
             timeToFirstByte = max(time - request.getTimeStamp(), 0);
         }
 
-        long timeToLastByte = max(ticker.read() - request.getTimeStamp(), 0);
+        long timeToLastByte = max(currentTimeInMillis - request.getTimeStamp(), 0);
 
         ImmutableList.Builder<String> builder = ImmutableList.builder();
         if (request.getRemoteAddr() != null) {

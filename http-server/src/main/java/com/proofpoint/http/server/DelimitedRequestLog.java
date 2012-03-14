@@ -15,7 +15,6 @@
  */
 package com.proofpoint.http.server;
 
-import com.google.common.base.Ticker;
 import com.proofpoint.event.client.EventClient;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
@@ -44,24 +43,24 @@ class DelimitedRequestLog
     private final DateTimeFormatter isoFormatter;
     private final TraceTokenManager traceTokenManager;
     private final EventClient eventClient;
-    private final Ticker ticker;
+    private final CurrentTimeMillisProvider currentTimeMillisProvider;
 
     public DelimitedRequestLog(String filename, int retainDays, TraceTokenManager traceTokenManager, EventClient eventClient)
             throws IOException
     {
-        this(filename, retainDays, traceTokenManager, eventClient, Ticker.systemTicker());
+        this(filename, retainDays, traceTokenManager, eventClient, new SystemCurrentTimeMillisProvider());
     }
 
     public DelimitedRequestLog(String filename,
             int retainDays,
             TraceTokenManager traceTokenManager,
             EventClient eventClient,
-            Ticker ticker)
+            CurrentTimeMillisProvider currentTimeMillisProvider)
             throws IOException
     {
         this.traceTokenManager = traceTokenManager;
         this.eventClient = eventClient;
-        this.ticker = ticker;
+        this.currentTimeMillisProvider = currentTimeMillisProvider;
         out = new RolloverFileOutputStream(filename, true, retainDays);
         writer = new OutputStreamWriter(out);
 
@@ -73,7 +72,8 @@ class DelimitedRequestLog
 
     public void log(Request request, Response response)
     {
-        HttpRequestEvent event = createHttpRequestEvent(request, response, traceTokenManager, ticker);
+        long currentTime = currentTimeMillisProvider.getCurrentTimeMillis();
+        HttpRequestEvent event = createHttpRequestEvent(request, response, traceTokenManager, currentTime);
 
         StringBuilder builder = new StringBuilder();
         builder.append(isoFormatter.print(event.getTimeStamp()))

@@ -16,7 +16,6 @@
 package com.proofpoint.http.server;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 import com.proofpoint.event.client.InMemoryEventClient;
@@ -96,14 +95,8 @@ public class TestDelimitedRequestLog
 
         final TraceTokenManager tokenManager = new TraceTokenManager();
         InMemoryEventClient eventClient = new InMemoryEventClient();
-        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, tokenManager, eventClient, new Ticker()
-        {
-            @Override
-            public long read()
-            {
-                return timestamp + timeToLastByte;
-            }
-        });
+        MockCurrentTimeMillisProvider currentTimeMillisProvider = new MockCurrentTimeMillisProvider(timestamp + timeToLastByte);
+        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, tokenManager, eventClient, currentTimeMillisProvider);
 
         when(principal.getName()).thenReturn(user);
         when(request.getTimeStamp()).thenReturn(timestamp);
@@ -178,7 +171,7 @@ public class TestDelimitedRequestLog
         when(request.getProtocol()).thenReturn("protocol");
 
         InMemoryEventClient eventClient = new InMemoryEventClient();
-        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, null, eventClient, Ticker.systemTicker());
+        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, null, eventClient);
         logger.log(request, response);
         logger.stop();
 
@@ -200,7 +193,7 @@ public class TestDelimitedRequestLog
         when(request.getRemoteAddr()).thenReturn(clientIp);
 
         InMemoryEventClient eventClient = new InMemoryEventClient();
-        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, null, eventClient, Ticker.systemTicker());
+        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, null, eventClient);
         logger.log(request, response);
         logger.stop();
 
@@ -223,7 +216,7 @@ public class TestDelimitedRequestLog
         when(request.getHeaders("X-FORWARDED-FOR")).thenReturn(Collections.enumeration(ImmutableList.of(clientIp, "192.168.1.2, 172.16.0.1", "169.254.1.2, 127.1.2.3", "10.1.2.3")));
 
         InMemoryEventClient eventClient = new InMemoryEventClient();
-        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, null, eventClient, Ticker.systemTicker());
+        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, null, eventClient);
         logger.log(request, response);
         logger.stop();
 
