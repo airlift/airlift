@@ -65,7 +65,9 @@ public class HttpRequestEvent
             catch (IllegalArgumentException ignored) {
             }
         }
-
+        if (clientAddress == null) {
+            clientAddress = request.getRemoteAddr();
+        }
 
         String requestUri = null;
         if (request.getUri() != null) {
@@ -79,7 +81,7 @@ public class HttpRequestEvent
 
         String protocol = request.getHeader("X-FORWARDED-PROTO");
         if (protocol == null) {
-            protocol = request.getProtocol();
+            protocol = request.getScheme();
         }
         if (protocol != null) {
             protocol = protocol.toLowerCase();

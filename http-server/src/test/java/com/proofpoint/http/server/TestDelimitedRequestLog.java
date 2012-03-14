@@ -168,7 +168,7 @@ public class TestDelimitedRequestLog
         final Response response = mock(Response.class);
         final String protocol = "protocol";
 
-        when(request.getProtocol()).thenReturn("protocol");
+        when(request.getScheme()).thenReturn("protocol");
 
         InMemoryEventClient eventClient = new InMemoryEventClient();
         DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, null, eventClient);
