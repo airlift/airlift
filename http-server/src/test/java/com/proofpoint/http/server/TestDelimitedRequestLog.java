@@ -140,7 +140,7 @@ public class TestDelimitedRequestLog
         Assert.assertEquals(event.getResponseCode(), responseCode);
         Assert.assertEquals(event.getResponseContentType(), responseContentType);
         Assert.assertEquals(event.getTimeToDispatch(), dispatchTime);
-        Assert.assertEquals(event.getTimeToFirstByte(), timeToFirstByte);
+        Assert.assertEquals(event.getTimeToFirstByte(), (Long)timeToFirstByte);
         Assert.assertEquals(event.getTimeToLastByte(), timeToLastByte);
         Assert.assertEquals(event.getTraceToken(), tokenManager.getCurrentRequestToken());
 
@@ -180,6 +180,25 @@ public class TestDelimitedRequestLog
         HttpRequestEvent event = (HttpRequestEvent) events.get(0);
 
         Assert.assertEquals(event.getProtocol(), protocol);
+    }
+
+    @Test
+    public void testNoTimeToFirstByte()
+            throws Exception
+    {
+        final Request request = mock(Request.class);
+        final Response response = mock(Response.class);
+
+        InMemoryEventClient eventClient = new InMemoryEventClient();
+        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, null, eventClient);
+        logger.log(request, response);
+        logger.stop();
+
+        List<Object> events = eventClient.getEvents();
+        Assert.assertEquals(events.size(), 1);
+        HttpRequestEvent event = (HttpRequestEvent) events.get(0);
+
+        Assert.assertNull(event.getTimeToFirstByte());
     }
 
     @Test

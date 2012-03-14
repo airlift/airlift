@@ -36,7 +36,7 @@ public class HttpRequestEvent
         }
         long timeToDispatch = max(dispatchTime - request.getTimeStamp(), 0);
 
-        long timeToFirstByte = 0;
+        Long timeToFirstByte = null;
         Object firstByteTime = request.getAttribute(TimingFilter.FIRST_BYTE_TIME);
         if (firstByteTime instanceof Long) {
             Long time = (Long) firstByteTime;
@@ -121,7 +121,7 @@ public class HttpRequestEvent
     private final int responseCode;
     private final String responseContentType;
     private final long timeToDispatch;
-    private final long timeToFirstByte;
+    private final Long timeToFirstByte;
     private final long timeToLastByte;
 
     public HttpRequestEvent(DateTime timeStamp,
@@ -139,7 +139,7 @@ public class HttpRequestEvent
             int responseCode,
             String responseContentType,
             long timeToDispatch,
-            long timeToFirstByte,
+            Long timeToFirstByte,
             long timeToLastByte)
     {
         this.timeStamp = timeStamp;
@@ -252,7 +252,7 @@ public class HttpRequestEvent
     }
 
     @EventField
-    public long getTimeToFirstByte()
+    public Long getTimeToFirstByte()
     {
         return timeToFirstByte;
     }
