@@ -3,6 +3,7 @@
 - Record and event for each http request processed
 - Added support for X-FORWARDED-FOR and X-FORWARDED-PROTO in request event and logging
 - Add timing filter to http request flow for measuring time to first byte
+- Set names of http server threads to a reasonable value
 
 * 0.54
 
