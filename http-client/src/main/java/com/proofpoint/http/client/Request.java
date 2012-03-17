@@ -1,11 +1,13 @@
 package com.proofpoint.http.client;
 
+import com.google.common.annotations.Beta;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 
 import java.net.URI;
 
+@Beta
 public class Request
 {
     private final URI uri;

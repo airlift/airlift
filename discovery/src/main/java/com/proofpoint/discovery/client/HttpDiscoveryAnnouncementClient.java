@@ -6,7 +6,7 @@ import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
-import com.proofpoint.http.client.HttpClient;
+import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
@@ -34,13 +34,13 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
     private final Provider<URI> discoveryServiceURI;
     private final NodeInfo nodeInfo;
     private final JsonCodec<Announcement> announcementCodec;
-    private final HttpClient httpClient;
+    private final AsyncHttpClient httpClient;
 
     @Inject
     public HttpDiscoveryAnnouncementClient(@ForDiscoveryClient Provider<URI> discoveryServiceURI,
             NodeInfo nodeInfo,
             JsonCodec<Announcement> announcementCodec,
-            @ForDiscoveryClient HttpClient httpClient)
+            @ForDiscoveryClient AsyncHttpClient httpClient)
     {
         Preconditions.checkNotNull(discoveryServiceURI, "discoveryServiceURI is null");
         Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");

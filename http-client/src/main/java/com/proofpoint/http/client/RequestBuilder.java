@@ -1,10 +1,12 @@
 package com.proofpoint.http.client;
 
+import com.google.common.annotations.Beta;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
 import java.net.URI;
 
+@Beta
 public class RequestBuilder
 {
     public static RequestBuilder prepareHead() {

@@ -4,8 +4,9 @@ import com.google.common.base.Throwables;
 import com.google.common.io.CharStreams;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.testing.StaticHttpServiceSelector;
-import com.proofpoint.http.client.HttpClient;
+import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
+import com.proofpoint.http.client.JavaUrlHttpClient;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.units.Duration;
 import org.eclipse.jetty.server.Server;
@@ -139,8 +140,10 @@ public class TestHttpEventClient
                 v2Selector,
                 eventWriter,
                 new NodeInfo("test"), config,
-                new HttpClient(Executors.newCachedThreadPool(),
-                        new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))));
+                new AsyncHttpClient(
+                        new JavaUrlHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))),
+                        Executors.newCachedThreadPool()
+                ));
     }
 
     private Server createServer(final DummyServlet servlet)

@@ -8,8 +8,8 @@ import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.ServiceType;
+import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.BodyGenerator;
-import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.Response;
@@ -38,7 +38,7 @@ public class HttpEventClient
     private final HttpServiceSelector serviceSelector;
     private final JsonEventWriter eventWriter;
     private final int version;
-    private final HttpClient httpClient;
+    private final AsyncHttpClient httpClient;
     private final NodeInfo nodeInfo;
 
     @Inject
@@ -48,7 +48,7 @@ public class HttpEventClient
             JsonEventWriter eventWriter,
             NodeInfo nodeInfo,
             HttpEventClientConfig config,
-            @ForEventClient HttpClient httpClient)
+            @ForEventClient AsyncHttpClient httpClient)
     {
         Preconditions.checkNotNull(serviceSelector, "serviceSelector is null");
         Preconditions.checkNotNull(v1ServiceSelector, "v1ServiceSelector is null");

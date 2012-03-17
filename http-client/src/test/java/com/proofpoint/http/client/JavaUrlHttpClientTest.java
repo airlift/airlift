@@ -5,7 +5,6 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.proofpoint.units.Duration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -30,13 +29,12 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Map.Entry;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class HttpClientTest
+public class JavaUrlHttpClientTest
 {
     private EchoServlet servlet;
-    private HttpClient httpClient;
+    private JavaUrlHttpClient httpClient;
     private Server server;
     private URI baseURI;
 
@@ -45,7 +43,7 @@ public class HttpClientTest
             throws Exception
     {
         servlet = new EchoServlet();
-        httpClient = new HttpClient(Executors.newCachedThreadPool(new ThreadFactoryBuilder().setDaemon(true).build()), new HttpClientConfig());
+        httpClient = new JavaUrlHttpClient(new HttpClientConfig());
 
         int port;
         ServerSocket socket = new ServerSocket();
@@ -99,7 +97,7 @@ public class HttpClientTest
                 .addHeader("dupe", "second")
                 .build();
 
-        int statusCode = httpClient.execute(request, new ResponseStatusCodeHandler()).checkedGet();
+        int statusCode = httpClient.execute(request, new ResponseStatusCodeHandler());
         Assert.assertEquals(statusCode, 200);
         Assert.assertEquals(servlet.requestMethod, "GET");
         Assert.assertEquals(servlet.requestUri, uri);
@@ -119,7 +117,7 @@ public class HttpClientTest
                 .addHeader("dupe", "second")
                 .build();
 
-        int statusCode = httpClient.execute(request, new ResponseStatusCodeHandler()).checkedGet();
+        int statusCode = httpClient.execute(request, new ResponseStatusCodeHandler());
         Assert.assertEquals(statusCode, 200);
         Assert.assertEquals(servlet.requestMethod, "POST");
         Assert.assertEquals(servlet.requestUri, uri);
@@ -139,7 +137,7 @@ public class HttpClientTest
                 .addHeader("dupe", "second")
                 .build();
 
-        int statusCode = httpClient.execute(request, new ResponseStatusCodeHandler()).checkedGet();
+        int statusCode = httpClient.execute(request, new ResponseStatusCodeHandler());
         Assert.assertEquals(statusCode, 200);
         Assert.assertEquals(servlet.requestMethod, "PUT");
         Assert.assertEquals(servlet.requestUri, uri);
@@ -159,7 +157,7 @@ public class HttpClientTest
                 .addHeader("dupe", "second")
                 .build();
 
-        int statusCode = httpClient.execute(request, new ResponseStatusCodeHandler()).checkedGet();
+        int statusCode = httpClient.execute(request, new ResponseStatusCodeHandler());
         Assert.assertEquals(statusCode, 200);
         Assert.assertEquals(servlet.requestMethod, "DELETE");
         Assert.assertEquals(servlet.requestUri, uri);
@@ -176,7 +174,7 @@ public class HttpClientTest
                 .setUri(baseURI)
                 .build();
 
-        int statusCode = httpClient.execute(request, new ResponseStatusCodeHandler()).checkedGet();
+        int statusCode = httpClient.execute(request, new ResponseStatusCodeHandler());
         Assert.assertEquals(statusCode, 543);
     }
 
@@ -204,7 +202,7 @@ public class HttpClientTest
             {
                 return response.getStatusMessage();
             }
-        }).checkedGet();
+        });
 
         Assert.assertEquals(statusMessage, "message");
     }
@@ -238,7 +236,7 @@ public class HttpClientTest
             {
                 return response.getHeaders();
             }
-        }).checkedGet();
+        });
 
         Assert.assertEquals(headers.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(headers.get("dupe"), ImmutableList.of("first", "second"));
@@ -252,7 +250,7 @@ public class HttpClientTest
                 .setUri(baseURI)
                 .build();
 
-        String body = httpClient.execute(request, new ResponseToStringHandler()).checkedGet();
+        String body = httpClient.execute(request, new ResponseToStringHandler());
         Assert.assertEquals(body, "");
     }
 
@@ -266,7 +264,7 @@ public class HttpClientTest
                 .setUri(baseURI)
                 .build();
 
-        String body = httpClient.execute(request, new ResponseToStringHandler()).checkedGet();
+        String body = httpClient.execute(request, new ResponseToStringHandler());
         Assert.assertEquals(body, "body text");
     }
 
@@ -281,7 +279,7 @@ public class HttpClientTest
                 .setUri(baseURI)
                 .build();
 
-        String body = httpClient.execute(request, new ResponseToStringHandler()).checkedGet();
+        String body = httpClient.execute(request, new ResponseToStringHandler());
         Assert.assertEquals(body, "body text");
     }
 
@@ -295,14 +293,14 @@ public class HttpClientTest
 
         HttpClientConfig config = new HttpClientConfig();
         config.setConnectTimeout(new Duration(5, TimeUnit.MILLISECONDS));
-        HttpClient client = new HttpClient(Executors.newCachedThreadPool(new ThreadFactoryBuilder().setDaemon(true).build()), config);
+        JavaUrlHttpClient client = new JavaUrlHttpClient(config);
 
         Request request = RequestBuilder.prepareGet()
                 .setUri(URI.create("http://localhost:" + serverSocket.getLocalPort() + "/"))
                 .build();
 
         try {
-            client.execute(request, new ResponseToStringHandler()).checkedGet();
+            client.execute(request, new ResponseToStringHandler());
         }
         finally {
             clientSocket.close();
@@ -317,14 +315,14 @@ public class HttpClientTest
         HttpClientConfig config = new HttpClientConfig()
                 .setReadTimeout(new Duration(200, TimeUnit.MILLISECONDS));
 
-        HttpClient client = new HttpClient(Executors.newCachedThreadPool(new ThreadFactoryBuilder().setDaemon(true).build()), config);
+        JavaUrlHttpClient client = new JavaUrlHttpClient(config);
 
         URI uri = URI.create(baseURI.toASCIIString() + "/?sleep=400");
         Request request = RequestBuilder.prepareGet()
                 .setUri(uri)
                 .build();
 
-        client.execute(request, new ResponseToStringHandler()).checkedGet();
+        client.execute(request, new ResponseToStringHandler());
     }
 
     private static final class EchoServlet extends HttpServlet

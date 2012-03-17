@@ -1,18 +1,28 @@
 Platform 0.55
 
+* In this release we have upgraded the following dependencies
+
+  - Jackson 1.9.5
+
 * HTTP request events
 
 We now record an event for each HTTP request processed.  The HTTP request logging and
 new event system now properly support the X-FORWARDED-FOR and X-FORWARDED-PROTO headers.
 
-* In this release we have upgraded the following dependencies
+* Redesigned HTTP client
 
-  - Jackson 1.9.5
+The existing HTTP client interface has been renamed to AsyncHttpClient and a new synchronous
+HTTP client interface has been added in its place.  Additionally, the underlying HTTP client
+engine has been replaced with Apache HTTP Components.
 
-Plaform 0.54
+The HTTP client is still experimental.
+
+
+Platform 0.54
 
 This release removed the use of DocLava for generating javadocs for projects rest-server-base. 
 It was triggering a bug in javadoc that prevented some projects from building successfully.
+
 
 Platform 0.53
 

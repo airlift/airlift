@@ -5,6 +5,8 @@
 - Added support for X-FORWARDED-FOR and X-FORWARDED-PROTO in request event and logging
 - Add timing filter to http request flow for measuring time to first byte
 - Set names of http server threads to a reasonable value
+- [Experimental] Changed HttpClient to not be async and added new AsyncHttpClient
+- [Experimental] Replace java.net.URL with Apache HTTP Components in http-client
 
 * 0.54
 

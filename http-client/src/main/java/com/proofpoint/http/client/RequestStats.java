@@ -1,5 +1,6 @@
 package com.proofpoint.http.client;
 
+import com.google.common.annotations.Beta;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.proofpoint.stats.CounterStat;
 import com.proofpoint.stats.MeterStat;
@@ -14,10 +15,10 @@ import javax.inject.Inject;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
+@Beta
 public class RequestStats
 {
     private final CounterStat request;
-    private final TimedStat schedulingTime;
     private final TimedStat requestTime;
     private final TimedStat responseTime;
     private final MeterStat readBytes;
@@ -30,7 +31,6 @@ public class RequestStats
         executor = new ScheduledThreadPoolExecutor(2, new ThreadFactoryBuilder().setNameFormat("RequestStatsTicker-%s").setDaemon(true).build());
 
         request = new CounterStat(executor);
-        schedulingTime = new TimedStat();
         requestTime = new TimedStat();
         responseTime = new TimedStat();
         readBytes = new MeterStat(executor);
@@ -54,14 +54,16 @@ public class RequestStats
             int responseCode,
             long requestSizeInBytes,
             long responseSizeInBytes,
-            Duration schedulingDelay,
             Duration requestProcessingTime,
             Duration responseProcessingTime)
     {
         request.update(1);
-        schedulingTime.addValue(schedulingDelay);
-        requestTime.addValue(requestProcessingTime);
-        responseTime.addValue(responseProcessingTime);
+        if (requestProcessingTime != null) {
+            requestTime.addValue(requestProcessingTime);
+        }
+        if (requestProcessingTime != null) {
+            responseTime.addValue(responseProcessingTime);
+        }
         readBytes.update(responseSizeInBytes);
         writtenBytes.update(requestSizeInBytes);
     }
@@ -71,13 +73,6 @@ public class RequestStats
     public CounterStat getRequest()
     {
         return request;
-    }
-
-    @Managed
-    @Nested
-    public TimedStat getSchedulingTime()
-    {
-        return schedulingTime;
     }
 
     @Managed
