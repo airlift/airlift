@@ -1,5 +1,8 @@
 * 0.54
 
+- Record and event for each http request processed
+- Added support for X-FORWARDED-FOR and X-FORWARDED-PROTO in request event and logging
+- Add timing filter to http request flow for measuring time to first byte
 - [Bug] Don't use doclava in javadoc plugin for servers that use rest-server-base, it's buggy
 
 * 0.53

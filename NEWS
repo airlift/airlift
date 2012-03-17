@@ -1,3 +1,10 @@
+Platform 0.54
+
+* HTTP request events
+
+We now record an event for each HTTP request processed.  The HTTP request logging and
+new event system now properly support the X-FORWARDED-FOR and X-FORWARDED-PROTO headers.
+
 Platform 0.53
 
 * In this release we have upgraded the following dependencies
