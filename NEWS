@@ -1,9 +1,14 @@
-Platform 0.54
+Platform 0.55
 
 * HTTP request events
 
 We now record an event for each HTTP request processed.  The HTTP request logging and
 new event system now properly support the X-FORWARDED-FOR and X-FORWARDED-PROTO headers.
+
+Plaform 0.54
+
+This release removed the use of DocLava for generating javadocs for projects rest-server-base. 
+It was triggering a bug in javadoc that prevented some projects from building successfully.
 
 Platform 0.53
 
