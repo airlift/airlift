@@ -151,8 +151,9 @@
                                 </goals>
                                 <configuration>
                                     <target name="Precompile assets">
-                                        <exec executable="bundle" dir="${project.basedir}" failonerror="true">
-                                            <arg line="exec rake assets:precompile" />
+                                        <exec executable="sh" dir="${project.basedir}" failonerror="true">
+                                            <arg value="-c"/>
+                                            <arg value="if [ -d app/assets ]; then bundle exec rake assets:precompile; else echo 'Consider upgrading to Rails 3.1+ and take advantage of the asset pipeline'; fi" />
                                         </exec>
                                     </target>
                                 </configuration>
