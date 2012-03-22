@@ -1,5 +1,6 @@
-* 0.55
+* 0.55-SNAPSHOT
 
+- Upgrade to Jackson 1.9.5
 - Record and event for each http request processed
 - Added support for X-FORWARDED-FOR and X-FORWARDED-PROTO in request event and logging
 - Add timing filter to http request flow for measuring time to first byte

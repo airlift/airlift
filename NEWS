@@ -5,6 +5,10 @@ Platform 0.55
 We now record an event for each HTTP request processed.  The HTTP request logging and
 new event system now properly support the X-FORWARDED-FOR and X-FORWARDED-PROTO headers.
 
+* In this release we have upgraded the following dependencies
+
+  - Jackson 1.9.5
+
 Plaform 0.54
 
 This release removed the use of DocLava for generating javadocs for projects rest-server-base. 
