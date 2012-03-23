@@ -4,6 +4,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.proofpoint.event.client.EventField;
+import com.proofpoint.event.client.EventType;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -15,6 +16,7 @@ import java.util.Enumeration;
 import static com.proofpoint.event.client.EventField.EventFieldMapping.TIMESTAMP;
 import static java.lang.Math.max;
 
+@EventType("HttpRequest")
 public class HttpRequestEvent
 {
     public static HttpRequestEvent createHttpRequestEvent(Request request, Response response, TraceTokenManager traceTokenManager, long currentTimeInMillis)
