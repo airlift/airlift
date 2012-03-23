@@ -12,6 +12,7 @@ import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
 
+import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.Collections;
@@ -52,29 +53,65 @@ public class AsyncHttpClientModule implements Module
     @Override
     public void configure(Binder binder)
     {
-        // bind the configuration
         bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(HttpClientConfig.class);
         bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(AsyncHttpClientConfig.class);
 
-        // Bind the datasource
-        binder.bind(AsyncHttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(name, annotation)).in(Scopes.SINGLETON);
+        binder.bind(AsyncHttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(annotation)).in(Scopes.SINGLETON);
+        binder.bind(ExecutorService.class).annotatedWith(annotation).toProvider(new ExecutorServiceProvider(name, annotation)).in(Scopes.SINGLETON);
 
-        // Bind aliases
         Key<AsyncHttpClient> key = Key.get(AsyncHttpClient.class, annotation);
         for (Class<? extends Annotation> alias : aliases) {
             binder.bind(AsyncHttpClient.class).annotatedWith(alias).to(key);
         }
     }
 
-    private static class HttpClientProvider implements Provider<AsyncHttpClient>
+    private static class ExecutorServiceProvider implements Provider<ExecutorService>
     {
         private final String name;
         private final Class<? extends Annotation> annotation;
+        private ExecutorService executorService;
         private Injector injector;
 
-        private HttpClientProvider(String name, Class<? extends Annotation> annotation)
+        private ExecutorServiceProvider(String name, Class<? extends Annotation> annotation)
         {
             this.name = name;
+            this.annotation = annotation;
+        }
+
+        @PreDestroy
+        public void stop()
+        {
+            if (executorService != null) {
+                executorService.shutdownNow();
+                executorService = null;
+            }
+        }
+
+        @Inject
+        public void setInjector(Injector injector)
+        {
+
+            this.injector = injector;
+        }
+
+        @Override
+        public ExecutorService get()
+        {
+            if (executorService == null) {
+                AsyncHttpClientConfig asyncConfig = injector.getInstance(Key.get(AsyncHttpClientConfig.class, annotation));
+                executorService = newFixedThreadPool(asyncConfig.getWorkerThreads(), new ThreadFactoryBuilder().setDaemon(true).setNameFormat(name + "-http-client-%s").build());
+            }
+            return executorService;
+        }
+    }
+
+    private static class HttpClientProvider implements Provider<AsyncHttpClient>
+    {
+        private final Class<? extends Annotation> annotation;
+        private Injector injector;
+
+        private HttpClientProvider(Class<? extends Annotation> annotation)
+        {
             this.annotation = annotation;
         }
 
@@ -88,6 +125,8 @@ public class AsyncHttpClientModule implements Module
         @Override
         public AsyncHttpClient get()
         {
+            ExecutorService executorService = injector.getInstance(Key.get(ExecutorService.class, annotation));
+
             ApacheHttpClient httpClient;
             try {
                 HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
@@ -97,10 +136,8 @@ public class AsyncHttpClientModule implements Module
                 throw Throwables.propagate(e);
             }
 
-            AsyncHttpClientConfig asyncConfig = injector.getInstance(Key.get(AsyncHttpClientConfig.class, annotation));
-            ExecutorService executor = newFixedThreadPool(asyncConfig.getWorkerThreads(), new ThreadFactoryBuilder().setNameFormat(name + "-http-client-%s").build());
 
-            return new AsyncHttpClient(httpClient, executor);
+            return new AsyncHttpClient(httpClient, executorService);
         }
     }
 }
