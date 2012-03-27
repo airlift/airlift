@@ -33,13 +33,7 @@ public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<
     public RuntimeException handleException(Request request, Exception exception)
     {
         if (exception instanceof ConnectException) {
-            URI uri = request.getUri();
-            try {
-                uri = new URI(uri.getScheme(), null, uri.getHost(), uri.getPort(), "/", null, null);
-            }
-            catch (Exception e) {
-            }
-            return new RuntimeException("Coordinator refused connection: " + uri);
+            return new RuntimeException("Server refused connection: " + request.getUri().toASCIIString());
         }
         return Throwables.propagate(exception);
     }
