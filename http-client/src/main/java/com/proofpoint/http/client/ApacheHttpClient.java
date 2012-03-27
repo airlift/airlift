@@ -34,8 +34,12 @@ public class ApacheHttpClient implements com.proofpoint.http.client.HttpClient
     private final RequestStats stats = new RequestStats();
     private final HttpClient httpClient;
 
+    public ApacheHttpClient()
+    {
+        this(new HttpClientConfig());
+    }
+
     public ApacheHttpClient(HttpClientConfig config)
-            throws IOException
     {
         Preconditions.checkNotNull(config, "config is null");
         Preconditions.checkNotNull(config.getConnectTimeout(), "config.getConnectTimeout() is null");
@@ -111,7 +115,8 @@ public class ApacheHttpClient implements com.proofpoint.http.client.HttpClient
                     // this should never happen but generics suck so be safe
                     // handler will be notified of the same exception again below
                 }
-            } else if (e instanceof ConnectTimeoutException) {
+            }
+            else if (e instanceof ConnectTimeoutException) {
                 // apache http client eats the socket timeout exception
                 SocketTimeoutException socketTimeoutException = new SocketTimeoutException(e.getMessage());
                 socketTimeoutException.setStackTrace(e.getStackTrace());

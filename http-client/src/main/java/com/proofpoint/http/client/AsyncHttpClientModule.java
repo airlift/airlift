@@ -1,7 +1,6 @@
 package com.proofpoint.http.client;
 
 import com.google.common.annotations.Beta;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Binder;
@@ -13,7 +12,6 @@ import com.google.inject.Provider;
 import com.google.inject.Scopes;
 
 import javax.annotation.PreDestroy;
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;
@@ -127,15 +125,8 @@ public class AsyncHttpClientModule implements Module
         {
             ExecutorService executorService = injector.getInstance(Key.get(ExecutorService.class, annotation));
 
-            ApacheHttpClient httpClient;
-            try {
-                HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
-                httpClient = new ApacheHttpClient(config);
-            }
-            catch (IOException e) {
-                throw Throwables.propagate(e);
-            }
-
+            HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
+            ApacheHttpClient httpClient = new ApacheHttpClient(config);
 
             return new AsyncHttpClient(httpClient, executorService);
         }

@@ -17,16 +17,16 @@ import java.util.List;
 
 public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<T>, RuntimeException>
 {
-    public static <T> FullJsonResponseHandler<T> createFullJsonResponseHandler(JsonCodec<T> slotsCodec)
+    public static <T> FullJsonResponseHandler<T> createFullJsonResponseHandler(JsonCodec<T> jsonCodec)
     {
-        return new FullJsonResponseHandler<T>(slotsCodec);
+        return new FullJsonResponseHandler<T>(jsonCodec);
     }
 
     private final JsonCodec<T> jsonCodec;
 
-    private FullJsonResponseHandler(JsonCodec<T> slotsCodec)
+    private FullJsonResponseHandler(JsonCodec<T> jsonCodec)
     {
-        jsonCodec = slotsCodec;
+        this.jsonCodec = jsonCodec;
     }
 
     @Override

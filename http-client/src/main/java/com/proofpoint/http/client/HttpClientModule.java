@@ -1,7 +1,6 @@
 package com.proofpoint.http.client;
 
 import com.google.common.annotations.Beta;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
 import com.google.inject.Inject;
@@ -11,7 +10,6 @@ import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
 
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;
@@ -82,13 +80,8 @@ public class HttpClientModule implements Module
         @Override
         public HttpClient get()
         {
-            try {
-                HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
-                return new ApacheHttpClient(config);
-            }
-            catch (IOException e) {
-                throw Throwables.propagate(e);
-            }
+            HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
+            return new ApacheHttpClient(config);
         }
     }
 }
