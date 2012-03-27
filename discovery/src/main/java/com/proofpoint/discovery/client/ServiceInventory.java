@@ -1,9 +1,11 @@
 package com.proofpoint.discovery.client;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.io.Files;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.proofpoint.http.client.HttpClient;
@@ -15,6 +17,7 @@ import com.proofpoint.units.Duration;
 import org.weakref.jmx.Managed;
 
 import javax.annotation.PostConstruct;
+import java.io.File;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -65,7 +68,7 @@ public class ServiceInventory
 
         if (serviceInventoryUri != null) {
             String scheme = serviceInventoryUri.getScheme().toLowerCase();
-            Preconditions.checkArgument(scheme.equals("http") || scheme.equals("https"), "Service inventory uri must have a http or https scheme");
+            Preconditions.checkArgument(scheme.equals("http") || scheme.equals("https") || scheme.equals("file"), "Service inventory uri must have a http, https, or file scheme");
 
             try {
                 updateServiceInventory();
@@ -138,21 +141,34 @@ public class ServiceInventory
     @Managed
     public void updateServiceInventory()
     {
-        RequestBuilder requestBuilder = prepareGet()
-                .setUri(serviceInventoryUri)
-                .setHeader("User-Agent", nodeInfo.getNodeId());
-        ServiceDescriptorsRepresentation serviceDescriptorsRepresentation = httpClient.execute(requestBuilder.build(), createJsonResponseHandler(serviceDescriptorsCodec));
+        try {
+            ServiceDescriptorsRepresentation serviceDescriptorsRepresentation;
+            if (serviceInventoryUri.getScheme().toLowerCase().startsWith("http")) {
+                RequestBuilder requestBuilder = prepareGet()
+                        .setUri(serviceInventoryUri)
+                        .setHeader("User-Agent", nodeInfo.getNodeId());
+                serviceDescriptorsRepresentation = httpClient.execute(requestBuilder.build(), createJsonResponseHandler(serviceDescriptorsCodec));
+            }
+            else {
+                File file = new File(serviceInventoryUri);
+                String json = Files.toString(file, Charsets.UTF_8);
+                serviceDescriptorsRepresentation = serviceDescriptorsCodec.fromJson(json);
+            }
 
-        if (!environment.equals(serviceDescriptorsRepresentation.getEnvironment())) {
-            logServerError("Expected environment to be %s, but was %s", environment, serviceDescriptorsRepresentation.getEnvironment());
+            if (!environment.equals(serviceDescriptorsRepresentation.getEnvironment())) {
+                logServerError("Expected environment to be %s, but was %s", environment, serviceDescriptorsRepresentation.getEnvironment());
+            }
+
+            List<ServiceDescriptor> descriptors = newArrayList(serviceDescriptorsRepresentation.getServiceDescriptors());
+            Collections.shuffle(descriptors);
+            serviceDescriptors.set(ImmutableList.copyOf(descriptors));
+
+            if (serverUp.compareAndSet(false, true)) {
+                log.info("ServiceInventory connect succeeded");
+            }
         }
-
-        List<ServiceDescriptor> descriptors = newArrayList(serviceDescriptorsRepresentation.getServiceDescriptors());
-        Collections.shuffle(descriptors);
-        serviceDescriptors.set(ImmutableList.copyOf(descriptors));
-
-        if (serverUp.compareAndSet(false, true)) {
-            log.info("ServiceInventory connect succeeded");
+        catch (Exception e) {
+            logServerError("Error loading service inventory from %s", serviceInventoryUri.toASCIIString());
         }
     }
 
