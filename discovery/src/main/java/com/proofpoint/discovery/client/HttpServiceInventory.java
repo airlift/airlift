@@ -1,38 +1,33 @@
 package com.proofpoint.discovery.client;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.io.CharStreams;
-import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
-import com.proofpoint.http.client.AsyncHttpClient;
-import com.proofpoint.http.client.Request;
+import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.RequestBuilder;
-import com.proofpoint.http.client.Response;
-import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.json.JsonCodec;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeInfo;
+import com.proofpoint.units.Duration;
+import org.weakref.jmx.Managed;
 
 import javax.annotation.PostConstruct;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static com.proofpoint.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static com.proofpoint.http.client.RequestBuilder.prepareGet;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
-import static javax.ws.rs.core.Response.Status.OK;
 
 public class HttpServiceInventory
 {
@@ -40,19 +35,21 @@ public class HttpServiceInventory
 
     private final String environment;
     private final URI serviceInventoryUri;
+    private final Duration updateRate;
     private final NodeInfo nodeInfo;
     private final JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec;
-    private final AsyncHttpClient httpClient;
+    private final HttpClient httpClient;
 
     private final AtomicReference<List<ServiceDescriptor>> serviceDescriptors = new AtomicReference<List<ServiceDescriptor>>(ImmutableList.<ServiceDescriptor>of());
     private final ScheduledExecutorService executorService = newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("service-inventory-%s").setDaemon(true).build());
     private final AtomicBoolean serverUp = new AtomicBoolean(true);
+    private ScheduledFuture<?> scheduledFuture;
 
     @Inject
     public HttpServiceInventory(ServiceInventoryConfig config,
             NodeInfo nodeInfo,
             JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec,
-            @ForDiscoveryClient AsyncHttpClient httpClient)
+            @ForDiscoveryClient HttpClient httpClient)
     {
         Preconditions.checkNotNull(config, "config is null");
         Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
@@ -62,12 +59,16 @@ public class HttpServiceInventory
         this.nodeInfo = nodeInfo;
         this.environment = nodeInfo.getEnvironment();
         this.serviceInventoryUri = config.getServiceInventoryUri();
+        updateRate = config.getUpdateRate();
         this.serviceDescriptorsCodec = serviceDescriptorsCodec;
         this.httpClient = httpClient;
 
         if (serviceInventoryUri != null) {
+            String scheme = serviceInventoryUri.getScheme().toLowerCase();
+            Preconditions.checkArgument(scheme.equals("http") || scheme.equals("https"), "Service inventory uri must have a http or https scheme");
+
             try {
-                updateServiceInventory().checkedGet(10, TimeUnit.SECONDS);
+                updateServiceInventory();
             }
             catch (Exception ignored) {
             }
@@ -75,12 +76,12 @@ public class HttpServiceInventory
     }
 
     @PostConstruct
-    public void start()
+    public synchronized void start()
     {
-        if (serviceInventoryUri == null) {
+        if (serviceInventoryUri == null || scheduledFuture != null) {
             return;
         }
-        executorService.scheduleAtFixedRate(new Runnable()
+        scheduledFuture = executorService.scheduleAtFixedRate(new Runnable()
         {
             @Override
             public void run()
@@ -92,7 +93,16 @@ public class HttpServiceInventory
                     log.error(e, "Unexpected exception from service inventory update");
                 }
             }
-        }, 0, 10, TimeUnit.SECONDS);
+        }, 0, (long) updateRate.toMillis(), TimeUnit.MILLISECONDS);
+    }
+
+    @PostConstruct
+    public synchronized void stop()
+    {
+        if (scheduledFuture != null) {
+            scheduledFuture.cancel(true);
+            scheduledFuture = null;
+        }
     }
 
     public Iterable<ServiceDescriptor> getServiceDescriptors()
@@ -125,83 +135,31 @@ public class HttpServiceInventory
         });
     }
 
-    private CheckedFuture<Void, RuntimeException> updateServiceInventory()
+    @Managed
+    public void updateServiceInventory()
     {
         RequestBuilder requestBuilder = prepareGet()
                 .setUri(serviceInventoryUri)
                 .setHeader("User-Agent", nodeInfo.getNodeId());
+        ServiceDescriptorsRepresentation serviceDescriptorsRepresentation = httpClient.execute(requestBuilder.build(), createJsonResponseHandler(serviceDescriptorsCodec));
 
-        return httpClient.execute(requestBuilder.build(), new ServiceInventoryResponseHandler(environment, serviceDescriptors, serverUp, serviceDescriptorsCodec));
+        if (!environment.equals(serviceDescriptorsRepresentation.getEnvironment())) {
+            logServerError("Expected environment to be %s, but was %s", environment, serviceDescriptorsRepresentation.getEnvironment());
+        }
+
+        List<ServiceDescriptor> descriptors = newArrayList(serviceDescriptorsRepresentation.getServiceDescriptors());
+        Collections.shuffle(descriptors);
+        serviceDescriptors.set(ImmutableList.copyOf(descriptors));
+
+        if (serverUp.compareAndSet(false, true)) {
+            log.info("ServiceInventory connect succeeded");
+        }
     }
 
-    private static class ServiceInventoryResponseHandler implements ResponseHandler<Void, RuntimeException>
+    private void logServerError(String message, Object... args)
     {
-        private final String environment;
-        private final JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec;
-        private final AtomicReference<List<ServiceDescriptor>> serviceDescriptors;
-        private final AtomicBoolean serverUp;
-
-        private ServiceInventoryResponseHandler(String environment,
-                AtomicReference<List<ServiceDescriptor>> serviceDescriptors,
-                AtomicBoolean serverUp,
-                JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec)
-        {
-            this.environment = environment;
-            this.serviceDescriptorsCodec = serviceDescriptorsCodec;
-            this.serviceDescriptors = serviceDescriptors;
-            this.serverUp = serverUp;
-        }
-
-        @Override
-        public RuntimeException handleException(Request request, Exception exception)
-        {
-            if (serverUp.compareAndSet(true, false) && !log.isDebugEnabled()) {
-                log.error("ServiceInventory failed: %s", exception.getMessage());
-            } else {
-                log.debug(exception, "ServiceInventory failed");
-            }
-            return null;
-        }
-
-        @Override
-        public Void handle(Request request, Response response)
-        {
-            if (OK.getStatusCode() != response.getStatusCode()) {
-                logServerError("ServiceInventory failed with status code %s", response.getStatusCode());
-                return null;
-            }
-
-            String json;
-            try {
-                json = CharStreams.toString(new InputStreamReader(response.getInputStream(), Charsets.UTF_8));
-            }
-            catch (IOException e) {
-                logServerError("Invalid ServiceInventory json");
-                return null;
-            }
-
-            ServiceDescriptorsRepresentation serviceDescriptorsRepresentation = serviceDescriptorsCodec.fromJson(json);
-            if (!environment.equals(serviceDescriptorsRepresentation.getEnvironment())) {
-                logServerError("Expected environment to be %s, but was %s", environment, serviceDescriptorsRepresentation.getEnvironment());
-                return null;
-            }
-
-            List<ServiceDescriptor> descriptors = newArrayList(serviceDescriptorsRepresentation.getServiceDescriptors());
-            Collections.shuffle(descriptors);
-            serviceDescriptors.set(ImmutableList.copyOf(descriptors));
-
-            if (serverUp.compareAndSet(false, true)) {
-                log.info("ServiceInventory connect succeeded");
-            }
-
-            return null;
-        }
-
-        private void logServerError(String message, Object... args)
-        {
-            if (serverUp.compareAndSet(true, false)) {
-                log.error(message, args);
-            }
+        if (serverUp.compareAndSet(true, false)) {
+            log.error(message, args);
         }
     }
 }
