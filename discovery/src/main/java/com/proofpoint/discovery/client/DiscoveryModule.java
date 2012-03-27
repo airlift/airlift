@@ -22,7 +22,7 @@ public class DiscoveryModule implements Module
     public void configure(Binder binder)
     {
         // bind service inventory
-        binder.bind(HttpServiceInventory.class).in(Scopes.SINGLETON);
+        binder.bind(ServiceInventory.class).in(Scopes.SINGLETON);
         bindConfig(binder).to(ServiceInventoryConfig.class);
 
         // for legacy configurations
@@ -56,7 +56,7 @@ public class DiscoveryModule implements Module
 
     @Provides
     @ForDiscoveryClient
-    public URI getDiscoveryUri(HttpServiceInventory serviceInventory, DiscoveryClientConfig config)
+    public URI getDiscoveryUri(ServiceInventory serviceInventory, DiscoveryClientConfig config)
     {
         Iterable<ServiceDescriptor> discovery = serviceInventory.getServiceDescriptors("discovery");
         for (ServiceDescriptor descriptor : discovery) {

@@ -29,9 +29,9 @@ import static com.proofpoint.http.client.JsonResponseHandler.createJsonResponseH
 import static com.proofpoint.http.client.RequestBuilder.prepareGet;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
-public class HttpServiceInventory
+public class ServiceInventory
 {
-    private static final Logger log = Logger.get(HttpServiceInventory.class);
+    private static final Logger log = Logger.get(ServiceInventory.class);
 
     private final String environment;
     private final URI serviceInventoryUri;
@@ -46,7 +46,7 @@ public class HttpServiceInventory
     private ScheduledFuture<?> scheduledFuture;
 
     @Inject
-    public HttpServiceInventory(ServiceInventoryConfig config,
+    public ServiceInventory(ServiceInventoryConfig config,
             NodeInfo nodeInfo,
             JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec,
             @ForDiscoveryClient HttpClient httpClient)
