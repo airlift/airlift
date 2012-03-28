@@ -1,0 +1,27 @@
+{
+    "environment": "test",
+    "services": [
+        {
+            "id": "C8A9EE64-0476-452C-8638-8E72F3EE3CA6",
+            "nodeId": "597A741E-9968-40E2-BB4D-7AF26DE18689",
+            "type": "discovery",
+            "pool": "general",
+            "location": "/localhost",
+            "state": "RUNNING",
+            "properties": {
+                "http": "http://localhost:8411"
+            }
+        },
+        {
+            "id": "370AF416-5F44-47D3-BFB6-D93A92676D49",
+            "nodeId": "0BA42FDB-5DBA-4A2C-BE26-9596B7B4368E",
+            "type": "discovery",
+            "pool": "general",
+            "location": "/localhost",
+            "state": "RUNNING",
+            "properties": {
+                "http": "http://localhost:8412"
+            }
+        }
+    ]
+}

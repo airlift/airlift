@@ -141,6 +141,10 @@ public class ServiceInventory
     @Managed
     public void updateServiceInventory()
     {
+        if (serviceInventoryUri == null) {
+            return;
+        }
+
         try {
             ServiceDescriptorsRepresentation serviceDescriptorsRepresentation;
             if (serviceInventoryUri.getScheme().toLowerCase().startsWith("http")) {
