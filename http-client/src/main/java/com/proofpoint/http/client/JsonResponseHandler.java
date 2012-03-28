@@ -8,10 +8,11 @@ import com.proofpoint.json.JsonCodec;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ConnectException;
-import java.net.URI;
 
 public class JsonResponseHandler<T> implements ResponseHandler<T, RuntimeException>
 {
+    private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
+
     public static <T> JsonResponseHandler<T> createJsonResponseHandler(JsonCodec<T> jsonCodec)
     {
         return new JsonResponseHandler<T>(jsonCodec);
@@ -40,7 +41,7 @@ public class JsonResponseHandler<T> implements ResponseHandler<T, RuntimeExcepti
             throw new UnexpectedResponseException(request, response);
         }
         String contentType = response.getHeader("Content-Type");
-        if (!"application/json".equals(contentType)) {
+        if (!MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
             throw new UnexpectedResponseException("Expected application/json response from server but got " + contentType, request, response);
         }
         try {

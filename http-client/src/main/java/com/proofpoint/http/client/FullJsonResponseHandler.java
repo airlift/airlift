@@ -9,6 +9,7 @@ import com.google.common.io.CharStreams;
 import com.proofpoint.http.client.FullJsonResponseHandler.JsonResponse;
 import com.proofpoint.json.JsonCodec;
 
+import javax.print.attribute.standard.Media;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ConnectException;
@@ -17,6 +18,8 @@ import java.util.List;
 
 public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<T>, RuntimeException>
 {
+    private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
+
     public static <T> FullJsonResponseHandler<T> createFullJsonResponseHandler(JsonCodec<T> jsonCodec)
     {
         return new FullJsonResponseHandler<T>(jsonCodec);
@@ -42,7 +45,7 @@ public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<
     public JsonResponse<T> handle(Request request, Response response)
     {
         String contentType = response.getHeader("Content-Type");
-        if (!"application/json".equals(contentType)) {
+        if (!MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
             return new JsonResponse<T>(response.getStatusCode(), response.getStatusMessage(), response.getHeaders());
         }
         try {
