@@ -256,7 +256,12 @@ public class ApacheHttpClient implements com.proofpoint.http.client.HttpClient
         @Override
         public String getHeader(String name)
         {
-            return response.getFirstHeader(name).getValue();
+            Header header = response.getFirstHeader(name);
+            if (header != null) {
+                return header.getValue();
+            }
+
+            return null;
         }
 
         @Override
