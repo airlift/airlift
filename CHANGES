@@ -1,4 +1,7 @@
-* 0.55-SNAPSHOT
+* 0.56
+- Fixed bug that causes HttpRequestEvents to not be published
+
+* 0.55
 
 - Upgrade to Jackson 1.9.5
 - Record and event for each http request processed

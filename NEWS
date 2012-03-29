@@ -1,3 +1,7 @@
+Platform 0.56
+
+* Fixed bug that causes HttpRequestEvents to not be published
+
 Platform 0.55
 
 * In this release we have upgraded the following dependencies
