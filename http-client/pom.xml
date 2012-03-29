@@ -3,14 +3,14 @@
     <parent>
         <artifactId>platform</artifactId>
         <groupId>com.proofpoint.platform</groupId>
-        <version>0.55</version>
+        <version>0.56-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>http-client-experimental</artifactId>
     <packaging>jar</packaging>
-    <version>0.55</version>
+    <version>0.56-SNAPSHOT</version>
 
 
     <dependencies>
@@ -23,19 +23,19 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>configuration</artifactId>
-            <version>0.55</version>
+            <version>0.56-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>json</artifactId>
-            <version>0.55</version>
+            <version>0.56-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>stats</artifactId>
-            <version>0.55</version>
+            <version>0.56-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -52,14 +52,14 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>testing</artifactId>
-            <version>0.55</version>
+            <version>0.56-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>log</artifactId>
-            <version>0.55</version>
+            <version>0.56-SNAPSHOT</version>
         </dependency>
 
         <dependency>
