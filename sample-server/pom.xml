@@ -3,13 +3,13 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>sample-server</artifactId>
-    <version>0.56-SNAPSHOT</version>
+    <version>0.56</version>
     <name>sample-server</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>rest-server-base</artifactId>
-        <version>0.56-SNAPSHOT</version>
+        <version>0.56</version>
         <relativePath>../rest-server-base/pom.xml</relativePath>
     </parent>
 
@@ -114,7 +114,7 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>experimental</artifactId>
-            <version>0.56-SNAPSHOT</version>
+            <version>0.56</version>
         </dependency>
 
         <dependency>

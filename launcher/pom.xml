@@ -4,13 +4,13 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>launcher</artifactId>
     <packaging>pom</packaging>
-    <version>0.56-SNAPSHOT</version>
+    <version>0.56</version>
     <name>launcher</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.56-SNAPSHOT</version>
+        <version>0.56</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     
