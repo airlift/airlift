@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>rack-server-base-experimental</artifactId>
-    <version>0.55-SNAPSHOT</version>
+    <version>0.55</version>
     <packaging>pom</packaging>
     <name>rack-server-base</name>
     <description>Proofpoint Platform Rack Server base POM</description>
@@ -77,13 +77,13 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>rack-experimental</artifactId>
-            <version>0.55-SNAPSHOT</version>
+            <version>0.55</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>rack-launcher-experimental</artifactId>
-            <version>0.55-SNAPSHOT</version>
+            <version>0.55</version>
             <classifier>bin</classifier>
             <type>tar.gz</type>
         </dependency>
@@ -152,7 +152,7 @@
                                 <configuration>
                                     <target name="Precompile assets">
                                         <exec executable="sh" dir="${project.basedir}" failonerror="true">
-                                            <arg value="-c"/>
+                                            <arg value="-c" />
                                             <arg value="if [ -d app/assets ]; then bundle exec rake assets:precompile; else echo 'Consider upgrading to Rails 3.1+ and take advantage of the asset pipeline'; fi" />
                                         </exec>
                                     </target>
@@ -178,7 +178,7 @@
                             <dependency>
                                 <groupId>com.proofpoint.platform</groupId>
                                 <artifactId>rack-packaging-experimental</artifactId>
-                                <version>0.55-SNAPSHOT</version>
+                                <version>0.55</version>
                             </dependency>
                         </dependencies>
 
