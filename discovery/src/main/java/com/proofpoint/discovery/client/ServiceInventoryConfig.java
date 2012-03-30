@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 public class ServiceInventoryConfig
 {
     private URI serviceInventoryUri;
-    private Duration updateRate = new Duration(10, TimeUnit.SECONDS);
+    private Duration updateInterval = new Duration(10, TimeUnit.SECONDS);
 
     public URI getServiceInventoryUri()
     {
@@ -27,16 +27,16 @@ public class ServiceInventoryConfig
     }
 
     @NotNull
-    public Duration getUpdateRate()
+    public Duration getUpdateInterval()
     {
-        return updateRate;
+        return updateInterval;
     }
 
     @Config("service-inventory.update-interval")
     @ConfigDescription("Service inventory update interval")
-    public ServiceInventoryConfig setUpdateRate(Duration updateRate)
+    public ServiceInventoryConfig setUpdateInterval(Duration updateInterval)
     {
-        this.updateRate = updateRate;
+        this.updateInterval = updateInterval;
         return this;
     }
 }

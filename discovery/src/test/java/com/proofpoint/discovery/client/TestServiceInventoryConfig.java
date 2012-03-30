@@ -16,7 +16,7 @@ public class TestServiceInventoryConfig
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(ServiceInventoryConfig.class)
                 .setServiceInventoryUri(null)
-                .setUpdateRate(new Duration(10, TimeUnit.SECONDS)));
+                .setUpdateInterval(new Duration(10, TimeUnit.SECONDS)));
     }
 
     @Test
@@ -29,7 +29,7 @@ public class TestServiceInventoryConfig
 
         ServiceInventoryConfig expected = new ServiceInventoryConfig()
                 .setServiceInventoryUri(URI.create("fake://server"))
-                .setUpdateRate(new Duration(15, TimeUnit.MINUTES));
+                .setUpdateInterval(new Duration(15, TimeUnit.MINUTES));
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }
