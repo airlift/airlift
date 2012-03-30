@@ -8,6 +8,7 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.proofpoint.http.client.AsyncHttpClientModule;
 import com.proofpoint.http.client.HttpClientModule;
+import org.weakref.jmx.guice.MBeanModule;
 
 import java.net.URI;
 import java.util.concurrent.ScheduledExecutorService;
@@ -45,6 +46,8 @@ public class DiscoveryModule implements Module
         Multibinder.newSetBinder(binder, ServiceAnnouncement.class);
 
         binder.bind(ServiceSelectorFactory.class).to(CachingServiceSelectorFactory.class).in(Scopes.SINGLETON);
+
+        MBeanModule.newExporter(binder).export(ServiceInventory.class).withGeneratedName();
     }
 
     @Provides
