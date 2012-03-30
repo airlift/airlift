@@ -1,4 +1,10 @@
+* 0.57
+
+- [Bug] ServiceInventory periodic refresh wasn't working
+- Export ServiceInventory through JMX
+
 * 0.56
+
 - Fixed bug that causes HttpRequestEvents to not be published
 
 * 0.55

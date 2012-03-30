@@ -1,3 +1,7 @@
+Platform 0.57
+
+* Fixed bug that prevents ServiceInventory from refreshing periodically
+
 Platform 0.56
 
 * Fixed bug that causes HttpRequestEvents to not be published
