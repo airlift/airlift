@@ -17,6 +17,7 @@ import com.proofpoint.units.Duration;
 import org.weakref.jmx.Managed;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.io.File;
 import java.net.URI;
 import java.util.Collections;
@@ -99,7 +100,7 @@ public class ServiceInventory
         }, (long) updateInterval.toMillis(), (long) updateInterval.toMillis(), TimeUnit.MILLISECONDS);
     }
 
-    @PostConstruct
+    @PreDestroy
     public synchronized void stop()
     {
         if (scheduledFuture != null) {
