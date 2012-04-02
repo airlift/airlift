@@ -2,12 +2,15 @@ package com.proofpoint.http.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharStreams;
+import com.google.common.primitives.Ints;
 import com.proofpoint.json.JsonCodec;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ConnectException;
+import java.util.Set;
 
 public class JsonResponseHandler<T> implements ResponseHandler<T, RuntimeException>
 {
@@ -18,11 +21,23 @@ public class JsonResponseHandler<T> implements ResponseHandler<T, RuntimeExcepti
         return new JsonResponseHandler<T>(jsonCodec);
     }
 
+    public static <T> JsonResponseHandler<T> createJsonResponseHandler(JsonCodec<T> jsonCodec, int firstSuccessfulResponseCode, int... otherSuccessfulResponseCodes)
+    {
+        return new JsonResponseHandler<T>(jsonCodec, firstSuccessfulResponseCode, otherSuccessfulResponseCodes);
+    }
+
     private final JsonCodec<T> jsonCodec;
+    private final Set<Integer> successfulResponseCodes;
 
     private JsonResponseHandler(JsonCodec<T> jsonCodec)
     {
+        this(jsonCodec, 200, 201, 202, 203, 204, 205, 206);
+    }
+
+    private JsonResponseHandler(JsonCodec<T> jsonCodec, int firstSuccessfulResponseCode, int... otherSuccessfulResponseCodes)
+    {
         this.jsonCodec = jsonCodec;
+        this.successfulResponseCodes = ImmutableSet.<Integer>builder().add(firstSuccessfulResponseCode).addAll(Ints.asList(otherSuccessfulResponseCodes)).build();
     }
 
     @Override
@@ -37,8 +52,11 @@ public class JsonResponseHandler<T> implements ResponseHandler<T, RuntimeExcepti
     @Override
     public T handle(Request request, Response response)
     {
-        if (response.getStatusCode() / 100 != 2) {
-            throw new UnexpectedResponseException(request, response);
+        if (!successfulResponseCodes.contains(response.getStatusCode())) {
+            throw new UnexpectedResponseException(
+                    String.format("Expected response code to be %s, but was %d: %s", successfulResponseCodes, response.getStatusCode(), response.getStatusMessage()),
+                    request,
+                    response);
         }
         String contentType = response.getHeader("Content-Type");
         if (!MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
@@ -53,5 +71,4 @@ public class JsonResponseHandler<T> implements ResponseHandler<T, RuntimeExcepti
             throw new RuntimeException("Error reading response from server");
         }
     }
-
 }
