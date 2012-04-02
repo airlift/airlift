@@ -556,7 +556,11 @@ final class MediaType
             ImmutableListMultimap.Builder<String, String> parameters = ImmutableListMultimap.builder();
             while (tokenizer.hasMore()) {
                 tokenizer.consumeCharacter(';');
-                tokenizer.consumeToken(LINEAR_WHITE_SPACE);
+                tokenizer.consumeOptionalToken(LINEAR_WHITE_SPACE);
+                // media type ends with a ; but has no parameters
+                if (!tokenizer.hasMore()) {
+                    break;
+                }
                 String attribute = tokenizer.consumeToken(TOKEN_MATCHER);
                 tokenizer.consumeCharacter('=');
                 final String value;
@@ -603,6 +607,13 @@ final class MediaType
             int startPosition = position;
             position = matcher.negate().indexIn(input, startPosition);
             checkState(position != startPosition);
+            return hasMore() ? input.substring(startPosition, position) : input.substring(startPosition);
+        }
+
+        String consumeOptionalToken(CharMatcher matcher)
+        {
+            int startPosition = position;
+            position = matcher.negate().indexIn(input, startPosition);
             return hasMore() ? input.substring(startPosition, position) : input.substring(startPosition);
         }
 
