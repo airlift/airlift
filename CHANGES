@@ -1,3 +1,7 @@
+* 0.58
+
+- [Bug] Add new required modules for Rack server
+
 * 0.57
 
 - [Bug] ServiceInventory periodic refresh wasn't working

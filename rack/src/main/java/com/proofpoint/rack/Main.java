@@ -17,9 +17,12 @@ package com.proofpoint.rack;
 
 import com.google.inject.Injector;
 import com.proofpoint.bootstrap.Bootstrap;
+import com.proofpoint.discovery.client.DiscoveryModule;
+import com.proofpoint.event.client.HttpEventModule;
 import com.proofpoint.http.server.HttpServerModule;
 import com.proofpoint.jmx.JmxModule;
 import com.proofpoint.jmx.http.rpc.JmxHttpRpcModule;
+import com.proofpoint.json.JsonModule;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeModule;
 import org.weakref.jmx.guice.MBeanModule;
@@ -35,6 +38,9 @@ public class Main
         Bootstrap app = new Bootstrap(
                 new NodeModule(),
                 new HttpServerModule(),
+                new HttpEventModule(),
+                new DiscoveryModule(),
+                new JsonModule(),
                 new MBeanModule(),
                 new RackModule(),
                 new JmxModule(),
