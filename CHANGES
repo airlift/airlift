@@ -1,6 +1,8 @@
 * 0.58
 
 - [Bug] Add new required modules for Rack server
+- [Bug] Make media type parser more lenient
+- [Experimental] Make JsonResponseHandler success codes configurable
 
 * 0.57
 
