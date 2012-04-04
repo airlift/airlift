@@ -77,6 +77,7 @@ class LifeCycleMethods
                     throw new UnsupportedOperationException(String.format("@PostConstruct/@PreDestroy methods cannot have arguments: %s", method.getDeclaringClass().getName() + "." + method.getName() + "(...)"));
                 }
 
+                method.setAccessible(true);
                 usedSet.add(method.getName());
                 methodMap.put(annotationClass, method);
             }
