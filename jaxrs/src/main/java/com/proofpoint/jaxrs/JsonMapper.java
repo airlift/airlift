@@ -6,6 +6,7 @@ import com.google.inject.Inject;
 import com.proofpoint.log.Logger;
 import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.spi.container.WebApplication;
+import org.apache.bval.jsr303.ApacheValidationProvider;
 import org.codehaus.jackson.JsonEncoding;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonParser;
@@ -44,7 +45,7 @@ import java.util.Set;
 @Produces({MediaType.APPLICATION_JSON, "text/json"})
 class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<Object>
 {
-    public static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
+    private static final Validator VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
 
     /**
      * Looks like we need to worry about accidental

@@ -32,6 +32,7 @@ import com.google.inject.spi.Element;
 import com.google.inject.spi.Message;
 import com.google.inject.spi.ProviderInstanceBinding;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
+import org.apache.bval.jsr303.ApacheValidationProvider;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
@@ -51,6 +52,8 @@ import static java.lang.String.format;
 
 public class ConfigurationFactory
 {
+    private static final Validator VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
+
     private final Map<String, String> properties;
     private final Problems.Monitor monitor;
     private final ConcurrentMap<Class<?>, ConfigurationMetadata<?>> metadataCache;
@@ -187,8 +190,7 @@ public class ConfigurationFactory
             }
         }
 
-        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-        for (ConstraintViolation<?> violation : validator.validate(instance)) {
+        for (ConstraintViolation<?> violation : VALIDATOR.validate(instance)) {
             problems.addError("Constraint violation with property prefix '%s': %s %s (for class %s)",
                     prefix, violation.getPropertyPath(), violation.getMessage(), configClass.getName());
         }

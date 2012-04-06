@@ -22,16 +22,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-validator</artifactId>
-            <version>4.2.0.Final</version>
-            <scope>test</scope>
-            <exclusions>
-                 <exclusion>
-                     <groupId>org.slf4j</groupId>
-                     <artifactId>slf4j-api</artifactId>
-                 </exclusion>
-            </exclusions>
+            <groupId>org.apache.bval</groupId>
+            <artifactId>bval-jsr303</artifactId>
+            <version>0.3-incubating</version>
         </dependency>
 
         <dependency>

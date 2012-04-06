@@ -29,6 +29,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.bval</groupId>
+            <artifactId>bval-jsr303</artifactId>
+            <version>0.3-incubating</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>http-server</artifactId>
             <version>0.59-SNAPSHOT</version>

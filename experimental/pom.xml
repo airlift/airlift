@@ -56,6 +56,11 @@
             <artifactId>guava</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.bval</groupId>
+            <artifactId>bval-jsr303</artifactId>
+            <version>0.3-incubating</version>
+        </dependency>
     </dependencies>
 
 

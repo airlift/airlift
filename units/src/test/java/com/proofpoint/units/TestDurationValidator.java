@@ -2,6 +2,7 @@ package com.proofpoint.units;
 
 import com.google.common.base.Throwables;
 import com.proofpoint.testing.Assertions;
+import org.apache.bval.jsr303.ApacheValidationProvider;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -19,7 +20,7 @@ import static org.testng.Assert.assertTrue;
 
 public class TestDurationValidator
 {
-    private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+    private static final Validator validator = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
 
     @Test
     public void testMaxDurationValidator()

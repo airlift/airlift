@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.testing.ConfigAssertions;
 import com.proofpoint.testing.Assertions;
+import org.apache.bval.jsr303.ApacheValidationProvider;
 import org.testng.annotations.Test;
 
 import javax.validation.ConstraintViolation;
@@ -31,6 +32,8 @@ import java.util.Set;
 
 public class TestRackServletConfig
 {
+    private static final Validator validator = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
+
     @Test
     public void testDefaults()
     {
@@ -58,7 +61,6 @@ public class TestRackServletConfig
 
     private static List<String> getBeanValidationErrors(RackServletConfig config)
     {
-        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
         Set<ConstraintViolation<RackServletConfig>> violations = validator.validate(config);
         if (violations.isEmpty()) {
             return Collections.emptyList();
