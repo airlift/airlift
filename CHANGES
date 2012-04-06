@@ -1,3 +1,7 @@
+* 0.59
+
+- Replace Hibernate validator with direct dependency on Apache BVal
+
 * 0.58
 
 - [Bug] Add new required modules for Rack server

@@ -1,3 +1,14 @@
+Platform 0.59
+
+* Hibernate validator replaced with direct dependency on Apache BVal
+
+We replaced the indirect use of the Hibernate validator with a direct
+dependency on Apache BVal. Consequently, the dependency was removed
+from the dependencyManagement section of the rest-server-base POM and
+should be removed from the POM of any servers or libraries as it is
+no longer required by Platform.
+
+
 Platform 0.58
 
 * Fixed bug that prevents Rack applications from starting
