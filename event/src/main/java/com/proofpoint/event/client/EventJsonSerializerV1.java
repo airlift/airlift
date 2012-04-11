@@ -23,8 +23,7 @@ class EventJsonSerializerV1<T>
     private EventJsonSerializerV1(EventTypeMetadata<T> eventTypeMetadata)
     {
         Preconditions.checkNotNull(eventTypeMetadata, "eventTypeMetadata is null");
-        Preconditions.checkState(eventTypeMetadata.getHostField() == null, "custom host field not supported for JSON V1");
-        Preconditions.checkState(eventTypeMetadata.getTimestampField() == null, "custom timestamp field not supported for JSON V1");
+
         this.eventTypeMetadata = eventTypeMetadata;
         try {
             hostName = InetAddress.getLocalHost().getHostName();
@@ -48,8 +47,20 @@ class EventJsonSerializerV1<T>
 
         jsonGenerator.writeStringField("name", eventTypeMetadata.getTypeName());
         jsonGenerator.writeStringField("type", "metrics"); // todo
-        jsonGenerator.writeStringField("host", hostName);
-        jsonGenerator.writeNumberField("timestamp", System.currentTimeMillis());
+
+        if (eventTypeMetadata.getHostField() != null) {
+            eventTypeMetadata.getHostField().writeField(jsonGenerator, event);
+        }
+        else {
+            jsonGenerator.writeStringField("host", hostName);
+        }
+
+        if (eventTypeMetadata.getTimestampField() != null) {
+            eventTypeMetadata.getTimestampField().writeTimestampV1(jsonGenerator, event);
+        }
+        else {
+            jsonGenerator.writeNumberField("timestamp", System.currentTimeMillis());
+        }
 
         jsonGenerator.writeArrayFieldStart("data");
         for (EventFieldMetadata field : eventTypeMetadata.getFields()) {

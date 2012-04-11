@@ -32,12 +32,16 @@ import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
 import com.proofpoint.event.client.EventClient;
+import com.proofpoint.event.client.HttpEventModule;
 import com.proofpoint.event.client.InMemoryEventClient;
 import com.proofpoint.event.client.InMemoryEventModule;
 import com.proofpoint.event.client.NullEventModule;
+import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.node.NodeModule;
+import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.testing.FileUtils;
 import com.proofpoint.tracetoken.TraceTokenModule;
 import org.testng.Assert;
@@ -107,6 +111,36 @@ public class TestHttpServerModule
 
         HttpServer server = injector.getInstance(HttpServer.class);
         assertNotNull(server);
+    }
+
+    @Test
+    public void testHttpEventModuleConstructionWithV1Events()
+            throws Exception
+    {
+        Injector injector = Guice.createInjector(
+                new HttpServerModule(),
+                new HttpEventModule(),
+                new JsonModule(),
+                new TestingNodeModule(),
+                new TestingDiscoveryModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
+                    }
+                },
+                new ConfigurationModule(new ConfigurationFactory(
+                        ImmutableMap.<String, String>builder()
+                                .put("node.environment", "test")
+                                .put("http-server.http.port", "0")
+                                .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
+                                .put("collector.json-version", "1")
+                                .build())));
+
+        HttpServer server = injector.getInstance(HttpServer.class);
+        Assert.assertNotNull(server);
     }
 
     @Test

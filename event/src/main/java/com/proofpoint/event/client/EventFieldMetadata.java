@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import org.codehaus.jackson.JsonGenerator;
+import org.joda.time.DateTime;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -181,6 +182,16 @@ class EventFieldMetadata
             jsonGenerator.writeFieldName("value");
             eventDataType.writeFieldValue(jsonGenerator, value);
             jsonGenerator.writeEndObject();
+        }
+    }
+
+    public void writeTimestampV1(JsonGenerator jsonGenerator, Object event)
+            throws IOException
+    {
+        Object value = getValue(event);
+        if (value != null) {
+            EventDataType.validateFieldValueType(value, DateTime.class);
+            jsonGenerator.writeNumberField("timestamp", ((DateTime) value).getMillis());
         }
     }
 }

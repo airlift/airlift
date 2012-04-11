@@ -1,0 +1,14 @@
+[
+    {
+        "name":"FixedDummy",
+        "type":"metrics",
+        "host":"localhost",
+        "timestamp":1315533599999,
+        "data":[
+            {
+                "name":"IntValue",
+                "value":123
+            }
+        ]
+    }
+]
