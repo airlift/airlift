@@ -88,6 +88,9 @@ class EventTypeMetadata<T>
                 continue;
             }
 
+            // allow accessing public methods in private event classes
+            method.setAccessible(true);
+
             Class<?> dataType = method.getReturnType();
             ContainerType containerType = null;
 
