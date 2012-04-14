@@ -38,15 +38,22 @@ public class TestRackServletConfig
     public void testDefaults()
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(RackServletConfig.class)
-                .setRackConfigPath("config.ru"));
+                .setRackConfigPath("config.ru")
+                .setServiceAnnouncement(null)
+        );
     }
 
     @Test
     public void testExplicitPropertyMappings()
     {
-        Map<String, String> properties = ImmutableMap.of("rackserver.rack-config-path", "rack-configuration.ru");
+        Map<String, String> properties = ImmutableMap.<String, String>builder()
+                .put("rackserver.rack-config-path", "rack-configuration.ru")
+                .put("rackserver.announcement", "test")
+                .build();
 
-        RackServletConfig expected = new RackServletConfig().setRackConfigPath("rack-configuration.ru");
+        RackServletConfig expected = new RackServletConfig()
+                .setRackConfigPath("rack-configuration.ru")
+                .setServiceAnnouncement("test");
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

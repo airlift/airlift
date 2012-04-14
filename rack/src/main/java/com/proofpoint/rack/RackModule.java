@@ -35,7 +35,10 @@ public class RackModule implements Module
         binder.disableCircularProxies();
 
         binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(RackServlet.class).in(Scopes.SINGLETON);
+
         ConfigurationModule.bindConfig(binder).to(RackServletConfig.class);
+
+        binder.bind(RackAnnouncer.class).asEagerSingleton();
     }
 
     /**

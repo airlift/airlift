@@ -23,6 +23,7 @@ import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.node.testing.TestingNodeModule;
@@ -49,6 +50,7 @@ public class TestRackModuleRaw
                 new TestingHttpServerModule(),
                 new RackModule(),
                 new TestingNodeModule(),
+                new TestingDiscoveryModule(),
                 new ConfigurationModule(new ConfigurationFactory(
                         ImmutableMap.<String, String>builder()
                                 .put("rackserver.rack-config-path", Resources.getResource("test/raw/config.ru").getFile())

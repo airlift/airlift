@@ -19,11 +19,13 @@ import com.proofpoint.configuration.Config;
 import com.proofpoint.configuration.ConfigDescription;
 
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 
 public class RackServletConfig
 {
     //Defaults to assuming config.ru is in the root.
     private String rackConfigPath = "config.ru";
+    private String serviceAnnouncement;
 
     @NotNull
     public String getRackConfigPath()
@@ -36,6 +38,20 @@ public class RackServletConfig
     public RackServletConfig setRackConfigPath(String rackConfigPath)
     {
         this.rackConfigPath = rackConfigPath;
+        return this;
+    }
+
+    @Pattern(regexp = "[a-z][a-z0-9]{0,14}")
+    public String getServiceAnnouncement()
+    {
+        return serviceAnnouncement;
+    }
+
+    @Config("rackserver.announcement")
+    @ConfigDescription("name of service to announce")
+    public RackServletConfig setServiceAnnouncement(String serviceAnnouncement)
+    {
+        this.serviceAnnouncement = serviceAnnouncement;
         return this;
     }
 }
