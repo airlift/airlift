@@ -1,6 +1,10 @@
 * 0.59
 
 - Replace Hibernate validator with direct dependency on Apache BVal
+- [Bug] Fix V1 Events so they can be used with http request events
+- Check for duplicate classes in the dependency closure during builds
+- Add JsonEventSerializer for external use
+- Add support for Rack servers to be able to announce with Discovery
 
 * 0.58
 

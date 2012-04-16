@@ -8,6 +8,28 @@ from the dependencyManagement section of the rest-server-base POM and
 should be removed from the POM of any servers or libraries as it is
 no longer required by Platform.
 
+* Fixed a bug preventing V1 Events from being able to be used with HttpRequestEvents
+
+* Check for duplicate classes in the dependency closure during builds
+
+Starting at 0.59, any rest-server-base dependent projects will have a build
+step added that ensures there are no duplicates of classes or resources on
+the classpath.  Any duplicates will trigger a failure of the build and the
+build output will include all the problematic classes or resources and which
+packages they come from.  Using the dependency:tree build goal can help with
+finding these conflicts and resolving them.
+
+* Add JsonEventSerializer for external use
+
+JsonEventSerializer serializes a single event in v2 format using a JsonGenerator.
+The existing JsonEventWriter is not easily consumed from external projects.
+
+* Add support for Rack servers to be able to announce with Discovery
+
+Starting with 0.59, the configuration property "rackserver.announcement" will
+set the name for the rack server to announce to discovery.  The remaining
+configuration to announce with discovery is identical to rest-server-base
+parented projects.
 
 Platform 0.58
 
