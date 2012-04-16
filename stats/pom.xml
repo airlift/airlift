@@ -4,13 +4,13 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>stats</artifactId>
     <packaging>jar</packaging>
-    <version>0.59-SNAPSHOT</version>
+    <version>0.59</version>
     <name>stats</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.59-SNAPSHOT</version>
+        <version>0.59</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -18,7 +18,7 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>units</artifactId>
-            <version>0.59-SNAPSHOT</version>
+            <version>0.59</version>
         </dependency>
 
         <dependency>
@@ -42,7 +42,7 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>testing</artifactId>
-            <version>0.59-SNAPSHOT</version>
+            <version>0.59</version>
             <scope>test</scope>
         </dependency>
 
