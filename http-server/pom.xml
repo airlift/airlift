@@ -4,13 +4,13 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>http-server</artifactId>
     <packaging>jar</packaging>
-    <version>0.60</version>
+    <version>0.61-SNAPSHOT</version>
     <name>http-server</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.60</version>
+        <version>0.61-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -18,31 +18,31 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>log</artifactId>
-            <version>0.60</version>
+            <version>0.61-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>node</artifactId>
-            <version>0.60</version>
+            <version>0.61-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>configuration</artifactId>
-            <version>0.60</version>
+            <version>0.61-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>discovery-experimental</artifactId>
-            <version>0.60</version>
+            <version>0.61-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>event-experimental</artifactId>
-            <version>0.60</version>
+            <version>0.61-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -114,20 +114,20 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>stats</artifactId>
-            <version>0.60</version>
+            <version>0.61-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>testing</artifactId>
-            <version>0.60</version>
+            <version>0.61-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>trace-token</artifactId>
-            <version>0.60</version>
+            <version>0.61-SNAPSHOT</version>
         </dependency>
 
         <dependency>
