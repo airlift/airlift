@@ -1,3 +1,7 @@
+Platform 0.60
+
+* Fixed bug that prevents Rack servers from announcing
+
 Platform 0.59
 
 * Hibernate validator replaced with direct dependency on Apache BVal

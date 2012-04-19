@@ -17,6 +17,7 @@ package com.proofpoint.rack;
 
 import com.google.inject.Injector;
 import com.proofpoint.bootstrap.Bootstrap;
+import com.proofpoint.discovery.client.Announcer;
 import com.proofpoint.discovery.client.DiscoveryModule;
 import com.proofpoint.event.client.HttpEventModule;
 import com.proofpoint.http.server.HttpServerModule;
@@ -48,6 +49,7 @@ public class Main
 
         try {
             Injector injector = app.strictConfig().initialize();
+            injector.getInstance(Announcer.class).start();
         }
         catch (Exception e) {
             Logger.get(Main.class).error(e);

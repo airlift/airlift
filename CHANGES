@@ -1,3 +1,7 @@
+* 0.60
+
+- [Bug] Fix announcements for Rack servers
+
 * 0.59
 
 - Replace Hibernate validator with direct dependency on Apache BVal
