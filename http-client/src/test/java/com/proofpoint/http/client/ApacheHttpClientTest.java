@@ -5,6 +5,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
+import com.proofpoint.testing.Assertions;
 import com.proofpoint.units.Duration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -311,6 +312,34 @@ public class ApacheHttpClientTest
         client.execute(request, new ResponseToStringHandler());
     }
 
+    @Test
+    public void testKeepAlive()
+            throws Exception
+    {
+        URI uri = URI.create(baseURI.toASCIIString() + "/?remotePort=");
+        Request request = RequestBuilder.prepareGet()
+                .setUri(uri)
+                .build();
+
+        ListMultimap<String, String> headers1 = httpClient.execute(request, new ResponseHeadersHandler());
+        Thread.sleep(100);
+        ListMultimap<String, String> headers2 = httpClient.execute(request, new ResponseHeadersHandler());
+        Thread.sleep(200);
+        ListMultimap<String, String> headers3 = httpClient.execute(request, new ResponseHeadersHandler());
+
+        Assert.assertEquals(headers1.get("remotePort").size(), 1);
+        Assert.assertEquals(headers2.get("remotePort").size(), 1);
+        Assert.assertEquals(headers3.get("remotePort").size(), 1);
+
+        int port1 = Integer.parseInt(headers1.get("remotePort").get(0));
+        int port2 = Integer.parseInt(headers2.get("remotePort").get(0));
+        int port3 = Integer.parseInt(headers3.get("remotePort").get(0));
+
+        Assert.assertEquals(port2, port1);
+        Assert.assertEquals(port3, port1);
+        Assertions.assertBetweenInclusive(port1, 1024, 65535);
+    }
+
     private static final class EchoServlet extends HttpServlet
     {
         private String requestMethod;
@@ -352,6 +381,10 @@ public class ApacheHttpClientTest
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return;
+            }
+
+            if (request.getParameter("remotePort") != null) {
+                response.addHeader("remotePort", String.valueOf(request.getRemotePort()));
             }
 
             if (responseBody != null) {
