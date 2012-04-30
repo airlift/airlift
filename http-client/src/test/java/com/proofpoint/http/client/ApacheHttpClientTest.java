@@ -222,21 +222,7 @@ public class ApacheHttpClientTest
                 .setUri(baseURI)
                 .build();
 
-        ListMultimap<String, String> headers = httpClient.execute(request, new ResponseHandler<ListMultimap<String, String>, Exception>()
-        {
-            @Override
-            public Exception handleException(Request request, Exception exception)
-            {
-                return exception;
-            }
-
-            @Override
-            public ListMultimap<String, String> handle(Request request, Response response)
-                    throws Exception
-            {
-                return response.getHeaders();
-            }
-        });
+        ListMultimap<String, String> headers = httpClient.execute(request, new ResponseHeadersHandler());
 
         Assert.assertEquals(headers.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(headers.get("dupe"), ImmutableList.of("first", "second"));
@@ -403,6 +389,23 @@ public class ApacheHttpClientTest
                 throws Exception
         {
             return response.getStatusCode();
+        }
+    }
+
+    private static class ResponseHeadersHandler
+            implements ResponseHandler<ListMultimap<String, String>, Exception>
+    {
+        @Override
+        public Exception handleException(Request request, Exception exception)
+        {
+            return exception;
+        }
+
+        @Override
+        public ListMultimap<String, String> handle(Request request, Response response)
+                throws Exception
+        {
+            return response.getHeaders();
         }
     }
 }
