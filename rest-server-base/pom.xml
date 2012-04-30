@@ -29,6 +29,11 @@
             <email>dain@iq80.com</email>
         </developer>
         <developer>
+            <id>mattstep</id>
+            <name>Matt Stephenson</name>
+            <email>mattstep@mattstep.net</email>
+        </developer>
+        <developer>
             <id>randgalt</id>
             <name>Jordan Zimmerman</name>
             <email>jordan@proofpoint.com</email>
@@ -239,7 +244,7 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>11.0.2</version>
+                <version>12.0</version>
             </dependency>
 
             <dependency>
