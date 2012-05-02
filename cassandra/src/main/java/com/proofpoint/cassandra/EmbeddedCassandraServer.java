@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.common.net.InetAddresses;
-import com.proofpoint.experimental.units.DataSize;
+import com.proofpoint.units.DataSize;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.units.Duration;
 import org.apache.cassandra.config.ConfigurationException;

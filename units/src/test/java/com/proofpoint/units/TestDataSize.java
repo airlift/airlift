@@ -1,21 +1,17 @@
-package com.proofpoint.experimental.units;
+package com.proofpoint.units;
+
+import static com.proofpoint.testing.EquivalenceTester.comparisonTester;
+import static com.proofpoint.units.DataSize.Unit.BYTE;
+import static com.proofpoint.units.DataSize.Unit.KILOBYTE;
+import static com.proofpoint.units.DataSize.Unit.MEGABYTE;
+import static com.proofpoint.units.DataSize.Unit.GIGABYTE;
+import static com.proofpoint.units.DataSize.Unit.TERABYTE;
+import static com.proofpoint.units.DataSize.Unit.PETABYTE;
+import static org.testng.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
-import com.proofpoint.testing.EquivalenceTester;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.util.List;
-
-import static com.proofpoint.experimental.units.DataSize.Unit.BYTE;
-import static com.proofpoint.experimental.units.DataSize.Unit.GIGABYTE;
-import static com.proofpoint.experimental.units.DataSize.Unit.KILOBYTE;
-import static com.proofpoint.experimental.units.DataSize.Unit.MEGABYTE;
-import static com.proofpoint.experimental.units.DataSize.Unit.PETABYTE;
-import static com.proofpoint.experimental.units.DataSize.Unit.TERABYTE;
-import static com.proofpoint.testing.EquivalenceTester.comparisonTester;
-import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
-import static org.testng.Assert.assertEquals;
 
 public class TestDataSize
 {

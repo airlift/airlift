@@ -2,8 +2,8 @@ package com.proofpoint.cassandra;
 
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.testing.ConfigAssertions;
-import com.proofpoint.experimental.units.DataSize;
-import com.proofpoint.experimental.units.DataSize.Unit;
+import com.proofpoint.units.DataSize;
+import com.proofpoint.units.DataSize.Unit;
 import com.proofpoint.units.Duration;
 import org.testng.annotations.Test;
 

@@ -1,7 +1,7 @@
 package com.proofpoint.cassandra;
 
 import com.proofpoint.configuration.Config;
-import com.proofpoint.experimental.units.DataSize;
+import com.proofpoint.units.DataSize;
 import com.proofpoint.units.Duration;
 import org.apache.cassandra.dht.ByteOrderedPartitioner;
 import org.apache.cassandra.dht.CollatingOrderPreservingPartitioner;

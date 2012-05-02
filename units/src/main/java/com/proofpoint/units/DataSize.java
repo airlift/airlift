@@ -1,5 +1,6 @@
-package com.proofpoint.experimental.units;
+package com.proofpoint.units;
 
+import com.google.common.annotations.Beta;
 import com.google.common.base.Preconditions;
 
 import java.util.regex.Matcher;
@@ -7,6 +8,7 @@ import java.util.regex.Pattern;
 
 import static java.lang.Math.floor;
 
+@Beta
 public class DataSize
         implements Comparable<DataSize>
 {
