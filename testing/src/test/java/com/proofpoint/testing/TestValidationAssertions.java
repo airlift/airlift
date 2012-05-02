@@ -1,15 +1,14 @@
-package com.proofpoint.experimental.testing;
+package com.proofpoint.testing;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import javax.validation.constraints.NotNull;
-
 import java.lang.annotation.Annotation;
 
-import static com.proofpoint.experimental.testing.ValidationAssertions.assertFailsValidation;
-import static com.proofpoint.experimental.testing.ValidationAssertions.assertValidates;
 import static com.proofpoint.testing.Assertions.assertContains;
+import static com.proofpoint.testing.ValidationAssertions.assertFailsValidation;
+import static com.proofpoint.testing.ValidationAssertions.assertValidates;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 

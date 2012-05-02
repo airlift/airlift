@@ -1,5 +1,6 @@
-package com.proofpoint.experimental.testing;
+package com.proofpoint.testing;
 
+import com.google.common.annotations.Beta;
 import org.apache.bval.jsr303.ApacheValidationProvider;
 
 import javax.validation.ConstraintViolation;
@@ -12,6 +13,7 @@ import static java.lang.String.format;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+@Beta
 public class ValidationAssertions
 {
     private static final Validator VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();

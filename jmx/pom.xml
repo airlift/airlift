@@ -23,7 +23,7 @@
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>experimental</artifactId>
+            <artifactId>discovery-experimental</artifactId>
             <version>0.62-SNAPSHOT</version>
         </dependency>
 

@@ -14,7 +14,7 @@ import java.io.File;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static com.proofpoint.experimental.testing.ValidationAssertions.assertFailsValidation;
+import static com.proofpoint.testing.ValidationAssertions.assertFailsValidation;
 
 public class TestCassandraServerConfig
 {

@@ -28,7 +28,7 @@
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>experimental</artifactId>
+            <artifactId>units</artifactId>
             <version>0.62-SNAPSHOT</version>
         </dependency>
 
@@ -74,6 +74,18 @@
                 	<groupId>log4j</groupId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-core-asl</artifactId>
+            <version>1.9.5</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-mapper-asl</artifactId>
+            <version>1.9.5</version>
         </dependency>
 
         <dependency>
