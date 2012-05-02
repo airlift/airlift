@@ -6,6 +6,7 @@ import com.proofpoint.units.Duration;
 import com.proofpoint.units.MinDuration;
 
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 import java.util.concurrent.TimeUnit;
 
 @Beta
@@ -16,6 +17,7 @@ public class HttpClientConfig
     private int maxConnections = 200;
     private int maxConnectionsPerServer = 20;
 
+    @NotNull
     @MinDuration("0ms")
     public Duration getConnectTimeout()
     {
@@ -29,6 +31,7 @@ public class HttpClientConfig
         return this;
     }
 
+    @NotNull
     @MinDuration("0ms")
     public Duration getReadTimeout()
     {

@@ -42,8 +42,6 @@ public class ApacheHttpClient implements com.proofpoint.http.client.HttpClient
     public ApacheHttpClient(HttpClientConfig config)
     {
         Preconditions.checkNotNull(config, "config is null");
-        Preconditions.checkNotNull(config.getConnectTimeout(), "config.getConnectTimeout() is null");
-        Preconditions.checkNotNull(config.getReadTimeout(), "config.getReadTimeout() is null");
 
         PoolingClientConnectionManager connectionManager = new PoolingClientConnectionManager();
         connectionManager.setMaxTotal(config.getMaxConnections());

@@ -5,8 +5,11 @@ import com.proofpoint.configuration.testing.ConfigAssertions;
 import com.proofpoint.units.Duration;
 import org.testng.annotations.Test;
 
+import javax.validation.constraints.NotNull;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import static com.proofpoint.testing.ValidationAssertions.assertFailsValidation;
 
 public class TestHttpClientConfig
 {
@@ -37,5 +40,12 @@ public class TestHttpClientConfig
                 .setMaxConnectionsPerServer(3);
 
         ConfigAssertions.assertFullMapping(properties, expected);
+    }
+
+    @Test
+    public void testValidations()
+    {
+        assertFailsValidation(new HttpClientConfig().setConnectTimeout(null), "connectTimeout", "may not be null", NotNull.class);
+        assertFailsValidation(new HttpClientConfig().setReadTimeout(null), "readTimeout", "may not be null", NotNull.class);
     }
 }
