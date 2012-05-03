@@ -1,11 +1,15 @@
 package com.proofpoint.http.client;
 
 import com.google.common.annotations.Beta;
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 
 import java.net.URI;
+
+import static com.google.common.base.Objects.equal;
+import static com.google.common.base.Objects.toStringHelper;
 
 @Beta
 public class Request
@@ -49,13 +53,30 @@ public class Request
     @Override
     public String toString()
     {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("Request");
-        sb.append("{uri=").append(uri);
-        sb.append(", method='").append(method).append('\'');
-        sb.append(", headers=").append(headers);
-        sb.append(", bodyGenerator=").append(bodyGenerator);
-        sb.append('}');
-        return sb.toString();
+        return toStringHelper(this)
+                .add("uri", uri)
+                .add("method", method)
+                .add("headers", headers)
+                .add("bodyGenerator", bodyGenerator)
+                .toString();
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (!(o instanceof Request)) {
+            return false;
+        }
+        Request r = (Request) o;
+        return equal(uri, r.uri) &&
+                equal(method, r.method) &&
+                equal(headers, r.headers) &&
+                equal(bodyGenerator, r.bodyGenerator);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hashCode(uri, method, headers, bodyGenerator);
     }
 }

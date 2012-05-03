@@ -5,6 +5,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
 import java.net.URI;
+import java.util.Map.Entry;
 
 @Beta
 public class RequestBuilder
@@ -27,6 +28,18 @@ public class RequestBuilder
 
     public static RequestBuilder prepareDelete() {
         return new RequestBuilder().setMethod("DELETE");
+    }
+
+    public static RequestBuilder fromRequest(Request request) {
+        RequestBuilder requestBuilder = new RequestBuilder();
+        requestBuilder.setMethod(request.getMethod());
+        requestBuilder.setBodyGenerator(request.getBodyGenerator());
+        requestBuilder.setUri(request.getUri());
+
+        for (Entry<String, String> entry : request.getHeaders().entries()) {
+            requestBuilder.addHeader(entry.getKey(), entry.getValue());
+        }
+        return requestBuilder;
     }
 
     private URI uri;
