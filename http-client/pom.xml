@@ -57,6 +57,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>trace-token</artifactId>
+            <version>0.61-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
             <groupId>javax.validation</groupId>
             <artifactId>validation-api</artifactId>
             <version>1.0.0.GA</version>
@@ -83,6 +89,12 @@
         <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
+            <version>3.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.inject.extensions</groupId>
+            <artifactId>guice-multibindings</artifactId>
             <version>3.0</version>
         </dependency>
 

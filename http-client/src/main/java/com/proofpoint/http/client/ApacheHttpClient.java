@@ -1,9 +1,11 @@
 package com.proofpoint.http.client;
 
 import com.google.common.annotations.Beta;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.CountingInputStream;
 import com.google.common.io.CountingOutputStream;
@@ -25,7 +27,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.SocketTimeoutException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Beta
@@ -33,6 +38,7 @@ public class ApacheHttpClient implements com.proofpoint.http.client.HttpClient
 {
     private final RequestStats stats = new RequestStats();
     private final HttpClient httpClient;
+    private final List<HttpRequestFilter> requestFilters;
 
     public ApacheHttpClient()
     {
@@ -41,7 +47,13 @@ public class ApacheHttpClient implements com.proofpoint.http.client.HttpClient
 
     public ApacheHttpClient(HttpClientConfig config)
     {
+        this(config, Collections.<HttpRequestFilter>emptySet());
+    }
+
+    public ApacheHttpClient(HttpClientConfig config, Set<HttpRequestFilter> requestFilters)
+    {
         Preconditions.checkNotNull(config, "config is null");
+        Preconditions.checkNotNull(requestFilters, "requestFilters is null");
 
         PoolingClientConnectionManager connectionManager = new PoolingClientConnectionManager();
         connectionManager.setMaxTotal(config.getMaxConnections());
@@ -52,7 +64,14 @@ public class ApacheHttpClient implements com.proofpoint.http.client.HttpClient
         httpParams.setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, (int) config.getConnectTimeout().toMillis());
         httpParams.setParameter(CoreConnectionPNames.SO_LINGER, 0); // do we need this?
 
-        httpClient = new DefaultHttpClient(connectionManager, httpParams);
+        this.httpClient = new DefaultHttpClient(connectionManager, httpParams);
+        this.requestFilters = ImmutableList.copyOf(requestFilters);
+    }
+
+    @VisibleForTesting
+    List<HttpRequestFilter> getRequestFilters()
+    {
+        return requestFilters;
     }
 
     @Managed
@@ -62,14 +81,19 @@ public class ApacheHttpClient implements com.proofpoint.http.client.HttpClient
         return stats;
     }
 
-    public <T, E extends Exception> T execute(final Request request, final ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> T execute(Request request, final ResponseHandler<T, E> responseHandler)
             throws E
     {
         Preconditions.checkNotNull(request, "request is null");
         Preconditions.checkNotNull(responseHandler, "responseHandler is null");
 
+        for (HttpRequestFilter requestFilter : requestFilters) {
+            request = requestFilter.filterRequest(request);
+        }
+
         final long requestStart = System.nanoTime();
         final GenericHttpRequest genericHttpRequest = new GenericHttpRequest(request);
+        final Request finalRequest = request;
         try {
             T value = httpClient.execute(
                     genericHttpRequest,
@@ -83,7 +107,7 @@ public class ApacheHttpClient implements com.proofpoint.http.client.HttpClient
 
                             Response response = new MyResponse(httpResponse);
                             try {
-                                T value = responseHandler.handle(request, response);
+                                T value = responseHandler.handle(finalRequest, response);
                                 return value;
                             }
                             catch (Exception e) {
@@ -93,7 +117,7 @@ public class ApacheHttpClient implements com.proofpoint.http.client.HttpClient
                                 Duration responseProcessingTime = Duration.nanosSince(responseStart);
                                 Duration requestProcessingTime = new Duration(responseStart - requestStart, TimeUnit.NANOSECONDS);
 
-                                stats.record(request.getMethod(),
+                                stats.record(finalRequest.getMethod(),
                                         response.getStatusCode(),
                                         genericHttpRequest.getBytesWritten(),
                                         response.getBytesRead(),

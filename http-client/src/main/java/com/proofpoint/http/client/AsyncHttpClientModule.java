@@ -10,15 +10,19 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
 
 import javax.annotation.PreDestroy;
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
+import static com.proofpoint.http.client.CompositeQualifierImpl.compositeQualifier;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 
 @Beta
@@ -48,6 +52,12 @@ public class AsyncHttpClientModule implements Module
         }
     }
 
+    @SuppressWarnings("unchecked")
+    static AsyncHttpClientModule createAsyncHttpClientModule(String name, Class<? extends Annotation> annotation)
+    {
+        return new AsyncHttpClientModule(name, annotation);
+    }
+
     @Override
     public void configure(Binder binder)
     {
@@ -61,6 +71,8 @@ public class AsyncHttpClientModule implements Module
         for (Class<? extends Annotation> alias : aliases) {
             binder.bind(AsyncHttpClient.class).annotatedWith(alias).to(key);
         }
+
+        newSetBinder(binder, HttpRequestFilter.class, filterQualifier(annotation));
     }
 
     private static class ExecutorServiceProvider implements Provider<ExecutorService>
@@ -124,11 +136,19 @@ public class AsyncHttpClientModule implements Module
         public AsyncHttpClient get()
         {
             ExecutorService executorService = injector.getInstance(Key.get(ExecutorService.class, annotation));
-
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
-            ApacheHttpClient httpClient = new ApacheHttpClient(config);
-
-            return new AsyncHttpClient(httpClient, executorService);
+            Set<HttpRequestFilter> filters = injector.getInstance(filterKey(annotation));
+            return new AsyncHttpClient(new ApacheHttpClient(config), executorService, filters);
         }
+    }
+
+    static Key<Set<HttpRequestFilter>> filterKey(Class<? extends Annotation> annotation)
+    {
+        return Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, filterQualifier(annotation));
+    }
+
+    static CompositeQualifier filterQualifier(Class<? extends Annotation> annotation)
+    {
+        return compositeQualifier(annotation, AsyncHttpClient.class);
     }
 }

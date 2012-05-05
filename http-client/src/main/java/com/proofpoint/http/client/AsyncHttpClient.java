@@ -1,7 +1,9 @@
 package com.proofpoint.http.client;
 
 import com.google.common.annotations.Beta;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.AbstractCheckedFuture;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -10,6 +12,9 @@ import com.google.common.util.concurrent.MoreExecutors;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -19,14 +24,28 @@ public class AsyncHttpClient
 {
     private final HttpClient httpClient;
     private final ListeningExecutorService executor;
+    private final List<HttpRequestFilter> requestFilters;
 
     public AsyncHttpClient(HttpClient httpClient, ExecutorService executor)
     {
+        this(httpClient, executor, Collections.<HttpRequestFilter>emptySet());
+    }
+
+    public AsyncHttpClient(HttpClient httpClient, ExecutorService executor, Set<HttpRequestFilter> requestFilters)
+    {
         Preconditions.checkNotNull(httpClient, "httpClient is null");
         Preconditions.checkNotNull(executor, "executor is null");
+        Preconditions.checkNotNull(requestFilters, "requestFilters is null");
 
         this.httpClient = httpClient;
         this.executor = MoreExecutors.listeningDecorator(executor);
+        this.requestFilters = ImmutableList.copyOf(requestFilters);
+    }
+
+    @VisibleForTesting
+    List<HttpRequestFilter> getRequestFilters()
+    {
+        return requestFilters;
     }
 
     @Managed
@@ -41,6 +60,10 @@ public class AsyncHttpClient
     {
         Preconditions.checkNotNull(request, "request is null");
         Preconditions.checkNotNull(responseHandler, "responseHandler is null");
+
+        for (HttpRequestFilter requestFilter : requestFilters) {
+            request = requestFilter.filterRequest(request);
+        }
 
         ListenableFuture<T> listenableFuture = executor.submit(new HttpExecution<T>(request, responseHandler));
         return new ResponseFuture<T, E>(request, responseHandler, listenableFuture);

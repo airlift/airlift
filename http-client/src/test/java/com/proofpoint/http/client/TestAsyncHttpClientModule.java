@@ -12,6 +12,7 @@ import org.testng.annotations.Test;
 
 import javax.inject.Qualifier;
 import java.lang.annotation.Retention;
+import java.util.Set;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
@@ -27,8 +28,11 @@ public class TestAsyncHttpClientModule
         AsyncHttpClient client = injector.getInstance(Key.get(AsyncHttpClient.class, HttpTest.class));
         Assert.assertNotNull(client);
         AsyncHttpClient aliasedClient = injector.getInstance(Key.get(AsyncHttpClient.class, HttpAliasTest.class));
-        Assert.assertNotNull(client);
+        Assert.assertNotNull(aliasedClient);
         Assert.assertSame(client, aliasedClient);
+        Set<HttpRequestFilter> filters = injector.getInstance(AsyncHttpClientModule.filterKey(HttpTest.class));
+        Assert.assertNotNull(filters);
+        Assert.assertTrue(filters.isEmpty());
     }
 
     @Retention(RUNTIME)

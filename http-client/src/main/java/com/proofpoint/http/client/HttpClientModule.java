@@ -9,13 +9,17 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
 
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
+import static com.proofpoint.http.client.CompositeQualifierImpl.compositeQualifier;
 
 @Beta
 public class HttpClientModule implements Module
@@ -44,6 +48,12 @@ public class HttpClientModule implements Module
         }
     }
 
+    @SuppressWarnings("unchecked")
+    static HttpClientModule createHttpClientModule(String name, Class<? extends Annotation> annotation)
+    {
+        return new HttpClientModule(name, annotation);
+    }
+
     @Override
     public void configure(Binder binder)
     {
@@ -58,6 +68,9 @@ public class HttpClientModule implements Module
         for (Class<? extends Annotation> alias : aliases) {
             binder.bind(HttpClient.class).annotatedWith(alias).to(key);
         }
+
+        // kick off the binding for the filter set
+        newSetBinder(binder, HttpRequestFilter.class, filterQualifier(annotation));
     }
     
     private static class HttpClientProvider implements Provider<HttpClient>
@@ -81,7 +94,18 @@ public class HttpClientModule implements Module
         public HttpClient get()
         {
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
-            return new ApacheHttpClient(config);
+            Set<HttpRequestFilter> filters = injector.getInstance(filterKey(annotation));
+            return new ApacheHttpClient(config, filters);
         }
+    }
+
+    static Key<Set<HttpRequestFilter>> filterKey(Class<? extends Annotation> annotation)
+    {
+        return Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, filterQualifier(annotation));
+    }
+
+    static CompositeQualifier filterQualifier(Class<? extends Annotation> annotation)
+    {
+        return compositeQualifier(annotation, HttpClient.class);
     }
 }

@@ -2,6 +2,7 @@ package com.proofpoint.http.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -36,7 +37,9 @@ public class AsyncHttpClientTest
             throws Exception
     {
         servlet = new EchoServlet();
-        httpClient = new AsyncHttpClient(new ApacheHttpClient(new HttpClientConfig()), Executors.newCachedThreadPool(new ThreadFactoryBuilder().setDaemon(true).build()));
+        httpClient = new AsyncHttpClient(new ApacheHttpClient(new HttpClientConfig()),
+                Executors.newCachedThreadPool(new ThreadFactoryBuilder().setDaemon(true).build()),
+                ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
 
         int port;
         ServerSocket socket = new ServerSocket();
@@ -96,6 +99,7 @@ public class AsyncHttpClientTest
         Assert.assertEquals(servlet.requestUri, uri);
         Assert.assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
+        Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
     }
 
     @Test
@@ -116,6 +120,7 @@ public class AsyncHttpClientTest
         Assert.assertEquals(servlet.requestUri, uri);
         Assert.assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
+        Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
     }
 
     @Test
@@ -136,6 +141,7 @@ public class AsyncHttpClientTest
         Assert.assertEquals(servlet.requestUri, uri);
         Assert.assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
+        Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
     }
 
     @Test
@@ -156,6 +162,7 @@ public class AsyncHttpClientTest
         Assert.assertEquals(servlet.requestUri, uri);
         Assert.assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
+        Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
     }
 
     @Test
