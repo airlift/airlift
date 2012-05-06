@@ -11,20 +11,17 @@
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
         <version>0.62-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <dependencies>
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>configuration</artifactId>
-            <version>0.62-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>log4j-over-slf4j</artifactId>
-            <version>1.6.2</version>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>testing</artifactId>
         </dependency>
 
         <dependency>
@@ -35,20 +32,28 @@
 
         <dependency>
             <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
+            <artifactId>log4j-over-slf4j</artifactId>
             <version>1.6.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
         </dependency>
 
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>0.9.30</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
         </dependency>
 
         <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
-            <version>3.0</version>
         </dependency>
 
         <dependency>
@@ -59,7 +64,6 @@
         <dependency>
             <groupId>org.weakref</groupId>
             <artifactId>jmxutils</artifactId>
-            <version>1.8</version>
         </dependency>
 
         <dependency>
@@ -69,9 +73,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
-            <artifactId>testing</artifactId>
-            <version>0.62-SNAPSHOT</version>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-core</artifactId>
+            <version>1.1</version>
             <scope>test</scope>
         </dependency>
 

@@ -10,6 +10,13 @@
     <description>Proofpoint platform</description>
     <url>http://github.com/proofpoint/platform</url>
 
+    <parent>
+        <groupId>com.proofpoint.platform</groupId>
+        <artifactId>library</artifactId>
+        <version>0.62-SNAPSHOT</version>
+        <relativePath>library/pom.xml</relativePath>
+    </parent>
+
     <inceptionYear>2010</inceptionYear>
     <organization>
         <name>Proofpoint, Inc.</name>
@@ -93,42 +100,6 @@
             <url>http://download.java.net/maven/2/</url>
         </repository>
     </repositories>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <name>Sonatype Nexus Snapshots</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-        </snapshotRepository>
-        <repository>
-            <id>sonatype-nexus-staging</id>
-            <name>Nexus Release Repository</name>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.testng</groupId>
-                <artifactId>testng</artifactId>
-                <version>6.2.1</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>http-client-experimental</artifactId>
-                <version>0.62-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.google.guava</groupId>
-                <artifactId>guava</artifactId>
-                <version>12.0</version>
-            </dependency>
-
-        </dependencies>
-    </dependencyManagement>
 
     <build>
         <plugins>
@@ -267,6 +238,24 @@
 
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>1.4</version>
+                    <executions>
+                        <execution>
+                            <id>sign-artifacts</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>sign</goal>
+                            </goals>
+                            <configuration>
+                                <useAgent>true</useAgent>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
@@ -434,6 +423,7 @@
     </profiles>
 
     <modules>
+        <module>library</module>
         <module>rack</module>
         <module>rack-launcher</module>
         <module>rack-packaging</module>

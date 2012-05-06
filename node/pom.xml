@@ -11,20 +11,17 @@
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
         <version>0.62-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <dependencies>
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>log</artifactId>
-            <version>0.62-SNAPSHOT</version>
+            <artifactId>configuration</artifactId>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>configuration</artifactId>
-            <version>0.62-SNAPSHOT</version>
+            <artifactId>testing</artifactId>
         </dependency>
 
         <dependency>
@@ -33,28 +30,23 @@
         </dependency>
 
         <dependency>
+            <groupId>com.google.inject.extensions</groupId>
+            <artifactId>guice-multibindings</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
-            <version>3.0</version>
         </dependency>
 
         <dependency>
             <groupId>org.weakref</groupId>
             <artifactId>jmxutils</artifactId>
-            <version>1.8</version>
         </dependency>
 
         <dependency>
-            <groupId>com.google.inject.extensions</groupId>
-            <artifactId>guice-multibindings</artifactId>
-            <version>3.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.proofpoint.platform</groupId>
-            <artifactId>testing</artifactId>
-            <version>0.62-SNAPSHOT</version>
-            <scope>test</scope>
+            <groupId>javax.validation</groupId>
+            <artifactId>validation-api</artifactId>
         </dependency>
 
         <dependency>
@@ -62,7 +54,6 @@
             <artifactId>testng</artifactId>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
     <build>

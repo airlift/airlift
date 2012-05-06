@@ -11,20 +11,17 @@
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
         <version>0.62-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
     </parent>
-    
+
     <dependencies>
         <dependency>
             <groupId>javax.validation</groupId>
             <artifactId>validation-api</artifactId>
-            <version>1.0.0.GA</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.bval</groupId>
             <artifactId>bval-jsr303</artifactId>
-            <version>0.3-incubating</version>
         </dependency>
 
         <dependency>
@@ -35,7 +32,6 @@
         <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
-            <version>3.0</version>
         </dependency>
 
         <dependency>
@@ -45,16 +41,14 @@
         </dependency>
 
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
-            <artifactId>testing</artifactId>
-            <version>0.62-SNAPSHOT</version>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
             <optional>true</optional>
         </dependency>
 
         <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <optional>true</optional>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>testing</artifactId>
         </dependency>
     </dependencies>
 

@@ -9,6 +9,13 @@
     <description>Proofpoint platform REST server base POM</description>
     <url>http://github.com/proofpoint/platform</url>
 
+    <parent>
+        <groupId>com.proofpoint.platform</groupId>
+        <artifactId>library</artifactId>
+        <version>0.62-SNAPSHOT</version>
+        <relativePath>../library/pom.xml</relativePath>
+    </parent>
+
     <inceptionYear>2010</inceptionYear>
     <organization>
         <name>Proofpoint, Inc.</name>
@@ -109,189 +116,6 @@
             </plugins>
         </pluginManagement>
     </build>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>bootstrap</artifactId>
-                <version>0.62-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>configuration</artifactId>
-                <version>0.62-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>dbpool</artifactId>
-                <version>0.62-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>discovery-experimental</artifactId>
-                <version>0.62-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>jmx-http-experimental</artifactId>
-                <version>0.62-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>event-experimental</artifactId>
-                <version>0.62-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>jaxrs</artifactId>
-                <version>0.62-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>http-server</artifactId>
-                <version>0.62-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>http-client-experimental</artifactId>
-                <version>0.62-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>json</artifactId>
-                <version>0.62-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>jmx</artifactId>
-                <version>0.62-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>jmx-http-rpc-experimental</artifactId>
-                <version>0.62-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>launcher</artifactId>
-                <version>0.62-SNAPSHOT</version>
-                <classifier>bin</classifier>
-                <type>tar.gz</type>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>log</artifactId>
-                <version>0.62-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>node</artifactId>
-                <version>0.62-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>stats</artifactId>
-                <version>0.62-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>units</artifactId>
-                <version>0.62-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>testing</artifactId>
-                <version>0.62-SNAPSHOT</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>trace-token</artifactId>
-                <version>0.62-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.weakref</groupId>
-                <artifactId>jmxutils</artifactId>
-                <version>1.8</version>
-            </dependency>
-
-            <dependency>
-                <groupId>joda-time</groupId>
-                <artifactId>joda-time</artifactId>
-                <version>2.0</version>
-            </dependency>
-
-            <dependency>
-                <groupId>javax.validation</groupId>
-                <artifactId>validation-api</artifactId>
-                <version>1.0.0.GA</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.google.guava</groupId>
-                <artifactId>guava</artifactId>
-                <version>12.0</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.google.inject</groupId>
-                <artifactId>guice</artifactId>
-                <version>3.0</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.google.inject.extensions</groupId>
-                <artifactId>guice-multibindings</artifactId>
-                <version>3.0</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.codehaus.jackson</groupId>
-                <artifactId>jackson-jaxrs</artifactId>
-                <version>1.9.5</version>
-            </dependency>
-
-            <dependency>
-              <groupId>org.codehaus.jackson</groupId>
-              <artifactId>jackson-mapper-asl</artifactId>
-              <version>1.9.5</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.codehaus.jackson</groupId>
-                <artifactId>jackson-core-asl</artifactId>
-                <version>1.9.5</version>
-            </dependency>
-
-            <!-- for testing -->
-            <dependency>
-                <groupId>org.testng</groupId>
-                <artifactId>testng</artifactId>
-                <version>6.2.1</version>
-                <scope>test</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <profiles>
         <profile>

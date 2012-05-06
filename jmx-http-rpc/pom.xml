@@ -1,10 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>platform</artifactId>
-        <groupId>com.proofpoint.platform</groupId>
-        <version>0.62-SNAPSHOT</version>
-    </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.proofpoint.platform</groupId>
@@ -12,37 +7,61 @@
     <packaging>jar</packaging>
     <version>0.62-SNAPSHOT</version>
 
+    <parent>
+        <groupId>com.proofpoint.platform</groupId>
+        <artifactId>platform</artifactId>
+        <version>0.62-SNAPSHOT</version>
+    </parent>
 
     <dependencies>
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>testing</artifactId>
-            <version>0.62-SNAPSHOT</version>
-            <scope>test</scope>
+            <artifactId>discovery-experimental</artifactId>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>discovery-experimental</artifactId>
-            <version>0.62-SNAPSHOT</version>
+            <artifactId>json</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>configuration</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>node</artifactId>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>http-server</artifactId>
-            <version>0.62-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
-            <version>3.0</version>
         </dependency>
 
         <dependency>
-          <groupId>org.codehaus.jackson</groupId>
-          <artifactId>jackson-mapper-asl</artifactId>
-          <version>1.9.5</version>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.weakref</groupId>
+            <artifactId>jmxutils</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty.orbit</groupId>
+            <artifactId>javax.servlet</artifactId>
         </dependency>
 
         <dependency>
@@ -50,7 +69,6 @@
             <artifactId>testng</artifactId>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
 

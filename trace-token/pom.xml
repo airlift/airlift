@@ -6,17 +6,17 @@
     <version>0.62-SNAPSHOT</version>
 
     <parent>
-        <artifactId>platform</artifactId>
         <groupId>com.proofpoint.platform</groupId>
+        <artifactId>platform</artifactId>
         <version>0.62-SNAPSHOT</version>
     </parent>
+
     <modelVersion>4.0.0</modelVersion>
 
     <dependencies>
         <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
-            <version>3.0</version>
         </dependency>
 
         <dependency>

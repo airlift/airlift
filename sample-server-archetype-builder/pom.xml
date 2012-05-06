@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>platform</artifactId>
-        <groupId>com.proofpoint.platform</groupId>
-        <version>0.62-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
-    </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>sample-server-archetype-builder</artifactId>
     <packaging>pom</packaging>
+
+    <parent>
+        <groupId>com.proofpoint.platform</groupId>
+        <artifactId>platform</artifactId>
+        <version>0.62-SNAPSHOT</version>
+    </parent>
 
     <properties>
         <server-name>sample-server</server-name>
@@ -153,6 +153,11 @@
       <name>Martin Traverso</name>
       <email>mtraverso@gmail.com</email>
     </developer>
+    <developer>
+      <id>mattstep</id>
+      <name>Matt Stephenson</name>
+      <email>mattstep@mattstep.net</email>
+    </developer>
   </developers>
 
   <scm>
@@ -160,19 +165,6 @@
     <developerConnection>scm:git:git@github.com:proofpoint/platform.git</developerConnection>
     <url>http://github.com/proofpoint/platform/tree/master</url>
   </scm>
-
-  <distributionManagement>
-    <snapshotRepository>
-      <id>sonatype-nexus-snapshots</id>
-      <name>Sonatype Nexus Snapshots</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-    </snapshotRepository>
-    <repository>
-      <id>sonatype-nexus-staging</id>
-      <name>Nexus Release Repository</name>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-    </repository>
-  </distributionManagement>
 
     <profiles>
         <profile>
