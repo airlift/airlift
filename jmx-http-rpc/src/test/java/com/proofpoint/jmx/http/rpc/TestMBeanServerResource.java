@@ -1,4 +1,4 @@
-package com.proofpoint.experimental.jmx;
+package com.proofpoint.jmx.http.rpc;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -12,7 +12,6 @@ import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
-import com.proofpoint.jmx.http.rpc.JmxHttpRpcModule;
 import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import org.testng.annotations.AfterMethod;
