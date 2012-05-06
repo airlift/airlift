@@ -449,6 +449,7 @@
         <module>http-server</module>
         <module>jaxrs</module>
         <module>jmx</module>
+        <module>jmx-http</module>
         <module>jmx-http-rpc</module>
         <module>bootstrap</module>
         <module>configuration</module>
@@ -459,7 +460,6 @@
         <module>rest-server-base</module>
         <module>sample-server</module>
         <module>skeleton-server</module>
-        <module>experimental</module>
         <module>sample-server-archetype-builder</module>
         <module>skeleton-server-archetype-builder</module>
         <module>cassandra</module>

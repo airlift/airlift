@@ -1,4 +1,4 @@
-package com.proofpoint.experimental.jmx;
+package com.proofpoint.jmx;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;

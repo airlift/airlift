@@ -1,4 +1,4 @@
-package com.proofpoint.experimental.jmx;
+package com.proofpoint.jmx;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
