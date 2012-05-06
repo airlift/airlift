@@ -4,6 +4,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharStreams;
+import com.google.common.net.MediaType;
 import com.google.common.primitives.Ints;
 import com.proofpoint.json.JsonCodec;
 
@@ -44,7 +45,7 @@ public class JsonResponseHandler<T> implements ResponseHandler<T, RuntimeExcepti
     public RuntimeException handleException(Request request, Exception exception)
     {
         if (exception instanceof ConnectException) {
-            return new RuntimeException("Server refused connection: " + request.getUri().toASCIIString());
+            return new RuntimeException("Server refused connection: " + request.getUri().toASCIIString(), exception);
         }
         return Throwables.propagate(exception);
     }
