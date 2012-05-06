@@ -25,6 +25,11 @@ import java.net.URI;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static com.proofpoint.http.client.Request.Builder.prepareDelete;
+import static com.proofpoint.http.client.Request.Builder.prepareGet;
+import static com.proofpoint.http.client.Request.Builder.preparePost;
+import static com.proofpoint.http.client.Request.Builder.preparePut;
+
 public class AsyncHttpClientTest
 {
     private EchoServlet servlet;
@@ -86,7 +91,7 @@ public class AsyncHttpClientTest
             throws Exception
     {
         URI uri = baseURI.resolve("/road/to/nowhere");
-        Request request = RequestBuilder.prepareGet()
+        Request request = prepareGet()
                 .setUri(uri)
                 .addHeader("foo", "bar")
                 .addHeader("dupe", "first")
@@ -107,7 +112,7 @@ public class AsyncHttpClientTest
             throws Exception
     {
         URI uri = baseURI.resolve("/road/to/nowhere");
-        Request request = RequestBuilder.preparePost()
+        Request request = preparePost()
                 .setUri(uri)
                 .addHeader("foo", "bar")
                 .addHeader("dupe", "first")
@@ -128,7 +133,7 @@ public class AsyncHttpClientTest
             throws Exception
     {
         URI uri = baseURI.resolve("/road/to/nowhere");
-        Request request = RequestBuilder.preparePut()
+        Request request = preparePut()
                 .setUri(uri)
                 .addHeader("foo", "bar")
                 .addHeader("dupe", "first")
@@ -149,7 +154,7 @@ public class AsyncHttpClientTest
             throws Exception
     {
         URI uri = baseURI.resolve("/road/to/nowhere");
-        Request request = RequestBuilder.prepareDelete()
+        Request request = prepareDelete()
                 .setUri(uri)
                 .addHeader("foo", "bar")
                 .addHeader("dupe", "first")
@@ -170,7 +175,7 @@ public class AsyncHttpClientTest
             throws Exception
     {
         servlet.responseStatusCode = 543;
-        Request request = RequestBuilder.prepareGet()
+        Request request = prepareGet()
                 .setUri(baseURI)
                 .build();
 
@@ -184,7 +189,7 @@ public class AsyncHttpClientTest
     {
         servlet.responseStatusMessage = "message";
 
-        Request request = RequestBuilder.prepareGet()
+        Request request = prepareGet()
                 .setUri(baseURI)
                 .build();
 
@@ -218,7 +223,7 @@ public class AsyncHttpClientTest
         Assert.assertEquals(servlet.responseHeaders.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(servlet.responseHeaders.get("dupe"), ImmutableList.of("first", "second"));
 
-        Request request = RequestBuilder.prepareGet()
+        Request request = prepareGet()
                 .setUri(baseURI)
                 .build();
 
@@ -246,7 +251,7 @@ public class AsyncHttpClientTest
     public void testResponseBodyEmpty()
             throws Exception
     {
-        Request request = RequestBuilder.prepareGet()
+        Request request = prepareGet()
                 .setUri(baseURI)
                 .build();
 
@@ -260,7 +265,7 @@ public class AsyncHttpClientTest
     {
         servlet.responseBody = "body text";
 
-        Request request = RequestBuilder.prepareGet()
+        Request request = prepareGet()
                 .setUri(baseURI)
                 .build();
 
@@ -275,7 +280,7 @@ public class AsyncHttpClientTest
         servlet.responseStatusCode = 500;
         servlet.responseBody = "body text";
 
-        Request request = RequestBuilder.prepareGet()
+        Request request = prepareGet()
                 .setUri(baseURI)
                 .build();
 
@@ -295,7 +300,7 @@ public class AsyncHttpClientTest
         config.setConnectTimeout(new Duration(5, TimeUnit.MILLISECONDS));
         AsyncHttpClient client = new AsyncHttpClient(new ApacheHttpClient(config), Executors.newCachedThreadPool(new ThreadFactoryBuilder().setDaemon(true).build()));
 
-        Request request = RequestBuilder.prepareGet()
+        Request request = prepareGet()
                 .setUri(URI.create("http://localhost:" + serverSocket.getLocalPort() + "/"))
                 .build();
 
@@ -318,7 +323,7 @@ public class AsyncHttpClientTest
         AsyncHttpClient client = new AsyncHttpClient(new ApacheHttpClient(config), Executors.newCachedThreadPool(new ThreadFactoryBuilder().setDaemon(true).build()));
 
         URI uri = URI.create(baseURI.toASCIIString() + "/?sleep=400");
-        Request request = RequestBuilder.prepareGet()
+        Request request = prepareGet()
                 .setUri(uri)
                 .build();
 

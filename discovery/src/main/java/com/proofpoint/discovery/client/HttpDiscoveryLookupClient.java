@@ -8,7 +8,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.Request;
-import com.proofpoint.http.client.RequestBuilder;
+import com.proofpoint.http.client.Request.Builder;
 import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
@@ -28,7 +28,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 
 import static com.proofpoint.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
-import static com.proofpoint.http.client.RequestBuilder.prepareGet;
+import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static java.lang.String.format;
 import static javax.ws.rs.core.Response.Status.NOT_MODIFIED;
 import static javax.ws.rs.core.Response.Status.OK;
@@ -102,7 +102,7 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
             uri = uri.resolve(pool);
         }
 
-        RequestBuilder requestBuilder = prepareGet()
+        Builder requestBuilder = prepareGet()
                 .setUri(uri)
                 .setHeader("User-Agent", nodeInfo.getNodeId());
         if (serviceDescriptors != null && serviceDescriptors.getETag() != null) {

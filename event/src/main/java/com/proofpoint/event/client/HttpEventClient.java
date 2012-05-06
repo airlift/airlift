@@ -28,7 +28,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.proofpoint.http.client.RequestBuilder.preparePost;
+import static com.proofpoint.http.client.Request.Builder.preparePost;
 
 public class HttpEventClient
         implements EventClient

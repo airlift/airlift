@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.proofpoint.tracetoken.TraceTokenManager;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.proofpoint.http.client.Request.Builder.fromRequest;
 
 public class TraceTokenRequestFilter
         implements HttpRequestFilter
@@ -27,7 +28,7 @@ public class TraceTokenRequestFilter
             return request;
         }
 
-        return RequestBuilder.fromRequest(request)
+        return fromRequest(request)
                 .addHeader(TRACETOKEN_HEADER, token)
                 .build();
     }

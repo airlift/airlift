@@ -9,7 +9,7 @@ import com.google.common.io.Files;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.proofpoint.http.client.HttpClient;
-import com.proofpoint.http.client.RequestBuilder;
+import com.proofpoint.http.client.Request.Builder;
 import com.proofpoint.json.JsonCodec;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeInfo;
@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.proofpoint.http.client.JsonResponseHandler.createJsonResponseHandler;
-import static com.proofpoint.http.client.RequestBuilder.prepareGet;
+import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 public class ServiceInventory
@@ -149,7 +149,7 @@ public class ServiceInventory
         try {
             ServiceDescriptorsRepresentation serviceDescriptorsRepresentation;
             if (serviceInventoryUri.getScheme().toLowerCase().startsWith("http")) {
-                RequestBuilder requestBuilder = prepareGet()
+                Builder requestBuilder = prepareGet()
                         .setUri(serviceInventoryUri)
                         .setHeader("User-Agent", nodeInfo.getNodeId());
                 serviceDescriptorsRepresentation = httpClient.execute(requestBuilder.build(), createJsonResponseHandler(serviceDescriptorsCodec));

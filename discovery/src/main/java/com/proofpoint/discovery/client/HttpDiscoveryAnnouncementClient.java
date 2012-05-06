@@ -26,8 +26,8 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 
 import static com.proofpoint.http.client.JsonBodyGenerator.jsonBodyGenerator;
-import static com.proofpoint.http.client.RequestBuilder.prepareDelete;
-import static com.proofpoint.http.client.RequestBuilder.preparePut;
+import static com.proofpoint.http.client.Request.Builder.prepareDelete;
+import static com.proofpoint.http.client.Request.Builder.preparePut;
 
 public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementClient
 {

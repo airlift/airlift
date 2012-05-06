@@ -6,6 +6,7 @@ import org.testng.annotations.Test;
 
 import java.net.URI;
 
+import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static com.proofpoint.http.client.TraceTokenRequestFilter.TRACETOKEN_HEADER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotSame;
@@ -19,7 +20,7 @@ public class TestTraceTokenRequestFilter
         TraceTokenManager manager = new TraceTokenManager();
         manager.registerRequestToken("testBasic");
         TraceTokenRequestFilter filter = new TraceTokenRequestFilter(manager);
-        Request original = RequestBuilder.prepareGet().setUri(URI.create("http://example.com")).build();
+        Request original = prepareGet().setUri(URI.create("http://example.com")).build();
 
         Request filtered = filter.filterRequest(original);
 
@@ -35,7 +36,7 @@ public class TestTraceTokenRequestFilter
     {
         TraceTokenManager manager = new TraceTokenManager();
         TraceTokenRequestFilter filter = new TraceTokenRequestFilter(manager);
-        Request original =  RequestBuilder.prepareGet().setUri(URI.create("http://example.com")).build();
+        Request original =  prepareGet().setUri(URI.create("http://example.com")).build();
 
         Request request = filter.filterRequest(original);
 

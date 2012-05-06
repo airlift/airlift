@@ -24,6 +24,11 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
+import static com.proofpoint.http.client.Request.Builder.prepareDelete;
+import static com.proofpoint.http.client.Request.Builder.prepareGet;
+import static com.proofpoint.http.client.Request.Builder.preparePost;
+import static com.proofpoint.http.client.Request.Builder.preparePut;
+
 public class ApacheHttpClientTest
 {
     private EchoServlet servlet;
@@ -84,7 +89,7 @@ public class ApacheHttpClientTest
             throws Exception
     {
         URI uri = baseURI.resolve("/road/to/nowhere");
-        Request request = RequestBuilder.prepareGet()
+        Request request = prepareGet()
                 .setUri(uri)
                 .addHeader("foo", "bar")
                 .addHeader("dupe", "first")
@@ -105,7 +110,7 @@ public class ApacheHttpClientTest
             throws Exception
     {
         URI uri = baseURI.resolve("/road/to/nowhere");
-        Request request = RequestBuilder.preparePost()
+        Request request = preparePost()
                 .setUri(uri)
                 .addHeader("foo", "bar")
                 .addHeader("dupe", "first")
@@ -126,7 +131,7 @@ public class ApacheHttpClientTest
             throws Exception
     {
         URI uri = baseURI.resolve("/road/to/nowhere");
-        Request request = RequestBuilder.preparePut()
+        Request request = preparePut()
                 .setUri(uri)
                 .addHeader("foo", "bar")
                 .addHeader("dupe", "first")
@@ -147,7 +152,7 @@ public class ApacheHttpClientTest
             throws Exception
     {
         URI uri = baseURI.resolve("/road/to/nowhere");
-        Request request = RequestBuilder.prepareDelete()
+        Request request = prepareDelete()
                 .setUri(uri)
                 .addHeader("foo", "bar")
                 .addHeader("dupe", "first")
@@ -168,7 +173,7 @@ public class ApacheHttpClientTest
             throws Exception
     {
         servlet.responseStatusCode = 543;
-        Request request = RequestBuilder.prepareGet()
+        Request request = prepareGet()
                 .setUri(baseURI)
                 .build();
 
@@ -182,7 +187,7 @@ public class ApacheHttpClientTest
     {
         servlet.responseStatusMessage = "message";
 
-        Request request = RequestBuilder.prepareGet()
+        Request request = prepareGet()
                 .setUri(baseURI)
                 .build();
 
@@ -216,7 +221,7 @@ public class ApacheHttpClientTest
         Assert.assertEquals(servlet.responseHeaders.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(servlet.responseHeaders.get("dupe"), ImmutableList.of("first", "second"));
 
-        Request request = RequestBuilder.prepareGet()
+        Request request = prepareGet()
                 .setUri(baseURI)
                 .build();
 
@@ -230,7 +235,7 @@ public class ApacheHttpClientTest
     public void testResponseBodyEmpty()
             throws Exception
     {
-        Request request = RequestBuilder.prepareGet()
+        Request request = prepareGet()
                 .setUri(baseURI)
                 .build();
 
@@ -244,7 +249,7 @@ public class ApacheHttpClientTest
     {
         servlet.responseBody = "body text";
 
-        Request request = RequestBuilder.prepareGet()
+        Request request = prepareGet()
                 .setUri(baseURI)
                 .build();
 
@@ -259,7 +264,7 @@ public class ApacheHttpClientTest
         servlet.responseStatusCode = 500;
         servlet.responseBody = "body text";
 
-        Request request = RequestBuilder.prepareGet()
+        Request request = prepareGet()
                 .setUri(baseURI)
                 .build();
 
@@ -279,7 +284,7 @@ public class ApacheHttpClientTest
         config.setConnectTimeout(new Duration(5, TimeUnit.MILLISECONDS));
         ApacheHttpClient client = new ApacheHttpClient(config);
 
-        Request request = RequestBuilder.prepareGet()
+        Request request = prepareGet()
                 .setUri(URI.create("http://localhost:" + serverSocket.getLocalPort() + "/"))
                 .build();
 
@@ -302,7 +307,7 @@ public class ApacheHttpClientTest
         ApacheHttpClient client = new ApacheHttpClient(config);
 
         URI uri = URI.create(baseURI.toASCIIString() + "/?sleep=400");
-        Request request = RequestBuilder.prepareGet()
+        Request request = prepareGet()
                 .setUri(uri)
                 .build();
 
@@ -314,7 +319,7 @@ public class ApacheHttpClientTest
             throws Exception
     {
         URI uri = URI.create(baseURI.toASCIIString() + "/?remotePort=");
-        Request request = RequestBuilder.prepareGet()
+        Request request = prepareGet()
                 .setUri(uri)
                 .build();
 

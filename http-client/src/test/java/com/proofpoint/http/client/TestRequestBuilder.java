@@ -5,6 +5,8 @@ import org.testng.annotations.Test;
 
 import java.net.URI;
 
+import static com.proofpoint.http.client.Request.Builder.fromRequest;
+import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static com.proofpoint.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static org.testng.Assert.assertEquals;
 
@@ -27,12 +29,12 @@ public class TestRequestBuilder
     public void testBuilderFromRequest()
     {
         Request request = createRequest();
-        assertEquals(RequestBuilder.fromRequest(request).build(), request);
+        assertEquals(fromRequest(request).build(), request);
     }
 
     private Request createRequest()
     {
-        return RequestBuilder.prepareGet()
+        return prepareGet()
                     .setUri(URI.create("http://example.com"))
                     .addHeader("newheader", "withvalue")
                     .addHeader("anotherheader", "anothervalue")
