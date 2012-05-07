@@ -111,6 +111,11 @@
             <artifactId>jmx-http-experimental</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>http-client-experimental</artifactId>
+        </dependency>
+
         <!-- for packaging -->
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
@@ -130,12 +135,6 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>testing</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.proofpoint.platform</groupId>
-            <artifactId>http-client-experimental</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
