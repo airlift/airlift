@@ -4,14 +4,14 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>rack-experimental</artifactId>
     <packaging>jar</packaging>
-    <version>0.63-SNAPSHOT</version>
+    <version>0.63</version>
     <name>rack</name>
     <description>The Platform Rack Server</description>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.63-SNAPSHOT</version>
+        <version>0.63</version>
     </parent>
 
     <dependencies>
