@@ -1,3 +1,41 @@
+Platform 0.62
+
+* Removed all dependencies to Ning's Asynchronous HTTP client
+
+Since http-client-experimental now replaces the usage of Ning's Asynchronous
+HTTP client, we've removed all existing references to that package.  Rest
+servers that upgrade to 0.62 may need to include it as an explicit dependency
+if they don't want to upgrade.
+
+* Cleaned up dependency management
+
+There is now a library project that contains a single parent dependencyManagement
+section for all poms to inherit from.  This now includes REST Server Base.  This
+ensures that all platform libraries are built with a single set of versions that
+produce fully compatible dependency closures with the services that consume them.
+
+* Multiple refactoring commits for readability
+
+There were multiple refactoring efforts to enhance readability.  Some classes that
+moved include:
+RequestBuilder -> Request.Builder
+EchoServlet is a separate class now
+MediaType is now available as a class in Guava 12
+
+* Addition of request filter support to HttpClient
+
+HttpClients may now bind in request filters, an example of such can be found by
+following the code in com.proofpoint.http.client.TestHttpClientBinder.  This
+was added to support having the TraceToken added into outbound http client requests.
+
+* Removal of deprecated JavaUrlHttpClient
+
+* Removal of the experimental module, segmented into separate modules
+
+At this time, we will no longer have a single experimental module, please be aware
+of classes that have the @Beta annotation going forward.  Such classes are subject
+to backwards incompatible changes.
+
 Platform 0.61
 
 * Upgrade Platform and Rest Server Base pom to Guava 12.0

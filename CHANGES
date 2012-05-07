@@ -1,3 +1,12 @@
+* 0.62
+
+- Removed all dependencies to Ning's Asynchronous HTTP client
+- Cleaned up dependency management
+- Multiple refactoring commits for readability
+- Addition of request filter support to HttpClient
+- Removal of deprecated JavaUrlHttpClient
+- Removal of the experimental module, segmented into separate modules
+
 * 0.61
 
 - Upgrade to Guava 12.0 for Platform and Rest Server Base
