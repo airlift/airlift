@@ -28,8 +28,6 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.Response;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
@@ -38,6 +36,11 @@ import com.proofpoint.event.client.HttpEventModule;
 import com.proofpoint.event.client.InMemoryEventClient;
 import com.proofpoint.event.client.InMemoryEventModule;
 import com.proofpoint.event.client.NullEventModule;
+import com.proofpoint.http.client.ApacheHttpClient;
+import com.proofpoint.http.client.HttpClient;
+import com.proofpoint.http.client.StaticBodyGenerator;
+import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
+import com.proofpoint.http.client.StringResponseHandler.StringResponse;
 import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.node.NodeModule;
@@ -55,6 +58,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.HttpHeaders;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -62,7 +66,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static com.proofpoint.http.client.Request.Builder.prepareGet;
+import static com.proofpoint.http.client.Request.Builder.preparePost;
+import static com.proofpoint.http.client.StaticBodyGenerator.createStaticBodyGenerator;
+import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static com.proofpoint.http.client.StringResponseHandler.createStringResponseHandler;
 import static java.util.Collections.nCopies;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -216,22 +227,18 @@ public class TestHttpServerModule
         server.start();
 
         try {
-            AsyncHttpClient client = new AsyncHttpClient();
+            HttpClient client = new ApacheHttpClient();
 
             // test servlet bound correctly
-            Response response = client.prepareGet(httpServerInfo.getHttpUri().toString())
-                    .execute()
-                    .get();
+            StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
 
             // test filter bound correctly
-            response = client.prepareGet(httpServerInfo.getHttpUri().resolve("/filter").toString())
-                    .execute()
-                    .get();
+            response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri().resolve("/filter")).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_PAYMENT_REQUIRED);
-            assertEquals(response.getStatusText(), "filtered");
+            assertEquals(response.getStatusMessage(), "filtered");
         }
         finally {
             server.stop();
@@ -288,21 +295,23 @@ public class TestHttpServerModule
         long beforeRequest = System.currentTimeMillis();
         long afterRequest;
         try {
-            AsyncHttpClient client = new AsyncHttpClient();
+            HttpClient client = new ApacheHttpClient();
 
             // test servlet bound correctly
-            Response response = client.preparePost(requestUri.toASCIIString())
-                    .setHeader("User-Agent", userAgent)
-                    .setHeader("Content-Type", requestContentType)
-                    .setHeader("Referer", referrer)
-                    .setHeader("X-Proofpoint-TraceToken", token)
-                    .setBody(requestBody)
-                    .execute()
-                    .get();
+            StringResponse response = client.execute(
+                    preparePost().setUri(requestUri)
+                            .addHeader(USER_AGENT, userAgent)
+                            .addHeader(CONTENT_TYPE, requestContentType)
+                            .addHeader("Referer", referrer)
+                            .addHeader("X-Proofpoint-TraceToken", token)
+                            .setBodyGenerator(createStaticBodyGenerator(requestBody, Charsets.UTF_8))
+                            .build(),
+                    createStringResponseHandler());
+
             afterRequest = System.currentTimeMillis();
 
             assertEquals(response.getStatusCode(), responseCode);
-            assertEquals(response.getResponseBody(), responseBody);
+            assertEquals(response.getBody(), responseBody);
             assertEquals(response.getHeader("Content-Type"), responseContentType);
         }
         finally {

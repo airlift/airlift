@@ -18,14 +18,15 @@ package com.proofpoint.http.server;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.Response;
-import com.ning.http.util.Base64;
-import com.proofpoint.testing.FileUtils;
-import com.proofpoint.event.client.InMemoryEventClient;
 import com.proofpoint.event.client.NullEventClient;
+import com.proofpoint.http.client.ApacheHttpClient;
+import com.proofpoint.http.client.HttpClient;
+import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
+import com.proofpoint.http.client.StringResponseHandler.StringResponse;
 import com.proofpoint.node.NodeInfo;
+import com.proofpoint.testing.FileUtils;
 import com.proofpoint.tracetoken.TraceTokenManager;
+import org.apache.commons.codec.binary.Base64;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -35,8 +36,11 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
-import java.util.concurrent.ExecutionException;
+import java.net.URI;
 
+import static com.proofpoint.http.client.Request.Builder.prepareGet;
+import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static com.proofpoint.http.client.StringResponseHandler.createStringResponseHandler;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -82,10 +86,8 @@ public class TestHttpServerProvider
         createServer();
         server.start();
 
-        AsyncHttpClient client = new AsyncHttpClient();
-        Response response = client.prepareGet(httpServerInfo.getHttpUri().toString())
-                .execute()
-                .get();
+        HttpClient client = new ApacheHttpClient();
+        StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
 
         assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
     }
@@ -97,13 +99,11 @@ public class TestHttpServerProvider
         createServer();
         server.start();
 
-        AsyncHttpClient client = new AsyncHttpClient();
-        Response response = client.prepareGet(httpServerInfo.getHttpUri().resolve("/filter").toString())
-                .execute()
-                .get();
+        HttpClient client = new ApacheHttpClient();
+        StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri().resolve("/filter")).build(), createStatusResponseHandler());
 
         assertEquals(response.getStatusCode(), HttpServletResponse.SC_PAYMENT_REQUIRED);
-        assertEquals(response.getStatusText(), "filtered");
+        assertEquals(response.getStatusMessage(), "filtered");
     }
 
     @Test
@@ -115,17 +115,15 @@ public class TestHttpServerProvider
         createServer();
         server.start();
 
-        AsyncHttpClient client = new AsyncHttpClient();
+        HttpClient client = new ApacheHttpClient();
         try {
-            Response response = client.prepareGet("http://localhost:" + config.getHttpPort() + "/")
-                    .execute()
-                    .get();
+            StatusResponse response = client.execute(prepareGet().setUri(new URI("http://localhost:" + config.getHttpPort() + "/")).build(), createStatusResponseHandler());
 
             if (response != null) { // TODO: this is a workaround for a bug in AHC (some race condition)
                 fail("Expected connection refused, got response code: " + response.getStatusCode());
             }
         }
-        catch (ExecutionException e) {
+        catch (RuntimeException e) {
             assertTrue(e.getCause() instanceof ConnectException);
         }
     }
@@ -142,14 +140,17 @@ public class TestHttpServerProvider
         createServer();
         server.start();
 
-        AsyncHttpClient client = new AsyncHttpClient();
-        Response response = client.prepareGet(httpServerInfo.getHttpUri().toString())
-                .addHeader("Authorization", "Basic " + Base64.encode("user:password".getBytes()))
-                .execute()
-                .get();
+        HttpClient client = new ApacheHttpClient();
+        StringResponse response = client.execute(
+                prepareGet()
+                        .setUri(httpServerInfo.getHttpUri())
+                        .addHeader("Authorization", "Basic " + Base64.encodeBase64String("user:password".getBytes()).trim())
+                        .build(),
+                createStringResponseHandler());
+
 
         assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
-        assertEquals(response.getResponseBody(), "user");
+        assertEquals(response.getBody(), "user");
     }
 
     private void createServer()

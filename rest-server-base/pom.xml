@@ -162,6 +162,12 @@
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
+                <artifactId>http-client-experimental</artifactId>
+                <version>0.62-SNAPSHOT</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.proofpoint.platform</groupId>
                 <artifactId>json</artifactId>
                 <version>0.62-SNAPSHOT</version>
             </dependency>
@@ -275,12 +281,6 @@
                 <groupId>org.codehaus.jackson</groupId>
                 <artifactId>jackson-core-asl</artifactId>
                 <version>1.9.5</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.ning</groupId>
-                <artifactId>async-http-client</artifactId>
-                <version>1.6.5</version>
             </dependency>
 
             <!-- for testing -->

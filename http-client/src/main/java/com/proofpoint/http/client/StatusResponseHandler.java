@@ -26,7 +26,7 @@ public class StatusResponseHandler implements ResponseHandler<StatusResponse, Ru
     public RuntimeException handleException(Request request, Exception exception)
     {
         if (exception instanceof ConnectException) {
-            return new RuntimeException("Server refused connection: " + request.getUri().toASCIIString());
+            return new RuntimeException("Server refused connection: " + request.getUri().toASCIIString(), exception);
         }
         return Throwables.propagate(exception);
     }

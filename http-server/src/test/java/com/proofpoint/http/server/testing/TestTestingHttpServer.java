@@ -15,6 +15,7 @@
  */
 package com.proofpoint.http.server.testing;
 
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
@@ -23,15 +24,20 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.Response;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.http.client.ApacheHttpClient;
+import com.proofpoint.http.client.HttpClient;
+import com.proofpoint.http.client.HttpClientConfig;
+import com.proofpoint.http.client.Request;
+import com.proofpoint.http.client.StatusResponseHandler;
+import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.server.HttpServerConfig;
 import com.proofpoint.http.server.HttpServerInfo;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.node.testing.TestingNodeModule;
+import com.proofpoint.units.Duration;
 import org.testng.annotations.Test;
 
 import javax.servlet.Filter;
@@ -46,13 +52,18 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.proofpoint.http.client.Request.Builder.prepareGet;
+import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static com.proofpoint.testing.Assertions.assertGreaterThan;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static javax.ws.rs.HttpMethod.GET;
 import static org.testng.Assert.assertEquals;
 
 public class TestTestingHttpServer
@@ -81,18 +92,16 @@ public class TestTestingHttpServer
     {
         DummyServlet servlet = new DummyServlet();
         TestingHttpServer server = null;
-        AsyncHttpClient client = null;
+        HttpClient client = null;
 
         try {
             server = createTestingHttpServer(servlet, Collections.<String, String>emptyMap());
-            client = new AsyncHttpClient();
+            client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)));
 
             server.start();
             assertGreaterThan(server.getPort(), 0);
 
-            Response response = client.prepareGet(format("http://localhost:%d/", server.getPort()))
-                    .execute()
-                    .get(1, TimeUnit.SECONDS);
+            StatusResponse response = client.execute(prepareGet().setUri(new URI(format("http://localhost:%d/", server.getPort()))).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
             assertEquals(servlet.getCallCount(), 1);
@@ -100,9 +109,6 @@ public class TestTestingHttpServer
         finally {
             if (server != null) {
                 closeQuietly(server);
-            }
-            if (client != null) {
-                closeQuietly(client);
             }
         }
     }
@@ -114,18 +120,16 @@ public class TestTestingHttpServer
         DummyServlet servlet = new DummyServlet();
         DummyFilter filter = new DummyFilter();
         TestingHttpServer server = null;
-        AsyncHttpClient client = null;
+        HttpClient client = null;
 
         try {
             server = createTestingHttpServerWithFilter(servlet, Collections.<String, String>emptyMap(), filter);
-            client = new AsyncHttpClient();
+            client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)));
 
             server.start();
             assertGreaterThan(server.getPort(), 0);
 
-            Response response = client.prepareGet(format("http://localhost:%d/", server.getPort()))
-                    .execute()
-                    .get(1, TimeUnit.SECONDS);
+            StatusResponse response = client.execute(prepareGet().setUri(new URI(format("http://localhost:%d/", server.getPort()))).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
             assertEquals(servlet.getCallCount(), 1);
@@ -135,9 +139,6 @@ public class TestTestingHttpServer
             if (server != null) {
                 closeQuietly(server);
             }
-            if (client != null) {
-                closeQuietly(client);
-            }
         }
     }
 
@@ -146,7 +147,7 @@ public class TestTestingHttpServer
             throws Exception
     {
         TestingHttpServer server = null;
-        AsyncHttpClient client = null;
+        HttpClient client = null;
         final DummyServlet servlet = new DummyServlet();
 
         try {
@@ -167,11 +168,9 @@ public class TestTestingHttpServer
             server = injector.getInstance(TestingHttpServer.class);
             server.start();
 
-            client = new AsyncHttpClient();
+            client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)));
 
-            Response response = client.prepareGet(format("http://localhost:%d/", server.getPort()))
-                    .execute()
-                    .get(1, TimeUnit.SECONDS);
+            StatusResponse response = client.execute(prepareGet().setUri(new URI(format("http://localhost:%d/", server.getPort()))).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
             assertEquals(servlet.getCallCount(), 1);
@@ -179,9 +178,6 @@ public class TestTestingHttpServer
         finally {
             if (server != null) {
                 closeQuietly(server);
-            }
-            if (client != null) {
-                closeQuietly(client);
             }
         }
     }
@@ -191,7 +187,7 @@ public class TestTestingHttpServer
             throws Exception
     {
         TestingHttpServer server = null;
-        AsyncHttpClient client = null;
+        HttpClient client = null;
         final DummyServlet servlet = new DummyServlet();
         final DummyFilter filter = new DummyFilter();
 
@@ -222,11 +218,9 @@ public class TestTestingHttpServer
             server = injector.getInstance(TestingHttpServer.class);
             server.start();
 
-            client = new AsyncHttpClient();
+            client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)));
 
-            Response response = client.prepareGet(format("http://localhost:%d/", server.getPort()))
-                    .execute()
-                    .get(1, TimeUnit.SECONDS);
+            StatusResponse response = client.execute(prepareGet().setUri(new URI(format("http://localhost:%d/", server.getPort()))).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
             assertEquals(servlet.getCallCount(), 1);
@@ -235,9 +229,6 @@ public class TestTestingHttpServer
         finally {
             if (server != null) {
                 closeQuietly(server);
-            }
-            if (client != null) {
-                closeQuietly(client);
             }
         }
     }
@@ -264,16 +255,6 @@ public class TestTestingHttpServer
     {
         try {
             server.stop();
-        }
-        catch (Throwable e) {
-            // ignore
-        }
-    }
-
-    private void closeQuietly(AsyncHttpClient client)
-    {
-        try {
-            client.close();
         }
         catch (Throwable e) {
             // ignore

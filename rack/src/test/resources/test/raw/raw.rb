@@ -17,6 +17,6 @@ require 'json'
 
 class Raw
   def call(env)
-    [200, {'Content-Type' => 'text/plain'}, env.to_json]
+    [200, {'Content-Type' => 'application/json'}, env.to_json]
   end
 end

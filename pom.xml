@@ -116,9 +116,9 @@
             </dependency>
 
             <dependency>
-                <groupId>com.ning</groupId>
-                <artifactId>async-http-client</artifactId>
-                <version>1.6.5</version>
+                <groupId>com.proofpoint.platform</groupId>
+                <artifactId>http-client-experimental</artifactId>
+                <version>0.62-SNAPSHOT</version>
             </dependency>
 
             <dependency>

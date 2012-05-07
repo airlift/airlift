@@ -19,27 +19,28 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.Response;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
+import com.proofpoint.http.client.ApacheHttpClient;
+import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.node.testing.TestingNodeModule;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.Map;
+
+import static com.proofpoint.http.client.JsonResponseHandler.createJsonResponseHandler;
+import static com.proofpoint.http.client.Request.Builder.prepareGet;
+import static com.proofpoint.json.JsonCodec.mapJsonCodec;
 import static org.testng.Assert.assertEquals;
 
 public class TestRackModuleRaw
 {
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-
-    private AsyncHttpClient client;
+    private HttpClient client;
     private TestingHttpServer server;
 
     @BeforeMethod
@@ -59,7 +60,7 @@ public class TestRackModuleRaw
 
         server = injector.getInstance(TestingHttpServer.class);
         server.start();
-        client = new AsyncHttpClient();
+        client = new ApacheHttpClient();
     }
 
     @AfterMethod
@@ -75,36 +76,29 @@ public class TestRackModuleRaw
     public void testBasicGet()
             throws Throwable
     {
-        Response response = client.prepareGet(server.getBaseUrl().resolve("/foo").toString())
-                .execute()
-                .get();
+        Map<String, Object> response = client.execute(
+                prepareGet().setUri(server.getBaseUrl().resolve("/foo")).build(),
+                createJsonResponseHandler(mapJsonCodec(String.class, Object.class)));
 
-        assertEquals(response.getStatusCode(), 200);
-        JsonNode tree = MAPPER.readTree(response.getResponseBody());
-
-        assertEquals(tree.get("REQUEST_METHOD").getTextValue(), "GET");
-        assertEquals(tree.get("SCRIPT_NAME").getTextValue(), "");
-        assertEquals(tree.get("PATH_INFO").getTextValue(), "/foo");
-        assertEquals(tree.get("QUERY_STRING").getTextValue(), "");
+        assertEquals(response.get("REQUEST_METHOD"), "GET");
+        assertEquals(response.get("SCRIPT_NAME"), "");
+        assertEquals(response.get("PATH_INFO"), "/foo");
+        assertEquals(response.get("QUERY_STRING"), "");
     }
 
     @Test
     public void testGetWithEscaping()
             throws Throwable
     {
-        String path = "/hello%2Fworld+bye";
+        String path = "/hello%20world+bye";
 
-        Response response = client.prepareGet(server.getBaseUrl().resolve(path).toString())
-                .addQueryParameter("foo/bar", "123 999")
-                .execute()
-                .get();
+        Map<String, Object> response = client.execute(
+                prepareGet().setUri(server.getBaseUrl().resolve(path + "?foo%2Fbar=123%20999")).build(),
+                createJsonResponseHandler(mapJsonCodec(String.class, Object.class)));
 
-        assertEquals(response.getStatusCode(), 200);
-        JsonNode tree = MAPPER.readTree(response.getResponseBody());
-
-        assertEquals(tree.get("REQUEST_METHOD").getTextValue(), "GET");
-        assertEquals(tree.get("SCRIPT_NAME").getTextValue(), "");
-        assertEquals(tree.get("PATH_INFO").getTextValue(), path);
-        assertEquals(tree.get("QUERY_STRING").getTextValue(), "foo%2Fbar=123%20999");
+        assertEquals(response.get("REQUEST_METHOD"), "GET");
+        assertEquals(response.get("SCRIPT_NAME"), "");
+        assertEquals(response.get("PATH_INFO"), "/hello%20world+bye");
+        assertEquals(response.get("QUERY_STRING"), "foo%2Fbar=123%20999");
     }
 }

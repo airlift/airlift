@@ -18,10 +18,10 @@ package com.proofpoint.jaxrs;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Module;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.Request;
-import com.ning.http.client.RequestBuilder;
-import com.ning.http.client.Response;
+import com.proofpoint.http.client.ApacheHttpClient;
+import com.proofpoint.http.client.HttpClient;
+import com.proofpoint.http.client.Request;
+import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.json.JsonModule;
@@ -39,6 +39,7 @@ import javax.ws.rs.core.Response.Status;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
+import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -53,7 +54,7 @@ public class TestOverrideMethodFilterInHttpServer
 
     private TestingHttpServer server;
     private TestResource resource;
-    private AsyncHttpClient client;
+    private HttpClient client;
 
     @BeforeMethod
     public void setup()
@@ -62,7 +63,7 @@ public class TestOverrideMethodFilterInHttpServer
         resource = new TestResource();
         server = createServer(resource);
 
-        client = new AsyncHttpClient();
+        client = new ApacheHttpClient();
 
         server.start();
     }
@@ -79,24 +80,13 @@ public class TestOverrideMethodFilterInHttpServer
         catch (Throwable e) {
             // ignore
         }
-
-        try {
-            if (client != null) {
-                client.close();
-            }
-        }
-        catch (Throwable e) {
-            // ignore
-        }
     }
 
     @Test
     public void testDeleteViaQueryParam()
             throws Exception
     {
-        client.prepareRequest(buildRequestWithQueryParam(POST, DELETE))
-                .execute()
-                .get();
+        client.execute(buildRequestWithQueryParam(POST, DELETE), createStatusResponseHandler());
 
         assertFalse(resource.postCalled(), "POST");
         assertTrue(resource.deleteCalled(), "DELETE");
@@ -108,9 +98,7 @@ public class TestOverrideMethodFilterInHttpServer
     public void testPutViaQueryParam()
             throws Exception
     {
-        client.prepareRequest(buildRequestWithQueryParam(POST, PUT))
-                .execute()
-                .get();
+        client.execute(buildRequestWithQueryParam(POST, PUT), createStatusResponseHandler());
 
         assertFalse(resource.postCalled(), "POST");
         assertFalse(resource.deleteCalled(), "DELETE");
@@ -123,9 +111,7 @@ public class TestOverrideMethodFilterInHttpServer
     public void testPostViaQueryParam()
             throws Exception
     {
-        client.prepareRequest(buildRequestWithQueryParam(POST, POST))
-                .execute()
-                .get();
+        client.execute(buildRequestWithQueryParam(POST, POST), createStatusResponseHandler());
 
         assertTrue(resource.postCalled(), "POST");
         assertFalse(resource.deleteCalled(), "DELETE");
@@ -137,9 +123,7 @@ public class TestOverrideMethodFilterInHttpServer
     public void testDeleteViaHeader()
             throws Exception
     {
-        client.prepareRequest(buildRequestWithHeader(POST, DELETE))
-                .execute()
-                .get();
+        client.execute(buildRequestWithHeader(POST, DELETE), createStatusResponseHandler());
 
         assertFalse(resource.postCalled(), "POST");
         assertTrue(resource.deleteCalled(), "DELETE");
@@ -151,9 +135,7 @@ public class TestOverrideMethodFilterInHttpServer
     public void testPutViaHeader()
             throws Exception
     {
-        client.prepareRequest(buildRequestWithHeader(POST, PUT))
-                .execute()
-                .get();
+        client.execute(buildRequestWithHeader(POST, PUT), createStatusResponseHandler());
 
         assertFalse(resource.postCalled(), "POST");
         assertFalse(resource.deleteCalled(), "DELETE");
@@ -166,9 +148,7 @@ public class TestOverrideMethodFilterInHttpServer
     public void testPostViaHeader()
             throws Exception
     {
-        client.prepareRequest(buildRequestWithHeader(POST, POST))
-                .execute()
-                .get();
+        client.execute(buildRequestWithHeader(POST, POST), createStatusResponseHandler());
 
         assertTrue(resource.postCalled(), "POST");
         assertFalse(resource.deleteCalled(), "DELETE");
@@ -180,9 +160,7 @@ public class TestOverrideMethodFilterInHttpServer
     private void assertNonOverridableMethod(Request request)
             throws IOException, ExecutionException, InterruptedException
     {
-        Response response = client.prepareRequest(request)
-                .execute()
-                .get();
+        StatusResponse response = client.execute(request, createStatusResponseHandler());
 
         assertEquals(response.getStatusCode(), Status.BAD_REQUEST.getStatusCode());
         assertFalse(resource.postCalled(), "POST");
@@ -193,19 +171,12 @@ public class TestOverrideMethodFilterInHttpServer
 
     private Request buildRequestWithHeader(String type, String override)
     {
-        return new RequestBuilder(type)
-                .setUrl(server.getBaseUrl().toString())
-                .addHeader("X-HTTP-Method-Override", override)
-                .build();
+        return Request.builder().setUri(server.getBaseUrl()).setMethod(type).addHeader("X-HTTP-Method-Override", override).build();
     }
 
     private Request buildRequestWithQueryParam(String type, String override)
     {
-        String url = server.getBaseUrl().resolve(format("/?_method=%s", override)).toString();
-
-        return new RequestBuilder(type)
-                .setUrl(url)
-                .build();
+        return Request.builder().setUri(server.getBaseUrl().resolve(format("/?_method=%s", override))).setMethod(type).build();
     }
 
     @Test

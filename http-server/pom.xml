@@ -144,11 +144,10 @@
         </dependency>
 
         <dependency>
-            <groupId>com.ning</groupId>
-            <artifactId>async-http-client</artifactId>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>http-client-experimental</artifactId>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
     <build>

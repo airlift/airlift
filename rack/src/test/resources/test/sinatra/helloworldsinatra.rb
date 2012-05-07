@@ -14,6 +14,7 @@
 # limitations under the License.
 
 require 'sinatra'
+require 'json'
 
 get "/name-echo" do
   logger = request.logger
@@ -31,8 +32,8 @@ get "/temp-store" do
   return @@tmp
 end
 
-get "/header-list-test" do
-  return request.cookies.inspect
+get "/header-cookies-json" do
+  return [200, {'Content-Type' => 'application/json'}, request.cookies.to_json]
 end
 
 

@@ -2,11 +2,12 @@ package com.proofpoint.platform.skeleton;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.Response;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.jmx.JmxHttpModule;
+import com.proofpoint.http.client.ApacheHttpClient;
+import com.proofpoint.http.client.HttpClient;
+import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.jaxrs.JaxrsModule;
@@ -17,13 +18,17 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.net.URI;
 import java.util.Collections;
 
+import static com.proofpoint.http.client.Request.Builder.prepareGet;
+import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static javax.ws.rs.core.Response.Status.OK;
 import static org.testng.Assert.assertEquals;
 
 public class TestServer
 {
-    private AsyncHttpClient client;
+    private HttpClient client;
     private TestingHttpServer server;
 
     @BeforeMethod
@@ -44,7 +49,7 @@ public class TestServer
         server = injector.getInstance(TestingHttpServer.class);
 
         server.start();
-        client = new AsyncHttpClient();
+        client = new ApacheHttpClient();
     }
 
     @AfterMethod
@@ -54,23 +59,21 @@ public class TestServer
         if (server != null) {
             server.stop();
         }
-
-        if (client != null) {
-            client.close();
-        }
     }
 
     @Test
     public void testNothing()
             throws Exception
     {
-        Response response = client.prepareGet(urlFor("/v1/jmx/mbean")).execute().get();
+        StatusResponse response = client.execute(
+                prepareGet().setUri(uriFor("/v1/jmx/mbean")).build(),
+                createStatusResponseHandler());
 
-        assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.OK.getStatusCode());
+        assertEquals(response.getStatusCode(), OK.getStatusCode());
     }
 
-    private String urlFor(String path)
+    private URI uriFor(String path)
     {
-        return server.getBaseUrl().resolve(path).toString();
+        return server.getBaseUrl().resolve(path);
     }
 }

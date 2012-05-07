@@ -15,27 +15,40 @@
  */
 package com.proofpoint.rack;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.Response;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
+import com.proofpoint.http.client.ApacheHttpClient;
+import com.proofpoint.http.client.HttpClient;
+import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
+import com.proofpoint.http.client.StringResponseHandler.StringResponse;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
+import com.proofpoint.json.JsonCodec;
 import com.proofpoint.node.testing.TestingNodeModule;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.Map;
+
+import static com.proofpoint.http.client.JsonResponseHandler.createJsonResponseHandler;
+import static com.proofpoint.http.client.Request.Builder.prepareGet;
+import static com.proofpoint.http.client.Request.Builder.preparePost;
+import static com.proofpoint.http.client.StaticBodyGenerator.createStaticBodyGenerator;
+import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static com.proofpoint.http.client.StringResponseHandler.createStringResponseHandler;
+import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 
 public class TestRackModuleSinatra
 {
-    private AsyncHttpClient client;
+    private HttpClient client;
     private TestingHttpServer server;
 
     @BeforeMethod
@@ -55,7 +68,7 @@ public class TestRackModuleSinatra
 
         server = injector.getInstance(TestingHttpServer.class);
         server.start();
-        client = new AsyncHttpClient();
+        client = new ApacheHttpClient();
     }
 
     @AfterMethod
@@ -73,12 +86,11 @@ public class TestRackModuleSinatra
     {
         String expected = "FooBarBaz";
 
-        Response response = client.prepareGet(server.getBaseUrl().resolve("/name-echo").toString())
-                .addQueryParameter("name", expected)
-                .execute()
-                .get();
+        StringResponse response = client.execute(
+                prepareGet().setUri(server.getBaseUrl().resolve(format("/name-echo?name=%s", expected))).build(),
+                createStringResponseHandler());
 
-        assertEquals(response.getResponseBody(), expected);
+        assertEquals(response.getBody(), expected);
         assertEquals(response.getStatusCode(), 200);
     }
 
@@ -86,9 +98,9 @@ public class TestRackModuleSinatra
     public void testGet404()
             throws Throwable
     {
-        Response response = client.prepareGet(server.getBaseUrl().resolve("/nothing-here").toString())
-                .execute()
-                .get();
+        StatusResponse response = client.execute(
+                prepareGet().setUri(server.getBaseUrl().resolve("/nothing-here")).build(),
+                createStatusResponseHandler());
 
         assertEquals(response.getStatusCode(), 404);
     }
@@ -97,14 +109,15 @@ public class TestRackModuleSinatra
     public void testSettingCookiesResultsInACookieHashInRuby()
             throws Throwable
     {
-        Response response = client.prepareGet(server.getBaseUrl().resolve("/header-list-test").toString())
-                .addHeader("COOKIE", "Cookie1=Value1")
-                .addHeader("COOKIE", "Cookie2=Value2")
-                .execute()
-                .get();
+        Map<String, String> response = client.execute(
+                prepareGet()
+                        .setUri(server.getBaseUrl().resolve("/header-cookies-json"))
+                        .addHeader("COOKIE", "Cookie1=Value1")
+                        .addHeader("COOKIE", "Cookie2=Value2")
+                        .build(),
+                createJsonResponseHandler(JsonCodec.mapJsonCodec(String.class, String.class)));
 
-        assertEquals(response.getResponseBody(), "{\"Cookie1\"=>\"Value1\", \"Cookie2\"=>\"Value2\"}");
-        assertEquals(response.getStatusCode(), 200);
+        assertEquals(response, ImmutableMap.of("Cookie1","Value1","Cookie2","Value2"));
     }
 
     @Test
@@ -113,19 +126,21 @@ public class TestRackModuleSinatra
     {
         String expected = "FooBarBaz";
 
-        Response responsePost = client.preparePost(server.getBaseUrl().resolve("/temp-store").toString())
-                .setBody(expected)
-                .execute()
-                .get();
+        StringResponse responsePost = client.execute(
+                preparePost()
+                        .setUri(server.getBaseUrl().resolve("/temp-store"))
+                        .setBodyGenerator(createStaticBodyGenerator(expected.getBytes(Charsets.UTF_8)))
+                        .build(),
+                createStringResponseHandler());
 
-        assertEquals(responsePost.getResponseBody(), "");
+        assertEquals(responsePost.getBody(), "");
         assertEquals(responsePost.getStatusCode(), 201);
 
-        Response responseGet = client.prepareGet(server.getBaseUrl().resolve("/temp-store").toString())
-                .execute()
-                .get();
+        StringResponse responseGet = client.execute(
+                prepareGet().setUri(server.getBaseUrl().resolve("/temp-store")).build(),
+                createStringResponseHandler());
 
-        assertEquals(responseGet.getResponseBody(), expected);
+        assertEquals(responseGet.getBody(), expected);
         assertEquals(responseGet.getStatusCode(), 200);
     }
 
@@ -133,19 +148,18 @@ public class TestRackModuleSinatra
     public void testResponseIsClosed()
             throws Throwable
     {
-        Response response = client.prepareGet(server.getBaseUrl().resolve("/closable-response").toString())
-                .execute()
-                .get();
+        StringResponse response = client.execute(
+                prepareGet().setUri(server.getBaseUrl().resolve("/closable-response")).build(),
+                createStringResponseHandler());
 
-        assertEquals(response.getResponseBody(), "hello");
+        assertEquals(response.getBody(), "hello");
         assertEquals(response.getStatusCode(), 200);
 
-        response = client.prepareGet(server.getBaseUrl().resolve("/close-called").toString())
-                .execute()
-                .get();
+        response = client.execute(
+                prepareGet().setUri(server.getBaseUrl().resolve("/close-called")).build(),
+                createStringResponseHandler());
 
-        System.err.println(response.getResponseBody());
-        assertEquals(response.getResponseBody(), "true");
+        assertEquals(response.getBody(), "true");
         assertEquals(response.getStatusCode(), 200);
     }
 }
