@@ -5,12 +5,12 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>event-experimental</artifactId>
     <packaging>jar</packaging>
-    <version>0.62</version>
+    <version>0.63-SNAPSHOT</version>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.62</version>
+        <version>0.63-SNAPSHOT</version>
     </parent>
 
     <dependencies>
