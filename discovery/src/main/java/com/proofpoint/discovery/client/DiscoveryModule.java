@@ -6,8 +6,6 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.proofpoint.http.client.AsyncHttpClientModule;
-import com.proofpoint.http.client.HttpClientModule;
 import org.weakref.jmx.guice.MBeanModule;
 
 import java.net.URI;
@@ -15,6 +13,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
+import static com.proofpoint.http.client.HttpClientBinder.httpClientBinder;
 import static com.proofpoint.json.JsonCodecBinder.jsonCodecBinder;
 
 public class DiscoveryModule implements Module
@@ -36,8 +35,8 @@ public class DiscoveryModule implements Module
         jsonCodecBinder(binder).bindJsonCodec(Announcement.class);
 
         // bind the http client
-        binder.install(new AsyncHttpClientModule("discovery", ForDiscoveryClient.class));
-        binder.install(new HttpClientModule("discovery", ForDiscoveryClient.class));
+        httpClientBinder(binder).bindAsyncHttpClient("discovery", ForDiscoveryClient.class);
+        httpClientBinder(binder).bindHttpClient("discovery", ForDiscoveryClient.class);
 
         // bind announcer
         binder.bind(Announcer.class).in(Scopes.SINGLETON);

@@ -5,11 +5,10 @@ import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.Multibinder;
 
 import java.lang.annotation.Annotation;
+import java.util.Collection;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static com.proofpoint.http.client.AsyncHttpClientModule.createAsyncHttpClientModule;
-import static com.proofpoint.http.client.HttpClientModule.createHttpClientModule;
 
 public class HttpClientBinder
 {
@@ -29,32 +28,46 @@ public class HttpClientBinder
     {
         checkNotNull(name, "name is null");
         checkNotNull(annotation, "annotation is null");
-
-        binder.install(createHttpClientModule(name, annotation));
-        return createBindingBuilder(HttpClientModule.filterQualifier(annotation));
+        return createBindingBuilder(new HttpClientModule(name, annotation));
     }
 
     public HttpClientBindingBuilder bindAsyncHttpClient(String name, Class<? extends Annotation> annotation)
     {
         checkNotNull(name, "name is null");
         checkNotNull(annotation, "annotation is null");
-
-        binder.install(createAsyncHttpClientModule(name, annotation));
-        return createBindingBuilder(AsyncHttpClientModule.filterQualifier(annotation));
+        return createBindingBuilder(new AsyncHttpClientModule(name, annotation));
     }
 
-    private HttpClientBindingBuilder createBindingBuilder(CompositeQualifier qualifier)
+    private HttpClientBindingBuilder createBindingBuilder(AbstractHttpClientModule module)
     {
-        return new HttpClientBindingBuilder(newSetBinder(binder, HttpRequestFilter.class, qualifier));
+        binder.install(module);
+        return new HttpClientBindingBuilder(module,
+                newSetBinder(binder, HttpRequestFilter.class, module.getFilterQualifier()));
     }
 
     public static class HttpClientBindingBuilder
     {
+        private final AbstractHttpClientModule module;
         private final Multibinder<HttpRequestFilter> multibinder;
 
-        private HttpClientBindingBuilder(Multibinder<HttpRequestFilter> multibinder)
+        private HttpClientBindingBuilder(AbstractHttpClientModule module, Multibinder<HttpRequestFilter> multibinder)
         {
+            this.module = module;
             this.multibinder = multibinder;
+        }
+
+        public HttpClientBindingBuilder withAlias(Class<? extends Annotation> alias)
+        {
+            module.addAlias(alias);
+            return this;
+        }
+
+        public HttpClientBindingBuilder withAliases(Collection<Class<? extends Annotation>> aliases)
+        {
+            for (Class<? extends Annotation> annotation : aliases) {
+                module.addAlias(annotation);
+            }
+            return this;
         }
 
         public LinkedBindingBuilder<HttpRequestFilter> addFilterBinding()

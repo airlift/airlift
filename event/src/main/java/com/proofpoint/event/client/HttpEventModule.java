@@ -5,10 +5,10 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.proofpoint.http.client.AsyncHttpClientModule;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
+import static com.proofpoint.http.client.HttpClientBinder.httpClientBinder;
 import static org.weakref.jmx.guice.MBeanModule.newExporter;
 
 public class HttpEventModule implements Module
@@ -25,7 +25,7 @@ public class HttpEventModule implements Module
         discoveryBinder(binder).bindHttpSelector("collector");
 
         // bind the http client
-        binder.install(new AsyncHttpClientModule("event", ForEventClient.class));
+        httpClientBinder(binder).bindAsyncHttpClient("event", ForEventClient.class);
 
         // Kick off the binding of Set<EventTypeMetadata> in case no events are bound
         Multibinder.newSetBinder(binder, new TypeLiteral<EventTypeMetadata<?>>() {});
