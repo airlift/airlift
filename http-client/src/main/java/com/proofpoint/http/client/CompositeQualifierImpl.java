@@ -4,7 +4,7 @@ import java.lang.annotation.Annotation;
 import java.util.Arrays;
 
 @SuppressWarnings("ClassExplicitlyAnnotation")
-public class CompositeQualifierImpl
+class CompositeQualifierImpl
         implements CompositeQualifier
 {
     private final Class<?>[] value;

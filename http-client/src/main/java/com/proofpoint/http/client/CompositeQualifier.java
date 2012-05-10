@@ -12,7 +12,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
 @Qualifier
-public @interface CompositeQualifier
+@interface CompositeQualifier
 {
     Class<?> [] value();
 }
