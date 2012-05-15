@@ -1,3 +1,12 @@
+* 0.64
+
+- [Bug] Add missing HttpEventModule to skeleton-server
+- Enforce use of HttpClientBinder
+
+* 0.63
+
+- [Bug] Make http-client-experimental a compile dependency
+
 * 0.62
 
 - Removed all dependencies to Ning's Asynchronous HTTP client

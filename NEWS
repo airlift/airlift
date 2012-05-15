@@ -1,3 +1,28 @@
+Platform 0.64
+
+* Fix bug that prevented skeleton server from starting
+
+* Enforce use of HttpClientBinder
+
+The previous way of using HttpClient was to create a new instance of the
+HttpClientModule or AsyncHttpClientModule for each client. The recent addition
+of filter support added a binding API, HttpClientBinder. The use of this API
+is now required. The modules cannot be used directly anymore. Here is an
+example of how to use the binder:
+
+    httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+        .withFilter(FirstFilter.class)
+        .withFilter(SecondFilter.class);
+
+Here is a simpler example to create a client for use with other platform
+services. The client will pass the trace token when making requests:
+
+    httpClientBinder(binder).bindHttpClient("foo", FooClient.class).withTracing();
+
+Platform 0.63
+
+* Fix bug that prevented sample and skeleton servers from starting
+
 Platform 0.62
 
 * Removed all dependencies to Ning's Asynchronous HTTP client
