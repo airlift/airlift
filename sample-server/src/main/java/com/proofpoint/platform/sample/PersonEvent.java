@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import com.proofpoint.event.client.EventField;
 import com.proofpoint.event.client.EventType;
 
-@EventType("test:type=person")
+@EventType("Person")
 public class PersonEvent
 {
     public static PersonEvent personAdded(String personId, Person person)

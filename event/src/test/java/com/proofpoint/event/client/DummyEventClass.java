@@ -1,6 +1,6 @@
 package com.proofpoint.event.client;
 
-@EventType("test:type=version1,name=dummy")
+@EventType("Dummy")
 public class DummyEventClass
 {
     private final double doubleValue;
