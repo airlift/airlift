@@ -26,7 +26,7 @@ public class Request
         Preconditions.checkNotNull(uri, "uri is null");
         Preconditions.checkNotNull(method, "method is null");
 
-        this.uri = uri;
+        this.uri = validateUri(uri);
         this.method = method;
         this.headers = ImmutableListMultimap.copyOf(headers);
         this.bodyGenerator = bodyGenerator;
@@ -128,7 +128,7 @@ public class Request
 
         public Builder setUri(URI uri)
         {
-            this.uri = uri;
+            this.uri = validateUri(uri);
             return this;
         }
 
@@ -160,5 +160,11 @@ public class Request
         public Request build() {
             return new Request(uri, method, headers, bodyGenerator);
         }
+    }
+
+    private static URI validateUri(URI uri)
+    {
+        Preconditions.checkArgument(uri.getPort() != 0, "Cannot make requests to HTTP port 0");
+        return uri;
     }
 }
