@@ -4,13 +4,13 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>bootstrap</artifactId>
     <packaging>jar</packaging>
-    <version>0.64-SNAPSHOT</version>
+    <version>0.64</version>
     <name>bootstrap</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.64-SNAPSHOT</version>
+        <version>0.64</version>
     </parent>
 
     <dependencies>
