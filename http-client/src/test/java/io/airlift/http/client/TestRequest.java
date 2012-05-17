@@ -30,6 +30,13 @@ public class TestRequest
                 .check();
     }
 
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Cannot make requests to HTTP port 0")
+    public void testCannotMakeRequestToIllegalPort()
+            throws Exception
+    {
+        new Request(URI.create("http://example.com:0/"), "GET", createHeaders1(), createBodyGenerator());
+    }
+
     private URI createUri1()
     {
         return URI.create("http://example.com");

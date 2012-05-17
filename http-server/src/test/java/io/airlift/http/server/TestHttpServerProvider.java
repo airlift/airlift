@@ -36,7 +36,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.URI;
 
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
@@ -117,7 +116,7 @@ public class TestHttpServerProvider
 
         HttpClient client = new ApacheHttpClient();
         try {
-            StatusResponse response = client.execute(prepareGet().setUri(new URI("http://localhost:" + config.getHttpPort() + "/")).build(), createStatusResponseHandler());
+            StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri().resolve("/")).build(), createStatusResponseHandler());
 
             if (response != null) { // TODO: this is a workaround for a bug in AHC (some race condition)
                 fail("Expected connection refused, got response code: " + response.getStatusCode());
