@@ -152,29 +152,6 @@ public class TestEquivalenceTester
     }
 
     @Test
-    public void nothingCanBeEqualToNull()
-    {
-        try {
-            equivalenceTester()
-                    .addEquivalentGroup(new EqualsToNull())
-                    .check();
-            fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
-            assertExpectedFailures(e, new ElementCheckFailure(EQUAL_TO_NULL, 0, 0));
-        }
-    }
-
-    static class EqualsToNull
-    {
-        @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass"})
-        public boolean equals(Object that)
-        {
-            return this == that || that == null;
-        }
-    }
-
-    @Test
     public void equalsNullThrowsException()
     {
         try {
@@ -202,7 +179,7 @@ public class TestEquivalenceTester
     {
         try {
             equivalenceTester()
-                    .addEquivalentGroup(new EqualsToOtherClass())
+                    .addEquivalentGroup(new EqualsOtherClass())
                     .check();
             fail("Expected EquivalenceAssertionError");
         }
@@ -211,26 +188,12 @@ public class TestEquivalenceTester
         }
     }
 
-    static class EqualsToOtherClass
+    static class EqualsOtherClass
     {
         @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass"})
         public boolean equals(Object that)
         {
             return that != null;
-        }
-    }
-
-    @Test
-    public void nothingCanBeEqualToOtherClass()
-    {
-        try {
-            equivalenceTester()
-                    .addEquivalentGroup(new EqualsToOtherClass())
-                    .check();
-            fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
-            assertExpectedFailures(e, new ElementCheckFailure(EQUAL_TO_OTHER_CLASS, 0, 0));
         }
     }
 
