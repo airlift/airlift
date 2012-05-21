@@ -37,6 +37,7 @@ import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPAR
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_NOT_EQUAL;
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_NOT_REFLEXIVE;
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_NULL_EXCEPTION;
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_NULL;
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_UNRELATED_CLASS;
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_UNRELATED_CLASS_CLASS_CAST_EXCEPTION;
@@ -152,25 +153,25 @@ public class TestEquivalenceTester
     }
 
     @Test
-    public void nothingCanBeEqualToNull()
+    public void equalsNullThrowsException()
     {
         try {
             equivalenceTester()
-                    .addEquivalentGroup(new EqualsToNull())
+                    .addEquivalentGroup(new EqualsNullThrowsException())
                     .check();
             fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
-            assertExpectedFailures(e, new ElementCheckFailure(EQUAL_TO_NULL, 0, 0));
+            assertExpectedFailures(e, new ElementCheckFailure(EQUAL_NULL_EXCEPTION, 0, 0));
         }
     }
 
-    static class EqualsToNull
+    static class EqualsNullThrowsException
     {
         @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass"})
         public boolean equals(Object that)
         {
-            return this == that || that == null;
+            return this.hashCode() == that.hashCode();
         }
     }
 
