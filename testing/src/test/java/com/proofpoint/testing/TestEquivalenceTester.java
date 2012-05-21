@@ -37,6 +37,7 @@ import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.CO
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_NOT_EQUAL;
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_NOT_REFLEXIVE;
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL;
+import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_NULL_EXCEPTION;
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_NULL;
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_OTHER_CLASS;
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.HASH_CODE_NOT_SAME;
@@ -170,6 +171,29 @@ public class TestEquivalenceTester
         public boolean equals(Object that)
         {
             return this == that || that == null;
+        }
+    }
+
+    @Test
+    public void equalsNullThrowsException()
+    {
+        try {
+            equivalenceTester()
+                    .addEquivalentGroup(new EqualsNullThrowsException())
+                    .check();
+            fail("Expected EquivalenceAssertionError");
+        }
+        catch (EquivalenceAssertionError e) {
+            assertExpectedFailures(e, new ElementCheckFailure(EQUAL_NULL_EXCEPTION, 0, 0));
+        }
+    }
+
+    static class EqualsNullThrowsException
+    {
+        @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass"})
+        public boolean equals(Object that)
+        {
+            return this.hashCode() == that.hashCode();
         }
     }
 

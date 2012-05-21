@@ -103,6 +103,7 @@ public final class EquivalenceTester
                         }
                     }
                     catch (NullPointerException e) {
+                        errors.add(new ElementCheckFailure(EQUAL_NULL_EXCEPTION, classNumber, elementNumber));
                     }
 
                     // if a class implements comparable, object.compareTo(null) must throw NPE
@@ -377,6 +378,7 @@ public final class EquivalenceTester
 
     public static enum EquivalenceFailureType {
         EQUAL_TO_NULL("Element (%d, %d) returns true when compared to null via equals()"),
+        EQUAL_NULL_EXCEPTION("Element (%d, %d) throws NullPointerException when when compared to null via equals()"),
         COMPARE_EQUAL_TO_NULL("Element (%d, %d) implements Comparable but does not throw NullPointerException when compared to null"),
         EQUAL_TO_OTHER_CLASS("Element (%d, %d) returns true when compared to a different class via equals()"),
         NOT_REFLEXIVE("Element (%d, %d) is not equal to itself when compared via equals()"),
