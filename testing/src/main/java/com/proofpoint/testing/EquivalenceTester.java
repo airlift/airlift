@@ -116,6 +116,11 @@ public final class EquivalenceTester
                         }
                     }
 
+                    // nothing can be equal to object of another class
+                    if (element.equals(new OtherClass())) {
+                        errors.add(new ElementCheckFailure(EQUAL_TO_OTHER_CLASS, classNumber, elementNumber));
+                    }
+
                     ++elementNumber;
                 }
 
@@ -259,6 +264,10 @@ public final class EquivalenceTester
             Comparable<T> comparable = (Comparable<T>) e1;
             return comparable.compareTo(e2) != 0;
         }
+
+        private static class OtherClass
+        {
+        }
     }
 
     @Deprecated
@@ -369,6 +378,7 @@ public final class EquivalenceTester
     public static enum EquivalenceFailureType {
         EQUAL_TO_NULL("Element (%d, %d) returns true when compared to null via equals()"),
         COMPARE_EQUAL_TO_NULL("Element (%d, %d) implements Comparable but does not throw NullPointerException when compared to null"),
+        EQUAL_TO_OTHER_CLASS("Element (%d, %d) returns true when compared to a different class via equals()"),
         NOT_REFLEXIVE("Element (%d, %d) is not equal to itself when compared via equals()"),
         COMPARE_NOT_REFLEXIVE("Element (%d, %d) implements Comparable but compare does not return 0 when compared to itself"),
         NOT_EQUAL("Element (%d, %d) is not equal to element (%d, %d) when compared via equals()"),

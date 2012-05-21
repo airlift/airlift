@@ -29,7 +29,6 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.proofpoint.testing.Assertions.assertEqualsIgnoreOrder;
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_CLASS_CAST_EXCEPTION;
@@ -39,6 +38,7 @@ import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.CO
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_NOT_REFLEXIVE;
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL;
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_NULL;
+import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_OTHER_CLASS;
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.HASH_CODE_NOT_SAME;
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.NOT_EQUAL;
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.NOT_GREATER_THAN;
@@ -97,10 +97,9 @@ public class TestEquivalenceTester
 
     static class NotReflexive
     {
-        @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass"})
         public boolean equals(Object that)
         {
-            return that != null && this != that;
+            return that != null && that instanceof NotReflexive && this != that;
         }
     }
 
@@ -170,7 +169,44 @@ public class TestEquivalenceTester
         @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass"})
         public boolean equals(Object that)
         {
-            return true;
+            return this == that || that == null;
+        }
+    }
+
+    @Test
+    public void equalsOtherClass()
+    {
+        try {
+            equivalenceTester()
+                    .addEquivalentGroup(new EqualsToOtherClass())
+                    .check();
+            fail("Expected EquivalenceAssertionError");
+        }
+        catch (EquivalenceAssertionError e) {
+            assertExpectedFailures(e, new ElementCheckFailure(EQUAL_TO_OTHER_CLASS, 0, 0));
+        }
+    }
+
+    static class EqualsToOtherClass
+    {
+        @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass"})
+        public boolean equals(Object that)
+        {
+            return that != null;
+        }
+    }
+
+    @Test
+    public void nothingCanBeEqualToOtherClass()
+    {
+        try {
+            equivalenceTester()
+                    .addEquivalentGroup(new EqualsToOtherClass())
+                    .check();
+            fail("Expected EquivalenceAssertionError");
+        }
+        catch (EquivalenceAssertionError e) {
+            assertExpectedFailures(e, new ElementCheckFailure(EQUAL_TO_OTHER_CLASS, 0, 0));
         }
     }
 
@@ -424,7 +460,7 @@ public class TestEquivalenceTester
         @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass"})
         public boolean equals(Object that)
         {
-            return that != null && value == ((ComparableThatDoesNotThrowNPE) that).value;
+            return that != null && that instanceof ComparableThatDoesNotThrowNPE && value == ((ComparableThatDoesNotThrowNPE) that).value;
         }
 
         @Override
