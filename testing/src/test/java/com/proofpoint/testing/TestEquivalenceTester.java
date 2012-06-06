@@ -39,7 +39,8 @@ import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.CO
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL;
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_NULL_EXCEPTION;
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_NULL;
-import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_OTHER_CLASS;
+import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_UNRELATED_CLASS;
+import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_UNRELATED_CLASS_CLASS_CAST_EXCEPTION;
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.HASH_CODE_NOT_SAME;
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.NOT_EQUAL;
 import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.NOT_GREATER_THAN;
@@ -175,25 +176,48 @@ public class TestEquivalenceTester
     }
 
     @Test
-    public void equalsOtherClass()
+    public void equalsUnrelatedClass()
     {
         try {
             equivalenceTester()
-                    .addEquivalentGroup(new EqualsOtherClass())
+                    .addEquivalentGroup(new EqualsUnrelatedClass())
                     .check();
             fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
-            assertExpectedFailures(e, new ElementCheckFailure(EQUAL_TO_OTHER_CLASS, 0, 0));
+            assertExpectedFailures(e, new ElementCheckFailure(EQUAL_TO_UNRELATED_CLASS, 0, 0));
         }
     }
 
-    static class EqualsOtherClass
+    static class EqualsUnrelatedClass
     {
         @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass"})
         public boolean equals(Object that)
         {
             return that != null;
+        }
+    }
+
+    @Test
+    public void equalsUnrelatedClassThrowsException()
+    {
+        try {
+            equivalenceTester()
+                    .addEquivalentGroup(new EqualsOtherClassThrowsException())
+                    .check();
+            fail("Expected EquivalenceAssertionError");
+        }
+        catch (EquivalenceAssertionError e) {
+            assertExpectedFailures(e, new ElementCheckFailure(EQUAL_TO_UNRELATED_CLASS_CLASS_CAST_EXCEPTION, 0, 0));
+        }
+    }
+
+    static class EqualsOtherClassThrowsException
+    {
+        @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass"})
+        public boolean equals(Object that)
+        {
+            return that != null && ((EqualsOtherClassThrowsException) that).hashCode() == this.hashCode();
         }
     }
 
