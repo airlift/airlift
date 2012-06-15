@@ -303,25 +303,36 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testDeprecatedProperties()
+    public void testNoDeprecatedProperties()
     {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
                 .put("email", "alice@example.com")
                 .put("home-page", "http://example.com")
                 .build();
 
-        Map<String, String> oldProperties = new ImmutableMap.Builder<String, String>()
-                .put("exchange-id", "alice@example.com")
-                .put("home-page", "http://example.com")
-                .build();
-
-        Map<String, String> olderProperties = new ImmutableMap.Builder<String, String>()
-                .put("notes-id", "alice@example.com")
-                .put("home-page-url", "http://example.com")
-                .build();
-
-        ConfigAssertions.assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
+        ConfigAssertions.assertDeprecatedEquivalence(NoDeprecatedConfig.class, currentProperties);
     }
+
+    @Test
+        public void testDeprecatedProperties()
+        {
+            Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
+                    .put("email", "alice@example.com")
+                    .put("home-page", "http://example.com")
+                    .build();
+
+            Map<String, String> oldProperties = new ImmutableMap.Builder<String, String>()
+                    .put("exchange-id", "alice@example.com")
+                    .put("home-page", "http://example.com")
+                    .build();
+
+            Map<String, String> olderProperties = new ImmutableMap.Builder<String, String>()
+                    .put("notes-id", "alice@example.com")
+                    .put("home-page-url", "http://example.com")
+                    .build();
+
+            ConfigAssertions.assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
+        }
 
     @Test
     public void testDeprecatedPropertiesFailUnsupportedProperties()
@@ -595,6 +606,62 @@ public class TestConfigAssertions
             catch (URISyntaxException e) {
                 throw new IllegalArgumentException(e);
             }
+        }
+    }
+
+    public static class NoDeprecatedConfig
+    {
+        private String name = "Dain";
+        private String email = "dain@proofpoint.com";
+        private String phone;
+        private URI homePage = URI.create("http://iq80.com");
+
+        public String getName()
+        {
+            return name;
+        }
+
+        @Config("name")
+        public NoDeprecatedConfig setName(String name)
+        {
+            this.name = name;
+            return this;
+        }
+
+        public String getEmail()
+        {
+            return email;
+        }
+
+        @Config("email")
+        public NoDeprecatedConfig setEmail(String email)
+        {
+            this.email = email;
+            return this;
+        }
+
+        public String getPhone()
+        {
+            return phone;
+        }
+
+        @Config("phone")
+        public NoDeprecatedConfig setPhone(String phone)
+        {
+            this.phone = phone;
+            return this;
+        }
+
+        public URI getHomePage()
+        {
+            return homePage;
+        }
+
+        @Config("home-page")
+        public NoDeprecatedConfig setHomePage(URI homePage)
+        {
+            this.homePage = homePage;
+            return this;
         }
     }
 }

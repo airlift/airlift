@@ -131,12 +131,11 @@ public final class ConfigAssertions
         assertAttributesEqual(metadata, actual, expected);
     }
 
-    public static <T> void assertDeprecatedEquivalence(Class<T> configClass, Map<String, String> currentProperties, Map<String, String> oldProperties, Map<String, String>... evenOlderPropertiesList)
+    public static <T> void assertDeprecatedEquivalence(Class<T> configClass, Map<String, String> currentProperties, Map<String, String>... oldPropertiesList)
     {
         Assert.assertNotNull(configClass, "configClass");
         Assert.assertNotNull(currentProperties, "currentProperties");
-        Assert.assertNotNull(oldProperties, "oldProperties");
-        Assert.assertNotNull(evenOlderPropertiesList, "evenOlderPropertiesList");
+        Assert.assertNotNull(oldPropertiesList, "oldPropertiesList");
 
         ConfigurationMetadata<T> metadata = ConfigurationMetadata.getValidConfigurationMetadata(configClass);
 
@@ -144,8 +143,7 @@ public final class ConfigAssertions
         assertPropertiesSupported(metadata, currentProperties.keySet(), false);
 
         // verify all old properties are supported (deprecation allowed)
-        assertPropertiesSupported(metadata, oldProperties.keySet(), true);
-        for (Map<String, String> evenOlderProperties : evenOlderPropertiesList) {
+        for (Map<String, String> evenOlderProperties : oldPropertiesList) {
             assertPropertiesSupported(metadata, evenOlderProperties.keySet(), true);
         }
 
@@ -157,8 +155,7 @@ public final class ConfigAssertions
             }
         }
         Set<String> suppliedDeprecatedProperties = new TreeSet<String>();
-        suppliedDeprecatedProperties.addAll(oldProperties.keySet());
-        for (Map<String, String> evenOlderProperties : evenOlderPropertiesList) {
+        for (Map<String, String> evenOlderProperties : oldPropertiesList) {
             suppliedDeprecatedProperties.addAll(evenOlderProperties.keySet());
         }
         if (!suppliedDeprecatedProperties.containsAll(knownDeprecatedProperties)) {
@@ -169,9 +166,7 @@ public final class ConfigAssertions
 
         // verify property sets create equivalent configurations
         T currentConfiguration = newInstance(configClass, currentProperties);
-        T oldConfiguration = newInstance(configClass, oldProperties);
-        assertAttributesEqual(metadata, currentConfiguration, oldConfiguration);
-        for (Map<String, String> evenOlderProperties : evenOlderPropertiesList) {
+        for (Map<String, String> evenOlderProperties : oldPropertiesList) {
             T evenOlderConfiguration = newInstance(configClass, evenOlderProperties);
             assertAttributesEqual(metadata, currentConfiguration, evenOlderConfiguration);
         }
