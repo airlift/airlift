@@ -1,4 +1,4 @@
-package com.proofpoint.units;
+package io.airlift.units;
 
 import javax.validation.Constraint;
 import javax.validation.Payload;
@@ -17,7 +17,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 public @interface MaxDuration
 {
     String value();
-    String message() default "{com.proofpoint.units.MaxDuration.message}";
+    String message() default "{io.airlift.units.MaxDuration.message}";
     Class<?>[] groups() default { };
     Class<? extends Payload>[] payload() default { };
 }

@@ -1,4 +1,4 @@
-package com.proofpoint.jmx.http.rpc;
+package io.airlift.jmx.http.rpc;
 
 import com.google.inject.Inject;
 
@@ -15,8 +15,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
-import static com.proofpoint.jmx.http.rpc.HttpMBeanServerRpc.createExceptionResponse;
-import static com.proofpoint.jmx.http.rpc.HttpMBeanServerRpc.createSuccessResponse;
+import static io.airlift.jmx.http.rpc.HttpMBeanServerRpc.createExceptionResponse;
+import static io.airlift.jmx.http.rpc.HttpMBeanServerRpc.createSuccessResponse;
 import static javax.servlet.http.HttpServletResponse.*;
 
 public class MBeanServerServlet extends HttpServlet

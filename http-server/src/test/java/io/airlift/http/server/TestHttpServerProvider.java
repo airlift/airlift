@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.http.server;
+package io.airlift.http.server;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
-import com.proofpoint.event.client.NullEventClient;
-import com.proofpoint.http.client.ApacheHttpClient;
-import com.proofpoint.http.client.HttpClient;
-import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
-import com.proofpoint.http.client.StringResponseHandler.StringResponse;
-import com.proofpoint.node.NodeInfo;
-import com.proofpoint.testing.FileUtils;
-import com.proofpoint.tracetoken.TraceTokenManager;
+import io.airlift.event.client.NullEventClient;
+import io.airlift.http.client.ApacheHttpClient;
+import io.airlift.http.client.HttpClient;
+import io.airlift.http.client.StatusResponseHandler.StatusResponse;
+import io.airlift.http.client.StringResponseHandler.StringResponse;
+import io.airlift.node.NodeInfo;
+import io.airlift.testing.FileUtils;
+import io.airlift.tracetoken.TraceTokenManager;
 import org.apache.commons.codec.binary.Base64;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -38,9 +38,9 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.URI;
 
-import static com.proofpoint.http.client.Request.Builder.prepareGet;
-import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
-import static com.proofpoint.http.client.StringResponseHandler.createStringResponseHandler;
+import static io.airlift.http.client.Request.Builder.prepareGet;
+import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;

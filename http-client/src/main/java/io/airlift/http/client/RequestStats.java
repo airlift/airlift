@@ -1,11 +1,11 @@
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
 import com.google.common.annotations.Beta;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.proofpoint.stats.CounterStat;
-import com.proofpoint.stats.MeterStat;
-import com.proofpoint.stats.TimedStat;
-import com.proofpoint.units.Duration;
+import io.airlift.stats.CounterStat;
+import io.airlift.stats.MeterStat;
+import io.airlift.stats.TimedStat;
+import io.airlift.units.Duration;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;

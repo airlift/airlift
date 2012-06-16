@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.http.server;
+package io.airlift.http.server;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
@@ -28,25 +28,24 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.proofpoint.configuration.ConfigurationFactory;
-import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
-import com.proofpoint.event.client.EventClient;
-import com.proofpoint.event.client.HttpEventModule;
-import com.proofpoint.event.client.InMemoryEventClient;
-import com.proofpoint.event.client.InMemoryEventModule;
-import com.proofpoint.event.client.NullEventModule;
-import com.proofpoint.http.client.ApacheHttpClient;
-import com.proofpoint.http.client.HttpClient;
-import com.proofpoint.http.client.StaticBodyGenerator;
-import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
-import com.proofpoint.http.client.StringResponseHandler.StringResponse;
-import com.proofpoint.json.JsonModule;
-import com.proofpoint.node.NodeInfo;
-import com.proofpoint.node.NodeModule;
-import com.proofpoint.node.testing.TestingNodeModule;
-import com.proofpoint.testing.FileUtils;
-import com.proofpoint.tracetoken.TraceTokenModule;
+import io.airlift.configuration.ConfigurationFactory;
+import io.airlift.configuration.ConfigurationModule;
+import io.airlift.discovery.client.testing.TestingDiscoveryModule;
+import io.airlift.event.client.EventClient;
+import io.airlift.event.client.HttpEventModule;
+import io.airlift.event.client.InMemoryEventClient;
+import io.airlift.event.client.InMemoryEventModule;
+import io.airlift.event.client.NullEventModule;
+import io.airlift.http.client.ApacheHttpClient;
+import io.airlift.http.client.HttpClient;
+import io.airlift.http.client.StatusResponseHandler.StatusResponse;
+import io.airlift.http.client.StringResponseHandler.StringResponse;
+import io.airlift.json.JsonModule;
+import io.airlift.node.NodeInfo;
+import io.airlift.node.NodeModule;
+import io.airlift.node.testing.TestingNodeModule;
+import io.airlift.testing.FileUtils;
+import io.airlift.tracetoken.TraceTokenModule;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -58,7 +57,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.HttpHeaders;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -66,11 +64,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import static com.proofpoint.http.client.Request.Builder.prepareGet;
-import static com.proofpoint.http.client.Request.Builder.preparePost;
-import static com.proofpoint.http.client.StaticBodyGenerator.createStaticBodyGenerator;
-import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
-import static com.proofpoint.http.client.StringResponseHandler.createStringResponseHandler;
+import static io.airlift.http.client.Request.Builder.prepareGet;
+import static io.airlift.http.client.Request.Builder.preparePost;
+import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
+import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static java.util.Collections.nCopies;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
@@ -303,7 +301,7 @@ public class TestHttpServerModule
                             .addHeader(USER_AGENT, userAgent)
                             .addHeader(CONTENT_TYPE, requestContentType)
                             .addHeader("Referer", referrer)
-                            .addHeader("X-Proofpoint-TraceToken", token)
+                            .addHeader("X-Airlift-TraceToken", token)
                             .setBodyGenerator(createStaticBodyGenerator(requestBody, Charsets.UTF_8))
                             .build(),
                     createStringResponseHandler());

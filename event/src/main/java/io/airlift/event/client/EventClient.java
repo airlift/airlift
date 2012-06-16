@@ -1,9 +1,8 @@
-package com.proofpoint.event.client;
+package io.airlift.event.client;
 
 import com.google.common.util.concurrent.CheckedFuture;
 
 import java.io.IOException;
-import java.util.concurrent.Future;
 
 public interface EventClient
 {

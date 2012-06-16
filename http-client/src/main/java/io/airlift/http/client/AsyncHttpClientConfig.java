@@ -1,7 +1,7 @@
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
 import com.google.common.annotations.Beta;
-import com.proofpoint.configuration.Config;
+import io.airlift.configuration.Config;
 
 import javax.validation.constraints.Min;
 

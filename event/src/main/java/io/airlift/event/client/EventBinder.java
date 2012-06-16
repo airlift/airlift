@@ -1,4 +1,4 @@
-package com.proofpoint.event.client;
+package io.airlift.event.client;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -8,7 +8,7 @@ import com.google.inject.multibindings.Multibinder;
 
 import java.util.List;
 
-import static com.proofpoint.event.client.EventTypeMetadata.getEventTypeMetadata;
+import static io.airlift.event.client.EventTypeMetadata.getEventTypeMetadata;
 
 public class EventBinder
 {

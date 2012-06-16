@@ -1,12 +1,12 @@
-package com.proofpoint.cassandra.testing;
+package io.airlift.cassandra.testing;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
-import com.proofpoint.cassandra.CassandraServerConfig;
-import com.proofpoint.cassandra.CassandraServerInfo;
-import com.proofpoint.cassandra.EmbeddedCassandraServer;
-import com.proofpoint.node.NodeInfo;
+import io.airlift.cassandra.CassandraServerConfig;
+import io.airlift.cassandra.CassandraServerInfo;
+import io.airlift.cassandra.EmbeddedCassandraServer;
+import io.airlift.node.NodeInfo;
 import org.apache.cassandra.config.ConfigurationException;
 import org.apache.thrift.transport.TTransportException;
 
@@ -78,7 +78,7 @@ public class CassandraServerSetup
         }
     }
 
-    //Copied from com.proofpoint.testing.FileUtils
+    //Copied from airlift.testing.FileUtils
     private static boolean deleteDirectoryContents(File directory)
     {
         Preconditions.checkArgument(directory.isDirectory(), "Not a directory: %s", directory);
@@ -95,7 +95,7 @@ public class CassandraServerSetup
         return success;
     }
 
-    //Copied from com.proofpoint.testing.FileUtils
+    //Copied from airlift.testing.FileUtils
     private static boolean deleteRecursively(File file)
     {
         boolean success = true;
@@ -106,7 +106,7 @@ public class CassandraServerSetup
         return file.delete() && success;
     }
 
-    //Copied from com.proofpoint.testing.FileUtils
+    //Copied from airlift.testing.FileUtils
     private static boolean isSymbolicLink(File file)
     {
         try {
@@ -123,7 +123,7 @@ public class CassandraServerSetup
         }
     }
 
-    //Copied from com.proofpoint.testing.FileUtils
+    //Copied from airlift.testing.FileUtils
     private static ImmutableList<File> listFiles(File dir)
     {
         File[] files = dir.listFiles();

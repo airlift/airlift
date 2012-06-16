@@ -1,19 +1,19 @@
-package com.proofpoint.platform.skeleton;
+package io.airlift.skeleton;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.proofpoint.configuration.ConfigurationFactory;
-import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.jmx.JmxHttpModule;
-import com.proofpoint.http.client.ApacheHttpClient;
-import com.proofpoint.http.client.HttpClient;
-import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
-import com.proofpoint.http.server.testing.TestingHttpServer;
-import com.proofpoint.http.server.testing.TestingHttpServerModule;
-import com.proofpoint.jaxrs.JaxrsModule;
-import com.proofpoint.jmx.JmxModule;
-import com.proofpoint.json.JsonModule;
-import com.proofpoint.node.testing.TestingNodeModule;
+import io.airlift.configuration.ConfigurationFactory;
+import io.airlift.configuration.ConfigurationModule;
+import io.airlift.jmx.JmxHttpModule;
+import io.airlift.http.client.ApacheHttpClient;
+import io.airlift.http.client.HttpClient;
+import io.airlift.http.client.StatusResponseHandler.StatusResponse;
+import io.airlift.http.server.testing.TestingHttpServer;
+import io.airlift.http.server.testing.TestingHttpServerModule;
+import io.airlift.jaxrs.JaxrsModule;
+import io.airlift.jmx.JmxModule;
+import io.airlift.json.JsonModule;
+import io.airlift.node.testing.TestingNodeModule;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -21,8 +21,8 @@ import org.testng.annotations.Test;
 import java.net.URI;
 import java.util.Collections;
 
-import static com.proofpoint.http.client.Request.Builder.prepareGet;
-import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static io.airlift.http.client.Request.Builder.prepareGet;
+import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.testng.Assert.assertEquals;
 

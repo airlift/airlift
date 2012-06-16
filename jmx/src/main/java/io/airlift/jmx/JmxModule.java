@@ -13,23 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.jmx;
+package io.airlift.jmx;
 
 import com.google.inject.Binder;
 import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
-import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.discovery.client.ServiceAnnouncement;
+import io.airlift.configuration.ConfigurationModule;
+import io.airlift.discovery.client.ServiceAnnouncement;
 import org.weakref.jmx.guice.ExportBuilder;
 import org.weakref.jmx.guice.MBeanModule;
 
 import javax.management.MBeanServer;
 import java.lang.management.ManagementFactory;
 
-import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
-import static com.proofpoint.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
+import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 
 public class JmxModule
         implements Module

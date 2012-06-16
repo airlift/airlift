@@ -1,10 +1,10 @@
-package com.proofpoint.cassandra;
+package io.airlift.cassandra;
 
 import com.google.common.collect.ImmutableMap;
-import com.proofpoint.configuration.testing.ConfigAssertions;
-import com.proofpoint.units.DataSize;
-import com.proofpoint.units.DataSize.Unit;
-import com.proofpoint.units.Duration;
+import io.airlift.configuration.testing.ConfigAssertions;
+import io.airlift.units.DataSize;
+import io.airlift.units.DataSize.Unit;
+import io.airlift.units.Duration;
 import org.testng.annotations.Test;
 
 import javax.validation.constraints.Max;
@@ -14,7 +14,7 @@ import java.io.File;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static com.proofpoint.testing.ValidationAssertions.assertFailsValidation;
+import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
 
 public class TestCassandraServerConfig
 {

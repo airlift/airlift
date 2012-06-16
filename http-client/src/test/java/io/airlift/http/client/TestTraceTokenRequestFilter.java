@@ -1,13 +1,13 @@
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableList;
-import com.proofpoint.tracetoken.TraceTokenManager;
+import io.airlift.tracetoken.TraceTokenManager;
 import org.testng.annotations.Test;
 
 import java.net.URI;
 
-import static com.proofpoint.http.client.Request.Builder.prepareGet;
-import static com.proofpoint.http.client.TraceTokenRequestFilter.TRACETOKEN_HEADER;
+import static io.airlift.http.client.Request.Builder.prepareGet;
+import static io.airlift.http.client.TraceTokenRequestFilter.TRACETOKEN_HEADER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertSame;

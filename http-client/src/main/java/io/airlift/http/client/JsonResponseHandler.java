@@ -1,4 +1,4 @@
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
@@ -6,7 +6,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharStreams;
 import com.google.common.net.MediaType;
 import com.google.common.primitives.Ints;
-import com.proofpoint.json.JsonCodec;
+import io.airlift.json.JsonCodec;
 
 import java.io.IOException;
 import java.io.InputStreamReader;

@@ -1,4 +1,4 @@
-package com.proofpoint.units;
+package io.airlift.units;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Preconditions;

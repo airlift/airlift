@@ -1,9 +1,9 @@
-package com.proofpoint.http.server;
+package io.airlift.http.server;
 
 import com.google.common.base.Throwables;
 import com.google.common.net.InetAddresses;
 import com.google.inject.Inject;
-import com.proofpoint.node.NodeInfo;
+import io.airlift.node.NodeInfo;
 
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;

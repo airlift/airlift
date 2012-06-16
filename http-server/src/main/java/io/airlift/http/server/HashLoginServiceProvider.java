@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.http.server;
+package io.airlift.http.server;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.proofpoint.log.Logger;
+import io.airlift.log.Logger;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jetty.security.HashLoginService;
 

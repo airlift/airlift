@@ -1,14 +1,14 @@
-package com.proofpoint.event.client;
+package io.airlift.event.client;
 
 import com.google.common.base.Throwables;
 import com.google.common.io.CharStreams;
-import com.proofpoint.discovery.client.HttpServiceSelector;
-import com.proofpoint.discovery.client.testing.StaticHttpServiceSelector;
-import com.proofpoint.http.client.ApacheHttpClient;
-import com.proofpoint.http.client.AsyncHttpClient;
-import com.proofpoint.http.client.HttpClientConfig;
-import com.proofpoint.node.NodeInfo;
-import com.proofpoint.units.Duration;
+import io.airlift.discovery.client.HttpServiceSelector;
+import io.airlift.discovery.client.testing.StaticHttpServiceSelector;
+import io.airlift.http.client.ApacheHttpClient;
+import io.airlift.http.client.AsyncHttpClient;
+import io.airlift.http.client.HttpClientConfig;
+import io.airlift.node.NodeInfo;
+import io.airlift.units.Duration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -37,8 +37,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static com.proofpoint.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
-import static com.proofpoint.event.client.TestingUtils.getNormalizedJson;
+import static io.airlift.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
+import static io.airlift.event.client.TestingUtils.getNormalizedJson;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;

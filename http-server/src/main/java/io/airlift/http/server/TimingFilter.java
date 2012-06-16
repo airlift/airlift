@@ -1,7 +1,6 @@
-package com.proofpoint.http.server;
+package io.airlift.http.server;
 
 import com.google.common.base.Preconditions;
-import com.google.common.io.NullOutputStream;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;

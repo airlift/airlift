@@ -1,13 +1,13 @@
-package com.proofpoint.event.client;
+package io.airlift.event.client;
 
 import com.google.common.base.Joiner;
 import org.testng.annotations.Test;
 
 import java.util.List;
 
-import static com.proofpoint.event.client.EventTypeMetadata.getEventTypeMetadata;
-import static com.proofpoint.event.client.EventTypeMetadata.getValidEventTypeMetadata;
-import static com.proofpoint.testing.Assertions.assertContains;
+import static io.airlift.event.client.EventTypeMetadata.getEventTypeMetadata;
+import static io.airlift.event.client.EventTypeMetadata.getValidEventTypeMetadata;
+import static io.airlift.testing.Assertions.assertContains;
 import static org.testng.Assert.assertEquals;
 
 public class TestEventValidation

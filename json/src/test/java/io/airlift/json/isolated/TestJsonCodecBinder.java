@@ -1,20 +1,20 @@
-package com.proofpoint.json.isolated;
+package io.airlift.json.isolated;
 
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Module;
-import com.proofpoint.json.JsonCodec;
-import com.proofpoint.json.JsonCodecBinder;
-import com.proofpoint.json.JsonModule;
-import com.proofpoint.json.Person;
+import io.airlift.json.JsonCodec;
+import io.airlift.json.JsonCodecBinder;
+import io.airlift.json.JsonModule;
+import io.airlift.json.Person;
 import org.testng.annotations.Test;
 
 import java.util.List;
 import java.util.Map;
 
-import static com.proofpoint.json.JsonCodecBinder.jsonCodecBinder;
+import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
 import static org.testng.Assert.assertNotNull;
 
 public class TestJsonCodecBinder

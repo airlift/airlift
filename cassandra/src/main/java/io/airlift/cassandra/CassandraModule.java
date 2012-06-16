@@ -1,9 +1,9 @@
-package com.proofpoint.cassandra;
+package io.airlift.cassandra;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.proofpoint.configuration.ConfigurationModule;
+import io.airlift.configuration.ConfigurationModule;
 
 public class CassandraModule
     implements Module

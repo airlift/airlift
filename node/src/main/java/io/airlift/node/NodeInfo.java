@@ -1,4 +1,4 @@
-package com.proofpoint.node;
+package io.airlift.node;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;

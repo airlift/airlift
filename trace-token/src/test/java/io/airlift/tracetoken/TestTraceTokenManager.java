@@ -1,4 +1,4 @@
-package com.proofpoint.tracetoken;
+package io.airlift.tracetoken;
 
 import org.testng.annotations.Test;
 

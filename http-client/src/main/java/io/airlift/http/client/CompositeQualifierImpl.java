@@ -1,4 +1,4 @@
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
 import java.lang.annotation.Annotation;
 import java.util.Arrays;

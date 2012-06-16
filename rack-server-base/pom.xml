@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.proofpoint.platform</groupId>
+    <groupId>io.airlift</groupId>
     <artifactId>rack-server-base-experimental</artifactId>
     <version>0.65-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>rack-server-base</name>
-    <description>Proofpoint Platform Rack Server base POM</description>
-    <url>http://github.com/proofpoint/platform</url>
+    <description>Airlift Rack Server base POM</description>
+    <url>http://github.com/airlift/airlift</url>
 
     <inceptionYear>2010</inceptionYear>
     <organization>
-        <name>Proofpoint, Inc.</name>
-        <url>http://www.proofpoint.com</url>
+        <name>Airlift</name>
     </organization>
     <licenses>
         <license>
@@ -50,9 +49,9 @@
     </properties>
 
     <scm>
-        <connection>scm:git:git://github.com/proofpoint/platform.git</connection>
-        <developerConnection>scm:git:git@github.com:proofpoint/platform.git</developerConnection>
-        <url>http://github.com/proofpoint/platform/tree/master</url>
+        <connection>scm:git:git://github.com/airlift/airlift.git</connection>
+        <developerConnection>scm:git:git@github.com:airlift/airlift.git</developerConnection>
+        <url>http://github.com/airlift/airlift/tree/master</url>
     </scm>
 
     <prerequisites>
@@ -75,13 +74,13 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>rack-experimental</artifactId>
             <version>0.65-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>rack-launcher-experimental</artifactId>
             <version>0.65-SNAPSHOT</version>
             <classifier>bin</classifier>
@@ -123,7 +122,7 @@
                 </pluginManagement>
                 <plugins>
                     <plugin>
-                        <groupId>com.proofpoint.platform</groupId>
+                        <groupId>io.airlift</groupId>
                         <artifactId>bundler-packaging-plugin</artifactId>
                         <version>1.1</version>
                         <executions>
@@ -176,7 +175,7 @@
 
                         <dependencies>
                             <dependency>
-                                <groupId>com.proofpoint.platform</groupId>
+                                <groupId>io.airlift</groupId>
                                 <artifactId>rack-packaging-experimental</artifactId>
                                 <version>0.65-SNAPSHOT</version>
                             </dependency>

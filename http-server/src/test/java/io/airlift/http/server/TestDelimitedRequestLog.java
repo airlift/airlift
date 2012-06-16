@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.http.server;
+package io.airlift.http.server;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
-import com.proofpoint.event.client.InMemoryEventClient;
-import com.proofpoint.tracetoken.TraceTokenManager;
+import io.airlift.event.client.InMemoryEventClient;
+import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;

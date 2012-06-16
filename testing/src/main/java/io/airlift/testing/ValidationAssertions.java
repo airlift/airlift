@@ -1,4 +1,4 @@
-package com.proofpoint.testing;
+package io.airlift.testing;
 
 import com.google.common.annotations.Beta;
 import org.apache.bval.jsr303.ApacheValidationProvider;

@@ -1,4 +1,4 @@
-package com.proofpoint.discovery.client;
+package io.airlift.discovery.client;
 
 import java.util.List;
 

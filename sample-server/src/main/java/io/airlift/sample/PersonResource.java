@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.platform.sample;
+package io.airlift.sample;
 
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
@@ -31,7 +31,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
-import static com.proofpoint.platform.sample.PersonRepresentation.from;
+import static io.airlift.sample.PersonRepresentation.from;
 
 @Path("/v1/person/{id: \\w+}")
 public class PersonResource

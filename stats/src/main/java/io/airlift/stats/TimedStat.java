@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.stats;
+package io.airlift.stats;
 
-import com.proofpoint.units.Duration;
-import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
-import org.apache.commons.math.stat.descriptive.SynchronizedDescriptiveStatistics;
+import io.airlift.units.Duration;
 import org.weakref.jmx.Managed;
 
 import java.util.Collections;

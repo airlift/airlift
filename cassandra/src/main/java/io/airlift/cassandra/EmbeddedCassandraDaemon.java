@@ -1,7 +1,7 @@
-package com.proofpoint.cassandra;
+package io.airlift.cassandra;
 
 import com.google.common.base.Preconditions;
-import com.proofpoint.log.Logger;
+import io.airlift.log.Logger;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.ConfigurationException;
 import org.apache.cassandra.config.DatabaseDescriptor;

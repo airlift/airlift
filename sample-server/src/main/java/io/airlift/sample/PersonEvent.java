@@ -1,8 +1,8 @@
-package com.proofpoint.platform.sample;
+package io.airlift.sample;
 
 import com.google.common.base.Preconditions;
-import com.proofpoint.event.client.EventField;
-import com.proofpoint.event.client.EventType;
+import io.airlift.event.client.EventField;
+import io.airlift.event.client.EventType;
 
 @EventType("Person")
 public class PersonEvent

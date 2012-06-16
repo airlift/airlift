@@ -1,4 +1,4 @@
-package com.proofpoint.event.client;
+package io.airlift.event.client;
 
 @SuppressWarnings("UnusedDeclaration")
 @EventType("Circular")

@@ -1,4 +1,4 @@
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;

@@ -1,4 +1,4 @@
-package com.proofpoint.event.client;
+package io.airlift.event.client;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;

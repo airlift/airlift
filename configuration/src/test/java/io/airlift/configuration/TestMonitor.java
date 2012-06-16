@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.configuration;
+package io.airlift.configuration;
 
 import com.google.common.base.Joiner;
 import com.google.inject.spi.Message;

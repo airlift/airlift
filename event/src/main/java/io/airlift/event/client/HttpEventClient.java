@@ -1,4 +1,4 @@
-package com.proofpoint.event.client;
+package io.airlift.event.client;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -6,16 +6,16 @@ import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
-import com.proofpoint.discovery.client.HttpServiceSelector;
-import com.proofpoint.discovery.client.ServiceType;
-import com.proofpoint.http.client.AsyncHttpClient;
-import com.proofpoint.http.client.BodyGenerator;
-import com.proofpoint.http.client.Request;
-import com.proofpoint.http.client.RequestStats;
-import com.proofpoint.http.client.Response;
-import com.proofpoint.http.client.ResponseHandler;
-import com.proofpoint.log.Logger;
-import com.proofpoint.node.NodeInfo;
+import io.airlift.discovery.client.HttpServiceSelector;
+import io.airlift.discovery.client.ServiceType;
+import io.airlift.http.client.AsyncHttpClient;
+import io.airlift.http.client.BodyGenerator;
+import io.airlift.http.client.Request;
+import io.airlift.http.client.RequestStats;
+import io.airlift.http.client.Response;
+import io.airlift.http.client.ResponseHandler;
+import io.airlift.log.Logger;
+import io.airlift.node.NodeInfo;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
@@ -28,7 +28,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.proofpoint.http.client.Request.Builder.preparePost;
+import static io.airlift.http.client.Request.Builder.preparePost;
 
 public class HttpEventClient
         implements EventClient

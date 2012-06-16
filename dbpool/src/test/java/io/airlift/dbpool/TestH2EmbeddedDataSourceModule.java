@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.dbpool;
+package io.airlift.dbpool;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
@@ -23,10 +23,9 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.ProvisionException;
-import com.google.inject.Scopes;
-import com.proofpoint.configuration.ConfigurationFactory;
-import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.testing.Assertions;
+import io.airlift.configuration.ConfigurationFactory;
+import io.airlift.configuration.ConfigurationModule;
+import io.airlift.testing.Assertions;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -252,7 +251,7 @@ public class TestH2EmbeddedDataSourceModule
         }
 
         properties.put(prefix + "db.filename", filename);
-        properties.put(prefix + "db.init-script", "com/proofpoint/dbpool/h2.ddl");
+        properties.put(prefix + "db.init-script", "io/airlift/dbpool/h2.ddl");
         properties.put(prefix + "db.cipher", "AES");
         properties.put(prefix + "db.file-password", "filePassword");
         return properties;

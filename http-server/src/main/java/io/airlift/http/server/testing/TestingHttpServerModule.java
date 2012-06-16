@@ -13,24 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.http.server.testing;
+package io.airlift.http.server.testing;
 
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.proofpoint.http.server.HttpServer;
-import com.proofpoint.http.server.HttpServerConfig;
-import com.proofpoint.http.server.HttpServerInfo;
-import com.proofpoint.http.server.TheServlet;
+import io.airlift.http.server.HttpServer;
+import io.airlift.http.server.HttpServerConfig;
+import io.airlift.http.server.HttpServerInfo;
+import io.airlift.http.server.TheServlet;
 
 import javax.servlet.Filter;
-import com.proofpoint.discovery.client.AnnouncementHttpServerInfo;
-import com.proofpoint.http.server.HttpServer;
-import com.proofpoint.http.server.HttpServerConfig;
-import com.proofpoint.http.server.HttpServerInfo;
-import com.proofpoint.http.server.LocalAnnouncementHttpServerInfo;
+import io.airlift.discovery.client.AnnouncementHttpServerInfo;
+import io.airlift.http.server.LocalAnnouncementHttpServerInfo;
 
 public class TestingHttpServerModule
         implements Module

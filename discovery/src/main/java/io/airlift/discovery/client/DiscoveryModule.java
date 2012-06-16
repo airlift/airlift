@@ -1,4 +1,4 @@
-package com.proofpoint.discovery.client;
+package io.airlift.discovery.client;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Binder;
@@ -12,9 +12,9 @@ import java.net.URI;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
-import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
-import static com.proofpoint.http.client.HttpClientBinder.httpClientBinder;
-import static com.proofpoint.json.JsonCodecBinder.jsonCodecBinder;
+import static io.airlift.configuration.ConfigurationModule.bindConfig;
+import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
+import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
 
 public class DiscoveryModule implements Module
 {

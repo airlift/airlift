@@ -1,1 +1,1 @@
-com.proofpoint.jmx.http.rpc.HttpJmxConnectorProvider
+io.airlift.jmx.http.rpc.HttpJmxConnectorProvider

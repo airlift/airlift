@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.bootstrap;
+package io.airlift.bootstrap;
 
 import com.google.common.collect.Sets;
 import com.google.inject.Binder;

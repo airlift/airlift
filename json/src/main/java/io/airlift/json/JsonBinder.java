@@ -1,4 +1,4 @@
-package com.proofpoint.json;
+package io.airlift.json;
 
 import com.google.common.base.Preconditions;
 import com.google.inject.Binder;

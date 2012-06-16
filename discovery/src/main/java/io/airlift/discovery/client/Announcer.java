@@ -1,4 +1,4 @@
-package com.proofpoint.discovery.client;
+package io.airlift.discovery.client;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -6,8 +6,8 @@ import com.google.common.collect.MapMaker;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
-import com.proofpoint.log.Logger;
-import com.proofpoint.units.Duration;
+import io.airlift.log.Logger;
+import io.airlift.units.Duration;
 
 import javax.annotation.PreDestroy;
 import java.net.ConnectException;
@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.proofpoint.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
+import static io.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
 
 public class Announcer
 {

@@ -1,4 +1,4 @@
-package com.proofpoint.jmx.http.rpc;
+package io.airlift.jmx.http.rpc;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

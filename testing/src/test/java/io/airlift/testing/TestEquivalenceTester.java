@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.testing;
+package io.airlift.testing;
 
 /**
  * Derived from http://code.google.com/p/kawala
@@ -23,29 +23,29 @@ package com.proofpoint.testing;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ComparisonChain;
-import com.proofpoint.testing.EquivalenceTester.ElementCheckFailure;
-import com.proofpoint.testing.EquivalenceTester.PairCheckFailure;
+import io.airlift.testing.EquivalenceTester.ElementCheckFailure;
+import io.airlift.testing.EquivalenceTester.PairCheckFailure;
 import org.testng.annotations.Test;
 
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Lists.newArrayList;
-import static com.proofpoint.testing.Assertions.assertEqualsIgnoreOrder;
-import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_CLASS_CAST_EXCEPTION;
-import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL;
-import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL_TO_NULL;
-import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_NOT_EQUAL;
-import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_NOT_REFLEXIVE;
-import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL;
-import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_NULL;
-import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.HASH_CODE_NOT_SAME;
-import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.NOT_EQUAL;
-import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.NOT_GREATER_THAN;
-import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.NOT_LESS_THAN;
-import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.NOT_REFLEXIVE;
-import static com.proofpoint.testing.EquivalenceTester.comparisonTester;
-import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
+import static io.airlift.testing.Assertions.assertEqualsIgnoreOrder;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_CLASS_CAST_EXCEPTION;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL_TO_NULL;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_NOT_EQUAL;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_NOT_REFLEXIVE;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_NULL;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.HASH_CODE_NOT_SAME;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_EQUAL;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_GREATER_THAN;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_LESS_THAN;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_REFLEXIVE;
+import static io.airlift.testing.EquivalenceTester.comparisonTester;
+import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 import static org.testng.Assert.assertEquals;
 import static org.testng.FileAssert.fail;
 

@@ -1,9 +1,9 @@
-package com.proofpoint.event.client;
+package io.airlift.event.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.NullOutputStream;
-import com.proofpoint.event.client.NestedDummyEventClass.NestedPart;
+import io.airlift.event.client.NestedDummyEventClass.NestedPart;
 import org.joda.time.DateTime;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -13,8 +13,8 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.proofpoint.event.client.ChainedCircularEventClass.ChainedPart;
-import static com.proofpoint.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
+import static io.airlift.event.client.ChainedCircularEventClass.ChainedPart;
+import static io.airlift.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 import static org.testng.Assert.assertEquals;
 
 public class TestJsonEventWriter

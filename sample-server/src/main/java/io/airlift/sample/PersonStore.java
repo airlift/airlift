@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.platform.sample;
+package io.airlift.sample;
 
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.proofpoint.event.client.EventClient;
+import io.airlift.event.client.EventClient;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 

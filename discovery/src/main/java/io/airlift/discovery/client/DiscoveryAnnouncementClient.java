@@ -1,7 +1,7 @@
-package com.proofpoint.discovery.client;
+package io.airlift.discovery.client;
 
 import com.google.common.util.concurrent.CheckedFuture;
-import com.proofpoint.units.Duration;
+import io.airlift.units.Duration;
 
 import java.util.Set;
 import java.util.concurrent.TimeUnit;

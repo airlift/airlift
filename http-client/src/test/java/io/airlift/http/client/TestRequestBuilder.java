@@ -1,13 +1,13 @@
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableListMultimap;
 import org.testng.annotations.Test;
 
 import java.net.URI;
 
-import static com.proofpoint.http.client.Request.Builder.fromRequest;
-import static com.proofpoint.http.client.Request.Builder.prepareGet;
-import static com.proofpoint.http.client.StaticBodyGenerator.createStaticBodyGenerator;
+import static io.airlift.http.client.Request.Builder.fromRequest;
+import static io.airlift.http.client.Request.Builder.prepareGet;
+import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static org.testng.Assert.assertEquals;
 
 public class TestRequestBuilder

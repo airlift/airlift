@@ -1,11 +1,11 @@
-package com.proofpoint.discovery.client.testing;
+package io.airlift.discovery.client.testing;
 
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
-import com.proofpoint.discovery.client.DiscoveryLookupClient;
-import com.proofpoint.discovery.client.ServiceSelector;
-import com.proofpoint.discovery.client.ServiceSelectorConfig;
-import com.proofpoint.discovery.client.ServiceSelectorFactory;
+import io.airlift.discovery.client.DiscoveryLookupClient;
+import io.airlift.discovery.client.ServiceSelector;
+import io.airlift.discovery.client.ServiceSelectorConfig;
+import io.airlift.discovery.client.ServiceSelectorFactory;
 
 public class SimpleServiceSelectorFactory implements ServiceSelectorFactory
 {

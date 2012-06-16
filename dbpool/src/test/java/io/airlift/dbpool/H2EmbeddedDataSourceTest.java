@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.dbpool;
+package io.airlift.dbpool;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
-import com.proofpoint.dbpool.H2EmbeddedDataSourceConfig.Cipher;
+import io.airlift.dbpool.H2EmbeddedDataSourceConfig.Cipher;
 import org.h2.jdbc.JdbcSQLException;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -59,7 +59,7 @@ public class H2EmbeddedDataSourceTest
         try {
             H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
                     .setFilename(file.getAbsolutePath())
-                    .setInitScript("com/proofpoint/dbpool/h2.ddl")
+                    .setInitScript("io/airlift/dbpool/h2.ddl")
                     .setCipher(Cipher.AES)
                     .setFilePassword("filePassword");
 
@@ -84,7 +84,7 @@ public class H2EmbeddedDataSourceTest
         Statement statement = null;
         ResultSet resultSet = null;
         try {
-            URL url = Resources.getResource("com/proofpoint/dbpool/h2.ddl");
+            URL url = Resources.getResource("io/airlift/dbpool/h2.ddl");
             Files.copy(Resources.newReaderSupplier(url, Charsets.UTF_8), initScript, Charsets.UTF_8);
 
             H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
@@ -134,7 +134,7 @@ public class H2EmbeddedDataSourceTest
     {
         H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
                 // Filename left as null
-                .setInitScript("com/proofpoint/dbpool/h2.ddl")
+                .setInitScript("io/airlift/dbpool/h2.ddl")
                 .setCipher(Cipher.AES)
                 .setFilePassword("filePassword");
 
@@ -147,7 +147,7 @@ public class H2EmbeddedDataSourceTest
     {
         H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
                 .setFilename("")
-                .setInitScript("com/proofpoint/dbpool/h2.ddl")
+                .setInitScript("io/airlift/dbpool/h2.ddl")
                 .setCipher(Cipher.AES)
                 .setFilePassword("filePassword");
 

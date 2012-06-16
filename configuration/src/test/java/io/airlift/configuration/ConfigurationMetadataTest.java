@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.configuration;
+package io.airlift.configuration;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.inject.ConfigurationException;
-import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
+import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.Map;
 import java.util.Set;
 
-import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
+import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 import static org.testng.Assert.fail;
 
 public class ConfigurationMetadataTest

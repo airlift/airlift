@@ -1,8 +1,8 @@
-package com.proofpoint.node;
+package io.airlift.node;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.InetAddresses;
-import com.proofpoint.configuration.testing.ConfigAssertions;
+import io.airlift.configuration.testing.ConfigAssertions;
 import org.testng.annotations.Test;
 
 import java.util.Map;

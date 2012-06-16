@@ -1,4 +1,4 @@
-package com.proofpoint.event.client;
+package io.airlift.event.client;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
@@ -9,7 +9,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
-import com.proofpoint.event.client.EventField.EventFieldMapping;
+import io.airlift.event.client.EventField.EventFieldMapping;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -21,10 +21,10 @@ import java.util.Set;
 
 import static com.google.common.collect.Iterables.getFirst;
 import static com.google.common.collect.Maps.newTreeMap;
-import static com.proofpoint.event.client.AnnotationUtils.findAnnotatedMethods;
-import static com.proofpoint.event.client.EventDataType.getEventDataType;
-import static com.proofpoint.event.client.EventFieldMetadata.ContainerType;
-import static com.proofpoint.event.client.TypeParameterUtils.getTypeParameters;
+import static io.airlift.event.client.AnnotationUtils.findAnnotatedMethods;
+import static io.airlift.event.client.EventDataType.getEventDataType;
+import static io.airlift.event.client.EventFieldMetadata.ContainerType;
+import static io.airlift.event.client.TypeParameterUtils.getTypeParameters;
 
 class EventTypeMetadata<T>
 {

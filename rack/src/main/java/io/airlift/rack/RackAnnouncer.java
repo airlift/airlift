@@ -1,12 +1,12 @@
-package com.proofpoint.rack;
+package io.airlift.rack;
 
 import com.google.inject.Inject;
-import com.proofpoint.discovery.client.AnnouncementHttpServerInfo;
-import com.proofpoint.discovery.client.Announcer;
-import com.proofpoint.discovery.client.ServiceAnnouncement;
+import io.airlift.discovery.client.AnnouncementHttpServerInfo;
+import io.airlift.discovery.client.Announcer;
+import io.airlift.discovery.client.ServiceAnnouncement;
 
-import static com.proofpoint.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
-import static com.proofpoint.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static io.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
+import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 
 public class RackAnnouncer
 {

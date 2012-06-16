@@ -1,4 +1,4 @@
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
 import javax.inject.Qualifier;
 import java.lang.annotation.Retention;

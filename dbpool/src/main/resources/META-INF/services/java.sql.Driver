@@ -1,1 +1,1 @@
-com.proofpoint.dbpool.DiscoveryDriver
+io.airlift.dbpool.DiscoveryDriver

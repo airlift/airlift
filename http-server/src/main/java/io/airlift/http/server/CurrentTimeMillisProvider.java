@@ -1,4 +1,4 @@
-package com.proofpoint.http.server;
+package io.airlift.http.server;
 
 interface CurrentTimeMillisProvider
 {

@@ -1,17 +1,15 @@
-package com.proofpoint.json;
+package io.airlift.json;
 
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.google.inject.internal.MoreTypes;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 
-import static com.proofpoint.json.JsonCodecBinder.jsonCodecBinder;
+import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
 import static org.testng.Assert.assertNotNull;
 
 public class TestJsonCodecBinder

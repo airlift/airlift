@@ -1,4 +1,4 @@
-package com.proofpoint.event.client;
+package io.airlift.event.client;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -6,9 +6,9 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 
-import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
-import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
-import static com.proofpoint.http.client.HttpClientBinder.httpClientBinder;
+import static io.airlift.configuration.ConfigurationModule.bindConfig;
+import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
+import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
 import static org.weakref.jmx.guice.MBeanModule.newExporter;
 
 public class HttpEventModule implements Module

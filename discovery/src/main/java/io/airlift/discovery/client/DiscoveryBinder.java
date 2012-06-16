@@ -1,15 +1,15 @@
-package com.proofpoint.discovery.client;
+package io.airlift.discovery.client;
 
 import com.google.common.base.Preconditions;
 import com.google.inject.Binder;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.multibindings.Multibinder;
-import com.proofpoint.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
+import io.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
 
-import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
-import static com.proofpoint.discovery.client.ServiceAnnouncement.serviceAnnouncement;
-import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
+import static io.airlift.configuration.ConfigurationModule.bindConfig;
+import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static io.airlift.discovery.client.ServiceTypes.serviceType;
 
 public class DiscoveryBinder
 {

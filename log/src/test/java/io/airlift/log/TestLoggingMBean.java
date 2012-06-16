@@ -1,4 +1,4 @@
-package com.proofpoint.log;
+package io.airlift.log;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;

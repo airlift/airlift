@@ -1,12 +1,11 @@
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
-import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
+import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 
 import java.net.ConnectException;
-import java.net.URI;
 import java.util.List;
 
 public class StatusResponseHandler implements ResponseHandler<StatusResponse, RuntimeException>

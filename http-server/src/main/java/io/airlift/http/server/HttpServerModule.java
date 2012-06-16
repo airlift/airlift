@@ -13,20 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.http.server;
+package io.airlift.http.server;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.discovery.client.AnnouncementHttpServerInfo;
-import com.proofpoint.event.client.EventBinder;
+import io.airlift.configuration.ConfigurationModule;
+import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 import org.weakref.jmx.guice.MBeanModule;
 
 import javax.servlet.Filter;
 
-import static com.proofpoint.event.client.EventBinder.eventBinder;
+import static io.airlift.event.client.EventBinder.eventBinder;
 
 /**
  * Provides a fully configured instance of an http server,
@@ -50,7 +49,7 @@ import static com.proofpoint.event.client.EventBinder.eventBinder;
 public class HttpServerModule
         implements Module
 {
-    public static final String REALM_NAME = "Proofpoint";
+    public static final String REALM_NAME = "Airlift";
 
     @Override
     public void configure(Binder binder)

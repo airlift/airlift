@@ -85,6 +85,6 @@ class Launcher < Launch::AbstractLauncher
     command <<= "-Drackserver.rack-config-path=#{@options[:rack_config]}" if File.exists?(@options[:rack_config])
     command <<= "-Drackserver.static-content-path=#{@options[:static_content]}" if Dir.exists?(@options[:static_content])
     command += ['-cp', File.join(@install_path, 'lib', '*')]
-    command << 'com.proofpoint.rack.Main'
+    command << 'io.airlift.rack.Main'
   end
 end

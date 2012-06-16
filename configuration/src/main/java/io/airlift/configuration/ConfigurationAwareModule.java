@@ -1,4 +1,4 @@
-package com.proofpoint.configuration;
+package io.airlift.configuration;
 
 import com.google.common.annotations.Beta;
 import com.google.inject.Module;

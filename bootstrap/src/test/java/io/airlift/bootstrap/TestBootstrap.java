@@ -1,11 +1,10 @@
-package com.proofpoint.bootstrap;
+package io.airlift.bootstrap;
 
 import com.google.inject.Binder;
 import com.google.inject.ConfigurationException;
 import com.google.inject.Module;
 import com.google.inject.ProvisionException;
-import com.google.inject.spi.InstanceBinding;
-import com.proofpoint.testing.Assertions;
+import io.airlift.testing.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

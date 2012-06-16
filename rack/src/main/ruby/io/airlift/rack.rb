@@ -17,11 +17,11 @@ require 'rubygems'
 require 'rack'
 require 'rack/rewindable_input'
 
-module Proofpoint
+module Airlift
   module RackServer
     class Builder
       def initialize
-        @logger = com::proofpoint::log.Logger.get('Proofpoint::RackServer::Builder')
+        @logger = Java::io::airlift::log.Logger.get('Airlift::RackServer::Builder')
       end
 
       def build(filename)
@@ -103,7 +103,7 @@ module Proofpoint
         this_file = call_stack.first.split(':').first
         caller_call = call_stack.reject { |call| call =~ /#{this_file}\:|Forwardable/i }.first
         caller_name = caller_call.split(':').first.split('/').last + ":" + caller_call.split('`').last.chomp("'")
-        com::proofpoint::log.Logger.get(caller_name)
+        Java::io::airlift::log.Logger.get(caller_name)
       end
 
       def debug(msg)

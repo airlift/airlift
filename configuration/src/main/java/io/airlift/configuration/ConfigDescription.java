@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.configuration;
+package io.airlift.configuration;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

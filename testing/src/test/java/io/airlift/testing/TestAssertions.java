@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.testing;
+package io.airlift.testing;
 
 import com.google.common.collect.Sets;
 import org.testng.Assert;
@@ -24,8 +24,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static com.proofpoint.testing.TestAssertions.SubComparable.createSubComparable;
-import static com.proofpoint.testing.TestAssertions.SuperComparable.createSuperComparable;
+import static io.airlift.testing.TestAssertions.SubComparable.createSubComparable;
+import static io.airlift.testing.TestAssertions.SuperComparable.createSuperComparable;
 
 public class TestAssertions
 {

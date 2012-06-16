@@ -1,9 +1,9 @@
-package com.proofpoint.event.client;
+package io.airlift.event.client;
 
 import com.google.common.base.Preconditions;
-import com.proofpoint.configuration.Config;
-import com.proofpoint.configuration.ConfigDescription;
-import com.proofpoint.units.Duration;
+import io.airlift.configuration.Config;
+import io.airlift.configuration.ConfigDescription;
+import io.airlift.units.Duration;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;

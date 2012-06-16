@@ -1,4 +1,4 @@
-package com.proofpoint.discovery.client;
+package io.airlift.discovery.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
@@ -8,12 +8,12 @@ import com.google.common.collect.Iterables;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
-import com.proofpoint.http.client.HttpClient;
-import com.proofpoint.http.client.Request.Builder;
-import com.proofpoint.json.JsonCodec;
-import com.proofpoint.log.Logger;
-import com.proofpoint.node.NodeInfo;
-import com.proofpoint.units.Duration;
+import io.airlift.http.client.HttpClient;
+import io.airlift.http.client.Request.Builder;
+import io.airlift.json.JsonCodec;
+import io.airlift.log.Logger;
+import io.airlift.node.NodeInfo;
+import io.airlift.units.Duration;
 import org.weakref.jmx.Managed;
 
 import javax.annotation.PostConstruct;
@@ -29,8 +29,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static com.proofpoint.http.client.JsonResponseHandler.createJsonResponseHandler;
-import static com.proofpoint.http.client.Request.Builder.prepareGet;
+import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
+import static io.airlift.http.client.Request.Builder.prepareGet;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 public class ServiceInventory

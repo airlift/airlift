@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.platform.skeleton;
+package io.airlift.skeleton;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
-import com.proofpoint.discovery.client.DiscoveryBinder;
+import io.airlift.discovery.client.DiscoveryBinder;
 
 public class MainModule
         implements Module

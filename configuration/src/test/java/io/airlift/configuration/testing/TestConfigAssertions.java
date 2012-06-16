@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.configuration.testing;
+package io.airlift.configuration.testing;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.proofpoint.configuration.Config;
-import com.proofpoint.configuration.Config1;
-import com.proofpoint.configuration.LegacyConfig;
-import com.proofpoint.configuration.testing.ConfigAssertions.$$RecordedConfigData;
-import com.proofpoint.testing.Assertions;
+import io.airlift.configuration.Config;
+import io.airlift.configuration.Config1;
+import io.airlift.configuration.LegacyConfig;
+import io.airlift.configuration.testing.ConfigAssertions.$$RecordedConfigData;
+import io.airlift.testing.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

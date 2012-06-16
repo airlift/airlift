@@ -1,4 +1,4 @@
-package com.proofpoint.jmx.http.rpc;
+package io.airlift.jmx.http.rpc;
 
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorProvider;

@@ -1,4 +1,4 @@
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ArrayListMultimap;

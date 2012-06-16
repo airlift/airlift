@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.http.server.testing;
+package io.airlift.http.server.testing;
 
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
@@ -24,20 +23,18 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.proofpoint.configuration.ConfigurationFactory;
-import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.http.client.ApacheHttpClient;
-import com.proofpoint.http.client.HttpClient;
-import com.proofpoint.http.client.HttpClientConfig;
-import com.proofpoint.http.client.Request;
-import com.proofpoint.http.client.StatusResponseHandler;
-import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
-import com.proofpoint.http.server.HttpServerConfig;
-import com.proofpoint.http.server.HttpServerInfo;
-import com.proofpoint.http.server.TheServlet;
-import com.proofpoint.node.NodeInfo;
-import com.proofpoint.node.testing.TestingNodeModule;
-import com.proofpoint.units.Duration;
+import io.airlift.configuration.ConfigurationFactory;
+import io.airlift.configuration.ConfigurationModule;
+import io.airlift.http.client.ApacheHttpClient;
+import io.airlift.http.client.HttpClient;
+import io.airlift.http.client.HttpClientConfig;
+import io.airlift.http.client.StatusResponseHandler.StatusResponse;
+import io.airlift.http.server.HttpServerConfig;
+import io.airlift.http.server.HttpServerInfo;
+import io.airlift.http.server.TheServlet;
+import io.airlift.node.NodeInfo;
+import io.airlift.node.testing.TestingNodeModule;
+import io.airlift.units.Duration;
 import org.testng.annotations.Test;
 
 import javax.servlet.Filter;
@@ -55,15 +52,13 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.proofpoint.http.client.Request.Builder.prepareGet;
-import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
-import static com.proofpoint.testing.Assertions.assertGreaterThan;
+import static io.airlift.http.client.Request.Builder.prepareGet;
+import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static io.airlift.testing.Assertions.assertGreaterThan;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static javax.ws.rs.HttpMethod.GET;
 import static org.testng.Assert.assertEquals;
 
 public class TestTestingHttpServer

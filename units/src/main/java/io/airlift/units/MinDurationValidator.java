@@ -1,4 +1,4 @@
-package com.proofpoint.units;
+package io.airlift.units;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.rack;
+package io.airlift.rack;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -69,7 +69,7 @@ public class RackServlet
         env.remove("GEM_HOME");
         env.remove("GEM_PATH");
 
-        InputStream stream = Resources.getResource("proofpoint/rack.rb").openStream();
+        InputStream stream = Resources.getResource("io/airlift/rack.rb").openStream();
         try {
             runtime.loadFile("rack.rb", stream, false);
         }
@@ -77,7 +77,7 @@ public class RackServlet
             stream.close();
         }
 
-        IRubyObject builder = runtime.evalScriptlet("Proofpoint::RackServer::Builder.new");
+        IRubyObject builder = runtime.evalScriptlet("Airlift::RackServer::Builder.new");
 
         rackApplication = adapter.callMethod(builder, "build", new IRubyObject[] {
                 javaToRuby(runtime, rackScriptFile.getCanonicalPath())

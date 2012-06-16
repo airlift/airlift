@@ -1,8 +1,8 @@
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
-import com.proofpoint.testing.EquivalenceTester;
+import io.airlift.testing.EquivalenceTester;
 import org.testng.annotations.Test;
 
 import java.net.URI;

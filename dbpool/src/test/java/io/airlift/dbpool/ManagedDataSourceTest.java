@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.dbpool;
+package io.airlift.dbpool;
 
-import com.proofpoint.dbpool.MockConnectionPoolDataSource.MockConnection;
-import com.proofpoint.units.Duration;
+import io.airlift.dbpool.MockConnectionPoolDataSource.MockConnection;
+import io.airlift.units.Duration;
 import org.testng.annotations.Test;
 
 import javax.sql.ConnectionPoolDataSource;
@@ -34,9 +34,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.proofpoint.testing.Assertions.assertGreaterThan;
-import static com.proofpoint.testing.Assertions.assertInstanceOf;
-import static com.proofpoint.units.Duration.nanosSince;
+import static io.airlift.testing.Assertions.assertGreaterThan;
+import static io.airlift.testing.Assertions.assertInstanceOf;
+import static io.airlift.units.Duration.nanosSince;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;

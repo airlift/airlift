@@ -1,9 +1,9 @@
-package com.proofpoint.node;
+package io.airlift.node;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.proofpoint.configuration.ConfigurationModule;
+import io.airlift.configuration.ConfigurationModule;
 import org.weakref.jmx.guice.MBeanModule;
 
 public class NodeModule

@@ -1,4 +1,4 @@
-package com.proofpoint.testing;
+package io.airlift.testing;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;

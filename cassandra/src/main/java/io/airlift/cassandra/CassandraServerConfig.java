@@ -1,8 +1,8 @@
-package com.proofpoint.cassandra;
+package io.airlift.cassandra;
 
-import com.proofpoint.configuration.Config;
-import com.proofpoint.units.DataSize;
-import com.proofpoint.units.Duration;
+import io.airlift.configuration.Config;
+import io.airlift.units.DataSize;
+import io.airlift.units.Duration;
 import org.apache.cassandra.dht.ByteOrderedPartitioner;
 import org.apache.cassandra.dht.CollatingOrderPreservingPartitioner;
 import org.apache.cassandra.dht.OrderPreservingPartitioner;

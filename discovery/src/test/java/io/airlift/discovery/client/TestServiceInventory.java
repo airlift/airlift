@@ -1,11 +1,11 @@
-package com.proofpoint.discovery.client;
+package io.airlift.discovery.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
-import com.proofpoint.http.client.ApacheHttpClient;
-import com.proofpoint.json.JsonCodec;
-import com.proofpoint.node.NodeInfo;
+import io.airlift.http.client.ApacheHttpClient;
+import io.airlift.json.JsonCodec;
+import io.airlift.node.NodeInfo;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;

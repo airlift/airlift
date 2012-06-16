@@ -1,6 +1,6 @@
-package com.proofpoint.http.server;
+package io.airlift.http.server;
 
-import com.proofpoint.discovery.client.AnnouncementHttpServerInfo;
+import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 
 import javax.inject.Inject;
 import java.net.URI;

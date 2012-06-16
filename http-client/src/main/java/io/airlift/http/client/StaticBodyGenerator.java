@@ -1,4 +1,4 @@
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
 import java.io.OutputStream;
 import java.nio.charset.Charset;

@@ -1,7 +1,7 @@
-package com.proofpoint.node;
+package io.airlift.node;
 
 import com.google.common.net.InetAddresses;
-import com.proofpoint.testing.Assertions;
+import io.airlift.testing.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

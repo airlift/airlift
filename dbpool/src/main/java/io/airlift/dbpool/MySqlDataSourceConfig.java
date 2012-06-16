@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.dbpool;
+package io.airlift.dbpool;
 
-import com.proofpoint.configuration.Config;
-import com.proofpoint.configuration.DefunctConfig;
+import io.airlift.configuration.Config;
+import io.airlift.configuration.DefunctConfig;
 
 /**
  * see <a href="http://dev.mysql.com/doc/refman/5.0/en/connector-j-reference-configuration-properties.html">http://dev.mysql.com/doc/refman/5.0/en/connector-j-reference-configuration-properties.html</a>

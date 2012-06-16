@@ -15,7 +15,7 @@ This artifact can be used in combination with the assembly-descriptor project to
 1. Add the following dependency to the project pom.xml:
 
 <dependency>
-    <groupId>com.proofpoint</groupId>
+    <groupId>io.airlift</groupId>
     <artifactId>launcher</artifactId>
     <version>{version}</version>
     <classifier>bin</classifier>
@@ -33,7 +33,7 @@ This artifact can be used in combination with the assembly-descriptor project to
    </configuration>
    <dependencies>
       <dependency>
-         <groupId>com.proofpoint</groupId>
+         <groupId>io.airlift</groupId>
          <artifactId>distribution-assembly-descriptor</artifactId>
          <version>{version}</version>
       </dependency>

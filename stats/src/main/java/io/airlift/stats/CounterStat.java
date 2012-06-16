@@ -1,4 +1,4 @@
-package com.proofpoint.stats;
+package io.airlift.stats;
 
 import com.google.common.annotations.Beta;
 import org.weakref.jmx.Managed;

@@ -1,11 +1,10 @@
-package com.proofpoint.node.testing;
+package io.airlift.node.testing;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.node.NodeConfig;
-import com.proofpoint.node.NodeInfo;
+import io.airlift.node.NodeConfig;
+import io.airlift.node.NodeInfo;
 import org.weakref.jmx.guice.MBeanModule;
 
 import java.util.Random;

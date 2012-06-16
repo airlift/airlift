@@ -1,8 +1,8 @@
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Charsets;
-import com.proofpoint.json.JsonCodec;
+import io.airlift.json.JsonCodec;
 
 import java.io.OutputStream;
 

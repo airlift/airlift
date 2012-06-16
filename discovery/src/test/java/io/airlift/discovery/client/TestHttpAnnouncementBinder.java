@@ -1,4 +1,4 @@
-package com.proofpoint.discovery.client;
+package io.airlift.discovery.client;
 
 import com.google.common.collect.Iterables;
 import com.google.inject.Binder;
@@ -7,14 +7,14 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
-import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
+import io.airlift.discovery.client.testing.TestingDiscoveryModule;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.net.URI;
 import java.util.Set;
 
-import static com.proofpoint.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 
 public class TestHttpAnnouncementBinder
 {

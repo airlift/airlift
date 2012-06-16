@@ -1,4 +1,4 @@
-package com.proofpoint.event.client;
+package io.airlift.event.client;
 
 import com.google.common.collect.ImmutableMap;
 import org.codehaus.jackson.JsonGenerator;
@@ -10,8 +10,8 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.proofpoint.event.client.EventJsonSerializerV2.createEventJsonSerializer;
-import static com.proofpoint.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
+import static io.airlift.event.client.EventJsonSerializerV2.createEventJsonSerializer;
+import static io.airlift.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 
 public class JsonEventSerializer
 {

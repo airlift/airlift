@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.bootstrap;
+package io.airlift.bootstrap;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
@@ -26,21 +26,21 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Stage;
 import com.google.inject.spi.Message;
-import com.proofpoint.bootstrap.LoggingWriter.Type;
-import com.proofpoint.configuration.ConfigurationAwareModule;
-import com.proofpoint.configuration.ConfigurationFactory;
-import com.proofpoint.configuration.ConfigurationInspector;
-import com.proofpoint.configuration.ConfigurationInspector.ConfigAttribute;
-import com.proofpoint.configuration.ConfigurationInspector.ConfigRecord;
-import com.proofpoint.configuration.ConfigurationLoader;
-import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.configuration.ConfigurationValidator;
-import com.proofpoint.configuration.ValidationErrorModule;
-import com.proofpoint.configuration.WarningsMonitor;
-import com.proofpoint.jmx.JmxInspector;
-import com.proofpoint.log.Logger;
-import com.proofpoint.log.Logging;
-import com.proofpoint.log.LoggingConfiguration;
+import io.airlift.bootstrap.LoggingWriter.Type;
+import io.airlift.configuration.ConfigurationAwareModule;
+import io.airlift.configuration.ConfigurationFactory;
+import io.airlift.configuration.ConfigurationInspector;
+import io.airlift.configuration.ConfigurationInspector.ConfigAttribute;
+import io.airlift.configuration.ConfigurationInspector.ConfigRecord;
+import io.airlift.configuration.ConfigurationLoader;
+import io.airlift.configuration.ConfigurationModule;
+import io.airlift.configuration.ConfigurationValidator;
+import io.airlift.configuration.ValidationErrorModule;
+import io.airlift.configuration.WarningsMonitor;
+import io.airlift.jmx.JmxInspector;
+import io.airlift.log.Logger;
+import io.airlift.log.Logging;
+import io.airlift.log.LoggingConfiguration;
 
 import java.io.PrintWriter;
 import java.util.Collections;

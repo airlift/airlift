@@ -1,6 +1,6 @@
-package com.proofpoint.http.server;
+package io.airlift.http.server;
 
-import com.proofpoint.tracetoken.TraceTokenManager;
+import io.airlift.tracetoken.TraceTokenManager;
 
 import javax.inject.Inject;
 import javax.servlet.Filter;
@@ -37,7 +37,7 @@ class TraceTokenFilter
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 
-        String token = request.getHeader("X-Proofpoint-TraceToken");
+        String token = request.getHeader("X-Airlift-TraceToken");
         if (token != null) {
             traceTokenManager.registerRequestToken(token);
         }

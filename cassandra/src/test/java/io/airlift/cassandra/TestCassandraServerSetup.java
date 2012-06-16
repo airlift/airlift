@@ -1,9 +1,9 @@
-package com.proofpoint.cassandra;
+package io.airlift.cassandra;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.proofpoint.cassandra.testing.CassandraServerSetup;
-import com.proofpoint.cassandra.testing.TestingCassandraModule;
+import io.airlift.cassandra.testing.CassandraServerSetup;
+import io.airlift.cassandra.testing.TestingCassandraModule;
 import me.prettyprint.cassandra.model.AllOneConsistencyLevelPolicy;
 import me.prettyprint.cassandra.serializers.StringSerializer;
 import me.prettyprint.cassandra.service.CassandraHostConfigurator;
@@ -27,7 +27,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.Arrays;
 
-import static com.proofpoint.testing.Assertions.assertNotEquals;
+import static io.airlift.testing.Assertions.assertNotEquals;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -97,14 +97,14 @@ public class TestCassandraServerSetup
 
         // put data
         ColumnFamilyUpdater<String, String> updater = template.createUpdater(key);
-        updater.setString("domain", "www.proofpoint.com");
+        updater.setString("domain", "www.test.com");
         updater.setLong("time", System.currentTimeMillis());
         template.update(updater);
 
         // get data
         ColumnFamilyResult<String, String> res = template.queryColumns(key);
         assertEquals(res.getColumnNames(), Arrays.asList("domain", "time"));
-        assertEquals(res.getString("domain"), "www.proofpoint.com");
+        assertEquals(res.getString("domain"), "www.test.com");
 
         // delete column data
         template.deleteColumn(key, "domain");

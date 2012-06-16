@@ -1,8 +1,8 @@
-package com.proofpoint.cassandra.testing;
+package io.airlift.cassandra.testing;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
-import com.proofpoint.cassandra.CassandraServerInfo;
+import io.airlift.cassandra.CassandraServerInfo;
 
 public class TestingCassandraModule
     implements Module

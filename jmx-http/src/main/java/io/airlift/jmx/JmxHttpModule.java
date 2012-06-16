@@ -1,11 +1,11 @@
-package com.proofpoint.jmx;
+package io.airlift.jmx;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.proofpoint.discovery.client.DiscoveryBinder;
+import io.airlift.discovery.client.DiscoveryBinder;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.proofpoint.json.JsonBinder.jsonBinder;
+import static io.airlift.json.JsonBinder.jsonBinder;
 
 public class JmxHttpModule implements Module
 {

@@ -1,4 +1,4 @@
-package com.proofpoint.discovery.client.testing;
+package io.airlift.discovery.client.testing;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Binder;
@@ -7,17 +7,15 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.proofpoint.discovery.client.Announcer;
-import com.proofpoint.discovery.client.DiscoveryAnnouncementClient;
-import com.proofpoint.discovery.client.DiscoveryLookupClient;
-import com.proofpoint.discovery.client.ForDiscoveryClient;
-import com.proofpoint.discovery.client.ServiceAnnouncement;
-import com.proofpoint.discovery.client.ServiceSelectorFactory;
+import io.airlift.discovery.client.Announcer;
+import io.airlift.discovery.client.DiscoveryAnnouncementClient;
+import io.airlift.discovery.client.DiscoveryLookupClient;
+import io.airlift.discovery.client.ForDiscoveryClient;
+import io.airlift.discovery.client.ServiceAnnouncement;
+import io.airlift.discovery.client.ServiceSelectorFactory;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-
-import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 
 public class TestingDiscoveryModule implements Module
 {

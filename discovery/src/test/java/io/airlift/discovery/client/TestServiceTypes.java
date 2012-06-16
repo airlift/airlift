@@ -1,10 +1,10 @@
-package com.proofpoint.discovery.client;
+package io.airlift.discovery.client;
 
 import com.google.common.base.Throwables;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
+import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 
 public class TestServiceTypes
 {

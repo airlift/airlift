@@ -1,4 +1,4 @@
-package com.proofpoint.event.client;
+package io.airlift.event.client;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -13,7 +13,7 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.Set;
 
-import static com.proofpoint.event.client.EventJsonSerializer.createEventJsonSerializer;
+import static io.airlift.event.client.EventJsonSerializer.createEventJsonSerializer;
 
 public class JsonEventWriter
 {

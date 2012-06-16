@@ -1,4 +1,4 @@
-package com.proofpoint.json;
+package io.airlift.json;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import static com.proofpoint.json.JsonBinder.jsonBinder;
+import static io.airlift.json.JsonBinder.jsonBinder;
 import static org.joda.time.DateTimeZone.UTC;
 import static org.testng.Assert.assertEquals;
 

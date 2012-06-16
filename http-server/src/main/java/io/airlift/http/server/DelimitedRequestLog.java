@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.http.server;
+package io.airlift.http.server;
 
-import com.proofpoint.event.client.EventClient;
-import com.proofpoint.tracetoken.TraceTokenManager;
+import io.airlift.event.client.EventClient;
+import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 
-import static com.proofpoint.http.server.HttpRequestEvent.createHttpRequestEvent;
+import static io.airlift.http.server.HttpRequestEvent.createHttpRequestEvent;
 
 class DelimitedRequestLog
         implements RequestLog

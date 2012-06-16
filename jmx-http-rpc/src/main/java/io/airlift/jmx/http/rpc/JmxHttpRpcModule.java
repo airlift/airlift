@@ -1,4 +1,4 @@
-package com.proofpoint.jmx.http.rpc;
+package io.airlift.jmx.http.rpc;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
@@ -8,11 +8,11 @@ import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.proofpoint.discovery.client.ServiceAnnouncement;
-import com.proofpoint.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
-import com.proofpoint.http.server.HttpServerInfo;
-import com.proofpoint.http.server.TheAdminServlet;
-import com.proofpoint.node.NodeInfo;
+import io.airlift.discovery.client.ServiceAnnouncement;
+import io.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
+import io.airlift.http.server.HttpServerInfo;
+import io.airlift.http.server.TheAdminServlet;
+import io.airlift.node.NodeInfo;
 
 import javax.servlet.Servlet;
 
@@ -20,9 +20,9 @@ import java.lang.annotation.Annotation;
 import java.net.URI;
 import java.util.Map;
 
-import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
-import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
-import static com.proofpoint.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static io.airlift.configuration.ConfigurationModule.bindConfig;
+import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
+import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 
 public class JmxHttpRpcModule implements Module
 {

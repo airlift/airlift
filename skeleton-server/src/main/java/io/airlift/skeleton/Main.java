@@ -13,23 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.platform.skeleton;
+package io.airlift.skeleton;
 
 import com.google.inject.Injector;
-import com.proofpoint.bootstrap.Bootstrap;
-import com.proofpoint.discovery.client.Announcer;
-import com.proofpoint.discovery.client.DiscoveryModule;
-import com.proofpoint.event.client.HttpEventModule;
-import com.proofpoint.jmx.JmxHttpModule;
-import com.proofpoint.http.server.HttpServerModule;
-import com.proofpoint.jaxrs.JaxrsModule;
-import com.proofpoint.jmx.JmxModule;
-import com.proofpoint.jmx.http.rpc.JmxHttpRpcModule;
-import com.proofpoint.json.JsonModule;
-import com.proofpoint.log.LogJmxModule;
-import com.proofpoint.log.Logger;
-import com.proofpoint.node.NodeModule;
-import com.proofpoint.tracetoken.TraceTokenModule;
+import io.airlift.bootstrap.Bootstrap;
+import io.airlift.discovery.client.Announcer;
+import io.airlift.discovery.client.DiscoveryModule;
+import io.airlift.event.client.HttpEventModule;
+import io.airlift.jmx.JmxHttpModule;
+import io.airlift.http.server.HttpServerModule;
+import io.airlift.jaxrs.JaxrsModule;
+import io.airlift.jmx.JmxModule;
+import io.airlift.jmx.http.rpc.JmxHttpRpcModule;
+import io.airlift.json.JsonModule;
+import io.airlift.log.LogJmxModule;
+import io.airlift.log.Logger;
+import io.airlift.node.NodeModule;
+import io.airlift.tracetoken.TraceTokenModule;
 import org.weakref.jmx.guice.MBeanModule;
 
 public class Main

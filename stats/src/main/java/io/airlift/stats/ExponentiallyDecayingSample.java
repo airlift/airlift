@@ -19,7 +19,7 @@ Copied from https://github.com/codahale/metrics
 
 */
 
-package com.proofpoint.stats;
+package io.airlift.stats;
 
 import java.util.ArrayList;
 import java.util.Arrays;

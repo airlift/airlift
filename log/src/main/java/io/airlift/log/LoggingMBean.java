@@ -1,4 +1,4 @@
-package com.proofpoint.log;
+package io.airlift.log;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;

@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.dbpool;
+package io.airlift.dbpool;
 
-import com.proofpoint.stats.TimedStat;
-import com.proofpoint.units.Duration;
+import io.airlift.stats.TimedStat;
+import io.airlift.units.Duration;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 

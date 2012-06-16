@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.configuration;
+package io.airlift.configuration;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.inject.Key;
-import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
+import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 
 import java.lang.reflect.Method;
 import java.util.SortedSet;

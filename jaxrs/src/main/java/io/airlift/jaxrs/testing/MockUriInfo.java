@@ -1,4 +1,4 @@
-package com.proofpoint.jaxrs.testing;
+package io.airlift.jaxrs.testing;
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,8 @@ import java.net.URLDecoder;
 import java.util.List;
 import java.util.Map;
 
-import static com.proofpoint.jaxrs.testing.MockUriInfo.GuavaMultivaluedMap.createGuavaMultivaluedMap;
-import static com.proofpoint.jaxrs.testing.MockUriInfo.GuavaMultivaluedMap.emptyMultivaluedMap;
+import static io.airlift.jaxrs.testing.MockUriInfo.GuavaMultivaluedMap.createGuavaMultivaluedMap;
+import static io.airlift.jaxrs.testing.MockUriInfo.GuavaMultivaluedMap.emptyMultivaluedMap;
 
 public class MockUriInfo implements UriInfo
 {

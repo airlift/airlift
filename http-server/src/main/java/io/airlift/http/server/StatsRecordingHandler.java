@@ -1,6 +1,6 @@
-package com.proofpoint.http.server;
+package io.airlift.http.server;
 
-import com.proofpoint.units.Duration;
+import io.airlift.units.Duration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;

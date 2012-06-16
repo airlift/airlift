@@ -1,9 +1,9 @@
-package com.proofpoint.event.client.privateclass;
+package io.airlift.event.client.privateclass;
 
 import com.google.common.io.NullOutputStream;
-import com.proofpoint.event.client.EventField;
-import com.proofpoint.event.client.EventType;
-import com.proofpoint.event.client.JsonEventSerializer;
+import io.airlift.event.client.EventField;
+import io.airlift.event.client.EventType;
+import io.airlift.event.client.JsonEventSerializer;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
 import org.testng.annotations.Test;

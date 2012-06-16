@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
 import com.google.common.net.MediaType;
-import com.proofpoint.http.client.StringResponseHandler.StringResponse;
+import io.airlift.http.client.StringResponseHandler.StringResponse;
 import org.apache.http.HttpHeaders;
 
 import java.io.IOException;

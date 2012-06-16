@@ -1,4 +1,4 @@
-package com.proofpoint.json;
+package io.airlift.json;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;

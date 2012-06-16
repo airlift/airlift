@@ -1,4 +1,4 @@
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
 import com.google.common.annotations.Beta;
 import com.google.inject.Inject;
@@ -12,8 +12,8 @@ import java.lang.annotation.Annotation;
 import java.util.Set;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
-import static com.proofpoint.http.client.CompositeQualifierImpl.compositeQualifier;
+import static io.airlift.configuration.ConfigurationModule.bindConfig;
+import static io.airlift.http.client.CompositeQualifierImpl.compositeQualifier;
 
 @Beta
 class HttpClientModule

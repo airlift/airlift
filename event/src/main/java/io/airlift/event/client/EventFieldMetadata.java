@@ -1,4 +1,4 @@
-package com.proofpoint.event.client;
+package io.airlift.event.client;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.Objects.firstNonNull;
-import static com.proofpoint.event.client.EventDataType.validateFieldValueType;
+import static io.airlift.event.client.EventDataType.validateFieldValueType;
 
 class EventFieldMetadata
 {

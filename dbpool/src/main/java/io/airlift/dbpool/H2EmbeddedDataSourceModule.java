@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.dbpool;
+package io.airlift.dbpool;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
@@ -29,7 +29,7 @@ import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;
 
-import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
+import static io.airlift.configuration.ConfigurationModule.bindConfig;
 
 public class H2EmbeddedDataSourceModule extends MBeanModule
 {

@@ -1,4 +1,4 @@
-package com.proofpoint.discovery.client;
+package io.airlift.discovery.client;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -8,19 +8,19 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
-import com.proofpoint.configuration.ConfigurationFactory;
-import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.discovery.client.testing.InMemoryDiscoveryClient;
-import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
-import com.proofpoint.node.testing.TestingNodeModule;
+import io.airlift.configuration.ConfigurationFactory;
+import io.airlift.configuration.ConfigurationModule;
+import io.airlift.discovery.client.testing.InMemoryDiscoveryClient;
+import io.airlift.discovery.client.testing.TestingDiscoveryModule;
+import io.airlift.node.testing.TestingNodeModule;
 import org.testng.annotations.Test;
 
 import java.net.URI;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
-import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
-import static com.proofpoint.discovery.client.ServiceAnnouncement.serviceAnnouncement;
-import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
+import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
+import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static io.airlift.discovery.client.ServiceTypes.serviceType;
 import static org.testng.Assert.assertEquals;
 
 public class TestHttpServiceSelectorBinder

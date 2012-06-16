@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.proofpoint.platform</groupId>
+    <groupId>io.airlift</groupId>
     <artifactId>library</artifactId>
     <version>0.65-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Library POM</name>
     <description>Library POM</description>
-    <url>http://github.com/proofpoint/platform</url>
+    <url>http://github.com/airlift/airlift</url>
 
     <inceptionYear>2010</inceptionYear>
     <organization>
-        <name>Proofpoint, Inc.</name>
-        <url>http://www.proofpoint.com</url>
+        <name>Airlift</name>
     </organization>
     <licenses>
         <license>
@@ -35,9 +34,9 @@
     </properties>
 
     <scm>
-        <connection>scm:git:git://github.com/proofpoint/platform.git</connection>
-        <developerConnection>scm:git:git@github.com:proofpoint/platform.git</developerConnection>
-        <url>http://github.com/proofpoint/platform/tree/master</url>
+        <connection>scm:git:git://github.com/airlift/airlift.git</connection>
+        <developerConnection>scm:git:git@github.com:airlift/airlift.git</developerConnection>
+        <url>http://github.com/airlift/airlift/tree/master</url>
     </scm>
 
     <prerequisites>
@@ -69,79 +68,79 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>bootstrap</artifactId>
                 <version>0.65-SNAPSHOT</version>
             </dependency>
 
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>configuration</artifactId>
                 <version>0.65-SNAPSHOT</version>
             </dependency>
 
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>dbpool</artifactId>
                 <version>0.65-SNAPSHOT</version>
             </dependency>
 
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>discovery-experimental</artifactId>
                 <version>0.65-SNAPSHOT</version>
             </dependency>
 
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>experimental</artifactId>
                 <version>0.62-SNAPSHOT</version>
             </dependency>
 
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>event-experimental</artifactId>
                 <version>0.65-SNAPSHOT</version>
             </dependency>
 
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>jaxrs</artifactId>
                 <version>0.65-SNAPSHOT</version>
             </dependency>
 
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>http-server</artifactId>
                 <version>0.65-SNAPSHOT</version>
             </dependency>
 
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>http-client-experimental</artifactId>
                 <version>0.65-SNAPSHOT</version>
             </dependency>
 
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>json</artifactId>
                 <version>0.65-SNAPSHOT</version>
             </dependency>
 
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>jmx</artifactId>
                 <version>0.65-SNAPSHOT</version>
             </dependency>
 
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>jmx-http-rpc-experimental</artifactId>
                 <version>0.65-SNAPSHOT</version>
             </dependency>
 
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>launcher</artifactId>
                 <version>0.65-SNAPSHOT</version>
                 <classifier>bin</classifier>
@@ -149,43 +148,43 @@
             </dependency>
 
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>log</artifactId>
                 <version>0.65-SNAPSHOT</version>
             </dependency>
 
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>node</artifactId>
                 <version>0.65-SNAPSHOT</version>
             </dependency>
 
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>stats</artifactId>
                 <version>0.65-SNAPSHOT</version>
             </dependency>
 
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>units</artifactId>
                 <version>0.65-SNAPSHOT</version>
             </dependency>
 
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>testing</artifactId>
                 <version>0.65-SNAPSHOT</version>
             </dependency>
 
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>trace-token</artifactId>
                 <version>0.65-SNAPSHOT</version>
             </dependency>
 
             <dependency>
-                <groupId>com.proofpoint.platform</groupId>
+                <groupId>io.airlift</groupId>
                 <artifactId>jmx-http-experimental</artifactId>
                 <version>0.65-SNAPSHOT</version>
             </dependency>

@@ -1,14 +1,14 @@
-package com.proofpoint.discovery.client.testing;
+package io.airlift.discovery.client.testing;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.proofpoint.discovery.client.ServiceDescriptor;
-import com.proofpoint.discovery.client.ServiceSelector;
+import io.airlift.discovery.client.ServiceDescriptor;
+import io.airlift.discovery.client.ServiceSelector;
 
 import java.util.List;
 
-import static com.proofpoint.discovery.client.ServiceSelectorConfig.DEFAULT_POOL;
+import static io.airlift.discovery.client.ServiceSelectorConfig.DEFAULT_POOL;
 
 public class StaticServiceSelector implements ServiceSelector
 {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.json;
+package io.airlift.json;
 
 import com.google.inject.TypeLiteral;
 import org.testng.annotations.Test;
@@ -21,7 +21,7 @@ import org.testng.annotations.Test;
 import java.util.List;
 import java.util.Map;
 
-import static com.proofpoint.json.JsonCodec.*;
+import static io.airlift.json.JsonCodec.*;
 
 public class TestJsonCodec
 {

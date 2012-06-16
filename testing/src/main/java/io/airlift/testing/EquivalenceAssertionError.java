@@ -1,8 +1,8 @@
-package com.proofpoint.testing;
+package io.airlift.testing;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.proofpoint.testing.EquivalenceTester.ElementCheckFailure;
+import io.airlift.testing.EquivalenceTester.ElementCheckFailure;
 
 import java.util.List;
 

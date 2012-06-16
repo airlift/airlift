@@ -17,7 +17,7 @@ DEALINGS IN THE SOFTWARE.
 
 Copied from https://github.com/codahale/metrics
 */
-package com.proofpoint.stats;
+package io.airlift.stats;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;

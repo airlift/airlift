@@ -1,17 +1,17 @@
-package com.proofpoint.discovery.client;
+package io.airlift.discovery.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
-import com.proofpoint.json.JsonCodec;
+import io.airlift.json.JsonCodec;
 import org.testng.annotations.Test;
 
 import java.util.Map;
 
-import static com.proofpoint.discovery.client.ServiceAnnouncement.serviceAnnouncement;
-import static com.proofpoint.json.JsonCodec.jsonCodec;
-import static com.proofpoint.json.JsonCodec.mapJsonCodec;
-import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
+import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static io.airlift.json.JsonCodec.jsonCodec;
+import static io.airlift.json.JsonCodec.mapJsonCodec;
+import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 

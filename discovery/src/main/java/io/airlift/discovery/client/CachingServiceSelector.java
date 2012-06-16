@@ -1,10 +1,10 @@
-package com.proofpoint.discovery.client;
+package io.airlift.discovery.client;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.CheckedFuture;
-import com.proofpoint.log.Logger;
-import com.proofpoint.units.Duration;
+import io.airlift.log.Logger;
+import io.airlift.units.Duration;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
@@ -14,7 +14,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.proofpoint.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
+import static io.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
 
 public class CachingServiceSelector implements ServiceSelector
 {

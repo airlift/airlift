@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.testing;
+package io.airlift.testing;
 
 /**
  * Derived from http://code.google.com/p/kawala
@@ -30,7 +30,7 @@ import java.util.List;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static java.lang.String.format;
-import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.*;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.*;
 
 /**
  * Equivalence tester streamlining tests of {@link #equals(Object)} and {@link #hashCode} methods. Using this tester makes it

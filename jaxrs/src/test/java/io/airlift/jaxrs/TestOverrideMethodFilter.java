@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.jaxrs;
+package io.airlift.jaxrs;
 
 import com.sun.jersey.core.header.InBoundHeaders;
 import com.sun.jersey.spi.container.ContainerRequest;
@@ -26,7 +26,7 @@ import javax.ws.rs.core.Response;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
 
-import static com.proofpoint.testing.Assertions.assertEqualsIgnoreCase;
+import static io.airlift.testing.Assertions.assertEqualsIgnoreCase;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;

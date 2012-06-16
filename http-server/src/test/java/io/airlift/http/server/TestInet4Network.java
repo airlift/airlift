@@ -1,4 +1,4 @@
-package com.proofpoint.http.server;
+package io.airlift.http.server;
 
 import com.google.common.net.InetAddresses;
 import org.testng.annotations.DataProvider;
@@ -6,8 +6,8 @@ import org.testng.annotations.Test;
 
 import java.net.Inet4Address;
 
-import static com.proofpoint.testing.EquivalenceTester.comparisonTester;
-import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
+import static io.airlift.testing.EquivalenceTester.comparisonTester;
+import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;

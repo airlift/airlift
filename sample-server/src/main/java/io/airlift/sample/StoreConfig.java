@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.platform.sample;
+package io.airlift.sample;
 
 import com.google.common.base.Preconditions;
-import com.proofpoint.configuration.Config;
-import com.proofpoint.configuration.LegacyConfig;
-import com.proofpoint.units.Duration;
+import io.airlift.configuration.Config;
+import io.airlift.configuration.LegacyConfig;
+import io.airlift.units.Duration;
 
 import javax.validation.constraints.NotNull;
 import java.util.concurrent.TimeUnit;

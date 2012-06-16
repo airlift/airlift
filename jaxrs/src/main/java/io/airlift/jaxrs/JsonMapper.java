@@ -1,9 +1,9 @@
-package com.proofpoint.jaxrs;
+package io.airlift.jaxrs;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import com.proofpoint.log.Logger;
+import io.airlift.log.Logger;
 import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.spi.container.WebApplication;
 import org.apache.bval.jsr303.ApacheValidationProvider;

@@ -1,4 +1,4 @@
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
 import com.google.common.annotations.Beta;
 import com.google.common.annotations.VisibleForTesting;
@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.CountingInputStream;
 import com.google.common.io.CountingOutputStream;
-import com.proofpoint.units.Duration;
+import io.airlift.units.Duration;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -34,7 +34,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Beta
-public class ApacheHttpClient implements com.proofpoint.http.client.HttpClient
+public class ApacheHttpClient implements io.airlift.http.client.HttpClient
 {
     private final RequestStats stats = new RequestStats();
     private final HttpClient httpClient;

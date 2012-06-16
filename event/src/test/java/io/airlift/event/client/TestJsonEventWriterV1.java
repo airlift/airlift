@@ -1,4 +1,4 @@
-package com.proofpoint.event.client;
+package io.airlift.event.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.proofpoint.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
+import static io.airlift.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 import static org.testng.Assert.assertEquals;
 
 public class TestJsonEventWriterV1

@@ -1,4 +1,4 @@
-package com.proofpoint.tracetoken;
+package io.airlift.tracetoken;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;

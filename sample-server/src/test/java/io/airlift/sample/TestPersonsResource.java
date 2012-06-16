@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.platform.sample;
+package io.airlift.sample;
 
-import com.proofpoint.event.client.InMemoryEventClient;
-import com.proofpoint.event.client.NullEventClient;
+import io.airlift.event.client.InMemoryEventClient;
+import io.airlift.event.client.NullEventClient;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -24,7 +24,7 @@ import javax.ws.rs.core.Response;
 import java.util.Collection;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static com.proofpoint.testing.Assertions.assertInstanceOf;
+import static io.airlift.testing.Assertions.assertInstanceOf;
 import static org.testng.Assert.assertEquals;
 
 public class TestPersonsResource

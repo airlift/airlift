@@ -1,4 +1,4 @@
-package com.proofpoint.http.server;
+package io.airlift.http.server;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.InetAddresses;
@@ -6,7 +6,7 @@ import com.google.common.net.InetAddresses;
 import java.net.Inet4Address;
 import java.util.List;
 
-import static com.proofpoint.http.server.Inet4Network.fromCidr;
+import static io.airlift.http.server.Inet4Network.fromCidr;
 
 class Inet4Networks
 {

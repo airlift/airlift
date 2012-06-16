@@ -1,11 +1,11 @@
-package com.proofpoint.discovery.client;
+package io.airlift.discovery.client;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.proofpoint.discovery.client.testing.InMemoryDiscoveryClient;
-import com.proofpoint.node.NodeInfo;
-import com.proofpoint.testing.Assertions;
+import io.airlift.discovery.client.testing.InMemoryDiscoveryClient;
+import io.airlift.node.NodeInfo;
+import io.airlift.testing.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;

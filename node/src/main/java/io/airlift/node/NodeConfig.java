@@ -1,8 +1,8 @@
-package com.proofpoint.node;
+package io.airlift.node;
 
 import com.google.common.net.InetAddresses;
-import com.proofpoint.configuration.Config;
-import com.proofpoint.configuration.LegacyConfig;
+import io.airlift.configuration.Config;
+import io.airlift.configuration.LegacyConfig;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;

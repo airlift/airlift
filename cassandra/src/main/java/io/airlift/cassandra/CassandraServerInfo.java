@@ -1,4 +1,4 @@
-package com.proofpoint.cassandra;
+package io.airlift.cassandra;
 
 import java.net.InetAddress;
 

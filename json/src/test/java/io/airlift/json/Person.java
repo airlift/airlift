@@ -1,4 +1,4 @@
-package com.proofpoint.json;
+package io.airlift.json;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;

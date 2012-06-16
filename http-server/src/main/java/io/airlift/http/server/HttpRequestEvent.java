@@ -1,11 +1,11 @@
-package com.proofpoint.http.server;
+package io.airlift.http.server;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.proofpoint.event.client.EventField;
-import com.proofpoint.event.client.EventType;
-import com.proofpoint.tracetoken.TraceTokenManager;
+import io.airlift.event.client.EventField;
+import io.airlift.event.client.EventType;
+import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.joda.time.DateTime;
@@ -13,7 +13,7 @@ import org.joda.time.DateTime;
 import java.security.Principal;
 import java.util.Enumeration;
 
-import static com.proofpoint.event.client.EventField.EventFieldMapping.TIMESTAMP;
+import static io.airlift.event.client.EventField.EventFieldMapping.TIMESTAMP;
 import static java.lang.Math.max;
 
 @EventType("HttpRequest")

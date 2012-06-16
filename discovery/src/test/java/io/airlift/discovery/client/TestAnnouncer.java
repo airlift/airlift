@@ -1,11 +1,11 @@
-package com.proofpoint.discovery.client;
+package io.airlift.discovery.client;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.proofpoint.discovery.client.testing.InMemoryDiscoveryClient;
-import com.proofpoint.node.NodeConfig;
-import com.proofpoint.node.NodeInfo;
-import com.proofpoint.units.Duration;
+import io.airlift.discovery.client.testing.InMemoryDiscoveryClient;
+import io.airlift.node.NodeConfig;
+import io.airlift.node.NodeInfo;
+import io.airlift.units.Duration;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
+import static io.airlift.discovery.client.ServiceTypes.serviceType;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;

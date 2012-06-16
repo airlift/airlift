@@ -1,4 +1,4 @@
-package com.proofpoint.jaxrs;
+package io.airlift.jaxrs;
 
 import org.codehaus.jackson.JsonProcessingException;
 import org.codehaus.jackson.map.ObjectMapper;

@@ -1,13 +1,13 @@
-package com.proofpoint.cassandra;
+package io.airlift.cassandra;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.common.net.InetAddresses;
-import com.proofpoint.units.DataSize;
-import com.proofpoint.node.NodeInfo;
-import com.proofpoint.units.Duration;
+import io.airlift.units.DataSize;
+import io.airlift.node.NodeInfo;
+import io.airlift.units.Duration;
 import org.apache.cassandra.config.ConfigurationException;
 import org.apache.cassandra.service.CassandraDaemon;
 import org.apache.thrift.transport.TTransportException;

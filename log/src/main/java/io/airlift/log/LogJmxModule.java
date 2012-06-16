@@ -1,4 +1,4 @@
-package com.proofpoint.log;
+package io.airlift.log;
 
 import com.google.common.annotations.Beta;
 import com.google.inject.Binder;
@@ -17,6 +17,6 @@ public class LogJmxModule
         binder.disableCircularProxies();
 
         binder.bind(LoggingMBean.class).in(Scopes.SINGLETON);
-        MBeanModule.newExporter(binder).export(LoggingMBean.class).as("com.proofpoint.log:name=Logging");
+        MBeanModule.newExporter(binder).export(LoggingMBean.class).as("io.airlift.log:name=Logging");
     }
 }

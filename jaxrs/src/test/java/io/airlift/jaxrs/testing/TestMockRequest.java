@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.jaxrs.testing;
+package io.airlift.jaxrs.testing;
 
 import com.google.common.collect.ImmutableList;
-import com.proofpoint.jaxrs.testing.MockRequest.ConditionalRequestBuilder;
+import io.airlift.jaxrs.testing.MockRequest.ConditionalRequestBuilder;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -29,11 +29,11 @@ import javax.ws.rs.core.Variant;
 import java.util.Date;
 import java.util.Locale;
 
-import static com.proofpoint.jaxrs.testing.MockRequest.delete;
-import static com.proofpoint.jaxrs.testing.MockRequest.get;
-import static com.proofpoint.jaxrs.testing.MockRequest.head;
-import static com.proofpoint.jaxrs.testing.MockRequest.post;
-import static com.proofpoint.jaxrs.testing.MockRequest.put;
+import static io.airlift.jaxrs.testing.MockRequest.delete;
+import static io.airlift.jaxrs.testing.MockRequest.get;
+import static io.airlift.jaxrs.testing.MockRequest.head;
+import static io.airlift.jaxrs.testing.MockRequest.post;
+import static io.airlift.jaxrs.testing.MockRequest.put;
 import static java.util.Locale.US;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
 import static javax.ws.rs.core.MediaType.TEXT_XML_TYPE;

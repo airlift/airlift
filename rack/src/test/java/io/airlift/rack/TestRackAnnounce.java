@@ -1,28 +1,28 @@
-package com.proofpoint.rack;
+package io.airlift.rack;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.proofpoint.configuration.ConfigurationFactory;
-import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.discovery.client.AnnouncementHttpServerInfo;
-import com.proofpoint.discovery.client.Announcer;
-import com.proofpoint.discovery.client.DiscoveryLookupClient;
-import com.proofpoint.discovery.client.ServiceAnnouncement;
-import com.proofpoint.discovery.client.ServiceDescriptor;
-import com.proofpoint.discovery.client.testing.InMemoryDiscoveryClient;
-import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
-import com.proofpoint.http.server.testing.TestingHttpServer;
-import com.proofpoint.http.server.testing.TestingHttpServerModule;
-import com.proofpoint.node.testing.TestingNodeModule;
+import io.airlift.configuration.ConfigurationFactory;
+import io.airlift.configuration.ConfigurationModule;
+import io.airlift.discovery.client.AnnouncementHttpServerInfo;
+import io.airlift.discovery.client.Announcer;
+import io.airlift.discovery.client.DiscoveryLookupClient;
+import io.airlift.discovery.client.ServiceAnnouncement;
+import io.airlift.discovery.client.ServiceDescriptor;
+import io.airlift.discovery.client.testing.InMemoryDiscoveryClient;
+import io.airlift.discovery.client.testing.TestingDiscoveryModule;
+import io.airlift.http.server.testing.TestingHttpServer;
+import io.airlift.http.server.testing.TestingHttpServerModule;
+import io.airlift.node.testing.TestingNodeModule;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.util.List;
 
-import static com.proofpoint.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static org.testng.Assert.assertEquals;
 
 public class TestRackAnnounce

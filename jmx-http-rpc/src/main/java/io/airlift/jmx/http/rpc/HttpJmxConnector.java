@@ -1,4 +1,4 @@
-package com.proofpoint.jmx.http.rpc;
+package io.airlift.jmx.http.rpc;
 
 import javax.management.Attribute;
 import javax.management.AttributeList;
@@ -31,8 +31,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.proofpoint.jmx.http.rpc.HttpMBeanServerRpc.propagateIfInstanceOf;
-import static com.proofpoint.jmx.http.rpc.HttpMBeanServerRpc.propagateIfPossible;
+import static io.airlift.jmx.http.rpc.HttpMBeanServerRpc.propagateIfInstanceOf;
+import static io.airlift.jmx.http.rpc.HttpMBeanServerRpc.propagateIfPossible;
 import static java.lang.String.format;
 
 public class HttpJmxConnector implements JMXConnector, JMXAddressable

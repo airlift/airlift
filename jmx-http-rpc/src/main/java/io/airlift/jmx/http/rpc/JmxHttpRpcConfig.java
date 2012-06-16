@@ -1,6 +1,6 @@
-package com.proofpoint.jmx.http.rpc;
+package io.airlift.jmx.http.rpc;
 
-import com.proofpoint.configuration.Config;
+import io.airlift.configuration.Config;
 
 public class JmxHttpRpcConfig
 {

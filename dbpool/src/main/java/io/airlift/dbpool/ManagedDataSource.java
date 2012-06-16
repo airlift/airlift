@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.dbpool;
+package io.airlift.dbpool;
 
-import com.proofpoint.units.Duration;
+import io.airlift.units.Duration;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.proofpoint.units.Duration.nanosSince;
+import static io.airlift.units.Duration.nanosSince;
 import static java.lang.Math.ceil;
 
 public abstract class ManagedDataSource implements DataSource

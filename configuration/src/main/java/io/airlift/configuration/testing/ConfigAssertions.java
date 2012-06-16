@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.configuration.testing;
+package io.airlift.configuration.testing;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
-import com.proofpoint.configuration.ConfigurationFactory;
-import com.proofpoint.configuration.ConfigurationMetadata;
-import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
-import com.proofpoint.testing.Assertions;
+import io.airlift.configuration.ConfigurationFactory;
+import io.airlift.configuration.ConfigurationMetadata;
+import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
+import io.airlift.testing.Assertions;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;

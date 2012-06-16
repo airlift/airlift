@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.rack;
+package io.airlift.rack;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.http.server.TheServlet;
+import io.airlift.configuration.ConfigurationModule;
+import io.airlift.http.server.TheServlet;
 
 import javax.servlet.Servlet;
 import java.util.Collections;

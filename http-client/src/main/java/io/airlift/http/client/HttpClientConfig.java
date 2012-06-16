@@ -1,9 +1,9 @@
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
 import com.google.common.annotations.Beta;
-import com.proofpoint.configuration.Config;
-import com.proofpoint.units.Duration;
-import com.proofpoint.units.MinDuration;
+import io.airlift.configuration.Config;
+import io.airlift.units.Duration;
+import io.airlift.units.MinDuration;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;

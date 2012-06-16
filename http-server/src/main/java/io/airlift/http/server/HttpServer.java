@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.http.server;
+package io.airlift.http.server;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.proofpoint.event.client.EventClient;
-import com.proofpoint.node.NodeInfo;
-import com.proofpoint.tracetoken.TraceTokenManager;
+import io.airlift.event.client.EventClient;
+import io.airlift.node.NodeInfo;
+import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;

@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.platform.sample;
+package io.airlift.sample;
 
 import com.google.common.collect.ImmutableList;
-import com.proofpoint.event.client.InMemoryEventClient;
-import com.proofpoint.jaxrs.testing.MockUriInfo;
+import io.airlift.event.client.InMemoryEventClient;
+import io.airlift.jaxrs.testing.MockUriInfo;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.core.Response;
 import java.net.URI;
 
-import static com.proofpoint.platform.sample.PersonEvent.personAdded;
-import static com.proofpoint.platform.sample.PersonEvent.personRemoved;
-import static com.proofpoint.platform.sample.PersonEvent.personUpdated;
+import static io.airlift.sample.PersonEvent.personAdded;
+import static io.airlift.sample.PersonEvent.personRemoved;
+import static io.airlift.sample.PersonEvent.personUpdated;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 

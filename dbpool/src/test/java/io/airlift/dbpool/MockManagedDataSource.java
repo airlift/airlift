@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.dbpool;
+package io.airlift.dbpool;
 
-import com.proofpoint.units.Duration;
+import io.airlift.units.Duration;
 
 import javax.sql.PooledConnection;
 import java.sql.SQLException;

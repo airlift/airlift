@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.stats;
+package io.airlift.stats;
 
 import org.testng.annotations.Test;
 
@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-import static com.proofpoint.testing.Assertions.assertGreaterThanOrEqual;
+import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
 import static java.lang.Math.min;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;

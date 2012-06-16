@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.rack;
+package io.airlift.rack;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.proofpoint.configuration.testing.ConfigAssertions;
-import com.proofpoint.testing.Assertions;
+import io.airlift.configuration.testing.ConfigAssertions;
+import io.airlift.testing.Assertions;
 import org.apache.bval.jsr303.ApacheValidationProvider;
 import org.testng.annotations.Test;
 

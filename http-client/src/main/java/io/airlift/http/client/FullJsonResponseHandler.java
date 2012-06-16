@@ -1,4 +1,4 @@
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
@@ -7,14 +7,12 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.CharStreams;
 import com.google.common.net.MediaType;
-import com.proofpoint.http.client.FullJsonResponseHandler.JsonResponse;
-import com.proofpoint.json.JsonCodec;
+import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
+import io.airlift.json.JsonCodec;
 
-import javax.print.attribute.standard.Media;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ConnectException;
-import java.net.URI;
 import java.util.List;
 
 public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<T>, RuntimeException>

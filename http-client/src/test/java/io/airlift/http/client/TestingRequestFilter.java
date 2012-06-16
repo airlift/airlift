@@ -1,6 +1,6 @@
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
-import static com.proofpoint.http.client.Request.Builder.fromRequest;
+import static io.airlift.http.client.Request.Builder.fromRequest;
 
 public class TestingRequestFilter
         implements HttpRequestFilter

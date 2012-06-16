@@ -1,4 +1,4 @@
-package com.proofpoint.event.client;
+package io.airlift.event.client;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;

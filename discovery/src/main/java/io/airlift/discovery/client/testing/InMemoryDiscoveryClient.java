@@ -1,4 +1,4 @@
-package com.proofpoint.discovery.client.testing;
+package io.airlift.discovery.client.testing;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -7,15 +7,15 @@ import com.google.common.collect.MapMaker;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
-import com.proofpoint.discovery.client.DiscoveryAnnouncementClient;
-import com.proofpoint.discovery.client.DiscoveryException;
-import com.proofpoint.discovery.client.DiscoveryLookupClient;
-import com.proofpoint.discovery.client.ServiceAnnouncement;
-import com.proofpoint.discovery.client.ServiceDescriptor;
-import com.proofpoint.discovery.client.ServiceDescriptors;
-import com.proofpoint.discovery.client.ServiceState;
-import com.proofpoint.node.NodeInfo;
-import com.proofpoint.units.Duration;
+import io.airlift.discovery.client.DiscoveryAnnouncementClient;
+import io.airlift.discovery.client.DiscoveryException;
+import io.airlift.discovery.client.DiscoveryLookupClient;
+import io.airlift.discovery.client.ServiceAnnouncement;
+import io.airlift.discovery.client.ServiceDescriptor;
+import io.airlift.discovery.client.ServiceDescriptors;
+import io.airlift.discovery.client.ServiceState;
+import io.airlift.node.NodeInfo;
+import io.airlift.units.Duration;
 
 import java.util.Set;
 import java.util.UUID;

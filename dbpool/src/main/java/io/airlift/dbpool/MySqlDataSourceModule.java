@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.dbpool;
+package io.airlift.dbpool;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
@@ -21,7 +21,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
-import com.proofpoint.discovery.client.ServiceSelector;
+import io.airlift.discovery.client.ServiceSelector;
 import org.weakref.jmx.guice.MBeanModule;
 
 import javax.sql.DataSource;
@@ -29,9 +29,9 @@ import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;
 
-import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
-import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
-import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
+import static io.airlift.configuration.ConfigurationModule.bindConfig;
+import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
+import static io.airlift.discovery.client.ServiceTypes.serviceType;
 
 public class MySqlDataSourceModule extends MBeanModule
 {

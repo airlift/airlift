@@ -1,4 +1,4 @@
-package com.proofpoint.jmx;
+package io.airlift.jmx;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;

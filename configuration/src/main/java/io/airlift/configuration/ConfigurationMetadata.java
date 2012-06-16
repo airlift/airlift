@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.configuration;
+package io.airlift.configuration;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.inject.ConfigurationException;
-import com.proofpoint.configuration.Problems.Monitor;
+import io.airlift.configuration.Problems.Monitor;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;

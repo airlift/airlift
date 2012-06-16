@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.bootstrap;
+package io.airlift.bootstrap;
 
 import com.google.common.collect.Lists;
-import com.proofpoint.log.Logger;
+import io.airlift.log.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;

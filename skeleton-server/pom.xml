@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.proofpoint.platform</groupId>
+    <groupId>io.airlift</groupId>
     <artifactId>skeleton-server</artifactId>
     <version>0.65-SNAPSHOT</version>
     <name>skeleton-server</name>
 
     <parent>
-        <groupId>com.proofpoint.platform</groupId>
+        <groupId>io.airlift</groupId>
         <artifactId>rest-server-base</artifactId>
         <version>0.65-SNAPSHOT</version>
         <relativePath>../rest-server-base/pom.xml</relativePath>
     </parent>
 
     <properties>
-        <main-class>com.proofpoint.platform.skeleton.Main</main-class>
+        <main-class>io.airlift.skeleton.Main</main-class>
     </properties>
 
     <distributionManagement>
@@ -32,62 +32,62 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>node</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>json</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>configuration</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>bootstrap</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>discovery-experimental</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>event-experimental</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>jmx-http-rpc-experimental</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>log</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>http-server</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>jaxrs</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>jmx</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>trace-token</artifactId>
         </dependency>
 
@@ -112,18 +112,18 @@
         </dependency>
 
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>jmx-http-experimental</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>http-client-experimental</artifactId>
         </dependency>
 
         <!-- for packaging -->
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>launcher</artifactId>
             <classifier>bin</classifier>
             <type>tar.gz</type>
@@ -138,7 +138,7 @@
         </dependency>
 
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>testing</artifactId>
             <scope>test</scope>
         </dependency>

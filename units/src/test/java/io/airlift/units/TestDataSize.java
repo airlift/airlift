@@ -1,12 +1,12 @@
-package com.proofpoint.units;
+package io.airlift.units;
 
-import static com.proofpoint.testing.EquivalenceTester.comparisonTester;
-import static com.proofpoint.units.DataSize.Unit.BYTE;
-import static com.proofpoint.units.DataSize.Unit.KILOBYTE;
-import static com.proofpoint.units.DataSize.Unit.MEGABYTE;
-import static com.proofpoint.units.DataSize.Unit.GIGABYTE;
-import static com.proofpoint.units.DataSize.Unit.TERABYTE;
-import static com.proofpoint.units.DataSize.Unit.PETABYTE;
+import static io.airlift.testing.EquivalenceTester.comparisonTester;
+import static io.airlift.units.DataSize.Unit.BYTE;
+import static io.airlift.units.DataSize.Unit.KILOBYTE;
+import static io.airlift.units.DataSize.Unit.MEGABYTE;
+import static io.airlift.units.DataSize.Unit.GIGABYTE;
+import static io.airlift.units.DataSize.Unit.TERABYTE;
+import static io.airlift.units.DataSize.Unit.PETABYTE;
 import static org.testng.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;

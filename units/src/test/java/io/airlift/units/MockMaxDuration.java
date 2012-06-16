@@ -1,7 +1,4 @@
-package com.proofpoint.units;
-
-import com.proofpoint.units.Duration;
-import com.proofpoint.units.MaxDuration;
+package io.airlift.units;
 
 import javax.validation.Payload;
 import java.lang.annotation.Annotation;

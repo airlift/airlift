@@ -1,9 +1,9 @@
-package com.proofpoint.http.server;
+package io.airlift.http.server;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import static com.proofpoint.http.server.Inet4Networks.isPrivateNetworkAddress;
+import static io.airlift.http.server.Inet4Networks.isPrivateNetworkAddress;
 
 public class TestInet4Networks
 {

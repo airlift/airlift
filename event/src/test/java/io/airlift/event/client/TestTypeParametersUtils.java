@@ -15,7 +15,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package com.proofpoint.event.client;
+package io.airlift.event.client;
 
 import org.testng.annotations.Test;
 
@@ -27,7 +27,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import static com.proofpoint.event.client.TypeParameterUtils.getTypeParameters;
+import static io.airlift.event.client.TypeParameterUtils.getTypeParameters;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;

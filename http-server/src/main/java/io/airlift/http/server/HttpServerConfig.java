@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.http.server;
+package io.airlift.http.server;
 
-import com.proofpoint.configuration.Config;
-import com.proofpoint.configuration.LegacyConfig;
-import com.proofpoint.units.Duration;
+import io.airlift.configuration.Config;
+import io.airlift.configuration.LegacyConfig;
+import io.airlift.units.Duration;
 
 import javax.validation.constraints.Min;
 import java.util.concurrent.TimeUnit;

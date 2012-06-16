@@ -1,14 +1,14 @@
-package com.proofpoint.discovery.client.testing;
+package io.airlift.discovery.client.testing;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.proofpoint.discovery.client.DiscoveryException;
-import com.proofpoint.discovery.client.DiscoveryLookupClient;
-import com.proofpoint.discovery.client.ServiceDescriptor;
-import com.proofpoint.discovery.client.ServiceDescriptors;
-import com.proofpoint.discovery.client.ServiceSelector;
-import com.proofpoint.discovery.client.ServiceSelectorConfig;
-import com.proofpoint.log.Logger;
+import io.airlift.discovery.client.DiscoveryException;
+import io.airlift.discovery.client.DiscoveryLookupClient;
+import io.airlift.discovery.client.ServiceDescriptor;
+import io.airlift.discovery.client.ServiceDescriptors;
+import io.airlift.discovery.client.ServiceSelector;
+import io.airlift.discovery.client.ServiceSelectorConfig;
+import io.airlift.log.Logger;
 
 import java.util.List;
 

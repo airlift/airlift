@@ -1,4 +1,4 @@
-package com.proofpoint.discovery.client;
+package io.airlift.discovery.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
@@ -6,13 +6,13 @@ import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
-import com.proofpoint.http.client.AsyncHttpClient;
-import com.proofpoint.http.client.Request;
-import com.proofpoint.http.client.Response;
-import com.proofpoint.http.client.ResponseHandler;
-import com.proofpoint.json.JsonCodec;
-import com.proofpoint.node.NodeInfo;
-import com.proofpoint.units.Duration;
+import io.airlift.http.client.AsyncHttpClient;
+import io.airlift.http.client.Request;
+import io.airlift.http.client.Response;
+import io.airlift.http.client.ResponseHandler;
+import io.airlift.json.JsonCodec;
+import io.airlift.node.NodeInfo;
+import io.airlift.units.Duration;
 
 import javax.inject.Provider;
 import javax.ws.rs.core.CacheControl;
@@ -25,9 +25,9 @@ import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 
-import static com.proofpoint.http.client.JsonBodyGenerator.jsonBodyGenerator;
-import static com.proofpoint.http.client.Request.Builder.prepareDelete;
-import static com.proofpoint.http.client.Request.Builder.preparePut;
+import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
+import static io.airlift.http.client.Request.Builder.prepareDelete;
+import static io.airlift.http.client.Request.Builder.preparePut;
 
 public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementClient
 {

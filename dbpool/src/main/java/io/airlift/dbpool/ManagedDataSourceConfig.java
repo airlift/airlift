@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.dbpool;
+package io.airlift.dbpool;
 
-import com.proofpoint.configuration.Config;
-import com.proofpoint.configuration.DefunctConfig;
-import com.proofpoint.units.Duration;
+import io.airlift.configuration.Config;
+import io.airlift.configuration.DefunctConfig;
+import io.airlift.units.Duration;
 
 import java.util.concurrent.TimeUnit;
 

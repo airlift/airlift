@@ -1,4 +1,4 @@
-package com.proofpoint.event.client;
+package io.airlift.event.client;
 
 import org.codehaus.jackson.map.JsonSerializer;
 

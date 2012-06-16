@@ -1,7 +1,7 @@
-package com.proofpoint.discovery.client;
+package io.airlift.discovery.client;
 
-import com.proofpoint.configuration.Config;
-import com.proofpoint.configuration.ConfigDescription;
+import io.airlift.configuration.Config;
+import io.airlift.configuration.ConfigDescription;
 
 import java.net.URI;
 

@@ -1,12 +1,12 @@
-package com.proofpoint.http.client;
+package io.airlift.http.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
-import com.proofpoint.testing.Assertions;
-import com.proofpoint.units.Duration;
+import io.airlift.testing.Assertions;
+import io.airlift.units.Duration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -24,10 +24,10 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
-import static com.proofpoint.http.client.Request.Builder.prepareDelete;
-import static com.proofpoint.http.client.Request.Builder.prepareGet;
-import static com.proofpoint.http.client.Request.Builder.preparePost;
-import static com.proofpoint.http.client.Request.Builder.preparePut;
+import static io.airlift.http.client.Request.Builder.prepareDelete;
+import static io.airlift.http.client.Request.Builder.prepareGet;
+import static io.airlift.http.client.Request.Builder.preparePost;
+import static io.airlift.http.client.Request.Builder.preparePut;
 
 public class ApacheHttpClientTest
 {

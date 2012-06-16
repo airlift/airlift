@@ -1,4 +1,4 @@
-package com.proofpoint.jmx;
+package io.airlift.jmx;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;

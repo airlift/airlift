@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.configuration;
+package io.airlift.configuration;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Function;
@@ -31,7 +31,7 @@ import com.google.inject.spi.DefaultElementVisitor;
 import com.google.inject.spi.Element;
 import com.google.inject.spi.Message;
 import com.google.inject.spi.ProviderInstanceBinding;
-import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
+import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 import org.apache.bval.jsr303.ApacheValidationProvider;
 
 import javax.validation.ConstraintViolation;
@@ -47,7 +47,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static com.proofpoint.configuration.Problems.exceptionFor;
+import static io.airlift.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
 
 public class ConfigurationFactory

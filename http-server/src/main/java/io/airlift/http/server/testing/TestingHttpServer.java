@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.http.server.testing;
+package io.airlift.http.server.testing;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import com.proofpoint.event.client.EventClient;
-import com.proofpoint.event.client.NullEventClient;
-import com.proofpoint.http.server.HttpServer;
-import com.proofpoint.http.server.HttpServerConfig;
-import com.proofpoint.http.server.HttpServerInfo;
-import com.proofpoint.http.server.RequestStats;
-import com.proofpoint.http.server.TheServlet;
-import com.proofpoint.node.NodeInfo;
-import com.proofpoint.tracetoken.TraceTokenManager;
+import io.airlift.event.client.EventClient;
+import io.airlift.event.client.NullEventClient;
+import io.airlift.http.server.HttpServer;
+import io.airlift.http.server.HttpServerConfig;
+import io.airlift.http.server.HttpServerInfo;
+import io.airlift.http.server.RequestStats;
+import io.airlift.http.server.TheServlet;
+import io.airlift.node.NodeInfo;
+import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 
 import javax.servlet.Filter;

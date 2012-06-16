@@ -1,8 +1,8 @@
-package com.proofpoint.event.client;
+package io.airlift.event.client;
 
 import com.google.common.collect.ImmutableList;
-import com.proofpoint.event.client.EventClient.EventGenerator;
-import com.proofpoint.event.client.EventClient.EventPoster;
+import io.airlift.event.client.EventClient.EventGenerator;
+import io.airlift.event.client.EventClient.EventPoster;
 import org.testng.annotations.Test;
 
 import java.io.IOException;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.jmx;
+package io.airlift.jmx;
 
 import com.google.common.collect.Sets;
 import com.google.inject.Injector;

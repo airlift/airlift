@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.dbpool;
+package io.airlift.dbpool;
 
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import static com.proofpoint.dbpool.DatabaseIpAddressUtil.fromDatabaseIpAddress;
-import static com.proofpoint.dbpool.DatabaseIpAddressUtil.toDatabaseIpAddress;
+import static io.airlift.dbpool.DatabaseIpAddressUtil.fromDatabaseIpAddress;
+import static io.airlift.dbpool.DatabaseIpAddressUtil.toDatabaseIpAddress;
 import static org.testng.Assert.assertEquals;
 
 public class DatabaseIpAddressUtilTest
