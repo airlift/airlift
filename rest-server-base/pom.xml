@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.airlift</groupId>
     <artifactId>rest-server-base</artifactId>
-    <version>0.65</version>
+    <version>0.66-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>REST Server Base POM</name>
     <description>Airlift REST server base POM</description>
@@ -12,7 +12,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>library</artifactId>
-        <version>0.65</version>
+        <version>0.66-SNAPSHOT</version>
         <relativePath>../library/pom.xml</relativePath>
     </parent>
 
@@ -229,7 +229,7 @@
                             <dependency>
                                 <groupId>io.airlift</groupId>
                                 <artifactId>packaging</artifactId>
-                                <version>0.65</version>
+                                <version>0.66-SNAPSHOT</version>
                             </dependency>
                         </dependencies>
 
