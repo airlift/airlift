@@ -99,18 +99,18 @@ public final class EquivalenceTester
                     // nothing can be equal to null
                     try {
                         if (element.equals(null)) {
-                            errors.add(new ElementCheckFailure(EQUAL_TO_NULL, classNumber, elementNumber));
+                            errors.add(new ElementCheckFailure(EQUAL_TO_NULL, classNumber, elementNumber, element));
                         }
                     }
                     catch (NullPointerException e) {
-                        errors.add(new ElementCheckFailure(EQUAL_NULL_EXCEPTION, classNumber, elementNumber));
+                        errors.add(new ElementCheckFailure(EQUAL_NULL_EXCEPTION, classNumber, elementNumber, element));
                     }
 
                     // if a class implements comparable, object.compareTo(null) must throw NPE
                     if (element instanceof Comparable) {
                         try {
                             ((Comparable<?>) element).compareTo(null);
-                            errors.add(new ElementCheckFailure(COMPARE_EQUAL_TO_NULL, classNumber, elementNumber));
+                            errors.add(new ElementCheckFailure(COMPARE_EQUAL_TO_NULL, classNumber, elementNumber, element));
                         }
                         catch (NullPointerException e) {
                             // ok
@@ -120,10 +120,10 @@ public final class EquivalenceTester
                     // nothing can be equal to object of an unrelated class
                     try {
                         if (element.equals(new OtherClass())) {
-                            errors.add(new ElementCheckFailure(EQUAL_TO_UNRELATED_CLASS, classNumber, elementNumber));
+                            errors.add(new ElementCheckFailure(EQUAL_TO_UNRELATED_CLASS, classNumber, elementNumber, element));
                         }
                     } catch (ClassCastException e) {
-                        errors.add(new ElementCheckFailure(EQUAL_TO_UNRELATED_CLASS_CLASS_CAST_EXCEPTION, classNumber, elementNumber));
+                        errors.add(new ElementCheckFailure(EQUAL_TO_UNRELATED_CLASS_CLASS_CAST_EXCEPTION, classNumber, elementNumber, element));
                     }
 
                     ++elementNumber;
@@ -140,10 +140,10 @@ public final class EquivalenceTester
                 int elementNumber = 0;
                 for (Object element : congruenceClass) {
                     if (!element.equals(element)) {
-                        errors.add(new ElementCheckFailure(NOT_REFLEXIVE, classNumber, elementNumber));
+                        errors.add(new ElementCheckFailure(NOT_REFLEXIVE, classNumber, elementNumber, element));
                     }
                     if (!doesCompareReturn0(element, element)) {
-                        errors.add(new ElementCheckFailure(COMPARE_NOT_REFLEXIVE, classNumber, elementNumber));
+                        errors.add(new ElementCheckFailure(COMPARE_NOT_REFLEXIVE, classNumber, elementNumber, element));
                     }
                     ++elementNumber;
                 }
@@ -160,37 +160,41 @@ public final class EquivalenceTester
                     for (int secondaryElementNumber = primaryElementNumber + 1; secondaryElementNumber < congruenceClass.size(); secondaryElementNumber++) {
                         Object secondary = congruenceClass.get(secondaryElementNumber);
                         if (!primary.equals(secondary)) {
-                            errors.add(new PairCheckFailure(NOT_EQUAL, classNumber, primaryElementNumber, classNumber, secondaryElementNumber));
+                            errors.add(new PairCheckFailure(NOT_EQUAL, classNumber, primaryElementNumber, primary, classNumber, secondaryElementNumber, secondary));
                         }
                         if (!secondary.equals(primary)) {
-                            errors.add(new PairCheckFailure(NOT_EQUAL, classNumber, secondaryElementNumber, classNumber, primaryElementNumber));
+                            errors.add(new PairCheckFailure(NOT_EQUAL, classNumber, secondaryElementNumber, secondary, classNumber, primaryElementNumber, primary));
                         }
                         try {
                             if (!doesCompareReturn0(primary, secondary)) {
                                 errors.add(new PairCheckFailure(COMPARE_NOT_EQUAL,
                                         classNumber,
                                         primaryElementNumber,
+                                        primary,
                                         classNumber,
-                                        secondaryElementNumber));
+                                        secondaryElementNumber,
+                                        secondary));
                             }
                         }
                         catch (ClassCastException e) {
-                            errors.add(new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION, classNumber, primaryElementNumber, classNumber, secondaryElementNumber));
+                            errors.add(new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION, classNumber, primaryElementNumber, primary, classNumber, secondaryElementNumber, secondary));
                         }
                         try {
                             if (!doesCompareReturn0(secondary, primary)) {
                                 errors.add(new PairCheckFailure(COMPARE_NOT_EQUAL,
                                         classNumber,
                                         secondaryElementNumber,
+                                        secondary,
                                         classNumber,
-                                        primaryElementNumber));
+                                        primaryElementNumber,
+                                        primary));
                             }
                         }
                         catch (ClassCastException e) {
-                            errors.add(new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION, classNumber, secondaryElementNumber, classNumber, primaryElementNumber));
+                            errors.add(new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION, classNumber, secondaryElementNumber, secondary, classNumber, primaryElementNumber, primary));
                         }
                         if (primary.hashCode() != secondary.hashCode()) {
-                            errors.add(new PairCheckFailure(HASH_CODE_NOT_SAME, classNumber, primaryElementNumber, classNumber, secondaryElementNumber));
+                            errors.add(new PairCheckFailure(HASH_CODE_NOT_SAME, classNumber, primaryElementNumber, primary, classNumber, secondaryElementNumber, secondary));
                         }
                     }
                 }
@@ -209,34 +213,38 @@ public final class EquivalenceTester
                         int secondaryElementNumber = 0;
                         for (Object secondary : secondaryCongruenceClass) {
                             if (primary.equals(secondary)) {
-                                errors.add(new PairCheckFailure(EQUAL, primaryClassNumber, primaryElementNumber, secondaryClassNumber, secondaryElementNumber));
+                                errors.add(new PairCheckFailure(EQUAL, primaryClassNumber, primaryElementNumber, primary, secondaryClassNumber, secondaryElementNumber, secondary));
                             }
                             if (secondary.equals(primary)) {
-                                errors.add(new PairCheckFailure(EQUAL, secondaryClassNumber, secondaryElementNumber, primaryClassNumber, primaryElementNumber));
+                                errors.add(new PairCheckFailure(EQUAL, secondaryClassNumber, secondaryElementNumber, secondary, primaryClassNumber, primaryElementNumber, primary));
                             }
                             try {
                                 if (!doesCompareNotReturn0(primary, secondary)) {
-                                    errors.add(new PairCheckFailure(COMPARE_EQUAL, primaryClassNumber, primaryElementNumber, secondaryClassNumber, secondaryElementNumber));
+                                    errors.add(new PairCheckFailure(COMPARE_EQUAL, primaryClassNumber, primaryElementNumber, primary, secondaryClassNumber, secondaryElementNumber, secondary));
                                 }
                             }
                             catch (ClassCastException e) {
                                 errors.add(new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION,
                                         primaryClassNumber,
                                         primaryElementNumber,
+                                        primary,
                                         secondaryClassNumber,
-                                        secondaryElementNumber));
+                                        secondaryElementNumber,
+                                        secondary));
                             }
                             try {
                                 if (!doesCompareNotReturn0(secondary, primary)) {
-                                    errors.add(new PairCheckFailure(COMPARE_EQUAL, secondaryClassNumber, secondaryElementNumber, primaryClassNumber, primaryElementNumber));
+                                    errors.add(new PairCheckFailure(COMPARE_EQUAL, secondaryClassNumber, secondaryElementNumber, secondary, primaryClassNumber, primaryElementNumber, primary));
                                 }
                             }
                             catch (ClassCastException e) {
                                 errors.add(new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION,
                                         secondaryClassNumber,
                                         secondaryElementNumber,
+                                        secondary,
                                         primaryClassNumber,
-                                        primaryElementNumber));
+                                        primaryElementNumber,
+                                        primary));
                             }
                             secondaryElementNumber++;
                         }
@@ -353,7 +361,7 @@ public final class EquivalenceTester
                             T greater = greaterBag.get(greaterElementNumber);
                             try {
                                 if (lesser.compareTo(greater) >= 0) {
-                                    builder.add(new PairCheckFailure(NOT_LESS_THAN, lesserClassNumber, lesserElementNumber, greaterClassNumber, greaterElementNumber));
+                                    builder.add(new PairCheckFailure(NOT_LESS_THAN, lesserClassNumber, lesserElementNumber, lesser, greaterClassNumber, greaterElementNumber, greater));
                                 }
                             }
                             catch (ClassCastException e) {
@@ -361,7 +369,7 @@ public final class EquivalenceTester
                             }
                             try {
                                 if (greater.compareTo(lesser) <= 0) {
-                                    builder.add(new PairCheckFailure(NOT_GREATER_THAN, greaterClassNumber, greaterElementNumber, lesserClassNumber, lesserElementNumber));
+                                    builder.add(new PairCheckFailure(NOT_GREATER_THAN, greaterClassNumber, greaterElementNumber, greater, lesserClassNumber, lesserElementNumber, lesser));
                                 }
                             }
                             catch (ClassCastException e) {
@@ -381,21 +389,21 @@ public final class EquivalenceTester
     }
 
     public static enum EquivalenceFailureType {
-        EQUAL_TO_NULL("Element (%d, %d) returns true when compared to null via equals()"),
-        EQUAL_NULL_EXCEPTION("Element (%d, %d) throws NullPointerException when when compared to null via equals()"),
-        COMPARE_EQUAL_TO_NULL("Element (%d, %d) implements Comparable but does not throw NullPointerException when compared to null"),
-        EQUAL_TO_UNRELATED_CLASS("Element (%d, %d) returns true when compared to an unrelated class via equals()"),
-        EQUAL_TO_UNRELATED_CLASS_CLASS_CAST_EXCEPTION("Element (%d, %d) throws a ClassCastException when compared to an unrelated class via equals()"),
-        NOT_REFLEXIVE("Element (%d, %d) is not equal to itself when compared via equals()"),
-        COMPARE_NOT_REFLEXIVE("Element (%d, %d) implements Comparable but compare does not return 0 when compared to itself"),
-        NOT_EQUAL("Element (%d, %d) is not equal to element (%d, %d) when compared via equals()"),
-        COMPARE_NOT_EQUAL("Element (%d, %d) is not equal to element (%d, %d) when compared via compareTo(T)"),
-        COMPARE_CLASS_CAST_EXCEPTION("Element (%d, %d) throws a ClassCastException when compared to element (%d, %d) via compareTo(T)"),
-        HASH_CODE_NOT_SAME("Elements (%d, %d) and (%d, %d) have different hash codes"),
-        EQUAL("Element (%d, %d) is equal to element (%d, %d) when compared via equals()"),
-        COMPARE_EQUAL("Element (%d, %d) implements Comparable and returns 0 when compared to element (%d, %d)"),
-        NOT_LESS_THAN("Element (%d, %d) is not less than (%d, %d)"),
-        NOT_GREATER_THAN("Element (%d, %d) is not greater than (%d, %d)"),
+        EQUAL_TO_NULL("Element (%d, %d):<%s> returns true when compared to null via equals()"),
+        EQUAL_NULL_EXCEPTION("Element (%d, %d):<%s> throws NullPointerException when when compared to null via equals()"),
+        COMPARE_EQUAL_TO_NULL("Element (%d, %d):<%s> implements Comparable but does not throw NullPointerException when compared to null"),
+        EQUAL_TO_UNRELATED_CLASS("Element (%d, %d):<%s> returns true when compared to an unrelated class via equals()"),
+        EQUAL_TO_UNRELATED_CLASS_CLASS_CAST_EXCEPTION("Element (%d, %d):<%s> throws a ClassCastException when compared to an unrelated class via equals()"),
+        NOT_REFLEXIVE("Element (%d, %d):<%s> is not equal to itself when compared via equals()"),
+        COMPARE_NOT_REFLEXIVE("Element (%d, %d):<%s> implements Comparable but compare does not return 0 when compared to itself"),
+        NOT_EQUAL("Element (%d, %d):<%s> is not equal to element (%d, %d):<%s> when compared via equals()"),
+        COMPARE_NOT_EQUAL("Element (%d, %d):<%s> is not equal to element (%d, %d):<%s> when compared via compareTo(T)"),
+        COMPARE_CLASS_CAST_EXCEPTION("Element (%d, %d):<%s> throws a ClassCastException when compared to element (%d, %d):<%s> via compareTo(T)"),
+        HASH_CODE_NOT_SAME("Elements (%d, %d):<%s> and (%d, %d):<%s> have different hash codes"),
+        EQUAL("Element (%d, %d):<%s> is equal to element (%d, %d):<%s> when compared via equals()"),
+        COMPARE_EQUAL("Element (%d, %d):<%s> implements Comparable and returns 0 when compared to element (%d, %d):<%s>"),
+        NOT_LESS_THAN("Element (%d, %d):<%s> is not less than (%d, %d):<%s>"),
+        NOT_GREATER_THAN("Element (%d, %d):<%s> is not greater than (%d, %d):<%s>"),
         ;
 
 
@@ -418,13 +426,15 @@ public final class EquivalenceTester
         protected final EquivalenceFailureType type;
         protected final int primaryClassNumber;
         protected final int primaryElementNumber;
+        protected final Object primaryObject;
 
-        public ElementCheckFailure(EquivalenceFailureType type, int primaryClassNumber, int primaryElementNumber)
+        public ElementCheckFailure(EquivalenceFailureType type, int primaryClassNumber, int primaryElementNumber, Object primaryObject)
         {
             Preconditions.checkNotNull(type, "type is null");
             this.type = type;
             this.primaryClassNumber = primaryClassNumber;
             this.primaryElementNumber = primaryElementNumber;
+            this.primaryObject = primaryObject;
         }
 
         public EquivalenceFailureType getType()
@@ -445,9 +455,10 @@ public final class EquivalenceTester
         @Override
         public String toString()
         {
-            return format(type.getMessage(), primaryClassNumber, primaryElementNumber);
+            return format(type.getMessage(), primaryClassNumber, primaryElementNumber, primaryObject);
         }
 
+        @SuppressWarnings("RedundantIfStatement")
         @Override
         public boolean equals(Object o)
         {
@@ -469,6 +480,10 @@ public final class EquivalenceTester
             if (!type.equals(that.type)) {
                 return false;
             }
+            if (primaryObject != that.primaryObject && // Some testing objects not reflexive
+                    !primaryObject.equals(that.primaryObject)) {
+                return false;
+            }
 
             return true;
         }
@@ -479,6 +494,7 @@ public final class EquivalenceTester
             int result = type.hashCode();
             result = 31 * result + primaryClassNumber;
             result = 31 * result + primaryElementNumber;
+            result = 31 * result + primaryObject.hashCode();
             return result;
         }
     }
@@ -487,12 +503,14 @@ public final class EquivalenceTester
     {
         private final int secondaryClassNumber;
         private final int secondaryElementNumber;
+        private final Object secondaryObject;
 
-        public PairCheckFailure(EquivalenceFailureType type, int primaryClassNumber, int primaryElementNumber, int secondaryClassNumber, int secondaryElementNumber)
+        public PairCheckFailure(EquivalenceFailureType type, int primaryClassNumber, int primaryElementNumber, Object primaryObject, int secondaryClassNumber, int secondaryElementNumber, Object secondaryObject)
         {
-            super(type, primaryClassNumber, primaryElementNumber);
+            super(type, primaryClassNumber, primaryElementNumber, primaryObject);
             this.secondaryClassNumber = secondaryClassNumber;
             this.secondaryElementNumber = secondaryElementNumber;
+            this.secondaryObject = secondaryObject;
         }
 
         public int getSecondaryClassNumber()
@@ -508,9 +526,10 @@ public final class EquivalenceTester
         @Override
         public String toString()
         {
-            return format(type.getMessage(), primaryClassNumber, primaryElementNumber, secondaryClassNumber, secondaryElementNumber);
+            return format(type.getMessage(), primaryClassNumber, primaryElementNumber, primaryObject, secondaryClassNumber, secondaryElementNumber, secondaryObject);
         }
 
+        @SuppressWarnings("RedundantIfStatement")
         @Override
         public boolean equals(Object o)
         {
@@ -532,10 +551,18 @@ public final class EquivalenceTester
             if (primaryElementNumber != that.primaryElementNumber) {
                 return false;
             }
+            if (primaryObject != that.primaryObject && // Some testing objects not reflexive
+                    !primaryObject.equals(that.primaryObject)) {
+                return false;
+            }
             if (secondaryClassNumber != that.secondaryClassNumber) {
                 return false;
             }
             if (secondaryElementNumber != that.secondaryElementNumber) {
+                return false;
+            }
+            if (secondaryObject != that.secondaryObject && // Some testing objects not reflexive
+                    !secondaryObject.equals(that.secondaryObject)) {
                 return false;
             }
             if (!type.equals(that.type)) {
@@ -552,8 +579,10 @@ public final class EquivalenceTester
             result = 31 * result + type.hashCode();
             result = 31 * result + primaryClassNumber;
             result = 31 * result + primaryElementNumber;
+            result = 31 * result + primaryObject.hashCode();
             result = 31 * result + secondaryClassNumber;
             result = 31 * result + secondaryElementNumber;
+            result = 31 * result + secondaryObject.hashCode();
             return result;
         }
     }
