@@ -6,7 +6,7 @@
     <artifactId>airlift</artifactId>
     <packaging>pom</packaging>
     <version>0.65-SNAPSHOT</version>
-    <name>platform</name>
+    <name>airlift</name>
     <description>Airlift</description>
     <url>http://github.com/airlift/airlift</url>
 
