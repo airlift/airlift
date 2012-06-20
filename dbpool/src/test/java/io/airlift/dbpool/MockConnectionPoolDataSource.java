@@ -31,6 +31,7 @@ import java.sql.NClob;
 import java.sql.PreparedStatement;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.SQLXML;
 import java.sql.Savepoint;
@@ -40,6 +41,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
+import java.util.logging.Logger;
 
 public class MockConnectionPoolDataSource implements ConnectionPoolDataSource
 {
@@ -86,6 +89,13 @@ public class MockConnectionPoolDataSource implements ConnectionPoolDataSource
             throws SQLException
     {
         logWriter = out;
+    }
+
+    @Override
+    public Logger getParentLogger()
+            throws SQLFeatureNotSupportedException
+    {
+        throw new SQLFeatureNotSupportedException("java.util.logging not supported");
     }
 
     @Override
@@ -205,6 +215,40 @@ public class MockConnectionPoolDataSource implements ConnectionPoolDataSource
             mockPooledConnection.errorOccurred();
         }
 
+        @Override
+        public void setSchema(String schema)
+                throws SQLException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String getSchema()
+                throws SQLException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int getNetworkTimeout()
+                throws SQLException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void setNetworkTimeout(Executor executor, int milliseconds)
+                throws SQLException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void abort(Executor executor)
+                throws SQLException
+        {
+            throw new UnsupportedOperationException();
+        }
 
         @Override
         public Statement createStatement()
