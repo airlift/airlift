@@ -26,9 +26,11 @@ import javax.sql.PooledConnection;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 
 import static com.proofpoint.units.Duration.nanosSince;
 import static java.lang.Math.ceil;
@@ -184,6 +186,13 @@ public abstract class ManagedDataSource implements DataSource
     public void setLogWriter(PrintWriter out)
             throws SQLException
     {
+    }
+
+    @Override
+    public Logger getParentLogger()
+            throws SQLFeatureNotSupportedException
+    {
+        throw new SQLFeatureNotSupportedException("java.util.logging not supported");
     }
 
     @Override
