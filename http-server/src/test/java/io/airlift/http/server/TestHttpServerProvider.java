@@ -21,11 +21,13 @@ import com.google.common.io.Files;
 import io.airlift.event.client.NullEventClient;
 import io.airlift.http.client.ApacheHttpClient;
 import io.airlift.http.client.HttpClient;
+import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.node.NodeInfo;
 import io.airlift.testing.FileUtils;
 import io.airlift.tracetoken.TraceTokenManager;
+import io.airlift.units.Duration;
 import org.apache.commons.codec.binary.Base64;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -36,6 +38,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.util.concurrent.TimeUnit;
 
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
@@ -114,7 +117,7 @@ public class TestHttpServerProvider
         createServer();
         server.start();
 
-        HttpClient client = new ApacheHttpClient();
+        HttpClient client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(2.0, TimeUnit.SECONDS)));
         try {
             StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri().resolve("/")).build(), createStatusResponseHandler());
 
@@ -123,7 +126,7 @@ public class TestHttpServerProvider
             }
         }
         catch (RuntimeException e) {
-            assertTrue(e.getCause() instanceof ConnectException);
+            assertTrue(e.getCause() instanceof ConnectException, e.getCause().getClass() + " instanceof ConnectException");
         }
     }
 
