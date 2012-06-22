@@ -100,9 +100,9 @@ module Airlift
     class RackLogger
       def get_logger
         call_stack = caller(0)
-        this_file = call_stack.first.split(':').first
+        this_file = call_stack.first.split(/:\d+:in `/).first
         caller_call = call_stack.reject { |call| call =~ /#{this_file}\:|Forwardable/i }.first
-        caller_name = caller_call.split(':').first.split('/').last + ":" + caller_call.split('`').last.chomp("'")
+        caller_name = File::basename(caller_call.split(/:\d+:in \`/).first) + ":" + caller_call.split(/:\d+:in `/).last.chomp("'")
         Java::io::airlift::log.Logger.get(caller_name)
       end
 
