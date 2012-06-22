@@ -22,9 +22,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
 import static java.lang.Math.min;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -86,9 +88,8 @@ public class TimedStatTest
         {
             @Override
             public Void call()
-                    throws Exception
             {
-                Thread.sleep(10);
+                LockSupport.parkNanos(SECONDS.toNanos(10));
                 return null;
             }
         });
