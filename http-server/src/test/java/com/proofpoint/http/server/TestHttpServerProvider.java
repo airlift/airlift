@@ -21,11 +21,13 @@ import com.google.common.io.Files;
 import com.proofpoint.event.client.NullEventClient;
 import com.proofpoint.http.client.ApacheHttpClient;
 import com.proofpoint.http.client.HttpClient;
+import com.proofpoint.http.client.HttpClientConfig;
 import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.client.StringResponseHandler.StringResponse;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.testing.FileUtils;
 import com.proofpoint.tracetoken.TraceTokenManager;
+import com.proofpoint.units.Duration;
 import org.apache.commons.codec.binary.Base64;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -36,6 +38,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.util.concurrent.TimeUnit;
 
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
@@ -114,7 +117,7 @@ public class TestHttpServerProvider
         createServer();
         server.start();
 
-        HttpClient client = new ApacheHttpClient();
+        HttpClient client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(2.0, TimeUnit.SECONDS)));
         try {
             StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri().resolve("/")).build(), createStatusResponseHandler());
 
@@ -123,7 +126,7 @@ public class TestHttpServerProvider
             }
         }
         catch (RuntimeException e) {
-            assertTrue(e.getCause() instanceof ConnectException);
+            assertTrue(e.getCause() instanceof ConnectException, e.getCause().getClass() + " instanceof ConnectException");
         }
     }
 
