@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static com.proofpoint.testing.Assertions.assertGreaterThanOrEqual;
 import static java.lang.Math.min;
@@ -86,9 +87,8 @@ public class TimedStatTest
         {
             @Override
             public Void call()
-                    throws Exception
             {
-                Thread.sleep(10);
+                LockSupport.parkNanos(10L * 1000 * 1000 * 1000);
                 return null;
             }
         });
