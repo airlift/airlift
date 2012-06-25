@@ -1,3 +1,8 @@
+Airlift 0.66-SNAPSHOT
+
+* CounterStats no longer requires a thread pool. It is based on DecayCounter, an implementation
+  of a counter that decays exponentially.
+
 Airlift 0.65
 
 * Re-packaged the project under io.airlift
