@@ -2,79 +2,50 @@ package io.airlift.stats;
 
 import com.google.common.annotations.Beta;
 import org.weakref.jmx.Managed;
+import org.weakref.jmx.Nested;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Beta
 public class CounterStat
 {
     private final AtomicLong count = new AtomicLong(0);
-    private final EWMA oneMinute = EWMA.oneMinuteEWMA();
-    private final EWMA fiveMinute = EWMA.fiveMinuteEWMA();
-    private final EWMA fifteenMinute = EWMA.fifteenMinuteEWMA();
-    private final ScheduledExecutorService executor;
-    private volatile ScheduledFuture<?> future;
-
-    public CounterStat(ScheduledExecutorService executor)
-    {
-        this.executor = executor;
-    }
-
-    @PostConstruct
-    public void start()
-    {
-        future = executor.scheduleAtFixedRate(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                oneMinute.tick();
-                fiveMinute.tick();
-                fifteenMinute.tick();
-            }
-        }, 5, 5, TimeUnit.SECONDS);
-    }
-
-    @PreDestroy
-    public void stop()
-    {
-        future.cancel(false);
-    }
+    private final DecayCounter oneMinute = new DecayCounter(ExponentialDecay.oneMinute());
+    private final DecayCounter fiveMinute = new DecayCounter(ExponentialDecay.fiveMinutes());
+    private final DecayCounter fifteenMinute = new DecayCounter(ExponentialDecay.fifteenMinutes());
 
     public void update(long count)
     {
-        oneMinute.update(count);
-        fiveMinute.update(count);
-        fifteenMinute.update(count);
+        oneMinute.add(count);
+        fiveMinute.add(count);
+        fifteenMinute.add(count);
         this.count.addAndGet(count);
     }
 
     @Managed
-    public long getCount()
+    public long getTotalCount()
     {
         return count.get();
     }
 
     @Managed
-    public double getOneMinuteRate()
+    @Nested
+    public DecayCounter getOneMinute()
     {
-        return oneMinute.rate(TimeUnit.SECONDS);
+        return oneMinute;
     }
 
     @Managed
-    public double getFiveMinuteRate()
+    @Nested
+    public DecayCounter getFiveMinute()
     {
-        return fiveMinute.rate(TimeUnit.SECONDS);
+        return fiveMinute;
     }
 
     @Managed
-    public double getFifteenMinuteRate()
+    @Nested
+    public DecayCounter getFifteenMinute()
     {
-        return fifteenMinute.rate(TimeUnit.SECONDS);
+        return fifteenMinute;
     }
 }
