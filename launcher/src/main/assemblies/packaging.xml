@@ -29,4 +29,11 @@
             <outputDirectory>/</outputDirectory>
         </fileSet>
     </fileSets>
+    <files>
+        <file>
+            <source>target/launcher-${project.version}.jar</source>
+            <destName>launcher.jar</destName>
+            <outputDirectory>/lib</outputDirectory>
+        </file>
+    </files>
 </assembly>
