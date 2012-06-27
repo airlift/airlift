@@ -160,7 +160,7 @@ def build_cmd_line(options)
 
   jvm_properties = load_lines(jvm_config_path).join(' ')
 
-  jar_path = File.join(install_path, 'lib', 'main.jar')
+  jar_path = File.join(install_path, 'lib', 'launcher.jar')
 
   system_properties = options[:system_properties].
                          map { |k, v| "-D#{k}=#{v}" }.

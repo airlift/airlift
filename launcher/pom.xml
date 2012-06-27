@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>launcher</artifactId>
-    <packaging>pom</packaging>
+    <packaging>jar</packaging>
     <version>0.71-SNAPSHOT</version>
     <name>launcher</name>
 
@@ -15,6 +15,35 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.3.1</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>com.proofpoint.launcher.Main</mainClass>
+                            <addClasspath>true</addClasspath>
+                            <useUniqueVersions>false</useUniqueVersions>
+                        </manifest>
+                        <manifestEntries>
+                            <Implementation-Version>${project.version}</Implementation-Version>
+                            <Class-Path>main.jar</Class-Path>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
         		<version>2.2</version>
