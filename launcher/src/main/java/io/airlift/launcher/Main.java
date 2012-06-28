@@ -23,7 +23,10 @@ import io.airlift.command.Option;
 import io.airlift.command.OptionType;
 import io.airlift.command.ParseException;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.JarURLConnection;
@@ -122,7 +125,12 @@ public class Main
             jvm_config_path = install_path + "/etc/jvm.config";
             config_path = install_path + "/etc/config.properties";
             data_dir = install_path;
+
             log_levels_path = install_path + "/etc/log.config";
+            if (!(new File(log_levels_path).canRead()) && new File(install_path + "/etc/log.properties").canRead()) {
+//todo                System.err.print("Did not find a log.properties file, but found a log.config instead.  log.config is deprecated, please use log.properties.");
+                 log_levels_path = install_path + "/etc/log.properties";
+            }
         }
 
         abstract void execute();
@@ -130,22 +138,48 @@ public class Main
         @Override
         public final void run()
         {
+            try (BufferedReader nodeReader = new BufferedReader(new FileReader(node_properties_path))) {
+                String line;
+                while ((line = nodeReader.readLine()) != null) {
+                    if (!line.matches("\\s*#.*")) {
+                        String[] split = line.split("=", 2);
+                        system_properties.put(split[0], split[1]);
+                    }
+                }
+            }
+            catch (FileNotFoundException ignore) {
+            }
+            catch (IOException e) {
+                throw new RuntimeException("Error reading node properties file: " + e);
+            }
+
+            for (String s : property) {
+                String[] split = s.split("=", 2);
+                String key = split[0];
+                if (key.equals("config")) {
+                    System.out.print("Config can not be passed in a -D argument. Use --config instead\n");
+                    System.exit(STATUS_INVALID_ARGS);
+                }
+                system_properties.put(key, split[1]);
+            }
+
+            if (system_properties.containsKey("node.data-dir")) {
+                data_dir = system_properties.get("node.data_dir");
+            }
+
             if (pid_file_path == null) {
                 pid_file_path = data_dir + "/var/run/launcher.pid";
             }
             if (log_path == null) {
                 log_path = data_dir + "/var/log/launcher.log";
             }
-            for (String s : property) {
-                String[] split = s.split("=", 2);
-                String key = split[0];
-                String value = split[0];
-                if (key.equals("config")) {
-                    System.out.print("Config can not be passed in a -D argument. Use --config instead\n");
-                    System.exit(STATUS_INVALID_ARGS);
-                }
-                system_properties.put(key, value);
+
+            if (verbose) {
+                //todo dump properties
             }
+
+            //todo symlink etc into data directory
+
             execute();
         }
 
