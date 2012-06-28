@@ -169,7 +169,7 @@ def build_cmd_line(options)
 
   # TODO: fix lack of escape handling by building an array
   command =<<-CMD
-    java #{jvm_properties} #{system_properties} '-Dconfig=#{config_path}' #{log_option} #{log_levels_option} -jar '#{jar_path}'
+    java #{jvm_properties} #{system_properties} '-Dconfig=#{config_path}' #{log_option} #{log_levels_option} -jar '#{jar_path}' start-client
   CMD
 
   puts command if options[:verbose]
