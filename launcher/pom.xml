@@ -64,6 +64,15 @@
             </plugin>
         </plugins>
     </build>
-    
+
+    <dependencies>
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>airline</artifactId>
+            <version>0.4</version>
+        </dependency>
+    </dependencies>
+
+
 </project>
 
