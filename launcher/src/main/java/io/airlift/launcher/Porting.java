@@ -20,6 +20,8 @@ import jnr.posix.POSIXFactory;
 import jnr.posix.POSIXHandler;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
@@ -31,14 +33,39 @@ import java.util.logging.Logger;
 class Porting
 {
     private static final POSIX posix = POSIXFactory.getPOSIX(new OurPOSIXHandler(), true);
+    public static final File NULL_FILE;
 
     private Porting()
     {
     }
 
+    static {
+        if (System.getProperty("os.name").startsWith("Windows")) {
+            NULL_FILE = new File("NUL");
+        }
+        else {
+            NULL_FILE = new File("/dev/null");
+        }
+    }
+
     static int getpid()
     {
         return posix.getpid();
+    }
+
+    static void detach()
+    {
+        if (!System.getProperty("os.name").startsWith("Windows")) {
+            posix.setsid();
+        }
+
+        try {
+            System.setIn(new FileInputStream(NULL_FILE));
+            System.setOut(new PrintStream(NULL_FILE));
+            System.setErr(new PrintStream(NULL_FILE));
+        }
+        catch (FileNotFoundException ignored) {
+        }
     }
 
     private static final class OurPOSIXHandler implements POSIXHandler

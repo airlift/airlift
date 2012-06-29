@@ -29,9 +29,6 @@ Options
 * kill (hard stop)
 * status (check status of daemon)
 
-Custom commands (for dev & debugging convenience)
-* run (run in foreground)
-
 Expects config under "etc":
   node.properties
   jvm.config
@@ -132,65 +129,8 @@ def merge_node_properties(options)
   options
 end
 
-def build_cmd_line(options)
-  install_path = Pathname.new(__FILE__).parent.parent.expand_path
-
-  log_option = if options[:daemon]
-    "'-Dlog.output-file=#{options[:log_path]}'"
-  else
-    ""
-  end
-
-  log_levels_option = if File.exists?(options[:log_levels_path])
-    "'-Dlog.levels-file=#{options[:log_levels_path]}'"
-  else
-    "" # ignore if levels file does not exist. TODO: should only ignore if using default & complain if user-provided file does not exist or has issues
-  end
-
-  config_path = options[:config_path]
-  raise CommandError.new(:config_missing, "Config file is missing: #{config_path}") unless File.exists?(config_path)
-
-  jvm_config_path = options[:jvm_config_path]
-  raise CommandError.new(:config_missing, "JVM config file is missing: #{jvm_config_path}") unless File.exists?(jvm_config_path)
-
-  jvm_properties = load_lines(jvm_config_path).join(' ')
-
-  jar_path = File.join(install_path, 'lib', 'launcher.jar')
-
-  system_properties = options[:system_properties].
-                         map { |k, v| "-D#{k}=#{v}" }.
-                         map { |v| escape(v) }.
-                         join(' ')
-
-  # TODO: fix lack of escape handling by building an array
-  command =<<-CMD
-    java #{jvm_properties} #{system_properties} '-Dconfig=#{config_path}' #{log_option} #{log_levels_option} -jar '#{jar_path}' start-client
-  CMD
-
-  puts command if options[:verbose]
-
-  command
-end
-
-def run(options)
-  exec(build_cmd_line(options),
-      :chdir=>options[:data_dir]
-  )
-end
-
 def start(options)
-  options[:daemon] = true
-  command = build_cmd_line(options)
-
-  puts command if options[:verbose]
-  pid = spawn("exec #{command}",
-    :chdir => options[:data_dir],
-    :out => "/dev/null",
-    :err => "/dev/null"
-  )
-  Process.detach(pid)
-
-  return :success, "Started as #{pid}"
+  exec("java", "-jar", "#{options[:install_path]}/lib/launcher.jar", *ORIG_ARGV)
 end
 
 
@@ -257,7 +197,7 @@ def status(options)
   end
 end
 
-commands = [:run, :start, :stop, :restart, :kill, :status]
+commands = [:start, :stop, :restart, :kill, :status]
 install_path = Pathname.new(__FILE__).parent.parent.expand_path
 
 legacy_log_properties_file = File.join(install_path, 'etc', 'log.config')
@@ -336,6 +276,7 @@ option_parser = OptionParser.new(:unknown_options_action => :collect) do |opts|
   end
 end
 
+ORIG_ARGV = Array.new(ARGV)
 option_parser.parse!(ARGV)
 
 options = merge_node_properties(options)
