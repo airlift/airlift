@@ -71,6 +71,24 @@
             <artifactId>airline</artifactId>
             <version>0.4</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.jnr</groupId>
+            <artifactId>jnr-posix</artifactId>
+            <version>2.0</version>
+            <!--version 2.1 pulls in a jnr-ffi that pulls in asm 2.x, which conflicts with the
+              asm used by jetty-server-->
+        </dependency>
+        <!--jnr-posix 2.0 dependencies-->
+        <dependency>
+            <groupId>com.github.jnr</groupId>
+            <artifactId>jnr-ffi</artifactId>
+            <version>0.6.0</version>
+        </dependency>
+       <dependency>
+            <groupId>com.github.jnr</groupId>
+            <artifactId>jnr-constants</artifactId>
+            <version>0.8.2</version>
+        </dependency>
     </dependencies>
 
 

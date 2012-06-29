@@ -82,11 +82,6 @@ class Pid
     @path = path
   end
 
-  def save(pid)
-    Pathname.new(@path).parent.mkpath
-    File.open(@path, "w") { |f| f.puts(pid) }
-  end
-
   def clear()
     File.delete(@path) if File.exists?(@path)
   end
@@ -184,11 +179,6 @@ def run(options)
 end
 
 def start(options)
-  pid_file = Pid.new(options[:pid_file])
-  if pid_file.alive?
-    return :success, "Already running as #{pid_file.get}"
-  end
-
   options[:daemon] = true
   command = build_cmd_line(options)
 
@@ -199,8 +189,6 @@ def start(options)
     :err => "/dev/null"
   )
   Process.detach(pid)
-
-  pid_file.save(pid)
 
   return :success, "Started as #{pid}"
 end
