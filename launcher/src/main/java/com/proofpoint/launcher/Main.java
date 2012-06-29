@@ -15,6 +15,7 @@
  */
 package com.proofpoint.launcher;
 
+import com.google.common.base.Joiner;
 import io.airlift.command.Arguments;
 import io.airlift.command.Cli;
 import io.airlift.command.Command;
@@ -28,6 +29,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.ProcessBuilder.Redirect;
 import java.lang.reflect.Method;
 import java.net.JarURLConnection;
 import java.net.MalformedURLException;
@@ -38,6 +40,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.LockSupport;
 import java.util.jar.Manifest;
 
 public class Main
@@ -45,12 +48,13 @@ public class Main
     private static final int STATUS_GENERIC_ERROR = 1;
     private static final int STATUS_INVALID_ARGS = 2;
     private static final int STATUS_UNSUPPORTED = 3;
+    private static final int STATUS_CONFIG_MISSING = 6;
 
     public static void main(String[] args)
     {
         Cli<Runnable> cli = Cli.buildCli("launcher", Runnable.class)
                 .withDescription("The service launcher")
-                .withCommands(Help.class, StartClientCommand.class)
+                .withCommands(Help.class, StartCommand.class, StartClientCommand.class)
                 .build();
 
         Runnable parse;
@@ -94,7 +98,9 @@ public class Main
 
         @Option(type = OptionType.GLOBAL, name = "-D", description = "Set a Java System property")
         public final List<String> property = new LinkedList<>();
-        private final Map<String, String> system_properties = new HashMap<>();
+
+        final Map<String, String> system_properties = new HashMap<>();
+        final List<String> launcherArgs = new LinkedList<>();
 
         LauncherCommand()
         {
@@ -121,15 +127,10 @@ public class Main
                 throw new RuntimeException(e);
             }
 
-            node_properties_path = install_path + "/etc/node.properties";
-            jvm_config_path = install_path + "/etc/jvm.config";
-            config_path = install_path + "/etc/config.properties";
-            data_dir = install_path;
-
-            log_levels_path = install_path + "/etc/log.config";
-            if (!(new File(log_levels_path).canRead()) && new File(install_path + "/etc/log.properties").canRead()) {
-//todo                System.err.print("Did not find a log.properties file, but found a log.config instead.  log.config is deprecated, please use log.properties.");
-                 log_levels_path = install_path + "/etc/log.properties";
+            log_levels_path = install_path + "/etc/log.properties";
+            if (!(new File(log_levels_path).canRead()) && new File(install_path + "/etc/log.config").canRead()) {
+                System.err.print("Did not find a log.properties file, but found a log.config instead.  log.config is deprecated, please use log.properties.");
+                log_levels_path = install_path + "/etc/log.config";
             }
         }
 
@@ -138,6 +139,40 @@ public class Main
         @Override
         public final void run()
         {
+            if (verbose) {
+                launcherArgs.add("-v");
+            }
+            if (node_properties_path == null) {
+                node_properties_path = install_path + "/etc/node.properties";
+            }
+            else {
+                launcherArgs.add("--node-config");
+                launcherArgs.add(new File(node_properties_path).getAbsolutePath());
+            }
+            if (jvm_config_path == null) {
+                jvm_config_path = install_path + "/etc/jvm.config";
+            }
+            else {
+                launcherArgs.add("--jvm-config");
+                launcherArgs.add(new File(jvm_config_path).getAbsolutePath());
+            }
+            if (config_path == null) {
+                config_path = install_path + "/etc/config.properties";
+            }
+            else {
+                launcherArgs.add("--config");
+                launcherArgs.add(new File(config_path).getAbsolutePath());
+            }
+            if (data_dir == null) {
+                data_dir = install_path;
+            }
+            else {
+                launcherArgs.add("--data");
+                launcherArgs.add(new File(data_dir).getAbsolutePath());
+            }
+            launcherArgs.add("--log-levels-file");
+            launcherArgs.add(new File(log_levels_path).getAbsolutePath());
+
             try (BufferedReader nodeReader = new BufferedReader(new FileReader(node_properties_path))) {
                 String line;
                 while ((line = nodeReader.readLine()) != null) {
@@ -154,6 +189,8 @@ public class Main
             }
 
             for (String s : property) {
+                launcherArgs.add("-D");
+                launcherArgs.add(s);
                 String[] split = s.split("=", 2);
                 String key = split[0];
                 if (key.equals("config")) {
@@ -170,8 +207,16 @@ public class Main
             if (pid_file_path == null) {
                 pid_file_path = data_dir + "/var/run/launcher.pid";
             }
+            else {
+                launcherArgs.add("--pid-file");
+                launcherArgs.add(new File(pid_file_path).getAbsolutePath());
+            }
             if (log_path == null) {
                 log_path = data_dir + "/var/log/launcher.log";
+            }
+            else {
+                launcherArgs.add("--log-file");
+                launcherArgs.add(new File(log_path).getAbsolutePath());
             }
 
             if (verbose) {
@@ -183,6 +228,109 @@ public class Main
             execute();
         }
 
+    }
+
+    @Command(name = "start", description = "Start server")
+    public static class StartCommand extends LauncherCommand
+    {
+        @Arguments(description = "Arguments to pass to server")
+        public final List<String> args = new LinkedList<>();
+
+        @Override
+        public void execute()
+        {
+            PidFile pidFile = new PidFile(pid_file_path);
+
+            PidStatus pidStatus = pidFile.get();
+            if (pidStatus.held) {
+                String msg = "Already running as";
+                if (pidStatus.pid != 0) {
+                    msg += " " + pidStatus.pid;
+                }
+                System.err.print(msg + "\n");
+                System.exit(0);
+            }
+
+            List<String> javaArgs = new LinkedList<>();
+            javaArgs.add("java");
+
+            if (!new File(config_path).exists()) {
+                System.err.print("Config file is missing: " + config_path);
+                System.exit(STATUS_CONFIG_MISSING);
+            }
+
+            try (BufferedReader jvmReader = new BufferedReader(new FileReader(jvm_config_path))) {
+                String line;
+                while ((line = jvmReader.readLine()) != null) {
+                    if (!line.matches("\\s*(?:#.*)?")) {
+                        javaArgs.add(line.trim());
+                    }
+                }
+            }
+            catch (FileNotFoundException e) {
+                System.err.print("JVM config file is missing: " + jvm_config_path);
+                System.exit(STATUS_CONFIG_MISSING);
+            }
+            catch (IOException e) {
+                System.err.print("Error reading JVM config file: " + e);
+                System.exit(STATUS_CONFIG_MISSING);
+            }
+
+            for (Map.Entry<String, String> entry : system_properties.entrySet()) {
+                javaArgs.add("-D" + entry.getKey() + "=" + entry.getValue());
+            }
+            javaArgs.add("-Dconfig=" + config_path);
+            javaArgs.add("-Dlog.output-file=" + log_path);
+            if (new File(log_levels_path).exists()) {
+                javaArgs.add("-Dlog.levels-file=" + log_levels_path);
+            }
+            javaArgs.add("-jar");
+            javaArgs.add(install_path + "/lib/launcher.jar");
+            javaArgs.addAll(launcherArgs);
+            javaArgs.add("start-client");
+            javaArgs.addAll(args);
+
+            if (verbose) {
+                System.out.print(Joiner.on(' ').join(javaArgs) + "\n");
+            }
+
+            Process child = null;
+            try {
+                child = new ProcessBuilder(javaArgs)
+                        .directory(new File(data_dir))
+                        .redirectInput(Porting.NULL_FILE)
+                        .redirectOutput(Redirect.INHERIT)
+                        .redirectError(Redirect.INHERIT)
+                        .start();
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+                System.exit(STATUS_GENERIC_ERROR);
+            }
+
+            do {
+                try {
+                    int status = child.exitValue();
+                    if (status == 0) {
+                        status = STATUS_GENERIC_ERROR;
+                    }
+                    System.err.print("Failed to start\n");
+                    System.exit(status);
+                }
+                catch (IllegalThreadStateException ignored) {
+                }
+                pidStatus = pidFile.waitRunning();
+                if (!pidStatus.held) {
+                    if (verbose) {
+                        System.out.print("Waiting for child to lock pid file\n");
+                    }
+                    LockSupport.parkNanos(100_000_000);
+                }
+            } while (!pidStatus.held);
+
+            System.out.print("Started as " + pidStatus.pid + "\n");
+            System.exit(0);
+        }
     }
 
     @Command(name = "start-client", description = "Internal use only", hidden = true)
@@ -200,9 +348,13 @@ public class Main
             pidFile = new PidFile(pid_file_path);
 
             int otherPid = pidFile.starting();
-            if (otherPid != 0) {
-               System.err.print("Already running as " + otherPid + "\n");
-               System.exit(0);
+            if (otherPid != -1) {
+                String msg = "Already running";
+                if (otherPid != 0) {
+                    msg += " as " + otherPid;
+                }
+                System.err.print(msg + "\n");
+                System.exit(0);
             }
 
             URL mainResource;
@@ -244,13 +396,16 @@ public class Main
                 System.err.print("Unable to find main method: " + e + "\n");
                 System.exit(STATUS_GENERIC_ERROR);
             }
+
+            Porting.detach();
+
             try {
                 mainClassMethod.invoke(null, (Object) argList.toArray(new String[0]));
             }
             catch (Exception e) {
-                e.printStackTrace();
                 System.exit(STATUS_GENERIC_ERROR);
             }
+            pidFile.running();
         }
     }
 

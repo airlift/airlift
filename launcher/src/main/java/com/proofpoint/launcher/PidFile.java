@@ -26,23 +26,26 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.util.concurrent.locks.LockSupport;
 
 @SuppressWarnings("FieldCanBeLocal")
 class PidFile
 {
-    private final String pid_file_path;
+    // Starting , Refreshing, Pausing, Paused, Resuming, Stopping, Running
+    private static final int STARTING = 1;
+    private static final int RUNNING = 7;
+    private static final int NOT_YET_RUNNING = 10;
+
     private FileChannel pidChannel = null;
     private FileChannel lockChannel = null;
     private FileLock startLock = null;
+    private FileLock runningLock = null;
+    private FileLock notYetRunningLock = null;
 
     PidFile(String pid_file_path)
     {
         Preconditions.checkNotNull(pid_file_path, "pid_file_path is null");
-        this.pid_file_path = pid_file_path;
-    }
 
-    int starting()
-    {
         //noinspection ResultOfMethodCallIgnored
         new File(pid_file_path).getParentFile().mkdirs();
         try {
@@ -65,9 +68,12 @@ class PidFile
         else {
             lockChannel = pidChannel;
         }
+    }
 
+    int starting()
+    {
         try {
-            startLock = lockChannel.tryLock(0, 1, false);
+            startLock = lockChannel.tryLock(0, STARTING, false);
         }
         catch (IOException e) {
             throw new RuntimeException("Cannot lock pid file: " + e);
@@ -81,20 +87,113 @@ class PidFile
             try {
                 pidChannel.truncate(0);
                 pidChannel.write(ByteBuffer.wrap((Integer.toString(Porting.getpid()) + "\n").getBytes()));
+                System.err.print(Porting.getpid() + ": " + "wrote pid"); //todo
             }
             catch (IOException e) {
                 throw new RuntimeException("Cannot write to pid file: " + e);
             }
+
+            try {
+                notYetRunningLock = lockChannel.lock(NOT_YET_RUNNING - 1, 1, false);
+            }
+            catch (IOException e) {
+                throw new RuntimeException("Cannot lock pid file: " + e);
+            }
         }
         else {
+            return readPid();
+        }
+        return -1;
+    }
+
+    private int readPid()
+    {
+        for (int i = 0; i < 10; ++i) {
             try {
+                pidChannel.position(0);
                 String line = new BufferedReader(Channels.newReader(pidChannel, "us-ascii")).readLine();
-                return Integer.decode(line.trim());
+                if (line != null) {
+                    return Integer.decode(line);
+                }
             }
             catch (IOException e) {
                 throw new RuntimeException("Cannot read pid file: " + e);
             }
+            LockSupport.parkNanos(10_000_000);
         }
         return 0;
+    }
+
+    void running()
+    {
+        try {
+            runningLock = lockChannel.lock(STARTING, RUNNING - STARTING, false);
+            notYetRunningLock.release();
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Cannot lock pid file: " + e);
+        }
+
+        notYetRunningLock = null;
+    }
+
+    PidStatus get()
+    {
+        FileLock fileLock;
+        try {
+            fileLock = lockChannel.tryLock(STARTING, NOT_YET_RUNNING - STARTING, true);
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Cannot lock pid file: " + e);
+        }
+
+        return getPidStatus(fileLock);
+    }
+
+    private PidStatus getPidStatus(FileLock fileLock)
+    {
+        PidStatus pidStatus = new PidStatus();
+        pidStatus.held = (fileLock == null);
+        if (fileLock == null) {
+            pidStatus.pid = readPid();
+        }
+        else {
+            try {
+                fileLock.release();
+            }
+            catch (IOException ignored) {
+            }
+        }
+
+        return pidStatus;
+    }
+
+    PidStatus waitRunning()
+    {
+        FileLock fileLock;
+        try {
+            fileLock = lockChannel.lock(NOT_YET_RUNNING - 1, 1, true);
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Cannot lock pid file: " + e);
+        }
+
+        try {
+            fileLock.release();
+        }
+        catch (IOException ignored) {
+        }
+
+        try {
+            // Possible race: a child that hasn't yet locked NOT_YET_RUNNING.
+            // We only check the lock up to RUNNING so that the returned PidStatus
+            // will have held set to false in that case.
+            fileLock = lockChannel.tryLock(STARTING, RUNNING - STARTING, true);
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Cannot lock pid file: " + e);
+        }
+
+        return getPidStatus(fileLock);
     }
 }
