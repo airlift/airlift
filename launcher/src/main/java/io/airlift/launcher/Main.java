@@ -190,10 +190,21 @@ public class Main
     {
         @Arguments(description = "Arguments to pass to server")
         public final List<String> argList = new LinkedList<>();
+        @SuppressWarnings("StaticNonFinalField")
+        private static PidFile pidFile = null; // static so it doesn't destruct and drop lock when main thread exits
 
         @Override
         public void execute()
         {
+            //noinspection AssignmentToStaticFieldFromInstanceMethod
+            pidFile = new PidFile(pid_file_path);
+
+            int otherPid = pidFile.starting();
+            if (otherPid != 0) {
+               System.err.print("Already running as " + otherPid + "\n");
+               System.exit(0);
+            }
+
             URL mainResource;
             try {
                 mainResource = new URL(launcherResource.toString().replaceFirst("/launcher.jar!", "/main.jar!"));
