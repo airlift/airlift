@@ -7,7 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-@Beta
+@Deprecated
 public class MeterStat
 {
     private final AtomicLong sum = new AtomicLong(0);
