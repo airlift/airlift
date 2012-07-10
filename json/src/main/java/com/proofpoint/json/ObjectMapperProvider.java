@@ -21,6 +21,7 @@ import org.codehaus.jackson.Version;
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.JsonDeserializer;
 import org.codehaus.jackson.map.JsonSerializer;
+import org.codehaus.jackson.map.KeyDeserializer;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 import org.codehaus.jackson.map.module.SimpleModule;
@@ -37,6 +38,8 @@ import static org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion.NON_NULL
 
 public class ObjectMapperProvider implements Provider<ObjectMapper>
 {
+    private Map<Class<?>, JsonSerializer<?>> keySerializers;
+    private Map<Class<?>, KeyDeserializer> keyDeserializers;
     private Map<Class<?>, JsonSerializer<?>> jsonSerializers;
     private Map<Class<?>, JsonDeserializer<?>> jsonDeserializers;
 
@@ -50,6 +53,18 @@ public class ObjectMapperProvider implements Provider<ObjectMapper>
     public void setJsonDeserializers(Map<Class<?>, JsonDeserializer<?>> jsonDeserializers)
     {
         this.jsonDeserializers = jsonDeserializers;
+    }
+
+    @Inject(optional = true)
+    public void setKeySerializers(@JsonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers)
+    {
+        this.keySerializers = keySerializers;
+    }
+
+    @Inject(optional = true)
+    public void setKeyDeserializers(@JsonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
+    {
+        this.keyDeserializers = keyDeserializers;
     }
 
     @Override
@@ -73,7 +88,7 @@ public class ObjectMapperProvider implements Provider<ObjectMapper>
         objectMapper.getSerializationConfig().disable(AUTO_DETECT_GETTERS);
         objectMapper.getSerializationConfig().disable(AUTO_DETECT_IS_GETTERS);
 
-        if (jsonSerializers != null || jsonDeserializers != null) {
+        if (jsonSerializers != null || jsonDeserializers != null || keySerializers != null || keyDeserializers != null) {
             SimpleModule module = new SimpleModule(getClass().getName(), new Version(1, 0, 0, null));
             if (jsonSerializers != null) {
                 for (Entry<Class<?>, JsonSerializer<?>> entry : jsonSerializers.entrySet()) {
@@ -84,6 +99,17 @@ public class ObjectMapperProvider implements Provider<ObjectMapper>
             if (jsonDeserializers != null) {
                 for (Entry<Class<?>, JsonDeserializer<?>> entry : jsonDeserializers.entrySet()) {
                     addDeserializer(module, entry.getKey(), entry.getValue());
+                }
+            }
+            if (keySerializers != null) {
+                for (Entry<Class<?>, JsonSerializer<?>> entry : keySerializers.entrySet()) {
+                    addKeySerializer(module, entry.getKey(), entry.getValue());
+
+                }
+            }
+            if (keyDeserializers != null) {
+                for (Entry<Class<?>, KeyDeserializer> entry : keyDeserializers.entrySet()) {
+                    module.addKeyDeserializer(entry.getKey(), entry.getValue());
                 }
             }
             objectMapper.registerModule(module);
@@ -107,5 +133,10 @@ public class ObjectMapperProvider implements Provider<ObjectMapper>
     public <T> void addDeserializer(SimpleModule module, Class<?> type, JsonDeserializer<?> jsonDeserializer)
     {
         module.addDeserializer((Class<T>) type, (JsonDeserializer<? extends T>) jsonDeserializer);
+    }
+
+    private <T> void addKeySerializer(SimpleModule module, Class<?> type, JsonSerializer<?> keySerializer)
+    {
+        module.addKeySerializer((Class<? extends T>) type, (JsonSerializer<T>) keySerializer);
     }
 }
