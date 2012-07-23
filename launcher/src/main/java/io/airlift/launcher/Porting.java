@@ -15,17 +15,24 @@
  */
 package io.airlift.launcher;
 
+import com.google.common.collect.ImmutableList;
 import jnr.posix.POSIX;
 import jnr.posix.POSIXFactory;
 import jnr.posix.POSIXHandler;
+import sun.misc.Signal;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.ProcessBuilder.Redirect;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.IllegalFormatException;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -65,6 +72,27 @@ class Porting
             System.setErr(new PrintStream(NULL_FILE));
         }
         catch (FileNotFoundException ignored) {
+        }
+    }
+
+    static void kill(int pid, boolean graceful)
+    {
+        if (System.getProperty("os.name").startsWith("Windows")) {
+            List<String> args = ImmutableList.of("taskkill", "/f", "/pid", Integer.toString(pid));
+            try {
+                new ProcessBuilder(args)
+                        .redirectInput(Redirect.from(NULL_FILE))
+                        .redirectOutput(Redirect.INHERIT)
+                        .redirectError(Redirect.INHERIT)
+                        .start()
+                        .waitFor();
+            }
+            catch (IOException | InterruptedException ignored) {
+            }
+        }
+        else {
+            int signal = new Signal(graceful ? "TERM" : "KILL").getNumber();
+            posix.kill(pid, signal);
         }
     }
 
