@@ -26,6 +26,8 @@ Options
 * start (run as daemon)
 * stop (stop gracefully)
 * restart (restart gracefully)
+* try-restart (restart gracefully if already running)
+* force-reload (cause the configuration of the service to be reloaded -- same as try-restart)
 * kill (hard stop)
 * status (check status of daemon)
 

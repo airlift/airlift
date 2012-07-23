@@ -61,7 +61,8 @@ public class Main
     {
         Cli<Runnable> cli = Cli.buildCli("launcher", Runnable.class)
                 .withDescription("The service launcher")
-                .withCommands(Help.class, RestartCommand.class, StartCommand.class, StartClientCommand.class,
+                .withCommands(Help.class, StartCommand.class, StartClientCommand.class,
+                        RestartCommand.class, TryRestartCommand.class, ForceReloadCommand.class,
                         StatusCommand.class, StopCommand.class, KillCommand.class)
                 .build();
 
@@ -522,6 +523,36 @@ public class Main
 
             super.execute();
        }
+    }
+
+    @Command(name = "try-restart", description = "Restart server gracefully if it is already running")
+    public static class TryRestartCommand extends StartCommand
+    {
+        @Override
+        public void execute()
+        {
+            PidFile pidFile = new PidFile(pid_file_path);
+
+            PidStatus pidStatus = pidFile.get();
+            if (!pidStatus.held) {
+                System.out.print("Not running\n");
+                System.exit(0);
+            }
+
+            KillStatus killStatus = killProcess(true);
+            if (killStatus.code != 0) {
+                System.out.print(killStatus.msg);
+                System.exit(killStatus.code);
+            }
+
+            super.execute();
+       }
+    }
+
+    @SuppressWarnings("EmptyClass")
+    @Command(name = "force-reload", description = "Cause server configuration to be reloaded")
+    public static class ForceReloadCommand extends TryRestartCommand
+    {
     }
 
     @Command(name = "stop", description = "Stop server gracefully")
