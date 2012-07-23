@@ -291,13 +291,6 @@ end
 
 puts options.map { |k, v| "#{k}=#{v}"}.join("\n") if options[:verbose]
 
-# symlink etc directory into data directory
-# this is needed to support programs that reference etc/xyz from within their config files (e.g., log.levels-file=etc/log.properties)
-if install_path != options[:data_dir]
-  File.delete(File.join(options[:data_dir], 'etc')) rescue nil
-  File.symlink(File.join(install_path, 'etc'), File.join(options[:data_dir], 'etc'))
-end
-
 status_codes = {
         :success => 0,
         :running => 0,

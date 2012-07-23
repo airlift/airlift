@@ -36,6 +36,8 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -220,10 +222,11 @@ public class Main
             }
 
             if (verbose) {
-                //todo dump properties
+// todo - uncomment when last command moved out of Ruby
+//                for (Entry<String, String> entry : system_properties.entrySet()) {
+//                    System.out.print(entry.getKey() + "=" + entry.getValue() + "\n");
+//                }
             }
-
-            //todo symlink etc into data directory
 
             execute();
         }
@@ -355,6 +358,21 @@ public class Main
                 }
                 System.err.print(msg + "\n");
                 System.exit(0);
+            }
+
+            if (!install_path.equals(data_dir)) {
+                // symlink etc directory into data directory
+                // this is needed to support programs that reference etc/xyz from within their config files (e.g., log.levels-file=etc/log.properties)
+                try {
+                    Files.delete(Paths.get(data_dir, "etc"));
+                }
+                catch (IOException ignored) {
+                }
+                try {
+                    Files.createSymbolicLink(Paths.get(data_dir, "etc"), Paths.get(install_path, "etc"));
+                }
+                catch (IOException ignored) {
+                }
             }
 
             URL mainResource;
