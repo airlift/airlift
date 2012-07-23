@@ -87,7 +87,6 @@ class PidFile
             try {
                 pidChannel.truncate(0);
                 pidChannel.write(ByteBuffer.wrap((Integer.toString(Porting.getpid()) + "\n").getBytes()));
-                System.err.print(Porting.getpid() + ": " + "wrote pid"); //todo
             }
             catch (IOException e) {
                 throw new RuntimeException("Cannot write to pid file: " + e);

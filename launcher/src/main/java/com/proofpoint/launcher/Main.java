@@ -16,6 +16,7 @@
 package com.proofpoint.launcher;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import io.airlift.command.Arguments;
 import io.airlift.command.Cli;
 import io.airlift.command.Command;
@@ -42,6 +43,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.locks.LockSupport;
 import java.util.jar.Manifest;
 
@@ -59,8 +61,8 @@ public class Main
     {
         Cli<Runnable> cli = Cli.buildCli("launcher", Runnable.class)
                 .withDescription("The service launcher")
-                .withCommands(Help.class, StartCommand.class, StartClientCommand.class,
-                        StatusCommand.class)
+                .withCommands(Help.class, RestartCommand.class, StartCommand.class, StartClientCommand.class,
+                        StatusCommand.class, StopCommand.class, KillCommand.class)
                 .build();
 
         Runnable parse;
@@ -226,15 +228,58 @@ public class Main
             }
 
             if (verbose) {
-// todo - uncomment when last command moved out of Ruby
-//                for (Entry<String, String> entry : system_properties.entrySet()) {
-//                    System.out.print(entry.getKey() + "=" + entry.getValue() + "\n");
-//                }
+                for (Entry<String, String> entry : system_properties.entrySet()) {
+                    System.out.print(entry.getKey() + "=" + entry.getValue() + "\n");
+                }
             }
 
             execute();
         }
 
+        static class KillStatus
+        {
+            public final int code;
+            public final String msg;
+
+            public KillStatus(int code, String msg)
+            {
+                Preconditions.checkNotNull(msg, "msg is null");
+
+                this.code = code;
+                this.msg = msg;
+            }
+        }
+
+        KillStatus killProcess(boolean graceful)
+        {
+            PidFile pidFile = new PidFile(pid_file_path);
+
+            for (int pidTriesLeft = 10; pidTriesLeft > 0; --pidTriesLeft) {
+                PidStatus pidStatus = pidFile.get();
+                if (!pidStatus.held) {
+                   return new KillStatus(0, "Not running\n");
+                }
+                if (pidStatus.pid != 0) {
+                    int pid = pidStatus.pid;
+                    Porting.kill(pid, graceful);
+                    for (int waitTriesLeft = 60 * 10; waitTriesLeft > 0; --waitTriesLeft) {
+                        pidStatus = pidFile.get();
+                        if (!pidStatus.held || pidStatus.pid != pid) {
+                            return new KillStatus(0, (graceful ? "Stopped " : "Killed ") + pid + "\n");
+                        }
+                        if (waitTriesLeft == 1 && graceful) {
+                            waitTriesLeft = 10;
+                            graceful = false;
+                            Porting.kill(pid, graceful);
+                        }
+                        LockSupport.parkNanos(100_000_000);
+                    }
+                    return new KillStatus(STATUS_GENERIC_ERROR, "Process " + pid + " refuses to die\n");
+                }
+                LockSupport.parkNanos(100_000_000);
+            }
+            return new KillStatus(STATUS_GENERIC_ERROR, "Unable to get server pid\n");
+        }
     }
 
     @Command(name = "start", description = "Start server")
@@ -461,6 +506,46 @@ public class Main
             System.out.print("Not running\n");
             System.exit(STATUS_NOT_RUNNING);
         }
+    }
+
+    @Command(name = "restart", description = "Restart server gracefully")
+    public static class RestartCommand extends StartCommand
+    {
+        @Override
+        public void execute()
+        {
+            KillStatus killStatus = killProcess(true);
+            if (killStatus.code != 0) {
+                System.out.print(killStatus.msg);
+                System.exit(killStatus.code);
+            }
+
+            super.execute();
+       }
+    }
+
+    @Command(name = "stop", description = "Stop server gracefully")
+    public static class StopCommand extends LauncherCommand
+    {
+        @Override
+        public void execute()
+        {
+            KillStatus killStatus = killProcess(true);
+            System.out.print(killStatus.msg);
+            System.exit(killStatus.code);
+       }
+    }
+
+    @Command(name = "kill", description = "Hard stop of server")
+    public static class KillCommand extends LauncherCommand
+    {
+        @Override
+        public void execute()
+        {
+            KillStatus killStatus = killProcess(false);
+            System.out.print(killStatus.msg);
+            System.exit(killStatus.code);
+       }
     }
 
     @Command(name = "ParseError")
