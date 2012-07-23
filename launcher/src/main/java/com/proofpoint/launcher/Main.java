@@ -52,11 +52,15 @@ public class Main
     private static final int STATUS_UNSUPPORTED = 3;
     private static final int STATUS_CONFIG_MISSING = 6;
 
+    // Specific to the "status" command
+    private static final int STATUS_NOT_RUNNING = 3;
+
     public static void main(String[] args)
     {
         Cli<Runnable> cli = Cli.buildCli("launcher", Runnable.class)
                 .withDescription("The service launcher")
-                .withCommands(Help.class, StartCommand.class, StartClientCommand.class)
+                .withCommands(Help.class, StartCommand.class, StartClientCommand.class,
+                        StatusCommand.class)
                 .build();
 
         Runnable parse;
@@ -246,9 +250,9 @@ public class Main
 
             PidStatus pidStatus = pidFile.get();
             if (pidStatus.held) {
-                String msg = "Already running as";
+                String msg = "Already running";
                 if (pidStatus.pid != 0) {
-                    msg += " " + pidStatus.pid;
+                    msg += " as " + pidStatus.pid;
                 }
                 System.err.print(msg + "\n");
                 System.exit(0);
@@ -424,6 +428,38 @@ public class Main
                 System.exit(STATUS_GENERIC_ERROR);
             }
             pidFile.running();
+        }
+    }
+
+    @Command(name = "status", description = "Check status of server")
+    public static class StatusCommand extends LauncherCommand
+    {
+        @Override
+        public void execute()
+        {
+            PidFile pidFile = new PidFile(pid_file_path);
+
+            PidStatus pidStatus = pidFile.get();
+            if (pidStatus.held) {
+                Integer pid = pidStatus.pid;
+                String msg = "Starting";
+
+                pidStatus = pidFile.getRunning();
+                if (pidStatus.held) {
+                    msg = "Running";
+                    if (pidStatus.pid != 0) {
+                        pid = pidStatus.pid;
+                    }
+                }
+                if (pid != 0) {
+                    msg += " as " + pid;
+                }
+                System.out.print(msg + "\n");
+                System.exit(0);
+            }
+
+            System.out.print("Not running\n");
+            System.exit(STATUS_NOT_RUNNING);
         }
     }
 

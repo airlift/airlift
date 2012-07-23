@@ -114,11 +114,6 @@ class CommandError < RuntimeError
   end
 end
 
-def escape(string)
-  string = string.gsub("'", %q('\\\''))
-  "'#{string}'"
-end
-
 def merge_node_properties(options)
   properties = {}
   properties = load_properties(options[:node_properties_path]) if File.exists?(options[:node_properties_path])
@@ -129,10 +124,13 @@ def merge_node_properties(options)
   options
 end
 
-def start(options)
+def exec_java(options)
   exec("java", "-jar", "#{options[:install_path]}/lib/launcher.jar", *ORIG_ARGV)
 end
 
+def start(options)
+  exec_java(options)
+end
 
 def stop(options)
   pid_file = Pid.new(options[:pid_file])
@@ -185,16 +183,7 @@ def kill(options)
 end
 
 def status(options)
-  pid_file = Pid.new(options[:pid_file])
-
-  if pid_file.get.nil?
-    return :not_running, "Not running"
-  elsif pid_file.alive?
-    return :running, "Running as #{pid_file.get}"
-  else
-    # todo this is wrong. how do you get path from the pid_file
-    return :not_running_with_pid_file, "Program is dead and pid file #{pid_file.get} exists"
-  end
+  exec_java(options)
 end
 
 commands = [:start, :stop, :restart, :kill, :status]
@@ -293,9 +282,6 @@ puts options.map { |k, v| "#{k}=#{v}"}.join("\n") if options[:verbose]
 
 status_codes = {
         :success => 0,
-        :running => 0,
-        :not_running_with_pid_file => 1,
-        :not_running => 3
 }
 
 

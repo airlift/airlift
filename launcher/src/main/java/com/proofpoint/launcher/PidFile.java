@@ -150,6 +150,19 @@ class PidFile
         return getPidStatus(fileLock);
     }
 
+    public PidStatus getRunning()
+    {
+        FileLock fileLock;
+        try {
+            fileLock = lockChannel.tryLock(STARTING, RUNNING - STARTING, true);
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Cannot lock pid file: " + e);
+        }
+
+        return getPidStatus(fileLock);
+    }
+
     private PidStatus getPidStatus(FileLock fileLock)
     {
         PidStatus pidStatus = new PidStatus();
