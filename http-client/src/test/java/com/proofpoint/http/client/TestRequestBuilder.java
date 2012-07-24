@@ -22,6 +22,7 @@ import java.net.URI;
 
 import static com.proofpoint.http.client.Request.Builder.fromRequest;
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
+import static com.proofpoint.http.client.Request.Builder.preparePut;
 import static com.proofpoint.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static org.testng.Assert.assertEquals;
 
@@ -32,8 +33,8 @@ public class TestRequestBuilder
     @Test
     public void testRequestBuilder()
     {
-        Request request = createRequest();
-        assertEquals(request.getMethod(), "GET");
+        Request request = createPutRequest();
+        assertEquals(request.getMethod(), "PUT");
         assertEquals(request.getBodyGenerator(), NULL_BODY_GENERATOR);
         assertEquals(request.getUri(), URI.create("http://example.com"));
         assertEquals(request.getHeaders(), ImmutableListMultimap.of(
@@ -50,17 +51,28 @@ public class TestRequestBuilder
     @Test
     public void testBuilderFromRequest()
     {
-        Request request = createRequest();
+        Request request = createPutRequest();
         assertEquals(fromRequest(request).build(), request);
     }
 
-    private Request createRequest()
+    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "Cannot set body generator for non entity methods")
+    public void testRequestBuilderThrowsOnUsingBodyGeneratorForGetRequest()
     {
-        return prepareGet()
-                    .setUri(URI.create("http://example.com"))
-                    .addHeader("newheader", "withvalue")
-                    .addHeader("anotherheader", "anothervalue")
-                    .setBodyGenerator(NULL_BODY_GENERATOR)
-                    .build();
+        prepareGet()
+         .setUri(URI.create("http://example.com"))
+         .addHeader("newheader", "withvalue")
+         .addHeader("anotherheader", "anothervalue")
+         .setBodyGenerator(NULL_BODY_GENERATOR)
+         .build();
+    }
+
+    private Request createPutRequest()
+    {
+        return preparePut()
+                .setUri(URI.create("http://example.com"))
+                .addHeader("newheader", "withvalue")
+                .addHeader("anotherheader", "anothervalue")
+                .setBodyGenerator(NULL_BODY_GENERATOR)
+                .build();
     }
 }
