@@ -1,3 +1,10 @@
+Platform 0.65
+
+* Improvements in unit tests and testing utilities
+* Modifications to allow building on Windows
+* Restrict entity bodies to PUT/POST requests in HttpClient
+* [Bug] Throw correct exception from HttpClient
+
 Platform 0.64
 
 * Fix bug that prevented skeleton server from starting
