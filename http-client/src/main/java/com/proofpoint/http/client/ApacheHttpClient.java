@@ -146,7 +146,7 @@ public class ApacheHttpClient implements com.proofpoint.http.client.HttpClient
         catch (Exception e) {
             if (e instanceof ExceptionFromResponseHandler) {
                 try {
-                    throw (E) e;
+                    throw (E) e.getCause();
                 }
                 catch (ClassCastException classCastException) {
                     // this should never happen but generics suck so be safe

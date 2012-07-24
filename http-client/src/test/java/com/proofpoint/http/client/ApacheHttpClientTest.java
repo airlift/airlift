@@ -225,6 +225,19 @@ public class ApacheHttpClientTest
         Assert.assertEquals(statusCode, 543);
     }
 
+    @Test(expectedExceptions = UnexpectedResponseException.class)
+    public void testThrowsUnexpectedResponseException()
+            throws Exception
+    {
+        servlet.responseStatusCode = 543;
+        Request request = prepareGet()
+                .setUri(baseURI)
+                .build();
+
+        httpClient.execute(request, new UnexpectedResponseStatusCodeHandler(200));
+    }
+
+
     @Test
     public void testResponseStatusMessage()
             throws Exception
@@ -417,6 +430,34 @@ public class ApacheHttpClientTest
             return response.getStatusCode();
         }
     }
+
+    static class UnexpectedResponseStatusCodeHandler implements ResponseHandler<Integer, RuntimeException>
+    {
+        private int expectedStatusCode;
+
+        UnexpectedResponseStatusCodeHandler(int expectedStatusCode)
+        {
+            this.expectedStatusCode = expectedStatusCode;
+        }
+
+        @Override
+        public RuntimeException handleException(Request request, Exception exception)
+        {
+            return null;
+        }
+
+        @Override
+        public Integer handle(Request request, Response response)
+                throws RuntimeException
+        {
+            if (response.getStatusCode() != expectedStatusCode)
+            {
+                throw new UnexpectedResponseException(request, response);
+            }
+            return response.getStatusCode();
+        }
+    }
+
 
     private static class ResponseHeadersHandler
             implements ResponseHandler<ListMultimap<String, String>, Exception>
