@@ -31,17 +31,29 @@ public class TestRequest
 
         EquivalenceTester.<Request>equivalenceTester()
                 .addEquivalentGroup(
+                        new Request(createUri1(), "GET", createHeaders1(), null),
+                        new Request(createUri1(), "GET", createHeaders1(), null))
+                .addEquivalentGroup(
                         new Request(createUri1(), "GET", createHeaders1(), bodyGenerator),
                         new Request(createUri1(), "GET", createHeaders1(), bodyGenerator))
                 .addEquivalentGroup(
+                        new Request(createUri1(), "GET", createHeaders2(), bodyGenerator))
+                .addEquivalentGroup(
                         new Request(createUri2(), "GET", createHeaders1(), bodyGenerator))
+                .addEquivalentGroup(
+                        new Request(createUri1(), "PUT", createHeaders1(), null),
+                        new Request(createUri1(), "PUT", createHeaders1(), null))
+                .addEquivalentGroup(
+                        new Request(createUri2(), "PUT", createHeaders1(), null))
+                .addEquivalentGroup(
+                        new Request(createUri1(), "PUT", createHeaders2(), null))
                 .addEquivalentGroup(
                         new Request(createUri1(), "PUT", createHeaders1(), bodyGenerator),
                         new Request(createUri1(), "PUT", createHeaders1(), bodyGenerator))
                 .addEquivalentGroup(
-                        new Request(createUri1(), "GET", createHeaders2(), bodyGenerator))
-                .addEquivalentGroup(
                         new Request(createUri1(), "GET", createHeaders1(), createBodyGenerator()))
+                .addEquivalentGroup(
+                        new Request(createUri1(), "PUT", createHeaders1(), createBodyGenerator()))
                 .check();
     }
 
