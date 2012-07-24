@@ -335,6 +335,15 @@ public class ConfigurationFactory
             return null;
         }
 
+        // Look for a static fromString(String) method
+        try {
+            Method fromString = type.getMethod("fromString", String.class);
+            if (fromString.getReturnType().isAssignableFrom(type)) {
+                return fromString.invoke(null, value);
+            }
+        } catch (Throwable ignored) {
+        }
+
         // Look for a static valueOf(String) method
         try {
             Method valueOf = type.getMethod("valueOf", String.class);
