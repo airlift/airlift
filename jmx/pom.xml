@@ -4,13 +4,13 @@
     <groupId>io.airlift</groupId>
     <artifactId>jmx</artifactId>
     <packaging>jar</packaging>
-    <version>0.66-SNAPSHOT</version>
+    <version>0.66</version>
     <name>jmx</name>
 
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>0.66-SNAPSHOT</version>
+        <version>0.66</version>
     </parent>
 
     <dependencies>
