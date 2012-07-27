@@ -1,7 +1,48 @@
-Airlift 0.66-SNAPSHOT
+Airlift 0.66
 
-* CounterStats no longer requires a thread pool. It is based on DecayCounter, an implementation
-  of a counter that decays exponentially.
+* Java 7 is now required
+
+Moving forward Airlift will be written using the new Java 7 syntax and APIs, and
+releases will be compiled using Java 7.  This means Java 7 is required for
+running Airlift-based servers.
+
+* No thread pool for CounterStats
+
+We changed the CounterStat implementation to use forward decay, which eliminates
+the need for a thread pool (and having to manage a thread pool).
+
+* HttpUriBuilder a fluent api for HTTP URIs
+
+Building HTTP URIs using java.net.URI is difficult and error prone, so we added
+a simple fluent API for building up HTTP URIs.  For example:
+
+    URI uri = uriBuilder()
+            .scheme("http")
+            .host("www.example.com")
+            .port(8081)
+            .replacePath("/a/b/c")
+            .replaceParameter("k", "1")
+            .build();
+
+Additionally, the API can manipulate existing URIs:
+
+    URI uri = HttpUriBuilder.uriBuilderFrom(URI.create("http://www.example.com:8081/?a=apple&b=banana"))
+            .replaceParameter("a", "apricot")
+            .appendPath("a/b/c")
+            .build();
+
+* Bind Jackson key serializers and deserializers in Guice
+
+We've added the ability to bind Jackson key serializers and deserializers with
+the JsonBinder.
+
+* Configuration types can now use a fromString method for coercion
+
+The configuration system will look for methods in the folowing order:
+
+    fromString(String);
+    valueOf(String);
+    <init>(String);
 
 Airlift 0.65
 
