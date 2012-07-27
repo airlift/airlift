@@ -1,13 +1,15 @@
 * 0.66
 
 - Java 7 is now required
-- Replaced EWMA with DecayCounter, an implementation that doesn't require a thread pool
+- Replace EWMA with DecayCounter, an implementation that doesn't require a thread pool
 - Add HttpUriBuilder from Airship (Formally Galaxy)
 - Add support for binding Jackson key serializers and deserializers in Guice
 - Add support for fromString method in configuration type coercion
 - Better testing for nulls an unrelated classes in EquivalenceTester
 - [Bug] Http client could attempt to connect to port zero; now throw an exception
 - Minor fixes for windows
+- Add QuantileDigest for computing approximate quantile statistics
+- Deprecate MeterStat in favor of newly introduced DistributionStat
 
 * 0.65
 

@@ -6,7 +6,7 @@ Moving forward Airlift will be written using the new Java 7 syntax and APIs, and
 releases will be compiled using Java 7.  This means Java 7 is required for
 running Airlift-based servers.
 
-* No thread pool for CounterStats
+* No thread pool for CounterStat
 
 We changed the CounterStat implementation to use forward decay, which eliminates
 the need for a thread pool (and having to manage a thread pool).
@@ -38,11 +38,25 @@ the JsonBinder.
 
 * Configuration types can now use a fromString method for coercion
 
-The configuration system will look for methods in the folowing order:
+The configuration system will look for methods in the following order:
 
     fromString(String);
     valueOf(String);
     <init>(String);
+
+* Quantile Digest
+
+We've introduced an implementation of Quantile Digests, a data structure for computing approximate
+quantile statistics and histograms in sub-linear space with guaranteed error bounds, from the paper
+"Medians and Beyond: New Aggregation Techniques for Sensor Networks". It supports
+exponentially-decayed counts and can be used to query quantiles and histograms very efficiently.
+
+* DistributionStat
+
+We've deprecated MeterStat in favor of DistributionStat. This new implementation is based on
+QuantileDigest and exposes statistically valid percentile metrics at various resolutions
+(1/5/15-minute, all time). It's designed to be exported via jmxutil's @Managed annotations.
+
 
 Airlift 0.65
 
