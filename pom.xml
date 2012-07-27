@@ -459,7 +459,6 @@
         <module>skeleton-server</module>
         <module>sample-server-archetype-builder</module>
         <module>skeleton-server-archetype-builder</module>
-        <module>cassandra</module>
         <module>trace-token</module>
     </modules>
 </project>
