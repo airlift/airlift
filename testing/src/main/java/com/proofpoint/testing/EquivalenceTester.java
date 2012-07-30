@@ -283,6 +283,7 @@ public final class EquivalenceTester
         }
     }
 
+    @SafeVarargs
     @Deprecated
     public static <T extends Comparable<T>> void checkComparison(Iterable<T> initialGroup, Iterable<T> greaterGroup, Iterable<T>... moreGreaterGroup)
     {
