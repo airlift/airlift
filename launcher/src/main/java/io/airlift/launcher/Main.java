@@ -62,6 +62,7 @@ public class Main
         Cli<Runnable> cli = Cli.buildCli("launcher", Runnable.class)
                 .withDescription("The service launcher")
                 .withCommands(Help.class, StartCommand.class, StartClientCommand.class,
+                        RunCommand.class, RunClientCommand.class,
                         RestartCommand.class, TryRestartCommand.class, ForceReloadCommand.class,
                         StatusCommand.class, StopCommand.class, KillCommand.class)
                 .build();
@@ -288,6 +289,7 @@ public class Main
     {
         @Arguments(description = "Arguments to pass to server")
         public final List<String> args = new LinkedList<>();
+        boolean daemon = true;
 
         @Override
         public void execute()
@@ -333,14 +335,21 @@ public class Main
                 javaArgs.add("-D" + entry.getKey() + "=" + entry.getValue());
             }
             javaArgs.add("-Dconfig=" + config_path);
-            javaArgs.add("-Dlog.output-file=" + log_path);
+            if (daemon) {
+                javaArgs.add("-Dlog.output-file=" + log_path);
+            }
             if (new File(log_levels_path).exists()) {
                 javaArgs.add("-Dlog.levels-file=" + log_levels_path);
             }
             javaArgs.add("-jar");
             javaArgs.add(install_path + "/lib/launcher.jar");
             javaArgs.addAll(launcherArgs);
-            javaArgs.add("start-client");
+            if (daemon) {
+                javaArgs.add("start-client");
+            }
+            else {
+                javaArgs.add("run-client");
+            }
             javaArgs.addAll(args);
 
             if (verbose) {
@@ -359,6 +368,15 @@ public class Main
             catch (IOException e) {
                 e.printStackTrace();
                 System.exit(STATUS_GENERIC_ERROR);
+            }
+
+            if (!daemon) {
+                try {
+                    System.exit(child.waitFor());
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
 
             do {
@@ -386,28 +404,41 @@ public class Main
         }
     }
 
+    @Command(name = "run", description = "Start server in foreground")
+    public static class RunCommand extends StartCommand
+    {
+        public RunCommand()
+        {
+            daemon = false;
+        }
+   }
+
     @Command(name = "start-client", description = "Internal use only", hidden = true)
     public static class StartClientCommand extends LauncherCommand
     {
         @Arguments(description = "Arguments to pass to server")
         public final List<String> argList = new LinkedList<>();
+        boolean daemon = true;
+
         @SuppressWarnings("StaticNonFinalField")
         private static PidFile pidFile = null; // static so it doesn't destruct and drop lock when main thread exits
 
         @Override
         public void execute()
         {
-            //noinspection AssignmentToStaticFieldFromInstanceMethod
-            pidFile = new PidFile(pid_file_path);
+            if (daemon) {
+                //noinspection AssignmentToStaticFieldFromInstanceMethod
+                pidFile = new PidFile(pid_file_path);
 
-            int otherPid = pidFile.starting();
-            if (otherPid != -1) {
-                String msg = "Already running";
-                if (otherPid != 0) {
-                    msg += " as " + otherPid;
+                int otherPid = pidFile.starting();
+                if (otherPid != -1) {
+                    String msg = "Already running";
+                    if (otherPid != 0) {
+                        msg += " as " + otherPid;
+                    }
+                    System.err.print(msg + "\n");
+                    System.exit(0);
                 }
-                System.err.print(msg + "\n");
-                System.exit(0);
             }
 
             if (!install_path.equals(data_dir)) {
@@ -465,7 +496,9 @@ public class Main
                 System.exit(STATUS_GENERIC_ERROR);
             }
 
-            Porting.detach();
+            if (daemon) {
+                Porting.detach();
+            }
 
             try {
                 mainClassMethod.invoke(null, (Object) argList.toArray(new String[0]));
@@ -473,7 +506,19 @@ public class Main
             catch (Exception e) {
                 System.exit(STATUS_GENERIC_ERROR);
             }
-            pidFile.running();
+
+            if (daemon) {
+                pidFile.running();
+            }
+        }
+    }
+
+    @Command(name = "run-client", description = "Internal use only", hidden = true)
+    public static class RunClientCommand extends StartClientCommand
+    {
+        public RunClientCommand()
+        {
+            daemon = false;
         }
     }
 
