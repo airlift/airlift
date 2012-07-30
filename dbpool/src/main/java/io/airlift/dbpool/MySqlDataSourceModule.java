@@ -39,6 +39,7 @@ public class MySqlDataSourceModule extends MBeanModule
     private final List<Class<? extends Annotation>> aliases;
     private final String type;
 
+    @SafeVarargs
     public MySqlDataSourceModule(String type, Class<? extends Annotation> annotation, Class<? extends Annotation>... aliases)
     {
         if (annotation == null) {

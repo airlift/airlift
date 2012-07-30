@@ -37,6 +37,7 @@ public class H2EmbeddedDataSourceModule extends MBeanModule
     private final List<Class<? extends Annotation>> aliases;
     private final String propertyPrefix;
 
+    @SafeVarargs
     public H2EmbeddedDataSourceModule(String propertyPrefix, Class<? extends Annotation> annotation, Class<? extends Annotation>... aliases)
     {
         if (annotation == null) {

@@ -131,6 +131,7 @@ public final class ConfigAssertions
         assertAttributesEqual(metadata, actual, expected);
     }
 
+    @SafeVarargs
     public static <T> void assertDeprecatedEquivalence(Class<T> configClass, Map<String, String> currentProperties, Map<String, String>... oldPropertiesList)
     {
         Assert.assertNotNull(configClass, "configClass");
