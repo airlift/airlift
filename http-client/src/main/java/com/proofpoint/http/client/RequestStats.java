@@ -38,31 +38,15 @@ public class RequestStats
     private final TimedStat responseTime;
     private final MeterStat readBytes;
     private final MeterStat writtenBytes;
-    private final ScheduledExecutorService executor;
 
     @Inject
     public RequestStats()
     {
-        executor = new ScheduledThreadPoolExecutor(2, new ThreadFactoryBuilder().setNameFormat("RequestStatsTicker-%s").setDaemon(true).build());
-
-        request = new CounterStat(executor);
+        request = new CounterStat();
         requestTime = new TimedStat();
         responseTime = new TimedStat();
-        readBytes = new MeterStat(executor);
-        writtenBytes = new MeterStat(executor);
-
-        request.start();
-        readBytes.start();
-        writtenBytes.start();
-    }
-
-    @PreDestroy
-    public void shutdown()
-    {
-        request.stop();
-        readBytes.stop();
-        writtenBytes.stop();
-        executor.shutdown();
+        readBytes = new MeterStat();
+        writtenBytes = new MeterStat();
     }
 
     public void record(String method,

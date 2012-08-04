@@ -15,7 +15,6 @@
  */
 package com.proofpoint.http.server;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.proofpoint.stats.CounterStat;
 import com.proofpoint.stats.MeterStat;
 import com.proofpoint.stats.TimedStat;
@@ -24,10 +23,7 @@ import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
-import javax.annotation.PreDestroy;
 import javax.inject.Inject;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 public class RequestStats
 {
@@ -35,30 +31,14 @@ public class RequestStats
     private final TimedStat requestTime;
     private final MeterStat readBytes;
     private final MeterStat writtenBytes;
-    private final ScheduledExecutorService executor;
 
     @Inject
     public RequestStats()
     {
-        executor = new ScheduledThreadPoolExecutor(2, new ThreadFactoryBuilder().setNameFormat("RequestStatsTicker-%s").setDaemon(true).build());
-
-        request = new CounterStat(executor);
+        request = new CounterStat();
         requestTime = new TimedStat();
-        readBytes = new MeterStat(executor);
-        writtenBytes = new MeterStat(executor);
-
-        request.start();
-        readBytes.start();
-        writtenBytes.start();
-    }
-
-    @PreDestroy
-    public void shutdown()
-    {
-        request.stop();
-        readBytes.stop();
-        writtenBytes.stop();
-        executor.shutdown();
+        readBytes = new MeterStat();
+        writtenBytes = new MeterStat();
     }
 
     public void record(String method, int responseCode, long requestSizeInBytes, long responseSizeInBytes, Duration schedulingDelay, Duration requestProcessingTime)
