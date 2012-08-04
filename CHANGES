@@ -1,3 +1,11 @@
+* 0.67
+
+- Replace EWMA with DecayCounter, an implementation that doesn't require a thread pool
+- Add HttpUriBuilder from Airship (Formerly Galaxy)
+- Add support for binding Jackson key serializers and deserializers in Guice
+- Add support for fromString method in configuration type coercion
+- Add QuantileDigest for computing approximate quantile statistics
+
 * 0.66
 - Java 7 is now required
 

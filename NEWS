@@ -1,3 +1,56 @@
+Platform 0.67
+
+* No thread pool for CounterStat
+
+We changed the CounterStat implementation to use forward decay, which eliminates
+the need for a thread pool (and having to manage a thread pool).
+
+* HttpUriBuilder a fluent api for HTTP URIs
+
+Building HTTP URIs using java.net.URI is difficult and error prone, so we added
+a simple fluent API for building up HTTP URIs. For example:
+
+    URI uri = uriBuilder()
+            .scheme("http")
+            .host("www.example.com")
+            .port(8081)
+            .replacePath("/a/b/c")
+            .replaceParameter("k", "1")
+            .build();
+
+Additionally, the API can manipulate existing URIs:
+
+    URI uri = HttpUriBuilder.uriBuilderFrom(URI.create("http://www.example.com:8081/?a=apple&b=banana"))
+            .replaceParameter("a", "apricot")
+            .appendPath("a/b/c")
+            .build();
+
+* Bind Jackson key serializers and deserializers in Guice
+
+We've added the ability to bind Jackson key serializers and deserializers with
+the JsonBinder.
+
+* Configuration types can now use a fromString method for coercion
+
+The configuration system will look for methods in the following order:
+
+    fromString(String);
+    valueOf(String);
+    <init>(String);
+
+* Quantile Digest
+
+We've introduced an implementation of Quantile Digests, a data structure for computing approximate
+quantile statistics and histograms in sub-linear space with guaranteed error bounds, from the paper
+"Medians and Beyond: New Aggregation Techniques for Sensor Networks". It supports
+exponentially-decayed counts and can be used to query quantiles and histograms very efficiently.
+
+* DistributionStat
+
+We've deprecated MeterStat in favor of DistributionStat. This new implementation is based on
+QuantileDigest and exposes statistically valid percentile metrics at various resolutions
+(1/5/15-minute, all time). It's designed to be exported via jmxutil's @Managed annotations.
+
 Platform 0.66
 
 * Java 7 is now required
