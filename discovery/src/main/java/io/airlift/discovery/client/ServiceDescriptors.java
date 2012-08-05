@@ -16,6 +16,7 @@
 package io.airlift.discovery.client;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import io.airlift.units.Duration;
 
 import java.util.List;
@@ -55,7 +56,7 @@ public class ServiceDescriptors
 
         this.type = type;
         this.pool = pool;
-        this.serviceDescriptors = serviceDescriptors;
+        this.serviceDescriptors = ImmutableList.copyOf(serviceDescriptors);
         this.maxAge = maxAge;
         this.eTag = eTag;
 
