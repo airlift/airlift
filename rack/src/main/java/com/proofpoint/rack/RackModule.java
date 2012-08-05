@@ -49,6 +49,6 @@ public class RackModule implements Module
     @TheServlet
     public Map<String, String> createTheServletParams()
     {
-        return Collections.<String,String>emptyMap();
+        return Collections.emptyMap();
     }
 }
