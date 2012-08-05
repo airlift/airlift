@@ -119,7 +119,7 @@ public final class ConfigAssertions
         if (!properties.keySet().equals(nonDeprecatedProperties)) {
             TreeSet<String> untestedProperties = new TreeSet<String>(nonDeprecatedProperties);
             untestedProperties.removeAll(properties.keySet());
-            Assert.fail(String.format("Untested properties " + untestedProperties));
+            Assert.fail("Untested properties " + untestedProperties);
         }
 
         // verify that none of the values are the same as a default for the configuration
