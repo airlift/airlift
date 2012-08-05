@@ -42,12 +42,7 @@ public class CachingServiceSelectorFactory implements ServiceSelectorFactory
         Preconditions.checkNotNull(selectorConfig, "selectorConfig is null");
 
         CachingServiceSelector serviceSelector = new CachingServiceSelector(type, selectorConfig, lookupClient, executor);
-        try {
-            serviceSelector.start();
-        }
-        catch (TimeoutException e) {
-            throw Throwables.propagate(e);
-        }
+        serviceSelector.start();
 
         return serviceSelector;
     }

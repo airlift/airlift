@@ -84,7 +84,6 @@ class LoggingWriter extends StringWriter
     }
 
     public void printMessage(String message, Object... args)
-            throws IOException
     {
         write(String.format(message, args) + "\n");
     }
