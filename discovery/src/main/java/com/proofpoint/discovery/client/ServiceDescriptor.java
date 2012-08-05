@@ -148,12 +148,12 @@ public class ServiceDescriptor
     {
         private UUID id = UUID.randomUUID();
         private String nodeId;
-        private String type;
+        private final String type;
         private String pool = ServiceSelectorConfig.DEFAULT_POOL;
         private String location;
         private ServiceState state;
 
-        private ImmutableMap.Builder<String, String> properties = ImmutableMap.builder();
+        private final ImmutableMap.Builder<String, String> properties = ImmutableMap.builder();
 
         private ServiceDescriptorBuilder(String type)
         {
