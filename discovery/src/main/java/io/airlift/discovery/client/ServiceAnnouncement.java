@@ -100,8 +100,7 @@ public class ServiceAnnouncement
     public static class ServiceAnnouncementBuilder
     {
         private final String type;
-
-        private ImmutableMap.Builder<String, String> properties = ImmutableMap.builder();
+        private final ImmutableMap.Builder<String, String> properties = ImmutableMap.builder();
 
         private ServiceAnnouncementBuilder(String type)
         {

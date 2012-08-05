@@ -60,7 +60,7 @@ public class ConfigurationMetadata<T>
     private final Problems problems;
     private final Constructor<T> constructor;
     private final Map<String, AttributeMetadata> attributes;
-    private Set<String> defunctConfig;
+    private final Set<String> defunctConfig;
 
     private ConfigurationMetadata(Class<T> configClass, Monitor monitor)
     {
@@ -496,7 +496,7 @@ public class ConfigurationMetadata<T>
         private String description = null;
         private Method getter = null;
         private InjectionPointMetaData injectionPoint = null;
-        private Set<InjectionPointMetaData> legacyInjectionPoints = Sets.newHashSet();
+        private final Set<InjectionPointMetaData> legacyInjectionPoints = Sets.newHashSet();
 
         public AttributeMetaDataBuilder(Class<?> configClass, String name)
         {
