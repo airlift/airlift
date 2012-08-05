@@ -142,7 +142,7 @@ public class ConfigurationMetadata<T>
         return attributes;
     }
 
-    public Problems getProblems()
+    Problems getProblems()
     {
         return problems;
     }
