@@ -16,6 +16,7 @@
 package io.airlift.discovery.client;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 import java.util.Set;
@@ -40,7 +41,7 @@ public class Announcement
         this.nodeId = nodeId;
         this.location = location;
         this.pool = pool;
-        this.services = services;
+        this.services = ImmutableSet.copyOf(services);
     }
 
     @JsonProperty
