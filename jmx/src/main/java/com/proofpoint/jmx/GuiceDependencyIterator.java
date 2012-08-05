@@ -23,6 +23,7 @@ import com.google.inject.spi.InjectionPoint;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
@@ -95,6 +96,9 @@ class GuiceDependencyIterator implements Iterator<Class<?>>, Iterable<Class<?>>
     @Override
     public Class<?> next()
     {
+        if (!hasNext()) {
+            throw new NoSuchElementException();
+        }
         Class<?> localClass = currentClass;
         currentClass = null;
         return localClass;
