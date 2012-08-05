@@ -66,12 +66,6 @@ class ManagedSemaphore extends Semaphore
     }
 
     @Override
-    public int availablePermits()
-    {
-        return super.availablePermits();
-    }
-
-    @Override
     public void acquire()
             throws InterruptedException
     {
