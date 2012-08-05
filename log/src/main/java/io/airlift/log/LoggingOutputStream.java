@@ -24,9 +24,8 @@ import java.io.IOException;
 class LoggingOutputStream
         extends ByteArrayOutputStream
 {
-    private String lineSeparator;
-
-    private org.slf4j.Logger logger;
+    private final String lineSeparator;
+    private final org.slf4j.Logger logger;
 
     public LoggingOutputStream(org.slf4j.Logger logger)
     {
