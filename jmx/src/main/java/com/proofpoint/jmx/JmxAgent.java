@@ -37,7 +37,7 @@ public class JmxAgent
     private final int serverPort;
     private final JMXConnectorServer connectorServer;
 
-    private static Logger log = Logger.get(JmxAgent.class);
+    private static final Logger log = Logger.get(JmxAgent.class);
     private final JMXServiceURL url;
 
     @Inject
