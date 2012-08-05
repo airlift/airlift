@@ -51,6 +51,28 @@ public class JmxInspector
         public final Types type;
 
         @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            InspectorRecord that = (InspectorRecord) o;
+
+            if (className != null ? !className.equals(that.className) : that.className != null) {
+                return false;
+            }
+            if (objectName != null ? !objectName.equals(that.objectName) : that.objectName != null) {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
         public int hashCode()
         {
             return className.hashCode();
