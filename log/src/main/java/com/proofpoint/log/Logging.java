@@ -179,7 +179,6 @@ public class Logging
     }
 
     private void processLevels(Properties properties)
-            throws IOException
     {
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
             String name = entry.getKey().toString();
