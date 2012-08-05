@@ -18,6 +18,7 @@ package com.proofpoint.http.server;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.proofpoint.event.client.EventClient;
@@ -77,8 +78,8 @@ public class HttpServerProvider
         this.nodeInfo = nodeInfo;
         this.config = config;
         this.theServlet = theServlet;
-        this.filters = filters;
-        this.adminFilters = adminFilters;
+        this.filters = ImmutableSet.copyOf(filters);
+        this.adminFilters = ImmutableSet.copyOf(adminFilters);
         this.stats = stats;
         this.eventClient = eventClient;
     }

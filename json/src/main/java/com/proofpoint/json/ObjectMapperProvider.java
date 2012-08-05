@@ -15,6 +15,7 @@
  */
 package com.proofpoint.json;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import org.codehaus.jackson.Version;
@@ -46,13 +47,13 @@ public class ObjectMapperProvider implements Provider<ObjectMapper>
     @Inject(optional = true)
     public void setJsonSerializers(Map<Class<?>, JsonSerializer<?>> jsonSerializers)
     {
-        this.jsonSerializers = jsonSerializers;
+        this.jsonSerializers = ImmutableMap.copyOf(jsonSerializers);
     }
 
     @Inject(optional = true)
     public void setJsonDeserializers(Map<Class<?>, JsonDeserializer<?>> jsonDeserializers)
     {
-        this.jsonDeserializers = jsonDeserializers;
+        this.jsonDeserializers = ImmutableMap.copyOf(jsonDeserializers);
     }
 
     @Inject(optional = true)

@@ -43,6 +43,7 @@ import com.proofpoint.log.Logging;
 import com.proofpoint.log.LoggingConfiguration;
 
 import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -69,7 +70,7 @@ public class Bootstrap
 
     public Bootstrap(Module... modules)
     {
-        this.modules = modules;
+        this.modules = Arrays.copyOf(modules, modules.length);
     }
 
     public Bootstrap strictConfig()

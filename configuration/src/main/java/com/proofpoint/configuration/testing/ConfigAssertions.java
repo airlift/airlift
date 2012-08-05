@@ -316,7 +316,7 @@ public final class ConfigAssertions
         public $$RecordedConfigData(T instance, Set<Method> invokedMethods)
         {
             this.instance = instance;
-            this.invokedMethods = invokedMethods;
+            this.invokedMethods = ImmutableSet.copyOf(invokedMethods);
         }
 
         public T getInstance()
