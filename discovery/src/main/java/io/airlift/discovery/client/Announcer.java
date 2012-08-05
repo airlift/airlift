@@ -62,7 +62,6 @@ public class Announcer
     }
 
     public void start()
-            throws TimeoutException
     {
         Preconditions.checkState(!executor.isShutdown(), "Announcer has been destroyed");
         if (started.compareAndSet(false, true)) {

@@ -59,7 +59,6 @@ public class CachingServiceSelector implements ServiceSelector
 
     @PostConstruct
     public void start()
-            throws TimeoutException
     {
         if (started.compareAndSet(false, true)) {
             Preconditions.checkState(!executor.isShutdown(), "CachingServiceSelector has been destroyed");
