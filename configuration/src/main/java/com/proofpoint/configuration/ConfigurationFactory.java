@@ -163,7 +163,7 @@ public class ConfigurationFactory
         if (prefix == null) {
             prefix = "";
         } else if (!prefix.isEmpty()) {
-            prefix = prefix + ".";
+            prefix += ".";
         }
 
         ConfigurationMetadata<T> configurationMetadata = (ConfigurationMetadata<T>) metadataCache.get(configClass);
