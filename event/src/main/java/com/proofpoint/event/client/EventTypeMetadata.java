@@ -41,7 +41,7 @@ import static com.proofpoint.event.client.EventDataType.getEventDataType;
 import static com.proofpoint.event.client.EventFieldMetadata.ContainerType;
 import static com.proofpoint.event.client.TypeParameterUtils.getTypeParameters;
 
-class EventTypeMetadata<T>
+final class EventTypeMetadata<T>
 {
     public static Set<EventTypeMetadata<?>> getValidEventTypeMetaDataSet(Class<?>... eventClasses)
     {
