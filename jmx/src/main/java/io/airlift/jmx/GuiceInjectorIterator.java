@@ -22,6 +22,7 @@ import com.google.inject.Key;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Type;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 class GuiceInjectorIterator implements Iterator<Class<?>>, Iterable<Class<?>>
@@ -53,6 +54,9 @@ class GuiceInjectorIterator implements Iterator<Class<?>>, Iterable<Class<?>>
     @Override
     public Class<?> next()
     {
+        if (!hasNext()) {
+            throw new NoSuchElementException();
+        }
         needsReset = true;
         return currentClass;
     }
