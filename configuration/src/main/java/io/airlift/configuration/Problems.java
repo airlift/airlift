@@ -38,7 +38,7 @@ class Problems
         void onWarning(Message warningMessage);
     }
 
-    public static final NullMonitor NULL_MONITOR = new NullMonitor();
+    public static final Problems.Monitor NULL_MONITOR = new NullMonitor();
 
     private static final class NullMonitor implements Problems.Monitor
     {
