@@ -49,7 +49,7 @@ import java.util.logging.LogManager;
  */
 public class Logging
 {
-    private final String PATTERN = "%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}\\t%5p\\t%t\\t%c\\t%m%n";
+    private static final String PATTERN = "%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}\\t%5p\\t%t\\t%c\\t%m%n";
     private final LoggerContext context;
     private final ch.qos.logback.classic.Logger root;
     private final Logger log = Logger.get(Logging.class);
