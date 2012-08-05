@@ -309,7 +309,7 @@ public class NodeInfo
                 }
             }
         }
-        catch (SocketException e) {
+        catch (SocketException ignored) {
         }
         return builder.build();
     }

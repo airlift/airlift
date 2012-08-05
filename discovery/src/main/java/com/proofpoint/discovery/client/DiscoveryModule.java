@@ -83,11 +83,11 @@ public class DiscoveryModule implements Module
 
             try {
                 return new URI(descriptor.getProperties().get("https"));
-            } catch (Exception e) {
+            } catch (Exception ignored) {
             }
             try {
                 return new URI(descriptor.getProperties().get("http"));
-            } catch (Exception e) {
+            } catch (Exception ignored) {
             }
         }
         if (config != null) {
