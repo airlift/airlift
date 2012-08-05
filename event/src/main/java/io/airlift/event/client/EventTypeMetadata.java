@@ -41,7 +41,7 @@ import static io.airlift.event.client.EventDataType.getEventDataType;
 import static io.airlift.event.client.EventFieldMetadata.ContainerType;
 import static io.airlift.event.client.TypeParameterUtils.getTypeParameters;
 
-class EventTypeMetadata<T>
+final class EventTypeMetadata<T>
 {
     public static Set<EventTypeMetadata<?>> getValidEventTypeMetaDataSet(Class<?>... eventClasses)
     {

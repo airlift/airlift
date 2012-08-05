@@ -58,7 +58,7 @@ import static java.lang.Math.*;
  * Systems. ICDE '09: Proceedings of the 2009 IEEE International Conference on
  * Data Engineering (2009)</a>
  */
-class ExponentiallyDecayingSample
+final class ExponentiallyDecayingSample
 {
     private static final long RESCALE_THRESHOLD = TimeUnit.HOURS.toNanos(1);
     private final ConcurrentSkipListMap<Double, Long> values;

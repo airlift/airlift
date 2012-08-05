@@ -155,7 +155,7 @@ public class ServiceInventory
     }
 
     @Managed
-    public void updateServiceInventory()
+    public final void updateServiceInventory()
     {
         if (serviceInventoryUri == null) {
             return;
