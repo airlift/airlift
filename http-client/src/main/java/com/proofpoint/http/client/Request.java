@@ -40,7 +40,6 @@ public class Request
     {
         Preconditions.checkNotNull(uri, "uri is null");
         Preconditions.checkNotNull(method, "method is null");
-        validateBodyNotSetForNonEntityMethods(method, bodyGenerator);
 
         this.uri = validateUri(uri);
         this.method = method;
@@ -174,15 +173,8 @@ public class Request
         }
 
         public Request build() {
-            validateBodyNotSetForNonEntityMethods(method, bodyGenerator);
             return new Request(uri, method, headers, bodyGenerator);
         }
-    }
-
-    private static boolean validateBodyNotSetForNonEntityMethods(String method, BodyGenerator bodyGenerator)
-    {
-        Preconditions.checkState(bodyGenerator != null ? (method.equalsIgnoreCase("PUT") || method.equalsIgnoreCase("POST")) : true, "Cannot set body generator for non entity methods");
-        return true;
     }
 
     private static URI validateUri(URI uri)
