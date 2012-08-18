@@ -3,12 +3,12 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>trace-token</artifactId>
     <packaging>jar</packaging>
-    <version>0.66-SNAPSHOT</version>
+    <version>0.66</version>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.66-SNAPSHOT</version>
+        <version>0.66</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
