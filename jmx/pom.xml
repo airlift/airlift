@@ -4,13 +4,13 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>jmx</artifactId>
     <packaging>jar</packaging>
-    <version>0.66</version>
+    <version>0.67-SNAPSHOT</version>
     <name>jmx</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.66</version>
+        <version>0.67-SNAPSHOT</version>
     </parent>
 
     <dependencies>
