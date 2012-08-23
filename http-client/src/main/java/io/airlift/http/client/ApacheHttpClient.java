@@ -177,72 +177,74 @@ public class ApacheHttpClient implements io.airlift.http.client.HttpClient
                 addHeader(entry.getKey(), entry.getValue());
             }
 
-            setEntity(new HttpEntity()
-            {
-                @Override
-                public boolean isRepeatable()
+            if (request.getBodyGenerator() != null) {
+                setEntity(new HttpEntity()
                 {
-                    return true;
-                }
+                    @Override
+                    public boolean isRepeatable()
+                    {
+                        return true;
+                    }
 
-                @Override
-                public boolean isChunked()
-                {
-                    return true;
-                }
+                    @Override
+                    public boolean isChunked()
+                    {
+                        return true;
+                    }
 
-                @Override
-                public long getContentLength()
-                {
-                    return -1;
-                }
+                    @Override
+                    public long getContentLength()
+                    {
+                        return -1;
+                    }
 
-                @Override
-                public Header getContentType()
-                {
-                    return null;
-                }
+                    @Override
+                    public Header getContentType()
+                    {
+                        return null;
+                    }
 
-                @Override
-                public Header getContentEncoding()
-                {
-                    return null;
-                }
+                    @Override
+                    public Header getContentEncoding()
+                    {
+                        return null;
+                    }
 
-                @Override
-                public InputStream getContent()
-                        throws IOException, IllegalStateException
-                {
-                    throw new UnsupportedOperationException();
-                }
+                    @Override
+                    public InputStream getContent()
+                            throws IOException, IllegalStateException
+                    {
+                        throw new UnsupportedOperationException();
+                    }
 
-                @Override
-                public void writeTo(OutputStream out)
-                        throws IOException
-                {
-                    if (request.getBodyGenerator() != null) {
-                        try {
-                            countingOutputStream = new CountingOutputStream(out);
-                            request.getBodyGenerator().write(countingOutputStream);
-                        }
-                        catch (Exception e) {
-                            Throwables.propagateIfPossible(e, IOException.class);
-                            throw new IOException(e);
+                    @Override
+                    public void writeTo(OutputStream out)
+                            throws IOException
+                    {
+                        if (request.getBodyGenerator() != null) {
+                            try {
+                                countingOutputStream = new CountingOutputStream(out);
+                                request.getBodyGenerator().write(countingOutputStream);
+                            }
+                            catch (Exception e) {
+                                Throwables.propagateIfPossible(e, IOException.class);
+                                throw new IOException(e);
+                            }
                         }
                     }
-                }
 
-                @Override
-                public boolean isStreaming()
-                {
-                    return true;
-                }
+                    @Override
+                    public boolean isStreaming()
+                    {
+                        return true;
+                    }
 
-                @Override
-                public void consumeContent()
-                {
-                }
-            });
+                    @Override
+                    public void consumeContent()
+                    {
+                    }
+                });
+            }
         }
 
         @Override

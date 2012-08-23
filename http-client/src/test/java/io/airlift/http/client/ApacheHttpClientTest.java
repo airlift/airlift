@@ -22,6 +22,7 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
 import io.airlift.testing.Assertions;
 import io.airlift.units.Duration;
+import org.apache.http.protocol.HTTP;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -37,6 +38,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import static io.airlift.http.client.Request.Builder.prepareDelete;
@@ -118,6 +120,7 @@ public class ApacheHttpClientTest
         Assert.assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
         Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
+        Assert.assertEquals(servlet.requestHeaders.get(HTTP.TRANSFER_ENCODING), Collections.emptyList());
     }
 
     @Test
@@ -139,6 +142,7 @@ public class ApacheHttpClientTest
         Assert.assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
         Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
+        Assert.assertEquals(servlet.requestHeaders.get(HTTP.TRANSFER_ENCODING), Collections.emptyList());
     }
 
     @Test
@@ -160,6 +164,30 @@ public class ApacheHttpClientTest
         Assert.assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
         Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
+        Assert.assertEquals(servlet.requestHeaders.get(HTTP.TRANSFER_ENCODING), Collections.emptyList());
+    }
+
+    @Test
+    public void testPutMethodWithBodyGenerator()
+            throws Exception
+    {
+        URI uri = baseURI.resolve("/road/to/nowhere");
+        Request request = preparePut()
+                .setUri(uri)
+                .addHeader("foo", "bar")
+                .addHeader("dupe", "first")
+                .addHeader("dupe", "second")
+                .setBodyGenerator(StaticBodyGenerator.createStaticBodyGenerator(new byte[0]))
+                .build();
+
+        int statusCode = httpClient.execute(request, new ResponseStatusCodeHandler());
+        Assert.assertEquals(statusCode, 200);
+        Assert.assertEquals(servlet.requestMethod, "PUT");
+        Assert.assertEquals(servlet.requestUri, uri);
+        Assert.assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
+        Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
+        Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
+        Assert.assertEquals(servlet.requestHeaders.get(HTTP.TRANSFER_ENCODING), ImmutableList.of(HTTP.CHUNK_CODING));
     }
 
     @Test
@@ -181,6 +209,7 @@ public class ApacheHttpClientTest
         Assert.assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
         Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
+        Assert.assertEquals(servlet.requestHeaders.get(HTTP.TRANSFER_ENCODING), Collections.emptyList());
     }
 
     @Test
