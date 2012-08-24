@@ -144,7 +144,7 @@ class ExponentiallyDecayingSample
         }
     }
 
-    private long tick() { return System.currentTimeMillis() / 1000; }
+    private static long tick() { return System.nanoTime() / 1_000_000_000; }
 
     private double weight(long t) {
         return exp(alpha * t);
@@ -207,7 +207,7 @@ class ExponentiallyDecayingSample
         Arrays.fill(scores, Double.NaN);
 
         final List<Long> values = this.values();
-        if (values.size() > 0) {
+        if (!values.isEmpty()) {
             Collections.sort(values);
 
             for (int i = 0; i < percentiles.length; i++) {
