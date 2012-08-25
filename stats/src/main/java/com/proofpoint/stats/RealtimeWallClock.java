@@ -5,6 +5,6 @@ class RealtimeWallClock
 {
     @Override
     public long getMillis() {
-        return System.currentTimeMillis();
+        return System.nanoTime() / 1_000_000;
     }
 }
