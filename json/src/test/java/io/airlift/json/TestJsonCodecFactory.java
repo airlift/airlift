@@ -15,6 +15,7 @@
  */
 package io.airlift.json;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.TypeLiteral;
@@ -189,12 +190,10 @@ public class TestJsonCodecFactory
         @Override
         public String toString()
         {
-            final StringBuffer sb = new StringBuffer();
-            sb.append("Person");
-            sb.append("{name='").append(name).append('\'');
-            sb.append(", rocks=").append(rocks);
-            sb.append('}');
-            return sb.toString();
+            return Objects.toStringHelper(this)
+                    .add("name", name)
+                    .add("rocks", rocks)
+                    .toString();
         }
     }
 }

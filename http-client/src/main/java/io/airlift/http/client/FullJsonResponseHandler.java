@@ -16,6 +16,7 @@
 package io.airlift.http.client;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableListMultimap;
@@ -139,15 +140,13 @@ public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<
         @Override
         public String toString()
         {
-            final StringBuilder sb = new StringBuilder();
-            sb.append("JsonResponse");
-            sb.append("{statusCode=").append(statusCode);
-            sb.append(", statusMessage='").append(statusMessage).append('\'');
-            sb.append(", headers=").append(headers);
-            sb.append(", hasValue=").append(hasValue);
-            sb.append(", value=").append(value);
-            sb.append('}');
-            return sb.toString();
+            return Objects.toStringHelper(this)
+                    .add("statusCode", statusCode)
+                    .add("statusMessage", statusMessage)
+                    .add("headers", headers)
+                    .add("hasValue", hasValue)
+                    .add("value", value)
+                    .toString();
         }
     }
 }

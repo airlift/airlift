@@ -15,6 +15,7 @@
  */
 package io.airlift.discovery.client;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.codehaus.jackson.annotate.JsonCreator;
@@ -52,11 +53,9 @@ public class ServiceDescriptorsRepresentation
     @Override
     public String toString()
     {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("ServiceDescriptorsRepresentation");
-        sb.append("{environment='").append(environment).append('\'');
-        sb.append(", serviceDescriptorList=").append(serviceDescriptors);
-        sb.append('}');
-        return sb.toString();
+        return Objects.toStringHelper(this)
+                .add("environment", environment)
+                .add("serviceDescriptors", serviceDescriptors)
+                .toString();
     }
 }
