@@ -26,7 +26,6 @@ import java.net.URI;
 import java.util.Map.Entry;
 
 import static com.google.common.base.Objects.equal;
-import static com.google.common.base.Objects.toStringHelper;
 
 @Beta
 public class Request
@@ -74,7 +73,7 @@ public class Request
     @Override
     public String toString()
     {
-        return toStringHelper(this)
+        return Objects.toStringHelper(this)
                 .add("uri", uri)
                 .add("method", method)
                 .add("headers", headers)

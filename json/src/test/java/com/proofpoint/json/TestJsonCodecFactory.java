@@ -15,11 +15,10 @@
  */
 package com.proofpoint.json;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.TypeLiteral;
-import com.proofpoint.json.JsonCodec;
-import com.proofpoint.json.JsonCodecFactory;
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -191,12 +190,10 @@ public class TestJsonCodecFactory
         @Override
         public String toString()
         {
-            final StringBuffer sb = new StringBuffer();
-            sb.append("Person");
-            sb.append("{name='").append(name).append('\'');
-            sb.append(", rocks=").append(rocks);
-            sb.append('}');
-            return sb.toString();
+            return Objects.toStringHelper(this)
+                    .add("name", name)
+                    .add("rocks", rocks)
+                    .toString();
         }
     }
 }

@@ -15,6 +15,8 @@
  */
 package com.proofpoint.jmx.http.rpc;
 
+import com.google.common.base.Objects;
+
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
@@ -452,11 +454,9 @@ public class HttpJmxConnector implements JMXConnector, JMXAddressable
         @Override
         public String toString()
         {
-            final StringBuilder sb = new StringBuilder();
-            sb.append("HttpMBeanServerConnection");
-            sb.append("{baseUri=").append(baseUri);
-            sb.append('}');
-            return sb.toString();
+            return Objects.toStringHelper(this)
+                    .add("baseUri", baseUri)
+                    .toString();
         }
 
         //

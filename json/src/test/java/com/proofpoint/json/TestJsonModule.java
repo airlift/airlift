@@ -16,6 +16,7 @@
 package com.proofpoint.json;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -285,17 +286,15 @@ public class TestJsonModule
         @Override
         public String toString()
         {
-            final StringBuffer sb = new StringBuffer();
-            sb.append("Car");
-            sb.append("{make='").append(make).append('\'');
-            sb.append(", model='").append(model).append('\'');
-            sb.append(", year=").append(year);
-            sb.append(", purchased=").append(purchased);
-            sb.append(", color='").append(color).append('\'');
-            sb.append(", notes='").append(notes).append('\'');
-            sb.append(", nameList=").append(nameList);
-            sb.append('}');
-            return sb.toString();
+            return Objects.toStringHelper(this)
+                    .add("make", make)
+                    .add("model", model)
+                    .add("year", year)
+                    .add("purchased", purchased)
+                    .add("color", color)
+                    .add("notes", notes)
+                    .add("nameList", nameList)
+                    .toString();
         }
     }
 

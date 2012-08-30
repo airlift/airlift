@@ -15,6 +15,7 @@
  */
 package com.proofpoint.discovery.client;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 
 import java.net.URI;
@@ -71,13 +72,11 @@ public class StaticAnnouncementHttpServerInfoImpl implements AnnouncementHttpSer
     @Override
     public String toString()
     {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("StaticAnnouncementHttpServerInfoImpl");
-        sb.append("{httpUri=").append(httpUri);
-        sb.append(", httpExternalUri=").append(httpExternalUri);
-        sb.append(", httpsUri=").append(httpsUri);
-        sb.append(", httpsExternalUri=").append(httpsExternalUri);
-        sb.append('}');
-        return sb.toString();
+        return Objects.toStringHelper(this)
+                .add("httpUri", httpUri)
+                .add("httpExternalUri", httpExternalUri)
+                .add("httpsUri", httpsUri)
+                .add("httpsExternalUri", httpsExternalUri)
+                .toString();
     }
 }

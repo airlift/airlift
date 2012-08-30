@@ -15,6 +15,7 @@
  */
 package com.proofpoint.configuration;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
@@ -317,11 +318,9 @@ public class ConfigurationMetadata<T>
     @Override
     public String toString()
     {
-        final StringBuffer sb = new StringBuffer();
-        sb.append("ConfigurationMetadata");
-        sb.append("{configClass=").append(configClass);
-        sb.append('}');
-        return sb.toString();
+        return Objects.toStringHelper(this)
+                .add("configClass", configClass)
+                .toString();
     }
 
     public static class InjectionPointMetaData
@@ -480,11 +479,9 @@ public class ConfigurationMetadata<T>
         @Override
         public String toString()
         {
-            final StringBuffer sb = new StringBuffer();
-            sb.append("AttributeMetadata");
-            sb.append("{name='").append(name).append('\'');
-            sb.append('}');
-            return sb.toString();
+            return Objects.toStringHelper(this)
+                    .add("name", name)
+                    .toString();
         }
     }
 

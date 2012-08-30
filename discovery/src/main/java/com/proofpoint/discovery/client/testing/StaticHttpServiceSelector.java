@@ -15,6 +15,7 @@
  */
 package com.proofpoint.discovery.client.testing;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.proofpoint.discovery.client.HttpServiceSelector;
@@ -93,12 +94,10 @@ public class StaticHttpServiceSelector implements HttpServiceSelector
     @Override
     public String toString()
     {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("StaticHttpServiceSelector");
-        sb.append("{type='").append(type).append('\'');
-        sb.append(", pool='").append(pool).append('\'');
-        sb.append(", uris=").append(uris);
-        sb.append('}');
-        return sb.toString();
+        return Objects.toStringHelper(this)
+                .add("type", type)
+                .add("pool", pool)
+                .add("uris", uris)
+                .toString();
     }
 }
