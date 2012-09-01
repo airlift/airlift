@@ -29,7 +29,7 @@ public class JsonBodyGenerator<T> implements BodyGenerator
         return new JsonBodyGenerator<T>(jsonCodec, instance);
     }
 
-    private byte[] json;
+    private final byte[] json;
 
     private JsonBodyGenerator(JsonCodec<T> jsonCodec, T instance)
     {

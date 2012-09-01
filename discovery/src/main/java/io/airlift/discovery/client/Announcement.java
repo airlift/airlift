@@ -15,7 +15,9 @@
  */
 package io.airlift.discovery.client;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 import java.util.Set;
@@ -40,7 +42,7 @@ public class Announcement
         this.nodeId = nodeId;
         this.location = location;
         this.pool = pool;
-        this.services = services;
+        this.services = ImmutableSet.copyOf(services);
     }
 
     @JsonProperty
@@ -101,12 +103,12 @@ public class Announcement
     @Override
     public String toString()
     {
-        return "Announcement{" +
-                "environment='" + environment + '\'' +
-                ", nodeId='" + nodeId + '\'' +
-                ", location='" + location + '\'' +
-                ", pool='" + pool + '\'' +
-                ", services=" + services +
-                '}';
+        return Objects.toStringHelper(this)
+                .add("environment", environment)
+                .add("nodeId", nodeId)
+                .add("location", location)
+                .add("pool", pool)
+                .add("services", services)
+                .toString();
     }
 }

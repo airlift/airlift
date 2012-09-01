@@ -81,11 +81,6 @@ public class HttpEventClient
         else {
             this.serviceSelector = serviceSelector;
         }
-
-        int workerThreads = config.getMaxConnections();
-        if (workerThreads <= 0) {
-            workerThreads = 16;
-        }
     }
 
     @Flatten

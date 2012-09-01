@@ -15,6 +15,7 @@
  */
 package io.airlift.discovery.client;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.node.NodeInfo;
@@ -125,17 +126,15 @@ public class ServiceDescriptor
     @Override
     public String toString()
     {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("ServiceDescriptor");
-        sb.append("{id=").append(id);
-        sb.append(", nodeId=").append(nodeId);
-        sb.append(", type='").append(type).append('\'');
-        sb.append(", pool='").append(pool).append('\'');
-        sb.append(", location='").append(location).append('\'');
-        sb.append(", state='").append(state).append('\'');
-        sb.append(", properties=").append(properties);
-        sb.append('}');
-        return sb.toString();
+        return Objects.toStringHelper(this)
+                .add("id", id)
+                .add("nodeId", nodeId)
+                .add("type", type)
+                .add("pool", pool)
+                .add("location", location)
+                .add("state", state)
+                .add("properties", properties)
+                .toString();
     }
 
     public static ServiceDescriptorBuilder serviceDescriptor(String type)
@@ -148,12 +147,12 @@ public class ServiceDescriptor
     {
         private UUID id = UUID.randomUUID();
         private String nodeId;
-        private String type;
+        private final String type;
         private String pool = ServiceSelectorConfig.DEFAULT_POOL;
         private String location;
         private ServiceState state;
 
-        private ImmutableMap.Builder<String, String> properties = ImmutableMap.builder();
+        private final ImmutableMap.Builder<String, String> properties = ImmutableMap.builder();
 
         private ServiceDescriptorBuilder(String type)
         {

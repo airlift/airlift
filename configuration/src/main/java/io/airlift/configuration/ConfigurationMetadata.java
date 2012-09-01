@@ -15,6 +15,7 @@
  */
 package io.airlift.configuration;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
@@ -60,7 +61,7 @@ public class ConfigurationMetadata<T>
     private final Problems problems;
     private final Constructor<T> constructor;
     private final Map<String, AttributeMetadata> attributes;
-    private Set<String> defunctConfig;
+    private final Set<String> defunctConfig;
 
     private ConfigurationMetadata(Class<T> configClass, Monitor monitor)
     {
@@ -142,7 +143,7 @@ public class ConfigurationMetadata<T>
         return attributes;
     }
 
-    public Problems getProblems()
+    Problems getProblems()
     {
         return problems;
     }
@@ -317,11 +318,9 @@ public class ConfigurationMetadata<T>
     @Override
     public String toString()
     {
-        final StringBuffer sb = new StringBuffer();
-        sb.append("ConfigurationMetadata");
-        sb.append("{configClass=").append(configClass);
-        sb.append('}');
-        return sb.toString();
+        return Objects.toStringHelper(this)
+                .add("configClass", configClass)
+                .toString();
     }
 
     public static class InjectionPointMetaData
@@ -480,11 +479,9 @@ public class ConfigurationMetadata<T>
         @Override
         public String toString()
         {
-            final StringBuffer sb = new StringBuffer();
-            sb.append("AttributeMetadata");
-            sb.append("{name='").append(name).append('\'');
-            sb.append('}');
-            return sb.toString();
+            return Objects.toStringHelper(this)
+                    .add("name", name)
+                    .toString();
         }
     }
 
@@ -496,7 +493,7 @@ public class ConfigurationMetadata<T>
         private String description = null;
         private Method getter = null;
         private InjectionPointMetaData injectionPoint = null;
-        private Set<InjectionPointMetaData> legacyInjectionPoints = Sets.newHashSet();
+        private final Set<InjectionPointMetaData> legacyInjectionPoints = Sets.newHashSet();
 
         public AttributeMetaDataBuilder(Class<?> configClass, String name)
         {

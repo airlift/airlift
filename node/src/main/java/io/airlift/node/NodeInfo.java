@@ -15,6 +15,7 @@
  */
 package io.airlift.node;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.InetAddresses;
@@ -241,16 +242,14 @@ public class NodeInfo
     @Override
     public String toString()
     {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("NodeInfo");
-        sb.append("{nodeId=").append(nodeId);
-        sb.append(", instanceId=").append(instanceId);
-        sb.append(", internalIp=").append(internalIp);
-        sb.append(", externalAddress=").append(externalAddress);
-        sb.append(", bindIp=").append(bindIp);
-        sb.append(", startTime=").append(startTime);
-        sb.append('}');
-        return sb.toString();
+        return Objects.toStringHelper(this)
+                .add("nodeId", nodeId)
+                .add("instanceId", instanceId)
+                .add("internalIp", internalIp)
+                .add("externalAddress", externalAddress)
+                .add("bindIp", bindIp)
+                .add("startTime", startTime)
+                .toString();
     }
 
     private static InetAddress findPublicIp()
@@ -309,7 +308,7 @@ public class NodeInfo
                 }
             }
         }
-        catch (SocketException e) {
+        catch (SocketException ignored) {
         }
         return builder.build();
     }

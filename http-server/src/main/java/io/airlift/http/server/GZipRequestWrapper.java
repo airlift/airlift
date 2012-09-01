@@ -90,7 +90,6 @@ class GZipRequestWrapper
         private final InputStream stream;
 
         public ServletInputStreamFromInputStream(InputStream stream)
-                throws IOException
         {
             this.stream = stream;
         }

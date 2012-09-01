@@ -31,27 +31,30 @@ public class HttpEventClientConfig
     private int maxConnections = -1;
     private Duration connectTimeout = new Duration(50, MILLISECONDS);
     private Duration requestTimeout = new Duration(60, SECONDS);
-    private boolean compress;
+    private boolean compress = false;
     private int jsonVersion = 2;
 
+    @Deprecated
     public int getMaxConnections()
     {
         return maxConnections;
     }
 
+    @Deprecated
     @Config("collector.max-connections")
-    @ConfigDescription("Get max number of simultaneous connections")
     public HttpEventClientConfig setMaxConnections(int maxConnections)
     {
         this.maxConnections = maxConnections;
         return this;
     }
 
+    @Deprecated
     public Duration getConnectTimeout()
     {
         return connectTimeout;
     }
 
+    @Deprecated
     @Config("collector.connect-timeout")
     public HttpEventClientConfig setConnectTimeout(Duration connectTimeout)
     {
@@ -63,11 +66,13 @@ public class HttpEventClientConfig
         return this;
     }
 
+    @Deprecated
     public Duration getRequestTimeout()
     {
         return requestTimeout;
     }
 
+    @Deprecated
     @Config("collector.request-timeout")
     public HttpEventClientConfig setRequestTimeout(Duration requestTimeout)
     {
@@ -79,13 +84,14 @@ public class HttpEventClientConfig
         return this;
     }
 
+    @Deprecated
     public boolean isCompress()
     {
         return compress;
     }
 
+    @Deprecated
     @Config("collector.compress")
-    @ConfigDescription("If true, gzip compress data posted")
     public HttpEventClientConfig setCompress(boolean compress)
     {
         this.compress = compress;

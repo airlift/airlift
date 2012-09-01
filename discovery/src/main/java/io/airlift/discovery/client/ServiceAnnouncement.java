@@ -15,6 +15,7 @@
  */
 package io.airlift.discovery.client;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import org.codehaus.jackson.annotate.JsonProperty;
@@ -83,13 +84,11 @@ public class ServiceAnnouncement
     @Override
     public String toString()
     {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("ServiceDescriptor");
-        sb.append("{id=").append(id);
-        sb.append(", type='").append(type).append('\'');
-        sb.append(", properties=").append(properties);
-        sb.append('}');
-        return sb.toString();
+        return Objects.toStringHelper(this)
+                .add("id", id)
+                .add("type", type)
+                .add("properties", properties)
+                .toString();
     }
 
     public static ServiceAnnouncementBuilder serviceAnnouncement(String type)
@@ -100,8 +99,7 @@ public class ServiceAnnouncement
     public static class ServiceAnnouncementBuilder
     {
         private final String type;
-
-        private ImmutableMap.Builder<String, String> properties = ImmutableMap.builder();
+        private final ImmutableMap.Builder<String, String> properties = ImmutableMap.builder();
 
         private ServiceAnnouncementBuilder(String type)
         {

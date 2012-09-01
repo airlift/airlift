@@ -15,6 +15,7 @@
  */
 package io.airlift.configuration;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.spi.Message;
@@ -27,7 +28,7 @@ public class ValidationErrorModule implements Module
 
     public ValidationErrorModule(List<Message> messages)
     {
-        this.messages = messages;
+        this.messages = ImmutableList.copyOf(messages);
     }
 
     @Override

@@ -41,7 +41,7 @@ public abstract class ManagedDataSource implements DataSource
     private final AtomicInteger maxConnectionWaitMillis = new AtomicInteger(100);
     private final ManagedDataSourceStats stats = new ManagedDataSourceStats();
 
-    public ManagedDataSource(int maxConnections, Duration maxConnectionWait)
+    protected ManagedDataSource(int maxConnections, Duration maxConnectionWait)
     {
         if (maxConnections < 1) {
             throw new IllegalArgumentException("maxConnections must be at least 1: maxConnections=" + maxConnections);

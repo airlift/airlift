@@ -15,6 +15,7 @@
  */
 package io.airlift.http.client;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 
@@ -81,13 +82,11 @@ public class UnexpectedResponseException extends RuntimeException
     @Override
     public String toString()
     {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("UnexpectedResponseException");
-        sb.append("{request=").append(request);
-        sb.append(", statusCode=").append(statusCode);
-        sb.append(", statusMessage='").append(statusMessage).append('\'');
-        sb.append(", headers=").append(headers);
-        sb.append('}');
-        return sb.toString();
+        return Objects.toStringHelper(this)
+                .add("request", request)
+                .add("statusCode", statusCode)
+                .add("statusMessage", statusMessage)
+                .add("headers", headers)
+                .toString();
     }
 }

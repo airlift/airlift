@@ -42,7 +42,7 @@ public class GZipRequestFilter
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 
         String contentEncoding = request.getHeader("content-encoding");
-        if (equalsIgnoreCase(contentEncoding, "gzip")) { // TODO: gzip; q=0.0 should mean "don't want gzip"
+        if (equalsIgnoreCase(contentEncoding, "gzip")) {
             filterChain.doFilter(new GZipRequestWrapper(request), servletResponse);
         }
         else {

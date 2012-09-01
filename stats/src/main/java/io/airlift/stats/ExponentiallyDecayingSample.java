@@ -58,7 +58,7 @@ import static java.lang.Math.*;
  * Systems. ICDE '09: Proceedings of the 2009 IEEE International Conference on
  * Data Engineering (2009)</a>
  */
-class ExponentiallyDecayingSample
+final class ExponentiallyDecayingSample
 {
     private static final long RESCALE_THRESHOLD = TimeUnit.HOURS.toNanos(1);
     private final ConcurrentSkipListMap<Double, Long> values;
@@ -144,7 +144,7 @@ class ExponentiallyDecayingSample
         }
     }
 
-    private long tick() { return System.currentTimeMillis() / 1000; }
+    private static long tick() { return System.nanoTime() / 1_000_000_000; }
 
     private double weight(long t) {
         return exp(alpha * t);
@@ -207,7 +207,7 @@ class ExponentiallyDecayingSample
         Arrays.fill(scores, Double.NaN);
 
         final List<Long> values = this.values();
-        if (values.size() > 0) {
+        if (!values.isEmpty()) {
             Collections.sort(values);
 
             for (int i = 0; i < percentiles.length; i++) {

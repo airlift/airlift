@@ -15,6 +15,7 @@
  */
 package io.airlift.configuration;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableSortedSet;
@@ -246,15 +247,13 @@ public class ConfigurationInspector
         @Override
         public String toString()
         {
-            final StringBuilder sb = new StringBuilder();
-            sb.append("ConfigAttribute");
-            sb.append("{attributeName='").append(attributeName).append('\'');
-            sb.append(", propertyName='").append(propertyName).append('\'');
-            sb.append(", defaultValue='").append(defaultValue).append('\'');
-            sb.append(", currentValue='").append(currentValue).append('\'');
-            sb.append(", description='").append(description).append('\'');
-            sb.append('}');
-            return sb.toString();
+            return Objects.toStringHelper(this)
+                    .add("attributeName", attributeName)
+                    .add("propertyName", propertyName)
+                    .add("defaultValue", defaultValue)
+                    .add("currentValue", currentValue)
+                    .add("description", description)
+                    .toString();
         }
     }
 }
