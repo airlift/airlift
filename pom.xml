@@ -42,6 +42,11 @@
             <email>altitude@proofpoint.com</email>
         </developer>
         <developer>
+            <id>jgmyers</id>
+            <name>John Gardiner Myers</name>
+            <email>jgmyers@proofpoint.com</email>
+        </developer>
+        <developer>
             <id>mkent</id>
             <name>Mark Kent</name>
             <email>mkent@proofpoint.com</email>
