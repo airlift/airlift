@@ -16,6 +16,7 @@
 package io.airlift.dbpool;
 
 import io.airlift.configuration.Config;
+import io.airlift.configuration.ConfigSecuritySensitive;
 import io.airlift.configuration.ConfigDescription;
 
 import javax.validation.constraints.NotNull;
@@ -89,6 +90,7 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2Embedd
     }
 
     @Config("db.file-password")
+    @ConfigSecuritySensitive
     public H2EmbeddedDataSourceConfig setFilePassword(String filePassword)
     {
         this.filePassword = filePassword;

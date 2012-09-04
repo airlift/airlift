@@ -18,6 +18,7 @@ package io.airlift.http.server;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import io.airlift.configuration.Config;
+import io.airlift.configuration.ConfigSecuritySensitive;
 import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.DefunctConfig;
 import io.airlift.units.DataSize;
@@ -165,6 +166,7 @@ public class HttpServerConfig
     }
 
     @Config("http-server.https.keystore.key")
+    @ConfigSecuritySensitive
     public HttpServerConfig setKeystorePassword(String keystorePassword)
     {
         this.keystorePassword = keystorePassword;
