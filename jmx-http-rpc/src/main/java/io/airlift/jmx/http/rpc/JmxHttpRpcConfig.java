@@ -16,6 +16,7 @@
 package io.airlift.jmx.http.rpc;
 
 import io.airlift.configuration.Config;
+import io.airlift.configuration.ConfigSecuritySensitive;
 
 public class JmxHttpRpcConfig
 {
@@ -40,6 +41,7 @@ public class JmxHttpRpcConfig
     }
 
     @Config("jmx-http-rpc.password")
+    @ConfigSecuritySensitive
     public JmxHttpRpcConfig setPassword(String password)
     {
         this.password = password;
