@@ -105,7 +105,7 @@ public class ConfigurationInspector
                     description = "";
                 }
 
-                builder.add(new ConfigAttribute(attribute.getName(), propertyName, defaultValue, currentValue, description));
+                builder.add(new ConfigAttribute(attribute.getName(), propertyName, defaultValue, currentValue, description, attribute.isSecuritySensitive()));
             }
             attributes = builder.build();
         }
@@ -172,7 +172,7 @@ public class ConfigurationInspector
 
         // todo this class needs to be updated to include the concept of deprecated property names
 
-        private ConfigAttribute(String attributeName, String propertyName, String defaultValue, String currentValue, String description)
+        private ConfigAttribute(String attributeName, String propertyName, String defaultValue, String currentValue, String description, boolean securitySensitive)
         {
             requireNonNull(attributeName, "attributeName");
             requireNonNull(propertyName, "propertyName");
@@ -182,8 +182,18 @@ public class ConfigurationInspector
 
             this.attributeName = attributeName;
             this.propertyName = propertyName;
-            this.defaultValue = defaultValue;
-            this.currentValue = currentValue;
+            if (securitySensitive && defaultValue != null) {
+                this.defaultValue = "[REDACTED]";
+            }
+            else {
+                this.defaultValue = defaultValue;
+            }
+            if (securitySensitive && currentValue != null) {
+                this.currentValue = "[REDACTED]";
+            }
+            else {
+                this.currentValue = currentValue;
+            }
             this.description = description;
         }
 

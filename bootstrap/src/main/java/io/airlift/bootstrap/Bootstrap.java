@@ -268,8 +268,8 @@ public class Bootstrap
         // Warn about unused properties
         if (!unusedProperties.isEmpty()) {
             log.warn("UNUSED PROPERTIES");
-            for (Entry<String, String> unusedProperty : unusedProperties.entrySet()) {
-                log.warn("%s=%s", unusedProperty.getKey(), unusedProperty.getValue());
+            for (String unusedProperty : unusedProperties.keySet()) {
+                log.warn("%s", unusedProperty);
             }
             log.warn("");
         }
