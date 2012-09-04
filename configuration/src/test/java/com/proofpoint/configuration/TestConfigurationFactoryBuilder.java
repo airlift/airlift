@@ -29,7 +29,7 @@ import java.util.Map;
 
 import static org.testng.Assert.assertEquals;
 
-public class TestConfigurationLoader
+public class TestConfigurationFactoryBuilder
 {
     private File tempDir;
 
@@ -55,8 +55,10 @@ public class TestConfigurationLoader
     {
         System.setProperty("test", "foo");
 
-        ConfigurationLoader loader = new ConfigurationLoader();
-        Map<String, String> properties = loader.loadProperties();
+        final Map<String, String> properties = new ConfigurationFactoryBuilder()
+                .withSystemProperties()
+                .build()
+                .getProperties();
 
         assertEquals(properties.get("test"), "foo");
 
@@ -68,18 +70,17 @@ public class TestConfigurationLoader
             throws IOException
     {
         final File file = File.createTempFile("config", ".properties", tempDir);
-        PrintStream out = new PrintStream(new FileOutputStream(file));
-        try {
+        try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
             out.print("test: foo");
-        }
-        catch (Exception e) {
-            out.close();
         }
 
         System.setProperty("config", file.getAbsolutePath());
 
-        ConfigurationLoader loader = new ConfigurationLoader();
-        Map<String, String> properties = loader.loadProperties();
+        final Map<String, String> properties = new ConfigurationFactoryBuilder()
+                .withFile(System.getProperty("config"))
+                .withSystemProperties()
+                .build()
+                .getProperties();
 
         assertEquals(properties.get("test"), "foo");
         assertEquals(properties.get("config"), file.getAbsolutePath());
@@ -92,20 +93,19 @@ public class TestConfigurationLoader
             throws IOException
     {
         final File file = File.createTempFile("config", ".properties", tempDir);
-        PrintStream out = new PrintStream(new FileOutputStream(file));
-        try {
+        try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
             out.println("key1: original");
             out.println("key2: original");
-        }
-        catch (Exception e) {
-            out.close();
         }
 
         System.setProperty("config", file.getAbsolutePath());
         System.setProperty("key1", "overridden");
 
-        ConfigurationLoader loader = new ConfigurationLoader();
-        Map<String, String> properties = loader.loadProperties();
+        final Map<String, String> properties = new ConfigurationFactoryBuilder()
+                .withFile(System.getProperty("config"))
+                .withSystemProperties()
+                .build()
+                .getProperties();
 
         assertEquals(properties.get("config"), file.getAbsolutePath());
         assertEquals(properties.get("key1"), "overridden");

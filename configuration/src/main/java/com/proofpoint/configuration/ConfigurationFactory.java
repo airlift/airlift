@@ -33,6 +33,7 @@ import com.google.inject.spi.Element;
 import com.google.inject.spi.Message;
 import com.google.inject.spi.ProviderInstanceBinding;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
+import com.proofpoint.configuration.Problems.Monitor;
 import org.apache.bval.jsr303.ApacheValidationProvider;
 
 import javax.validation.ConstraintViolation;
@@ -51,12 +52,13 @@ import java.util.concurrent.ConcurrentMap;
 import static com.proofpoint.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
 
-public class ConfigurationFactory
+public final class ConfigurationFactory
 {
     private static final Validator VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
 
     private final Map<String, String> properties;
     private final Problems.Monitor monitor;
+    private final Set<String> unusedProperties = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
     private final LoadingCache<Class<?>, ConfigurationMetadata<?>> metadataCache;
     private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
     private final Set<String> usedProperties = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
@@ -64,13 +66,14 @@ public class ConfigurationFactory
 
     public ConfigurationFactory(Map<String, String> properties)
     {
-        this(properties, Problems.NULL_MONITOR);
+        this(properties, Collections.<String>emptySet(), Problems.NULL_MONITOR);
     }
 
-    ConfigurationFactory(Map<String, String> properties, final Problems.Monitor monitor)
+    ConfigurationFactory(Map<String, String> properties, Set<String> expectToUse, final Monitor monitor)
     {
         this.monitor = monitor;
         this.properties = ImmutableMap.copyOf(properties);
+        unusedProperties.addAll(expectToUse);
 
         metadataCache = CacheBuilder.newBuilder().weakKeys().weakValues()
                 .build(new CacheLoader<Class<?>, ConfigurationMetadata<?>>()
@@ -96,11 +99,19 @@ public class ConfigurationFactory
     {
         Preconditions.checkNotNull(property, "property is null");
         usedProperties.add(property);
+        unusedProperties.remove(property);
     }
 
+    @Deprecated
     public Set<String> getUsedProperties()
     {
         return ImmutableSortedSet.copyOf(usedProperties);
+    }
+
+    public Set<String> getUnusedProperties()
+    {
+
+        return ImmutableSortedSet.copyOf(unusedProperties);
     }
 
     /**
@@ -304,6 +315,7 @@ public class ConfigurationFactory
                     injectionPoint.getSetter().toGenericString()));
         }
         usedProperties.add(name);
+        unusedProperties.remove(name);
         return finalValue;
     }
 

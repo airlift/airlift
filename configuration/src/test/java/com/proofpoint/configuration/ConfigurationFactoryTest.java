@@ -29,6 +29,7 @@ import org.testng.annotations.Test;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -293,7 +294,7 @@ public class ConfigurationFactoryTest
 
     private Injector createInjector(Map<String, String> properties, TestMonitor monitor, Module module)
     {
-        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, monitor);
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, Collections.<String>emptySet(), monitor);
         List<Message> messages = new ConfigurationValidator(configurationFactory, null).validate(module);
         return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
     }
