@@ -178,8 +178,8 @@ public class Bootstrap
                 @Override
                 public void configure(Binder binder)
                 {
-                    for (Entry<String,String> unusedProperty : unusedProperties.entrySet()) {
-                        binder.addError("Configuration property '%s=%s' was not used", unusedProperty.getKey(), unusedProperty.getValue());
+                    for (String unusedProperty : unusedProperties.keySet()) {
+                        binder.addError("Configuration property '%s' was not used", unusedProperty);
                     }
                 }
             });
@@ -225,8 +225,8 @@ public class Bootstrap
         // Warn about unused properties
         if (!unusedProperties.isEmpty()) {
             log.warn("UNUSED PROPERTIES");
-            for (Entry<String,String> unusedProperty : unusedProperties.entrySet()) {
-                log.warn("%s=%s", unusedProperty.getKey(), unusedProperty.getValue());
+            for (String unusedProperty : unusedProperties.keySet()) {
+                log.warn("%s", unusedProperty);
             }
             log.warn("");
         }

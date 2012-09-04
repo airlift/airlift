@@ -240,6 +240,14 @@ public class ConfigurationMetadata<T>
             }
         }
 
+        // Find orphan @ConfigSecuritySensitive methods, in order to report errors
+        Collection<Method> sensitiveMethods = findSensitiveConfigMethods(configClass);
+        for (Method method : sensitiveMethods) {
+            if (!method.isAnnotationPresent(Config.class)) {
+                problems.addError("@ConfigSecuritySensitive method [%s] is not annotated with @Config.", method.toGenericString());
+            }
+        }
+
         return attributes;
     }
 
@@ -252,6 +260,7 @@ public class ConfigurationMetadata<T>
         }
 
         String propertyName = configMethod.getAnnotation(Config.class).value();
+        final boolean securitySensitive = configMethod.isAnnotationPresent(ConfigSecuritySensitive.class);
 
         // verify parameters
         if (!validateSetter(configMethod)) {
@@ -261,7 +270,7 @@ public class ConfigurationMetadata<T>
         // determine the attribute name
         String attributeName = configMethod.getName().substring(3);
 
-        AttributeMetaDataBuilder builder = new AttributeMetaDataBuilder(configClass, attributeName);
+        AttributeMetaDataBuilder builder = new AttributeMetaDataBuilder(configClass, attributeName, securitySensitive);
 
         if (configMethod.isAnnotationPresent(ConfigDescription.class)) {
             builder.setDescription(configMethod.getAnnotation(ConfigDescription.class).value());
@@ -401,13 +410,14 @@ public class ConfigurationMetadata<T>
         private final Class<?> configClass;
         private final String name;
         private final String description;
+        private final boolean securitySensitive;
         private final Method getter;
 
         private final InjectionPointMetaData injectionPoint;
         private final Set<InjectionPointMetaData> legacyInjectionPoints;
 
-        public AttributeMetadata(Class<?> configClass, String name, String description, Method getter,
-                                 InjectionPointMetaData injectionPoint, Set<InjectionPointMetaData> legacyInjectionPoints)
+        public AttributeMetadata(Class<?> configClass, String name, String description, boolean securitySensitive, Method getter,
+                InjectionPointMetaData injectionPoint, Set<InjectionPointMetaData> legacyInjectionPoints)
         {
             Preconditions.checkNotNull(configClass);
             Preconditions.checkNotNull(name);
@@ -418,6 +428,7 @@ public class ConfigurationMetadata<T>
             this.configClass = configClass;
             this.name = name;
             this.description = description;
+            this.securitySensitive = securitySensitive;
             this.getter = getter;
 
             this.injectionPoint = injectionPoint;
@@ -437,6 +448,11 @@ public class ConfigurationMetadata<T>
         public String getDescription()
         {
             return description;
+        }
+
+        public boolean isSecuritySensitive()
+        {
+            return securitySensitive;
         }
 
         public Method getGetter()
@@ -494,8 +510,9 @@ public class ConfigurationMetadata<T>
         private Method getter = null;
         private InjectionPointMetaData injectionPoint = null;
         private final Set<InjectionPointMetaData> legacyInjectionPoints = Sets.newHashSet();
+        private final boolean securitySensitive;
 
-        public AttributeMetaDataBuilder(Class<?> configClass, String name)
+        public AttributeMetaDataBuilder(Class<?> configClass, String name, boolean securitySensitive)
         {
             Preconditions.checkNotNull(configClass);
             Preconditions.checkNotNull(name);
@@ -503,6 +520,7 @@ public class ConfigurationMetadata<T>
 
             this.configClass = configClass;
             this.name = name;
+            this.securitySensitive = securitySensitive;
         }
 
         public void setDescription(String description)
@@ -544,7 +562,7 @@ public class ConfigurationMetadata<T>
                 return null;
             }
 
-            return new AttributeMetadata(configClass, name, description, getter, injectionPoint, legacyInjectionPoints);
+            return new AttributeMetadata(configClass, name, description, securitySensitive, getter, injectionPoint, legacyInjectionPoints);
         }
     }
 
@@ -556,6 +574,11 @@ public class ConfigurationMetadata<T>
     private static Collection<Method> findLegacyConfigMethods(Class<?> configClass)
     {
         return findAnnotatedMethods(configClass, LegacyConfig.class);
+    }
+
+    private static Collection<Method> findSensitiveConfigMethods(Class<?> configClass)
+    {
+        return findAnnotatedMethods(configClass, ConfigSecuritySensitive.class);
     }
 
     /**
@@ -687,7 +710,7 @@ public class ConfigurationMetadata<T>
         // too small
         if (getters.isEmpty()) {
             String unusable = "";
-            if (unusableGetters.size() > 0) {
+            if (!unusableGetters.isEmpty()) {
                 StringBuilder builder = new StringBuilder(" The following methods are unusable: ");
                 for (Method method : unusableGetters) {
                     builder.append('[').append(method.toGenericString()).append(']');
@@ -709,7 +732,7 @@ public class ConfigurationMetadata<T>
         return getters.get(0);
     }
 
-    private boolean isUsableMethod(Method method)
+    private static boolean isUsableMethod(Method method)
     {
         return !method.isSynthetic() && !method.isBridge() && !Modifier.isStatic(method.getModifiers()) && Modifier.isPublic(method.getModifiers());
     }
