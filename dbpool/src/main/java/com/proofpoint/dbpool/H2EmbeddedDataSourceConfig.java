@@ -16,6 +16,7 @@
 package com.proofpoint.dbpool;
 
 import com.proofpoint.configuration.Config;
+import com.proofpoint.configuration.ConfigSecuritySensitive;
 
 /**
  * Configuration for (@see H2EmbeddedDataSource}.
@@ -82,6 +83,7 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2Embedd
     }
 
     @Config("db.file-password")
+    @ConfigSecuritySensitive
     public H2EmbeddedDataSourceConfig setFilePassword(String filePassword)
     {
         this.filePassword = filePassword;

@@ -16,6 +16,7 @@
 package com.proofpoint.http.server;
 
 import com.proofpoint.configuration.Config;
+import com.proofpoint.configuration.ConfigSecuritySensitive;
 import com.proofpoint.configuration.LegacyConfig;
 import com.proofpoint.units.Duration;
 
@@ -119,6 +120,7 @@ public class HttpServerConfig
 
     @Config("http-server.https.keystore.key")
     @LegacyConfig({"jetty.https.keystore.password", "http-server.https.keystore.password"})
+    @ConfigSecuritySensitive
     public HttpServerConfig setKeystorePassword(String keystorePassword)
     {
         this.keystorePassword = keystorePassword;

@@ -16,6 +16,7 @@
 package com.proofpoint.jmx.http.rpc;
 
 import com.proofpoint.configuration.Config;
+import com.proofpoint.configuration.ConfigSecuritySensitive;
 
 public class JmxHttpRpcConfig
 {
@@ -40,6 +41,7 @@ public class JmxHttpRpcConfig
     }
 
     @Config("jmx-http-rpc.password")
+    @ConfigSecuritySensitive
     public JmxHttpRpcConfig setPassword(String password)
     {
         this.password = password;
