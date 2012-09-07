@@ -16,13 +16,14 @@
 package com.proofpoint.configuration;
 
 import com.google.common.annotations.Beta;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.MapMaker;
 import com.google.inject.Binding;
 import com.google.inject.ConfigurationException;
 import com.google.inject.Module;
@@ -56,8 +57,8 @@ public class ConfigurationFactory
 
     private final Map<String, String> properties;
     private final Problems.Monitor monitor;
-    private final ConcurrentMap<Class<?>, ConfigurationMetadata<?>> metadataCache;
-    private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<ConfigurationProvider<?>, Object>();
+    private final LoadingCache<Class<?>, ConfigurationMetadata<?>> metadataCache;
+    private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
     private final Set<String> usedProperties = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
     private final Set<ConfigurationProvider<?>> registeredProviders = Collections.newSetFromMap(new ConcurrentHashMap<ConfigurationProvider<?>, Boolean>());
 
@@ -71,14 +72,15 @@ public class ConfigurationFactory
         this.monitor = monitor;
         this.properties = ImmutableMap.copyOf(properties);
 
-        metadataCache = new MapMaker().weakKeys().weakValues().makeComputingMap(new Function<Class<?>, ConfigurationMetadata<?>>()
-        {
-            @Override
-            public ConfigurationMetadata<?> apply(Class<?> configClass)
-            {
-                return ConfigurationMetadata.getConfigurationMetadata(configClass, monitor);
-            }
-        });
+        metadataCache = CacheBuilder.newBuilder().weakKeys().weakValues()
+                .build(new CacheLoader<Class<?>, ConfigurationMetadata<?>>()
+                {
+                    @Override
+                    public ConfigurationMetadata<?> load(Class<?> configClass)
+                    {
+                        return ConfigurationMetadata.getConfigurationMetadata(configClass, monitor);
+                    }
+                });
     }
 
     public Map<String, String> getProperties()
@@ -129,7 +131,7 @@ public class ConfigurationFactory
         registeredProviders.add(configurationProvider);
 
         // check for a prebuilt instance
-        T instance = (T) instanceCache.get(configurationProvider);
+        @SuppressWarnings("unchecked") T instance = (T) instanceCache.get(configurationProvider);
         if (instance != null) {
             return instance;
         }
@@ -145,7 +147,7 @@ public class ConfigurationFactory
         }
 
         // add to instance cache
-        T existingValue = (T) instanceCache.putIfAbsent(configurationProvider, instance);
+        @SuppressWarnings("unchecked") T existingValue = (T) instanceCache.putIfAbsent(configurationProvider, instance);
         // if key was already associated with a value, there was a
         // creation race and we lost. Just use the winners' instance;
         if (existingValue != null) {
@@ -166,7 +168,7 @@ public class ConfigurationFactory
             prefix += ".";
         }
 
-        ConfigurationMetadata<T> configurationMetadata = (ConfigurationMetadata<T>) metadataCache.get(configClass);
+        @SuppressWarnings("unchecked") ConfigurationMetadata<T> configurationMetadata = (ConfigurationMetadata<T>) metadataCache.getUnchecked(configClass);
         configurationMetadata.getProblems().throwIfHasErrors();
 
         T instance = newInstance(configurationMetadata);
@@ -200,7 +202,7 @@ public class ConfigurationFactory
         return new ConfigurationHolder<T>(instance, problems);
     }
 
-    private <T> T newInstance(ConfigurationMetadata<T> configurationMetadata)
+    private static <T> T newInstance(ConfigurationMetadata<T> configurationMetadata)
     {
         try {
             return configurationMetadata.getConstructor().newInstance();
@@ -375,7 +377,7 @@ public class ConfigurationFactory
         }
     }
 
-    private List<ConfigurationProvider<?>> getAllProviders(Module... modules)
+    private static List<ConfigurationProvider<?>> getAllProviders(Module... modules)
     {
         final List<ConfigurationProvider<?>> providers = Lists.newArrayList();
 
@@ -383,6 +385,7 @@ public class ConfigurationFactory
         for (final Element element : elementsIterator) {
             element.acceptVisitor(new DefaultElementVisitor<Void>()
             {
+                @Override
                 public <T> Void visit(Binding<T> binding)
                 {
                     // look for ConfigurationProviders...
