@@ -22,6 +22,7 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>log</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
