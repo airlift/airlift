@@ -13,7 +13,7 @@ public class BenchmarkQuantileDigest
         Duration warmupTime = new Duration(3, TimeUnit.SECONDS);
         Duration benchmarkTime = new Duration(5, TimeUnit.SECONDS);
 
-        final QuantileDigest digest = new QuantileDigest(0.01, 0, new TestingClock(), true);
+        final QuantileDigest digest = new QuantileDigest(0.01, 0, new TestingTicker(), true);
         final Random random = new Random();
 
         Benchmark.Results results = Benchmark.run(new Runnable() {
