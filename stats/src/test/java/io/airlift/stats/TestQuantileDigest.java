@@ -106,7 +106,7 @@ public class TestQuantileDigest
     public void testBasicCompression()
     {
         // maxError = 0.8 so that we get compression factor = 5 with the data below
-        QuantileDigest digest = new QuantileDigest(0.8, 0, new TestingClock(), false);
+        QuantileDigest digest = new QuantileDigest(0.8, 0, new TestingTicker(), false);
 
         List<Integer> values = asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7);
         addAll(digest, values);
@@ -124,7 +124,7 @@ public class TestQuantileDigest
     public void testCompression()
             throws Exception
     {
-        QuantileDigest digest = new QuantileDigest(1, 0, new TestingClock(), false);
+        QuantileDigest digest = new QuantileDigest(1, 0, new TestingTicker(), false);
 
         for (int loop = 0; loop < 2; ++loop) {
             addRange(digest, 0, 15);
@@ -266,8 +266,8 @@ public class TestQuantileDigest
     public void testDecayedQuantiles()
             throws Exception
     {
-        TestingClock clock = new TestingClock();
-        QuantileDigest digest = new QuantileDigest(1, ExponentialDecay.computeAlpha(0.5, 60), clock, true);
+        TestingTicker ticker = new TestingTicker();
+        QuantileDigest digest = new QuantileDigest(1, ExponentialDecay.computeAlpha(0.5, 60), ticker, true);
 
         addAll(digest, asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 
@@ -275,7 +275,7 @@ public class TestQuantileDigest
         assertEquals(digest.getCompressions(), 0);
         assertEquals(digest.getConfidenceFactor(), 0.0);
 
-        clock.increment(60, TimeUnit.SECONDS);
+        ticker.increment(60, TimeUnit.SECONDS);
         addAll(digest, asList(10, 11, 12, 13, 14, 15, 16, 17, 18, 19));
 
         // Considering that the first 10 values now have a weight of 0.5 per the alpha factor, they only contributed a count
@@ -288,8 +288,8 @@ public class TestQuantileDigest
     public void testDecayedCounts()
             throws Exception
     {
-        TestingClock clock = new TestingClock();
-        QuantileDigest digest = new QuantileDigest(1, ExponentialDecay.computeAlpha(0.5, 60), clock, true);
+        TestingTicker ticker = new TestingTicker();
+        QuantileDigest digest = new QuantileDigest(1, ExponentialDecay.computeAlpha(0.5, 60), ticker, true);
 
         addAll(digest, asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 
@@ -297,7 +297,7 @@ public class TestQuantileDigest
         assertEquals(digest.getCompressions(), 0);
         assertEquals(digest.getConfidenceFactor(), 0.0);
 
-        clock.increment(60, TimeUnit.SECONDS);
+        ticker.increment(60, TimeUnit.SECONDS);
         addAll(digest, asList(10, 11, 12, 13, 14, 15, 16, 17, 18, 19));
 
         // The first 10 values only contribute 5 to the counts per the alpha factor
@@ -314,12 +314,12 @@ public class TestQuantileDigest
     {
         int targetAgeInSeconds = (int) (QuantileDigest.RESCALE_THRESHOLD_SECONDS - 1);
 
-        TestingClock clock = new TestingClock();
+        TestingTicker ticker = new TestingTicker();
         QuantileDigest digest = new QuantileDigest(1,
-                ExponentialDecay.computeAlpha(0.5, targetAgeInSeconds), clock, false);
+                ExponentialDecay.computeAlpha(0.5, targetAgeInSeconds), ticker, false);
 
         addAll(digest, asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
-        clock.increment(targetAgeInSeconds, TimeUnit.SECONDS);
+        ticker.increment(targetAgeInSeconds, TimeUnit.SECONDS);
         addAll(digest, asList(10, 11, 12, 13, 14, 15, 16, 17, 18, 19));
 
         // The first 10 values only contribute 5 to the counts per the alpha factor
@@ -334,7 +334,7 @@ public class TestQuantileDigest
     public void testMinMax()
             throws Exception
     {
-        QuantileDigest digest = new QuantileDigest(0.01, 0, new TestingClock(), false);
+        QuantileDigest digest = new QuantileDigest(0.01, 0, new TestingTicker(), false);
 
         int from = 500;
         int to = 700;
@@ -348,14 +348,14 @@ public class TestQuantileDigest
     public void testMinMaxWithDecay()
             throws Exception
     {
-        TestingClock clock = new TestingClock();
+        TestingTicker ticker = new TestingTicker();
 
         QuantileDigest digest = new QuantileDigest(0.01,
-                ExponentialDecay.computeAlpha(QuantileDigest.ZERO_WEIGHT_THRESHOLD, 60), clock, false);
+                ExponentialDecay.computeAlpha(QuantileDigest.ZERO_WEIGHT_THRESHOLD, 60), ticker, false);
 
         addRange(digest, 1, 10);
 
-        clock.increment(1000, TimeUnit.SECONDS); // TODO: tighter bounds?
+        ticker.increment(1000, TimeUnit.SECONDS); // TODO: tighter bounds?
 
         int from = 4;
         int to = 7;
@@ -371,19 +371,19 @@ public class TestQuantileDigest
     public void testRescaleWithDecayKeepsCompactTree()
             throws Exception
     {
-        TestingClock clock = new TestingClock();
+        TestingTicker ticker = new TestingTicker();
         int targetAgeInSeconds = (int) (QuantileDigest.RESCALE_THRESHOLD_SECONDS);
 
         QuantileDigest digest = new QuantileDigest(0.01,
                 ExponentialDecay.computeAlpha(QuantileDigest.ZERO_WEIGHT_THRESHOLD / 2, targetAgeInSeconds),
-                clock, true);
+                ticker, true);
 
         for (int i = 0; i < 10; ++i) {
             digest.add(i);
             digest.validate();
 
             // bump the clock to make all previous values decay to ~0
-            clock.increment(targetAgeInSeconds, TimeUnit.SECONDS);
+            ticker.increment(targetAgeInSeconds, TimeUnit.SECONDS);
         }
 
         assertEquals(digest.getTotalNodeCount(), 1);

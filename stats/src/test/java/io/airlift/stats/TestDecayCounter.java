@@ -11,11 +11,11 @@ public class TestDecayCounter
     @Test
     public void testCountDecays()
     {
-        TestingClock clock = new TestingClock();
+        TestingTicker ticker = new TestingTicker();
 
-        DecayCounter counter = new DecayCounter(ExponentialDecay.oneMinute(), clock);
+        DecayCounter counter = new DecayCounter(ExponentialDecay.oneMinute(), ticker);
         counter.add(1);
-        clock.increment(1, TimeUnit.MINUTES);
+        ticker.increment(1, TimeUnit.MINUTES);
 
         assertTrue(Math.abs(counter.getCount() - 1 / Math.E) < 1e-9);
     }
@@ -23,11 +23,11 @@ public class TestDecayCounter
     @Test
     public void testAddAfterRescale()
     {
-        TestingClock clock = new TestingClock();
+        TestingTicker ticker = new TestingTicker();
 
-        DecayCounter counter = new DecayCounter(ExponentialDecay.oneMinute(), clock);
+        DecayCounter counter = new DecayCounter(ExponentialDecay.oneMinute(), ticker);
         counter.add(1);
-        clock.increment(1, TimeUnit.MINUTES);
+        ticker.increment(1, TimeUnit.MINUTES);
         counter.add(2);
 
         double expected = 2 + 1 / Math.E;
