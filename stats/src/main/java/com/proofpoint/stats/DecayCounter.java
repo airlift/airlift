@@ -5,8 +5,6 @@ import org.weakref.jmx.Managed;
 
 import java.util.concurrent.TimeUnit;
 
-import static java.lang.String.format;
-
 /*
  * A counter that decays exponentially. Values are weighted according to the formula
  *     w(t, α) = e^(-α * t), where α is the decay factor and t is the age in seconds
