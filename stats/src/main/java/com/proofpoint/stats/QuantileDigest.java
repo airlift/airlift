@@ -3,6 +3,7 @@ package com.proofpoint.stats;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
@@ -47,7 +48,7 @@ public class QuantileDigest
     static final double ZERO_WEIGHT_THRESHOLD = 1e-5;
 
     private final double maxError;
-    private final WallClock clock;
+    private final Ticker ticker;
     private final double alpha;
     private final boolean compressAutomatically;
 
@@ -89,21 +90,21 @@ public class QuantileDigest
      */
     public QuantileDigest(double maxError, double alpha)
     {
-        this(maxError, alpha, new RealtimeWallClock(), true);
+        this(maxError, alpha, Ticker.systemTicker(), true);
     }
 
     @VisibleForTesting
-    QuantileDigest(double maxError, double alpha, WallClock clock, boolean compressAutomatically)
+    QuantileDigest(double maxError, double alpha, Ticker ticker, boolean compressAutomatically)
     {
         checkArgument(maxError >= 0 && maxError <= 1, "maxError must be in range [0, 1]");
         checkArgument(alpha >= 0 && alpha < 1, "alpha must be in range [0, 1)");
 
         this.maxError = maxError;
         this.alpha = alpha;
-        this.clock = clock;
+        this.ticker = ticker;
         this.compressAutomatically = compressAutomatically;
 
-        landmarkInSeconds = TimeUnit.MILLISECONDS.toSeconds(clock.getMillis());
+        landmarkInSeconds = TimeUnit.NANOSECONDS.toSeconds(ticker.read());
     }
 
     /**
@@ -113,7 +114,7 @@ public class QuantileDigest
     {
         checkArgument(value >= 0, "value must be >= 0");
 
-        long nowInSeconds = TimeUnit.MILLISECONDS.toSeconds(clock.getMillis());
+        long nowInSeconds = TimeUnit.NANOSECONDS.toSeconds(ticker.read());
 
         int maxExpectedNodeCount = 3 * calculateCompressionFactor();
         if (nowInSeconds - landmarkInSeconds >= RESCALE_THRESHOLD_SECONDS) {
@@ -128,7 +129,7 @@ public class QuantileDigest
             compress();
         }
 
-        double weight = weight(TimeUnit.MILLISECONDS.toSeconds(clock.getMillis()));
+        double weight = weight(TimeUnit.NANOSECONDS.toSeconds(ticker.read()));
         weightedCount += weight;
 
         max = Math.max(max, value);
@@ -196,7 +197,7 @@ public class QuantileDigest
      */
     public synchronized double getCount()
     {
-        return weightedCount / weight(TimeUnit.MILLISECONDS.toSeconds(clock.getMillis()));
+        return weightedCount / weight(TimeUnit.NANOSECONDS.toSeconds(ticker.read()));
     }
 
     /*
@@ -223,7 +224,7 @@ public class QuantileDigest
         // for computing weighed average of values in bucket
         final AtomicDouble bucketWeightedSum = new AtomicDouble();
 
-        final double normalizationFactor = weight(TimeUnit.MILLISECONDS.toSeconds(clock.getMillis()));
+        final double normalizationFactor = weight(TimeUnit.NANOSECONDS.toSeconds(ticker.read()));
 
         postOrderTraversal(root, new Callback()
         {

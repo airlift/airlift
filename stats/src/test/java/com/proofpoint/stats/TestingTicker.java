@@ -4,7 +4,7 @@ import com.google.common.base.Ticker;
 
 import java.util.concurrent.TimeUnit;
 
-public class TestingClock
+public class TestingTicker
         extends Ticker
 {
     private long time;

@@ -1,5 +1,6 @@
 package com.proofpoint.stats;
 
+import com.google.common.base.Ticker;
 import org.weakref.jmx.Managed;
 
 import java.util.concurrent.TimeUnit;
@@ -20,26 +21,26 @@ public class DecayCounter
     static final long RESCALE_THRESHOLD_SECONDS = 50;
 
     private final double alpha;
-    private final WallClock clock;
+    private final Ticker ticker;
 
     private long landmarkInSeconds;
     private double count;
 
     public DecayCounter(double alpha)
     {
-        this(alpha, new RealtimeWallClock());
+        this(alpha, Ticker.systemTicker());
     }
 
-    public DecayCounter(double alpha, WallClock clock)
+    public DecayCounter(double alpha, Ticker ticker)
     {
         this.alpha = alpha;
-        this.clock = clock;
-        landmarkInSeconds = TimeUnit.MILLISECONDS.toSeconds(clock.getMillis());
+        this.ticker = ticker;
+        landmarkInSeconds = getTickInSeconds();
     }
 
     public synchronized void add(long value)
     {
-        long nowInSeconds = TimeUnit.MILLISECONDS.toSeconds(clock.getMillis());
+        long nowInSeconds = getTickInSeconds();
 
         if (nowInSeconds - landmarkInSeconds >= RESCALE_THRESHOLD_SECONDS) {
             // rescale the count based on a new landmark to avoid numerical overflow issues
@@ -52,7 +53,7 @@ public class DecayCounter
     @Managed
     public synchronized double getCount()
     {
-        long nowInSeconds = TimeUnit.MILLISECONDS.toSeconds(clock.getMillis());
+        long nowInSeconds = getTickInSeconds();
         return count / weight(nowInSeconds, landmarkInSeconds);
     }
 
@@ -68,5 +69,10 @@ public class DecayCounter
     private double weight(long timestampInSeconds, long landmarkInSeconds)
     {
         return Math.exp(alpha * (timestampInSeconds - landmarkInSeconds));
+    }
+
+    private long getTickInSeconds()
+    {
+        return TimeUnit.NANOSECONDS.toSeconds(ticker.read());
     }
 }
