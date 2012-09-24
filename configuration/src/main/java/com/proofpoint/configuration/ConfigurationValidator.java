@@ -27,6 +27,7 @@ import com.google.inject.spi.ProviderInstanceBinding;
 
 import java.util.List;
 
+import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 
 public class ConfigurationValidator
@@ -48,6 +49,7 @@ public class ConfigurationValidator
         for (final Element element : elementsIterator) {
             element.acceptVisitor(new DefaultElementVisitor<Void>()
             {
+                @Override
                 public <T> Void visit(Binding<T> binding)
                 {
                     // look for ConfigurationProviders...
@@ -76,6 +78,13 @@ public class ConfigurationValidator
                 }
             });
         }
+
+        for (String unusedProperty : configurationFactory.getUnusedProperties()) {
+            final Message message = new Message(format("Configuration property '%s' was not used", unusedProperty));
+            messages.add(message);
+            configurationFactory.getMonitor().onError(message);
+        }
+
         return messages;
     }
 }

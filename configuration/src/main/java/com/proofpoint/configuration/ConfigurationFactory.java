@@ -108,10 +108,15 @@ public final class ConfigurationFactory
         return ImmutableSortedSet.copyOf(usedProperties);
     }
 
-    public Set<String> getUnusedProperties()
+    Set<String> getUnusedProperties()
     {
 
         return ImmutableSortedSet.copyOf(unusedProperties);
+    }
+
+    Monitor getMonitor()
+    {
+        return monitor;
     }
 
     /**

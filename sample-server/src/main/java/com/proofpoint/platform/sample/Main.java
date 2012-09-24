@@ -34,7 +34,7 @@ import org.weakref.jmx.guice.MBeanModule;
 
 public class Main
 {
-    private final static Logger log = Logger.get(Main.class);
+    private static final Logger log = Logger.get(Main.class);
 
     public static void main(String[] args)
             throws Exception
@@ -55,7 +55,7 @@ public class Main
                 new MainModule());
 
         try {
-            Injector injector = app.strictConfig().initialize();
+            Injector injector = app.initialize();
             injector.getInstance(Announcer.class).start();
         }
         catch (Throwable e) {

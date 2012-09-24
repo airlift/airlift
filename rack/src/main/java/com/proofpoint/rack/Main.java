@@ -48,7 +48,7 @@ public class Main
                 new JmxHttpRpcModule());
 
         try {
-            Injector injector = app.strictConfig().initialize();
+            Injector injector = app.initialize();
             injector.getInstance(Announcer.class).start();
         }
         catch (Exception e) {

@@ -15,6 +15,8 @@
  */
 package com.proofpoint.configuration;
 
+import com.proofpoint.configuration.Problems.Monitor;
+
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileReader;
@@ -30,6 +32,7 @@ public final class ConfigurationFactoryBuilder
 {
     private final Map<String, String> properties = new HashMap<>();
     private final Set<String> expectToUse = new HashSet<>();
+    private Monitor monitor = Problems.NULL_MONITOR;
 
     /**
      * Loads properties from the given file
@@ -61,9 +64,15 @@ public final class ConfigurationFactoryBuilder
         return this;
     }
 
+    public ConfigurationFactoryBuilder withMonitor(Monitor monitor)
+    {
+        this.monitor = monitor;
+        return this;
+    }
+
     public ConfigurationFactory build()
     {
-        return new ConfigurationFactory(properties, expectToUse, Problems.NULL_MONITOR);
+        return new ConfigurationFactory(properties, expectToUse, monitor);
     }
 
     private void mergeProperties(Properties properties)

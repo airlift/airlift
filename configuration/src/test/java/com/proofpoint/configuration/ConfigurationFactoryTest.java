@@ -291,7 +291,6 @@ public class ConfigurationFactoryTest
         }
     }
 
-
     private Injector createInjector(Map<String, String> properties, TestMonitor monitor, Module module)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, Collections.<String>emptySet(), monitor);

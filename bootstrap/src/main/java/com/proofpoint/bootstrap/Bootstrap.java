@@ -60,16 +60,15 @@ public class Bootstrap
 {
     private final Logger log = Logger.get(Bootstrap.class);
     private final Module[] modules;
-    private boolean strictConfig = false;
 
     public Bootstrap(Module... modules)
     {
         this.modules = Arrays.copyOf(modules, modules.length);
     }
 
+    @Deprecated
     public Bootstrap strictConfig()
     {
-        this.strictConfig = true;
         return this;
     }
 
@@ -148,20 +147,6 @@ public class Bootstrap
                 binder.requireExplicitBindings();
             }
         });
-
-        // todo this should be part of the ValidationErrorModule
-        if (strictConfig) {
-            moduleList.add(new Module()
-            {
-                @Override
-                public void configure(Binder binder)
-                {
-                    for (String unusedProperty : configurationFactory.getUnusedProperties()) {
-                        binder.addError("Configuration property '%s' was not used", unusedProperty);
-                    }
-                }
-            });
-        }
         moduleList.add(modules);
 
         // create the injector
@@ -199,16 +184,6 @@ public class Bootstrap
         PrintWriter out = new PrintWriter(new LoggingWriter(log, Type.INFO));
         columnPrinter.print(out);
         out.flush();
-
-        // Warn about unused properties
-        final Set<String> unusedProperties = configurationFactory.getUnusedProperties();
-        if (!unusedProperties.isEmpty()) {
-            log.warn("UNUSED PROPERTIES");
-            for (String unusedProperty : unusedProperties) {
-                log.warn("%s", unusedProperty);
-            }
-            log.warn("");
-        }
     }
 
     private void logJMX(Injector injector)
