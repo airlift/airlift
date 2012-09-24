@@ -4,7 +4,6 @@ import com.google.common.collect.Lists;
 import org.testng.annotations.Test;
 
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import io.airlift.log.Logger;

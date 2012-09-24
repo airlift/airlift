@@ -143,8 +143,7 @@ public class QuantileDigest
      */
     public synchronized List<Long> getQuantiles(List<Double> quantiles)
     {
-        checkArgument(Ordering.natural().isOrdered(quantiles),
-                "quantiles must be sorted in increasing order");
+        checkArgument(Ordering.natural().isOrdered(quantiles), "quantiles must be sorted in increasing order");
         for (double quantile : quantiles) {
             checkArgument(quantile >= 0 && quantile <= 1, "quantile must be between [0,1]");
         }
