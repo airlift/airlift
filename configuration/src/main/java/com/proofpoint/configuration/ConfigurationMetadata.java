@@ -416,7 +416,7 @@ public class ConfigurationMetadata<T>
         private final InjectionPointMetaData injectionPoint;
         private final Set<InjectionPointMetaData> legacyInjectionPoints;
 
-        public AttributeMetadata(Class<?> configClass, String name, String description, boolean securitySensitive, Method getter,
+        private AttributeMetadata(Class<?> configClass, String name, String description, boolean securitySensitive, Method getter,
                 InjectionPointMetaData injectionPoint, Set<InjectionPointMetaData> legacyInjectionPoints)
         {
             Preconditions.checkNotNull(configClass);
@@ -501,7 +501,7 @@ public class ConfigurationMetadata<T>
         }
     }
 
-    public static class AttributeMetaDataBuilder
+    private static class AttributeMetaDataBuilder
     {
         private final Class<?> configClass;
         private final String name;
@@ -512,7 +512,7 @@ public class ConfigurationMetadata<T>
         private final Set<InjectionPointMetaData> legacyInjectionPoints = Sets.newHashSet();
         private final boolean securitySensitive;
 
-        public AttributeMetaDataBuilder(Class<?> configClass, String name, boolean securitySensitive)
+        AttributeMetaDataBuilder(Class<?> configClass, String name, boolean securitySensitive)
         {
             Preconditions.checkNotNull(configClass);
             Preconditions.checkNotNull(name);
