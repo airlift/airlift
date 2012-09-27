@@ -22,17 +22,22 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+
+import static java.lang.String.format;
 
 public final class ConfigurationFactoryBuilder
 {
     private final Map<String, String> properties = new HashMap<>();
     private final Set<String> expectToUse = new HashSet<>();
     private Monitor monitor = Problems.NULL_MONITOR;
+    private final List<String> errors = new ArrayList<>();
 
     /**
      * Loads properties from the given file
@@ -41,14 +46,24 @@ public final class ConfigurationFactoryBuilder
      * @return self
      * @throws java.io.IOException errors
      */
-    public ConfigurationFactoryBuilder withFile(@Nullable String path)
+    public ConfigurationFactoryBuilder withFile(@Nullable final String path)
             throws IOException
     {
         if (path == null) {
             return this;
         }
 
-        Properties properties = new Properties();
+        final Properties properties = new Properties() {
+            @SuppressWarnings("UseOfPropertiesAsHashtable")
+            @Override
+            public synchronized Object put(Object key, Object value) {
+                final Object old = super.put(key, value);
+                if (old != null) {
+                    errors.add(format("Duplicate configuration property '%s' in file %s", key, path));
+                }
+                return old;
+            }
+        };
         try (Reader reader = new FileReader(new File(path))) {
             properties.load(reader);
         }
@@ -72,7 +87,7 @@ public final class ConfigurationFactoryBuilder
 
     public ConfigurationFactory build()
     {
-        return new ConfigurationFactory(properties, expectToUse, monitor);
+        return new ConfigurationFactory(properties, expectToUse, errors, monitor);
     }
 
     private void mergeProperties(Properties properties)

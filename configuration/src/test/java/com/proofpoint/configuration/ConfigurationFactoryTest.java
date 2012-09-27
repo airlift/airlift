@@ -15,6 +15,7 @@
  */
 package com.proofpoint.configuration;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.inject.Binder;
 import com.google.inject.CreationException;
@@ -293,7 +294,7 @@ public class ConfigurationFactoryTest
 
     private Injector createInjector(Map<String, String> properties, TestMonitor monitor, Module module)
     {
-        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, Collections.<String>emptySet(), monitor);
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, Collections.<String>emptySet(), ImmutableList.<String>of(), monitor);
         List<Message> messages = new ConfigurationValidator(configurationFactory, null).validate(module);
         return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
     }

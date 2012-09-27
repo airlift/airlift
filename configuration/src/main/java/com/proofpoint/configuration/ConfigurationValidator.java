@@ -45,6 +45,13 @@ public class ConfigurationValidator
     {
         final List<Message> messages = Lists.newArrayList();
 
+
+        for (String error : configurationFactory.getInitialErrors()) {
+            final Message message = new Message(error);
+            messages.add(message);
+            configurationFactory.getMonitor().onError(message);
+        }
+
         ElementsIterator elementsIterator = new ElementsIterator(modules);
         for (final Element element : elementsIterator) {
             element.acceptVisitor(new DefaultElementVisitor<Void>()

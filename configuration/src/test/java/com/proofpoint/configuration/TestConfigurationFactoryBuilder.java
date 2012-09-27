@@ -129,7 +129,6 @@ public class TestConfigurationFactoryBuilder
         System.getProperties().remove("config");
     }
 
-
     @Test
     public void testUnusedConfigFromFileThrowsError()
             throws IOException
@@ -160,12 +159,52 @@ public class TestConfigurationFactoryBuilder
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to conflicting configuration");
+            Assert.fail("Expected an exception in object creation due to unused configuration");
         } catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
             monitor.assertMatchingErrorRecorded("Configuration property 'unused' was not used");
             Assertions.assertContainsAllOf(e.getMessage(), "Configuration property 'unused' was not used");
+        }
+    }
+
+    @Test
+    public void testDuplicatePropertiesInFileThrowsError()
+            throws IOException
+    {
+        final File file = File.createTempFile("config", ".properties", tempDir);
+        try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
+            out.print("string-value: foo\n");
+            out.print("string-value: foo");
+        }
+
+        System.setProperty("config", file.getAbsolutePath());
+
+        TestMonitor monitor = new TestMonitor();
+        final ConfigurationFactory configurationFactory = new ConfigurationFactoryBuilder()
+                .withMonitor(monitor)
+                .withFile(System.getProperty("config"))
+                .withSystemProperties()
+                .build();
+
+        System.getProperties().remove("config");
+
+        try {
+            createInjector(configurationFactory, new Module()
+            {
+                @Override
+                public void configure(Binder binder)
+                {
+                    ConfigurationModule.bindConfig(binder).to(AnnotatedSetter.class);
+                }
+            });
+
+            Assert.fail("Expected an exception in object creation due to duplicate configuration");
+        } catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(0);
+            monitor.assertMatchingErrorRecorded("Duplicate configuration property 'string-value' in file " + file.getAbsolutePath());
+            Assertions.assertContainsAllOf(e.getMessage(), "Duplicate configuration property 'string-value' in file " + file.getAbsolutePath());
         }
 
     }

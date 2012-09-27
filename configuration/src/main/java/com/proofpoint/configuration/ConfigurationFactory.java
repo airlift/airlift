@@ -42,6 +42,7 @@ import javax.validation.Validator;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +60,7 @@ public final class ConfigurationFactory
     private final Map<String, String> properties;
     private final Problems.Monitor monitor;
     private final Set<String> unusedProperties = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+    private final Collection<String> initialErrors;
     private final LoadingCache<Class<?>, ConfigurationMetadata<?>> metadataCache;
     private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
     private final Set<String> usedProperties = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
@@ -66,14 +68,15 @@ public final class ConfigurationFactory
 
     public ConfigurationFactory(Map<String, String> properties)
     {
-        this(properties, Collections.<String>emptySet(), Problems.NULL_MONITOR);
+        this(properties, Collections.<String>emptySet(), ImmutableList.<String>of(), Problems.NULL_MONITOR);
     }
 
-    ConfigurationFactory(Map<String, String> properties, Set<String> expectToUse, final Monitor monitor)
+    ConfigurationFactory(Map<String, String> properties, Set<String> expectToUse, Collection<String> errors, final Monitor monitor)
     {
         this.monitor = monitor;
         this.properties = ImmutableMap.copyOf(properties);
         unusedProperties.addAll(expectToUse);
+        initialErrors = ImmutableList.copyOf(errors);
 
         metadataCache = CacheBuilder.newBuilder().weakKeys().weakValues()
                 .build(new CacheLoader<Class<?>, ConfigurationMetadata<?>>()
@@ -117,6 +120,11 @@ public final class ConfigurationFactory
     Monitor getMonitor()
     {
         return monitor;
+    }
+
+    Collection<String> getInitialErrors()
+    {
+        return initialErrors;
     }
 
     /**
