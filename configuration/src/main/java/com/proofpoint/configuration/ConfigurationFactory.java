@@ -290,8 +290,8 @@ public final class ConfigurationFactory
                     operativeInjectionPoint = injectionPoint;
                     operativeValue = value;
                     operativeName = fullName;
-                } else if (!value.equals(operativeValue)) {
-                    problems.addError("Value for property '%s' (=%s) conflicts with property '%s' (=%s)", fullName, value, operativeName, operativeValue);
+                } else {
+                    problems.addError("Configuration property '%s' (=%s) conflicts with property '%s' (=%s)", fullName, value, operativeName, operativeValue);
                 }
             }
         }
