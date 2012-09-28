@@ -106,21 +106,22 @@ public class ConfigurationFactoryTest
     }
 
     @Test
-    public void testConfigurationWithRedundantLegacyConfig()
+    public void testConfigurationWithRedundantLegacyConfigThrows()
     {
         Map<String, String> properties = new TreeMap<>();
         properties.put("string-value", "this is a");
         properties.put("string-a", "this is a");
         properties.put("string-b", "this is b");
         TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(LegacyConfigPresent.class));
-        LegacyConfigPresent legacyConfigPresent = injector.getInstance(LegacyConfigPresent.class);
-        monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(1);
-        monitor.assertMatchingWarningRecorded("string-value", "replaced", "Use 'string-a'");
-        Assert.assertNotNull(legacyConfigPresent);
-        Assert.assertEquals(legacyConfigPresent.getStringA(), "this is a");
-        Assert.assertEquals(legacyConfigPresent.getStringB(), "this is b");
+        try {
+            createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(LegacyConfigPresent.class));
+        }
+        catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(1);
+            monitor.assertMatchingWarningRecorded("string-value", "replaced", "Use 'string-a'");
+            Assertions.assertContainsAllOf(e.getMessage(), "string-value", "conflicts with property", "string-a");
+        }
     }
 
     @Test
