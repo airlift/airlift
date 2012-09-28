@@ -16,6 +16,7 @@
 package com.proofpoint.configuration;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.inject.Binder;
 import com.google.inject.CreationException;
@@ -31,9 +32,12 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
+import static com.proofpoint.testing.Assertions.assertInstanceOf;
 
 public class ConfigurationFactoryTest
 {
@@ -132,7 +136,7 @@ public class ConfigurationFactoryTest
     @Test
     public void testConfigurationWithRedundantLegacyConfigThrows()
     {
-        Map<String, String> properties = new TreeMap<String, String>();
+        Map<String, String> properties = new TreeMap<>();
         properties.put("string-value", "this is a");
         properties.put("string-a", "this is a");
         properties.put("string-b", "this is b");
@@ -151,6 +155,32 @@ public class ConfigurationFactoryTest
             monitor.assertNumberOfWarnings(1);
             monitor.assertMatchingWarningRecorded("string-value", "replaced", "Use 'string-a'");
             Assertions.assertContainsAllOf(e.getMessage(), "string-value", "conflicts with property", "string-a");
+        }
+    }
+
+    @Test
+    public void testConfigurationWithRedundantDeprecatedConfigThrows()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("string-value", "this is a");
+        properties.put("deprecated-string-value", "this is a");
+        properties.put("string-b", "this is b");
+        TestMonitor monitor = new TestMonitor();
+        try {
+            createInjector(properties, monitor, new Module()
+            {
+                public void configure(Binder binder)
+                {
+                    ConfigurationModule.bindConfig(binder).to(LegacyConfigPresent.class);
+                }
+            });
+        }
+        catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(2);
+            monitor.assertMatchingWarningRecorded("string-value", "replaced", "Use 'string-a'");
+            monitor.assertMatchingWarningRecorded("deprecated-string-value", "replaced", "Use 'string-a'");
+            Assertions.assertContainsAllOf(e.getMessage(), "string-value", "conflicts with property", "deprecated-string-value");
         }
     }
 
@@ -293,6 +323,340 @@ public class ConfigurationFactoryTest
         }
     }
 
+    @Test
+    public void testConfigurationThroughLegacyMapConfig()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("map-value.k", "this is a");
+        properties.put("map-b.k2", "this is b");
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(properties, monitor, new Module()
+        {
+            public void configure(Binder binder)
+            {
+                ConfigurationModule.bindConfig(binder).to(LegacyMapConfigPresent.class);
+            }
+        });
+        LegacyMapConfigPresent legacyMapConfigPresent = injector.getInstance(LegacyMapConfigPresent.class);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(1);
+        monitor.assertMatchingWarningRecorded("map-value", "replaced", "Use 'map-a'");
+        Assert.assertNotNull(legacyMapConfigPresent);
+        Assert.assertEquals(legacyMapConfigPresent.getMapA(), ImmutableMap.<String,String>of("k", "this is a"));
+        Assert.assertEquals(legacyMapConfigPresent.getMapB(), ImmutableMap.<String,String>of("k2", "this is b"));
+    }
+
+    @Test
+    public void testConfigurationWithRedundantLegacyMapConfigThrows()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("map-value.k", "this is a");
+        properties.put("map-a.k3", "this is a");
+        properties.put("map-b.k2", "this is b");
+        TestMonitor monitor = new TestMonitor();
+        try {
+            createInjector(properties, monitor, new Module()
+            {
+                public void configure(Binder binder)
+                {
+                    ConfigurationModule.bindConfig(binder).to(LegacyMapConfigPresent.class);
+                }
+            });
+        }
+        catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(1);
+            monitor.assertMatchingWarningRecorded("map-value", "replaced", "Use 'map-a'");
+            Assertions.assertContainsAllOf(e.getMessage(), "map-value", "conflicts with map property prefix", "map-a");
+        }
+    }
+
+    @Test
+    public void testConfigurationWithRedundantDeprecatedMapConfigThrows()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("map-value.k", "this is a");
+        properties.put("deprecated-map-value.k3", "this is a");
+        properties.put("map-b.k2", "this is b");
+        TestMonitor monitor = new TestMonitor();
+        try {
+            createInjector(properties, monitor, new Module()
+            {
+                public void configure(Binder binder)
+                {
+                    ConfigurationModule.bindConfig(binder).to(LegacyMapConfigPresent.class);
+                }
+            });
+        }
+        catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(2);
+            monitor.assertMatchingWarningRecorded("map-value", "replaced", "Use 'map-a'");
+            monitor.assertMatchingWarningRecorded("deprecated-map-value", "replaced", "Use 'map-a'");
+            Assertions.assertContainsAllOf(e.getMessage(), "map-value", "conflicts with map property prefix", "deprecated-map-value");
+        }
+    }
+
+
+    @Test
+    public void testConfigurationThroughDeprecatedMapConfig()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("map-a.k1", "this is a");
+        properties.put("map-b.k2", "this is b");
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(properties, monitor, new Module()
+        {
+            public void configure(Binder binder)
+            {
+                ConfigurationModule.bindConfig(binder).to(DeprecatedMapConfigPresent.class);
+            }
+        });
+        DeprecatedMapConfigPresent deprecatedMapConfigPresent = injector.getInstance(DeprecatedMapConfigPresent.class);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(1);
+        monitor.assertMatchingWarningRecorded("map-a", "deprecated and should not be used");
+        Assert.assertNotNull(deprecatedMapConfigPresent);
+        Assert.assertEquals(deprecatedMapConfigPresent.getMapA(), ImmutableMap.<String,String>of("k1", "this is a"));
+        Assert.assertEquals(deprecatedMapConfigPresent.getMapB(), ImmutableMap.<String,String>of("k2", "this is b"));
+    }
+
+
+    @Test
+    public void testConfigurationThroughLegacyMapValueConfig()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("map-a.k.string-value", "this is a");
+        properties.put("map-a.k.string-b", "this is b");
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(properties, monitor, new Module()
+        {
+            public void configure(Binder binder)
+            {
+                ConfigurationModule.bindConfig(binder).to(LegacyMapValueConfigPresent.class);
+            }
+        });
+        LegacyMapValueConfigPresent legacyMapValueConfigPresent = injector.getInstance(LegacyMapValueConfigPresent.class);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(1);
+        monitor.assertMatchingWarningRecorded("map-a.k.string-value", "replaced", "Use 'map-a.k.string-a'");
+        Assert.assertNotNull(legacyMapValueConfigPresent);
+        Assert.assertEquals(legacyMapValueConfigPresent.getMapA().get("k").getStringA(), "this is a");
+        Assert.assertEquals(legacyMapValueConfigPresent.getMapA().get("k").getStringB(), "this is b");
+    }
+
+    @Test
+    public void testConfigurationWithRedundantLegacyMapValueConfigThrows()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("map-a.k.string-value", "this is a");
+        properties.put("map-a.k.string-a", "this is a");
+        properties.put("map-a.k.string-b", "this is b");
+        TestMonitor monitor = new TestMonitor();
+        try {
+            createInjector(properties, monitor, new Module()
+            {
+                public void configure(Binder binder)
+                {
+                    ConfigurationModule.bindConfig(binder).to(LegacyMapValueConfigPresent.class);
+                }
+            });
+        }
+        catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(1);
+            monitor.assertMatchingWarningRecorded("map-a.k.string-value", "replaced", "Use 'map-a.k.string-a'");
+            Assertions.assertContainsAllOf(e.getMessage(), "map-a.k.string-value", "conflicts with property", "map-a.k.string-a");
+        }
+    }
+
+    @Test
+    public void testConfigurationWithRedundantDeprecatedMapValueConfigThrows()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("map-a.k.string-value", "this is a");
+        properties.put("map-a.k.deprecated-string-value", "this is a");
+        properties.put("map-a.k.string-b", "this is b");
+        TestMonitor monitor = new TestMonitor();
+        try {
+            createInjector(properties, monitor, new Module()
+            {
+                public void configure(Binder binder)
+                {
+                    ConfigurationModule.bindConfig(binder).to(LegacyMapValueConfigPresent.class);
+                }
+            });
+        }
+        catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(2);
+            monitor.assertMatchingWarningRecorded("map-a.k.string-value", "replaced", "Use 'map-a.k.string-a'");
+            monitor.assertMatchingWarningRecorded("map-a.k.deprecated-string-value", "replaced", "Use 'map-a.k.string-a'");
+            Assertions.assertContainsAllOf(e.getMessage(), "map-a.k.string-value", "conflicts with property", "map-a.k.deprecated-string-value");
+        }
+    }
+
+    @Test
+    public void testConfigurationThroughDeprecatedMapValueConfig()
+    {
+        Map<String, String> properties = new TreeMap<String, String>();
+        properties.put("map-a.k.string-a", "this is a");
+        properties.put("map-a.k.string-b", "this is b");
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(properties, monitor, new Module()
+        {
+            public void configure(Binder binder)
+            {
+                ConfigurationModule.bindConfig(binder).to(DeprecatedMapValueConfigPresent.class);
+            }
+        });
+        DeprecatedMapValueConfigPresent deprecatedMapValueConfigPresent = injector.getInstance(DeprecatedMapValueConfigPresent.class);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(1);
+        monitor.assertMatchingWarningRecorded("map-a.k.string-a", "deprecated and should not be used");
+        Assert.assertNotNull(deprecatedMapValueConfigPresent);
+        Assert.assertEquals(deprecatedMapValueConfigPresent.getMapA().get("k").getStringA(), "this is a");
+        Assert.assertEquals(deprecatedMapValueConfigPresent.getMapA().get("k").getStringB(), "this is b");
+    }
+
+
+    @Test
+    public void testDefunctPropertyInMapValueConfigThrows()
+    {
+        Map<String, String> properties = Maps.newTreeMap();
+        properties.put("map-a.k.string-value", "this is a");
+        properties.put("map-a.k.defunct-value", "this shouldn't work");
+        TestMonitor monitor = new TestMonitor();
+        try {
+            createInjector(properties, monitor, new Module()
+            {
+                public void configure(Binder binder)
+                {
+                    ConfigurationModule.bindConfig(binder).to(DefunctMapValueConfigPresent.class);
+                }
+            });
+
+            Assert.fail("Expected an exception in object creation due to use of defunct config");
+        } catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(0);
+            monitor.assertMatchingErrorRecorded("Defunct property", "'map-a.k.defunct-value", "cannot be configured");
+        }
+    }
+
+    @Test
+    public void testSuccessfulMapValueBeanValidation()
+    {
+        Map<String, String> properties = Maps.newHashMap();
+        properties.put("map-a.k.string-value", "has a value");
+        properties.put("map-a.k.int-value", "50");
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(properties, monitor, new Module()
+        {
+            public void configure(Binder binder)
+            {
+                ConfigurationModule.bindConfig(binder).to(MapValueBeanValidationClass.class);
+            }
+        });
+        MapValueBeanValidationClass mapValueBeanValidationClass = injector.getInstance(MapValueBeanValidationClass.class);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
+        Assert.assertNotNull(mapValueBeanValidationClass);
+        Assert.assertEquals(mapValueBeanValidationClass.getMapA().get("k").getStringValue(), "has a value");
+        Assert.assertEquals(mapValueBeanValidationClass.getMapA().get("k").getIntValue(), 50);
+    }
+
+    @Test
+    public void testFailedMapValueBeanValidation()
+    {
+        Map<String, String> properties = Maps.newHashMap();
+        // string-value left at invalid default
+        properties.put("map-a.k.int-value", "5000");  // out of range
+        TestMonitor monitor = new TestMonitor();
+        try {
+            Injector injector = createInjector(properties, monitor, new Module()
+            {
+                public void configure(Binder binder)
+                {
+                    ConfigurationModule.bindConfig(binder).to(MapValueBeanValidationClass.class);
+                }
+            });
+        } catch (CreationException e) {
+            monitor.assertNumberOfErrors(2);
+            monitor.assertNumberOfWarnings(0);
+            monitor.assertMatchingErrorRecorded("Constraint violation", "intValue", "must be less than or equal to 100", "BeanValidationClass");
+            monitor.assertMatchingErrorRecorded("Constraint violation", "stringValue", "may not be null", "BeanValidationClass");
+        }
+    }
+
+    @Test
+    public void testConfigurationWithDifferentRepresentationOfSameMapKeyThrows()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("map-a.01337.string-a", "this is a");
+        properties.put("map-a.1337.string-b", "this is b");
+        TestMonitor monitor = new TestMonitor();
+        try {
+            createInjector(properties, monitor, new Module()
+            {
+                public void configure(Binder binder)
+                {
+                    ConfigurationModule.bindConfig(binder).to(IntegerLegacyMapConfig.class);
+                }
+            });
+        }
+        catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(0);
+            Assertions.assertContainsAllOf(e.getMessage(),"Configuration property prefixes", "'map-a.1337'", "'map-a.01337'", "convert to the same map key", "setMapA");
+        }
+    }
+
+    @Test
+    public void testConfigurationOfSimpleMapValueWithComplexPropertyThrows()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("map-a.1337.string-a", "this is a");
+        TestMonitor monitor = new TestMonitor();
+        try {
+            createInjector(properties, monitor, new Module()
+            {
+                public void configure(Binder binder)
+                {
+                    ConfigurationModule.bindConfig(binder).to(IntegerStringMapConfig.class);
+                }
+            });
+        }
+        catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(0);
+            Assertions.assertContainsAllOf(e.getMessage(), "Configuration map has non-configuration value class java.lang.String, so key '1337' cannot be followed by '.'",
+                    "property 'map-a.1337.string-a'", "setMapA");
+        }
+    }
+
+    @Test
+    public void testConfigurationWithInvalidMapKeyThrows()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("map-a.k.string-a", "this is a");
+        TestMonitor monitor = new TestMonitor();
+        try {
+            createInjector(properties, monitor, new Module()
+            {
+                public void configure(Binder binder)
+                {
+                    ConfigurationModule.bindConfig(binder).to(IntegerLegacyMapConfig.class);
+                }
+            });
+        }
+        catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(0);
+            Assertions.assertContainsAllOf(e.getMessage(),"Could not coerce map key 'k' to java.lang.Integer", "property prefix 'map-a.k'", "setMapA");
+        }
+    }
+
     private Injector createInjector(Map<String, String> properties, TestMonitor monitor, Module module)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, Collections.<String>emptySet(), ImmutableList.<String>of(), monitor);
@@ -368,6 +732,13 @@ public class ConfigurationFactoryTest
         @Config("string-a")
         @LegacyConfig("string-value")
         public void setStringA(String stringValue)
+        {
+            this.stringA = stringValue;
+        }
+
+        @Deprecated
+        @LegacyConfig(value = "deprecated-string-value", replacedBy = "string-a")
+        public void setDeprecatedStringA(String stringValue)
         {
             this.stringA = stringValue;
         }
@@ -461,6 +832,178 @@ public class ConfigurationFactoryTest
         public void setIntValue(int value)
         {
             this.myIntValue = value;
+        }
+    }
+
+    public static class LegacyMapConfigPresent
+    {
+        private Map<String, String> mapA = new HashMap<>();
+        private Map<String, String> mapB = new HashMap<>();
+
+        public Map<String, String> getMapA()
+        {
+            return mapA;
+        }
+
+        @Config("map-a")
+        @LegacyConfig("map-value")
+        @ConfigMap
+        public void setMapA(Map<String, String> mapValue)
+        {
+            this.mapA = ImmutableMap.copyOf(mapValue);
+        }
+
+        @Deprecated
+        @LegacyConfig(value = "deprecated-map-value", replacedBy = "map-a")
+        public void setDeprecatedMapA(Map<String, String> mapValue)
+        {
+            this.mapA = ImmutableMap.copyOf(mapValue);
+        }
+
+        public Map<String, String> getMapB()
+        {
+            return mapB;
+        }
+
+        @Config("map-b")
+        @ConfigMap
+        public void setMapB(Map<String, String> mapValue)
+        {
+            this.mapB = ImmutableMap.copyOf(mapValue);
+        }
+    }
+
+    public static class DeprecatedMapConfigPresent
+    {
+        private Map<String, String> mapA = new HashMap<>();
+        private Map<String, String> mapB = new HashMap<>();
+
+        @Deprecated
+        public Map<String, String> getMapA()
+        {
+            return mapA;
+        }
+
+        @Deprecated
+        @Config("map-a")
+        @ConfigMap
+        public void setMapA(Map<String, String> mapValue)
+        {
+            this.mapA = ImmutableMap.copyOf(mapValue);
+        }
+
+        public Map<String, String> getMapB()
+        {
+            return mapB;
+        }
+
+        @Config("map-b")
+        @ConfigMap
+        public void setMapB(Map<String, String> mapValue)
+        {
+            this.mapB = ImmutableMap.copyOf(mapValue);
+        }
+    }
+
+    public static class LegacyMapValueConfigPresent
+    {
+        private Map<String, LegacyConfigPresent> mapA = new HashMap<>();
+
+        public Map<String, LegacyConfigPresent> getMapA()
+        {
+            return mapA;
+        }
+
+        @Config("map-a")
+        @ConfigMap(LegacyConfigPresent.class)
+        public void setMapA(Map<String, LegacyConfigPresent> mapValue)
+        {
+            this.mapA = ImmutableMap.copyOf(mapValue);
+        }
+    }
+
+    public static class DeprecatedMapValueConfigPresent
+    {
+        private Map<String, DeprecatedConfigPresent> mapA = new HashMap<>();
+
+        public Map<String, DeprecatedConfigPresent> getMapA()
+        {
+            return mapA;
+        }
+
+        @Config("map-a")
+        @ConfigMap(DeprecatedConfigPresent.class)
+        public void setMapA(Map<String, DeprecatedConfigPresent> mapValue)
+        {
+            this.mapA = ImmutableMap.copyOf(mapValue);
+        }
+    }
+
+    public static class DefunctMapValueConfigPresent
+    {
+        private Map<String, DefunctConfigPresent> mapA = new HashMap<>();
+
+        public Map<String, DefunctConfigPresent> getMapA()
+        {
+            return mapA;
+        }
+
+        @Config("map-a")
+        @ConfigMap(DefunctConfigPresent.class)
+        public void setMapA(Map<String, DefunctConfigPresent> mapValue)
+        {
+            this.mapA = ImmutableMap.copyOf(mapValue);
+        }
+    }
+
+    public static class MapValueBeanValidationClass
+    {
+        private Map<String, BeanValidationClass> mapA = new HashMap<>();
+
+        public Map<String, BeanValidationClass> getMapA()
+        {
+            return mapA;
+        }
+
+        @Config("map-a")
+        @ConfigMap(BeanValidationClass.class)
+        public void setMapA(Map<String, BeanValidationClass> mapValue)
+        {
+            this.mapA = ImmutableMap.copyOf(mapValue);
+        }
+    }
+
+    public static class IntegerLegacyMapConfig
+    {
+        private Map<Integer, LegacyConfigPresent> mapA = new HashMap<>();
+
+        public Map<Integer, LegacyConfigPresent> getMapA()
+        {
+            return mapA;
+        }
+
+        @Config("map-a")
+        @ConfigMap(key = Integer.class, value = LegacyConfigPresent.class)
+        public void setMapA(Map<Integer, LegacyConfigPresent> mapValue)
+        {
+            this.mapA = ImmutableMap.copyOf(mapValue);
+        }
+    }
+
+    public static class IntegerStringMapConfig
+    {
+        private Map<Integer, String> mapA = new HashMap<>();
+
+        public Map<Integer, String> getMapA()
+        {
+            return mapA;
+        }
+
+        @Config("map-a")
+        @ConfigMap(key = Integer.class)
+        public void setMapA(Map<Integer, String> mapValue)
+        {
+            this.mapA = ImmutableMap.copyOf(mapValue);
         }
     }
 }

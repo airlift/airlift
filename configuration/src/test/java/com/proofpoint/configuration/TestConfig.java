@@ -17,6 +17,7 @@ package com.proofpoint.configuration;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
 import com.google.inject.CreationException;
 import com.google.inject.Guice;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static com.proofpoint.testing.Assertions.assertInstanceOf;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -52,7 +54,37 @@ import static org.testng.Assert.fail;
         verifyConfig(injector.getInstance(Config1.class));
     }
 
-    private void verifyConfig(Config1 config)
+    @Test
+    public void testConfigMapSimple()
+    {
+        Map<String,String> properties = ImmutableMap.<String, String>builder()
+                    .put("map.key1", "value1")
+                    .put("map.key2", "value2")
+                    .build();
+        Injector injector = createInjector(properties, createModule(ConfigMapSimple.class, null));
+        final ConfigMapSimple mapSimple = injector.getInstance(ConfigMapSimple.class);
+        assertEquals(mapSimple.getMap(), ImmutableMap.of("key1", "value1", "key2", "value2"));
+    }
+
+    @Test
+    public void testConfigMapComplex()
+    {
+        final ImmutableSet<Integer> keys = ImmutableSet.of(1, 2, 3, 5, 8);
+        final Builder<String, String> builder = ImmutableMap.builder();
+        for (Integer key : keys) {
+            for (Entry<String, String> entry : properties.entrySet()) {
+                builder.put("map." + key + "." + entry.getKey(), entry.getValue());
+            }
+        }
+        Injector injector = createInjector(builder.build(), createModule(ConfigMapComplex.class, null));
+        final ConfigMapComplex mapComplex = injector.getInstance(ConfigMapComplex.class);
+        assertEquals(mapComplex.getMap().keySet(), keys);
+        for (Config1 config1 : mapComplex.getMap().values()) {
+            verifyConfig(config1);
+        }
+    }
+
+    private static void verifyConfig(Config1 config)
     {
         assertEquals("a string", config.getStringOption());
         assertEquals(true, config.getBooleanOption());
@@ -86,23 +118,22 @@ import static org.testng.Assert.fail;
         }
     }
 
-    private Injector createInjector(Map<String, String> properties, Module module)
+    private static Injector createInjector(Map<String, String> properties, Module module)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
         List<Message> messages = new ConfigurationValidator(configurationFactory, null).validate(module);
         return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
     }
 
-    private <T> Module createModule(final Class<T> configClass, final String prefix)
+    private static <T> Module createModule(final Class<T> configClass, final String prefix)
     {
-        Module module = new Module() {
+        return new Module() {
             @Override
             public void configure(Binder binder)
             {
                 ConfigurationModule.bindConfig(binder).prefixedWith(prefix).to(configClass);
             }
         };
-        return module;
     }
 
     @BeforeMethod

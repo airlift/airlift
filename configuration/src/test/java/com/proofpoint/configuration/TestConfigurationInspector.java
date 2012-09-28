@@ -6,6 +6,8 @@ import com.google.inject.Guice;
 import com.google.inject.Module;
 import com.google.inject.spi.Message;
 import com.proofpoint.configuration.ConfigurationFactoryTest.AnnotatedSetter;
+import com.proofpoint.configuration.ConfigurationFactoryTest.LegacyMapConfigPresent;
+import com.proofpoint.configuration.ConfigurationFactoryTest.LegacyMapValueConfigPresent;
 import com.proofpoint.configuration.ConfigurationInspector.ConfigAttribute;
 import com.proofpoint.configuration.ConfigurationInspector.ConfigRecord;
 import com.proofpoint.configuration.ConfigurationMetadataTest.SetterSensitiveClass;
@@ -68,6 +70,51 @@ public class TestConfigurationInspector
         })
                 .component("ConfigurationMetadataTest$SetterSensitiveClass")
                 .value("Value", "value", "[REDACTED]", "[REDACTED]", "description")
+                .end();
+    }
+
+    @Test
+    public void testSimpleMapConfig()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("map-a.a", "this is a");
+        properties.put("map-a.b", "this is b");
+        inspect(properties, new Module()
+        {
+            @Override
+            public void configure(Binder binder)
+            {
+                ConfigurationModule.bindConfig(binder).to(LegacyMapConfigPresent.class);
+            }
+        })
+                .component("ConfigurationFactoryTest$LegacyMapConfigPresent")
+                .value("MapA[a]", "map-a.a", "-- n/a --", "this is a", "")
+                .value("MapA[b]", "map-a.b", "-- n/a --", "this is b", "")
+                .value("MapB", "map-b", "-- n/a --", "-- empty --", "")
+                .end();
+    }
+
+    @Test
+    public void testConfigMapValueConfig()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("map-a.k1.string-value", "this is a");
+        properties.put("map-a.k1.string-b", "this is b");
+        properties.put("map-a.k2.string-value", "this is k2 a");
+        properties.put("map-a.k2.string-b", "this is k2 b");
+        inspect(properties, new Module()
+        {
+            @Override
+            public void configure(Binder binder)
+            {
+                ConfigurationModule.bindConfig(binder).to(LegacyMapValueConfigPresent.class);
+            }
+        })
+                .component("ConfigurationFactoryTest$LegacyMapValueConfigPresent")
+                .value("MapA[k1]StringA", "map-a.k1.string-a", "defaultA", "this is a", "")
+                .value("MapA[k1]StringB", "map-a.k1.string-b", "defaultB", "this is b", "")
+                .value("MapA[k2]StringA", "map-a.k2.string-a", "defaultA", "this is k2 a", "")
+                .value("MapA[k2]StringB", "map-a.k2.string-b", "defaultB", "this is k2 b", "")
                 .end();
     }
 

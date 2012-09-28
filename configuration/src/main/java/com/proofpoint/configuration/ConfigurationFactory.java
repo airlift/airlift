@@ -22,6 +22,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
 import com.google.inject.Binding;
@@ -33,6 +34,7 @@ import com.google.inject.spi.Element;
 import com.google.inject.spi.Message;
 import com.google.inject.spi.ProviderInstanceBinding;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
+import com.proofpoint.configuration.ConfigurationMetadata.InjectionPointMetaData;
 import com.proofpoint.configuration.Problems.Monitor;
 import org.apache.bval.jsr303.ApacheValidationProvider;
 
@@ -44,6 +46,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -182,6 +186,17 @@ public final class ConfigurationFactory
 
     private <T> ConfigurationHolder<T> build(Class<T> configClass, String prefix)
     {
+        Problems problems = new Problems(monitor);
+
+        final T instance = build(configClass, prefix, problems);
+
+        problems.throwIfHasErrors();
+
+        return new ConfigurationHolder<T>(instance, problems);
+    }
+
+    private <T> T build(Class<T> configClass, String prefix, Problems problems)
+    {
         if (configClass == null) {
             throw new NullPointerException("configClass is null");
         }
@@ -197,8 +212,6 @@ public final class ConfigurationFactory
 
         T instance = newInstance(configurationMetadata);
 
-        Problems problems = new Problems(monitor);
-
         for (AttributeMetadata attribute : configurationMetadata.getAttributes().values()) {
             try {
                 setConfigProperty(instance, attribute, prefix, problems);
@@ -211,7 +224,7 @@ public final class ConfigurationFactory
         if (configClass.isAnnotationPresent(DefunctConfig.class)) {
             for (String value : configClass.getAnnotation(DefunctConfig.class).value()) {
                 if (!value.isEmpty() && properties.get(prefix + value) != null) {
-                    problems.addError("Defunct property '%s' (class [%s]) cannot be configured.", value, configClass.toString());
+                    problems.addError("Defunct property '%s' (class [%s]) cannot be configured.", prefix + value, configClass.toString());
                 }
             }
         }
@@ -221,9 +234,7 @@ public final class ConfigurationFactory
                     prefix, violation.getPropertyPath(), violation.getMessage(), configClass.getName());
         }
 
-        problems.throwIfHasErrors();
-
-        return new ConfigurationHolder<T>(instance, problems);
+        return instance;
     }
 
     private static <T> T newInstance(ConfigurationMetadata<T> configurationMetadata)
@@ -250,10 +261,10 @@ public final class ConfigurationFactory
         }
 
         if (injectionPoint.getSetter().isAnnotationPresent(Deprecated.class)) {
-            problems.addWarning("Configuration property '%s' is deprecated and should not be used", injectionPoint.getProperty());
+            problems.addWarning("Configuration property '%s' is deprecated and should not be used", prefix + injectionPoint.getProperty());
         }
 
-        Object value = getInjectedValue(injectionPoint, prefix);
+        Object value = getInjectedValue(injectionPoint, prefix, problems);
 
         try {
             injectionPoint.getSetter().invoke(instance, value);
@@ -268,48 +279,95 @@ public final class ConfigurationFactory
     private ConfigurationMetadata.InjectionPointMetaData findOperativeInjectionPoint(AttributeMetadata attribute, String prefix, Problems problems)
             throws ConfigurationException
     {
-        ConfigurationMetadata.InjectionPointMetaData operativeInjectionPoint = attribute.getInjectionPoint();
-        String operativeName = null;
-        String operativeValue = null;
-        if (operativeInjectionPoint != null) {
-            operativeName = prefix + operativeInjectionPoint.getProperty();
-            operativeValue = properties.get(operativeName);
-        }
+        OperativeInjectionData operativeInjectionData = new OperativeInjectionData(attribute, prefix, problems);
+        operativeInjectionData.consider(attribute.getInjectionPoint(), false);
 
         for (ConfigurationMetadata.InjectionPointMetaData injectionPoint : attribute.getLegacyInjectionPoints()) {
-            String fullName = prefix + injectionPoint.getProperty();
-            String value = properties.get(fullName);
-            if (value != null) {
-                String replacement = "deprecated.";
-                if (attribute.getInjectionPoint() != null) {
-                    replacement = format("replaced. Use '%s' instead.", prefix + attribute.getInjectionPoint().getProperty());
-                }
-                problems.addWarning("Configuration property '%s' has been " + replacement, fullName);
+            operativeInjectionData.consider(injectionPoint, true);
+        }
 
-                if (operativeValue == null) {
-                    operativeInjectionPoint = injectionPoint;
-                    operativeValue = value;
-                    operativeName = fullName;
-                } else {
-                    problems.addError("Configuration property '%s' (=%s) conflicts with property '%s' (=%s)", fullName, value, operativeName, operativeValue);
+        problems.throwIfHasErrors();
+        return operativeInjectionData.operativeInjectionPoint;
+    }
+
+    private class OperativeInjectionData
+    {
+        private AttributeMetadata attribute;
+        private String prefix;
+        private Problems problems;
+
+        private String operativeDescription = null;
+        InjectionPointMetaData operativeInjectionPoint = null;
+
+        public OperativeInjectionData(AttributeMetadata attribute, String prefix, Problems problems)
+        {
+            this.attribute = attribute;
+            this.prefix = prefix;
+            this.problems = problems;
+        }
+
+        public void consider(InjectionPointMetaData injectionPoint, boolean isLegacy)
+        {
+            if (injectionPoint == null) {
+                return;
+            }
+            String fullName = prefix + injectionPoint.getProperty();
+            if (injectionPoint.isConfigMap()) {
+                final String mapPrefix = fullName + ".";
+                for (String key : properties.keySet()) {
+                    if (key.startsWith(mapPrefix)) {
+                        if (isLegacy) {
+                            warnLegacy(fullName);
+                        }
+
+                        if (operativeDescription == null) {
+                            operativeInjectionPoint = injectionPoint;
+                            operativeDescription = format("map property prefix '%s'", fullName);
+                        }
+                        else {
+                            problems.addError("Map property prefix '%s' conflicts with %s", fullName, operativeDescription);
+                        }
+                        break;
+                    }
+                }
+            }
+            else {
+                String value = properties.get(fullName);
+                if (value != null) {
+                    if (isLegacy) {
+                        warnLegacy(fullName);
+                    }
+
+                    if (operativeDescription == null) {
+                        operativeInjectionPoint = injectionPoint;
+                        operativeDescription = format("property '%s' (=%s)", fullName, value);
+                    }
+                    else {
+                        problems.addError("Configuration property '%s' (=%s) conflicts with %s", fullName, value, operativeDescription);
+                    }
                 }
             }
         }
 
-        problems.throwIfHasErrors();
-        if (operativeValue == null) {
-            // No injection from configuration
-            return null;
+        private void warnLegacy(String fullName)
+        {
+            String replacement = "deprecated.";
+            if (attribute.getInjectionPoint() != null) {
+                replacement = format("replaced. Use '%s' instead.", prefix + attribute.getInjectionPoint().getProperty());
+            }
+            problems.addWarning("Configuration property '%s' has been %s", fullName, replacement);
         }
-
-        return operativeInjectionPoint;
     }
 
-    private Object getInjectedValue(ConfigurationMetadata.InjectionPointMetaData injectionPoint, String prefix)
+    private Object getInjectedValue(InjectionPointMetaData injectionPoint, String prefix, Problems problems)
             throws InvalidConfigurationException
     {
         // Get the property value
         String name = prefix + injectionPoint.getProperty();
+        final ConfigMap configMap = injectionPoint.getConfigMap();
+        if (configMap != null) {
+            return getInjectedMap(injectionPoint, name + ".", problems, configMap.key(), configMap.value());
+        }
         String value = properties.get(name);
 
         if (value == null) {
@@ -324,12 +382,93 @@ public final class ConfigurationFactory
             throw new InvalidConfigurationException(format("Could not coerce value '%s' to %s (property '%s') in order to call [%s]",
                     value,
                     propertyType.getName(),
-                    injectionPoint.getProperty(),
+                    name,
                     injectionPoint.getSetter().toGenericString()));
         }
         usedProperties.add(name);
         unusedProperties.remove(name);
         return finalValue;
+    }
+
+    private <K,V> Map<K, V> getInjectedMap(InjectionPointMetaData injectionPoint, String name, Problems problems, Class<K> keyClass, Class<V> valueClass)
+    {
+        boolean valueIsConfigClass = false;
+        for (Method method : valueClass.getDeclaredMethods()) {
+            if (method.isAnnotationPresent(Config.class)) {
+                valueIsConfigClass = true;
+                break;
+            }
+        }
+
+        final HashSet<String> keySet = new HashSet<>();
+        for (String key : properties.keySet()) {
+            if (key.startsWith(name)) {
+                final String keySuffix = key.substring(name.length());
+                if (valueIsConfigClass) {
+                    keySet.add(keySuffix.split("\\.", 2)[0]);
+                }
+                else if (keySuffix.contains(".")) {
+                    problems.addError("Configuration map has non-configuration value class %s, so key '%s' cannot be followed by '.' (property '%s') for call [%s]",
+                            valueClass.getName(),
+                            keySuffix.split("\\.", 2)[0],
+                            key,
+                            injectionPoint.getSetter().toGenericString());
+                }
+                else {
+                    keySet.add(keySuffix);
+                }
+            }
+        }
+
+        final Map<K, String> coercedKeyMap = new HashMap<>();
+
+        final Builder<K, V> builder = ImmutableMap.builder();
+        for (String keyString : keySet) {
+            K key = (K) coerce(keyClass, keyString);
+            if (key == null) {
+                problems.addError("Could not coerce map key '%s' to %s (property%s '%s') in order to call [%s]",
+                        keyString,
+                        keyClass.getName(),
+                        valueIsConfigClass ? " prefix" : "",
+                        name + keyString,
+                        injectionPoint.getSetter().toGenericString());
+                continue;
+            }
+
+            final String oldkeyString = coercedKeyMap.put(key, keyString);
+            if (oldkeyString != null) {
+                problems.addError("Configuration property prefixes ('%s' and '%s') convert to the same map key, preventing creation of map for call [%s]",
+                        name + oldkeyString,
+                        name + keyString,
+                        injectionPoint.getSetter().toGenericString());
+                continue;
+            }
+            final V value;
+            if (valueIsConfigClass) {
+                try {
+                    value = build(valueClass, name + keyString, problems);
+                }
+                catch (ConfigurationException ignored) {
+                    continue;
+                }
+            }
+            else {
+                value = (V) coerce(valueClass, properties.get(name + keyString));
+                if (value == null) {
+                    problems.addError("Could not coerce value '%s' to %s (property '%s') in order to call [%s]",
+                            value,
+                            valueClass.getName(),
+                            name + keyString,
+                            injectionPoint.getSetter().toGenericString());
+                    continue;
+                }
+                usedProperties.add(name + keyString);
+                unusedProperties.remove(name + keyString);
+            }
+            builder.put(key, value);
+        }
+
+        return builder.build();
     }
 
     private static Object coerce(Class<?> type, String value)

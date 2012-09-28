@@ -19,11 +19,16 @@ import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.ImmutableSortedSet.Builder;
 import com.google.inject.Key;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
 
 import java.lang.reflect.Method;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.SortedSet;
+
+import static com.google.common.base.Objects.firstNonNull;
 
 public class ConfigurationInspector
 {
@@ -95,26 +100,79 @@ public class ConfigurationInspector
                 // provider could blow up for any reason, which is fine for this code
                 // this is catch throwable because we may get an AssertionError
             }
-            T defaults = newDefaultInstance(metadata);
 
             String prefix = configurationProvider.getPrefix();
             prefix = prefix == null ? "" : (prefix + ".");
 
             ImmutableSortedSet.Builder<ConfigAttribute> builder = ImmutableSortedSet.naturalOrder();
+            enumerateConfig(metadata, instance, prefix, builder, "");
+            attributes = builder.build();
+        }
+
+        private static <T> void enumerateConfig(ConfigurationMetadata<T> metadata, T instance, String prefix, Builder<ConfigAttribute> builder, String attributePrefix)
+        {
+            T defaults = newDefaultInstance(metadata);
             for (AttributeMetadata attribute : metadata.getAttributes().values()) {
                 String propertyName = prefix + attribute.getInjectionPoint().getProperty();
                 Method getter = attribute.getGetter();
 
-                String defaultValue = getValue(getter, defaults, "-- none --");
-                String currentValue = getValue(getter, instance, "-- n/a --");
-                String description = attribute.getDescription();
-                if (description == null) {
-                    description = "";
-                }
+                String description = firstNonNull(attribute.getDescription(), "");
 
-                builder.add(new ConfigAttribute(attribute.getName(), propertyName, defaultValue, currentValue, description, attribute.isSecuritySensitive()));
+                final ConfigMap configMap = attribute.getConfigMap();
+                if (getter != null && instance != null && !attribute.isSecuritySensitive() && configMap != null) {
+                    final Class<?> valueClass = configMap.value();
+                    Class<?> valueConfigClass = null;
+                    for (Method valueMethod : valueClass.getDeclaredMethods()) {
+                        if (valueMethod.isAnnotationPresent(Config.class)) {
+                            valueConfigClass = valueClass;
+                            break;
+                        }
+                    }
+
+                    enumerateMap(instance, attributePrefix + attribute.getName(), propertyName, description, getter, valueConfigClass, builder);
+                }
+                else {
+                    String defaultValue = getValue(getter, defaults, "-- none --");
+                    String currentValue = getValue(getter, instance, "-- n/a --");
+
+                    builder.add(new ConfigAttribute(attributePrefix + attribute.getName(), propertyName, defaultValue, currentValue, description, attribute.isSecuritySensitive()));
+                }
             }
-            attributes = builder.build();
+        }
+
+        private static <T, K, V> void enumerateMap(T instance, String attributeName, String propertyName, String description, Method getter, Class<V> valueConfigClass, Builder<ConfigAttribute> builder)
+        {
+            Map<K, V> map;
+            try {
+                map = (Map<K, V>) getter.invoke(instance);
+            }
+            catch (Throwable e) {
+                builder.add(new ConfigAttribute(attributeName, propertyName, "-- n/a --", "-- ERROR --", description, false));
+                return;
+            }
+
+            if (map == null) {
+                builder.add(new ConfigAttribute(attributeName, propertyName, "-- n/a --", "null", description, false));
+                return;
+            }
+            if (map.isEmpty()) {
+                builder.add(new ConfigAttribute(attributeName, propertyName, "-- n/a --", "-- empty --", description, false));
+                return;
+            }
+            for (Entry<K, V> entry : map.entrySet()) {
+                if (valueConfigClass != null) {
+                    enumerateConfig(ConfigurationMetadata.getConfigurationMetadata(valueConfigClass),
+                            entry.getValue(),
+                            propertyName + "." + entry.getKey().toString() + ".",
+                            builder,
+                            attributeName + "[" + entry.getKey().toString() + "]");
+                }
+                else {
+                    builder.add(new ConfigAttribute(attributeName + "[" + entry.getKey().toString() + "]",
+                            propertyName + "." + entry.getKey().toString(),
+                            "-- n/a --", entry.getValue().toString(), description, false));
+                }
+            }
         }
 
         public String getComponentName()
