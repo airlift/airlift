@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList.Builder;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Stage;
 import com.google.inject.spi.Message;
@@ -43,7 +42,6 @@ import com.proofpoint.log.LoggingConfiguration;
 import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Entry point for an application built using the platform codebase.
@@ -230,7 +228,7 @@ public class Bootstrap
         columnPrinter.addColumn(DESCRIPTION_COLUMN);
 
         for (ConfigRecord<?> record : configurationInspector.inspect(configurationFactory)) {
-            String componentName = getComponentName(record);
+            String componentName = record.getComponentName();
             for (ConfigAttribute attribute : record.getAttributes()) {
                 columnPrinter.addValue(COMPONENT_COLUMN, componentName);
                 columnPrinter.addValue(ATTRIBUTE_NAME_COLUMN, attribute.getAttributeName());
@@ -241,16 +239,5 @@ public class Bootstrap
             }
         }
         return columnPrinter;
-    }
-
-    private static String getComponentName(ConfigRecord<?> record)
-    {
-        Key<?> key = record.getKey();
-        String componentName = "";
-        if (key.getAnnotationType() != null) {
-            componentName = "@" + key.getAnnotationType().getSimpleName() + " ";
-        }
-        componentName += key.getTypeLiteral();
-        return componentName;
     }
 }

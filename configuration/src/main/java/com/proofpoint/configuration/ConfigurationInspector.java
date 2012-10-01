@@ -117,6 +117,17 @@ public class ConfigurationInspector
             attributes = builder.build();
         }
 
+        public String getComponentName()
+        {
+            Key<?> key = getKey();
+            String componentName = "";
+            if (key.getAnnotationType() != null) {
+                componentName = "@" + key.getAnnotationType().getSimpleName() + " ";
+            }
+            componentName += key.getTypeLiteral();
+            return componentName;
+        }
+
         public Key<T> getKey()
         {
             return key;
