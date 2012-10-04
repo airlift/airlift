@@ -29,9 +29,9 @@ import org.codehaus.jackson.map.DeserializationContext;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.JsonSerializer;
 import org.codehaus.jackson.map.SerializerProvider;
-import org.codehaus.jackson.map.deser.StdScalarDeserializer;
-import org.codehaus.jackson.map.ser.SerializerBase;
-import org.codehaus.jackson.map.ser.ToStringSerializer;
+import org.codehaus.jackson.map.deser.std.StdScalarDeserializer;
+import org.codehaus.jackson.map.ser.std.SerializerBase;
+import org.codehaus.jackson.map.ser.std.ToStringSerializer;
 import org.codehaus.jackson.node.ObjectNode;
 import sun.management.LazyCompositeData;
 

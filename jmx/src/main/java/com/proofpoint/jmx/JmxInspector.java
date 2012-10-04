@@ -117,7 +117,7 @@ public class JmxInspector
     @Override
     public Iterator<InspectorRecord> iterator()
     {
-        return Iterators.unmodifiableIterator(inspectorRecords.iterator());
+        return inspectorRecords.iterator();
     }
 
     private void addConfig(Multimap<String, String> nameMap, Class<?> clazz, ImmutableSortedSet.Builder<InspectorRecord> builder)
