@@ -25,6 +25,7 @@ import org.codehaus.jackson.map.JsonSerializer;
 import org.codehaus.jackson.map.KeyDeserializer;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
+import org.codehaus.jackson.map.SerializationConfig.Feature;
 import org.codehaus.jackson.map.module.SimpleModule;
 
 import java.util.Map;
@@ -71,23 +72,36 @@ public class ObjectMapperProvider implements Provider<ObjectMapper>
     @Override
     public ObjectMapper get()
     {
+        return getPretty(false);
+    }
+
+    ObjectMapper getPretty(boolean pretty)
+    {
         ObjectMapper objectMapper = new ObjectMapper();
+        SerializationConfig serializationConfig = objectMapper.getSerializationConfig();
+        DeserializationConfig deserializationConfig = objectMapper.getDeserializationConfig();
 
         // ignore unknown fields (for backwards compatibility)
-        objectMapper.getDeserializationConfig().disable(FAIL_ON_UNKNOWN_PROPERTIES);
+        deserializationConfig = deserializationConfig.without(FAIL_ON_UNKNOWN_PROPERTIES);
 
         // use ISO dates
-        objectMapper.getSerializationConfig().disable(WRITE_DATES_AS_TIMESTAMPS);
+        serializationConfig = serializationConfig.without(WRITE_DATES_AS_TIMESTAMPS);
 
         // skip fields that are null instead of writing an explicit json null value
-        objectMapper.getSerializationConfig().setSerializationInclusion(NON_NULL);
+        serializationConfig = serializationConfig.withSerializationInclusion(NON_NULL);
 
         // disable auto detection of json properties... all properties must be explicit
-        objectMapper.getDeserializationConfig().disable(DeserializationConfig.Feature.AUTO_DETECT_FIELDS);
-        objectMapper.getDeserializationConfig().disable(AUTO_DETECT_SETTERS);
-        objectMapper.getSerializationConfig().disable(SerializationConfig.Feature.AUTO_DETECT_FIELDS);
-        objectMapper.getSerializationConfig().disable(AUTO_DETECT_GETTERS);
-        objectMapper.getSerializationConfig().disable(AUTO_DETECT_IS_GETTERS);
+        deserializationConfig = deserializationConfig.without(DeserializationConfig.Feature.AUTO_DETECT_FIELDS)
+                .without(AUTO_DETECT_SETTERS);
+        serializationConfig = serializationConfig.without(SerializationConfig.Feature.AUTO_DETECT_FIELDS)
+                .without(AUTO_DETECT_GETTERS)
+                .without(AUTO_DETECT_IS_GETTERS);
+
+        if (pretty) {
+            serializationConfig = serializationConfig.with(Feature.INDENT_OUTPUT);
+        }
+
+        objectMapper = new ObjectMapper(null, null, null, serializationConfig, deserializationConfig);
 
         if (jsonSerializers != null || jsonDeserializers != null || keySerializers != null || keyDeserializers != null) {
             SimpleModule module = new SimpleModule(getClass().getName(), new Version(1, 0, 0, null));

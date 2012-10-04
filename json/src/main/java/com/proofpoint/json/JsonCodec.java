@@ -33,12 +33,12 @@ import static org.codehaus.jackson.map.SerializationConfig.Feature.INDENT_OUTPUT
 
 public class JsonCodec<T>
 {
-    private static final Supplier<ObjectMapper> OBJECT_MAPPER_SUPPLIER = Suppliers.memoize(new Supplier()
+    private static final Supplier<ObjectMapper> OBJECT_MAPPER_SUPPLIER = Suppliers.memoize(new Supplier<ObjectMapper>()
     {
-        public Object get()
+        @Override
+        public ObjectMapper get()
         {
-            ObjectMapper objectMapper = new ObjectMapperProvider().get();
-            objectMapper.getSerializationConfig().enable(INDENT_OUTPUT);
+            ObjectMapper objectMapper = new ObjectMapperProvider().getPretty(true);
             return objectMapper;
         }
     });
