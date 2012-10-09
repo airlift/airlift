@@ -1,209 +1,751 @@
-* 0.67
+Platform 0.67
 
-- Replace EWMA with DecayCounter, an implementation that doesn't require a thread pool
-- Add HttpUriBuilder from Airship (Formerly Galaxy)
-- Add support for binding Jackson key serializers and deserializers in Guice
-- Add support for fromString method in configuration type coercion
-- Add QuantileDigest for computing approximate quantile statistics
+* No thread pool for CounterStat
 
-* 0.66
-- Java 7 is now required
+We changed the CounterStat implementation to use forward decay, which eliminates
+the need for a thread pool (and having to manage a thread pool).
 
-* 0.65
-- Improvements in unit tests and testing utilities
-- Modifications to allow building on Windows
-- Restrict entity bodies to PUT/POST requests in HttpClient
-- [Bug] Throw correct exception from HttpClient
+* HttpUriBuilder a fluent api for HTTP URIs
 
-* 0.64
+Building HTTP URIs using java.net.URI is difficult and error prone, so we added
+a simple fluent API for building up HTTP URIs. For example:
 
-- [Bug] Add missing HttpEventModule to skeleton-server
-- Enforce use of HttpClientBinder
+    URI uri = uriBuilder()
+            .scheme("http")
+            .host("www.example.com")
+            .port(8081)
+            .replacePath("/a/b/c")
+            .replaceParameter("k", "1")
+            .build();
 
-* 0.63
+Additionally, the API can manipulate existing URIs:
 
-- [Bug] Make http-client-experimental a compile dependency
+    URI uri = HttpUriBuilder.uriBuilderFrom(URI.create("http://www.example.com:8081/?a=apple&b=banana"))
+            .replaceParameter("a", "apricot")
+            .appendPath("a/b/c")
+            .build();
 
-* 0.62
+* Bind Jackson key serializers and deserializers in Guice
 
-- Removed all dependencies to Ning's Asynchronous HTTP client
-- Cleaned up dependency management
-- Multiple refactoring commits for readability
-- Addition of request filter support to HttpClient
-- Removal of deprecated JavaUrlHttpClient
-- Removal of the experimental module, segmented into separate modules
+We've added the ability to bind Jackson key serializers and deserializers with
+the JsonBinder.
 
-* 0.61
+* Configuration types can now use a fromString method for coercion
 
-- Upgrade to Guava 12.0 for Platform and Rest Server Base
-- Tests for keep alives in ApacheHttpClient
+The configuration system will look for methods in the following order:
 
-* 0.60
+    fromString(String);
+    valueOf(String);
+    <init>(String);
 
-- [Bug] Fix announcements for Rack servers
+* Quantile Digest
 
-* 0.59
+We've introduced an implementation of Quantile Digests, a data structure for computing approximate
+quantile statistics and histograms in sub-linear space with guaranteed error bounds, from the paper
+"Medians and Beyond: New Aggregation Techniques for Sensor Networks". It supports
+exponentially-decayed counts and can be used to query quantiles and histograms very efficiently.
 
-- Replace Hibernate validator with direct dependency on Apache BVal
-- [Bug] Fix V1 Events so they can be used with http request events
-- Check for duplicate classes in the dependency closure during builds
-- Add JsonEventSerializer for external use
-- Add support for Rack servers to be able to announce with Discovery
+* DistributionStat
 
-* 0.58
+We've deprecated MeterStat in favor of DistributionStat. This new implementation is based on
+QuantileDigest and exposes statistically valid percentile metrics at various resolutions
+(1/5/15-minute, all time). It's designed to be exported via jmxutil's @Managed annotations.
 
-- [Bug] Add new required modules for Rack server
-- [Bug] Make media type parser more lenient
-- [Experimental] Make JsonResponseHandler success codes configurable
+* @ConfigSecuritySensitive
 
-* 0.57
+We created the @ConfigSecuritySensitive annotation for configuration settings such as passwords.
+When placed on a @Config setter, prevents the value of the setting from being logged upon startup.
 
-- [Bug] ServiceInventory periodic refresh wasn't working
-- Export ServiceInventory through JMX
+* @ConfigMap
 
-* 0.56
+We added support for configuration maps. For example, given the setter:
 
-- Fixed bug that causes HttpRequestEvents to not be published
+    @Config("setting")
+    @ConfigMap(key = Integer.class, value = Double.class)
+    public void setSetting(Map<Integer, Double> value)
 
-* 0.55
+the configuration settings:
 
-- Upgrade to Jackson 1.9.5
-- Record and event for each http request processed
-- Added support for X-FORWARDED-FOR and X-FORWARDED-PROTO in request event and logging
-- Add timing filter to http request flow for measuring time to first byte
-- Set names of http server threads to a reasonable value
-- Service inventory now support file URIs
-- [Experimental] Changed HttpClient to not be async and added new AsyncHttpClient
-- [Experimental] Replace java.net.URL with Apache HTTP Components in http-client
+    setting.1=0.059
+    setting.5=2.543
 
-* 0.54
+will cause the setter to be called with ImmutableMap.of(1, 0.059, 5, 2.543).
 
-- [Bug] Don't use doclava in javadoc plugin for servers that use rest-server-base, it's buggy
+The "key" and "value" arguments both default to String.class and can be any type that the configuration
+system can coerce. Furthermore, the "value" argument can be any configuration class. For example,
+given a EndpointConfig class with setters annotated with @Config("hostname") and @Config("port"):
 
-* 0.53
+    @Config("endpoint")
+    @ConfigMap(EndpointConfig.class)
+    public void setFruit(Map<String, EndpointConfig> value)
 
-- Upgrade to jetty 8.1.1 to fix connection leak when clients hang up prematurely
-- EOFException while reading a JSON request now results in a 400 instead of a 500
-- Add support for binding servlet filters into TestingHttpServer
-- [Experimental] Update Rack packaging (JRuby on Rails) for Rails 3.1+
+the configuration settings:
 
-* 0.52
+    endpoint.foo.hostname=foo.example.com
+    endpoint.foo.port=8080
+    endpoint.bar.hostname=bar.example.com
 
-- Use a separate thread pool for http server admin listener
-- Make http client connect and read timeout configurable
-- Add node.external-address property to specify external routable address
-- Server response header is not longer sent
+will cause the setter to be called with a map with two entries. One entry will have key "foo" and
+value an EndpointConfig with host "foo.example.com" and port "8080". The other entry will have key
+"bar" and value an EndpointConfig with host "bar.example.com" and a default port.
 
-* 0.51
+* Additional error checks in configuration
 
-- [Experimental] Trace token support in http server
-- Support Map and Multimap for event fields
-- Add server binary and config spec in jmx-http-rpc announcement
-- [Bug] Announce jmx-http-rpc on admin port instead of main port
-- [Bug] Add support for legacy log.config to launcher
+ - All configuration properties read from a configuration file must be used--Bootstrap.strictConfig()
+   now does nothing and is deprecated.
+ - Duplicate configuration property keys in a given configuration file now cause an error.
+ - Specifying a given configuration setting multiple times (through legacy properties) is now an error,
+   even if all the properties use the same string value.
 
-* 0.50
+* We removed the restriction of entity bodies to PUT/POST requests that was added in Platform 0.65
+* We deprecated unused configuration settings in HTTPEventClient
+* We limited the stats to log dependency to test scope
 
-- Upgrade to Guava 10.0.1
-- Upgrade to TestNG 6.2.1
-- Upgrade to Joda time 2.0
-- Upgrade to CGlib 2.2.2
-- Upgrade to Hibernate validation 4.2.0.Final
-- Upgrade to log4j-over-slf4j 1.6.2
-- Upgrade to Logback 0.9.30
-- [Experimental] Log levels can be configured via JMX
+Platform 0.66
 
-* 0.49
+* Java 7 is now required
 
-- Upgrade to Jetty 8.0.3. Fixes critical bug where the http server leaks connections and file descriptors
-- Sign artifacts for projects that inherit from rest-server-base and rack-server-base-experimental
-- Optimize event serializer under high-concurrency
-- [Experimental] Discovery client now bootstraps itself by calling out to an optional service inventory API
-- [Experimental] Http server and client now expose request stats over JMX
-- [Experimental] Support for conditional module binding
-- [Experimental] Http-based JMX connector listens on an alternate admin port
-- [Bug] Http client now consumes all unread input, otherwise keep-alive doesn't work
-- [Bug] RackServlet inherited GEM_HOME and GEM_PATH environment variables
+Platform 0.65
 
-* 0.48
-- Upgrade to Guava 10.0 - older version are now banned
-- Upgrade to Hector 0.8.0-2
-- Upgrade to Jersey 1.9.1
-- Upgrade to Jetty 8.0.1
-- [Experimental] Added http based JMX remote connector
-- [Experimental] User agent if http client is now node.id to make debugging easier
-- [Bug] removed broken discovery and event fail-safe logic
+* Improvements in unit tests and testing utilities
+* Modifications to allow building on Windows
+* Restrict entity bodies to PUT/POST requests in HttpClient
+* [Bug] Throw correct exception from HttpClient
 
-* 0.47
-- [Bug] Fixed memory leaks in DiscoveryClient and EventClient due to AsyncHttpClient
-- [Experimental] Added simplified HttpClient based in java.net.URL
+Platform 0.64
 
-* 0.46
-- Launcher script now symlinks etc directory from install dir to data dir
-- Launcher now looks for etc/node.properties instead of etc/node.config
+* Fix bug that prevented skeleton server from starting
 
-* 0.45
-- Releases and snapshots are now published to oss.sonatype.org
-- HttpServer now allows SSL renegotiation (underlying issue has been fixed in JVM)
-- Record request size in http log
-- Launcher now supports --node-config for passing node specific data from Galaxy Agent
-- Upgrade to async-http-client 1.6.5
-- [Experimental] Rewrote event client v2 serialization and deprecated v1
-- [Experimental] Added support for nested and iterable event fields in v2
-- [Experimental] Changed event client to use java.net.URL instead of AsyncHttpClient due to memory leak
-- [Experimental] Upgraded embedded Cassandra to 0.8.5
-- [Experimental] Changed default Cassandra partitioner to BYTE_ORDERED
-- [Experimental] Added rpc timeout configuration support for embedded Cassandra
-- [Experimental] Moved experimental discovery based JDBC driver to pure Ruby
-- [Experimental] Removed experimental dbpool-no-dep jar
-- [Experimental] JRuby on Rails platform integration and galaxy packaging
-- [Experimental] Added toBytes and roundTo methods to DataSize
-- [Bug] System out and err redirect to logging does not flush
-- [Bug] Fixed race condition in embedded Cassandra lifecycle
-- [Bug] Fixed error reporting in event client
-- [Bug] Fixed launcher issues with spawn using 'sh -c' on Linux
+* Enforce use of HttpClientBinder
 
-* 0.44 [BAD]
-- This is a bad release.  Do not use.
+The previous way of using HttpClient was to create a new instance of the
+HttpClientModule or AsyncHttpClientModule for each client. The recent addition
+of filter support added a binding API, HttpClientBinder. The use of this API
+is now required. The modules cannot be used directly anymore. Here is an
+example of how to use the binder:
 
-* 0.43
-- [Experimental] Added rack servlet for integration with JRuby on Rails
-- [Bug] Discovery client fails to reschedule refresh job in some cases
+    httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+        .withFilter(FirstFilter.class)
+        .withFilter(SecondFilter.class);
 
-* 0.42
+Here is a simpler example to create a client for use with other platform
+services. The client will pass the trace token when making requests:
 
-- [Experimental] Embedded cassandra server and testing utilities
-- [Experimental] Added DataSize (similar to Duration)
-- [Experimental] Added ValidationAssertions.assertValidates and assertFailsValidation
-- [Bug] Discovery client fails when consuming static announcements
-- [Bug] MySQL connection timeouts using the wrong unit (ms vs s) 
-- [Bug] Jar manifest using the wrong file names when building snapshot versions
+    httpClientBinder(binder).bindHttpClient("foo", FooClient.class).withTracing();
 
-* 0.41
+Platform 0.63
 
-- Removed support for building RPMs
-- Launcher now requires MRI Ruby 1.9.2+
-- Launcher script now supports arbitrary properties using -Dname=value
-- Launcher script now supports restart command
-- Launcher script now supports a data directory argument which specifies
-  the location to which the process should write persistent data files
-- Launcher script now writes pid file and launcher log to data directory
-- Added location to NodeInfo
-- Updated to Surefire 2.8.1 which fixes Guice dependency problems
-- Graduated @MinDuration and @MaxDuration to platform units module
-- [Experimental] Added service discovery client
-- [Experimental] JMX now announces to discovery server
-- [Experimental] HTTP event client now uses discovery to find event collectors
-- [Experimental] MySQL db pool now uses discovery to find mysql servers
-- [Experimental] Added no-dep discovery database driver for use in Rails
-- [Bug] Assembly packaging now picks up jars that contain a maven classifier
+* Fix bug that prevented sample and skeleton servers from starting
 
-* 0.40
+Platform 0.62
 
-- Builder-based API for EquivalenceTester
-- Improved error reporting for EquivalenceTester
-- MockRequest for testing Jax-RS resources
-- Bean validation annotations for Durations (@MinDuration, @MaxDuration)
-- Log.debug() variant that takes an exception
-- http-server.https.keystore.password to http-server.https.keystore.key
-- Bug fixes
+* Removed all dependencies to Ning's Asynchronous HTTP client
+
+Since http-client-experimental now replaces the usage of Ning's Asynchronous
+HTTP client, we've removed all existing references to that package.  Rest
+servers that upgrade to 0.62 may need to include it as an explicit dependency
+if they don't want to upgrade.
+
+* Cleaned up dependency management
+
+There is now a library project that contains a single parent dependencyManagement
+section for all poms to inherit from.  This now includes REST Server Base.  This
+ensures that all platform libraries are built with a single set of versions that
+produce fully compatible dependency closures with the services that consume them.
+
+* Multiple refactoring commits for readability
+
+There were multiple refactoring efforts to enhance readability.  Some classes that
+moved include:
+RequestBuilder -> Request.Builder
+EchoServlet is a separate class now
+MediaType is now available as a class in Guava 12
+
+* Addition of request filter support to HttpClient
+
+HttpClients may now bind in request filters, an example of such can be found by
+following the code in com.proofpoint.http.client.TestHttpClientBinder.  This
+was added to support having the TraceToken added into outbound http client requests.
+
+* Removal of deprecated JavaUrlHttpClient
+
+* Removal of the experimental module, segmented into separate modules
+
+At this time, we will no longer have a single experimental module, please be aware
+of classes that have the @Beta annotation going forward.  Such classes are subject
+to backwards incompatible changes.
+
+Platform 0.61
+
+* Upgrade Platform and Rest Server Base pom to Guava 12.0
+
+* Tests for keep alives with ApacheHttpClient
+
+Platform 0.60
+
+* Fixed bug that prevents Rack servers from announcing
+
+Platform 0.59
+
+* Hibernate validator replaced with direct dependency on Apache BVal
+
+We replaced the indirect use of the Hibernate validator with a direct
+dependency on Apache BVal. Consequently, the dependency was removed
+from the dependencyManagement section of the rest-server-base POM and
+should be removed from the POM of any servers or libraries as it is
+no longer required by Platform.
+
+* Fixed a bug preventing V1 Events from being able to be used with HttpRequestEvents
+
+* Check for duplicate classes in the dependency closure during builds
+
+Starting at 0.59, any rest-server-base dependent projects will have a build
+step added that ensures there are no duplicates of classes or resources on
+the classpath.  Any duplicates will trigger a failure of the build and the
+build output will include all the problematic classes or resources and which
+packages they come from.  Using the dependency:tree build goal can help with
+finding these conflicts and resolving them.
+
+* Add JsonEventSerializer for external use
+
+JsonEventSerializer serializes a single event in v2 format using a JsonGenerator.
+The existing JsonEventWriter is not easily consumed from external projects.
+
+* Add support for Rack servers to be able to announce with Discovery
+
+Starting with 0.59, the configuration property "rackserver.announcement" will
+set the name for the rack server to announce to discovery.  The remaining
+configuration to announce with discovery is identical to rest-server-base
+parented projects.
+
+Platform 0.58
+
+* Fixed bug that prevents Rack applications from starting
+
+* As of release 0.55, the HttpServerModule has additional dependencies:
+
+ - HttpEventModule
+ - DiscoveryModule
+ - JsonModule
+
+
+Platform 0.57
+
+* Fixed bug that prevents ServiceInventory from refreshing periodically
+
+Platform 0.56
+
+* Fixed bug that causes HttpRequestEvents to not be published
+
+Platform 0.55
+
+* In this release we have upgraded the following dependencies
+
+  - Jackson 1.9.5
+
+* HTTP request events
+
+We now record an event for each HTTP request processed.  The HTTP request logging and
+new event system now properly support the X-FORWARDED-FOR and X-FORWARDED-PROTO headers.
+
+* Redesigned HTTP client
+
+The existing HTTP client interface has been renamed to AsyncHttpClient and a new synchronous
+HTTP client interface has been added in its place.  Additionally, the underlying HTTP client
+engine has been replaced with Apache HTTP Components.
+
+The HTTP client is still experimental.
+
+
+Platform 0.54
+
+This release removed the use of DocLava for generating javadocs for projects rest-server-base. 
+It was triggering a bug in javadoc that prevented some projects from building successfully.
+
+
+Platform 0.53
+
+* In this release we have upgraded the following dependencies
+
+  - Jetty 8.1.1
+  - Guava 11.0.2
+
+Jetty 8.0.3 has a bug where connections will leak in CLOSE_WAIT state if clients hang up
+prematurely.
+
+* Testing servlet filters
+
+When developing servlet filters for use with the platform HTTP server, it is now possible
+to test these filters inside the TestingHttpServer. Bind the TestingHttpServerModule into your
+test injector along with the module that binds your servlet filter. 
+
+* Rack packaging (JRuby on Rails)
+
+The rack packaging has been substantially updated with many changes:
+
+  - rewritten launcher that supports the new node config file
+  - support only Rails 3.1+ with asset pipeline
+  - add support for JMX over HTTP
+  - use Bundler to require dependencies when starting application
+  - no creation of .bundle directory when packaging gems
+  - various bug fixes including PATH_INFO, logging, locking, resources
+
+This release requires Rails 3.1+ rather than supporting arbitrary rack
+applications. It also requires the build machine to have a Ruby installation
+with all of the application gems installed. This is a temporary restriction
+and will be fixed in future releases.
+
+The build process runs "bundle exec rake assets:precompile". Please verify
+that this command succeeds before running the build. The following config
+change in config/application.rb is likely required to prevent the command
+from trying to connect to the configured production database:
+
+  # Only partially load application when precompiling assets
+  config.assets.initialize_on_precompile = false
+
+The following config changes are also required for production mode in
+config/environments/production.rb:
+
+  # Serve static assets directly from Rails
+  config.serve_static_assets = true
+
+  # Enable threaded mode
+  config.threadsafe!
+
+Future versions of the rack packaging may configure these automatically.
+
+
+Platform 0.52
+
+* Admin Http Server thread pool
+
+The thread pool for the admin http server (for jmx over http) listener has been
+separated from the main http thread pool to prevent DoS if all http threads in the main
+pool get stuck.
+
+The pool size can be controlled via the http-server.admin.threads.min and http-server.admin.threads.max
+configuration properties.
+
+* Configurable http client timeouts
+
+Connection and read timeouts for http client are now configurable. For Discovery client, use
+discovery.http-client.connect-timeout and discovery.http-client.read-timeout. For Event client,
+use event.http-client.connect-timeout and event.http-client.read-timeout.
+
+* Add external address to node info
+
+Added node.external-address property to specify the external address (e.g., Internet routable)
+to the JVM. HTTP and JMX services are announced using the existing name and a '-external' name,
+so external clients can easily find the server.
+
+Platform 0.51
+
+* Trace token support for http requests
+
+The http server can now deal with request trace tokens passed in via a 
+request header (X-Proofpoint-TraceToken). The trace token is recorded
+in the request logs and is made available to application code via a
+TraceTokenManager object. If no token is provided, a new one is created
+automatically.
+ 
+To enable this functionality, simply add a dependency to
+com.proofpoint.platform:trace-token and add TraceTokenModule to the list of 
+guice modules for your application.
+
+* Event fields support Map and Multimap
+
+In addition to Iterable, the event client now supports event fields of type
+java.util.Map and com.google.common.collect.Multimap. The map key type must
+be java.lang.String, while the value type can be any standard supported type
+or nested type (i.e. any type that is supported by Iterable).
+
+
+Platform 0.50
+
+* Library Upgrades
+
+In this release we have upgraded the following dependencies
+
+  - Guava 10.0.1
+  - TestNG 6.2.1
+  - Joda time 2.0
+  - CGlib 2.2.2
+  - Hibernate validation 4.2.0.Final
+  - log4j-over-slf4j 1.6.2
+  - Logback 0.9.30
+
+* Log configuration via JMX
+
+Log levels can now be configured via JMX under an mbean named
+com.proofpoint.log:name=Logging. Enable this by adding LogJmxModule to your
+Guice modules. The AllLevels attribute returns all explicitly configured
+loggers (it excludes those with an inherited level).
+
+
+Platform 0.49, Oct 14th 2011
+
+* Library Upgrades
+
+In this release we have upgraded the following dependencies
+
+  - Jetty 8.0.3
+  - Jackson 1.9.1
+
+* Http server critical bugs
+
+There are a number of bugs in versions of Jetty prior to 8.0.3 that can cause
+the server to spin in a busy loop when using SSL or leak file descriptors under
+certain conditions.
+
+* Admin port
+
+The http-based jmx connector now runs on an alternate admin port to avoid polluting
+the request logs and stats when monitoring the server through jmx. For backwards
+compatibility, the http listener is bound to a random port. The binding can be
+overriden via the http-server.admin.port property and can be turned off via
+http-server.admin.enabled.
+
+* Service inventory
+
+Discovery client now finds the location of available discovery servers by calling
+out to a service inventory API. The location of the service inventory API is specified
+via the service-inventory.uri configuration property and is provided automatically
+when deploying with recent snapshot versions of Galaxy.
+
+This feature is experimental, so the old discovery.uri property is still supported.
+
+* PGP signing of artifacts
+
+Projects that inherit from rest-server-base are now automatically signed with PGP on
+release. To get this working, the release machine and account needs to have a PGP key
+and agent configured.
+
+See http://www.sonatype.com/people/2010/01/how-to-generate-pgp-signatures-with-maven/
+for more information.
+
+* Http server request stats
+
+The http server now exposes additional request stats via JMX under an mbean named
+com.proofpoint.http:name=RequestStats.
+
+The available stats include:
+- Request count
+    - Total
+    - 1-minute, 5-minute and 15-minute exponentially-weighted moving average requests
+      per second
+- Bytes Read/Written to connection
+    - Total (since server start)
+    - Exponentially-weighted per-request mean, min, max, percentiles (50, 90, 99, 99.9)
+      with a bias towards the past 5 minutes
+    - 1-minute, 5-minute and 15-minute exponentially-weighted moving average bytes
+      per second
+- Request time (ms)
+    - Total (since server start)
+    - Exponentially-weighted per-request mean, min, max, percentiles (50, 90, 99, 99.9)
+      with a bias towards the past 5 minutes
+    - 1-minute, 5-minute and 15-minute exponentially-weighted moving average bytes
+      per second
+
+* Http client request stats
+
+Event and discovery clients now expose http request stats via JMX under the
+com.proofpoint.discovery.client:name=DiscoveryClient and
+com.proofpoint.event.client:name=EventClient mbeans.
+
+The available stats include:
+- Request count
+    - Total
+    - 1-minute, 5-minute and 15-minute exponentially-weighted moving average requests
+      per second
+- Bytes Read/Written to connection
+    - Total (since server start)
+    - Exponentially-weighted per-request mean, min, max, percentiles (50, 90, 99, 99.9)
+      with a bias towards the past 5 minutes
+    - 1-minute, 5-minute and 15-minute exponentially-weighted moving average bytes
+      per second
+- Request scheduling time (ms) -- time for request to get picked up by an available worker thread.
+    - Total (since server start)
+    - Exponentially-weighted per-request mean, min, max, percentiles (50, 90, 99, 99.9)
+      with a bias towards the past 5 minutes
+    - 1-minute, 5-minute and 15-minute exponentially-weighted moving average bytes
+      per second
+- Scheduling time (ms) -- time for request to get picked up by an available worker thread.
+    - Total (since server start)
+    - Exponentially-weighted per-request mean, min, max, percentiles (50, 90, 99, 99.9)
+      with a bias towards the past 5 minutes
+    - 1-minute, 5-minute and 15-minute exponentially-weighted moving average bytes
+      per second
+- Request time (ms) -- time to send request data to remote server
+    - Total (since server start)
+    - Exponentially-weighted per-request mean, min, max, percentiles (50, 90, 99, 99.9)
+      with a bias towards the past 5 minutes
+    - 1-minute, 5-minute and 15-minute exponentially-weighted moving average bytes
+      per second
+- Response time (ms) -- time to read response
+    - Total (since server start)
+    - Exponentially-weighted per-request mean, min, max, percentiles (50, 90, 99, 99.9)
+      with a bias towards the past 5 minutes
+    - 1-minute, 5-minute and 15-minute exponentially-weighted moving average bytes
+      per second
+
+
+Platform 0.48, Oct 5th 2011
+
+* Library Upgrades
+
+In this release we have upgraded the following dependencies
+
+  - Guava 10.0
+  - Hector 0.8.0-2
+  - Jersey 1.9.1
+  - Jetty 8.0.1
+
+Note: we have banned all prior versions of Guava since the former versioning
+names are not understood by maven and can result in invalid combinations of
+dependencies.
+
+* Jmx over HTTP
+
+One of the major problems we have with supporting our servers in a production
+environment is accessing JMX through the firewall.  JMX uses RMI by default
+and RMI binds to two random ports, so we can run multiple servers on the same
+instance.  This configuration annoyance is compounded by the bidirectional
+nature of the RMI protocol.  When an RMI object is published, it encodes the
+local address of the server on which the object is running.  In EC2, each
+server has a private IP for use within EC2 and a public address which we use for
+connecting from out side of EC2.  Since the RMI object can only contain one
+address, we must choose between JMX being internally or externally accessible.
+
+We have eliminated both of these problems by writing a HTTP based JMX Remoteing
+(JSR 160) connector. To add this to your server, simply add the JmxHttpRpcModule
+to the Guice modules.  The following command will connect jvisualvm to the server:
+
+  jvisualvm --cp:a jmx-http-rpc-experimental.jar \
+      --openjmx service:jmx:http://<host>:<port>
+
+Note: You must install the VisualVM-MBean plugin to see mbeans in jvisualvm
+
+
+
+Platform 0.47, Sept 29th 2011
+
+* EventClient and DiscoveryClient
+
+After running some of our servers under load, we have found major memory leaks
+in EventClient and DiscoveryClient due to the AsyncHttpClient.  Unfortunately,
+these leaks are difficult to fix due to the complexity of this code base, so we
+have replaced the use of AsyncHttpClient in these libraries with the
+experimental http client.
+
+* HttpClient
+
+We have written a vastly simplified event client interface that supports only the
+features needed by EventClient and DiscoveryClient.  The current
+implementation uses java.net.URL internally but we expect this to change.  This
+code base is under active development and should not be used outside of the
+platform until it is stabilizes.
+
+Platform 0.46, Sept 26th 2011
+
+* Launcher script
+
+This release addresses one of the recent problems we've had with our servers
+running in Galaxy.  Galaxy splits the installation directory, which contains
+our configuration files, from the data directory where the Java process runs.
+This split makes it easy for Galaxy to upgrade servers without losing
+persistent server data, but this split means it is impossible for the Java
+program to locate configuration files in the installation etc directory.  We
+have fixed this problem by having the launcher script symlink the etc
+directory from the installation directory into the data directory, so the Java
+process can find the configuration using a relative path.
+
+
+Platform 0.45, Sept 22th 2011
+
+* oss.sonatype.org
+
+We are pleased to announce that starting with this release, all artifacts are
+published to Maven Central.  You can search for our artifacts here:
+
+  http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.proofpoint.platform%22
+
+* HttpServer
+
+We have added the request size to the http server log.  The new log line format
+follows:
+
+  timeStamp remoteAddress method uri user agent status contentRead contentCount requestTime
+
+As a comparison the previous log line format was:
+
+  timeStamp remoteAddress method uri user agent status contentCount requestTime
+
+Additionally, we have reenabled SSL renegotiation since the underlying JVM bug
+has been fixed.
+
+* Launcher script
+
+Starting with this release, the preferred method for passing node specific
+information (e.g., id, environment, and pool) to a server is the --node-config
+command line option.  The argument to this option must point to a file
+containing key-value pairs encoded as 'key=value'.  The properties in this file
+are simply added to the Java command line as -D parameters when launching the
+server.  Parameters can still be passed to the server using -D parameters on
+the launcher, and these will override any parameters in the node config file.
+
+* JRuby on Rails
+
+It is now possible to package a Rails application just like any other Java
+platform application.  The packaged application will use the platform http
+server, logging, and over time we will extend the integration to support other
+platform services.  An instructional guide is currently under review and will
+be included soon.
+
+
+and run rack applications, such as rails, using the
+platform http server.  The platform logger is automatically provided to rack and rails, and other
+platform facilities can be used from within JRuby.  Simply set
+rack-server-base-experimental as your parent pom, and you gain many of the same
+features that exist in the rest-server-base parent pom.  An instructional guide is
+currently under review and will be included soon.
+
+* Event Client v2
+
+The event client for the event v2 protocol has been mostly rewritten to fix
+various bugs and annoyances.  Additionally, we have have expanded the allowed
+event fields to include java.util.Iterable and nested simple event types.  For
+Iterable, any supported type is allowed for the elements except Iterable.
+Nested event types, can be any event type without a special field (e.g.,
+timestamp, uuid, or host) since these are only allowed in the envelope
+of the protocol.  For a full example see:
+
+  com.proofpoint.event.client.NestedDummyEventClass
+
+* Embedded Cassandra
+
+Cassandra has been upgraded to 0.8.5 which addresses many internal bugs (see
+https://svn.apache.org/repos/asf/cassandra/tags/cassandra-0.8.5/CHANGES.txt
+for more information).  Additional, work has been on startup reliability and
+timeout configuration.
+
+One backwards incompatible change is the default partitioner is now
+ByteOrderedPartitioner instead of RandomPartitioner since most of our
+application are using range queries.
+
+* AsyncHttpClient
+
+We have upgraded AsyncHttpClient to version 1.6.5, but since this version still
+contains a memory leak we have removed it from the event client.  We are
+several evaluating long term solutions to the memory leak and hope to have one
+implemented in the next release.
+
+* DataSize helper methods
+
+The toBytes() and roundTo(Unit) helper method have been added to DataSize for
+easily converting the size to a long.  These methods will throw an exception if
+the size is bigger than a long in the specified unit.
+
+* Removed Discovery JDBC
+
+The experimental discovery based JDBC driver has been removed.  This was
+originally introduced for supporting database discovery to rails, but this
+feature has been rewritten in much simpler pure Ruby.
+
+* Bug fixes
+    - System out and err redirect to logging does not flush
+    - Fixed race condition in embedded Cassandra lifecycle
+    - Fixed error reporting in event client
+    - Fixed launcher issues with spawn using 'sh -c' on Linux
+
+
+Platform 0.44, Sept 22th 2011
+
+* Bad release
+
+Don't use this release, it is bad.
+
+Platform 0.43, Jun 10th 2011
+
+* JRuby on Rails integration
+
+We've started the work support JRuby on Rails in the platform by adding a
+servlet based implementation of Rack.  Work will continue in future releases.
+
+
+* Bug fixes
+    - Discovery client fails to reschedule refresh job in some cases
+
+
+
+
+Platform 0.42, May 24th 2011
+
+* Embedded Cassandra and testing utilities
+
+The code is part of the cassandra-experimental module
+(com.proofpoint.platform:cassandra-experimental:0.42). The server is enabled by
+adding CassandraModule to your Guice injector. Configuration for the server is
+encapsulated in CassandraServerConfig. Code that needs to talk to the cassandra
+server (e.g., Hector) should depend on CassandraServerInfo, which exposes a
+method for obtaining the RPC port that Cassandra listens on.
+
+Here's an example of how to run a simple server with an embedded cassandra instance:
+
+
+       Bootstrap bootstrap = new Bootstrap(new NodeModule(), new CassandraModule());
+
+       try {
+           Injector injector = bootstrap.initialize();
+           CassandraServerInfo info = injector.getInstance(CassandraServerInfo.class);
+           log.info("Cassandra server listening on port " + info.getRpcPort());
+       }
+       catch (Throwable e) {
+           log.error(e);
+           // Cassandra creates non-daemon threads that will prevent the vm from shutting down
+           System.exit(1);
+       }
+
+
+
+We've also added some utilities to simplify unit testing of code that talks to
+Cassandra. It is important to keep in mind that due to how Cassandra is
+written, there can only be one embedded instance per VM, and it can only be
+started once during the lifetime of the VM.
+
+To use Cassandra in unit tests, use CassandraServerSetup to initialize the
+embedded instance. This should be done in @BeforeSuite and @AfterSuite methods
+that call CassandraServerSetup.tryInitialize() and tryShutdown(), respectively.
+It's important that this be done in every class that contains cassandra-based
+tests. Otherwise, the initialization code  will only run if you include the
+class with these methods in your unit test execution. TryInitialize() and
+tryShutdown() are designed to properly handle calls from multiple
+@Before/AfterSuite methods.
+
+The server will be bound to a random port which can be obtained through the
+CassandraServerInfo object. To get this object use either
+CassandraServerSetup.getServerInfo() or TestingCassandraModule if your tests
+require Guice.
+
+* DataSize
+
+We've introduced a DataSize class to the experimental module for dealing with
+units of data in human-readable form (similar to Duration). It supports B, kB,
+MB, GB, TB, PB and can handle conversions between these units. It's also fully
+compatible with the configuration system.
+
+* ValidationAssertions
+
+We've also added some utilities to the experimental module to make easier to
+test code that uses Bean Validation Framework annotations.
+ValidationAssertions.assertValidates() and assertFailsValidation() can be used
+to test that an object passes or fails validations as specified by its
+annotations. Here's an example on how to use assertFailsValidation():
+
+        assertFailsValidation(config, "maxAge", "may not be null", NotNull.class)
+
+* Bug fixes
+
+The following issues have been fixed:
+	- Discovery client fails when consuming static announcements
+	- MySQL connection timeouts using the wrong unit (ms vs s)
+	- Jar manifest using the wrong file names when building snapshot versions
