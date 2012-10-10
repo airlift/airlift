@@ -65,6 +65,9 @@ public final class EquivalenceTester
 
         public EquivalenceCheck<T> addEquivalentGroup(T value, T... moreValues)
         {
+            if (moreValues.length == 0 && value instanceof Iterable) {
+                throw new RuntimeException("addEquivalentGroup(T, T...) called on a single Iterable. Perhaps you intended <T>addEquivalentGroup(Iterable<T>) ?");
+            }
             equivalenceClasses.add(Lists.asList(value, moreValues));
             return this;
         }
