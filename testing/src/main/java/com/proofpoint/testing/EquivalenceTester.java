@@ -40,6 +40,10 @@ import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.*;
  */
 public final class EquivalenceTester
 {
+    private EquivalenceTester()
+    {
+    }
+
     @Deprecated
     public static void check(Collection<?>... equivalenceClasses)
     {
@@ -52,7 +56,7 @@ public final class EquivalenceTester
 
     public static <T> EquivalenceCheck<T> equivalenceTester()
     {
-        return new EquivalenceCheck<T>();
+        return new EquivalenceCheck<>();
     }
 
     public static class EquivalenceCheck<T>
@@ -63,7 +67,8 @@ public final class EquivalenceTester
         {
         }
 
-        public EquivalenceCheck<T> addEquivalentGroup(T value, T... moreValues)
+        @SafeVarargs
+        public final EquivalenceCheck<T> addEquivalentGroup(T value, T... moreValues)
         {
             if (moreValues.length == 0 && value instanceof Iterable) {
                 throw new RuntimeException("addEquivalentGroup(T, T...) called on a single Iterable. Perhaps you intended <T>addEquivalentGroup(Iterable<T>) ?");
@@ -90,7 +95,7 @@ public final class EquivalenceTester
         @SuppressWarnings({"ObjectEqualsNull"})
         private List<ElementCheckFailure> checkEquivalence()
         {
-            ImmutableList.Builder<ElementCheckFailure> errors = new ImmutableList.Builder<ElementCheckFailure>();
+            ImmutableList.Builder<ElementCheckFailure> errors = new ImmutableList.Builder<>();
 
             //
             // equal(null)
@@ -312,16 +317,17 @@ public final class EquivalenceTester
         {
         }
 
-        public <T extends Comparable<T>> ComparisonCheck<T> addLesserGroup(T value, T... moreValues)
+        @SafeVarargs
+        public final <T extends Comparable<T>> ComparisonCheck<T> addLesserGroup(T value, T... moreValues)
         {
-            ComparisonCheck<T> comparisonCheck = new ComparisonCheck<T>();
+            ComparisonCheck<T> comparisonCheck = new ComparisonCheck<>();
             comparisonCheck.addGreaterGroup(Lists.asList(value, moreValues));
             return comparisonCheck;
         }
 
         public <T extends Comparable<T>> ComparisonCheck<T> addLesserGroup(Iterable<T> objects)
         {
-            ComparisonCheck<T> comparisonCheck = new ComparisonCheck<T>();
+            ComparisonCheck<T> comparisonCheck = new ComparisonCheck<>();
             comparisonCheck.addGreaterGroup(objects);
             return comparisonCheck;
         }
@@ -335,7 +341,8 @@ public final class EquivalenceTester
         {
         }
 
-        public ComparisonCheck<T> addGreaterGroup(T value, T... moreValues)
+        @SafeVarargs
+        public final ComparisonCheck<T> addGreaterGroup(T value, T... moreValues)
         {
             equivalence.addEquivalentGroup(Lists.asList(value, moreValues));
             return this;
