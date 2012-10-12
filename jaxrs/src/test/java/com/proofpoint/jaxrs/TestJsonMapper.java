@@ -16,12 +16,14 @@
 package com.proofpoint.jaxrs;
 
 import org.codehaus.jackson.JsonProcessingException;
+import org.codehaus.jackson.annotate.JsonCreator;
+import org.codehaus.jackson.annotate.JsonProperty;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response.Status;
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
@@ -31,12 +33,11 @@ import java.util.zip.ZipException;
 public class TestJsonMapper
 {
     @Test
-    public void testEOFExceptionTeturnsWebAppException()
+    public void testEOFExceptionReturnsJsonMapperParsingException()
             throws IOException
     {
         try {
             JsonMapper jsonMapper = new JsonMapper(new ObjectMapper(), null);
-            InputStream is = new ByteArrayInputStream("foo".getBytes());
             jsonMapper.readFrom(Object.class, Object.class, null, null, null, new InputStream()
             {
                 @Override
@@ -60,21 +61,19 @@ public class TestJsonMapper
                     throw new EOFException("forced EOF Exception");
                 }
             });
-            Assert.fail("Should have thrown a WebApplicationException");
+            Assert.fail("Should have thrown a JsonMapperParsingException");
         }
-        catch (WebApplicationException e) {
-            Assert.assertEquals(e.getResponse().getStatus(), Status.BAD_REQUEST.getStatusCode());
-            Assert.assertTrue(((String) e.getResponse().getEntity()).startsWith("Invalid json for Java type"));
+        catch (JsonMapperParsingException e) {
+            Assert.assertTrue((e.getMessage()).startsWith("Invalid json for Java type"));
         }
     }
 
     @Test
-    public void testJsonProcessingExceptionThrowsWebAppException()
+    public void testJsonProcessingExceptionThrowsJsonMapperParsingException()
             throws IOException
     {
         try {
             JsonMapper jsonMapper = new JsonMapper(new ObjectMapper(), null);
-            InputStream is = new ByteArrayInputStream("foo".getBytes());
             jsonMapper.readFrom(Object.class, Object.class, null, null, null, new InputStream()
             {
                 @Override
@@ -98,11 +97,10 @@ public class TestJsonMapper
                     throw new TestingJsonProcessingException("forced JsonProcessingException");
                 }
             });
-            Assert.fail("Should have thrown a WebApplicationException");
+            Assert.fail("Should have thrown a JsonMapperParsingException");
         }
-        catch (WebApplicationException e) {
-            Assert.assertEquals(e.getResponse().getStatus(), Status.BAD_REQUEST.getStatusCode());
-            Assert.assertTrue(((String) e.getResponse().getEntity()).startsWith("Invalid json for Java type"));
+        catch (JsonMapperParsingException e) {
+            Assert.assertTrue((e.getMessage()).startsWith("Invalid json for Java type"));
         }
     }
 
@@ -112,7 +110,6 @@ public class TestJsonMapper
     {
         try {
             JsonMapper jsonMapper = new JsonMapper(new ObjectMapper(), null);
-            InputStream is = new ByteArrayInputStream("foo".getBytes());
             jsonMapper.readFrom(Object.class, Object.class, null, null, null, new InputStream()
             {
                 @Override
@@ -139,7 +136,23 @@ public class TestJsonMapper
             Assert.fail("Should have thrown an IOException");
         }
         catch (WebApplicationException e) {
-            Assert.fail("Should not have received a WebApplicationException", e);
+            Assert.fail("Should not have received an IOException", e);
+        }
+    }
+
+    @Test
+    public void testBeanValidationThrowsBeanValidationException() throws IOException
+    {
+        try {
+            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper(), null);
+            InputStream is = new ByteArrayInputStream("{}".getBytes());
+            jsonMapper.readFrom(Object.class, JsonClass.class, null, null, null, is);
+            Assert.fail("Should have thrown an BeanValidationException");
+        }
+        catch (BeanValidationException e) {
+            Assert.assertEquals(e.getErrorMessages().size(), 2);
+            Assert.assertTrue(e.getErrorMessages().contains("secondField may not be null"));
+            Assert.assertTrue(e.getErrorMessages().contains("firstField may not be null"));
         }
     }
 
@@ -148,6 +161,22 @@ public class TestJsonMapper
         public TestingJsonProcessingException(String message)
         {
             super(message);
+        }
+    }
+
+    public static class JsonClass
+    {
+        @NotNull
+        private String firstField;
+
+        @NotNull
+        private String secondField;
+
+        @JsonCreator
+        private JsonClass(@JsonProperty("firstField") String firstField, @JsonProperty("secondField") String secondField)
+        {
+            this.firstField = firstField;
+            this.secondField = secondField;
         }
     }
 }

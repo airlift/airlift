@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Proofpoint, Inc.
+ * Copyright 2012 Proofpoint, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ public class JaxrsModule implements Module
         binder.bind(GuiceContainer.class).in(Scopes.SINGLETON);
         binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(Key.get(GuiceContainer.class));
         binder.bind(JsonMapper.class).in(Scopes.SINGLETON);
+        binder.bind(ParsingExceptionMapper.class).in(Scopes.SINGLETON);
     }
 
     @Provides

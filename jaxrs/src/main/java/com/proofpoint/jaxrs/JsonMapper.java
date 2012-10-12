@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Proofpoint, Inc.
+ * Copyright 2010, 2012 Proofpoint, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.proofpoint.jaxrs;
 
-import com.google.common.collect.ImmutableList;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.proofpoint.log.Logger;
@@ -27,7 +27,6 @@ import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonProcessingException;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.type.TypeFactory;
 import org.codehaus.jackson.map.util.JSONPObject;
 import org.codehaus.jackson.type.JavaType;
 
@@ -36,7 +35,6 @@ import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -50,8 +48,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 // This code is based on JacksonJsonProvider
@@ -131,34 +127,27 @@ class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<Object>
             // mapping, so we need to instruct parser:
             jsonParser.disable(JsonParser.Feature.AUTO_CLOSE_SOURCE);
 
-            object = objectMapper.readValue(jsonParser, TypeFactory.type(genericType));
+            object = objectMapper.readValue(jsonParser, objectMapper.getTypeFactory().constructType(genericType));
         }
         catch (Exception e) {
-            // we want to return a 400 for bad JSON but not for a real IO exception
+            // We want to handle parsing exceptions differently than regular IOExceptions so just rethrow IOExceptions
             if (e instanceof IOException && !(e instanceof JsonProcessingException) && !(e instanceof EOFException)) {
-                throw (IOException) e;
+                throw e;
             }
 
             // log the exception at debug so it can be viewed during development
             // Note: we are not logging at a higher level because this could cause a denial of service
             log.debug(e, "Invalid json for Java type %s", type);
 
-            // invalid json request
-            throw new WebApplicationException(
-                    Response.status(Response.Status.BAD_REQUEST)
-                            .entity("Invalid json for Java type " + type)
-                            .build());
+            // Invalid json request. Throwing exception so the response code can be overridden using a mapper.
+            throw new JsonMapperParsingException(type, e);
         }
 
         // validate object using the bean validation framework
         Set<ConstraintViolation<Object>> violations = VALIDATOR.validate(object);
         if (!violations.isEmpty()) {
-            throw new WebApplicationException(
-                    Response.status(Response.Status.BAD_REQUEST)
-                            .entity(messagesFor(violations))
-                            .build());
+            throw new BeanValidationException(violations);
         }
-
 
         return object;
     }
@@ -201,7 +190,7 @@ class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<Object>
                 // This is still not exactly right; should root type be further
                 // specialized with 'value.getClass()'? Let's see how well this works before
                 // trying to come up with more complete solution.
-                rootType = TypeFactory.type(genericType);
+                rootType = objectMapper.getTypeFactory().constructType(genericType);
             }
         }
 
@@ -210,7 +199,7 @@ class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<Object>
             objectMapper.writeValue(jsonGenerator, new JSONPObject(jsonpFunctionName, value, rootType));
         }
         else if (rootType != null) {
-            objectMapper.typedWriter(rootType).writeValue(jsonGenerator, value);
+            objectMapper.writerWithType(rootType).writeValue(jsonGenerator, value);
         }
         else {
             objectMapper.writeValue(jsonGenerator, value);
@@ -248,15 +237,5 @@ class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<Object>
             return null;
         }
         return queryParameters.getFirst("jsonp");
-    }
-
-    private static List<String> messagesFor(Collection<? extends ConstraintViolation<?>> violations)
-    {
-        ImmutableList.Builder<String> messages = new ImmutableList.Builder<String>();
-        for (ConstraintViolation<?> violation : violations) {
-            messages.add(violation.getPropertyPath().toString() + " " + violation.getMessage());
-        }
-
-        return messages.build();
     }
 }
