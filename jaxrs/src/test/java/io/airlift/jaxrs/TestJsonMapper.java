@@ -15,11 +15,14 @@
  */
 package io.airlift.jaxrs;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ForwardingMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.net.HttpHeaders;
@@ -27,16 +30,22 @@ import io.airlift.json.JsonCodec;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response.Status;
+
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.ZipException;
+
+import static com.google.common.collect.Iterables.transform;
+import static io.airlift.jaxrs.BeanValidationException.constraintMessageBuilder;
 
 public class TestJsonMapper
 {
@@ -72,7 +81,7 @@ public class TestJsonMapper
     }
 
     @Test
-    public void testEOFExceptionReturnsWebAppException()
+    public void testEOFExceptionReturnsJsonMapperParsingException()
             throws IOException
     {
         try {
@@ -100,16 +109,15 @@ public class TestJsonMapper
                     throw new EOFException("forced EOF Exception");
                 }
             });
-            Assert.fail("Should have thrown a WebApplicationException");
+            Assert.fail("Should have thrown a JsonMapperParsingException");
         }
-        catch (WebApplicationException e) {
-            Assert.assertEquals(e.getResponse().getStatus(), Status.BAD_REQUEST.getStatusCode());
-            Assert.assertTrue(((String) e.getResponse().getEntity()).startsWith("Invalid json for Java type"));
+        catch (JsonMapperParsingException e) {
+            Assert.assertTrue((e.getMessage()).startsWith("Invalid json for Java type"));
         }
     }
 
     @Test
-    public void testJsonProcessingExceptionThrowsWebAppException()
+    public void testJsonProcessingExceptionThrowsJsonMapperParsingException()
             throws IOException
     {
         try {
@@ -137,11 +145,10 @@ public class TestJsonMapper
                     throw new TestingJsonProcessingException("forced JsonProcessingException");
                 }
             });
-            Assert.fail("Should have thrown a WebApplicationException");
+            Assert.fail("Should have thrown a JsonMapperParsingException");
         }
-        catch (WebApplicationException e) {
-            Assert.assertEquals(e.getResponse().getStatus(), Status.BAD_REQUEST.getStatusCode());
-            Assert.assertTrue(((String) e.getResponse().getEntity()).startsWith("Invalid json for Java type"));
+        catch (JsonMapperParsingException e) {
+            Assert.assertTrue((e.getMessage()).startsWith("Invalid json for Java type"));
         }
     }
 
@@ -181,7 +188,53 @@ public class TestJsonMapper
         }
     }
 
-    private static class TestingJsonProcessingException extends JsonProcessingException
+    @Test
+    public void testBeanValidationThrowsBeanValidationException()
+            throws IOException
+    {
+        try {
+            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper(), null);
+            InputStream is = new ByteArrayInputStream("{}".getBytes());
+            jsonMapper.readFrom(Object.class, JsonClass.class, null, null, null, is);
+            Assert.fail("Should have thrown an BeanValidationException");
+        }
+        catch (BeanValidationException e) {
+            Set<String> messages = ImmutableSet.copyOf(transform(e.getViolations(), constraintMessageBuilder()));
+            Assert.assertEquals(messages.size(), 2);
+            Assert.assertTrue(messages.contains("secondField may not be null"));
+            Assert.assertTrue(messages.contains("firstField may not be null"));
+        }
+    }
+
+    public static class JsonClass
+    {
+        private String firstField;
+        private String secondField;
+
+        @JsonCreator
+        public JsonClass(
+                @JsonProperty("firstField") String firstField,
+                @JsonProperty("secondField") String secondField)
+        {
+            this.firstField = firstField;
+            this.secondField = secondField;
+        }
+
+        @NotNull
+        public String getFirstField()
+        {
+            return firstField;
+        }
+
+        @NotNull
+        public String getSecondField()
+        {
+            return secondField;
+        }
+    }
+
+    private static class TestingJsonProcessingException
+            extends JsonProcessingException
     {
         public TestingJsonProcessingException(String message)
         {
@@ -189,8 +242,9 @@ public class TestJsonMapper
         }
     }
 
-    static class GuavaMultivaluedMap<K, V> extends ForwardingMap<K, List<V>>
-                implements MultivaluedMap<K, V>
+    static class GuavaMultivaluedMap<K, V>
+            extends ForwardingMap<K, List<V>>
+            implements MultivaluedMap<K, V>
     {
         private final ListMultimap<K, V> multimap;
 

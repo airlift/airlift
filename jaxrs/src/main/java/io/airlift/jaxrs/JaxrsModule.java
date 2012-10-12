@@ -20,19 +20,21 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import io.airlift.http.server.TheServlet;
 import com.sun.jersey.core.util.FeaturesAndProperties;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
 import com.sun.jersey.spi.MessageBodyWorkers;
 import com.sun.jersey.spi.container.ExceptionMapperContext;
 import com.sun.jersey.spi.container.WebApplication;
+import io.airlift.http.server.TheServlet;
 
 import javax.servlet.Servlet;
 import javax.ws.rs.ext.Providers;
+
 import java.util.HashMap;
 import java.util.Map;
 
-public class JaxrsModule implements Module
+public class JaxrsModule
+        implements Module
 {
     @Override
     public void configure(Binder binder)
@@ -43,6 +45,7 @@ public class JaxrsModule implements Module
         binder.bind(GuiceContainer.class).in(Scopes.SINGLETON);
         binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(Key.get(GuiceContainer.class));
         binder.bind(JsonMapper.class).in(Scopes.SINGLETON);
+        binder.bind(ParsingExceptionMapper.class).in(Scopes.SINGLETON);
     }
 
     @Provides
