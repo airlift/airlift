@@ -178,9 +178,8 @@ public class ConfigurationMetadataTest
         expectedAttributes.put("Value", ImmutableSet.of("value"));
 
         verifyMetaData(metadata, NotPublicClass.class, null, false, expectedAttributes);
-        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        monitor.assertMatchingErrorRecorded("not public", NotPublicClass.class.getName());
     }
 
     @Test
@@ -193,9 +192,8 @@ public class ConfigurationMetadataTest
         expectedAttributes.put("Value", ImmutableSet.of("value"));
 
         verifyMetaData(metadata, NotPublicConstructorClass.class, null, false, expectedAttributes);
-        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        monitor.assertMatchingErrorRecorded("not public", metadata.getConfigClass().getName() + "()");
     }
 
     @Test
@@ -263,11 +261,11 @@ public class ConfigurationMetadataTest
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(NotPublicAttributeClass.class, monitor);
         Map<String, Set<String>> expectedAttributes = Maps.newHashMap();
+        expectedAttributes.put("Value", ImmutableSet.of("value"));
 
         verifyMetaData(metadata, NotPublicAttributeClass.class, null, false, expectedAttributes);
-        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        monitor.assertMatchingErrorRecorded("No getter", "unusable", "getValue", "setValue");
     }
 
     @Test
@@ -347,11 +345,11 @@ public class ConfigurationMetadataTest
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(GetterPrivateSetterClass.class, monitor);
         Map<String, Set<String>> expectedAttributes = Maps.newHashMap();
+        expectedAttributes.put("Value", ImmutableSet.of("value"));
 
         verifyMetaData(metadata, GetterPrivateSetterClass.class, null, false, expectedAttributes);
-        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        monitor.assertMatchingErrorRecorded("@Config method", "setValue", "is not public");
     }
 
 
@@ -418,11 +416,11 @@ public class ConfigurationMetadataTest
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(IsMethodPrivateSetterClass.class, monitor);
         Map<String, Set<String>> expectedAttributes = Maps.newHashMap();
+        expectedAttributes.put("Value", ImmutableSet.of("value"));
 
         verifyMetaData(metadata, IsMethodPrivateSetterClass.class, null, false, expectedAttributes);
-        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        monitor.assertMatchingErrorRecorded("@Config method", IsMethodPrivateSetterClass.class.getName(), "setValue", "is not public");
     }
 
     @Test

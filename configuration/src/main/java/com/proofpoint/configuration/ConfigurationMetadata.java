@@ -17,10 +17,12 @@ package com.proofpoint.configuration;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Table;
 import com.google.inject.ConfigurationException;
 import com.google.inject.spi.Message;
 import com.proofpoint.configuration.Problems.Monitor;
@@ -77,9 +79,6 @@ public class ConfigurationMetadata<T>
         if (Modifier.isAbstract(configClass.getModifiers())) {
             problems.addError("Config class [%s] is abstract", configClass.getName());
         }
-        if (!Modifier.isPublic(configClass.getModifiers())) {
-            problems.addError("Config class [%s] is not public", configClass.getName());
-        }
 
         this.defunctConfig = Sets.newHashSet();
         if (configClass.isAnnotationPresent(DefunctConfig.class)) {
@@ -97,15 +96,13 @@ public class ConfigurationMetadata<T>
             }
         }
 
-        // verify there is a public no-arg constructor
+        // verify there is a no-arg constructor
         Constructor<T> constructor = null;
         try {
             constructor = configClass.getDeclaredConstructor();
-            if (!Modifier.isPublic(constructor.getModifiers())) {
-                problems.addError("Constructor [%s] is not public", constructor.toGenericString());
-            }
+            constructor.setAccessible(true);
         } catch (Exception e) {
-            problems.addError("Configuration class [%s] does not have a public no-arg constructor", configClass.getName());
+            problems.addError("Configuration class [%s] does not have a no-arg constructor", configClass.getName());
         }
         this.constructor = constructor;
 
@@ -115,9 +112,6 @@ public class ConfigurationMetadata<T>
         for (Class<?> clazz = configClass; (clazz != null) && !clazz.equals(Object.class); clazz = clazz.getSuperclass()) {
             for (Method method : clazz.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(Config.class)) {
-                    if (!Modifier.isPublic(method.getModifiers())) {
-                        problems.addError("@Config method [%s] is not public", method.toGenericString());
-                    }
                     if (Modifier.isStatic(method.getModifiers())) {
                         problems.addError("@Config method [%s] is static", method.toGenericString());
                     }
@@ -255,6 +249,7 @@ public class ConfigurationMetadata<T>
     {
         Map<String, AttributeMetadata> attributes = Maps.newHashMap();
         for (Method configMethod : findConfigMethods(configClass)) {
+            configMethod.setAccessible(true);
             AttributeMetadata attribute = buildAttributeMetadata(configClass, configMethod);
 
             if (attribute != null) {
@@ -322,6 +317,7 @@ public class ConfigurationMetadata<T>
         // find the getter
         Method getter = findGetter(configClass, configMethod, attributeName);
         if (getter != null) {
+            getter.setAccessible(true);
             builder.setGetter(getter);
 
             if (configMethod.isAnnotationPresent(Deprecated.class) != getter.isAnnotationPresent(Deprecated.class)) {
@@ -383,12 +379,12 @@ public class ConfigurationMetadata<T>
         private final boolean current;
         private final ConfigMap configMap;
 
-        public static InjectionPointMetaData newCurrent(Class<?> configClass, String property, Method setter, @Nullable ConfigMap configMap)
+        private static InjectionPointMetaData newCurrent(Class<?> configClass, String property, Method setter, @Nullable ConfigMap configMap)
         {
             return new InjectionPointMetaData(configClass, property, setter, configMap, true);
         }
 
-        public static InjectionPointMetaData newLegacy(Class<?> configClass, String property, Method setter, @Nullable ConfigMap configMap)
+        private static InjectionPointMetaData newLegacy(Class<?> configClass, String property, Method setter, @Nullable ConfigMap configMap)
         {
             return new InjectionPointMetaData(configClass, property, setter, configMap, false);
         }
@@ -654,24 +650,29 @@ public class ConfigurationMetadata<T>
      */
     private static Collection<Method> findAnnotatedMethods(Class<?> configClass, Class<? extends java.lang.annotation.Annotation> annotation)
     {
-        List<Method> result = new ArrayList<Method>();
+        Table<String, Class<?>[], Method> methodTable = HashBasedTable.create();
 
-        // gather all publicly available methods
-        // this returns everything, even if it's declared in a parent
-        for (Method method : configClass.getMethods()) {
-            // skip methods that are used internally by the vm for implementing covariance, etc
-            if (method.isSynthetic() || method.isBridge() || Modifier.isStatic(method.getModifiers())) {
-                continue;
-            }
+        // gather all available methods
+        for (Class<?> aClass = configClass; aClass != Object.class; aClass = aClass.getSuperclass()) {
+            for (Method method : aClass.getDeclaredMethods()) {
+                if (methodTable.contains(method.getName(), method.getParameterTypes())) {
+                    continue;
+                }
 
-            // look for annotations recursively in super-classes or interfaces
-            Method managedMethod = findAnnotatedMethod(configClass, annotation, method.getName(), method.getParameterTypes());
-            if (managedMethod != null) {
-                result.add(managedMethod);
+                // skip methods that are used internally by the vm for implementing covariance, etc
+                if (method.isSynthetic() || method.isBridge() || Modifier.isStatic(method.getModifiers())) {
+                    continue;
+                }
+
+                // look for annotations recursively in super-classes or interfaces
+                Method managedMethod = findAnnotatedMethod(configClass, annotation, method.getName(), method.getParameterTypes());
+                if (managedMethod != null) {
+                    methodTable.put(method.getName(), method.getParameterTypes(), managedMethod);
+                }
             }
         }
 
-        return result;
+        return methodTable.values();
     }
 
     public static Method findAnnotatedMethod(Class<?> configClass, Class<? extends java.lang.annotation.Annotation> annotation, String methodName, Class<?>... paramTypes)
@@ -710,6 +711,7 @@ public class ConfigurationMetadata<T>
 
         for (Class<?> clazz = configClass; (clazz != null) && !clazz.equals(Object.class); clazz = clazz.getSuperclass()) {
             for (Method method : clazz.getDeclaredMethods()) {
+                method.setAccessible(true);
                 if (isUsableMethod(method)) {
                     final ConfigMap configMap = method.getAnnotation(ConfigMap.class);
                     if (method.getName().equals(setterName) && method.isAnnotationPresent(LegacyConfig.class)) {
@@ -799,6 +801,6 @@ public class ConfigurationMetadata<T>
 
     private static boolean isUsableMethod(Method method)
     {
-        return !method.isSynthetic() && !method.isBridge() && !Modifier.isStatic(method.getModifiers()) && Modifier.isPublic(method.getModifiers());
+        return !method.isSynthetic() && !method.isBridge() && !Modifier.isStatic(method.getModifiers());
     }
 }

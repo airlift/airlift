@@ -692,58 +692,58 @@ public class ConfigurationFactoryTest
         }
     }
     
-    public static class AnnotatedSetter {
+    static class AnnotatedSetter {
         private String stringValue;
         private boolean booleanValue;
 
-        public String getStringValue()
+        String getStringValue()
         {
             return stringValue;
         }
 
         @Config("string-value")
-        public void setStringValue(String stringValue)
+        void setStringValue(String stringValue)
         {
             this.stringValue = stringValue;
         }
 
-        public boolean isBooleanValue()
+        private boolean isBooleanValue()
         {
             return booleanValue;
         }
 
         @Config("boolean-value")
-        public void setBooleanValue(boolean booleanValue)
+        private void setBooleanValue(boolean booleanValue)
         {
             this.booleanValue = booleanValue;
         }
     }
 
-    public static class LegacyConfigPresent
+    private static class LegacyConfigPresent
     {
         private String stringA = "defaultA";
         private String stringB = "defaultB";
 
-        public String getStringA()
+        String getStringA()
         {
             return stringA;
         }
 
         @Config("string-a")
         @LegacyConfig("string-value")
-        public void setStringA(String stringValue)
+        private void setStringA(String stringValue)
         {
             this.stringA = stringValue;
         }
 
         @Deprecated
         @LegacyConfig(value = "deprecated-string-value", replacedBy = "string-a")
-        public void setDeprecatedStringA(String stringValue)
+        private void setDeprecatedStringA(String stringValue)
         {
             this.stringA = stringValue;
         }
 
-        public String getStringB()
+        private String getStringB()
         {
             return stringB;
         }
@@ -755,92 +755,92 @@ public class ConfigurationFactoryTest
         }
     }
 
-    public static class DeprecatedConfigPresent
+    static class DeprecatedConfigPresent
     {
         private String stringA = "defaultA";
         private String stringB = "defaultB";
 
         @Deprecated
-        public String getStringA()
+        String getStringA()
         {
             return stringA;
         }
 
         @Deprecated
         @Config("string-a")
-        public void setStringA(String stringValue)
+        void setStringA(String stringValue)
         {
             this.stringA = stringValue;
         }
 
-        public String getStringB()
+        private String getStringB()
         {
             return stringB;
         }
 
         @Config("string-b")
-        public void setStringB(String stringValue)
+        private void setStringB(String stringValue)
         {
             this.stringB = stringValue;
         }
     }
 
     @DefunctConfig("defunct-value")
-    public static class DefunctConfigPresent
+    private static class DefunctConfigPresent
     {
         private String stringValue;
         private boolean booleanValue;
 
-        public String getStringValue()
+        String getStringValue()
         {
             return stringValue;
         }
 
         @Config("string-value")
-        public void setStringValue(String stringValue)
+        private void setStringValue(String stringValue)
         {
             this.stringValue = stringValue;
         }
     }
 
-    public static class BeanValidationClass
+    private static class BeanValidationClass
     {
         @NotNull
         private String stringValue = null;
 
         private int myIntValue;
 
-        public String getStringValue()
+        String getStringValue()
         {
             return stringValue;
         }
 
         @Config("string-value")
-        public void setStringValue(String value)
+        private void setStringValue(String value)
         {
             this.stringValue = value;
         }
 
         @Min(1)
         @Max(100)
-        public int getIntValue()
+        private int getIntValue()
         {
             return myIntValue;
         }
 
         @Config("int-value")
-        public void setIntValue(int value)
+        void setIntValue(int value)
         {
             this.myIntValue = value;
         }
     }
 
-    public static class LegacyMapConfigPresent
+    static class LegacyMapConfigPresent
     {
         private Map<String, String> mapA = new HashMap<>();
         private Map<String, String> mapB = new HashMap<>();
 
-        public Map<String, String> getMapA()
+        Map<String, String> getMapA()
         {
             return mapA;
         }
@@ -848,19 +848,19 @@ public class ConfigurationFactoryTest
         @Config("map-a")
         @LegacyConfig("map-value")
         @ConfigMap
-        public void setMapA(Map<String, String> mapValue)
+        void setMapA(Map<String, String> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);
         }
 
         @Deprecated
         @LegacyConfig(value = "deprecated-map-value", replacedBy = "map-a")
-        public void setDeprecatedMapA(Map<String, String> mapValue)
+        private void setDeprecatedMapA(Map<String, String> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);
         }
 
-        public Map<String, String> getMapB()
+        private Map<String, String> getMapB()
         {
             return mapB;
         }
@@ -873,13 +873,13 @@ public class ConfigurationFactoryTest
         }
     }
 
-    public static class DeprecatedMapConfigPresent
+    private static class DeprecatedMapConfigPresent
     {
         private Map<String, String> mapA = new HashMap<>();
         private Map<String, String> mapB = new HashMap<>();
 
         @Deprecated
-        public Map<String, String> getMapA()
+        Map<String, String> getMapA()
         {
             return mapA;
         }
@@ -887,121 +887,121 @@ public class ConfigurationFactoryTest
         @Deprecated
         @Config("map-a")
         @ConfigMap
-        public void setMapA(Map<String, String> mapValue)
+        void setMapA(Map<String, String> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);
         }
 
-        public Map<String, String> getMapB()
+        private Map<String, String> getMapB()
         {
             return mapB;
         }
 
         @Config("map-b")
         @ConfigMap
-        public void setMapB(Map<String, String> mapValue)
+        private void setMapB(Map<String, String> mapValue)
         {
             this.mapB = ImmutableMap.copyOf(mapValue);
         }
     }
 
-    public static class LegacyMapValueConfigPresent
+    static class LegacyMapValueConfigPresent
     {
         private Map<String, LegacyConfigPresent> mapA = new HashMap<>();
 
-        public Map<String, LegacyConfigPresent> getMapA()
+        private Map<String, LegacyConfigPresent> getMapA()
         {
             return mapA;
         }
 
         @Config("map-a")
         @ConfigMap(LegacyConfigPresent.class)
-        public void setMapA(Map<String, LegacyConfigPresent> mapValue)
+        void setMapA(Map<String, LegacyConfigPresent> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);
         }
     }
 
-    public static class DeprecatedMapValueConfigPresent
+    private static class DeprecatedMapValueConfigPresent
     {
         private Map<String, DeprecatedConfigPresent> mapA = new HashMap<>();
 
-        public Map<String, DeprecatedConfigPresent> getMapA()
+        Map<String, DeprecatedConfigPresent> getMapA()
         {
             return mapA;
         }
 
         @Config("map-a")
         @ConfigMap(DeprecatedConfigPresent.class)
-        public void setMapA(Map<String, DeprecatedConfigPresent> mapValue)
+        private void setMapA(Map<String, DeprecatedConfigPresent> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);
         }
     }
 
-    public static class DefunctMapValueConfigPresent
+    static class DefunctMapValueConfigPresent
     {
         private Map<String, DefunctConfigPresent> mapA = new HashMap<>();
 
-        public Map<String, DefunctConfigPresent> getMapA()
+        private Map<String, DefunctConfigPresent> getMapA()
         {
             return mapA;
         }
 
         @Config("map-a")
         @ConfigMap(DefunctConfigPresent.class)
-        public void setMapA(Map<String, DefunctConfigPresent> mapValue)
+        void setMapA(Map<String, DefunctConfigPresent> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);
         }
     }
 
-    public static class MapValueBeanValidationClass
+    private static class MapValueBeanValidationClass
     {
         private Map<String, BeanValidationClass> mapA = new HashMap<>();
 
-        public Map<String, BeanValidationClass> getMapA()
+        Map<String, BeanValidationClass> getMapA()
         {
             return mapA;
         }
 
         @Config("map-a")
         @ConfigMap(BeanValidationClass.class)
-        public void setMapA(Map<String, BeanValidationClass> mapValue)
+        private void setMapA(Map<String, BeanValidationClass> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);
         }
     }
 
-    public static class IntegerLegacyMapConfig
+    private static class IntegerLegacyMapConfig
     {
         private Map<Integer, LegacyConfigPresent> mapA = new HashMap<>();
 
-        public Map<Integer, LegacyConfigPresent> getMapA()
+        private Map<Integer, LegacyConfigPresent> getMapA()
         {
             return mapA;
         }
 
         @Config("map-a")
         @ConfigMap(key = Integer.class, value = LegacyConfigPresent.class)
-        public void setMapA(Map<Integer, LegacyConfigPresent> mapValue)
+        private void setMapA(Map<Integer, LegacyConfigPresent> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);
         }
     }
 
-    public static class IntegerStringMapConfig
+    private static class IntegerStringMapConfig
     {
         private Map<Integer, String> mapA = new HashMap<>();
 
-        public Map<Integer, String> getMapA()
+        Map<Integer, String> getMapA()
         {
             return mapA;
         }
 
         @Config("map-a")
         @ConfigMap(key = Integer.class)
-        public void setMapA(Map<Integer, String> mapValue)
+        void setMapA(Map<Integer, String> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);
         }
