@@ -29,13 +29,13 @@ public class StoreConfig
 
     @Deprecated
     @LegacyConfig(value = "store.ttl-in-ms", replacedBy = "store.ttl")
-    public StoreConfig setTtlInMs(int duration)
+    StoreConfig setTtlInMs(int duration)
     {
         return setTtl(new Duration(duration, TimeUnit.MILLISECONDS));
     }
 
     @Config("store.ttl")
-    public StoreConfig setTtl(Duration ttl)
+    StoreConfig setTtl(Duration ttl)
     {
         Preconditions.checkNotNull(ttl, "ttl must not be null");
         Preconditions.checkArgument(ttl.toMillis() > 0, "ttl must be > 0");
@@ -45,7 +45,7 @@ public class StoreConfig
     }
 
     @NotNull
-    public Duration getTtl()
+    Duration getTtl()
     {
         return ttl;
     }
