@@ -232,7 +232,7 @@ public class Bootstrap
         if (strictConfig) {
             moduleList.add(binder -> {
                 for (Entry<String, String> unusedProperty : unusedProperties.entrySet()) {
-                    binder.addError("Configuration property '%s=%s' was not used", unusedProperty.getKey(), unusedProperty.getValue());
+                    binder.addError("Configuration property '%s' was not used", unusedProperty.getKey());
                 }
             });
         }
