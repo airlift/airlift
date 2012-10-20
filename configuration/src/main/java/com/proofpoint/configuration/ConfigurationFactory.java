@@ -264,7 +264,7 @@ public final class ConfigurationFactory
             problems.addWarning("Configuration property '%s' is deprecated and should not be used", prefix + injectionPoint.getProperty());
         }
 
-        Object value = getInjectedValue(injectionPoint, prefix, problems);
+        Object value = getInjectedValue(attribute, injectionPoint, prefix, problems);
 
         try {
             injectionPoint.getSetter().invoke(instance, value);
@@ -340,10 +340,19 @@ public final class ConfigurationFactory
 
                     if (operativeDescription == null) {
                         operativeInjectionPoint = injectionPoint;
-                        operativeDescription = format("property '%s' (=%s)", fullName, value);
+                        final StringBuilder stringBuilder = new StringBuilder("property '").append(fullName).append("'");
+                        if (!attribute.isSecuritySensitive()) {
+                            stringBuilder.append(" (=").append(value).append(")");
+                        }
+                        operativeDescription = stringBuilder.toString();
                     }
                     else {
-                        problems.addError("Configuration property '%s' (=%s) conflicts with %s", fullName, value, operativeDescription);
+                        final StringBuilder stringBuilder = new StringBuilder("Configuration property '").append(fullName).append("'");
+                        if (!attribute.isSecuritySensitive()) {
+                            stringBuilder.append(" (=").append(value).append(")");
+                        }
+                        stringBuilder.append(" conflicts with ").append(operativeDescription);
+                        problems.addError(stringBuilder.toString());
                     }
                 }
             }
@@ -359,14 +368,14 @@ public final class ConfigurationFactory
         }
     }
 
-    private Object getInjectedValue(InjectionPointMetaData injectionPoint, String prefix, Problems problems)
+    private Object getInjectedValue(AttributeMetadata attribute, InjectionPointMetaData injectionPoint, String prefix, Problems problems)
             throws InvalidConfigurationException
     {
         // Get the property value
         String name = prefix + injectionPoint.getProperty();
         final ConfigMap configMap = injectionPoint.getConfigMap();
         if (configMap != null) {
-            return getInjectedMap(injectionPoint, name + ".", problems, configMap.key(), configMap.value());
+            return getInjectedMap(attribute, injectionPoint, name + ".", problems, configMap.key(), configMap.value());
         }
         String value = properties.get(name);
 
@@ -378,9 +387,16 @@ public final class ConfigurationFactory
         Class<?> propertyType = injectionPoint.getSetter().getParameterTypes()[0];
 
         Object finalValue = coerce(propertyType, value);
+        final String valueDescription;
+        if (attribute.isSecuritySensitive()) {
+            valueDescription = "";
+        }
+        else {
+            valueDescription = " '" + value + "'";
+        }
         if (finalValue == null) {
-            throw new InvalidConfigurationException(format("Could not coerce value '%s' to %s (property '%s') in order to call [%s]",
-                    value,
+            throw new InvalidConfigurationException(format("Could not coerce value%s to %s (property '%s') in order to call [%s]",
+                    valueDescription,
                     propertyType.getName(),
                     name,
                     injectionPoint.getSetter().toGenericString()));
@@ -390,7 +406,7 @@ public final class ConfigurationFactory
         return finalValue;
     }
 
-    private <K,V> Map<K, V> getInjectedMap(InjectionPointMetaData injectionPoint, String name, Problems problems, Class<K> keyClass, Class<V> valueClass)
+    private <K,V> Map<K, V> getInjectedMap(AttributeMetadata attribute, InjectionPointMetaData injectionPoint, String name, Problems problems, Class<K> keyClass, Class<V> valueClass)
     {
         boolean valueIsConfigClass = false;
         for (Method method : valueClass.getDeclaredMethods()) {
@@ -455,8 +471,15 @@ public final class ConfigurationFactory
             else {
                 value = (V) coerce(valueClass, properties.get(name + keyString));
                 if (value == null) {
-                    problems.addError("Could not coerce value '%s' to %s (property '%s') in order to call [%s]",
-                            value,
+                    final String valueDescription;
+                    if (attribute.isSecuritySensitive()) {
+                        valueDescription = "";
+                    }
+                    else {
+                        valueDescription = " '" + value + "'";
+                    }
+                    problems.addError("Could not coerce value%s to %s (property '%s') in order to call [%s]",
+                            valueDescription,
                             valueClass.getName(),
                             name + keyString,
                             injectionPoint.getSetter().toGenericString());
@@ -476,7 +499,6 @@ public final class ConfigurationFactory
         if (type.isPrimitive() && value == null) {
             return null;
         }
-
 
         try {
             if (String.class.isAssignableFrom(type)) {
