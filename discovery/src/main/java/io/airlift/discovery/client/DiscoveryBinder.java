@@ -19,6 +19,7 @@ import com.google.common.base.Preconditions;
 import com.google.inject.Binder;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
 
@@ -54,7 +55,7 @@ public class DiscoveryBinder
     {
         Preconditions.checkNotNull(serviceType, "serviceType is null");
         bindConfig(binder).annotatedWith(serviceType).prefixedWith("discovery." + serviceType.value()).to(ServiceSelectorConfig.class);
-        binder.bind(ServiceSelector.class).annotatedWith(serviceType).toProvider(new ServiceSelectorProvider(serviceType.value()));
+        binder.bind(ServiceSelector.class).annotatedWith(serviceType).toProvider(new ServiceSelectorProvider(serviceType.value())).in(Scopes.SINGLETON);
     }
 
     public void bindServiceAnnouncement(ServiceAnnouncement announcement)
@@ -92,7 +93,7 @@ public class DiscoveryBinder
     {
         Preconditions.checkNotNull(serviceType, "serviceType is null");
         bindSelector(serviceType);
-        binder.bind(HttpServiceSelector.class).annotatedWith(serviceType).toProvider(new HttpServiceSelectorProvider(serviceType.value()));
+        binder.bind(HttpServiceSelector.class).annotatedWith(serviceType).toProvider(new HttpServiceSelectorProvider(serviceType.value())).in(Scopes.SINGLETON);
     }
 
     static class HttpAnnouncementProvider implements Provider<ServiceAnnouncement>
