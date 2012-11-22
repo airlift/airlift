@@ -190,28 +190,6 @@
                                 <class>org.apache.commons.collections.FastHashMap</class>
                             </classes>
                         </exception>
-
-                        <exception>
-                            <!-- https://github.com/apache/httpcore/commit/1411f34092eb44c0a689410291dc57adc62edee5 -->
-                            <conflictingDependencies>
-                                <dependency>
-                                    <groupId>org.apache.httpcomponents</groupId>
-                                    <artifactId>httpclient</artifactId>
-                                    <version>4.0.1</version>
-                                </dependency>
-                                <dependency>
-                                    <groupId>org.apache.httpcomponents</groupId>
-                                    <artifactId>httpcore</artifactId>
-                                    <version>4.2-beta1</version>
-                                </dependency>
-                            </conflictingDependencies>
-                            <classes>
-                                <class>org.apache.http.annotation.GuardedBy</class>
-                                <class>org.apache.http.annotation.Immutable</class>
-                                <class>org.apache.http.annotation.NotThreadSafe</class>
-                                <class>org.apache.http.annotation.ThreadSafe</class>
-                            </classes>
-                        </exception>
                     </exceptions>
 
                     <ignoredResources>
