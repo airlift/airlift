@@ -33,4 +33,4 @@
 #
 # Requires Java to be in PATH
 
-$(dirname $0)/launcher.rb $*
+exec java -jar $(dirname $(dirname $0))/lib/launcher.jar ${@+"$@"}
