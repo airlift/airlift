@@ -27,9 +27,11 @@ import io.airlift.command.ParseException;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.ProcessBuilder.Redirect;
 import java.lang.reflect.Method;
 import java.net.JarURLConnection;
@@ -39,11 +41,9 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.concurrent.locks.LockSupport;
 import java.util.jar.Manifest;
 
@@ -109,7 +109,7 @@ public class Main
         @Option(type = OptionType.GLOBAL, name = "-D", description = "Set a Java System property")
         public final List<String> property = new LinkedList<>();
 
-        final Map<String, String> system_properties = new HashMap<>();
+        final Properties system_properties = new Properties();
         final List<String> launcherArgs = new LinkedList<>();
 
         LauncherCommand()
@@ -183,14 +183,8 @@ public class Main
             launcherArgs.add("--log-levels-file");
             launcherArgs.add(new File(log_levels_path).getAbsolutePath());
 
-            try (BufferedReader nodeReader = new BufferedReader(new FileReader(node_properties_path))) {
-                String line;
-                while ((line = nodeReader.readLine()) != null) {
-                    if (!line.matches("\\s*#.*")) {
-                        String[] split = line.split("=", 2);
-                        system_properties.put(split[0], split[1]);
-                    }
-                }
+            try (InputStream nodeFile = new FileInputStream(node_properties_path)) {
+                system_properties.load(nodeFile);
             }
             catch (FileNotFoundException ignore) {
             }
@@ -207,11 +201,11 @@ public class Main
                     System.out.print("Config can not be passed in a -D argument. Use --config instead\n");
                     System.exit(STATUS_INVALID_ARGS);
                 }
-                system_properties.put(key, split[1]);
+                system_properties.setProperty(key, split[1]);
             }
 
             if (system_properties.containsKey("node.data-dir")) {
-                data_dir = system_properties.get("node.data_dir");
+                data_dir = system_properties.getProperty("node.data_dir");
             }
 
             if (pid_file_path == null) {
@@ -230,8 +224,8 @@ public class Main
             }
 
             if (verbose) {
-                for (Entry<String, String> entry : system_properties.entrySet()) {
-                    System.out.print(entry.getKey() + "=" + entry.getValue() + "\n");
+                for (String key : system_properties.stringPropertyNames()) {
+                    System.out.print(key + "=" + system_properties.getProperty(key) + "\n");
                 }
             }
 
@@ -331,8 +325,8 @@ public class Main
                 System.exit(STATUS_CONFIG_MISSING);
             }
 
-            for (Map.Entry<String, String> entry : system_properties.entrySet()) {
-                javaArgs.add("-D" + entry.getKey() + "=" + entry.getValue());
+            for (String key : system_properties.stringPropertyNames()) {
+                javaArgs.add("-D" + key + "=" + system_properties.getProperty(key));
             }
             javaArgs.add("-Dconfig=" + config_path);
             if (daemon) {
