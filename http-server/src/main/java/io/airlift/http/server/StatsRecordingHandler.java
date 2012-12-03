@@ -22,6 +22,8 @@ import org.eclipse.jetty.server.Response;
 
 import java.util.concurrent.TimeUnit;
 
+import static java.lang.Math.max;
+
 public class StatsRecordingHandler
         implements RequestLog
 {
@@ -35,14 +37,14 @@ public class StatsRecordingHandler
     @Override
     public void log(Request request, Response response)
     {
-        Duration requestTime = new Duration(System.currentTimeMillis() - request.getTimeStamp(), TimeUnit.MILLISECONDS);
+        Duration requestTime = new Duration(max(0, System.currentTimeMillis() - request.getTimeStamp()), TimeUnit.MILLISECONDS);
 
         long dispatchTime = request.getDispatchTime();
         if (dispatchTime == 0) {
             dispatchTime = request.getTimeStamp();
         }
 
-        Duration schedulingDelay = new Duration(dispatchTime - request.getTimeStamp(), TimeUnit.MILLISECONDS);
+        Duration schedulingDelay = new Duration(max(0, dispatchTime - request.getTimeStamp()), TimeUnit.MILLISECONDS);
 
         stats.record(request.getMethod(), response.getStatus(), request.getContentRead(), response.getContentCount(), schedulingDelay, requestTime);
     }
