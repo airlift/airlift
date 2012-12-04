@@ -1,3 +1,32 @@
+Platform 0.68
+
+* Library Upgrades
+
+In this release we have upgraded the following dependencies:
+
+    - Guava 13.0.1
+    - httpclient 4.2.2
+    - bval-jsr303 0.5
+    - joda-time 2.1
+
+NOTE: Guava 13 removes transitivity of the JSR-305 artifact (commonly used for @Nullable).
+If your project depended on this, you need to add the following to your project's pom.xml file:
+
+    <dependency>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>jsr305</artifactId>
+    </dependency>
+
+* Mappable exception for JSON decoding errors
+
+When there is a JSON decoding error, the JsonMapper.readFrom() method now throws newly defined
+exceptions (instead of WebApplicationException). This allows them to be handled by an ExceptionMapper.
+The newly defined exceptions are BeanValidationException and JsonMapperParsingException.
+
+* [Bug] Don't throw exception from StatsRecordingHandler if the system clock goes backwards.
+
+* We have removed the Cassandra module
+
 Platform 0.67
 
 * No thread pool for CounterStat
