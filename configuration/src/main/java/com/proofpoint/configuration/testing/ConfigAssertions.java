@@ -17,6 +17,7 @@ package com.proofpoint.configuration.testing;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
+import com.proofpoint.configuration.ConfigMap;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationMetadata;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
@@ -28,11 +29,14 @@ import org.testng.Assert;
 
 import java.lang.reflect.Method;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
+
+import static com.proofpoint.configuration.ConfigurationMetadata.isConfigClass;
 
 public final class ConfigAssertions
 {
@@ -110,15 +114,16 @@ public final class ConfigAssertions
         assertPropertiesSupported(metadata, properties.keySet(), false);
 
         // verify that every (non-deprecated) property is tested
-        Set<String> nonDeprecatedProperties = new TreeSet<String>();
+        Set<String> untestedProperties = new TreeSet<>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-            if (attribute.getInjectionPoint().getProperty() != null) {
-                nonDeprecatedProperties.add(attribute.getInjectionPoint().getProperty());
+            final String property = attribute.getInjectionPoint().getProperty();
+            if (property != null) {
+                if (!isPropertyTested(property, attribute, properties.keySet())) {
+                    untestedProperties.add(property);
+                }
             }
         }
-        if (!properties.keySet().equals(nonDeprecatedProperties)) {
-            TreeSet<String> untestedProperties = new TreeSet<String>(nonDeprecatedProperties);
-            untestedProperties.removeAll(properties.keySet());
+        if (!untestedProperties.isEmpty()) {
             Assert.fail("Untested properties " + untestedProperties);
         }
 
@@ -129,6 +134,33 @@ public final class ConfigAssertions
 
         // verify that a configuration object created from the properties is equivalent to the expected object
         assertAttributesEqual(metadata, actual, expected);
+    }
+
+    private static boolean isPropertyTested(String property, AttributeMetadata attribute, Set<String> testedProperties)
+    {
+        final ConfigMap configMap = attribute.getConfigMap();
+        if (configMap == null) {
+            return testedProperties.contains(property);
+        }
+        if (isConfigClass(configMap.value())) {
+            for (String testedProperty : testedProperties) {
+                if (testedProperty.startsWith(property) &&
+                        testedProperty.charAt(property.length()) == '.' &&
+                        testedProperty.substring(property.length() + 1).contains(".")) {
+                    return true;
+                }
+            }
+        }
+        else {
+            for (String testedProperty : testedProperties) {
+                if (testedProperty.startsWith(property) &&
+                        testedProperty.charAt(property.length()) == '.' &&
+                        !testedProperty.substring(property.length() + 1).contains(".")) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @SafeVarargs
@@ -149,19 +181,19 @@ public final class ConfigAssertions
         }
 
         // verify that all deprecated properties are tested
-        Set<String> knownDeprecatedProperties = new TreeSet<String>();
-        for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-            for (ConfigurationMetadata.InjectionPointMetaData deprecated : attribute.getLegacyInjectionPoints()) {
-                knownDeprecatedProperties.add(deprecated.getProperty());
-            }
-        }
-        Set<String> suppliedDeprecatedProperties = new TreeSet<String>();
+        Set<String> suppliedDeprecatedProperties = new TreeSet<>();
         for (Map<String, String> evenOlderProperties : oldPropertiesList) {
             suppliedDeprecatedProperties.addAll(evenOlderProperties.keySet());
         }
-        if (!suppliedDeprecatedProperties.containsAll(knownDeprecatedProperties)) {
-            TreeSet<String> untestedDeprecatedProperties = new TreeSet<String>(knownDeprecatedProperties);
-            untestedDeprecatedProperties.removeAll(suppliedDeprecatedProperties);
+        TreeSet<String> untestedDeprecatedProperties = new TreeSet<>();
+        for (AttributeMetadata attribute : metadata.getAttributes().values()) {
+            for (ConfigurationMetadata.InjectionPointMetaData deprecated : attribute.getLegacyInjectionPoints()) {
+                if (!isPropertyTested(deprecated.getProperty(), attribute, suppliedDeprecatedProperties)) {
+                    untestedDeprecatedProperties.add(deprecated.getProperty());
+                }
+            }
+        }
+        if (!untestedDeprecatedProperties.isEmpty()) {
             Assert.fail("Untested deprecated properties: " + untestedDeprecatedProperties);
         }
 
@@ -175,28 +207,62 @@ public final class ConfigAssertions
 
     private static void assertPropertiesSupported(ConfigurationMetadata<?> metadata, Set<String> propertyNames, boolean allowDeprecatedProperties)
     {
-        Set<String> supportedProperties = new TreeSet<String>();
-        Set<String> nonDeprecatedProperties = new TreeSet<String>();
+        Set<String> unsupportedProperties = new TreeSet<>(propertyNames);
+        Set<String> deprecatedProperties = new TreeSet<>(propertyNames);
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-            if (attribute.getInjectionPoint().getProperty() != null) {
-                nonDeprecatedProperties.add(attribute.getInjectionPoint().getProperty());
-                supportedProperties.add(attribute.getInjectionPoint().getProperty());
+            final String property = attribute.getInjectionPoint().getProperty();
+            final ConfigMap configMap = attribute.getConfigMap();
+            if (property != null) {
+                markPropertySupported(property, configMap, unsupportedProperties, deprecatedProperties);
             }
             for (ConfigurationMetadata.InjectionPointMetaData deprecated : attribute.getLegacyInjectionPoints()) {
-                supportedProperties.add(deprecated.getProperty());
+                markPropertySupported(deprecated.getProperty(), configMap, unsupportedProperties, null);
             }
         }
-        if (!supportedProperties.containsAll(propertyNames)) {
-            TreeSet<String> unsupportedProperties = new TreeSet<String>(propertyNames);
-            unsupportedProperties.removeAll(supportedProperties);
+
+        if (!unsupportedProperties.isEmpty()) {
             Assert.fail("Unsupported properties: " + unsupportedProperties);
         }
 
         // check for usage of deprecated properties
-        if (!allowDeprecatedProperties && !nonDeprecatedProperties.containsAll(propertyNames)) {
-            TreeSet<String> deprecatedProperties = new TreeSet<String>(propertyNames);
-            deprecatedProperties.removeAll(nonDeprecatedProperties);
+        if (!allowDeprecatedProperties && !deprecatedProperties.isEmpty()) {
             Assert.fail("Deprecated properties: " + deprecatedProperties);
+        }
+    }
+
+    private static void markPropertySupported(String property, ConfigMap configMap, Set<String> unsupportedProperties, Set<String> deprecatedProperties)
+    {
+        if (configMap == null) {
+            if (deprecatedProperties != null) {
+                deprecatedProperties.remove(property);
+            }
+            unsupportedProperties.remove(property);
+        }
+        else if (isConfigClass(configMap.value())) {
+            for (Iterator<String> iterator = unsupportedProperties.iterator(); iterator.hasNext(); ) {
+                String unsupportedProperty = iterator.next();
+                if (unsupportedProperty.startsWith(property) &&
+                        unsupportedProperty.charAt(property.length()) == '.' &&
+                        unsupportedProperty.substring(property.length() + 1).contains(".")) {
+                    if (deprecatedProperties != null) {
+                        deprecatedProperties.remove(unsupportedProperty);
+                    }
+                    iterator.remove();
+                }
+            }
+        }
+        else {
+            for (Iterator<String> iterator = unsupportedProperties.iterator(); iterator.hasNext(); ) {
+                String unsupportedProperty = iterator.next();
+                if (unsupportedProperty.startsWith(property) &&
+                        unsupportedProperty.charAt(property.length()) == '.' &&
+                        !unsupportedProperty.substring(property.length() + 1).contains(".")) {
+                    if (deprecatedProperties != null) {
+                        deprecatedProperties.remove(unsupportedProperty);
+                    }
+                    iterator.remove();
+                }
+            }
         }
     }
 

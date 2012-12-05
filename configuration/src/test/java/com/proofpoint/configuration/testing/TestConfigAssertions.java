@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.proofpoint.configuration.Config;
 import com.proofpoint.configuration.Config1;
+import com.proofpoint.configuration.ConfigMap;
 import com.proofpoint.configuration.LegacyConfig;
 import com.proofpoint.configuration.testing.ConfigAssertions.$$RecordedConfigData;
 import com.proofpoint.testing.Assertions;
@@ -314,25 +315,25 @@ public class TestConfigAssertions
     }
 
     @Test
-        public void testDeprecatedProperties()
-        {
-            Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
-                    .put("email", "alice@example.com")
-                    .put("home-page", "http://example.com")
-                    .build();
+    public void testDeprecatedProperties()
+    {
+        Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
+                .put("email", "alice@example.com")
+                .put("home-page", "http://example.com")
+                .build();
 
-            Map<String, String> oldProperties = new ImmutableMap.Builder<String, String>()
-                    .put("exchange-id", "alice@example.com")
-                    .put("home-page", "http://example.com")
-                    .build();
+        Map<String, String> oldProperties = new ImmutableMap.Builder<String, String>()
+                .put("exchange-id", "alice@example.com")
+                .put("home-page", "http://example.com")
+                .build();
 
-            Map<String, String> olderProperties = new ImmutableMap.Builder<String, String>()
-                    .put("notes-id", "alice@example.com")
-                    .put("home-page-url", "http://example.com")
-                    .build();
+        Map<String, String> olderProperties = new ImmutableMap.Builder<String, String>()
+                .put("notes-id", "alice@example.com")
+                .put("home-page-url", "http://example.com")
+                .build();
 
-            ConfigAssertions.assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
-        }
+        ConfigAssertions.assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
+    }
 
     @Test
     public void testDeprecatedPropertiesFailUnsupportedProperties()
@@ -540,6 +541,70 @@ public class TestConfigAssertions
         }
     }
 
+    @Test
+    public void testExplicitPropertyMappingsWithMap()
+    {
+        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("name", "Jenny")
+                .put("simple.email", "jenny@compuserve.com")
+                .put("sub.a.phone", "867-5309")
+                .build();
+
+        MapConfig expected = new MapConfig()
+                .setName("Jenny")
+                .setSimpleMap(ImmutableMap.of("email", "jenny@compuserve.com"))
+                .setSubMap(ImmutableMap.of("a", new SubConfig().setPhone("867-5309")));
+
+        ConfigAssertions.assertFullMapping(properties, expected);
+    }
+
+    @Test
+    public void testExplicitPropertyMappingsWithMapFailUntestedProperty()
+    {
+        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("name", "Jenny")
+                .build();
+
+        MapConfig expected = new MapConfig()
+                .setName("Jenny");
+
+        boolean pass = true;
+        try {
+            ConfigAssertions.assertFullMapping(properties, expected);
+        }
+        catch (AssertionError e) {
+            // expected
+            pass = false;
+            Assertions.assertContains(e.getMessage(), "simple");
+            Assertions.assertContains(e.getMessage(), "sub");
+        }
+
+        if (pass) {
+            Assert.fail("Expected AssertionError");
+        }
+    }
+
+    @Test
+    public void testDeprecatedPropertiesWithMap()
+    {
+        Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
+                .put("simple.email", "jenny@compuserve.com")
+                .put("sub.a.phone", "867-5309")
+                .build();
+
+        Map<String, String> oldProperties = new ImmutableMap.Builder<String, String>()
+                .put("simple-legacy.email", "jenny@compuserve.com")
+                .put("sub.a.phone", "867-5309")
+                .build();
+
+        Map<String, String> olderProperties = new ImmutableMap.Builder<String, String>()
+                .put("simple.email", "jenny@compuserve.com")
+                .put("sub-legacy.a.phone", "867-5309")
+                .build();
+
+        ConfigAssertions.assertDeprecatedEquivalence(MapConfig.class, currentProperties, oldProperties, olderProperties);
+    }
+
     public static class PersonConfig
     {
         private String name = "Dain";
@@ -664,4 +729,94 @@ public class TestConfigAssertions
             return this;
         }
     }
+
+    public static class SubConfig
+    {
+        private String phone = null;
+
+        public String getPhone()
+        {
+            return phone;
+        }
+
+        @Config("phone")
+        public SubConfig setPhone(String phone)
+        {
+            this.phone = phone;
+            return this;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            SubConfig subConfig = (SubConfig) o;
+
+            if (phone != null ? !phone.equals(subConfig.phone) : subConfig.phone != null) {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return phone != null ? phone.hashCode() : 0;
+        }
+    }
+
+    public static class MapConfig
+    {
+        private String name = "Dain";
+        private Map<String, String> simpleMap = null;
+        private Map<String, SubConfig> subMap = null;
+
+        public String getName()
+        {
+            return name;
+        }
+
+        @Config("name")
+        public MapConfig setName(String name)
+        {
+            this.name = name;
+            return this;
+        }
+
+        public Map<String, String> getSimpleMap()
+        {
+            return simpleMap;
+        }
+
+        @Config("simple")
+        @LegacyConfig("simple-legacy")
+        @ConfigMap
+        public MapConfig setSimpleMap(Map<String, String> simpleMap)
+        {
+            this.simpleMap = simpleMap;
+            return this;
+        }
+
+        public Map<String, SubConfig> getSubMap()
+        {
+            return subMap;
+        }
+
+        @Config("sub")
+        @LegacyConfig("sub-legacy")
+        @ConfigMap(SubConfig.class)
+        public MapConfig setSubMap(Map<String, SubConfig> subMap)
+        {
+            this.subMap = subMap;
+            return this;
+        }
+    }
+
 }
