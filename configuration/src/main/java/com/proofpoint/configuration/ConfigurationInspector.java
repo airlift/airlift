@@ -29,6 +29,7 @@ import java.util.Map.Entry;
 import java.util.SortedSet;
 
 import static com.google.common.base.Objects.firstNonNull;
+import static com.proofpoint.configuration.ConfigurationMetadata.isConfigClass;
 
 public class ConfigurationInspector
 {
@@ -122,11 +123,8 @@ public class ConfigurationInspector
                 if (getter != null && instance != null && !attribute.isSecuritySensitive() && configMap != null) {
                     final Class<?> valueClass = configMap.value();
                     Class<?> valueConfigClass = null;
-                    for (Method valueMethod : valueClass.getDeclaredMethods()) {
-                        if (valueMethod.isAnnotationPresent(Config.class)) {
-                            valueConfigClass = valueClass;
-                            break;
-                        }
+                    if (isConfigClass(valueClass)) {
+                        valueConfigClass = valueClass;
                     }
 
                     enumerateMap(instance, attributePrefix + attribute.getName(), propertyName, description, getter, valueConfigClass, builder);

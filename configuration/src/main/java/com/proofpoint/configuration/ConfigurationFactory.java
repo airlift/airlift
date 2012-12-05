@@ -54,6 +54,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static com.proofpoint.configuration.ConfigurationMetadata.isConfigClass;
 import static com.proofpoint.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
 
@@ -408,13 +409,7 @@ public final class ConfigurationFactory
 
     private <K,V> Map<K, V> getInjectedMap(AttributeMetadata attribute, InjectionPointMetaData injectionPoint, String name, Problems problems, Class<K> keyClass, Class<V> valueClass)
     {
-        boolean valueIsConfigClass = false;
-        for (Method method : valueClass.getDeclaredMethods()) {
-            if (method.isAnnotationPresent(Config.class)) {
-                valueIsConfigClass = true;
-                break;
-            }
-        }
+        final boolean valueIsConfigClass = isConfigClass(valueClass);
 
         final HashSet<String> keySet = new HashSet<>();
         for (String key : properties.keySet()) {

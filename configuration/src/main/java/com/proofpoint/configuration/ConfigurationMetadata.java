@@ -130,6 +130,15 @@ public class ConfigurationMetadata<T>
         }
     }
 
+    public static boolean isConfigClass(Class<?> classz) {
+        for (Method method : classz.getDeclaredMethods()) {
+            if (method.isAnnotationPresent(Config.class)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public Class<T> getConfigClass()
     {
         return configClass;
@@ -214,31 +223,28 @@ public class ConfigurationMetadata<T>
                 problems.addError("@ConfigMap method [%s] does not have Map as the parameter type", method.toGenericString());
             }
             final Class<?> valueClass = configMap.value();
-            for (Method valueMethod : valueClass.getDeclaredMethods()) {
-                if (valueMethod.isAnnotationPresent(Config.class)) {
-                    getConfigurationMetadata(valueClass, new Monitor()
+            if (isConfigClass(valueClass)) {
+                getConfigurationMetadata(valueClass, new Monitor()
+                {
+                    @Override
+                    public void onError(Message errorMessage)
                     {
-                        @Override
-                        public void onError(Message errorMessage)
-                        {
-                            problems.addError(errorMessage.getCause(),
-                                    "@ConfigMap method [%s] value type %s: %s",
-                                    method.toGenericString(),
-                                    valueClass.getSimpleName(),
-                                    errorMessage.getMessage());
-                        }
+                        problems.addError(errorMessage.getCause(),
+                                "@ConfigMap method [%s] value type %s: %s",
+                                method.toGenericString(),
+                                valueClass.getSimpleName(),
+                                errorMessage.getMessage());
+                    }
 
-                        @Override
-                        public void onWarning(Message warningMessage)
-                        {
-                            problems.addWarning("@ConfigMap method [%s] value type %s: %s",
-                                    method.toGenericString(),
-                                    valueClass.getSimpleName(),
-                                    warningMessage.getMessage());
-                        }
-                    });
-                    break;
-                }
+                    @Override
+                    public void onWarning(Message warningMessage)
+                    {
+                        problems.addWarning("@ConfigMap method [%s] value type %s: %s",
+                                method.toGenericString(),
+                                valueClass.getSimpleName(),
+                                warningMessage.getMessage());
+                    }
+                });
             }
         }
 
