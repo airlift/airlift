@@ -17,6 +17,7 @@ package com.proofpoint.jmx;
 
 import com.google.inject.Inject;
 import com.proofpoint.log.Logger;
+import com.proofpoint.node.NodeInfo;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -25,7 +26,6 @@ import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.rmi.registry.LocateRegistry;
 import java.util.Collections;
@@ -34,18 +34,17 @@ public class JmxAgent
 {
     private final String host;
     private final int registryPort;
-    private final int serverPort;
     private final JMXConnectorServer connectorServer;
 
     private static final Logger log = Logger.get(JmxAgent.class);
     private final JMXServiceURL url;
 
     @Inject
-    public JmxAgent(MBeanServer server, JmxConfig config)
+    public JmxAgent(MBeanServer server, NodeInfo nodeinfo, JmxConfig config)
             throws IOException
     {
         if (config.getHostname() == null) {
-            host = InetAddress.getLocalHost().getHostAddress();
+            host = nodeinfo.getInternalIp().getHostAddress();
         }
         else {
             host = config.getHostname();
@@ -58,6 +57,7 @@ public class JmxAgent
             registryPort = config.getRmiRegistryPort();
         }
 
+        int serverPort;
         if (config.getRmiServerPort() == null) {
             serverPort = NetUtils.findUnusedPort();
         }

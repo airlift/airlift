@@ -15,12 +15,13 @@
  */
 package com.proofpoint.jmx;
 
-import com.beust.jcommander.internal.Maps;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Stage;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.node.NodeModule;
 import org.testng.annotations.Test;
 import org.weakref.jmx.guice.MBeanModule;
 
@@ -31,18 +32,19 @@ public class TestJmxModule
     @Test
     public void testCanConstruct()
     {
-        Map<String, String> properties = Maps.newHashMap();
+        Map<String, String> properties = ImmutableMap.of("node.environment", "test");
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
-        Injector injector = Guice.createInjector(new JmxModule(), new ConfigurationModule(configFactory));
+        Injector injector = Guice.createInjector(new JmxModule(), new NodeModule(), new ConfigurationModule(configFactory));
         injector.getInstance(JmxAgent.class);
     }
 
     @Test
     public void testCanExportBeans()
     {
-        Map<String, String> properties = Maps.newHashMap();
+        Map<String, String> properties = ImmutableMap.of("node.environment", "test");
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
         Injector injector = Guice.createInjector(Stage.PRODUCTION, new JmxModule(),
+                                                 new NodeModule(),
                                                  new MBeanModule(),
                                                  new ConfigurationModule(configFactory));
         injector.getInstance(JmxAgent.class);
