@@ -54,31 +54,25 @@
     </developers>
     <contributors>
         <contributor>
-            <id>dain</id>
             <name>Dain Sundstrom</name>
             <email>dain@iq80.com</email>
         </contributor>
         <contributor>
-            <id>electrum</id>
             <name>David Phillips</name>
             <email>david@acz.org</email>
         </contributor>
         <contributor>
-            <id>randgalt</id>
             <name>Jordan Zimmerman</name>
         </contributor>
         <contributor>
-            <id>mattstep</id>
             <name>Matt Stephenson</name>
             <email>mattstep@mattstep.net</email>
         </contributor>
         <contributor>
-            <id>mtraverso</id>
             <name>Martin Traverso</name>
             <email>mtraverso@gmail.com</email>
         </contributor>
         <contributor>
-            <id>rick.wong</id>
             <name>Rick Wong</name>
         </contributor>
     </contributors>
