@@ -21,8 +21,6 @@ import org.codehaus.jackson.map.JsonSerializer;
 import org.codehaus.jackson.map.SerializerProvider;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 
 class EventJsonSerializerV1<T>
         extends JsonSerializer<T>
@@ -32,7 +30,7 @@ class EventJsonSerializerV1<T>
 
     public static <T> EventJsonSerializerV1<T> createEventJsonSerializer(EventTypeMetadata<T> eventTypeMetadata)
     {
-        return new EventJsonSerializerV1<T>(eventTypeMetadata);
+        return new EventJsonSerializerV1<>(eventTypeMetadata);
     }
 
     private EventJsonSerializerV1(EventTypeMetadata<T> eventTypeMetadata)
@@ -40,12 +38,7 @@ class EventJsonSerializerV1<T>
         Preconditions.checkNotNull(eventTypeMetadata, "eventTypeMetadata is null");
 
         this.eventTypeMetadata = eventTypeMetadata;
-        try {
-            hostName = InetAddress.getLocalHost().getHostName();
-        }
-        catch (UnknownHostException e) {
-            throw new IllegalArgumentException("Unable to determine local host name");
-        }
+        hostName = EventJsonSerializer.getLocalHostName();
     }
 
     @Override
