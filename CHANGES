@@ -5,6 +5,7 @@ Platform 0.68
 In this release we have upgraded the following dependencies:
 
     - Guava 13.0.1
+    - jetty 8.1.8
     - httpclient 4.2.2
     - bval-jsr303 0.5
     - joda-time 2.1
@@ -22,6 +23,21 @@ If your project depended on this, you need to add the following to your project'
 When there is a JSON decoding error, the JsonMapper.readFrom() method now throws newly defined
 exceptions (instead of WebApplicationException). This allows them to be handled by an ExceptionMapper.
 The newly defined exceptions are BeanValidationException and JsonMapperParsingException.
+
+* Workaround for InetAddress.getLocalHost() throwing UnrecognizedHostException in Java 7u5
+
+    - The jmx module now gets the default value of the local IP address from the node module.
+
+* We now detect some incorrect usage to EquivalenceTester.
+
+To detect calls intended for EquivalenceTester<T>.addEquivalentGroup(Iterable<T>) that instead
+call EquivalenceTester<Object>.addEquivalentGroup(T, T...), the latter method now prohibits calls
+with a single argument that implements Iterable.
+
+* @ConfigSecuritySensitive now redacts the configuration value in any generated error.
+
+* [Bug] @ConfigMap attributes can now be tested by ConfigAssertions.assertFullMapping() and
+  ConfigAssertions.assertDeprecatedEquivalence()
 
 * [Bug] Don't throw exception from StatsRecordingHandler if the system clock goes backwards.
 
