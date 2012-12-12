@@ -81,31 +81,30 @@ public class H2EmbeddedDataSource extends ManagedDataSource
             setConfig(connection, "COMPRESS_LOB", config.getCompressLob());
             setConfig(connection, "DB_CLOSE_DELAY ", "-1");
 
-            // find init script
+            // handle init script
             String fileName = config.getInitScript();
-            File file = new File(fileName);
-            URL url;
-            if (file.exists()) {
-                url = file.toURI().toURL();
-            }
-            else {
-                url = getClass().getClassLoader().getResource(fileName);
-            }
-
-            if (url == null) {
-                throw new FileNotFoundException(fileName);
-            }
-
-            // execute init script
-            Reader reader = Resources.newReaderSupplier(url, Charsets.UTF_8).getInput();
-            try {
-                ScriptReader scriptReader = new ScriptReader(reader);
-                for (String statement = scriptReader.readStatement(); statement != null; statement = scriptReader.readStatement()) {
-                    executeCommand(connection, statement);
+            if (fileName != null) {
+                // find init script
+                File file = new File(fileName);
+                URL url;
+                if (file.exists()) {
+                    url = file.toURI().toURL();
                 }
-            }
-            finally {
-                reader.close();
+                else {
+                    url = getClass().getClassLoader().getResource(fileName);
+                }
+
+                if (url == null) {
+                    throw new FileNotFoundException(fileName);
+                }
+
+                // execute init script
+                try (Reader reader = Resources.newReaderSupplier(url, Charsets.UTF_8).getInput()) {
+                    ScriptReader scriptReader = new ScriptReader(reader);
+                    for (String statement = scriptReader.readStatement(); statement != null; statement = scriptReader.readStatement()) {
+                        executeCommand(connection, statement);
+                    }
+                }
             }
 
             // run last so script can contain literals
