@@ -78,6 +78,8 @@ public class H2EmbeddedDataSource extends ManagedDataSource
         try {
             setConfig(connection, "CACHE_SIZE", config.getCacheSize());
             setConfig(connection, "COMPRESS_LOB", config.getCompressLob());
+            setConfig(connection, "MAX_MEMORY_ROWS", config.getMaxMemoryRows());
+            setConfig(connection, "MAX_LENGTH_INPLACE_LOB", config.getMaxLengthInplaceLob());
             setConfig(connection, "DB_CLOSE_DELAY ", "-1");
 
             // handle init script
