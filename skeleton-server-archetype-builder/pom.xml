@@ -136,25 +136,6 @@
     </license>
   </licenses>
 
-  <contributors>
-    <contributor>
-      <name>Dain Sundstrom</name>
-      <email>dain@iq80.com</email>
-    </contributor>
-    <contributor>
-      <name>Jordan Zimmerman</name>
-      <email>jordan@proofpoint.com</email>
-    </contributor>
-    <contributor>
-      <name>Martin Traverso</name>
-      <email>mtraverso@gmail.com</email>
-    </contributor>
-    <contributor>
-      <name>Matt Stephenson</name>
-      <email>mattstep@mattstep.net</email>
-    </contributor>
-  </contributors>
-
   <scm>
     <connection>scm:git:git://github.com/proofpoint/platform.git</connection>
     <developerConnection>scm:git:git@github.com:proofpoint/platform.git</developerConnection>

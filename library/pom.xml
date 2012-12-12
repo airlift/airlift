@@ -22,13 +22,6 @@
         </license>
     </licenses>
 
-    <contributors>
-        <contributor>
-            <name>Matt Stephenson</name>
-            <email>mattstep@mattstep.net</email>
-        </contributor>
-    </contributors>
-
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
