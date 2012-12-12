@@ -53,8 +53,7 @@ public class H2EmbeddedDataSource extends ManagedDataSource
         // build jdbc url connection string
         StringBuilder jdbcUrlBuilder = new StringBuilder()
                 .append("jdbc:h2:").append(config.getFilename())
-                .append(";ALLOW_LITERALS=").append(config.getAllowLiterals())
-                .append(";CACHE_SIZE=").append(config.getCacheSize());
+                .append(";MVCC=").append(config.isMvccEnabled());
 
         if (config.getCipher() != Cipher.NONE) {
             jdbcUrlBuilder.append(";CIPHER=").append(config.getCipher());
@@ -79,33 +78,34 @@ public class H2EmbeddedDataSource extends ManagedDataSource
         try {
             setConfig(connection, "CACHE_SIZE", config.getCacheSize());
             setConfig(connection, "COMPRESS_LOB", config.getCompressLob());
+            setConfig(connection, "MAX_MEMORY_ROWS", config.getMaxMemoryRows());
+            setConfig(connection, "MAX_LENGTH_INPLACE_LOB", config.getMaxLengthInplaceLob());
             setConfig(connection, "DB_CLOSE_DELAY ", "-1");
 
-            // find init script
+            // handle init script
             String fileName = config.getInitScript();
-            File file = new File(fileName);
-            URL url;
-            if (file.exists()) {
-                url = file.toURI().toURL();
-            }
-            else {
-                url = getClass().getClassLoader().getResource(fileName);
-            }
-
-            if (url == null) {
-                throw new FileNotFoundException(fileName);
-            }
-
-            // execute init script
-            Reader reader = Resources.newReaderSupplier(url, Charsets.UTF_8).getInput();
-            try {
-                ScriptReader scriptReader = new ScriptReader(reader);
-                for (String statement = scriptReader.readStatement(); statement != null; statement = scriptReader.readStatement()) {
-                    executeCommand(connection, statement);
+            if (fileName != null) {
+                // find init script
+                File file = new File(fileName);
+                URL url;
+                if (file.exists()) {
+                    url = file.toURI().toURL();
                 }
-            }
-            finally {
-                reader.close();
+                else {
+                    url = getClass().getClassLoader().getResource(fileName);
+                }
+
+                if (url == null) {
+                    throw new FileNotFoundException(fileName);
+                }
+
+                // execute init script
+                try (Reader reader = Resources.newReaderSupplier(url, Charsets.UTF_8).getInput()) {
+                    ScriptReader scriptReader = new ScriptReader(reader);
+                    for (String statement = scriptReader.readStatement(); statement != null; statement = scriptReader.readStatement()) {
+                        executeCommand(connection, statement);
+                    }
+                }
             }
 
             // run last so script can contain literals
