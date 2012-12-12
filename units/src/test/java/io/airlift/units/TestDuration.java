@@ -15,9 +15,11 @@
  */
 package io.airlift.units;
 
+import io.airlift.json.JsonCodec;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -201,16 +203,35 @@ public class TestDuration
         }
     }
 
+    @Test
+    public void testJsonRoundTrip()
+            throws Exception
+    {
+        assertJsonRoundTrip(new Duration(1.234, MILLISECONDS));
+        assertJsonRoundTrip(new Duration(1.234, SECONDS));
+        assertJsonRoundTrip(new Duration(1.234, MINUTES));
+        assertJsonRoundTrip(new Duration(1.234, HOURS));
+        assertJsonRoundTrip(new Duration(1.234, DAYS));
+
+    }
+
+    private void assertJsonRoundTrip(Duration duration)
+            throws IOException
+    {
+        JsonCodec<Duration> dataSizeCodec = JsonCodec.jsonCodec(Duration.class);
+        String json = dataSizeCodec.toJson(duration);
+        Duration durationCopy = dataSizeCodec.fromJson(json);
+        double delta = duration.toMillis() * 0.01;
+        Assert.assertEquals(duration.toMillis(), durationCopy.toMillis(), delta);
+    }
+
     private void failDurationConstruction(double value, TimeUnit timeUnit)
     {
         try {
             new Duration(value, timeUnit);
             Assert.fail("Expected NullPointerException or IllegalArgumentException");
         }
-        catch (NullPointerException e) {
-            // ok
-        }
-        catch (IllegalArgumentException e) {
+        catch (NullPointerException | IllegalArgumentException e) {
             // ok
         }
     }

@@ -15,18 +15,22 @@
  */
 package io.airlift.units;
 
-import static io.airlift.testing.EquivalenceTester.comparisonTester;
-import static io.airlift.units.DataSize.Unit.BYTE;
-import static io.airlift.units.DataSize.Unit.KILOBYTE;
-import static io.airlift.units.DataSize.Unit.MEGABYTE;
-import static io.airlift.units.DataSize.Unit.GIGABYTE;
-import static io.airlift.units.DataSize.Unit.TERABYTE;
-import static io.airlift.units.DataSize.Unit.PETABYTE;
-import static org.testng.Assert.assertEquals;
-
 import com.google.common.collect.ImmutableList;
+import io.airlift.json.JsonCodec;
+import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import java.io.IOException;
+
+import static io.airlift.testing.EquivalenceTester.comparisonTester;
+import static io.airlift.units.DataSize.Unit.BYTE;
+import static io.airlift.units.DataSize.Unit.GIGABYTE;
+import static io.airlift.units.DataSize.Unit.KILOBYTE;
+import static io.airlift.units.DataSize.Unit.MEGABYTE;
+import static io.airlift.units.DataSize.Unit.PETABYTE;
+import static io.airlift.units.DataSize.Unit.TERABYTE;
+import static org.testng.Assert.assertEquals;
 
 public class TestDataSize
 {
@@ -195,6 +199,29 @@ public class TestDataSize
     public void testRoundToTooLarge3()
     {
         new DataSize(9000 * 1024, PETABYTE).roundTo(KILOBYTE);
+    }
+
+    @Test
+    public void testJsonRoundTrip()
+            throws Exception
+    {
+        assertJsonRoundTrip(new DataSize(1.234, BYTE));
+        assertJsonRoundTrip(new DataSize(1.234, KILOBYTE));
+        assertJsonRoundTrip(new DataSize(1.234, MEGABYTE));
+        assertJsonRoundTrip(new DataSize(1.234, GIGABYTE));
+        assertJsonRoundTrip(new DataSize(1.234, TERABYTE));
+        assertJsonRoundTrip(new DataSize(1.234, PETABYTE));
+
+    }
+
+    private void assertJsonRoundTrip(DataSize dataSize)
+            throws IOException
+    {
+        JsonCodec<DataSize> dataSizeCodec = JsonCodec.jsonCodec(DataSize.class);
+        String json = dataSizeCodec.toJson(dataSize);
+        DataSize dataSizeCopy = dataSizeCodec.fromJson(json);
+        double delta = dataSize.toBytes() * 0.01;
+        Assert.assertEquals(dataSize.toBytes(), dataSizeCopy.toBytes(), delta);
     }
 
 

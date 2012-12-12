@@ -17,6 +17,8 @@ package io.airlift.units;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Preconditions;
+import org.codehaus.jackson.annotate.JsonCreator;
+import org.codehaus.jackson.annotate.JsonValue;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -84,7 +86,7 @@ public class DataSize
     public DataSize convertToMostSuccinctDataSize()
     {
         Unit unitToUse = Unit.BYTE;
-        for(Unit unitToTest : Unit.values()) {
+        for (Unit unitToTest : Unit.values()) {
             if (getValue(unitToTest) > 1) {
                 unitToUse = unitToTest;
             }
@@ -95,8 +97,10 @@ public class DataSize
         return convertTo(unitToUse);
     }
 
+    @JsonValue
     public String toString()
     {
+        //noinspection FloatingPointEquality
         if (floor(value) == value) {
             return (long) (floor(value)) + unit.getUnitString();
         }
@@ -104,6 +108,7 @@ public class DataSize
         return value + unit.getUnitString();
     }
 
+    @JsonCreator
     public static DataSize valueOf(String size)
             throws IllegalArgumentException
     {
@@ -153,7 +158,7 @@ public class DataSize
     {
         double value = getValue(Unit.BYTE);
 
-        long temp = value != 0d ? Double.doubleToLongBits(value) : 0L;
+        long temp = value != 0.0d ? Double.doubleToLongBits(value) : 0L;
         return (int) (temp ^ (temp >>> 32));
     }
 
@@ -181,7 +186,7 @@ public class DataSize
             return factor;
         }
 
-        String getUnitString()
+        public String getUnitString()
         {
             return unitString;
         }
