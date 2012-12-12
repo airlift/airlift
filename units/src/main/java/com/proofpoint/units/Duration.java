@@ -16,6 +16,8 @@
 package com.proofpoint.units;
 
 import com.google.common.base.Preconditions;
+import org.codehaus.jackson.annotate.JsonCreator;
+import org.codehaus.jackson.annotate.JsonValue;
 
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -93,6 +95,7 @@ public final class Duration implements Comparable<Duration>
         return Double.compare(millis, o.millis);
     }
 
+    @JsonValue
     @Override
     public String toString()
     {
@@ -163,6 +166,7 @@ public final class Duration implements Comparable<Duration>
 
     private static final Pattern DURATION_PATTERN = Pattern.compile("^\\s*(\\d+(?:\\.\\d+)?)\\s*(s|m|h|d|ms)\\s*$");
 
+    @JsonCreator
     public static Duration valueOf(String duration)
             throws IllegalArgumentException
     {
