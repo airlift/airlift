@@ -16,6 +16,7 @@
 package com.proofpoint.dbpool;
 
 import com.proofpoint.configuration.Config;
+import com.proofpoint.configuration.ConfigDescription;
 import com.proofpoint.configuration.ConfigSecuritySensitive;
 
 import javax.validation.constraints.NotNull;
@@ -60,6 +61,7 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2Embedd
     private int cacheSize = 16384;
     private long maxLengthInplaceLob = 1024;
     private long maxMemoryRows = 10000;
+    private boolean mvccEnabled = true;
 
     /**
      * Database filename
@@ -223,6 +225,19 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2Embedd
     public H2EmbeddedDataSourceConfig setMaxMemoryRows(long maxMemoryRows)
     {
         this.maxMemoryRows = maxMemoryRows;
+        return this;
+    }
+
+    public boolean isMvccEnabled()
+    {
+        return mvccEnabled;
+    }
+
+    @Config("db.mvcc.enabled")
+    @ConfigDescription("Enable MVCC mode for higher concurrency")
+    public H2EmbeddedDataSourceConfig setMvccEnabled(boolean mvccEnabled)
+    {
+        this.mvccEnabled = mvccEnabled;
         return this;
     }
 }

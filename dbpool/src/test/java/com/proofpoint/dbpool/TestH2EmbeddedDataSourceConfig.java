@@ -29,6 +29,7 @@ public class TestH2EmbeddedDataSourceConfig
                 .setInitScript(null)
                 .setMaxLengthInplaceLob(1024)
                 .setMaxMemoryRows(10000)
+                .setMvccEnabled(true)
                 .setMaxConnections(10)
                 .setMaxConnectionWait(new Duration(500, TimeUnit.MILLISECONDS)));
     }
@@ -46,6 +47,7 @@ public class TestH2EmbeddedDataSourceConfig
                 .put("db.init-script", "init.sql")
                 .put("db.inplace.lob.length.max", "8192")
                 .put("db.rows.memory.max", "5000")
+                .put("db.mvcc.enabled", "FALSE")
                 .put("db.connections.max", "12")
                 .put("db.connections.wait", "42s")
                 .build();
@@ -60,6 +62,7 @@ public class TestH2EmbeddedDataSourceConfig
                 .setInitScript("init.sql")
                 .setMaxLengthInplaceLob(8192)
                 .setMaxMemoryRows(5000)
+                .setMvccEnabled(false)
                 .setMaxConnections(12)
                 .setMaxConnectionWait(new Duration(42, TimeUnit.SECONDS));
 
