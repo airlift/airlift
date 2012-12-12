@@ -24,15 +24,18 @@ When there is a JSON decoding error, the JsonMapper.readFrom() method now throws
 exceptions (instead of WebApplicationException). This allows them to be handled by an ExceptionMapper.
 The newly defined exceptions are BeanValidationException and JsonMapperParsingException.
 
-* Workaround for InetAddress.getLocalHost() throwing UnrecognizedHostException in Java 7u5
+* Workaround for InetAddress.getLocalHost() throwing UnrecognizedHostException in Java 7u5 on MacOS
 
     - The jmx module now gets the default value of the local IP address from the node module.
+    - The event-client module tries harder to get the local hostname
 
 * We now detect some incorrect usage to EquivalenceTester.
 
 To detect calls intended for EquivalenceTester<T>.addEquivalentGroup(Iterable<T>) that instead
 call EquivalenceTester<Object>.addEquivalentGroup(T, T...), the latter method now prohibits calls
 with a single argument that implements Iterable.
+
+* Configuration classes, getters, setters, and default constructors no longer need to be public.
 
 * @ConfigSecuritySensitive now redacts the configuration value in any generated error.
 
