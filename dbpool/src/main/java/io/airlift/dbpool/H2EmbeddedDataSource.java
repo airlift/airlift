@@ -53,9 +53,7 @@ public class H2EmbeddedDataSource extends ManagedDataSource
         // build jdbc url connection string
         StringBuilder jdbcUrlBuilder = new StringBuilder()
                 .append("jdbc:h2:").append(config.getFilename())
-                .append(";MVCC=").append(config.isMvccEnabled())
-                .append(";ALLOW_LITERALS=").append(config.getAllowLiterals())
-                .append(";CACHE_SIZE=").append(config.getCacheSize());
+                .append(";MVCC=").append(config.isMvccEnabled());
 
         if (config.getCipher() != Cipher.NONE) {
             jdbcUrlBuilder.append(";CIPHER=").append(config.getCipher());
