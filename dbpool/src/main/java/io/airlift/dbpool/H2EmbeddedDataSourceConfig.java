@@ -17,6 +17,8 @@ package io.airlift.dbpool;
 
 import io.airlift.configuration.Config;
 
+import javax.validation.constraints.NotNull;
+
 /**
  * Configuration for (@see H2EmbeddedDataSource}.
  * </p>
@@ -61,6 +63,7 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2Embedd
     /**
      * Database filename
      */
+    @NotNull
     public String getFilename()
     {
         return filename;
