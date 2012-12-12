@@ -5,12 +5,12 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>json</artifactId>
     <packaging>jar</packaging>
-    <version>0.68-SNAPSHOT</version>
+    <version>0.68</version>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.68-SNAPSHOT</version>
+        <version>0.68</version>
     </parent>
 
     <dependencies>
