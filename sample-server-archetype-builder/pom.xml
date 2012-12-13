@@ -138,6 +138,26 @@
   </licenses>
 
   <developers>
+      <developer>
+          <id>ahong</id>
+          <name>Alfred Hong</name>
+          <email>ahong@proofpoint.com</email>
+      </developer>
+      <developer>
+          <id>altitude</id>
+          <name>Alex Tang</name>
+          <email>altitude@proofpoint.com</email>
+      </developer>
+      <developer>
+          <id>jgmyers</id>
+          <name>John Gardiner Myers</name>
+          <email>jgmyers@proofpoint.com</email>
+      </developer>
+      <developer>
+          <id>mkent</id>
+          <name>Mark Kent</name>
+          <email>mkent@proofpoint.com</email>
+      </developer>
   </developers>
 
   <scm>
