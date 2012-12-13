@@ -4,13 +4,13 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>jaxrs</artifactId>
     <packaging>jar</packaging>
-    <version>0.69</version>
+    <version>0.70-SNAPSHOT</version>
     <name>jaxrs</name>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.69</version>
+        <version>0.70-SNAPSHOT</version>
     </parent>
 
     <dependencies>
