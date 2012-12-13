@@ -66,15 +66,6 @@
         <maven>3.0</maven>
     </prerequisites>
 
-    <repositories>
-        <!-- TODO remove when jersey is in maven central -->
-        <repository>
-            <id>maven2-repository.dev.java.net</id>
-            <name>Java.net Repository for Maven</name>
-            <url>http://download.java.net/maven/2/</url>
-        </repository>
-    </repositories>
-
     <build>
         <pluginManagement>
             <plugins>
