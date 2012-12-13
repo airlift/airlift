@@ -53,7 +53,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -112,7 +111,7 @@ public class HttpServer
             httpConnector = new SelectChannelConnector();
             httpConnector.setName("http");
             httpConnector.setPort(httpServerInfo.getHttpUri().getPort());
-            httpConnector.setMaxIdleTime((int) config.getNetworkMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
+            httpConnector.setMaxIdleTime(Ints.checkedCast(config.getNetworkMaxIdleTime().toMillis()));
             httpConnector.setStatsOn(true);
             httpConnector.setHost(nodeInfo.getBindIp().getHostAddress());
             if (config.getMaxRequestHeaderSize() != null) {
@@ -130,7 +129,7 @@ public class HttpServer
             httpsConnector.setStatsOn(true);
             httpsConnector.setKeystore(config.getKeystorePath());
             httpsConnector.setPassword(config.getKeystorePassword());
-            httpsConnector.setMaxIdleTime((int) config.getNetworkMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
+            httpsConnector.setMaxIdleTime(Ints.checkedCast(config.getNetworkMaxIdleTime().toMillis()));
             httpsConnector.setHost(nodeInfo.getBindIp().getHostAddress());
             if (config.getMaxRequestHeaderSize() != null) {
                 httpsConnector.setRequestHeaderSize(Ints.checkedCast(config.getMaxRequestHeaderSize().toBytes()));
@@ -155,7 +154,7 @@ public class HttpServer
             }
             adminConnector.setName("admin");
             adminConnector.setPort(httpServerInfo.getAdminUri().getPort());
-            adminConnector.setMaxIdleTime((int) config.getNetworkMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
+            adminConnector.setMaxIdleTime(Ints.checkedCast(config.getNetworkMaxIdleTime().toMillis()));
             adminConnector.setStatsOn(true);
             adminConnector.setHost(nodeInfo.getBindIp().getHostAddress());
             if (config.getMaxRequestHeaderSize() != null) {
@@ -165,7 +164,7 @@ public class HttpServer
             QueuedThreadPool adminThreadPool = new QueuedThreadPool(config.getAdminMaxThreads());
             adminThreadPool.setName("http-admin-worker");
             adminThreadPool.setMinThreads(config.getAdminMinThreads());
-            adminThreadPool.setMaxIdleTimeMs((int) config.getThreadMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
+            adminThreadPool.setMaxIdleTimeMs(Ints.checkedCast(config.getThreadMaxIdleTime().toMillis()));
             adminConnector.setThreadPool(adminThreadPool);
 
             server.addBean(adminThreadPool); // workaround until jetty bug 373272 is fixed
@@ -174,7 +173,7 @@ public class HttpServer
 
         QueuedThreadPool threadPool = new QueuedThreadPool(config.getMaxThreads());
         threadPool.setMinThreads(config.getMinThreads());
-        threadPool.setMaxIdleTimeMs((int) config.getThreadMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
+        threadPool.setMaxIdleTimeMs(Ints.checkedCast(config.getThreadMaxIdleTime().toMillis()));
         threadPool.setName("http-worker");
         server.setThreadPool(threadPool);
 

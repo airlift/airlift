@@ -48,7 +48,10 @@ public class TestDataSize
     public void testConvertToMostSuccinctDataSize(DataSize.Unit unit, DataSize.Unit toUnit, double factor)
     {
         DataSize size = new DataSize(factor, toUnit);
-        assertEquals(size.convertToMostSuccinctDataSize(), new DataSize(1, unit));
+        DataSize actual = size.convertToMostSuccinctDataSize();
+        assertEquals(actual, new DataSize(1, unit));
+        assertEquals(actual.getValue(unit), 1.0, 0.001);
+        assertEquals(actual.getUnit(), unit);
     }
 
     @Test

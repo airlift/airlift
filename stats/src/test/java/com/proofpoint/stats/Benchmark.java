@@ -9,8 +9,8 @@ public class Benchmark
     public static Results run(Runnable task, Duration warmupTime, Duration benchmarkTime)
             throws Exception
     {
-        double warmupNanos = warmupTime.convertTo(TimeUnit.NANOSECONDS);
-        double totalNanos = warmupNanos + benchmarkTime.convertTo(TimeUnit.NANOSECONDS);
+        double warmupNanos = warmupTime.getValue(TimeUnit.NANOSECONDS);
+        double totalNanos = warmupNanos + benchmarkTime.getValue(TimeUnit.NANOSECONDS);
 
         long operations = 0;
         long begin = System.nanoTime();
@@ -60,12 +60,12 @@ public class Benchmark
 
         public double getOperationsPerSecond()
         {
-            return operations / time.convertTo(TimeUnit.SECONDS);
+            return operations / time.getValue(TimeUnit.SECONDS);
         }
 
         public Duration getTimePerOperation()
         {
-            return new Duration(time.toMillis() / operations, TimeUnit.MILLISECONDS);
+            return new Duration(time.getValue(TimeUnit.MILLISECONDS) / operations, TimeUnit.MILLISECONDS);
         }
     }
 }

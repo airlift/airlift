@@ -138,7 +138,7 @@ public final class ServiceDescriptorsUpdater
             {
                 refresh();
             }
-        }, (long) delay.toMillis(), TimeUnit.MILLISECONDS);
+        }, delay.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     private static <V> ListenableFuture<V> chainedCallback(

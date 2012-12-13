@@ -22,6 +22,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.CountingInputStream;
+import com.google.common.primitives.Ints;
 import com.proofpoint.units.Duration;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -73,8 +74,8 @@ public class ApacheHttpClient
         connectionManager.setDefaultMaxPerRoute(config.getMaxConnectionsPerServer());
 
         BasicHttpParams httpParams = new BasicHttpParams();
-        httpParams.setParameter(CoreConnectionPNames.SO_TIMEOUT, (int) config.getReadTimeout().toMillis());
-        httpParams.setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, (int) config.getConnectTimeout().toMillis());
+        httpParams.setParameter(CoreConnectionPNames.SO_TIMEOUT, Ints.checkedCast(config.getReadTimeout().toMillis()));
+        httpParams.setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, Ints.checkedCast(config.getConnectTimeout().toMillis()));
         httpParams.setParameter(CoreConnectionPNames.SO_LINGER, 0); // do we need this?
 
         DefaultHttpClient defaultHttpClient = new DefaultHttpClient(connectionManager, httpParams);

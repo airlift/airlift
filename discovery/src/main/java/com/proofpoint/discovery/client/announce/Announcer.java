@@ -159,7 +159,7 @@ public class Announcer
             {
                 announce();
             }
-        }, (long) delay.toMillis(), MILLISECONDS);
+        }, delay.toMillis(), MILLISECONDS);
     }
 
     // TODO: move this to a utility package

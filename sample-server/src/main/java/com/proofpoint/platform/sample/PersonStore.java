@@ -44,7 +44,7 @@ public class PersonStore
         checkNotNull(eventClient, "eventClient is null");
 
         Cache<String, Person> personCache = CacheBuilder.newBuilder()
-                .expireAfterWrite((long) config.getTtl().toMillis(), TimeUnit.MILLISECONDS)
+                .expireAfterWrite(config.getTtl().toMillis(), TimeUnit.MILLISECONDS)
                 .build();
         persons = personCache.asMap();
         stats = new PersonStoreStats(eventClient);

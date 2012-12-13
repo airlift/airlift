@@ -27,9 +27,9 @@ public class BenchmarkQuantileDigest
 
         System.out.println(String.format("Processed %s entries in %s ms. Insertion rate = %s entries/s (%.4fµs per operation)",
                 results.getOperations(),
-                results.getTime().toMillis(),
+                results.getTime().getValue(TimeUnit.MILLISECONDS),
                 results.getOperationsPerSecond(),
-                results.getTimePerOperation().convertTo(TimeUnit.MICROSECONDS)));
+                results.getTimePerOperation().getValue(TimeUnit.MICROSECONDS)));
 
         System.out.println(String.format("Compressions: %s, %s entries/compression",
                 digest.getCompressions(),
