@@ -18,6 +18,7 @@ package io.airlift.units;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.base.Preconditions;
+import com.google.common.primitives.Doubles;
 
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -25,42 +26,118 @@ import java.util.regex.Pattern;
 
 public final class Duration implements Comparable<Duration>
 {
+    private static final Pattern PATTERN = Pattern.compile("^\\s*(\\d+(?:\\.\\d+)?)\\s*([a-zA-Z]+)\\s*$");
+
     public static Duration nanosSince(long start)
     {
         long end = System.nanoTime();
         return new Duration(end - start, TimeUnit.NANOSECONDS);
     }
 
-    private final double millis;
+    private final double value;
+    private final TimeUnit unit;
 
-    public Duration(double value, TimeUnit timeUnit)
+    public Duration(double value, TimeUnit unit)
     {
         Preconditions.checkArgument(!Double.isInfinite(value), "value is infinite");
         Preconditions.checkArgument(!Double.isNaN(value), "value is not a number");
         Preconditions.checkArgument(value >= 0, "value is negative");
+        Preconditions.checkNotNull(unit, "unit is null");
+
+        this.value = value;
+        this.unit = unit;
+    }
+
+    public long toMillis()
+    {
+        return roundTo(TimeUnit.MILLISECONDS);
+    }
+
+    public double getValue()
+    {
+        return value;
+    }
+
+    public TimeUnit getUnit()
+    {
+        return unit;
+    }
+
+    public double getValue(TimeUnit timeUnit)
+    {
         Preconditions.checkNotNull(timeUnit, "timeUnit is null");
-
-        double conversionFactor = millisPerTimeUnit(timeUnit);
-        millis = value * conversionFactor;
+        return value * (millisPerTimeUnit(this.unit) * 1.0 / millisPerTimeUnit(timeUnit));
     }
 
-    public double toMillis()
+    public long roundTo(TimeUnit timeUnit)
     {
-        return millis;
+        Preconditions.checkNotNull(timeUnit, "timeUnit is null");
+        double rounded = Math.floor(getValue(timeUnit) + 0.5d);
+        Preconditions.checkArgument(rounded <= Long.MAX_VALUE,
+                "size is too large to be represented in requested unit as a long");
+        return (long) rounded;
     }
 
-    public double convertTo(TimeUnit timeUnit)
+    public Duration convertTo(TimeUnit timeUnit)
     {
-        if (timeUnit == null) {
-            throw new NullPointerException("timeUnit is null");
+        Preconditions.checkNotNull(timeUnit, "timeUnit is null");
+        return new Duration(getValue(timeUnit), timeUnit);
+    }
+
+    public Duration convertToMostSuccinctTimeUnit()
+    {
+        TimeUnit unitToUse = TimeUnit.NANOSECONDS;
+        for (TimeUnit unitToTest : TimeUnit.values()) {
+            if (getValue(unitToTest) > 0.99) {
+                unitToUse = unitToTest;
+            }
+            else {
+                break;
+            }
         }
-        return convertTo(millis, timeUnit);
+        return convertTo(unitToUse);
     }
 
-    private static double convertTo(double millis, TimeUnit timeUnit)
+
+    @JsonValue
+    @Override
+    public String toString()
     {
-        double conversionFactor = millisPerTimeUnit(timeUnit);
-        return millis / conversionFactor;
+        return toString(unit);
+    }
+
+    public String toString(TimeUnit timeUnit)
+    {
+        Preconditions.checkNotNull(timeUnit, "timeUnit is null");
+        double magnitude = getValue(timeUnit);
+        String timeUnitAbbreviation = timeUnitToString(timeUnit);
+        return String.format("%.2f%s", magnitude, timeUnitAbbreviation);
+    }
+
+    @JsonCreator
+    public static Duration valueOf(String duration)
+            throws IllegalArgumentException
+    {
+        Preconditions.checkNotNull(duration, "duration is null");
+        Preconditions.checkArgument(!duration.isEmpty(), "duration is empty");
+
+        Matcher matcher = PATTERN.matcher(duration);
+        if (!matcher.matches()) {
+            throw new IllegalArgumentException("duration is not a valid data duration string: " + duration);
+        }
+
+        double value = Double.parseDouble(matcher.group(1));
+        String unitString = matcher.group(2);
+
+        TimeUnit timeUnit = valueOfTimeUnit(unitString);
+        return new Duration(value, timeUnit);
+    }
+
+
+    @Override
+    public int compareTo(Duration o)
+    {
+        return Double.compare(getValue(TimeUnit.MILLISECONDS), o.getValue(TimeUnit.MILLISECONDS));
     }
 
     @Override
@@ -75,136 +152,91 @@ public final class Duration implements Comparable<Duration>
 
         Duration duration = (Duration) o;
 
-        if (Double.compare(duration.millis, millis) != 0) {
-            return false;
-        }
-
-        return true;
+        return compareTo(duration) == 0;
     }
 
     @Override
     public int hashCode()
     {
-        long temp = Double.doubleToLongBits(millis);
-        return (int) (temp ^ (temp >>> 32));
+        double value = getValue(TimeUnit.MILLISECONDS);
+        return Doubles.hashCode(value);
     }
 
-    @Override
-    public int compareTo(Duration o)
-    {
-        return Double.compare(millis, o.millis);
-    }
 
-    @JsonValue
-    @Override
-    public String toString()
+    public static TimeUnit valueOfTimeUnit(String timeUnitString)
     {
-        return toString(TimeUnit.MILLISECONDS);
-    }
-
-    public String toString(TimeUnit timeUnit)
-    {
-        if (timeUnit == null) {
-            throw new NullPointerException("timeUnit is null");
+        Preconditions.checkNotNull(timeUnitString, "timeUnitString is null");
+        TimeUnit timeUnit;
+        switch (timeUnitString) {
+            case "ns":
+                timeUnit = TimeUnit.NANOSECONDS;
+                break;
+            case "us":
+                timeUnit = TimeUnit.MICROSECONDS;
+                break;
+            case "ms":
+                timeUnit = TimeUnit.MILLISECONDS;
+                break;
+            case "s":
+                timeUnit = TimeUnit.SECONDS;
+                break;
+            case "m":
+                timeUnit = TimeUnit.MINUTES;
+                break;
+            case "h":
+                timeUnit = TimeUnit.HOURS;
+                break;
+            case "d":
+                timeUnit = TimeUnit.DAYS;
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown time unit: " + timeUnitString);
         }
+        return timeUnit;
+    }
 
-        double magnitude = convertTo(millis, timeUnit);
-        String timeUnitAbbreviation;
+    public static String timeUnitToString(TimeUnit timeUnit)
+    {
+        Preconditions.checkNotNull(timeUnit, "timeUnit is null");
         switch (timeUnit) {
+            case NANOSECONDS:
+                return "ns";
+            case MICROSECONDS:
+                return "us";
             case MILLISECONDS:
-                timeUnitAbbreviation = "ms";
-                break;
+                return "ms";
             case SECONDS:
-                timeUnitAbbreviation = "s";
-                break;
+                return "s";
             case MINUTES:
-                timeUnitAbbreviation = "m";
-                break;
+                return "m";
             case HOURS:
-                timeUnitAbbreviation = "h";
-                break;
+                return "h";
             case DAYS:
-                timeUnitAbbreviation = "d";
-                break;
+                return "d";
             default:
                 throw new IllegalArgumentException("Unsupported time unit " + timeUnit);
         }
-        return String.format("%.2f%s", magnitude, timeUnitAbbreviation);
     }
 
     private static double millisPerTimeUnit(TimeUnit timeUnit)
     {
-        double conversionFactor;
         switch (timeUnit) {
             case NANOSECONDS:
-                conversionFactor = 1.0 / 1000000.0;
-                break;
+                return 1.0 / 1000000.0;
             case MICROSECONDS:
-                conversionFactor = 1.0 / 1000.0;
-                break;
+                return 1.0 / 1000.0;
             case MILLISECONDS:
-                conversionFactor = 1;
-                break;
+                return 1;
             case SECONDS:
-                conversionFactor = 1000;
-                break;
+                return 1000;
             case MINUTES:
-                conversionFactor = 1000 * 60;
-                break;
+                return 1000 * 60;
             case HOURS:
-                conversionFactor = 1000 * 60 * 60;
-                break;
+                return 1000 * 60 * 60;
             case DAYS:
-                conversionFactor = 1000 * 60 * 60 * 24;
-                break;
+                return 1000 * 60 * 60 * 24;
             default:
                 throw new IllegalArgumentException("Unsupported time unit " + timeUnit);
         }
-        return conversionFactor;
-    }
-
-
-    private static final Pattern DURATION_PATTERN = Pattern.compile("^\\s*(\\d+(?:\\.\\d+)?)\\s*(s|m|h|d|ms)\\s*$");
-
-    @JsonCreator
-    public static Duration valueOf(String duration)
-            throws IllegalArgumentException
-    {
-        Preconditions.checkNotNull(duration, "duration is null");
-        Preconditions.checkArgument(!duration.isEmpty(), "duration is empty");
-
-        // Parse the duration string
-        Matcher matcher = DURATION_PATTERN.matcher(duration);
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("duration is not a valid duration string: " + duration);
-        }
-
-        // Determine the magnitude of the duration
-        String magnitudeString = matcher.group(1);
-        double magnitude = Double.parseDouble(magnitudeString);
-
-        // Determine TimeUnit of the duration
-        String timeUnitString = matcher.group(2);
-        TimeUnit timeUnit;
-        if (timeUnitString.equals("ms")) {
-            timeUnit = TimeUnit.MILLISECONDS;
-        }
-        else if (timeUnitString.equals("s")) {
-            timeUnit = TimeUnit.SECONDS;
-        }
-        else if (timeUnitString.equals("m")) {
-            timeUnit = TimeUnit.MINUTES;
-        }
-        else if (timeUnitString.equals("h")) {
-            timeUnit = TimeUnit.HOURS;
-        }
-        else if (timeUnitString.equals("d")) {
-            timeUnit = TimeUnit.DAYS;
-        }
-        else {
-            throw new IllegalArgumentException("Unknown time unit: " + timeUnitString);
-        }
-
-        return new Duration(magnitude, timeUnit);
     }
 }

@@ -71,7 +71,7 @@ public class H2EmbeddedDataSource extends ManagedDataSource
         else {
             dataSource.setPassword("");
         }
-        dataSource.setLoginTimeout((int) ceil(config.getMaxConnectionWait().convertTo(SECONDS)));
+        dataSource.setLoginTimeout((int) ceil(config.getMaxConnectionWait().getValue(SECONDS)));
 
         // connect to database and initialize database
         Connection connection = getConnection();

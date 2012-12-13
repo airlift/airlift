@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.annotations.Beta;
 import com.google.common.base.Preconditions;
+import com.google.common.primitives.Doubles;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,9 +49,8 @@ public class DataSize
     public long toBytes()
     {
         double bytes = getValue(Unit.BYTE);
-        if (bytes > Long.MAX_VALUE) {
-            throw new IllegalStateException("size is too large to be represented in bytes as a long");
-        }
+        Preconditions.checkArgument(bytes <= Long.MAX_VALUE,
+                "size is too large to be represented in requested unit as a long");
         return (long) bytes;
     }
 
@@ -72,14 +72,14 @@ public class DataSize
     public long roundTo(Unit unit)
     {
         double rounded = Math.floor(getValue(unit) + 0.5d);
-        if (rounded > Long.MAX_VALUE) {
-            throw new IllegalArgumentException("size is too large to be represented in requested unit as a long");
-        }
+        Preconditions.checkArgument(rounded <= Long.MAX_VALUE,
+                "size is too large to be represented in requested unit as a long");
         return (long) rounded;
     }
 
     public DataSize convertTo(Unit unit)
     {
+        Preconditions.checkNotNull(unit, "unit is null");
         return new DataSize(getValue(unit), unit);
     }
 
@@ -87,7 +87,7 @@ public class DataSize
     {
         Unit unitToUse = Unit.BYTE;
         for (Unit unitToTest : Unit.values()) {
-            if (getValue(unitToTest) > 1) {
+            if (getValue(unitToTest) > 0.99) {
                 unitToUse = unitToTest;
             }
             else {
@@ -157,9 +157,7 @@ public class DataSize
     public int hashCode()
     {
         double value = getValue(Unit.BYTE);
-
-        long temp = value != 0.0d ? Double.doubleToLongBits(value) : 0L;
-        return (int) (temp ^ (temp >>> 32));
+        return Doubles.hashCode(value);
     }
 
     public enum Unit

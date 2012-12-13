@@ -17,13 +17,14 @@ package io.airlift.units;
 
 import io.airlift.json.JsonCodec;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
-import static io.airlift.testing.EquivalenceTester.equivalenceTester;
+import static io.airlift.testing.EquivalenceTester.comparisonTester;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
@@ -31,98 +32,146 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
 public class TestDuration
 {
     @Test
-    public void testConvertTo()
+    public void testGetValue()
     {
         double millis = 12346789.0d;
         Duration duration = new Duration(millis, MILLISECONDS);
-        Assert.assertEquals(duration.toMillis(), millis);
-        Assert.assertEquals(duration.convertTo(MILLISECONDS), millis);
-        Assert.assertEquals(duration.convertTo(SECONDS), millis / 1000);
-        Assert.assertEquals(duration.convertTo(MINUTES), millis / 1000 / 60);
-        Assert.assertEquals(duration.convertTo(HOURS), millis / 1000 / 60 / 60);
-        Assert.assertEquals(duration.convertTo(DAYS), millis / 1000 / 60 / 60 / 24);
+        Assert.assertEquals(duration.getValue(MILLISECONDS), millis);
+        Assert.assertEquals(duration.getValue(SECONDS), millis / 1000, 0.001);
+        Assert.assertEquals(duration.getValue(MINUTES), millis / 1000 / 60, 0.001);
+        Assert.assertEquals(duration.getValue(HOURS), millis / 1000 / 60 / 60, 0.001);
+        Assert.assertEquals(duration.getValue(DAYS), millis / 1000 / 60 / 60 / 24, 0.001);
 
         double days = 3.0;
         duration = new Duration(days, DAYS);
-        Assert.assertEquals(duration.convertTo(DAYS), days);
-        Assert.assertEquals(duration.convertTo(HOURS), days * 24);
-        Assert.assertEquals(duration.convertTo(MINUTES), days * 24 * 60);
-        Assert.assertEquals(duration.convertTo(SECONDS), days * 24 * 60 * 60);
-        Assert.assertEquals(duration.convertTo(MILLISECONDS), days * 24 * 60 * 60 * 1000);
-        Assert.assertEquals(duration.toMillis(), days * 24 * 60 * 60 * 1000);
+        Assert.assertEquals(duration.getValue(DAYS), days);
+        Assert.assertEquals(duration.getValue(HOURS), days * 24, 0.001);
+        Assert.assertEquals(duration.getValue(MINUTES), days * 24 * 60, 0.001);
+        Assert.assertEquals(duration.getValue(SECONDS), days * 24 * 60 * 60, 0.001);
+        Assert.assertEquals(duration.getValue(MILLISECONDS), days * 24 * 60 * 60 * 1000, 0.001);
     }
 
-    @Test
-    public void testToString()
+    @Test(dataProvider = "conversions")
+    public void testConversions(TimeUnit unit, TimeUnit toTimeUnit, double factor)
     {
-        Assert.assertEquals(new Duration(2.125, MILLISECONDS).toString(), "2.13ms");
-        Assert.assertEquals(new Duration(2.125, MILLISECONDS).toString(MILLISECONDS), "2.13ms");
-        Assert.assertEquals(new Duration(2.125, SECONDS).toString(SECONDS), "2.13s");
-        Assert.assertEquals(new Duration(2.125, MINUTES).toString(MINUTES), "2.13m");
-        Assert.assertEquals(new Duration(2.125, HOURS).toString(HOURS), "2.13h");
-        Assert.assertEquals(new Duration(2.125, DAYS).toString(DAYS), "2.13d");
+        Duration size = new Duration(1, unit).convertTo(toTimeUnit);
+        assertEquals(size.getUnit(), toTimeUnit);
+        assertEquals(size.getValue(), factor, factor * 0.001);
+
+        assertEquals(size.getValue(toTimeUnit), factor, factor * 0.001);
     }
 
-    @Test
-    public void testValueOf()
+    @Test(dataProvider = "conversions")
+    public void testConvertToMostSuccinctDuration(TimeUnit unit, TimeUnit toTimeUnit, double factor)
     {
-        Assert.assertEquals(Duration.valueOf("1 ms"), new Duration(1, MILLISECONDS));
-        Assert.assertEquals(Duration.valueOf("1 s"), new Duration(1, SECONDS));
-        Assert.assertEquals(Duration.valueOf("1 m"), new Duration(1, MINUTES));
-        Assert.assertEquals(Duration.valueOf("1 h"), new Duration(1, HOURS));
-        Assert.assertEquals(Duration.valueOf("1 d"), new Duration(1, DAYS));
+        Duration duration = new Duration(factor, toTimeUnit);
+        Duration actual = duration.convertToMostSuccinctTimeUnit();
+        assertEquals(actual.getValue(toTimeUnit), factor, factor * 0.001);
+        assertEquals(actual.getValue(unit), 1.0,  0.001);
+        assertEquals(actual.getUnit(), unit);
+    }
 
-        Assert.assertEquals(Duration.valueOf("1.234 ms"), new Duration(1.234, MILLISECONDS));
-        Assert.assertEquals(Duration.valueOf("1.234 s"), new Duration(1.234, SECONDS));
-        Assert.assertEquals(Duration.valueOf("1.234 m"), new Duration(1.234, MINUTES));
-        Assert.assertEquals(Duration.valueOf("1.234 h"), new Duration(1.234, HOURS));
-        Assert.assertEquals(Duration.valueOf("1.234 d"), new Duration(1.234, DAYS));
+    
+    @Test
+    public void testEquivalence()
+    {
+        comparisonTester()
+                .addLesserGroup(generateTimeBucket(0))
+                .addGreaterGroup(generateTimeBucket(1))
+                .addGreaterGroup(generateTimeBucket(123352))
+                .addGreaterGroup(generateTimeBucket(Long.MAX_VALUE))
+                .check();
+    }
 
-        try {
-            Duration.valueOf(null);
-            fail("Expected NullPointerException");
+    private ArrayList<Duration> generateTimeBucket(double seconds)
+    {
+        ArrayList<Duration> bucket = new ArrayList<>();
+        bucket.add(new Duration(seconds * 1000 * 1000 * 1000, NANOSECONDS));
+        bucket.add(new Duration(seconds * 1000 * 1000, MICROSECONDS));
+        bucket.add(new Duration(seconds * 1000, MILLISECONDS));
+        bucket.add(new Duration(seconds, SECONDS));
+        bucket.add(new Duration(seconds / 60, MINUTES));
+        bucket.add(new Duration(seconds / 60 / 60, HOURS));
+        // skip days for larger values as this results in rounding errors
+        if (seconds <= 1.0) {
+            bucket.add(new Duration(seconds / 60 / 60/ 24, DAYS));
         }
-        catch (NullPointerException e) {
-            // ok
-        }
+        return bucket;
+    }
 
-        try {
-            Duration.valueOf("");
-            fail("Expected IllegalArgumentException");
-        }
-        catch (IllegalArgumentException e) {
-            // ok
-        }
+    @Test(dataProvider = "printedValues")
+    public void testToString(String expectedString, double value, TimeUnit unit)
+    {
+        assertEquals(new Duration(value, unit).toString(), expectedString);
+    }
 
-        try {
-            Duration.valueOf("1.234 foo");
-            fail("Expected IllegalArgumentException");
-        }
-        catch (IllegalArgumentException e) {
-            // ok
-        }
+    @Test(dataProvider = "parseableValues")
+    public void testValueOf(String string, double expectedValue, TimeUnit expectedUnit)
+    {
+        Duration size = Duration.valueOf(string);
 
-        try {
-            Duration.valueOf("1.x34 ms");
-            fail("Expected IllegalArgumentException");
-        }
-        catch (IllegalArgumentException e) {
-            // ok
-        }
+        assertEquals(size.getUnit(), expectedUnit);
+        assertEquals(size.getValue(), expectedValue);
+    }
 
-        try {
-            Duration.valueOf("1. ms");
-            fail("Expected IllegalArgumentException");
-        }
-        catch (IllegalArgumentException e) {
-            // ok
-        }
+    @Test(expectedExceptions = NullPointerException.class, expectedExceptionsMessageRegExp = "duration is null")
+    public void testValueOfRejectsNull()
+    {
+        Duration.valueOf(null);
+    }
 
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "duration is empty")
+    public void testValueOfRejectsEmptyString()
+    {
+        Duration.valueOf("");
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Unknown time unit: kg")
+    public void testValueOfRejectsInvalidUnit()
+    {
+        Duration.valueOf("1.234 kg");
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "duration is not a valid.*")
+    public void testValueOfRejectsInvalidNumber()
+    {
+        Duration.valueOf("1.2x4 s");
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "value is negative")
+    public void testConstructorRejectsNegativeSize()
+    {
+        new Duration(-1, SECONDS);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "value is infinite")
+    public void testConstructorRejectsInfiniteSize()
+    {
+        new Duration(Double.POSITIVE_INFINITY, SECONDS);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "value is infinite")
+    public void testConstructorRejectsInfiniteSize2()
+    {
+        new Duration(Double.NEGATIVE_INFINITY, SECONDS);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "value is not a number")
+    public void testConstructorRejectsNaN()
+    {
+        new Duration(Double.NaN, SECONDS);
+    }
+
+    @Test(expectedExceptions = NullPointerException.class, expectedExceptionsMessageRegExp = "unit is null")
+    public void testConstructorRejectsNullUnit()
+    {
+        new Duration(1, null);
     }
 
     @Test
@@ -140,40 +189,17 @@ public class TestDuration
     }
 
     @Test
-    public void testEquivalence()
-    {
-        equivalenceTester()
-                .addEquivalentGroup(generateTimeBucket(1))
-                .addEquivalentGroup(generateTimeBucket(2))
-                .addEquivalentGroup(generateTimeBucket(3))
-                .check();
-    }
-
-    private ArrayList<Duration> generateTimeBucket(double seconds)
-    {
-        ArrayList<Duration> bucket = new ArrayList<Duration>();
-        bucket.add(new Duration(seconds * 1000 * 1000 * 1000, NANOSECONDS));
-        bucket.add(new Duration(seconds * 1000 * 1000, MICROSECONDS));
-        bucket.add(new Duration(seconds * 1000, MILLISECONDS));
-        bucket.add(new Duration(seconds, SECONDS));
-        bucket.add(new Duration(seconds / 60, MINUTES));
-        bucket.add(new Duration(seconds / 60 / 60, HOURS));
-        bucket.add(new Duration(seconds / 60 / 60 / 24, DAYS));
-        return bucket;
-    }
-
-    @Test
     public void testNanoConversions()
     {
         double nanos = 1.0d;
         Duration duration = new Duration(nanos, NANOSECONDS);
-        Assert.assertEquals(duration.toMillis(), nanos / 1000000);
-        Assert.assertEquals(duration.convertTo(NANOSECONDS), nanos);
-        Assert.assertEquals(duration.convertTo(MILLISECONDS), nanos / 1000000);
-        Assert.assertEquals(duration.convertTo(SECONDS), nanos / 1000000 / 1000);
-        Assert.assertEquals(duration.convertTo(MINUTES), nanos / 1000000 / 1000 / 60, 1.0E10);
-        Assert.assertEquals(duration.convertTo(HOURS), nanos / 1000000 / 1000 / 60 / 60, 1.0E10);
-        Assert.assertEquals(duration.convertTo(DAYS), nanos / 1000000 / 1000 / 60 / 60 / 24, 1.0E10);
+        Assert.assertEquals(duration.getValue(), nanos);
+        Assert.assertEquals(duration.getValue(NANOSECONDS), nanos);
+        Assert.assertEquals(duration.getValue(MILLISECONDS), nanos / 1000000);
+        Assert.assertEquals(duration.getValue(SECONDS), nanos / 1000000 / 1000);
+        Assert.assertEquals(duration.getValue(MINUTES), nanos / 1000000 / 1000 / 60, 1.0E10);
+        Assert.assertEquals(duration.getValue(HOURS), nanos / 1000000 / 1000 / 60 / 60, 1.0E10);
+        Assert.assertEquals(duration.getValue(DAYS), nanos / 1000000 / 1000 / 60 / 60 / 24, 1.0E10);
 
     }
 
@@ -235,4 +261,108 @@ public class TestDuration
             // ok
         }
     }
+
+
+    @DataProvider(name = "parseableValues", parallel = true)
+    private Object[][] parseableValues()
+    {
+        return new Object[][]{
+                // spaces
+                new Object[]{"1234 ns", 1234, NANOSECONDS},
+                new Object[]{"1234 ms", 1234, MILLISECONDS},
+                new Object[]{"1234 s", 1234, SECONDS},
+                new Object[]{"1234 m", 1234, MINUTES},
+                new Object[]{"1234 h", 1234, HOURS},
+                new Object[]{"1234 d", 1234, DAYS},
+                new Object[]{"1234.567 ns", 1234.567, NANOSECONDS},
+                new Object[]{"1234.567 ms", 1234.567, MILLISECONDS},
+                new Object[]{"1234.567 s", 1234.567, SECONDS},
+                new Object[]{"1234.567 m", 1234.567, MINUTES},
+                new Object[]{"1234.567 h", 1234.567, HOURS},
+                new Object[]{"1234.567 d", 1234.567, DAYS},
+                // no spaces
+                new Object[]{"1234ns", 1234, NANOSECONDS},
+                new Object[]{"1234ms", 1234, MILLISECONDS},
+                new Object[]{"1234s", 1234, SECONDS},
+                new Object[]{"1234m", 1234, MINUTES},
+                new Object[]{"1234h", 1234, HOURS},
+                new Object[]{"1234d", 1234, DAYS},
+                new Object[]{"1234.567ns", 1234.567, NANOSECONDS},
+                new Object[]{"1234.567ms", 1234.567, MILLISECONDS},
+                new Object[]{"1234.567s", 1234.567, SECONDS},
+                new Object[]{"1234.567m", 1234.567, MINUTES},
+                new Object[]{"1234.567h", 1234.567, HOURS},
+                new Object[]{"1234.567d", 1234.567, DAYS}
+        };
+    }
+
+    @DataProvider(name = "printedValues", parallel = true)
+    private Object[][] printedValues()
+    {
+        return new Object[][]{
+                new Object[]{"1234.00ns", 1234, NANOSECONDS},
+                new Object[]{"1234.00us", 1234, MICROSECONDS},
+                new Object[]{"1234.00ms", 1234, MILLISECONDS},
+                new Object[]{"1234.00s", 1234, SECONDS},
+                new Object[]{"1234.00m", 1234, MINUTES},
+                new Object[]{"1234.00h", 1234, HOURS},
+                new Object[]{"1234.00d", 1234, DAYS},
+                new Object[]{"1234.57ns", 1234.567, NANOSECONDS},
+                new Object[]{"1234.57us", 1234.567, MICROSECONDS},
+                new Object[]{"1234.57ms", 1234.567, MILLISECONDS},
+                new Object[]{"1234.57s", 1234.567, SECONDS},
+                new Object[]{"1234.57m", 1234.567, MINUTES},
+                new Object[]{"1234.57h", 1234.567, HOURS},
+                new Object[]{"1234.57d", 1234.567, DAYS}
+        };
+    }
+
+    @DataProvider(name = "conversions", parallel = true)
+    private Object[][] conversions()
+    {
+        return new Object[][]{
+                new Object[]{NANOSECONDS, NANOSECONDS, 1.0},
+                new Object[]{NANOSECONDS, MILLISECONDS, 1.0 / 1000_000},
+                new Object[]{NANOSECONDS, SECONDS, 1.0 / 1000_000 / 1000},
+                new Object[]{NANOSECONDS, MINUTES, 1.0 / 1000_000 / 1000 / 60},
+                new Object[]{NANOSECONDS, HOURS, 1.0 / 1000_000 / 1000 / 60 / 60},
+                new Object[]{NANOSECONDS, DAYS, 1.0 / 1000_000 / 1000 / 60 / 60 / 24},
+
+                new Object[]{MILLISECONDS, NANOSECONDS, 1000000.0},
+                new Object[]{MILLISECONDS, MILLISECONDS, 1.0},
+                new Object[]{MILLISECONDS, SECONDS, 1.0 / 1000},
+                new Object[]{MILLISECONDS, MINUTES, 1.0 / 1000 / 60},
+                new Object[]{MILLISECONDS, HOURS, 1.0 / 1000 / 60 / 60},
+                new Object[]{MILLISECONDS, DAYS, 1.0 / 1000 / 60 / 60 / 24},
+
+                new Object[]{SECONDS, NANOSECONDS, 1000000.0 * 1000},
+                new Object[]{SECONDS, MILLISECONDS, 1000},
+                new Object[]{SECONDS, SECONDS, 1},
+                new Object[]{SECONDS, MINUTES, 1.0 / 60},
+                new Object[]{SECONDS, HOURS, 1.0 / 60 / 60},
+                new Object[]{SECONDS, DAYS, 1.0 / 60 / 60 / 24},
+
+                new Object[]{MINUTES, NANOSECONDS, 1000000.0 * 1000 * 60},
+                new Object[]{MINUTES, MILLISECONDS, 1000 * 60},
+                new Object[]{MINUTES, SECONDS, 60},
+                new Object[]{MINUTES, MINUTES, 1},
+                new Object[]{MINUTES, HOURS, 1.0 / 60},
+                new Object[]{MINUTES, DAYS, 1.0 / 60 / 24},
+
+                new Object[]{HOURS, NANOSECONDS, 1000000.0 * 1000 * 60 * 60},
+                new Object[]{HOURS, MILLISECONDS, 1000 * 60 * 60},
+                new Object[]{HOURS, SECONDS, 60 * 60},
+                new Object[]{HOURS, MINUTES, 60},
+                new Object[]{HOURS, HOURS, 1},
+                new Object[]{HOURS, DAYS, 1.0 / 24},
+
+                new Object[]{DAYS, NANOSECONDS, 1000000.0 * 1000 * 60 * 60 * 24},
+                new Object[]{DAYS, MILLISECONDS, 1000 * 60 * 60 * 24},
+                new Object[]{DAYS, SECONDS, 60 * 60 * 24},
+                new Object[]{DAYS, MINUTES, 60 * 24},
+                new Object[]{DAYS, HOURS, 24},
+                new Object[]{DAYS, DAYS, 1},
+        };
+    }
+
 }

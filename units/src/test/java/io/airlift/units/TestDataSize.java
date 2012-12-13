@@ -48,7 +48,10 @@ public class TestDataSize
     public void testConvertToMostSuccinctDataSize(DataSize.Unit unit, DataSize.Unit toUnit, double factor)
     {
         DataSize size = new DataSize(factor, toUnit);
-        assertEquals(size.convertToMostSuccinctDataSize(), new DataSize(1, unit));
+        DataSize actual = size.convertToMostSuccinctDataSize();
+        assertEquals(actual, new DataSize(1, unit));
+        assertEquals(actual.getValue(unit), 1.0, 0.001);
+        assertEquals(actual.getUnit(), unit);
     }
 
     @Test
@@ -160,13 +163,13 @@ public class TestDataSize
         assertEquals(new DataSize(Long.MAX_VALUE / 1024.0, KILOBYTE).toBytes(), Long.MAX_VALUE);
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "size is too large .*")
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "size is too large .*")
     public void testToBytesTooLarge()
     {
         new DataSize(Long.MAX_VALUE + 1024.0001, BYTE).toBytes(); // smallest value that overflows
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "size is too large .*")
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "size is too large .*")
     public void testToBytesTooLarge2()
     {
         new DataSize(9000, PETABYTE).toBytes();
