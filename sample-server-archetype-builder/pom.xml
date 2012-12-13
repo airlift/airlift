@@ -137,6 +137,9 @@
     </license>
   </licenses>
 
+  <developers>
+  </developers>
+
   <scm>
     <connection>scm:git:git://github.com/proofpoint/platform.git</connection>
     <developerConnection>scm:git:git@github.com:proofpoint/platform.git</developerConnection>
