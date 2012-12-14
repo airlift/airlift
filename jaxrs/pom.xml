@@ -4,13 +4,13 @@
     <groupId>io.airlift</groupId>
     <artifactId>jaxrs</artifactId>
     <packaging>jar</packaging>
-    <version>0.67-SNAPSHOT</version>
+    <version>0.67</version>
     <name>jaxrs</name>
 
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>0.67-SNAPSHOT</version>
+        <version>0.67</version>
     </parent>
 
     <dependencies>
