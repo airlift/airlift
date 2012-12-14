@@ -9,6 +9,7 @@
 - Improve validation of H2EmbeddedDataSource config
 - Allow use of H2 without an init script
 - Enable mvcc support for embedded H2
+- DataSize and Duration are now serializable as json
 
 * 0.66
 

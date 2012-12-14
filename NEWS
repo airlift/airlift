@@ -4,6 +4,8 @@ Airlift 0.67
 
 Starting with this version, the Cassandra module is no longer supported
 
+* DataSize and Duration can now be serialized as json
+
 * In this release we have upgraded the following dependencies
 
   - Apache HttpClient 4.2.2 
