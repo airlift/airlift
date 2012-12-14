@@ -1,3 +1,15 @@
+* 0.67
+
+- Dropped the Cassandra module
+- Improvements to EquivalenceTester
+- [Bug] Don't send entity in http client if there's no body generator 
+- [Bug] Use System.nanoTime() instead of System.currentTimeMillis for measuring time intervals
+- Upgrade to Apache httpclient 4.2.2
+- [Bug] Don't throw an exception from http request logger when wall clock time goes backwards
+- Improve validation of H2EmbeddedDataSource config
+- Allow use of H2 without an init script
+- Enable mvcc support for embedded H2
+
 * 0.66
 
 - Java 7 is now required

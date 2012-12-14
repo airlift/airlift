@@ -1,3 +1,14 @@
+Airlift 0.67
+
+* Cassandra module has been removed
+
+Starting with this version, the Cassandra module is no longer supported
+
+* In this release we have upgraded the following dependencies
+
+  - Apache HttpClient 4.2.2 
+
+
 Airlift 0.66
 
 * Java 7 is now required
