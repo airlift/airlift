@@ -20,14 +20,14 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
+import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServerConfig;
 import io.airlift.http.server.HttpServerInfo;
+import io.airlift.http.server.LocalAnnouncementHttpServerInfo;
 import io.airlift.http.server.TheServlet;
 
 import javax.servlet.Filter;
-import io.airlift.discovery.client.AnnouncementHttpServerInfo;
-import io.airlift.http.server.LocalAnnouncementHttpServerInfo;
 
 public class TestingHttpServerModule
         implements Module
@@ -38,7 +38,11 @@ public class TestingHttpServerModule
         binder.requireExplicitBindings();
         binder.disableCircularProxies();
 
-        binder.bind(HttpServerConfig.class).toInstance(new HttpServerConfig().setMinThreads(1).setMaxThreads(10).setHttpPort(0));
+        // Jetty scales required threads based on processor count, so pick a safe number
+        int threads = Math.max(10, Runtime.getRuntime().availableProcessors());
+        HttpServerConfig config = new HttpServerConfig().setMinThreads(1).setMaxThreads(threads).setHttpPort(0);
+
+        binder.bind(HttpServerConfig.class).toInstance(config);
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
         binder.bind(TestingHttpServer.class).in(Scopes.SINGLETON);
         binder.bind(HttpServer.class).to(Key.get(TestingHttpServer.class));
