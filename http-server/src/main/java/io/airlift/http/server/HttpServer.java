@@ -26,6 +26,7 @@ import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -53,11 +54,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 
 public class HttpServer
 {
     private final Server server;
+    private final Connector httpConnector;
+    private final Connector httpsConnector;
+    private final Connector adminConnector;
 
     @SuppressWarnings({"deprecation"})
     public HttpServer(HttpServerInfo httpServerInfo,
@@ -74,7 +79,7 @@ public class HttpServer
             TraceTokenManager tokenManager,
             RequestStats stats,
             EventClient eventClient)
-        throws IOException
+            throws IOException
     {
         Preconditions.checkNotNull(httpServerInfo, "httpServerInfo is null");
         Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
@@ -86,7 +91,8 @@ public class HttpServer
 
         if (mbeanServer != null) {
             // export jmx mbeans if a server was provided
-            MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer) {
+            MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer)
+            {
                 @Override
                 public void doStart()
                 {
@@ -97,7 +103,7 @@ public class HttpServer
         }
 
         // set up NIO-based HTTP connector
-        SelectChannelConnector httpConnector;
+        SelectChannelConnector httpConnector = null;
         if (config.isHttpEnabled()) {
             httpConnector = new SelectChannelConnector();
             httpConnector.setName("http");
@@ -110,7 +116,7 @@ public class HttpServer
         }
 
         // set up NIO-based HTTPS connector
-        SslSelectChannelConnector httpsConnector;
+        SslSelectChannelConnector httpsConnector = null;
         if (config.isHttpsEnabled()) {
             httpsConnector = new SslSelectChannelConnector();
             httpsConnector.setName("https");
@@ -126,7 +132,7 @@ public class HttpServer
         }
 
         // set up NIO-based Admin connector
-        SelectChannelConnector adminConnector;
+        SelectChannelConnector adminConnector = null;
         if (theAdminServlet != null && config.isAdminEnabled()) {
             if (config.isHttpsEnabled()) {
                 SslSelectChannelConnector connector = new SslSelectChannelConnector();
@@ -134,7 +140,8 @@ public class HttpServer
                 connector.setPassword(config.getKeystorePassword());
                 connector.setAllowRenegotiate(true);
                 adminConnector = connector;
-            } else {
+            }
+            else {
                 adminConnector = new SelectChannelConnector();
             }
             adminConnector.setName("admin");
@@ -198,6 +205,9 @@ public class HttpServer
         server.setHandler(rootHandlers);
 
         this.server = server;
+        this.httpConnector = httpConnector;
+        this.httpsConnector = httpsConnector;
+        this.adminConnector = adminConnector;
     }
 
     private static ServletContextHandler createServletContext(Servlet theServlet,
@@ -270,7 +280,6 @@ public class HttpServer
             throw new IOException(format("Cannot create %s and path does not already exist", logPath.getAbsolutePath()));
         }
 
-
         RequestLog requestLog = new DelimitedRequestLog(config.getLogPath(), (int) config.getLogRetentionTime().convertTo(TimeUnit.DAYS), tokenManager, eventClient);
         logHandler.setRequestLog(requestLog);
 
@@ -282,7 +291,16 @@ public class HttpServer
             throws Exception
     {
         server.start();
-        Preconditions.checkState(server.isRunning(), "server is not running");
+        checkState(server.isRunning(), "server is not running");
+
+        // The combination of an NIO connector and an insufficient number of threads results
+        // in a server that hangs after accepting connections. Jetty scales the number of
+        // required threads based on the number of available processors in a non-trivial way,
+        // so a config that works on one machine might fail on a larger machine without an
+        // obvious reason why. Thus, we need this runtime check after startup as a safeguard.
+        checkSufficientThreads(httpConnector, "HTTP");
+        checkSufficientThreads(httpsConnector, "HTTPS");
+        checkSufficientThreads(adminConnector, "admin");
     }
 
     @PreDestroy
@@ -290,5 +308,10 @@ public class HttpServer
             throws Exception
     {
         server.stop();
+    }
+
+    private static void checkSufficientThreads(Connector connector, String name)
+    {
+        checkState((connector == null) || !connector.isLowResources(), "insufficient threads configured for %s connector", name);
     }
 }
