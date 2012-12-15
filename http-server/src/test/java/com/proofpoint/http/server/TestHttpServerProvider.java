@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.io.Resources.getResource;
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static com.proofpoint.http.client.StringResponseHandler.createStringResponseHandler;
@@ -150,9 +151,45 @@ public class TestHttpServerProvider
                         .build(),
                 createStringResponseHandler());
 
-
         assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
         assertEquals(response.getBody(), "user");
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "insufficient threads configured for HTTP connector")
+    public void testInsufficientThreadsHttp()
+            throws Exception
+    {
+        config.setMaxThreads(1);
+        createAndStartServer();
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "insufficient threads configured for HTTPS connector")
+    public void testInsufficientThreadsHttps()
+            throws Exception
+    {
+        config.setHttpEnabled(false)
+                .setHttpsEnabled(true)
+                .setHttpsPort(0)
+                .setKeystorePath(getResource("test.keystore").toString())
+                .setKeystorePassword("airlift")
+                .setMaxThreads(1);
+        createAndStartServer();
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "insufficient threads configured for admin connector")
+    public void testInsufficientThreadsAdmin()
+            throws Exception
+    {
+        config.setAdminMaxThreads(1);
+        createAndStartServer();
+    }
+
+    private void createAndStartServer()
+            throws Exception
+    {
+        httpServerInfo = new HttpServerInfo(config, nodeInfo);
+        createServer();
+        server.start();
     }
 
     private void createServer()
@@ -166,6 +203,7 @@ public class TestHttpServerProvider
                 ImmutableSet.<Filter>of(),
                 new RequestStats(),
                 new NullEventClient());
+        serverProvider.setTheAdminServlet(new DummyServlet());
         serverProvider.setLoginService(loginServiceProvider.get());
         serverProvider.setTokenManager(new TraceTokenManager());
         server = serverProvider.get();

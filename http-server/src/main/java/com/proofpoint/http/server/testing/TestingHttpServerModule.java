@@ -41,7 +41,11 @@ public class TestingHttpServerModule
         binder.requireExplicitBindings();
         binder.disableCircularProxies();
 
-        binder.bind(HttpServerConfig.class).toInstance(new HttpServerConfig().setMinThreads(1).setMaxThreads(10).setHttpPort(0));
+        // Jetty scales required threads based on processor count, so pick a safe number
+        int threads = Math.max(10, Runtime.getRuntime().availableProcessors());
+        HttpServerConfig config = new HttpServerConfig().setMinThreads(1).setMaxThreads(threads).setHttpPort(0);
+
+        binder.bind(HttpServerConfig.class).toInstance(config);
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
         binder.bind(TestingHttpServer.class).in(Scopes.SINGLETON);
         binder.bind(HttpServer.class).to(Key.get(TestingHttpServer.class));
