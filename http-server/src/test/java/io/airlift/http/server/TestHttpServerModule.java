@@ -30,9 +30,7 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationModule;
-import io.airlift.discovery.client.testing.TestingDiscoveryModule;
 import io.airlift.event.client.EventClient;
-import io.airlift.event.client.HttpEventModule;
 import io.airlift.event.client.InMemoryEventClient;
 import io.airlift.event.client.InMemoryEventModule;
 import io.airlift.event.client.NullEventModule;
@@ -40,10 +38,8 @@ import io.airlift.http.client.ApacheHttpClient;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
-import io.airlift.json.JsonModule;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.NodeModule;
-import io.airlift.node.testing.TestingNodeModule;
 import io.airlift.testing.FileUtils;
 import io.airlift.tracetoken.TraceTokenModule;
 import org.testng.Assert;
@@ -120,36 +116,6 @@ public class TestHttpServerModule
 
         HttpServer server = injector.getInstance(HttpServer.class);
         assertNotNull(server);
-    }
-
-    @Test
-    public void testHttpEventModuleConstructionWithV1Events()
-            throws Exception
-    {
-        Injector injector = Guice.createInjector(
-                new HttpServerModule(),
-                new HttpEventModule(),
-                new JsonModule(),
-                new TestingNodeModule(),
-                new TestingDiscoveryModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
-                    }
-                },
-                new ConfigurationModule(new ConfigurationFactory(
-                        ImmutableMap.<String, String>builder()
-                                .put("node.environment", "test")
-                                .put("http-server.http.port", "0")
-                                .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
-                                .put("collector.json-version", "1")
-                                .build())));
-
-        HttpServer server = injector.getInstance(HttpServer.class);
-        Assert.assertNotNull(server);
     }
 
     @Test
