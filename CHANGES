@@ -1,3 +1,7 @@
+* 0.68
+
+- Dropped support for v1 events
+
 * 0.67
 
 - Dropped the Cassandra module

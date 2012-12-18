@@ -15,21 +15,84 @@
  */
 package io.airlift.event.client;
 
+import com.google.common.base.Preconditions;
+import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.JsonSerializer;
+import org.codehaus.jackson.map.SerializerProvider;
+import org.joda.time.DateTime;
 
-public class EventJsonSerializer
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.UUID;
+
+class EventJsonSerializer<T>
+        extends JsonSerializer<T>
 {
-    public static <T> JsonSerializer<T> createEventJsonSerializer(EventTypeMetadata<T> eventTypeMetadata, int version)
+    private final EventTypeMetadata<T> eventTypeMetadata;
+    private final String hostName;
+
+    public EventJsonSerializer(EventTypeMetadata<T> eventTypeMetadata)
     {
-        switch (version) {
-            case 1:
-                return EventJsonSerializerV1.createEventJsonSerializer(eventTypeMetadata);
+        Preconditions.checkNotNull(eventTypeMetadata, "eventTypeMetadata is null");
 
-            case 2:
-                return EventJsonSerializerV2.createEventJsonSerializer(eventTypeMetadata);
-
-            default:
-                throw new RuntimeException(String.format("EventJsonSerializer version %d is unknown", version));
+        this.eventTypeMetadata = eventTypeMetadata;
+        if (eventTypeMetadata.getHostField() == null) {
+            try {
+                hostName = InetAddress.getLocalHost().getHostName();
+            }
+            catch (UnknownHostException e) {
+                throw new IllegalArgumentException("Unable to determine local host name");
+            }
         }
+        else {
+            hostName = null;
+        }
+    }
+
+    @Override
+    public Class<T> handledType()
+    {
+        return eventTypeMetadata.getEventClass();
+    }
+
+    @Override
+    public void serialize(T event, JsonGenerator jsonGenerator, SerializerProvider provider)
+            throws IOException
+    {
+        jsonGenerator.writeStartObject();
+
+        jsonGenerator.writeStringField("type", eventTypeMetadata.getTypeName());
+
+        if (eventTypeMetadata.getUuidField() != null) {
+            eventTypeMetadata.getUuidField().writeField(jsonGenerator, event);
+        }
+        else {
+            jsonGenerator.writeStringField("uuid", UUID.randomUUID().toString());
+        }
+
+        if (eventTypeMetadata.getHostField() != null) {
+            eventTypeMetadata.getHostField().writeField(jsonGenerator, event);
+        }
+        else {
+            jsonGenerator.writeStringField("host", hostName);
+        }
+
+        if (eventTypeMetadata.getTimestampField() != null) {
+            eventTypeMetadata.getTimestampField().writeField(jsonGenerator, event);
+        }
+        else {
+            jsonGenerator.writeFieldName("timestamp");
+            EventDataType.DATETIME.writeFieldValue(jsonGenerator, new DateTime());
+        }
+
+        jsonGenerator.writeObjectFieldStart("data");
+        for (EventFieldMetadata field : eventTypeMetadata.getFields()) {
+            field.writeField(jsonGenerator, event);
+        }
+        jsonGenerator.writeEndObject();
+
+        jsonGenerator.writeEndObject();
+        jsonGenerator.flush();
     }
 }
