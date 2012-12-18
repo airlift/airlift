@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.proofpoint.event.client.EventJsonSerializerV2.createEventJsonSerializer;
 import static com.proofpoint.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 
 public class JsonEventSerializer
@@ -40,7 +39,7 @@ public class JsonEventSerializer
 
         ImmutableMap.Builder<Class<?>, JsonSerializer<?>> map = ImmutableMap.builder();
         for (EventTypeMetadata<?> eventType : eventTypes) {
-            map.put(eventType.getEventClass(), createEventJsonSerializer(eventType));
+            map.put(eventType.getEventClass(), new EventJsonSerializer<>(eventType));
         }
         this.serializers = map.build();
     }

@@ -15,34 +15,85 @@
  */
 package com.proofpoint.event.client;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.google.common.base.Preconditions;
+import org.joda.time.DateTime;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class EventJsonSerializer
+class EventJsonSerializer<T>
+        extends JsonSerializer<T>
 {
-
+    
     private static final Pattern HOST_EXCEPTION_MESSAGE_PATTERN = Pattern.compile("([-_a-zA-Z0-9]+):.*");
 
-    private EventJsonSerializer()
+    private final EventTypeMetadata<T> eventTypeMetadata;
+    private final String hostName;
+
+    public EventJsonSerializer(EventTypeMetadata<T> eventTypeMetadata)
     {
+        Preconditions.checkNotNull(eventTypeMetadata, "eventTypeMetadata is null");
+
+        this.eventTypeMetadata = eventTypeMetadata;
+        if (eventTypeMetadata.getHostField() == null) {
+            hostName = EventJsonSerializer.getLocalHostName();
+        }
+        else {
+            hostName = null;
+        }
     }
 
-    public static <T> JsonSerializer<T> createEventJsonSerializer(EventTypeMetadata<T> eventTypeMetadata, int version)
+    @Override
+    public Class<T> handledType()
     {
-        switch (version) {
-            case 1:
-                return EventJsonSerializerV1.createEventJsonSerializer(eventTypeMetadata);
+        return eventTypeMetadata.getEventClass();
+    }
 
-            case 2:
-                return EventJsonSerializerV2.createEventJsonSerializer(eventTypeMetadata);
+    @Override
+    public void serialize(T event, JsonGenerator jsonGenerator, SerializerProvider provider)
+            throws IOException
+    {
+        jsonGenerator.writeStartObject();
 
-            default:
-                throw new RuntimeException(String.format("EventJsonSerializer version %d is unknown", version));
+        jsonGenerator.writeStringField("type", eventTypeMetadata.getTypeName());
+
+        if (eventTypeMetadata.getUuidField() != null) {
+            eventTypeMetadata.getUuidField().writeField(jsonGenerator, event);
         }
+        else {
+            jsonGenerator.writeStringField("uuid", UUID.randomUUID().toString());
+        }
+
+        if (eventTypeMetadata.getHostField() != null) {
+            eventTypeMetadata.getHostField().writeField(jsonGenerator, event);
+        }
+        else {
+            jsonGenerator.writeStringField("host", hostName);
+        }
+
+        if (eventTypeMetadata.getTimestampField() != null) {
+            eventTypeMetadata.getTimestampField().writeField(jsonGenerator, event);
+        }
+        else {
+            jsonGenerator.writeFieldName("timestamp");
+            EventDataType.DATETIME.writeFieldValue(jsonGenerator, new DateTime());
+        }
+
+        jsonGenerator.writeObjectFieldStart("data");
+        for (EventFieldMetadata field : eventTypeMetadata.getFields()) {
+            field.writeField(jsonGenerator, event);
+        }
+        jsonGenerator.writeEndObject();
+
+        jsonGenerator.writeEndObject();
+        jsonGenerator.flush();
     }
 
     static String getLocalHostName()

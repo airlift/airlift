@@ -30,21 +30,16 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
 import com.proofpoint.event.client.EventClient;
-import com.proofpoint.event.client.HttpEventModule;
 import com.proofpoint.event.client.InMemoryEventClient;
 import com.proofpoint.event.client.InMemoryEventModule;
 import com.proofpoint.event.client.NullEventModule;
 import com.proofpoint.http.client.ApacheHttpClient;
 import com.proofpoint.http.client.HttpClient;
-import com.proofpoint.http.client.StaticBodyGenerator;
 import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.client.StringResponseHandler.StringResponse;
-import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.node.NodeModule;
-import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.testing.FileUtils;
 import com.proofpoint.tracetoken.TraceTokenModule;
 import org.testng.Assert;
@@ -58,7 +53,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.HttpHeaders;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -122,36 +116,6 @@ public class TestHttpServerModule
 
         HttpServer server = injector.getInstance(HttpServer.class);
         assertNotNull(server);
-    }
-
-    @Test
-    public void testHttpEventModuleConstructionWithV1Events()
-            throws Exception
-    {
-        Injector injector = Guice.createInjector(
-                new HttpServerModule(),
-                new HttpEventModule(),
-                new JsonModule(),
-                new TestingNodeModule(),
-                new TestingDiscoveryModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
-                    }
-                },
-                new ConfigurationModule(new ConfigurationFactory(
-                        ImmutableMap.<String, String>builder()
-                                .put("node.environment", "test")
-                                .put("http-server.http.port", "0")
-                                .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
-                                .put("collector.json-version", "1")
-                                .build())));
-
-        HttpServer server = injector.getInstance(HttpServer.class);
-        Assert.assertNotNull(server);
     }
 
     @Test

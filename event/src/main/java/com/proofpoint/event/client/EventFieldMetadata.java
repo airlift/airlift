@@ -19,7 +19,6 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import org.joda.time.DateTime;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -55,26 +54,23 @@ class EventFieldMetadata
     }
 
     private final String name;
-    private final String v1Name;
     private final Method method;
     private final EventDataType eventDataType;
     private final EventTypeMetadata<?> nestedType;
     private final ContainerType containerType;
 
-    EventFieldMetadata(String name, String v1Name, Method method, EventDataType eventDataType, EventTypeMetadata<?> nestedType, ContainerType containerType)
+    EventFieldMetadata(String name, Method method, EventDataType eventDataType, EventTypeMetadata<?> nestedType, ContainerType containerType)
     {
         Preconditions.checkArgument((eventDataType != null) || (nestedType != null), "both eventDataType and nestedType are null");
         Preconditions.checkArgument((eventDataType == null) || (nestedType == null), "both eventDataType and nestedType are set");
 
         this.name = name;
-        this.v1Name = v1Name;
         this.method = method;
         this.eventDataType = eventDataType;
         this.nestedType = nestedType;
         this.containerType = containerType;
     }
 
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored") // IDEA-74322
     private Object getValue(Object event)
             throws InvalidEventException
     {
@@ -90,7 +86,7 @@ class EventFieldMetadata
     public void writeField(JsonGenerator jsonGenerator, Object event)
             throws IOException
     {
-        writeField(jsonGenerator, event, new ArrayDeque<Object>());
+        writeField(jsonGenerator, event, new ArrayDeque<>());
     }
 
     private void writeField(JsonGenerator jsonGenerator, Object event, Deque<Object> objectStack)
@@ -182,31 +178,6 @@ class EventFieldMetadata
                 List<Object> path = Lists.reverse(Lists.newArrayList(objectStack));
                 throw new InvalidEventException("Cycle detected in event data: %s", path);
             }
-        }
-    }
-
-    public void writeFieldV1(JsonGenerator jsonGenerator, Object event)
-            throws IOException
-    {
-        Preconditions.checkState(containerType == null, "%s fields not supported for JSON V1", containerType);
-        Preconditions.checkState(nestedType == null, "nested types not supported for JSON V1");
-        Object value = getValue(event);
-        if (value != null) {
-            jsonGenerator.writeStartObject();
-            jsonGenerator.writeStringField("name", v1Name);
-            jsonGenerator.writeFieldName("value");
-            eventDataType.writeFieldValue(jsonGenerator, value);
-            jsonGenerator.writeEndObject();
-        }
-    }
-
-    public void writeTimestampV1(JsonGenerator jsonGenerator, Object event)
-            throws IOException
-    {
-        Object value = getValue(event);
-        if (value != null) {
-            EventDataType.validateFieldValueType(value, DateTime.class);
-            jsonGenerator.writeNumberField("timestamp", ((DateTime) value).getMillis());
         }
     }
 }

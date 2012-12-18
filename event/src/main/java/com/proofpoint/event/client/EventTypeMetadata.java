@@ -144,7 +144,6 @@ final class EventTypeMetadata<T>
 
             EventField eventField = method.getAnnotation(EventField.class);
             String fieldName = eventField.value();
-            String v1FieldName = null;
 
             if (eventField.fieldMapping() != EventFieldMapping.DATA) {
                 // validate special fields
@@ -164,12 +163,9 @@ final class EventTypeMetadata<T>
             }
             else {
                 if (fieldName.isEmpty()) {
-                    fieldName = extractRawNameFromGetter(method);
+                    fieldName = extractNameFromGetter(method);
                 }
-                // always lowercase the first letter, even for user specified names
-                v1FieldName = fieldName;
-                fieldName = fieldName.substring(0, 1).toLowerCase() + fieldName.substring(1);
-                if (!isValidName(fieldName)) {
+                if (!isValidFieldName(fieldName)) {
                     addMethodError("Field name is invalid [%s]", method, fieldName);
                     continue;
                 }
@@ -179,7 +175,7 @@ final class EventTypeMetadata<T>
                 }
             }
 
-            EventFieldMetadata eventFieldMetadata = new EventFieldMetadata(fieldName, v1FieldName, method, eventDataType, nestedType, containerType);
+            EventFieldMetadata eventFieldMetadata = new EventFieldMetadata(fieldName, method, eventDataType, nestedType, containerType);
             if (eventField.fieldMapping() == EventFieldMapping.DATA) {
                 fields.put(fieldName, eventFieldMetadata);
             }
@@ -223,7 +219,7 @@ final class EventTypeMetadata<T>
         else if (typeName.isEmpty()) {
             addClassError("does not specify an event name");
         }
-        else if (!isValidLegacyEventName(typeName)) {
+        else if (!isValidEventName(typeName)) {
             addClassError("Event name is invalid [%s]", typeName);
         }
         return typeName;
@@ -305,16 +301,21 @@ final class EventTypeMetadata<T>
         }
     }
 
-    private static String extractRawNameFromGetter(Method method)
+    private static String extractNameFromGetter(Method method)
     {
         String name = method.getName();
         if (name.length() > 3 && name.startsWith("get")) {
-            return name.substring(3);
+            return lowerCaseFirstCharacter(name.substring(3));
         }
         if (name.length() > 2 && name.startsWith("is")) {
-            return name.substring(2);
+            return lowerCaseFirstCharacter(name.substring(2));
         }
         return name;
+    }
+
+    private static String lowerCaseFirstCharacter(String s)
+    {
+        return s.substring(0, 1).toLowerCase() + s.substring(1);
     }
 
     private static boolean isString(Class<?> type)
@@ -342,15 +343,14 @@ final class EventTypeMetadata<T>
         return type.isAnnotationPresent(EventType.class);
     }
 
-    private static boolean isValidName(String name)
+    private static boolean isValidFieldName(String name)
     {
-        return name.matches("[A-Za-z][A-Za-z0-9]*");
+        return name.matches("[a-z][A-Za-z0-9]*");
     }
 
-    private static boolean isValidLegacyEventName(String name)
+    private static boolean isValidEventName(String name)
     {
-        // TODO: remove when V1 is gone
-        return name.matches("[A-Za-z0-9.:=, -]*");
+        return name.matches("[A-Z][A-Za-z0-9]*");
     }
 
     List<String> getErrors()

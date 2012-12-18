@@ -42,7 +42,7 @@ public class TestJsonEventWriter
     {
         Set<EventTypeMetadata<?>> eventTypes = getValidEventTypeMetaDataSet(
                 FixedDummyEventClass.class, NestedDummyEventClass.class, CircularEventClass.class, ChainedCircularEventClass.class);
-        eventWriter = new JsonEventWriter(eventTypes, new HttpEventClientConfig());
+        eventWriter = new JsonEventWriter(eventTypes);
     }
 
     @Test

@@ -139,20 +139,17 @@ public class TestHttpEventClient
         }
     }
 
-    private HttpEventClient newEventClient(List<URI> v2Uris)
+    private HttpEventClient newEventClient(List<URI> uris)
     {
-        HttpServiceSelector v1Selector = new StaticHttpServiceSelector("event", "general", Collections.<URI>emptyList());
-        HttpServiceSelector v2Selector = new StaticHttpServiceSelector("collector", "general", v2Uris);
-
-        HttpEventClientConfig config = new HttpEventClientConfig();
+        HttpServiceSelector selector = new StaticHttpServiceSelector("collector", "general", uris);
 
         Set<EventTypeMetadata<?>> eventTypes = getValidEventTypeMetaDataSet(FixedDummyEventClass.class);
-        JsonEventWriter eventWriter = new JsonEventWriter(eventTypes, config);
+        JsonEventWriter eventWriter = new JsonEventWriter(eventTypes);
 
-        return new HttpEventClient(v1Selector,
-                v2Selector,
+        return new HttpEventClient(
+                selector,
                 eventWriter,
-                new NodeInfo("test"), config,
+                new NodeInfo("test"),
                 new ApacheAsyncHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))));
     }
 
@@ -160,13 +157,9 @@ public class TestHttpEventClient
             throws Exception
     {
         int port;
-        ServerSocket socket = new ServerSocket();
-        try {
+        try (ServerSocket socket = new ServerSocket()) {
             socket.bind(new InetSocketAddress(0));
             port = socket.getLocalPort();
-        }
-        finally {
-            socket.close();
         }
         baseUri = new URI("http", null, "127.0.0.1", port, null, null, null);
 

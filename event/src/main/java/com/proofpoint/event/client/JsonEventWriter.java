@@ -29,25 +29,22 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.Set;
 
-import static com.proofpoint.event.client.EventJsonSerializer.createEventJsonSerializer;
-
 public class JsonEventWriter
 {
     private final JsonFactory jsonFactory;
     private final Map<Class<?>, JsonSerializer<?>> serializers;
 
     @Inject
-    public JsonEventWriter(Set<EventTypeMetadata<?>> eventTypes, HttpEventClientConfig config)
+    public JsonEventWriter(Set<EventTypeMetadata<?>> eventTypes)
     {
         Preconditions.checkNotNull(eventTypes, "eventTypes is null");
-        Preconditions.checkNotNull(config, "config is null");
 
         this.jsonFactory = new JsonFactory();
 
         ImmutableMap.Builder<Class<?>, JsonSerializer<?>> serializerBuilder = ImmutableMap.builder();
 
         for (EventTypeMetadata<?> eventType : eventTypes) {
-            serializerBuilder.put(eventType.getEventClass(), createEventJsonSerializer(eventType, config.getJsonVersion()));
+            serializerBuilder.put(eventType.getEventClass(), new EventJsonSerializer<>(eventType));
         }
         this.serializers = serializerBuilder.build();
     }
