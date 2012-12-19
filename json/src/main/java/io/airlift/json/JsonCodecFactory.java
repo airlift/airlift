@@ -35,14 +35,13 @@ public class JsonCodecFactory
 
     public JsonCodecFactory()
     {
-        this(new ObjectMapperProvider(), true);
+        this(new ObjectMapperProvider());
     }
 
     @Inject
     public JsonCodecFactory(Provider<ObjectMapper> objectMapperProvider)
     {
-        this.objectMapperProvider = objectMapperProvider;
-        this.prettyPrint = true;
+        this(objectMapperProvider, false);
     }
 
     public JsonCodecFactory(Provider<ObjectMapper> objectMapperProvider, boolean prettyPrint)

@@ -2,6 +2,7 @@
 
 - Dropped support for v1 events
 - HTTP clients are now Closeable and shutdown properly
+- JsonCodecFactory no longer pretty prints by default
 
 * 0.67
 

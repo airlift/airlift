@@ -2,9 +2,17 @@ Airlift 0.68
 
 * Support for v1 events has been removed
 
-* The HttpClient and AsyncHttpClients now implement Closeable and properly
-  shutdown when used as lifecycle objects. Calling close shuts down the
-  connection pool for the underlying Apache HTTP client.
+* HTTP client shutdown
+
+The HttpClient and AsyncHttpClients now implement Closeable and properly
+shutdown when used as lifecycle objects. Calling close shuts down the
+connection pool for the underlying Apache HTTP client.
+
+* Pretty-printed JSON
+
+The injected JsonCodecFactory and injected codecs no longer produce
+pretty-printed JSON. The previous behavior was a bug. JsonCodecFactory
+has a method to return a factory that produces pretty-print codecs.
 
 
 Airlift 0.67
