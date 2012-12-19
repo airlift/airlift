@@ -4,6 +4,12 @@ Platform 0.70
   shutdown when used as lifecycle objects. Calling close shuts down the
   connection pool for the underlying Apache HTTP client.
 
+* Pretty-printed JSON
+
+The injected JsonCodecFactory and injected codecs no longer produce
+pretty-printed JSON. The previous behavior was a bug. JsonCodecFactory
+has a method to return a factory that produces pretty-print codecs.
+
 Platform 0.69
 
 * Library Upgrades
