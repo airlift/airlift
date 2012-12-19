@@ -15,7 +15,6 @@
  */
 package io.airlift.event.client;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.CheckedFuture;
@@ -43,6 +42,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static io.airlift.http.client.Request.Builder.preparePost;
 
 public class HttpEventClient
@@ -52,35 +52,20 @@ public class HttpEventClient
 
     private final HttpServiceSelector serviceSelector;
     private final JsonEventWriter eventWriter;
-    private final int version;
     private final AsyncHttpClient httpClient;
     private final NodeInfo nodeInfo;
 
     @Inject
     public HttpEventClient(
-            @ServiceType("event") HttpServiceSelector v1ServiceSelector,
             @ServiceType("collector") HttpServiceSelector serviceSelector,
             JsonEventWriter eventWriter,
             NodeInfo nodeInfo,
-            HttpEventClientConfig config,
             @ForEventClient AsyncHttpClient httpClient)
     {
-        Preconditions.checkNotNull(serviceSelector, "serviceSelector is null");
-        Preconditions.checkNotNull(v1ServiceSelector, "v1ServiceSelector is null");
-        Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
-        Preconditions.checkNotNull(httpClient, "httpClient is null");
-
-        this.eventWriter = eventWriter;
-        this.version = config.getJsonVersion();
-        this.nodeInfo = nodeInfo;
-        this.httpClient = httpClient;
-
-        if (version == 1) {
-            this.serviceSelector = v1ServiceSelector;
-        }
-        else {
-            this.serviceSelector = serviceSelector;
-        }
+        this.serviceSelector = checkNotNull(serviceSelector, "serviceSelector is null");
+        this.eventWriter = checkNotNull(eventWriter, "eventWriter is null");
+        this.nodeInfo = checkNotNull(nodeInfo, "nodeInfo is null");
+        this.httpClient = checkNotNull(httpClient, "httpClient is null");
     }
 
     @Flatten
@@ -90,11 +75,12 @@ public class HttpEventClient
         return httpClient.getStats();
     }
 
+    @SafeVarargs
     @Override
-    public <T> CheckedFuture<Void, RuntimeException> post(T... event)
+    public final <T> CheckedFuture<Void, RuntimeException> post(T... event)
             throws IllegalArgumentException
     {
-        Preconditions.checkNotNull(event, "event is null");
+        checkNotNull(event, "event is null");
         return post(Arrays.asList(event));
     }
 
@@ -102,7 +88,7 @@ public class HttpEventClient
     public <T> CheckedFuture<Void, RuntimeException> post(final Iterable<T> events)
             throws IllegalArgumentException
     {
-        Preconditions.checkNotNull(events, "eventsSupplier is null");
+        checkNotNull(events, "eventsSupplier is null");
         return post(new EventGenerator<T>()
         {
             @Override
@@ -119,7 +105,7 @@ public class HttpEventClient
     @Override
     public <T> CheckedFuture<Void, RuntimeException> post(EventGenerator<T> eventGenerator)
     {
-        Preconditions.checkNotNull(eventGenerator, "eventGenerator is null");
+        checkNotNull(eventGenerator, "eventGenerator is null");
 
         List<URI> uris = serviceSelector.selectHttpService();
 
@@ -129,21 +115,12 @@ public class HttpEventClient
 
         // todo this doesn't really work due to returning the future which can fail without being retried
         Request request = preparePost()
-                .setUri(resolveUri(uris.get(0)))
+                .setUri(uris.get(0).resolve("/v2/event"))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setBodyGenerator(new JsonEntityWriter<T>(eventWriter, eventGenerator))
                 .build();
         return httpClient.execute(request, new EventResponseHandler(serviceSelector.getType(), serviceSelector.getPool()));
-    }
-
-    private URI resolveUri(URI uri)
-    {
-        if (version == 1) {
-            return uri;
-        }
-
-        return uri.resolve("/v2/event");
     }
 
     private static class JsonEntityWriter<T>
@@ -154,10 +131,8 @@ public class HttpEventClient
 
         public JsonEntityWriter(JsonEventWriter eventWriter, EventGenerator<T> events)
         {
-            Preconditions.checkNotNull(eventWriter, "eventWriter is null");
-            Preconditions.checkNotNull(events, "events is null");
-            this.eventWriter = eventWriter;
-            this.events = events;
+            this.eventWriter = checkNotNull(eventWriter, "eventWriter is null");
+            this.events = checkNotNull(events, "events is null");
         }
 
         @Override
@@ -175,11 +150,8 @@ public class HttpEventClient
 
         public EventResponseHandler(String type, String pool)
         {
-            Preconditions.checkNotNull(type, "type is null");
-            Preconditions.checkNotNull(pool, "pool is null");
-
-            this.type = type;
-            this.pool = pool;
+            this.type = checkNotNull(type, "type is null");
+            this.pool = checkNotNull(pool, "pool is null");
         }
 
         @Override
