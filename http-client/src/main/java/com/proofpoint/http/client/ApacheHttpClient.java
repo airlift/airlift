@@ -38,6 +38,7 @@ import org.apache.http.params.CoreConnectionPNames;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
+import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -49,7 +50,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Beta
-public class ApacheHttpClient implements com.proofpoint.http.client.HttpClient
+public class ApacheHttpClient
+        implements com.proofpoint.http.client.HttpClient
 {
     private final RequestStats stats = new RequestStats();
     private final HttpClient httpClient;
@@ -87,6 +89,13 @@ public class ApacheHttpClient implements com.proofpoint.http.client.HttpClient
     List<HttpRequestFilter> getRequestFilters()
     {
         return requestFilters;
+    }
+
+    @PreDestroy
+    @Override
+    public void close()
+    {
+        httpClient.getConnectionManager().shutdown();
     }
 
     @Managed
@@ -163,7 +172,8 @@ public class ApacheHttpClient implements com.proofpoint.http.client.HttpClient
         }
     }
 
-    private static class GenericHttpRequest extends HttpEntityEnclosingRequestBase
+    private static class GenericHttpRequest
+            extends HttpEntityEnclosingRequestBase
     {
         private final String method;
         private CountingOutputStream countingOutputStream;
@@ -262,7 +272,8 @@ public class ApacheHttpClient implements com.proofpoint.http.client.HttpClient
         }
     }
 
-    private static class ExceptionFromResponseHandler extends IOException
+    private static class ExceptionFromResponseHandler
+            extends IOException
     {
         private ExceptionFromResponseHandler(Exception cause)
         {
@@ -270,7 +281,8 @@ public class ApacheHttpClient implements com.proofpoint.http.client.HttpClient
         }
     }
 
-    private static class MyResponse implements Response
+    private static class MyResponse
+            implements Response
     {
         private final HttpResponse response;
         private CountingInputStream countingInputStream;

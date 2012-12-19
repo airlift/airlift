@@ -27,6 +27,8 @@ import com.google.common.util.concurrent.MoreExecutors;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
+import javax.annotation.PreDestroy;
+import java.io.Closeable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -36,6 +38,7 @@ import java.util.concurrent.ExecutorService;
 
 @Beta
 public class AsyncHttpClient
+        implements Closeable
 {
     private final HttpClient httpClient;
     private final ListeningExecutorService executor;
@@ -63,6 +66,13 @@ public class AsyncHttpClient
         return requestFilters;
     }
 
+    @PreDestroy
+    @Override
+    public void close()
+    {
+        httpClient.close();
+    }
+
     @Managed
     @Flatten
     public RequestStats getStats()
@@ -84,7 +94,8 @@ public class AsyncHttpClient
         return new ResponseFuture<T, E>(request, responseHandler, listenableFuture);
     }
 
-    private class HttpExecution<T> implements Callable<T>
+    private class HttpExecution<T>
+            implements Callable<T>
     {
         private final Request request;
         private final ResponseHandler<T, ?> responseHandler;
@@ -107,7 +118,8 @@ public class AsyncHttpClient
         }
     }
 
-    private static class ResponseFuture<T, E extends Exception> extends AbstractCheckedFuture<T, E>
+    private static class ResponseFuture<T, E extends Exception>
+            extends AbstractCheckedFuture<T, E>
     {
         private final Request request;
         private final ResponseHandler<T, E> responseHandler;
@@ -142,7 +154,8 @@ public class AsyncHttpClient
         }
     }
 
-    private static class ExceptionFromHttpClient extends Exception
+    private static class ExceptionFromHttpClient
+            extends Exception
     {
         private ExceptionFromHttpClient(Exception cause)
         {

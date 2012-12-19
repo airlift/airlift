@@ -1,3 +1,9 @@
+Platform 0.70
+
+* The HttpClient and AsyncHttpClients now implement Closeable and properly
+  shutdown when used as lifecycle objects. Calling close shuts down the
+  connection pool for the underlying Apache HTTP client.
+
 Platform 0.69
 
 * Library Upgrades
