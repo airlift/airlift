@@ -17,9 +17,15 @@ package io.airlift.http.client;
 
 import com.google.common.annotations.Beta;
 
+import java.io.Closeable;
+
 @Beta
 public interface HttpClient
+        extends Closeable
 {
+    @Override
+    void close();
+
     RequestStats getStats();
 
     <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)

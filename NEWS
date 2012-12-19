@@ -2,6 +2,10 @@ Airlift 0.68
 
 * Support for v1 events has been removed
 
+* The HttpClient and AsyncHttpClients now implement Closeable and properly
+  shutdown when used as lifecycle objects. Calling close shuts down the
+  connection pool for the underlying Apache HTTP client.
+
 
 Airlift 0.67
 

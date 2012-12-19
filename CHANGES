@@ -1,6 +1,7 @@
 * 0.68
 
 - Dropped support for v1 events
+- HTTP clients are now Closeable and shutdown properly
 
 * 0.67
 
