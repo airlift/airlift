@@ -10,6 +10,10 @@ The injected JsonCodecFactory and injected codecs no longer produce
 pretty-printed JSON. The previous behavior was a bug. JsonCodecFactory
 has a method to return a factory that produces pretty-print codecs.
 
+* DataSize and Duration can now be serialized as json
+
+* [Bug] Don't throw an exception from http request logger when wall clock time goes backwards
+
 Platform 0.69
 
 * Library Upgrades
