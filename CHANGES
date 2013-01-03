@@ -3,6 +3,7 @@
 - Dropped support for v1 events
 - HTTP clients are now Closeable and shutdown properly
 - JsonCodecFactory no longer pretty prints by default
+- [Bug] Prevent HTTP tests from hanging on machines with many processors
 
 * 0.67
 
