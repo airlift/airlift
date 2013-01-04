@@ -234,7 +234,7 @@
             <dependency>
                 <groupId>org.weakref</groupId>
                 <artifactId>jmxutils</artifactId>
-                <version>1.8</version>
+                <version>1.13</version>
             </dependency>
 
             <dependency>
