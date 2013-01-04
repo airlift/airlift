@@ -18,11 +18,11 @@ package io.airlift.dbpool;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
 import com.google.inject.BindingAnnotation;
+import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Module;
-import com.google.inject.ProvisionException;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationModule;
 import io.airlift.testing.Assertions;
@@ -190,7 +190,7 @@ public class TestH2EmbeddedDataSourceModule
         assertEquals(created.getMaxConnections(), expectedValue, "Property value not loaded from correct prefix");
     }
 
-    @Test(groups = "requiresTempFile", expectedExceptions = ProvisionException.class)
+    @Test(groups = "requiresTempFile", expectedExceptions = CreationException.class)
     public void testIncorrectConfigurationPrefixThrows()
     {
         final String configurationPrefix = "configuration";
@@ -198,10 +198,8 @@ public class TestH2EmbeddedDataSourceModule
 
         Map<String, String> properties = createDefaultConfigurationProperties(configurationPrefix, temporaryFile.getAbsolutePath());
 
-        Injector injector = createInjector(properties, new H2EmbeddedDataSourceModule(constructionPrefix, MainBinding.class));
-
-        // Will throw com.google.inject.ProvisionException because construction will fail due to the incorrect prefixing.
-        ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
+        // Will throw because construction will fail due to the incorrect prefixing.
+        createInjector(properties, new H2EmbeddedDataSourceModule(constructionPrefix, MainBinding.class));
     }
 
     private static Injector createInjector(Map<String, String> properties, Module... modules)
