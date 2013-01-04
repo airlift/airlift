@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.airlift</groupId>
     <artifactId>library</artifactId>
-    <version>0.68</version>
+    <version>0.69-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Library POM</name>
     <description>Library POM</description>
@@ -70,73 +70,73 @@
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>bootstrap</artifactId>
-                <version>0.68</version>
+                <version>0.69-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>configuration</artifactId>
-                <version>0.68</version>
+                <version>0.69-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>dbpool</artifactId>
-                <version>0.68</version>
+                <version>0.69-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>discovery-experimental</artifactId>
-                <version>0.68</version>
+                <version>0.69-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>event-experimental</artifactId>
-                <version>0.68</version>
+                <version>0.69-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>jaxrs</artifactId>
-                <version>0.68</version>
+                <version>0.69-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>http-server</artifactId>
-                <version>0.68</version>
+                <version>0.69-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>http-client-experimental</artifactId>
-                <version>0.68</version>
+                <version>0.69-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>json</artifactId>
-                <version>0.68</version>
+                <version>0.69-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>jmx</artifactId>
-                <version>0.68</version>
+                <version>0.69-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>jmx-http-rpc-experimental</artifactId>
-                <version>0.68</version>
+                <version>0.69-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>launcher</artifactId>
-                <version>0.68</version>
+                <version>0.69-SNAPSHOT</version>
                 <classifier>bin</classifier>
                 <type>tar.gz</type>
             </dependency>
@@ -144,43 +144,43 @@
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>log</artifactId>
-                <version>0.68</version>
+                <version>0.69-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>node</artifactId>
-                <version>0.68</version>
+                <version>0.69-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>stats</artifactId>
-                <version>0.68</version>
+                <version>0.69-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>units</artifactId>
-                <version>0.68</version>
+                <version>0.69-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>testing</artifactId>
-                <version>0.68</version>
+                <version>0.69-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>trace-token</artifactId>
-                <version>0.68</version>
+                <version>0.69-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>jmx-http-experimental</artifactId>
-                <version>0.68</version>
+                <version>0.69-SNAPSHOT</version>
             </dependency>
 
             <dependency>
