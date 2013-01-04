@@ -5,7 +5,7 @@
     <groupId>io.airlift</groupId>
     <artifactId>airlift</artifactId>
     <packaging>pom</packaging>
-    <version>0.68-SNAPSHOT</version>
+    <version>0.68</version>
     <name>airlift</name>
     <description>Airlift</description>
     <url>http://github.com/airlift/airlift</url>
@@ -13,7 +13,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>library</artifactId>
-        <version>0.68-SNAPSHOT</version>
+        <version>0.68</version>
         <relativePath>library/pom.xml</relativePath>
     </parent>
 

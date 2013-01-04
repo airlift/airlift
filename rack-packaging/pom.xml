@@ -3,13 +3,13 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.airlift</groupId>
     <artifactId>rack-packaging-experimental</artifactId>
-    <version>0.68-SNAPSHOT</version>
+    <version>0.68</version>
     <name>rack-packaging</name>
     <description>Assembly for building a galaxy binary for the Platform Rack Server</description>
 
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>0.68-SNAPSHOT</version>
+        <version>0.68</version>
     </parent>
 </project>

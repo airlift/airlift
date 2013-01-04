@@ -3,12 +3,12 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.airlift</groupId>
     <artifactId>packaging</artifactId>
-    <version>0.68-SNAPSHOT</version>
+    <version>0.68</version>
     <name>packaging</name>
 
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>0.68-SNAPSHOT</version>
+        <version>0.68</version>
     </parent>
 </project>
