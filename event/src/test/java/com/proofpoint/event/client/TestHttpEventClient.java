@@ -19,7 +19,6 @@ import com.google.common.base.Throwables;
 import com.google.common.io.CharStreams;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.testing.StaticHttpServiceSelector;
-import com.proofpoint.http.client.ApacheHttpClient;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
 import com.proofpoint.node.NodeInfo;
@@ -48,7 +47,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static com.google.common.collect.Lists.newArrayList;
@@ -155,10 +153,7 @@ public class TestHttpEventClient
                 v2Selector,
                 eventWriter,
                 new NodeInfo("test"), config,
-                new AsyncHttpClient(
-                        new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))),
-                        Executors.newCachedThreadPool()
-                ));
+                new AsyncHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))));
     }
 
     private Server createServer(final DummyServlet servlet)

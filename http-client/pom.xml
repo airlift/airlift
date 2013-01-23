@@ -52,6 +52,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpasyncclient</artifactId>
+            <version>4.0-beta3</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>trace-token</artifactId>
         </dependency>
