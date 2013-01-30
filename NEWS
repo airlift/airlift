@@ -1,3 +1,13 @@
+Airlift 0.70
+
+* Upgrade to Jackson 2.1.x
+
+Jackson 1.x has been upgraded to 2.1.x. This requires substantial code and
+dependency changes as all the artifacts are named differently and all the
+classes are in different packages. The upgrade guide has more details:
+http://wiki.fasterxml.com/JacksonUpgradeFrom19To20
+
+
 Airlift 0.69
 
 * In this release we have upgraded the following dependencies

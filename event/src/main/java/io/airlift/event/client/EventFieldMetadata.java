@@ -15,10 +15,10 @@
  */
 package io.airlift.event.client;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import org.codehaus.jackson.JsonGenerator;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
