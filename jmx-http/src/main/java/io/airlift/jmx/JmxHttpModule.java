@@ -15,24 +15,24 @@
  */
 package io.airlift.jmx;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import io.airlift.discovery.client.DiscoveryBinder;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonToken;
-import org.codehaus.jackson.map.DeserializationContext;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.JsonSerializer;
-import org.codehaus.jackson.map.SerializerProvider;
-import org.codehaus.jackson.map.deser.StdScalarDeserializer;
-import org.codehaus.jackson.map.ser.SerializerBase;
-import org.codehaus.jackson.map.ser.ToStringSerializer;
-import org.codehaus.jackson.node.ObjectNode;
 import sun.management.LazyCompositeData;
 
 import javax.management.MalformedObjectNameException;
@@ -40,6 +40,7 @@ import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.OpenType;
 import javax.management.openmbean.TabularData;
+
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.InetAddress;
@@ -98,7 +99,7 @@ public class JmxHttpModule implements Module
     }
 
     static class TabularDataSerializer
-            extends SerializerBase<TabularData>
+            extends StdSerializer<TabularData>
     {
         public TabularDataSerializer()
         {
@@ -134,7 +135,7 @@ public class JmxHttpModule implements Module
     }
 
     static class CompositeDataSerializer
-            extends SerializerBase<CompositeData>
+            extends StdSerializer<CompositeData>
     {
         public CompositeDataSerializer()
         {
@@ -209,6 +210,7 @@ public class JmxHttpModule implements Module
         return builder.build();
     }
 
+    @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> toList(TabularData data)
     {
         ImmutableList.Builder<Map<String, Object>> builder = ImmutableList.builder();

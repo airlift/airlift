@@ -15,12 +15,12 @@
  */
 package io.airlift.event.client.privateclass;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.io.NullOutputStream;
 import io.airlift.event.client.EventField;
 import io.airlift.event.client.EventType;
 import io.airlift.event.client.JsonEventSerializer;
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
