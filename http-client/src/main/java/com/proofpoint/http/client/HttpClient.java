@@ -23,11 +23,11 @@ import java.io.Closeable;
 public interface HttpClient
         extends Closeable
 {
-    @Override
-    void close();
+    <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
+    throws E;
 
     RequestStats getStats();
 
-    <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
-            throws E;
+    @Override
+    void close();
 }

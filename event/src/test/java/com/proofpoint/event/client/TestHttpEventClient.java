@@ -19,7 +19,7 @@ import com.google.common.base.Throwables;
 import com.google.common.io.CharStreams;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.testing.StaticHttpServiceSelector;
-import com.proofpoint.http.client.AsyncHttpClient;
+import com.proofpoint.http.client.ApacheAsyncHttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.units.Duration;
@@ -153,7 +153,7 @@ public class TestHttpEventClient
                 v2Selector,
                 eventWriter,
                 new NodeInfo("test"), config,
-                new AsyncHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))));
+                new ApacheAsyncHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))));
     }
 
     private Server createServer(final DummyServlet servlet)

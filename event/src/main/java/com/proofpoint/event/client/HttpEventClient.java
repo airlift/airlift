@@ -134,7 +134,7 @@ public class HttpEventClient
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setBodyGenerator(new JsonEntityWriter<T>(eventWriter, eventGenerator))
                 .build();
-        return httpClient.execute(request, new EventResponseHandler(serviceSelector.getType(), serviceSelector.getPool()));
+        return httpClient.executeAsync(request, new EventResponseHandler(serviceSelector.getType(), serviceSelector.getPool()));
     }
 
     private URI resolveUri(URI uri)

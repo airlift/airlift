@@ -99,7 +99,7 @@ public abstract class AbstractHttpClientTest
                 .setUri(URI.create("http://localhost:" + serverSocket.getLocalPort() + "/"))
                 .build();
 
-        try {
+       try {
             executeRequest(config, request, new ResponseToStringHandler());
         }
         finally {

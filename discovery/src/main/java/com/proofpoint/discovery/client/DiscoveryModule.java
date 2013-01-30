@@ -51,7 +51,6 @@ public class DiscoveryModule implements Module
 
         // bind the http client
         httpClientBinder(binder).bindAsyncHttpClient("discovery", ForDiscoveryClient.class);
-        httpClientBinder(binder).bindHttpClient("discovery", ForDiscoveryClient.class);
 
         // bind announcer
         binder.bind(Announcer.class).in(Scopes.SINGLETON);
