@@ -19,7 +19,7 @@ import com.google.common.base.Throwables;
 import com.google.common.io.CharStreams;
 import io.airlift.discovery.client.HttpServiceSelector;
 import io.airlift.discovery.client.testing.StaticHttpServiceSelector;
-import io.airlift.http.client.AsyncHttpClient;
+import io.airlift.http.client.ApacheAsyncHttpClient;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
@@ -150,7 +150,7 @@ public class TestHttpEventClient
                 selector,
                 eventWriter,
                 new NodeInfo("test"),
-                new AsyncHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))));
+                new ApacheAsyncHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))));
     }
 
     private Server createServer(final DummyServlet servlet)

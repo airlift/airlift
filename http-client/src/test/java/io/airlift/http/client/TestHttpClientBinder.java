@@ -37,8 +37,8 @@ import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.fail;
 
 public class TestHttpClientBinder
 {
@@ -69,7 +69,7 @@ public class TestHttpClientBinder
     }
 
     @Test
-    public void testSeparateFiltersForClientAndAsyncClient()
+    public void testBindAsyncClientWithFilter()
     {
         Injector injector = Guice.createInjector(
                 new Module()
@@ -77,20 +77,20 @@ public class TestHttpClientBinder
                     @Override
                     public void configure(Binder binder)
                     {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+                        httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class)
                                 .withFilter(TestingRequestFilter.class)
                                 .withFilter(AnotherHttpRequestFilter.class)
                                 .withTracing();
-
-                        httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class)
-                                .withFilter(AnotherHttpRequestFilter.class);
                     }
                 },
                 new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())),
                 new TraceTokenModule());
 
-        assertFilterCount(injector.getInstance(Key.get(HttpClient.class, FooClient.class)), 3);
-        assertFilterCount(injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class)), 1);
+        HttpClient httpClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
+        AsyncHttpClient asyncHttpClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
+        assertSame(httpClient, asyncHttpClient);
+        assertFilterCount(httpClient, 3);
+        assertFilterCount(asyncHttpClient, 3);
     }
 
     @Test
@@ -133,7 +133,7 @@ public class TestHttpClientBinder
     }
 
     @Test
-    public void testSeparateAliasesForClientAndAsyncClient()
+    public void testBindAsyncClientWithAliases()
     {
         Injector injector = Guice.createInjector(
                 new Module()
@@ -141,38 +141,32 @@ public class TestHttpClientBinder
                     @Override
                     public void configure(Binder binder)
                     {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+                        httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class)
                                 .withAlias(FooAlias1.class)
                                 .withAlias(FooAlias2.class);
-
-                        httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class)
-                                .withAlias(FooAlias3.class);
                     }
                 },
                 new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
 
-        HttpClient client = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
+        AsyncHttpClient client = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
+        assertSame(injector.getInstance(Key.get(AsyncHttpClient.class, FooAlias1.class)), client);
+        assertSame(injector.getInstance(Key.get(AsyncHttpClient.class, FooAlias2.class)), client);
+
+        assertSame(injector.getInstance(Key.get(HttpClient.class, FooClient.class)), client);
         assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias1.class)), client);
         assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias2.class)), client);
-        assertNull(injector.getExistingBinding(Key.get(HttpClient.class, FooAlias3.class)));
-
-        AsyncHttpClient asyncClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
-        assertSame(injector.getInstance(Key.get(AsyncHttpClient.class, FooAlias3.class)), asyncClient);
-        assertNull(injector.getExistingBinding(Key.get(AsyncHttpClient.class, FooAlias1.class)));
-        assertNull(injector.getExistingBinding(Key.get(AsyncHttpClient.class, FooAlias2.class)));
     }
 
     private static void assertFilterCount(HttpClient httpClient, int filterCount)
     {
         assertNotNull(httpClient);
-        assertEquals(httpClient.getClass(), ApacheHttpClient.class);
-        assertEquals(((ApacheHttpClient) httpClient).getRequestFilters().size(), filterCount);
-    }
-
-    private static void assertFilterCount(AsyncHttpClient asyncHttpClient, int filterCount)
-    {
-        assertNotNull(asyncHttpClient);
-        assertEquals(asyncHttpClient.getRequestFilters().size(), filterCount);
+        if (httpClient instanceof ApacheHttpClient) {
+            assertEquals(((ApacheHttpClient) httpClient).getRequestFilters().size(), filterCount);
+        } else if (httpClient instanceof HttpClient) {
+            assertEquals(((ApacheAsyncHttpClient) httpClient).getRequestFilters().size(), filterCount);
+        } else {
+            fail("Unexpected HttpClient implementation " + httpClient.getClass().getName());
+        }
     }
 
     @Retention(RUNTIME)

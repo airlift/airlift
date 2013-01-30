@@ -30,7 +30,7 @@ public class AsyncHttpClientTest
     public void setUp()
             throws Exception
     {
-        httpClient = new AsyncHttpClient(new HttpClientConfig().setKeepAliveInterval(new Duration(1, TimeUnit.MINUTES)),
+        httpClient = new ApacheAsyncHttpClient(new HttpClientConfig().setKeepAliveInterval(new Duration(1, TimeUnit.MINUTES)),
                 ImmutableSet.of(new TestingRequestFilter()));
     }
 
@@ -38,14 +38,14 @@ public class AsyncHttpClientTest
     public <T, E extends Exception> T executeRequest(Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        return httpClient.execute(request, responseHandler).checkedGet();
+        return httpClient.executeAsync(request, responseHandler).checkedGet();
     }
 
     @Override
     public <T, E extends Exception> T  executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        AsyncHttpClient client = new AsyncHttpClient(config);
-        return client.execute(request, responseHandler).checkedGet();
+        AsyncHttpClient client = new ApacheAsyncHttpClient(config);
+        return client.executeAsync(request, responseHandler).checkedGet();
     }
 }
