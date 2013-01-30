@@ -15,12 +15,12 @@
  */
 package io.airlift.jmx;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import com.google.inject.Inject;
-import org.codehaus.jackson.map.ObjectMapper;
 
 import javax.management.JMException;
 import javax.management.MBeanServer;
@@ -30,6 +30,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+
 import java.util.List;
 
 @Path("/v1/jmx/mbean")
