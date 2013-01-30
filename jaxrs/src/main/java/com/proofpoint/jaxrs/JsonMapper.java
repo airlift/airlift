@@ -19,16 +19,17 @@ package com.proofpoint.jaxrs;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.proofpoint.log.Logger;
+import com.fasterxml.jackson.core.JsonEncoding;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.spi.container.WebApplication;
 import org.apache.bval.jsr303.ApacheValidationProvider;
-import org.codehaus.jackson.JsonEncoding;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonProcessingException;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.util.JSONPObject;
-import org.codehaus.jackson.type.JavaType;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
@@ -42,6 +43,7 @@ import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,7 +56,8 @@ import java.util.Set;
 @Provider
 @Consumes({MediaType.APPLICATION_JSON, "text/json"})
 @Produces({MediaType.APPLICATION_JSON, "text/json"})
-class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<Object>
+class JsonMapper
+        implements MessageBodyReader<Object>, MessageBodyWriter<Object>
 {
     private static final Validator VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
 
@@ -121,7 +124,7 @@ class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<Object>
     {
         Object object;
         try {
-            JsonParser jsonParser = objectMapper.getJsonFactory().createJsonParser(inputStream);
+            JsonParser jsonParser = objectMapper.getFactory().createJsonParser(inputStream);
 
             // Important: we are NOT to close the underlying stream after
             // mapping, so we need to instruct parser:
@@ -191,19 +194,31 @@ class JsonMapper implements MessageBodyReader<Object>, MessageBodyWriter<Object>
                 // specialized with 'value.getClass()'? Let's see how well this works before
                 // trying to come up with more complete solution.
                 rootType = objectMapper.getTypeFactory().constructType(genericType);
+                // 26-Feb-2011, tatu: To help with [JACKSON-518], we better recognize cases where
+                //    type degenerates back into "Object.class" (as is the case with plain TypeVariable,
+                //    for example), and not use that.
+                //
+                if (rootType.getRawClass() == Object.class) {
+                    rootType = null;
+                }
             }
+        }
+
+        ObjectWriter writer;
+        if (rootType != null) {
+            writer = objectMapper.writerWithType(rootType);
+        }
+        else {
+            writer = objectMapper.writer();
         }
 
         String jsonpFunctionName = getJsonpFunctionName();
         if (jsonpFunctionName != null) {
-            objectMapper.writeValue(jsonGenerator, new JSONPObject(jsonpFunctionName, value, rootType));
+            value = new JSONPObject(jsonpFunctionName, value, rootType);
         }
-        else if (rootType != null) {
-            objectMapper.writerWithType(rootType).writeValue(jsonGenerator, value);
-        }
-        else {
-            objectMapper.writeValue(jsonGenerator, value);
-        }
+
+        writer.writeValue(jsonGenerator, value);
+
         // add a newline so when you use curl it looks nice
         outputStream.write('\n');
     }

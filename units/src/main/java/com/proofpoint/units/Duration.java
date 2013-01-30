@@ -15,9 +15,9 @@
  */
 package com.proofpoint.units;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.base.Preconditions;
-import org.codehaus.jackson.annotate.JsonCreator;
-import org.codehaus.jackson.annotate.JsonValue;
 
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;

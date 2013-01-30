@@ -15,10 +15,10 @@
  */
 package com.proofpoint.event.client;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import org.codehaus.jackson.JsonGenerator;
 import org.joda.time.DateTime;
 
 import java.io.IOException;

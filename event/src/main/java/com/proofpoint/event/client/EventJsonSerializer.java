@@ -15,7 +15,7 @@
  */
 package com.proofpoint.event.client;
 
-import org.codehaus.jackson.map.JsonSerializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;

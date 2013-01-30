@@ -15,33 +15,27 @@
  */
 package com.proofpoint.json;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.KeyDeserializer;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import org.codehaus.jackson.Version;
-import org.codehaus.jackson.map.DeserializationConfig;
-import org.codehaus.jackson.map.JsonDeserializer;
-import org.codehaus.jackson.map.JsonSerializer;
-import org.codehaus.jackson.map.KeyDeserializer;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
-import org.codehaus.jackson.map.SerializationConfig.Feature;
-import org.codehaus.jackson.map.module.SimpleModule;
 
 import java.util.Map;
 import java.util.Map.Entry;
 
-import static org.codehaus.jackson.map.DeserializationConfig.Feature.AUTO_DETECT_CREATORS;
-import static org.codehaus.jackson.map.DeserializationConfig.Feature.AUTO_DETECT_FIELDS;
-import static org.codehaus.jackson.map.DeserializationConfig.Feature.AUTO_DETECT_SETTERS;
-import static org.codehaus.jackson.map.DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES;
-import static org.codehaus.jackson.map.DeserializationConfig.Feature.USE_GETTERS_AS_SETTERS;
-import static org.codehaus.jackson.map.SerializationConfig.Feature.AUTO_DETECT_GETTERS;
-import static org.codehaus.jackson.map.SerializationConfig.Feature.AUTO_DETECT_IS_GETTERS;
-import static org.codehaus.jackson.map.SerializationConfig.Feature.WRITE_DATES_AS_TIMESTAMPS;
-import static org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion.NON_NULL;
-
-public class ObjectMapperProvider implements Provider<ObjectMapper>
+public class ObjectMapperProvider
+        implements Provider<ObjectMapper>
 {
     private Map<Class<?>, JsonSerializer<?>> keySerializers;
     private Map<Class<?>, KeyDeserializer> keyDeserializers;
@@ -75,45 +69,33 @@ public class ObjectMapperProvider implements Provider<ObjectMapper>
     @Override
     public ObjectMapper get()
     {
-        return getPretty(false);
-    }
-
-    ObjectMapper getPretty(boolean pretty)
-    {
         ObjectMapper objectMapper = new ObjectMapper();
-        SerializationConfig serializationConfig = objectMapper.getSerializationConfig();
-        DeserializationConfig deserializationConfig = objectMapper.getDeserializationConfig();
 
         // ignore unknown fields (for backwards compatibility)
-        deserializationConfig = deserializationConfig.without(FAIL_ON_UNKNOWN_PROPERTIES);
+        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
         // use ISO dates
-        serializationConfig = serializationConfig.without(WRITE_DATES_AS_TIMESTAMPS);
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
         // skip fields that are null instead of writing an explicit json null value
-        serializationConfig = serializationConfig.withSerializationInclusion(NON_NULL);
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
         // disable auto detection of json properties... all properties must be explicit
-        deserializationConfig = deserializationConfig.without(AUTO_DETECT_CREATORS)
-                .without(AUTO_DETECT_FIELDS)
-                .without(AUTO_DETECT_SETTERS)
-                .without(USE_GETTERS_AS_SETTERS);
-        serializationConfig = serializationConfig.without(SerializationConfig.Feature.AUTO_DETECT_FIELDS)
-                .without(AUTO_DETECT_GETTERS)
-                .without(AUTO_DETECT_IS_GETTERS);
+        objectMapper.disable(MapperFeature.AUTO_DETECT_CREATORS);
+        objectMapper.disable(MapperFeature.AUTO_DETECT_FIELDS);
+        objectMapper.disable(MapperFeature.AUTO_DETECT_SETTERS);
+        objectMapper.disable(MapperFeature.AUTO_DETECT_GETTERS);
+        objectMapper.disable(MapperFeature.AUTO_DETECT_IS_GETTERS);
 
-        if (pretty) {
-            serializationConfig = serializationConfig.with(Feature.INDENT_OUTPUT);
-        }
-
-        objectMapper = new ObjectMapper(null, null, null, serializationConfig, deserializationConfig);
+        // add modules for Guava and Joda
+        objectMapper.registerModule(new GuavaModule());
+        objectMapper.registerModule(new JodaModule());
 
         if (jsonSerializers != null || jsonDeserializers != null || keySerializers != null || keyDeserializers != null) {
             SimpleModule module = new SimpleModule(getClass().getName(), new Version(1, 0, 0, null));
             if (jsonSerializers != null) {
                 for (Entry<Class<?>, JsonSerializer<?>> entry : jsonSerializers.entrySet()) {
                     addSerializer(module, entry.getKey(), entry.getValue());
-
                 }
             }
             if (jsonDeserializers != null) {
@@ -124,7 +106,6 @@ public class ObjectMapperProvider implements Provider<ObjectMapper>
             if (keySerializers != null) {
                 for (Entry<Class<?>, JsonSerializer<?>> entry : keySerializers.entrySet()) {
                     addKeySerializer(module, entry.getKey(), entry.getValue());
-
                 }
             }
             if (keyDeserializers != null) {
@@ -145,16 +126,19 @@ public class ObjectMapperProvider implements Provider<ObjectMapper>
     // T but it is only used for casting
     //
 
+    @SuppressWarnings("unchecked")
     private <T> void addSerializer(SimpleModule module, Class<?> type, JsonSerializer<?> jsonSerializer)
     {
         module.addSerializer((Class<? extends T>) type, (JsonSerializer<T>) jsonSerializer);
     }
 
+    @SuppressWarnings("unchecked")
     public <T> void addDeserializer(SimpleModule module, Class<?> type, JsonDeserializer<?> jsonDeserializer)
     {
         module.addDeserializer((Class<T>) type, (JsonDeserializer<? extends T>) jsonDeserializer);
     }
 
+    @SuppressWarnings("unchecked")
     private <T> void addKeySerializer(SimpleModule module, Class<?> type, JsonSerializer<?> keySerializer)
     {
         module.addKeySerializer((Class<? extends T>) type, (JsonSerializer<T>) keySerializer);

@@ -15,12 +15,10 @@
  */
 package com.proofpoint.json;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.proofpoint.json.JsonCodecFactory;
-import com.proofpoint.json.ObjectMapperProvider;
-import org.codehaus.jackson.map.ObjectMapper;
 
 public class JsonModule implements Module
 {

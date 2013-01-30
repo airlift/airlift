@@ -15,11 +15,12 @@
  */
 package com.proofpoint.event.client;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.google.common.collect.ImmutableMap;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.map.JsonSerializer;
 
 import javax.inject.Inject;
+
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;

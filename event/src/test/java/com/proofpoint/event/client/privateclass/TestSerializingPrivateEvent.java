@@ -15,12 +15,12 @@
  */
 package com.proofpoint.event.client.privateclass;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.io.NullOutputStream;
 import com.proofpoint.event.client.EventField;
 import com.proofpoint.event.client.EventType;
 import com.proofpoint.event.client.JsonEventSerializer;
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
 import org.testng.annotations.Test;
 
 import java.io.IOException;

@@ -15,6 +15,14 @@
  */
 package com.proofpoint.json;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
@@ -25,13 +33,6 @@ import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonToken;
-import org.codehaus.jackson.annotate.JsonProperty;
-import org.codehaus.jackson.map.DeserializationContext;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.deser.std.StdScalarDeserializer;
-import org.codehaus.jackson.map.ser.std.ToStringSerializer;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 import org.testng.annotations.BeforeMethod;
@@ -114,6 +115,18 @@ public class TestJsonModule
         Map<String, Object> actual = objectMapper.readValue(objectMapper.writeValueAsString(CAR), Map.class);
 
         assertEquals(actual.get("purchased"), ISODateTimeFormat.dateTime().print(CAR.getPurchased()));
+    }
+
+    @Test
+    public void testGuavaRoundTrip()
+            throws Exception
+    {
+        ImmutableList<Integer> list = ImmutableList.of(3, 5, 8);
+
+        String json = objectMapper.writeValueAsString(list);
+        ImmutableList<Integer> actual = objectMapper.readValue(json, new TypeReference<ImmutableList<Integer>>() {});
+
+        assertEquals(actual, list);
     }
 
     @Test

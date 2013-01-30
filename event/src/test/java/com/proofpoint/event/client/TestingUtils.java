@@ -15,10 +15,10 @@
  */
 package com.proofpoint.event.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.joda.time.DateTime;
 
 import java.io.IOException;

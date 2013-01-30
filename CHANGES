@@ -1,5 +1,12 @@
 Platform 0.70
 
+* Upgrade Jackson to 2.1.3
+
+Jackson 1.x has been upgraded to 2.1.x. This requires substantial code and
+dependency changes as all the artifacts are named differently and all the
+classes are in different packages. The upgrade guide has more details:
+http://wiki.fasterxml.com/JacksonUpgradeFrom19To20
+
 * The HttpClient and AsyncHttpClients now implement Closeable and properly
   shutdown when used as lifecycle objects. Calling close shuts down the
   connection pool for the underlying Apache HTTP client.

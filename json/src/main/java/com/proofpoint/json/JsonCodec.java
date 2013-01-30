@@ -15,21 +15,20 @@
  */
 package com.proofpoint.json;
 
-import com.google.common.base.Preconditions;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.inject.TypeLiteral;
 import com.google.inject.internal.MoreTypes.ParameterizedTypeImpl;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.type.TypeFactory;
-import org.codehaus.jackson.type.JavaType;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 
-import static org.codehaus.jackson.map.SerializationConfig.Feature.INDENT_OUTPUT;
+import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class JsonCodec<T>
 {
@@ -38,57 +37,56 @@ public class JsonCodec<T>
         @Override
         public ObjectMapper get()
         {
-            ObjectMapper objectMapper = new ObjectMapperProvider().getPretty(true);
-            return objectMapper;
+            return new ObjectMapperProvider().get().enable(INDENT_OUTPUT);
         }
     });
 
     public static <T> JsonCodec<T> jsonCodec(Class<T> type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        checkNotNull(type, "type is null");
 
-        return new JsonCodec<T>(OBJECT_MAPPER_SUPPLIER.get(), type);
+        return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), type);
     }
 
     public static <T> JsonCodec<T> jsonCodec(TypeLiteral<T> type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        checkNotNull(type, "type is null");
 
-        return new JsonCodec<T>(OBJECT_MAPPER_SUPPLIER.get(), type.getType());
+        return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), type.getType());
     }
 
     public static <T> JsonCodec<List<T>> listJsonCodec(Class<T> type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        checkNotNull(type, "type is null");
 
         ParameterizedTypeImpl listType = new ParameterizedTypeImpl(null, List.class, type);
-        return new JsonCodec<List<T>>(OBJECT_MAPPER_SUPPLIER.get(), listType);
+        return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), listType);
     }
 
     public static <T> JsonCodec<List<T>> listJsonCodec(JsonCodec<T> type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        checkNotNull(type, "type is null");
 
         ParameterizedTypeImpl listType = new ParameterizedTypeImpl(null, List.class, type.getType());
-        return new JsonCodec<List<T>>(OBJECT_MAPPER_SUPPLIER.get(), listType);
+        return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), listType);
     }
 
     public static <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, Class<V> valueType)
     {
-        Preconditions.checkNotNull(keyType, "keyType is null");
-        Preconditions.checkNotNull(valueType, "valueType is null");
+        checkNotNull(keyType, "keyType is null");
+        checkNotNull(valueType, "valueType is null");
 
         ParameterizedTypeImpl mapType = new ParameterizedTypeImpl(null, Map.class, keyType, valueType);
-        return new JsonCodec<Map<K, V>>(OBJECT_MAPPER_SUPPLIER.get(), mapType);
+        return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), mapType);
     }
 
     public static <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, JsonCodec<V> valueType)
     {
-        Preconditions.checkNotNull(keyType, "keyType is null");
-        Preconditions.checkNotNull(valueType, "valueType is null");
+        checkNotNull(keyType, "keyType is null");
+        checkNotNull(valueType, "valueType is null");
 
         ParameterizedTypeImpl mapType = new ParameterizedTypeImpl(null, Map.class, keyType, valueType.getType());
-        return new JsonCodec<Map<K, V>>(OBJECT_MAPPER_SUPPLIER.get(), mapType);
+        return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), mapType);
     }
 
     private final ObjectMapper mapper;
@@ -99,7 +97,7 @@ public class JsonCodec<T>
     {
         this.mapper = mapper;
         this.type = type;
-        javaType = TypeFactory.type(this.type);
+        this.javaType = mapper.getTypeFactory().constructType(type);
     }
 
     /**
@@ -116,6 +114,7 @@ public class JsonCodec<T>
      * @return Parsed response; never null
      * @throws IllegalArgumentException if the json string can not be converted to the type T
      */
+    @SuppressWarnings("unchecked")
     public T fromJson(String json)
             throws IllegalArgumentException
     {
