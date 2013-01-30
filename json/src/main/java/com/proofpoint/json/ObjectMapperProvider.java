@@ -31,8 +31,11 @@ import org.codehaus.jackson.map.module.SimpleModule;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static org.codehaus.jackson.map.DeserializationConfig.Feature.AUTO_DETECT_CREATORS;
+import static org.codehaus.jackson.map.DeserializationConfig.Feature.AUTO_DETECT_FIELDS;
 import static org.codehaus.jackson.map.DeserializationConfig.Feature.AUTO_DETECT_SETTERS;
 import static org.codehaus.jackson.map.DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static org.codehaus.jackson.map.DeserializationConfig.Feature.USE_GETTERS_AS_SETTERS;
 import static org.codehaus.jackson.map.SerializationConfig.Feature.AUTO_DETECT_GETTERS;
 import static org.codehaus.jackson.map.SerializationConfig.Feature.AUTO_DETECT_IS_GETTERS;
 import static org.codehaus.jackson.map.SerializationConfig.Feature.WRITE_DATES_AS_TIMESTAMPS;
@@ -91,8 +94,10 @@ public class ObjectMapperProvider implements Provider<ObjectMapper>
         serializationConfig = serializationConfig.withSerializationInclusion(NON_NULL);
 
         // disable auto detection of json properties... all properties must be explicit
-        deserializationConfig = deserializationConfig.without(DeserializationConfig.Feature.AUTO_DETECT_FIELDS)
-                .without(AUTO_DETECT_SETTERS);
+        deserializationConfig = deserializationConfig.without(AUTO_DETECT_CREATORS)
+                .without(AUTO_DETECT_FIELDS)
+                .without(AUTO_DETECT_SETTERS)
+                .without(USE_GETTERS_AS_SETTERS);
         serializationConfig = serializationConfig.without(SerializationConfig.Feature.AUTO_DETECT_FIELDS)
                 .without(AUTO_DETECT_GETTERS)
                 .without(AUTO_DETECT_IS_GETTERS);
