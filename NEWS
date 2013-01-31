@@ -1,3 +1,11 @@
+Airlift 0.69
+
+* In this release we have upgraded the following dependencies
+
+  - jmxutils 1.13
+  - Jackson 1.9.12
+
+
 Airlift 0.68
 
 * Support for v1 events has been removed
