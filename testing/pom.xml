@@ -5,11 +5,11 @@
     <artifactId>testing</artifactId>
     <packaging>jar</packaging>
     <name>testing</name>
-    <version>0.69-SNAPSHOT</version>
+    <version>0.69</version>
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>0.69-SNAPSHOT</version>
+        <version>0.69</version>
     </parent>
 
     <dependencies>

@@ -4,13 +4,13 @@
     <groupId>io.airlift</groupId>
     <artifactId>http-server</artifactId>
     <packaging>jar</packaging>
-    <version>0.69-SNAPSHOT</version>
+    <version>0.69</version>
     <name>http-server</name>
 
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>0.69-SNAPSHOT</version>
+        <version>0.69</version>
     </parent>
 
     <dependencies>
