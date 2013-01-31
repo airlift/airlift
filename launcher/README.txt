@@ -19,6 +19,7 @@ This artifact can be used in combination with the assembly-descriptor project to
     <artifactId>launcher</artifactId>
     <version>{version}</version>
     <classifier>bin</classifier>
+    <type>tar.gz</type>
 </dependency>
 
 2. Add the following plugins to the project pom.xml:
