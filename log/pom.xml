@@ -4,13 +4,13 @@
     <groupId>io.airlift</groupId>
     <artifactId>log</artifactId>
     <packaging>jar</packaging>
-    <version>0.69</version>
+    <version>0.70-SNAPSHOT</version>
     <name>log</name>
 
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>0.69</version>
+        <version>0.70-SNAPSHOT</version>
     </parent>
 
     <dependencies>
