@@ -35,7 +35,7 @@ This artifact can be used in combination with the assembly-descriptor project to
    <dependencies>
       <dependency>
          <groupId>com.proofpoint</groupId>
-         <artifactId>distribution-assembly-descriptor</artifactId>
+         <artifactId>packaging</artifactId>
          <version>{version}</version>
       </dependency>
    </dependencies>
