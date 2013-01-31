@@ -15,18 +15,18 @@
  */
 package io.airlift.json;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.google.inject.internal.MoreTypes.ParameterizedTypeImpl;
-import org.codehaus.jackson.map.ObjectMapper;
 
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 
-import static org.codehaus.jackson.map.SerializationConfig.Feature.INDENT_OUTPUT;
+import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 
 public class JsonCodecFactory
 {
@@ -116,7 +116,7 @@ public class JsonCodecFactory
 
         // Work around for http://code.google.com/p/google-guice/issues/detail?id=627
         RuntimeException lastException = null;
-        for (int i = 0; objectMapper == null && i< 10; i++) {
+        for (int i = 0; objectMapper == null && i < 10; i++) {
             try {
                 objectMapper = objectMapperProvider.get();
             }
@@ -129,10 +129,10 @@ public class JsonCodecFactory
         }
 
         if (prettyPrint) {
-            objectMapper.getSerializationConfig().enable(INDENT_OUTPUT);
+            objectMapper.enable(INDENT_OUTPUT);
         }
         else {
-            objectMapper.getSerializationConfig().disable(INDENT_OUTPUT);
+            objectMapper.disable(INDENT_OUTPUT);
         }
         return objectMapper;
     }

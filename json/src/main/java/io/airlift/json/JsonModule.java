@@ -15,10 +15,10 @@
  */
 package io.airlift.json;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import org.codehaus.jackson.map.ObjectMapper;
 
 public class JsonModule implements Module
 {
