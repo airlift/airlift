@@ -85,7 +85,7 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setBodyGenerator(jsonBodyGenerator(announcementCodec, announcement))
                 .build();
-        return httpClient.execute(request, new DiscoveryResponseHandler<Duration>("Announcement")
+        return httpClient.executeAsync(request, new DiscoveryResponseHandler<Duration>("Announcement")
         {
             @Override
             public Duration handle(Request request, Response response)
@@ -129,7 +129,7 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
                 .setUri(URI.create(uri + "/v1/announcement/" + nodeInfo.getNodeId()))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
                 .build();
-        return httpClient.execute(request, new DiscoveryResponseHandler<Void>("Unannouncement"));
+        return httpClient.executeAsync(request, new DiscoveryResponseHandler<Void>("Unannouncement"));
     }
 
     private Duration extractMaxAge(Response response)

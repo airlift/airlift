@@ -29,6 +29,7 @@ public class HttpClientConfig
 {
     private Duration connectTimeout = new Duration(1, TimeUnit.SECONDS);
     private Duration readTimeout = new Duration(1, TimeUnit.MINUTES);
+    private Duration keepAliveInterval = null;
     private int maxConnections = 200;
     private int maxConnectionsPerServer = 20;
 
@@ -57,6 +58,18 @@ public class HttpClientConfig
     public HttpClientConfig setReadTimeout(Duration readTimeout)
     {
         this.readTimeout = readTimeout;
+        return this;
+    }
+
+    public Duration getKeepAliveInterval()
+    {
+        return keepAliveInterval;
+    }
+
+    @Config("http-client.keep-alive-interval")
+    public HttpClientConfig setKeepAliveInterval(Duration keepAliveInterval)
+    {
+        this.keepAliveInterval = keepAliveInterval;
         return this;
     }
 

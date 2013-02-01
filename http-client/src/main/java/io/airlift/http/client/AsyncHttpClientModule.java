@@ -16,7 +16,6 @@
 package io.airlift.http.client;
 
 import com.google.common.annotations.Beta;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -24,15 +23,12 @@ import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 
-import javax.annotation.PreDestroy;
 import java.lang.annotation.Annotation;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.configuration.ConfigurationModule.bindConfig;
 import static io.airlift.http.client.CompositeQualifierImpl.compositeQualifier;
-import static java.util.concurrent.Executors.newFixedThreadPool;
 
 @Beta
 public class AsyncHttpClientModule
@@ -54,11 +50,12 @@ public class AsyncHttpClientModule
     {
         // bind the configuration
         bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(HttpClientConfig.class);
-        bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(AsyncHttpClientConfig.class);
 
-        // bind the client and executor
+        // bind the async client
         binder.bind(AsyncHttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(annotation)).in(Scopes.SINGLETON);
-        binder.bind(ExecutorService.class).annotatedWith(annotation).toProvider(new ExecutorServiceProvider(name, annotation)).in(Scopes.SINGLETON);
+
+        // bind the a sync client also
+        binder.bind(HttpClient.class).annotatedWith(annotation).to(Key.get(AsyncHttpClient.class, annotation));
 
         // kick off the binding for the filter set
         newSetBinder(binder, HttpRequestFilter.class, filterQualifier(annotation));
@@ -68,46 +65,7 @@ public class AsyncHttpClientModule
     public void addAlias(Class<? extends Annotation> alias)
     {
         binder.bind(AsyncHttpClient.class).annotatedWith(alias).to(Key.get(AsyncHttpClient.class, annotation));
-    }
-
-    private static class ExecutorServiceProvider implements Provider<ExecutorService>
-    {
-        private final String name;
-        private final Class<? extends Annotation> annotation;
-        private ExecutorService executorService;
-        private Injector injector;
-
-        private ExecutorServiceProvider(String name, Class<? extends Annotation> annotation)
-        {
-            this.name = name;
-            this.annotation = annotation;
-        }
-
-        @PreDestroy
-        public void stop()
-        {
-            if (executorService != null) {
-                executorService.shutdownNow();
-                executorService = null;
-            }
-        }
-
-        @Inject
-        public void setInjector(Injector injector)
-        {
-
-            this.injector = injector;
-        }
-
-        @Override
-        public ExecutorService get()
-        {
-            if (executorService == null) {
-                AsyncHttpClientConfig asyncConfig = injector.getInstance(Key.get(AsyncHttpClientConfig.class, annotation));
-                executorService = newFixedThreadPool(asyncConfig.getWorkerThreads(), new ThreadFactoryBuilder().setDaemon(true).setNameFormat(name + "-http-client-%s").build());
-            }
-            return executorService;
-        }
+        binder.bind(HttpClient.class).annotatedWith(alias).to(Key.get(AsyncHttpClient.class, annotation));
     }
 
     private static class HttpClientProvider implements Provider<AsyncHttpClient>
@@ -130,10 +88,9 @@ public class AsyncHttpClientModule
         @Override
         public AsyncHttpClient get()
         {
-            ExecutorService executorService = injector.getInstance(Key.get(ExecutorService.class, annotation));
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
             Set<HttpRequestFilter> filters = injector.getInstance(filterKey(annotation));
-            return new AsyncHttpClient(new ApacheHttpClient(config), executorService, filters);
+            return new ApacheAsyncHttpClient(config, filters);
         }
     }
 

@@ -7,6 +7,26 @@ dependency changes as all the artifacts are named differently and all the
 classes are in different packages. The upgrade guide has more details:
 http://wiki.fasterxml.com/JacksonUpgradeFrom19To20
 
+* True async http client
+
+The AsyncHttpClient has been rewritten on top of the new Apache async http
+client library.  As part of this work, the AsyncHttpClient has been converted
+into an interface and the main implementation is ApacheAsyncHttpClient.
+Additionally, the execute method has been renamed to executeAsync so the
+AsyncHttpClient can extend HttpClient.  The change is to simply replace:
+
+    asyncHttpClient.execute(request, responseHandler);
+
+with:
+
+    asyncHttpClient.executeAsync(request, responseHandler)
+
+The other main change is when using the HttpClientBinder.  The bindAsyncHttpClient
+method now binds both an AsyncHttpClient and a HttpClient, so if you were binding
+both before, you will need to remove the call to bindHttpClient.
+
+This API remains in BETA, and is subject to additional backwards incompatible
+changes.
 
 Airlift 0.69
 

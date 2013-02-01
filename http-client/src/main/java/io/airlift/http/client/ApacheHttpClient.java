@@ -18,18 +18,15 @@ package io.airlift.http.client;
 import com.google.common.annotations.Beta;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.CountingInputStream;
-import com.google.common.io.CountingOutputStream;
 import io.airlift.units.Duration;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
@@ -41,11 +38,9 @@ import org.weakref.jmx.Managed;
 import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.SocketTimeoutException;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -81,7 +76,10 @@ public class ApacheHttpClient
         httpParams.setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, (int) config.getConnectTimeout().toMillis());
         httpParams.setParameter(CoreConnectionPNames.SO_LINGER, 0); // do we need this?
 
-        this.httpClient = new DefaultHttpClient(connectionManager, httpParams);
+        DefaultHttpClient defaultHttpClient = new DefaultHttpClient(connectionManager, httpParams);
+        defaultHttpClient.setKeepAliveStrategy(new FixedIntervalKeepAliveStrategy(config.getKeepAliveInterval()));
+        this.httpClient = defaultHttpClient;
+
         this.requestFilters = ImmutableList.copyOf(requestFilters);
     }
 
@@ -116,11 +114,11 @@ public class ApacheHttpClient
         }
 
         final long requestStart = System.nanoTime();
-        final GenericHttpRequest genericHttpRequest = new GenericHttpRequest(request);
+        final StatsHttpUriRequest httpUriRequest = StatsHttpUriRequest.createGenericHttpRequest(request);
         final Request finalRequest = request;
         try {
             T value = httpClient.execute(
-                    genericHttpRequest,
+                    httpUriRequest,
                     new org.apache.http.client.ResponseHandler<T>()
                     {
                         @Override
@@ -143,7 +141,7 @@ public class ApacheHttpClient
 
                                 stats.record(finalRequest.getMethod(),
                                         response.getStatusCode(),
-                                        genericHttpRequest.getBytesWritten(),
+                                        httpUriRequest.getBytesWritten(),
                                         response.getBytesRead(),
                                         requestProcessingTime,
                                         responseProcessingTime);
@@ -172,106 +170,6 @@ public class ApacheHttpClient
         }
     }
 
-    private static class GenericHttpRequest
-            extends HttpEntityEnclosingRequestBase
-    {
-        private final String method;
-        private CountingOutputStream countingOutputStream;
-
-        public GenericHttpRequest(final Request request)
-        {
-            this.method = request.getMethod();
-            setURI(request.getUri());
-
-            for (Entry<String, String> entry : request.getHeaders().entries()) {
-                addHeader(entry.getKey(), entry.getValue());
-            }
-
-            if (request.getBodyGenerator() != null) {
-                setEntity(new HttpEntity()
-                {
-                    @Override
-                    public boolean isRepeatable()
-                    {
-                        return true;
-                    }
-
-                    @Override
-                    public boolean isChunked()
-                    {
-                        return true;
-                    }
-
-                    @Override
-                    public long getContentLength()
-                    {
-                        return -1;
-                    }
-
-                    @Override
-                    public Header getContentType()
-                    {
-                        return null;
-                    }
-
-                    @Override
-                    public Header getContentEncoding()
-                    {
-                        return null;
-                    }
-
-                    @Override
-                    public InputStream getContent()
-                            throws IOException, IllegalStateException
-                    {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override
-                    public void writeTo(OutputStream out)
-                            throws IOException
-                    {
-                        if (request.getBodyGenerator() != null) {
-                            try {
-                                countingOutputStream = new CountingOutputStream(out);
-                                request.getBodyGenerator().write(countingOutputStream);
-                            }
-                            catch (Exception e) {
-                                Throwables.propagateIfPossible(e, IOException.class);
-                                throw new IOException(e);
-                            }
-                        }
-                    }
-
-                    @Override
-                    public boolean isStreaming()
-                    {
-                        return true;
-                    }
-
-                    @Override
-                    public void consumeContent()
-                    {
-                    }
-                });
-            }
-        }
-
-        @Override
-        public String getMethod()
-        {
-            return method;
-        }
-
-        public long getBytesWritten()
-        {
-            if (countingOutputStream == null) {
-                return 0;
-            }
-            return countingOutputStream.getCount();
-        }
-    }
-
     private static class ExceptionFromResponseHandler
             extends IOException
     {
@@ -281,7 +179,7 @@ public class ApacheHttpClient
         }
     }
 
-    private static class MyResponse
+    static class MyResponse
             implements Response
     {
         private final HttpResponse response;

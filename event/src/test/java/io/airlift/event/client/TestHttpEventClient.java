@@ -19,8 +19,7 @@ import com.google.common.base.Throwables;
 import com.google.common.io.CharStreams;
 import io.airlift.discovery.client.HttpServiceSelector;
 import io.airlift.discovery.client.testing.StaticHttpServiceSelector;
-import io.airlift.http.client.ApacheHttpClient;
-import io.airlift.http.client.AsyncHttpClient;
+import io.airlift.http.client.ApacheAsyncHttpClient;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
@@ -48,7 +47,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static com.google.common.collect.Lists.newArrayList;
@@ -152,10 +150,7 @@ public class TestHttpEventClient
                 selector,
                 eventWriter,
                 new NodeInfo("test"),
-                new AsyncHttpClient(
-                        new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))),
-                        Executors.newCachedThreadPool()
-                ));
+                new ApacheAsyncHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))));
     }
 
     private Server createServer(final DummyServlet servlet)
