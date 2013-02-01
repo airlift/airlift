@@ -1,6 +1,7 @@
 * 0.70
 
 - Upgrade to Jackson 2.1.3
+- Change AsyncHttpClient to be a true async http client
 
 * 0.69
 
