@@ -26,6 +26,7 @@ import com.google.common.net.MediaType;
 import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.json.JsonCodec;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ConnectException;
@@ -37,7 +38,7 @@ public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<
 
     public static <T> FullJsonResponseHandler<T> createFullJsonResponseHandler(JsonCodec<T> jsonCodec)
     {
-        return new FullJsonResponseHandler<T>(jsonCodec);
+        return new FullJsonResponseHandler<>(jsonCodec);
     }
 
     private final JsonCodec<T> jsonCodec;
@@ -61,45 +62,48 @@ public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<
     {
         String contentType = response.getHeader("Content-Type");
         if (!MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
-            return new JsonResponse<T>(response.getStatusCode(), response.getStatusMessage(), response.getHeaders());
+            return new JsonResponse<>(response.getStatusCode(), response.getStatusMessage(), response.getHeaders(), jsonCodec);
         }
         try {
             String json = CharStreams.toString(new InputStreamReader(response.getInputStream(), Charsets.UTF_8));
-            T value = jsonCodec.fromJson(json);
-
-            return new JsonResponse<T>(response.getStatusCode(), response.getStatusMessage(), response.getHeaders(), value);
+            return new JsonResponse<>(response.getStatusCode(), response.getStatusMessage(), response.getHeaders(), jsonCodec, json);
         }
         catch (IOException e) {
             throw new RuntimeException("Error reading JSON response from server", e);
         }
     }
 
+    @NotThreadSafe
     public static class JsonResponse<T>
     {
         private final int statusCode;
         private final String statusMessage;
         private final ListMultimap<String, String> headers;
         private final boolean hasValue;
-        private final T value;
+        private final JsonCodec<T> jsonCodec;
+        private final String json;
+        private T value;
 
-        public JsonResponse(int statusCode, String statusMessage, ListMultimap<String, String> headers)
+        public JsonResponse(int statusCode, String statusMessage, ListMultimap<String, String> headers, JsonCodec<T> jsonCodec)
         {
             this.statusCode = statusCode;
             this.statusMessage = statusMessage;
+            this.jsonCodec = jsonCodec;
             this.headers = ImmutableListMultimap.copyOf(headers);
 
             this.hasValue = false;
-            this.value = null;
+            this.json = null;
         }
 
-        public JsonResponse(int statusCode, String statusMessage, ListMultimap<String, String> headers, T value)
+        public JsonResponse(int statusCode, String statusMessage, ListMultimap<String, String> headers, JsonCodec<T> jsonCodec, String json)
         {
             this.statusCode = statusCode;
             this.statusMessage = statusMessage;
+            this.jsonCodec = jsonCodec;
             this.headers = ImmutableListMultimap.copyOf(headers);
 
             this.hasValue = true;
-            this.value = value;
+            this.json = json;
         }
 
         public int getStatusCode()
@@ -128,13 +132,21 @@ public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<
 
         public boolean hasValue()
         {
-            return hasValue;
+            return json != null;
         }
 
         public T getValue()
         {
             Preconditions.checkState(hasValue, "Response does not contain a JSON value");
+            if (value == null) {
+                value = jsonCodec.fromJson(json);
+            }
             return value;
+        }
+
+        public String getJson()
+        {
+            return json;
         }
 
         @Override
