@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>io.airlift</groupId>
     <artifactId>sample-server</artifactId>
-    <version>0.70-SNAPSHOT</version>
     <name>sample-server</name>
 
     <parent>
@@ -14,21 +12,9 @@
     </parent>
 
     <properties>
+        <air.main.basedir>${project.parent.basedir}</air.main.basedir>
         <main-class>io.airlift.sample.Main</main-class>
     </properties>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <name>Sonatype Nexus Snapshots</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-        </snapshotRepository>
-        <repository>
-            <id>sonatype-nexus-staging</id>
-            <name>Nexus Release Repository</name>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 
     <dependencies>
         <dependency>
@@ -47,13 +33,8 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.inject.extensions</groupId>
-            <artifactId>guice-multibindings</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
+            <artifactId>annotations</artifactId>
         </dependency>
 
         <dependency>
@@ -145,15 +126,6 @@
             <groupId>io.airlift</groupId>
             <artifactId>http-client-experimental</artifactId>
         </dependency>
-
-        <!-- for packaging -->
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>launcher</artifactId>
-            <classifier>bin</classifier>
-            <type>tar.gz</type>
-        </dependency>
-
 
         <!-- for testing -->
         <dependency>
