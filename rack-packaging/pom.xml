@@ -6,6 +6,11 @@
     <version>0.71-SNAPSHOT</version>
     <name>rack-packaging</name>
     <description>Assembly for building a galaxy binary for the Platform Rack Server</description>
+    <packaging>jar</packaging>
+
+    <properties>
+        <air.main.basedir>${project.parent.basedir}</air.main.basedir>
+    </properties>
 
     <parent>
         <groupId>io.airlift</groupId>

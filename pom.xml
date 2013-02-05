@@ -12,12 +12,21 @@
 
     <parent>
         <groupId>io.airlift</groupId>
-        <artifactId>library</artifactId>
-        <version>0.71-SNAPSHOT</version>
-        <relativePath>library/pom.xml</relativePath>
+        <artifactId>airbase</artifactId>
+        <version>3-SNAPSHOT</version>
     </parent>
 
     <inceptionYear>2010</inceptionYear>
+
+    <properties>
+        <air.check.fail-all>false</air.check.fail-all>
+        <air.check.fail-basic>true</air.check.fail-basic>
+        <air.check.skip-pmd>true</air.check.skip-pmd>
+
+        <dep.airlift.version>${project.version}</dep.airlift.version>
+        <dep.packaging.version>${project.version}</dep.packaging.version>
+    </properties>
+
     <organization>
         <name>Airlift</name>
     </organization>
@@ -66,6 +75,11 @@
             <email>mkent@proofpoint.com</email>
         </developer>
         <developer>
+            <id>hgschmie</id>
+            <name>Henning Schmiedehausen</name>
+            <email>henning@schmiedehausen.org</email>
+        </developer>
+        <developer>
             <id>mtraverso</id>
             <name>Martin Traverso</name>
             <email>mtraverso@gmail.com</email>
@@ -77,371 +91,271 @@
         </developer>
     </developers>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-
     <scm>
         <connection>scm:git:git://github.com/airlift/airlift.git</connection>
         <developerConnection>scm:git:git@github.com:airlift/airlift.git</developerConnection>
         <url>http://github.com/airlift/airlift/tree/master</url>
     </scm>
 
-    <prerequisites>
-        <maven>3.0</maven>
-    </prerequisites>
+    <modules>
+        <!-- components -->
+        <module>bootstrap</module>
+        <module>configuration</module>
+        <module>dbpool</module>
+        <module>discovery</module>
+        <module>event</module>
+        <module>http-client</module>
+        <module>http-server</module>
+        <module>jaxrs</module>
+        <module>jmx-http-rpc</module>
+        <module>jmx-http</module>
+        <module>jmx</module>
+        <module>json</module>
+        <module>launcher</module>
+        <module>log</module>
+        <module>node</module>
+        <module>packaging</module>
+        <module>rack-launcher</module>
+        <module>rack-packaging</module>
+        <module>rack</module>
+        <module>stats</module>
+        <module>testing</module>
+        <module>trace-token</module>
+        <module>units</module>
 
-    <repositories>
-        <!-- TODO remove when jersey is in maven central -->
-        <repository>
-            <id>maven2-repository.dev.java.net</id>
-            <name>Java.net Repository for Maven</name>
-            <url>http://download.java.net/maven/2/</url>
-        </repository>
-    </repositories>
+        <!-- base poms -->
+        <module>rack-server-base</module>
+
+        <!-- skeleton / sample code -->
+        <module>skeleton-server</module>
+        <module>sample-server</module>
+
+        <!-- archetype generators. Keep those last! -->
+        <module>skeleton-server-archetype-builder</module>
+        <module>sample-server-archetype-builder</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>bootstrap</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>configuration</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>dbpool</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>discovery-experimental</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>event-experimental</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>http-client-experimental</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>http-server</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>jaxrs</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>jmx-http-rpc-experimental</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>jmx-http-experimental</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>jmx</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>json</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>launcher</artifactId>
+                <version>${dep.airlift.version}</version>
+                <classifier>bin</classifier>
+                <type>tar.gz</type>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>log</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>node</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>packaging</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>rack-launcher-experimental</artifactId>
+                <version>${dep.airlift.version}</version>
+                <classifier>bin</classifier>
+                <type>tar.gz</type>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>rack-packaging-experimental</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>rack-experimental</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>stats</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>testing</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>trace-token</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>units</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>2.6</version>
+            </dependency>
+
+            <dependency>
+                <groupId>commons-codec</groupId>
+                <artifactId>commons-codec</artifactId>
+                <version>1.7</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>4.2.3</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore</artifactId>
+                <version>4.2.3</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty</artifactId>
+                <version>3.6.2.Final</version>
+            </dependency>
+
+            <dependency>
+                <groupId>mysql</groupId>
+                <artifactId>mysql-connector-java</artifactId>
+                <version>5.1.23</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>1.3.170</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.beust</groupId>
+                <artifactId>jcommander</artifactId>
+                <version>1.30</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jruby</groupId>
+                <artifactId>jruby-complete</artifactId>
+                <version>1.6.2</version>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
 
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <version>1.0.1</version>
-                <executions>
-                    <execution>
-                        <id>enforce-versions</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <requireMavenVersion>
-                                    <version>3.0.0</version>
-                                </requireMavenVersion>
-                                <requireJavaVersion>
-                                    <version>1.7</version>
-                                </requireJavaVersion>
-                                <bannedDependencies>
-                                    <excludes>
-                                        <exclude>com.google.collections:google-collections</exclude>
-                                        <exclude>com.google.guava:guava</exclude>
-                                    </excludes>
-                                    <includes>
-                                        <include>com.google.guava:guava:[10.0.1,)</include>
-                                    </includes>
-                                </bannedDependencies>
-                            </rules>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <groupId>com.ning.maven.plugins</groupId>
-                <artifactId>maven-duplicate-finder-plugin</artifactId>
-                <version>1.0.3</version>
-                <configuration>
-                    <exceptions>
-                        <exception>
-                            <!-- Same jersey versions... -->
-                            <conflictingDependencies>
-                                <dependency>
-                                    <groupId>com.sun.jersey</groupId>
-                                    <artifactId>jersey-server</artifactId>
-                                    <version>1.9.1</version>
-                                </dependency>
-                                <dependency>
-                                    <groupId>com.sun.jersey</groupId>
-                                    <artifactId>jersey-core</artifactId>
-                                    <version>1.9.1</version>
-                                </dependency>
-                                <dependency>
-                                    <groupId>com.sun.jersey.contribs</groupId>
-                                    <artifactId>jersey-multipart</artifactId>
-                                    <version>1.9.1</version>
-                                </dependency>
-                            </conflictingDependencies>
-                            <resources>
-                                <resource>META-INF/jersey-module-version</resource>
-                            </resources>
-                        </exception>
-
-                        <exception>
-                            <!-- For bval-jsr303 -->
-                            <conflictingDependencies>
-                                <dependency>
-                                    <groupId>commons-beanutils</groupId>
-                                    <artifactId>commons-beanutils-core</artifactId>
-                                    <version>1.8.3</version>
-                                </dependency>
-                                <dependency>
-                                    <groupId>commons-collections</groupId>
-                                    <artifactId>commons-collections</artifactId>
-                                    <version>3.2.1</version>
-                                </dependency>
-                            </conflictingDependencies>
-                            <classes>
-                                <class>org.apache.commons.collections.ArrayStack</class>
-                                <class>org.apache.commons.collections.Buffer</class>
-                                <class>org.apache.commons.collections.BufferUnderflowException</class>
-                                <class>org.apache.commons.collections.FastHashMap</class>
-                            </classes>
-                        </exception>
-                    </exceptions>
-
-                    <ignoredResources>
-                        <!-- For all the jetty packages -->
-                        <ignoredResource>about\.html</ignoredResource>
-                    </ignoredResources>
-
-                    <ignoredDependencies>
-                        <!-- jRuby complete isn't very safe, but we only use it in the rack project -->
-                        <dependency>
-                            <groupId>org.jruby</groupId>
-                            <artifactId>jruby-complete</artifactId>
-                        </dependency>
-                    </ignoredDependencies>
-
-                    <failBuildInCaseOfConflict>true</failBuildInCaseOfConflict>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-
         <pluginManagement>
             <plugins>
                 <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-gpg-plugin</artifactId>
-                    <version>1.4</version>
-                    <executions>
-                        <execution>
-                            <id>sign-artifacts</id>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>sign</goal>
-                            </goals>
-                            <configuration>
-                                <useAgent>true</useAgent>
-                            </configuration>
-                        </execution>
-                    </executions>
+                    <groupId>io.airlift</groupId>
+                    <artifactId>bundler-packaging-plugin</artifactId>
+                    <version>1.1</version>
                 </plugin>
-
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.8.1</version>
-                    <!-- Work around Cobertura incompatibilty with Java 7 -->
-                    <configuration>
-                        <argLine>-XX:-UseSplitVerifier</argLine>
-                    </configuration>
+                    <artifactId>maven-antrun-plugin</artifactId>
+                    <version>1.7</version>
                 </plugin>
-
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-source-plugin</artifactId>
-                    <version>2.1.2</version>
-                    <configuration>
-                        <attach>true</attach>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>create-source-jar</id>
-                            <goals>
-                                <goal>jar-no-fork</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>2.3.2</version>
-                    <configuration>
-                        <source>1.7</source>
-                        <target>1.7</target>
-                    </configuration>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>findbugs-maven-plugin</artifactId>
-                    <version>2.3.2</version>
-                    <configuration>
-                        <findbugsXmlOutput>true</findbugsXmlOutput>
-                        <xmlOutput>true</xmlOutput>
-                    </configuration>
-                </plugin>
-
-
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>cobertura-maven-plugin</artifactId>
-                    <version>2.4</version>
-                    <configuration>
-                        <formats>
-                            <format>xml</format>
-                        </formats>
-                    </configuration>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-install-plugin</artifactId>
-                    <version>2.3.1</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-resources-plugin</artifactId>
-                    <version>2.4.3</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-deploy-plugin</artifactId>
-                    <version>2.5</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.8</version>
-                    <configuration>
-                        <additionalparam>
-                            -quiet
-                        </additionalparam>
-                        <!--
-                          | Apple's JVM sometimes requires more memory
-                        -->
-                        <additionalJOption>-J-Xmx1024m</additionalJOption>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>attach-javadocs</id>
-                            <goals>
-                                <goal>jar</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-release-plugin</artifactId>
-                    <version>2.2.2</version>
-                    <configuration>
-                        <mavenExecutorId>forked-path</mavenExecutorId>
-                        <arguments>-Psonatype-oss-release</arguments>
-                        <useReleaseProfile>false</useReleaseProfile>
-                        <pushChanges>false</pushChanges>
-                        <localCheckout>true</localCheckout>
-                        <preparationGoals>clean install</preparationGoals>
-                        <autoVersionSubmodules>true</autoVersionSubmodules>
-                        <tagNameFormat>@{project.version}</tagNameFormat>
-                    </configuration>
-                </plugin>
-
-                <plugin>
-                    <groupId>com.mycila.maven-license-plugin</groupId>
-                    <artifactId>maven-license-plugin</artifactId>
-                    <version>1.9.0</version>
-                    <configuration>
-                        <skipExistingHeaders>true</skipExistingHeaders>
-                        <header>license-header.txt</header>
-                        <mapping>
-                            <java>SLASHSTAR_STYLE</java>
-                        </mapping>
-                        <excludes>
-                            <exclude>**/README.txt</exclude>
-                            <exclude>**/config.properties</exclude>
-                            <exclude>**/log.properties</exclude>
-                            <exclude>**/src/test/resources/gems/**</exclude>
-                            <exclude>**/*.html</exclude>
-                        </excludes>
-                    </configuration>
+                    <artifactId>maven-invoker-plugin</artifactId>
+                    <version>1.5</version>
                 </plugin>
             </plugins>
         </pluginManagement>
     </build>
-
-    <profiles>
-        <profile>
-            <id>sonatype-oss-release</id>
-            <properties>
-                <skipTests>true</skipTests> <!-- tests run in the preparation step of the release -->
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.4</version>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                                <configuration>
-                                    <useAgent>true</useAgent>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
-
-    <modules>
-        <module>library</module>
-        <module>rack</module>
-        <module>rack-launcher</module>
-        <module>rack-packaging</module>
-        <module>rack-server-base</module>
-        <module>testing</module>
-        <module>launcher</module>
-        <module>packaging</module>
-        <module>log</module>
-        <module>node</module>
-        <module>event</module>
-        <module>json</module>
-        <module>http-client</module>
-        <module>http-server</module>
-        <module>jaxrs</module>
-        <module>jmx</module>
-        <module>jmx-http</module>
-        <module>jmx-http-rpc</module>
-        <module>bootstrap</module>
-        <module>configuration</module>
-        <module>discovery</module>
-        <module>stats</module>
-        <module>units</module>
-        <module>dbpool</module>
-        <module>rest-server-base</module>
-        <module>sample-server</module>
-        <module>skeleton-server</module>
-        <module>sample-server-archetype-builder</module>
-        <module>skeleton-server-archetype-builder</module>
-        <module>trace-token</module>
-    </modules>
 </project>
 
