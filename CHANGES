@@ -28,9 +28,8 @@ both before, you will need to remove the call to bindHttpClient.
 This API remains in BETA, and is subject to additional backwards incompatible
 changes.
 
-* The HttpClient and AsyncHttpClients now implement Closeable and properly
-  shutdown when used as lifecycle objects. Calling close shuts down the
-  connection pool for the underlying Apache HTTP client.
+* Disabled auto-detection of constructors and use of getters as setters in
+  Jackson.
 
 * Pretty-printed JSON
 
@@ -38,7 +37,13 @@ The injected JsonCodecFactory and injected codecs no longer produce
 pretty-printed JSON. The previous behavior was a bug. JsonCodecFactory
 has a method to return a factory that produces pretty-print codecs.
 
+* The HttpClient and AsyncHttpClients now implement Closeable and properly
+  shutdown when used as lifecycle objects. Calling close shuts down the
+  connection pool for the underlying Apache HTTP client.
+
 * DataSize and Duration can now be serialized as json
+
+* Upgrade jmxutils to 1.13
 
 * [Bug] Don't throw an exception from http request logger when wall clock time goes backwards
 
