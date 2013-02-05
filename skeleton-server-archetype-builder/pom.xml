@@ -12,6 +12,7 @@
     </parent>
 
     <properties>
+        <air.main.basedir>${project.parent.basedir}</air.main.basedir>
         <server-name>skeleton-server</server-name>
     </properties>
 
@@ -20,7 +21,6 @@
             <!-- This all super lame but works around a ton of bugs/limitations in the archetype plugin -->
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.6</version>
                 <executions>
                     <execution>
                         <id>make-clean-copy-of-project</id>
@@ -36,6 +36,7 @@
                                         <include name="pom.xml" />
                                         <include name=".gitignore" />
                                         <include name="README.txt" />
+                                        <include name=".build-airlift" />
                                     </fileset>
                                 </copy>
 
@@ -50,7 +51,6 @@
             </plugin>
             <plugin>
                 <artifactId>maven-invoker-plugin</artifactId>
-                <version>1.5</version>
                 <executions>
                     <execution>
                         <id>generate-archetype</id>
@@ -81,7 +81,6 @@
             </plugin>
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.6</version>
                 <executions>
                     <execution>
                         <id>munge-generated-pom</id>
@@ -97,14 +96,14 @@
 
                                 <replace file="${project.build.directory}/archetype/src/main/resources/archetype-resources/pom.xml">
                                     <replacefilter>
-                                        <replacetoken><![CDATA[<relativePath>../rest-server-base/pom.xml</relativePath>]]></replacetoken>
+                                        <replacetoken><![CDATA[<air.main.basedir>${project.parent.basedir}</air.main.basedir>]]></replacetoken>
                                         <replacevalue />
                                     </replacefilter>
                                     <replacefilter>
                                         <replacetoken><![CDATA[<main-class>io.airlift.skeleton.Main</main-class>]]></replacetoken>
                                         <replacevalue><![CDATA[<main-class>${package}.Main</main-class>]]></replacevalue>
                                     </replacefilter>
-                                    <!-- King of the lame:  can't have a literal ${artifictId} in a value anywhere in a pom or it gets interpolated so split the property across two replacements -->
+                                    <!-- King of the lame:  can't have a literal ${artifactId} in a value anywhere in a pom or it gets interpolated so split the property across two replacements -->
                                     <replacefilter>
                                         <replacetoken><![CDATA[<name>]]></replacetoken>
                                         <replacevalue><![CDATA[<name>${]]></replacevalue>
@@ -164,33 +163,6 @@
     <url>http://github.com/airlift/airlift/tree/master</url>
   </scm>
 
-    <profiles>
-        <profile>
-            <id>sonatype-oss-release</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.4</version>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                                <configuration>
-                                    <useAgent>true</useAgent>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
-
   <build>]]></replacevalue>
                                     </replacefilter>
                                 </replace>
@@ -202,10 +174,8 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <artifactId>maven-invoker-plugin</artifactId>
-                <version>1.5</version>
                 <configuration>
                     <pomIncludes>
                         <pomInclude>pom.xml</pomInclude>
@@ -254,38 +224,4 @@
             </plugin>
         </plugins>
     </build>
-    <profiles>
-        <profile>
-            <id>sonatype-oss-release</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-invoker-plugin</artifactId>
-                        <version>1.5</version>
-                        <configuration>
-                            <projectsDirectory>${project.build.directory}/archetype</projectsDirectory>
-                            <streamLogs>true</streamLogs>
-                            <profiles>
-                                <profile>sonatype-oss-release</profile>
-                            </profiles>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>deploy-archetype</id>
-                                <phase>deploy</phase>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <configuration>
-                                    <goals>
-                                        <goal>deploy</goal>
-                                    </goals>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>
