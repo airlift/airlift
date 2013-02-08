@@ -45,6 +45,11 @@ has a method to return a factory that produces pretty-print codecs.
 
 * Upgrade jmxutils to 1.13
 
+* H2 improvements
+  - Improve validation of H2EmbeddedDataSource config
+  - Allow use of H2 without an init script
+  - Enable mvcc support for embedded H2
+
 * [Bug] Don't throw an exception from http request logger when wall clock time goes backwards
 
 Platform 0.69
