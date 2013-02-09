@@ -15,15 +15,19 @@
  */
 package com.proofpoint.tracetoken;
 
+import com.proofpoint.log.Logging;
+
 import java.util.UUID;
 
-public class TraceTokenManager
+final public class TraceTokenManager
 {
-    private final ThreadLocal<String> token = new ThreadLocal<String>();
+    private static final String TRACE_TOKEN = "TraceToken";
+    private final ThreadLocal<String> token = new ThreadLocal<>();
 
     public void registerRequestToken(String token)
     {
         this.token.set(token);
+        Logging.putMDC(TRACE_TOKEN, token);
     }
 
     public String getCurrentRequestToken()
@@ -34,8 +38,14 @@ public class TraceTokenManager
     public String createAndRegisterNewRequestToken()
     {
         String newToken = UUID.randomUUID().toString();
-        this.token.set(newToken);
+        registerRequestToken(newToken);
 
         return newToken;
+    }
+
+    public void clearRequestToken()
+    {
+        this.token.remove();
+        Logging.removeMDC(TRACE_TOKEN);
     }
 }

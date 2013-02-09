@@ -25,6 +25,7 @@ import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.status.Status;
 import ch.qos.logback.core.status.StatusChecker;
+import org.apache.log4j.MDC;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
@@ -49,7 +50,7 @@ import java.util.logging.LogManager;
  */
 public class Logging
 {
-    private static final String PATTERN = "%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}\\t%5p\\t%t\\t%c\\t%m%n";
+    private static final String PATTERN = "%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}\\t%5p\\t%t\\t%c\\t%X\\t%m%n";
     private final LoggerContext context;
     private final ch.qos.logback.classic.Logger root;
     private final Logger log = Logger.get(Logging.class);
@@ -103,7 +104,7 @@ public class Logging
         encoder.setContext(context);
         encoder.start();
 
-        consoleAppender = new OutputStreamAppender<ILoggingEvent>();
+        consoleAppender = new OutputStreamAppender<>();
         consoleAppender.setContext(context);
         consoleAppender.setEncoder(encoder);
         consoleAppender.setOutputStream(stream); // needs to happen after setEncoder()
@@ -129,9 +130,9 @@ public class Logging
         encoder.setContext(context);
         encoder.start();
 
-        RollingFileAppender<ILoggingEvent> fileAppender = new RollingFileAppender<ILoggingEvent>();
-        TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<ILoggingEvent>();
-        SizeAndTimeBasedFNATP<ILoggingEvent> triggeringPolicy = new SizeAndTimeBasedFNATP<ILoggingEvent>();
+        RollingFileAppender<ILoggingEvent> fileAppender = new RollingFileAppender<>();
+        TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
+        SizeAndTimeBasedFNATP<ILoggingEvent> triggeringPolicy = new SizeAndTimeBasedFNATP<>();
 
         rollingPolicy.setContext(context);
         rollingPolicy.setFileNamePattern(logPath + "-%d{yyyy-MM-dd}.%i.log.gz");
@@ -167,12 +168,8 @@ public class Logging
             throws IOException
     {
         Properties properties = new Properties();
-        Reader reader = new FileReader(file);
-        try {
+        try (Reader reader = new FileReader(file)) {
             properties.load(reader);
-        }
-        finally {
-            reader.close();
         }
 
         processLevels(properties);
@@ -252,5 +249,15 @@ public class Logging
         if (config.getLevelsFile() != null) {
             setLevels(new File(config.getLevelsFile()));
         }
+    }
+
+    public static void putMDC(String key, Object value)
+    {
+        MDC.put(key, value);
+    }
+
+    public static void removeMDC(String key)
+    {
+        MDC.remove(key);
     }
 }
