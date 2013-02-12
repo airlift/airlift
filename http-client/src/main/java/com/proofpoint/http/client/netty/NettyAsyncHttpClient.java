@@ -54,21 +54,26 @@ public class NettyAsyncHttpClient
         this(config, new AsyncHttpClientConfig(), Collections.<HttpRequestFilter>emptySet());
     }
 
-    public NettyAsyncHttpClient(HttpClientConfig config, AsyncHttpClientConfig nettyConfig, Set<? extends HttpRequestFilter> requestFilters)
+    public NettyAsyncHttpClient(HttpClientConfig config, AsyncHttpClientConfig asyncConfig, Set<? extends HttpRequestFilter> requestFilters)
     {
         Preconditions.checkNotNull(config, "config is null");
-        Preconditions.checkNotNull(nettyConfig, "nettyConfig is null");
+        Preconditions.checkNotNull(asyncConfig, "asyncConfig is null");
         Preconditions.checkNotNull(requestFilters, "requestFilters is null");
 
         this.requestFilters = ImmutableList.copyOf(requestFilters);
 
         ChannelFactory channelFactory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
 
-        executor = new OrderedMemoryAwareThreadPoolExecutor(nettyConfig.getWorkerThreads(), 0, 0);
+        executor = new OrderedMemoryAwareThreadPoolExecutor(asyncConfig.getWorkerThreads(), 0, 0);
 
-        HttpClientPipelineFactory pipelineFactory = new HttpClientPipelineFactory(executor, config.getReadTimeout(), nettyConfig.getMaxContentLength());
+        HttpClientPipelineFactory pipelineFactory = new HttpClientPipelineFactory(executor, config.getReadTimeout(), asyncConfig.getMaxContentLength());
 
-        nettyConnectionPool = new NettyConnectionPool(channelFactory, pipelineFactory, config.getConnectTimeout());
+        nettyConnectionPool = new NettyConnectionPool(channelFactory,
+                pipelineFactory,
+                config.getConnectTimeout(),
+                config.getMaxConnections(),
+                executor,
+                asyncConfig.isEnableConnectionPooling());
 
         // give a the pipeline factory a reference to the connection pool so it can return connections when the request is complete
         pipelineFactory.setNettyConnectionPool(nettyConnectionPool);

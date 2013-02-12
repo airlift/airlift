@@ -28,6 +28,7 @@ public class AsyncHttpClientConfig
 {
     private int workerThreads = Runtime.getRuntime().availableProcessors() * 4;;
     private DataSize maxContentLength = new DataSize(16, Unit.MEGABYTE);
+    private boolean enableConnectionPooling;
 
     @Min(1)
     public int getWorkerThreads()
@@ -52,6 +53,18 @@ public class AsyncHttpClientConfig
     public AsyncHttpClientConfig setMaxContentLength(DataSize maxContentLength)
     {
         this.maxContentLength = maxContentLength;
+        return this;
+    }
+
+    public boolean isEnableConnectionPooling()
+    {
+        return enableConnectionPooling;
+    }
+
+    @Config("http-client.pool-connections")
+    public AsyncHttpClientConfig setEnableConnectionPooling(boolean enableConnectionPooling)
+    {
+        this.enableConnectionPooling = enableConnectionPooling;
         return this;
     }
 }
