@@ -47,6 +47,8 @@ import java.util.Properties;
 import java.util.concurrent.locks.LockSupport;
 import java.util.jar.Manifest;
 
+import static com.google.common.base.Objects.firstNonNull;
+
 public class Main
 {
     private static final int STATUS_GENERIC_ERROR = 1;
@@ -80,36 +82,36 @@ public class Main
     abstract static class LauncherCommand implements Runnable
     {
         final URL launcherResource;
-        final String install_path;
+        final String installPath;
 
         @Option(type = OptionType.GLOBAL, name = {"-v", "--verbose"}, description = "Run verbosely")
         public boolean verbose = false;
 
         @Option(type = OptionType.GLOBAL, name = "--node-config", description = "Path to node properties file. Defaults to INSTALL_PATH/etc/node.properties")
-        public String node_properties_path = null;
+        public String nodePropertiesPath = null;
 
         @Option(type = OptionType.GLOBAL, name = "--jvm-config", description = "Path to jvm config file. Defaults to INSTALL_PATH/etc/jvm.config")
-        public String jvm_config_path = null;
+        public String jvmConfigPath = null;
 
         @Option(type = OptionType.GLOBAL, name = "--config", description = "Path to configuration file. Defaults to INSTALL_PATH/etc/config.properties")
-        public String config_path = null;
+        public String configPath = null;
 
         @Option(type = OptionType.GLOBAL, name = "--data", description = "Path to data directory. Defaults to INSTALL_PATH")
-        public String data_dir = null;
+        public String dataDir = null;
 
         @Option(type = OptionType.GLOBAL, name = "--pid-file", description = "Path to pid file. Defaults to DATA_DIR/var/run/launcher.pid")
-        public String pid_file_path = null;
+        public String pidFilePath = null;
 
         @Option(type = OptionType.GLOBAL, name = "--log-file", description = "Path to log file. Defaults to DATA_DIR/var/log/launcher.log")
-        public String log_path = null;
+        public String logPath = null;
 
         @Option(type = OptionType.GLOBAL, name = "--log-levels-file", description = "Path to log config file. Defaults to INSTALL_PATH/etc/log.config")
-        public String log_levels_path = null;
+        public String logLevelsPath = null;
 
         @Option(type = OptionType.GLOBAL, name = "-D", description = "Set a Java System property")
         public final List<String> property = new LinkedList<>();
 
-        final Properties system_properties = new Properties();
+        final Properties systemProperties = new Properties();
         final List<String> launcherArgs = new LinkedList<>();
 
         LauncherCommand()
@@ -130,17 +132,17 @@ public class Main
                 System.exit(STATUS_GENERIC_ERROR);
             }
             try {
-                install_path = new File(((JarURLConnection) urlConnection).getJarFileURL().toURI()).getParentFile().getParent();
+                installPath = new File(((JarURLConnection) urlConnection).getJarFileURL().toURI()).getParentFile().getParent();
             }
             catch (URISyntaxException e) {
                 // Can't happen
                 throw new RuntimeException(e);
             }
 
-            log_levels_path = install_path + "/etc/log.properties";
-            if (!(new File(log_levels_path).canRead()) && new File(install_path + "/etc/log.config").canRead()) {
+            logLevelsPath = installPath + "/etc/log.properties";
+            if (!(new File(logLevelsPath).canRead()) && new File(installPath + "/etc/log.config").canRead()) {
                 System.err.print("Did not find a log.properties file, but found a log.config instead.  log.config is deprecated, please use log.properties.");
-                log_levels_path = install_path + "/etc/log.config";
+                logLevelsPath = installPath + "/etc/log.config";
             }
         }
 
@@ -152,39 +154,39 @@ public class Main
             if (verbose) {
                 launcherArgs.add("-v");
             }
-            if (node_properties_path == null) {
-                node_properties_path = install_path + "/etc/node.properties";
+            if (nodePropertiesPath == null) {
+                nodePropertiesPath = installPath + "/etc/node.properties";
             }
             else {
                 launcherArgs.add("--node-config");
-                launcherArgs.add(new File(node_properties_path).getAbsolutePath());
+                launcherArgs.add(new File(nodePropertiesPath).getAbsolutePath());
             }
-            if (jvm_config_path == null) {
-                jvm_config_path = install_path + "/etc/jvm.config";
+            if (jvmConfigPath == null) {
+                jvmConfigPath = installPath + "/etc/jvm.config";
             }
             else {
                 launcherArgs.add("--jvm-config");
-                launcherArgs.add(new File(jvm_config_path).getAbsolutePath());
+                launcherArgs.add(new File(jvmConfigPath).getAbsolutePath());
             }
-            if (config_path == null) {
-                config_path = install_path + "/etc/config.properties";
+            if (configPath == null) {
+                configPath = installPath + "/etc/config.properties";
             }
             else {
                 launcherArgs.add("--config");
-                launcherArgs.add(new File(config_path).getAbsolutePath());
+                launcherArgs.add(new File(configPath).getAbsolutePath());
             }
-            if (data_dir == null) {
-                data_dir = install_path;
+            if (dataDir == null) {
+                dataDir = installPath;
             }
             else {
                 launcherArgs.add("--data");
-                launcherArgs.add(new File(data_dir).getAbsolutePath());
+                launcherArgs.add(new File(dataDir).getAbsolutePath());
             }
             launcherArgs.add("--log-levels-file");
-            launcherArgs.add(new File(log_levels_path).getAbsolutePath());
+            launcherArgs.add(new File(logLevelsPath).getAbsolutePath());
 
-            try (InputStream nodeFile = new FileInputStream(node_properties_path)) {
-                system_properties.load(nodeFile);
+            try (InputStream nodeFile = new FileInputStream(nodePropertiesPath)) {
+                systemProperties.load(nodeFile);
             }
             catch (FileNotFoundException ignore) {
             }
@@ -201,31 +203,34 @@ public class Main
                     System.out.print("Config can not be passed in a -D argument. Use --config instead\n");
                     System.exit(STATUS_INVALID_ARGS);
                 }
-                system_properties.setProperty(key, split[1]);
+
+                String value = "";
+                if (split.length > 1) {
+                    value = split[1];
+                }
+                systemProperties.setProperty(key, value);
             }
 
-            if (system_properties.containsKey("node.data-dir")) {
-                data_dir = system_properties.getProperty("node.data_dir");
-            }
+            dataDir = firstNonNull(systemProperties.getProperty("node.data-dir"), dataDir);
 
-            if (pid_file_path == null) {
-                pid_file_path = data_dir + "/var/run/launcher.pid";
+            if (pidFilePath == null) {
+                pidFilePath = dataDir + "/var/run/launcher.pid";
             }
             else {
                 launcherArgs.add("--pid-file");
-                launcherArgs.add(new File(pid_file_path).getAbsolutePath());
+                launcherArgs.add(new File(pidFilePath).getAbsolutePath());
             }
-            if (log_path == null) {
-                log_path = data_dir + "/var/log/launcher.log";
+            if (logPath == null) {
+                logPath = dataDir + "/var/log/launcher.log";
             }
             else {
                 launcherArgs.add("--log-file");
-                launcherArgs.add(new File(log_path).getAbsolutePath());
+                launcherArgs.add(new File(logPath).getAbsolutePath());
             }
 
             if (verbose) {
-                for (String key : system_properties.stringPropertyNames()) {
-                    System.out.print(key + "=" + system_properties.getProperty(key) + "\n");
+                for (String key : systemProperties.stringPropertyNames()) {
+                    System.out.print(key + "=" + systemProperties.getProperty(key) + "\n");
                 }
             }
 
@@ -248,7 +253,7 @@ public class Main
 
         KillStatus killProcess(boolean graceful)
         {
-            PidFile pidFile = new PidFile(pid_file_path);
+            PidFile pidFile = new PidFile(pidFilePath);
 
             for (int pidTriesLeft = 10; pidTriesLeft > 0; --pidTriesLeft) {
                 PidStatus pidStatus = pidFile.get();
@@ -288,7 +293,7 @@ public class Main
         @Override
         public void execute()
         {
-            PidFile pidFile = new PidFile(pid_file_path);
+            PidFile pidFile = new PidFile(pidFilePath);
 
             PidStatus pidStatus = pidFile.get();
             if (pidStatus.held) {
@@ -303,12 +308,12 @@ public class Main
             List<String> javaArgs = new LinkedList<>();
             javaArgs.add("java");
 
-            if (!new File(config_path).exists()) {
-                System.err.print("Config file is missing: " + config_path);
+            if (!new File(configPath).exists()) {
+                System.err.print("Config file is missing: " + configPath);
                 System.exit(STATUS_CONFIG_MISSING);
             }
 
-            try (BufferedReader jvmReader = new BufferedReader(new FileReader(jvm_config_path))) {
+            try (BufferedReader jvmReader = new BufferedReader(new FileReader(jvmConfigPath))) {
                 String line;
                 while ((line = jvmReader.readLine()) != null) {
                     if (!line.matches("\\s*(?:#.*)?")) {
@@ -317,7 +322,7 @@ public class Main
                 }
             }
             catch (FileNotFoundException e) {
-                System.err.print("JVM config file is missing: " + jvm_config_path);
+                System.err.print("JVM config file is missing: " + jvmConfigPath);
                 System.exit(STATUS_CONFIG_MISSING);
             }
             catch (IOException e) {
@@ -325,18 +330,18 @@ public class Main
                 System.exit(STATUS_CONFIG_MISSING);
             }
 
-            for (String key : system_properties.stringPropertyNames()) {
-                javaArgs.add("-D" + key + "=" + system_properties.getProperty(key));
+            for (String key : systemProperties.stringPropertyNames()) {
+                javaArgs.add("-D" + key + "=" + systemProperties.getProperty(key));
             }
-            javaArgs.add("-Dconfig=" + config_path);
+            javaArgs.add("-Dconfig=" + configPath);
             if (daemon) {
-                javaArgs.add("-Dlog.output-file=" + log_path);
+                javaArgs.add("-Dlog.output-file=" + logPath);
             }
-            if (new File(log_levels_path).exists()) {
-                javaArgs.add("-Dlog.levels-file=" + log_levels_path);
+            if (new File(logLevelsPath).exists()) {
+                javaArgs.add("-Dlog.levels-file=" + logLevelsPath);
             }
             javaArgs.add("-jar");
-            javaArgs.add(install_path + "/lib/launcher.jar");
+            javaArgs.add(installPath + "/lib/launcher.jar");
             javaArgs.addAll(launcherArgs);
             if (daemon) {
                 javaArgs.add("start-client");
@@ -353,7 +358,7 @@ public class Main
             Process child = null;
             try {
                 child = new ProcessBuilder(javaArgs)
-                        .directory(new File(data_dir))
+                        .directory(new File(dataDir))
                         .redirectInput(Porting.NULL_FILE)
                         .redirectOutput(Redirect.INHERIT)
                         .redirectError(Redirect.INHERIT)
@@ -422,29 +427,27 @@ public class Main
         {
             if (daemon) {
                 //noinspection AssignmentToStaticFieldFromInstanceMethod
-                pidFile = new PidFile(pid_file_path);
+                pidFile = new PidFile(pidFilePath);
 
-                int otherPid = pidFile.starting();
-                if (otherPid != -1) {
-                    String msg = "Already running";
-                    if (otherPid != 0) {
-                        msg += " as " + otherPid;
-                    }
-                    System.err.print(msg + "\n");
+                try {
+                    pidFile.indicateStarting();
+                }
+                catch (AlreadyRunningException e) {
+                    System.err.print(e.getMessage() + "\n");
                     System.exit(0);
                 }
             }
 
-            if (!install_path.equals(data_dir)) {
+            if (!installPath.equals(dataDir)) {
                 // symlink etc directory into data directory
                 // this is needed to support programs that reference etc/xyz from within their config files (e.g., log.levels-file=etc/log.properties)
                 try {
-                    Files.delete(Paths.get(data_dir, "etc"));
+                    Files.delete(Paths.get(dataDir, "etc"));
                 }
                 catch (IOException ignored) {
                 }
                 try {
-                    Files.createSymbolicLink(Paths.get(data_dir, "etc"), Paths.get(install_path, "etc"));
+                    Files.createSymbolicLink(Paths.get(dataDir, "etc"), Paths.get(installPath, "etc"));
                 }
                 catch (IOException ignored) {
                 }
@@ -502,7 +505,7 @@ public class Main
             }
 
             if (daemon) {
-                pidFile.running();
+                pidFile.indicateRunning();
             }
         }
     }
@@ -522,7 +525,7 @@ public class Main
         @Override
         public void execute()
         {
-            PidFile pidFile = new PidFile(pid_file_path);
+            PidFile pidFile = new PidFile(pidFilePath);
 
             PidStatus pidStatus = pidFile.get();
             if (pidStatus.held) {
@@ -570,11 +573,11 @@ public class Main
         @Override
         public void execute()
         {
-            PidFile pidFile = new PidFile(pid_file_path);
+            PidFile pidFile = new PidFile(pidFilePath);
 
             PidStatus pidStatus = pidFile.get();
             if (!pidStatus.held) {
-                System.out.print("Not running\n");
+                System.out.print("Not indicateRunning\n");
                 System.exit(0);
             }
 
