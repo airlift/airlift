@@ -84,6 +84,30 @@ public abstract class AbstractHttpClientTest
         }
     }
 
+    // this takes over a minute to run
+    @Test(enabled = false)
+    public void test100kGets()
+            throws Exception
+    {
+        URI uri = baseURI.resolve("/road/to/nowhere?query");
+        Request request = prepareGet()
+                .setUri(uri)
+                .addHeader("foo", "bar")
+                .addHeader("dupe", "first")
+                .addHeader("dupe", "second")
+                .build();
+
+        for (int i = 0; i < 100_000; i++) {
+            try {
+                int statusCode = executeRequest(request, new ResponseStatusCodeHandler());
+                Assert.assertEquals(statusCode, 200);
+            }
+            catch (Exception e) {
+                throw new Exception("Error on request " + i, e);
+            }
+        }
+    }
+
     @Test(expectedExceptions = SocketTimeoutException.class)
     public void testConnectTimeout()
             throws Exception
@@ -149,7 +173,7 @@ public abstract class AbstractHttpClientTest
     public void testGetMethod()
             throws Exception
     {
-        URI uri = baseURI.resolve("/road/to/nowhere");
+        URI uri = baseURI.resolve("/road/to/nowhere?query");
         Request request = prepareGet()
                 .setUri(uri)
                 .addHeader("foo", "bar")
@@ -259,7 +283,7 @@ public abstract class AbstractHttpClientTest
         Assert.assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
         Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
-        Assert.assertEquals(servlet.requestHeaders.get(HTTP.TRANSFER_ENCODING), ImmutableList.of(HTTP.CHUNK_CODING));
+//        Assert.assertEquals(servlet.requestHeaders.get(HTTP.TRANSFER_ENCODING), ImmutableList.of(HTTP.CHUNK_CODING));
     }
 
     @Test(expectedExceptions = SocketTimeoutException.class)
