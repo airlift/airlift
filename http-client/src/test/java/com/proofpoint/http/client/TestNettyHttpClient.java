@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Proofpoint, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,20 @@
 package com.proofpoint.http.client;
 
 import com.google.common.collect.ImmutableSet;
-
+import com.proofpoint.http.client.netty.NettyAsyncHttpClient;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-public class ApacheHttpClientTest
+public class TestNettyHttpClient
         extends AbstractHttpClientTest
 {
-    private ApacheHttpClient httpClient;
+    private NettyAsyncHttpClient httpClient;
 
     @BeforeMethod
     public void setUp()
             throws Exception
     {
-        httpClient = new ApacheHttpClient(new HttpClientConfig(),
-                ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
+        httpClient = new NettyAsyncHttpClient(new HttpClientConfig(), new AsyncHttpClientConfig(), ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
 
     @Override
@@ -44,15 +43,15 @@ public class ApacheHttpClientTest
     public <T, E extends Exception> T  executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        ApacheHttpClient client = new ApacheHttpClient(config);
+        NettyAsyncHttpClient client = new NettyAsyncHttpClient(config);
         return client.execute(request, responseHandler);
     }
 
     @Test(enabled = false)
     @Override
-    public void test100kGets()
+    public void testKeepAlive()
             throws Exception
     {
-        super.test100kGets();
+        super.testKeepAlive();
     }
 }

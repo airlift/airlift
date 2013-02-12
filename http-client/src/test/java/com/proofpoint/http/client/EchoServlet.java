@@ -47,6 +47,9 @@ public final class EchoServlet
     {
         requestMethod = request.getMethod();
         requestUri = URI.create(HttpUtils.getRequestURL(request).toString());
+        if (request.getQueryString() != null) {
+            requestUri = URI.create(requestUri.toASCIIString() + "?" + request.getQueryString());
+        }
 
         requestHeaders.clear();
         for (String name : Collections.list(request.getHeaderNames())) {

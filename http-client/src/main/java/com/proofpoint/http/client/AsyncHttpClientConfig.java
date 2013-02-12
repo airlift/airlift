@@ -17,13 +17,17 @@ package com.proofpoint.http.client;
 
 import com.google.common.annotations.Beta;
 import com.proofpoint.configuration.Config;
+import com.proofpoint.units.DataSize;
+import com.proofpoint.units.DataSize.Unit;
 
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 
 @Beta
 public class AsyncHttpClientConfig
 {
-    private int workerThreads = 16;
+    private int workerThreads = Runtime.getRuntime().availableProcessors() * 4;;
+    private DataSize maxContentLength = new DataSize(16, Unit.MEGABYTE);
 
     @Min(1)
     public int getWorkerThreads()
@@ -35,6 +39,19 @@ public class AsyncHttpClientConfig
     public AsyncHttpClientConfig setWorkerThreads(int workerThreads)
     {
         this.workerThreads = workerThreads;
+        return this;
+    }
+
+    @NotNull
+    public DataSize getMaxContentLength()
+    {
+        return maxContentLength;
+    }
+
+    @Config("http-client.max-content-length")
+    public AsyncHttpClientConfig setMaxContentLength(DataSize maxContentLength)
+    {
+        this.maxContentLength = maxContentLength;
         return this;
     }
 }
