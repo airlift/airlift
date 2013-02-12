@@ -28,6 +28,8 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.util.concurrent.locks.LockSupport;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 @SuppressWarnings("FieldCanBeLocal")
 class PidFile
 {
@@ -42,14 +44,14 @@ class PidFile
     private FileLock runningLock = null;
     private FileLock notYetRunningLock = null;
 
-    PidFile(String pid_file_path)
+    PidFile(String pidFilePath)
     {
-        Preconditions.checkNotNull(pid_file_path, "pid_file_path is null");
+        checkNotNull(pidFilePath, "pidFilePath is null");
 
         //noinspection ResultOfMethodCallIgnored
-        new File(pid_file_path).getParentFile().mkdirs();
+        new File(pidFilePath).getParentFile().mkdirs();
         try {
-            pidChannel = new RandomAccessFile(pid_file_path, "rw").getChannel();
+            pidChannel = new RandomAccessFile(pidFilePath, "rw").getChannel();
         }
         catch (FileNotFoundException e) {
             throw new RuntimeException("Cannot open pid file: " + e);
@@ -59,7 +61,7 @@ class PidFile
             // Windows file locks are mandatory: use a separate lock file so that
             // the pid file can be read by other processes
             try {
-                lockChannel = new RandomAccessFile(pid_file_path + ".lck", "rw").getChannel();
+                lockChannel = new RandomAccessFile(pidFilePath + ".lck", "rw").getChannel();
             }
             catch (FileNotFoundException e) {
                 throw new RuntimeException("Cannot open pid lockfile: " + e);
@@ -70,7 +72,8 @@ class PidFile
         }
     }
 
-    int starting()
+    void indicateStarting()
+            throws AlreadyRunningException
     {
         try {
             startLock = lockChannel.tryLock(0, STARTING, false);
@@ -79,30 +82,28 @@ class PidFile
             throw new RuntimeException("Cannot lock pid file: " + e);
         }
 
-        if (startLock != null) {
-            // There is a race here between the time we lock the file and the
-            // time we write our pid into it. This could be fixed by readers using
-            // the pid returned by fcntl(F_GETLK) instead of the file contents, but
-            // have not yet found a way to call fcntl(F_GETLK) from Java.
-            try {
-                pidChannel.truncate(0);
-                pidChannel.write(ByteBuffer.wrap((Integer.toString(Porting.getpid()) + "\n").getBytes()));
-            }
-            catch (IOException e) {
-                throw new RuntimeException("Cannot write to pid file: " + e);
-            }
+        if (startLock == null) {
+            throw new AlreadyRunningException(readPid());
+        }
 
-            try {
-                notYetRunningLock = lockChannel.lock(NOT_YET_RUNNING - 1, 1, false);
-            }
-            catch (IOException e) {
-                throw new RuntimeException("Cannot lock pid file: " + e);
-            }
+        // There is a race here between the time we lock the file and the
+        // time we write our pid into it. This could be fixed by readers using
+        // the pid returned by fcntl(F_GETLK) instead of the file contents, but
+        // have not yet found a way to call fcntl(F_GETLK) from Java.
+        try {
+            pidChannel.truncate(0);
+            pidChannel.write(ByteBuffer.wrap((Integer.toString(Porting.getpid()) + "\n").getBytes()));
         }
-        else {
-            return readPid();
+        catch (IOException e) {
+            throw new RuntimeException("Cannot write to pid file: " + e);
         }
-        return -1;
+
+        try {
+            notYetRunningLock = lockChannel.lock(NOT_YET_RUNNING - 1, 1, false);
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Cannot lock pid file: " + e);
+        }
     }
 
     private int readPid()
@@ -123,7 +124,7 @@ class PidFile
         return 0;
     }
 
-    void running()
+    void indicateRunning()
     {
         try {
             runningLock = lockChannel.lock(STARTING, RUNNING - STARTING, false);
