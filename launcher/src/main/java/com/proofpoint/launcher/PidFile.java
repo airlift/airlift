@@ -76,6 +76,8 @@ class PidFile
             throws AlreadyRunningException
     {
         try {
+            // If obtained, startLock will be held for the lifetime of this process,
+            // indicating that this is the active server.
             startLock = lockChannel.tryLock(0, STARTING, false);
         }
         catch (IOException e) {
@@ -99,6 +101,9 @@ class PidFile
         }
 
         try {
+            // notYetRunningLock is released in indicateRunning(). The parent
+            // process, running the launcher 'start' command, will block on this
+            // in waitRunning().
             notYetRunningLock = lockChannel.lock(NOT_YET_RUNNING - 1, 1, false);
         }
         catch (IOException e) {
@@ -126,6 +131,8 @@ class PidFile
 
     void indicateRunning()
     {
+        // runningLock is held for the lifetime of this process, indicating that
+        // this server has completed startup.
         try {
             runningLock = lockChannel.lock(STARTING, RUNNING - STARTING, false);
             notYetRunningLock.release();
