@@ -28,6 +28,19 @@ both before, you will need to remove the call to bindHttpClient.
 This API remains in BETA, and is subject to additional backwards incompatible
 changes.
 
+* Socks proxy support in http client
+
+The new NettyAsyncHttpClient supports connecting to servers through a socks proxy.
+This is particularly useful for accessing production servers.  The easiest way
+to use this feature is to establish a socks proxy using ssh, as follows:
+
+    ssh -N -D 1080 any.server.running.sshd
+
+Then simply set the HttpClientConfig SocksProxy property either directly in code
+or via the following config option:
+
+    myclient.http-client.socks-proxy = localhost:1080
+
 * Disabled auto-detection of constructors and use of getters as setters in
   Jackson.
 

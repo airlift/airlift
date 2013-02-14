@@ -18,6 +18,7 @@ package com.proofpoint.http.client;
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.testing.ConfigAssertions;
 import com.proofpoint.units.Duration;
+import com.google.common.net.HostAndPort;
 import org.testng.annotations.Test;
 
 import javax.validation.constraints.NotNull;
@@ -36,7 +37,8 @@ public class TestHttpClientConfig
                 .setReadTimeout(new Duration(1, TimeUnit.MINUTES))
                 .setKeepAliveInterval(null)
                 .setMaxConnections(200)
-                .setMaxConnectionsPerServer(20));
+                .setMaxConnectionsPerServer(20)
+                .setSocksProxy(null));
     }
 
     @Test
@@ -48,6 +50,7 @@ public class TestHttpClientConfig
                 .put("http-client.keep-alive-interval", "6s")
                 .put("http-client.max-connections", "12")
                 .put("http-client.max-connections-per-server", "3")
+                .put("http-client.socks-proxy", "localhost:1080")
                 .build();
 
         HttpClientConfig expected = new HttpClientConfig()
@@ -55,7 +58,8 @@ public class TestHttpClientConfig
                 .setReadTimeout(new Duration(5, TimeUnit.SECONDS))
                 .setKeepAliveInterval(new Duration(6, TimeUnit.SECONDS))
                 .setMaxConnections(12)
-                .setMaxConnectionsPerServer(3);
+                .setMaxConnectionsPerServer(3)
+                .setSocksProxy(HostAndPort.fromParts("localhost", 1080));
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

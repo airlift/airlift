@@ -7,13 +7,10 @@ import com.google.common.collect.Multimap;
 import com.google.common.net.HostAndPort;
 import com.google.common.net.InetAddresses;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.proofpoint.units.Duration;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 
@@ -46,18 +43,12 @@ public class NettyConnectionPool
     private final AtomicInteger checkedOutConnections = new AtomicInteger();
     private final boolean enablePooling;
 
-    public NettyConnectionPool(ChannelFactory channelFactory,
-            ChannelPipelineFactory pipelineFactory,
-            Duration connectTimeout,
+    public NettyConnectionPool(ClientBootstrap bootstrap,
             int maxConnections,
             Executor executorService,
             boolean enablePooling)
     {
-        bootstrap = new ClientBootstrap(channelFactory);
-        bootstrap.setPipelineFactory(pipelineFactory);
-        bootstrap.setOption("connectTimeoutMillis", (long) connectTimeout.toMillis());
-        bootstrap.setOption("soLinger", 0);
-
+        this.bootstrap = bootstrap;
         this.maxConnections = maxConnections;
         this.connectionPermits = new PermitQueue(this.maxConnections);
         this.executor = executorService;

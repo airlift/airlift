@@ -16,6 +16,7 @@
 package com.proofpoint.http.client;
 
 import com.google.common.annotations.Beta;
+import com.google.common.net.HostAndPort;
 import com.proofpoint.configuration.Config;
 import com.proofpoint.units.Duration;
 import com.proofpoint.units.MinDuration;
@@ -32,6 +33,7 @@ public class HttpClientConfig
     private Duration keepAliveInterval = null;
     private int maxConnections = 200;
     private int maxConnectionsPerServer = 20;
+    private HostAndPort socksProxy;
 
     @NotNull
     @MinDuration("0ms")
@@ -96,6 +98,18 @@ public class HttpClientConfig
     public HttpClientConfig setMaxConnectionsPerServer(int maxConnectionsPerServer)
     {
         this.maxConnectionsPerServer = maxConnectionsPerServer;
+        return this;
+    }
+
+    public HostAndPort getSocksProxy()
+    {
+        return socksProxy;
+    }
+
+    @Config("http-client.socks-proxy")
+    public HttpClientConfig setSocksProxy(HostAndPort socksProxy)
+    {
+        this.socksProxy = socksProxy;
         return this;
     }
 }
