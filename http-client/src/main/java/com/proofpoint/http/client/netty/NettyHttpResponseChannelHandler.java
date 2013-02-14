@@ -2,6 +2,7 @@ package com.proofpoint.http.client.netty;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
@@ -11,6 +12,7 @@ import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.timeout.ReadTimeoutException;
 
 import java.net.SocketTimeoutException;
+import java.nio.channels.ClosedChannelException;
 
 /**
  * Final handler in Netty HTTP invocation chain.  This class converts the Netty
@@ -68,12 +70,23 @@ public class NettyHttpResponseChannelHandler
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent event)
             throws Exception
     {
+        handleException(ctx, event.getCause());
+    }
+
+    @Override
+    public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e)
+            throws Exception
+    {
+        handleException(ctx, new ClosedChannelException());
+    }
+
+    private void handleException(ChannelHandlerContext ctx, Throwable cause)
+    {
         try {
             NettyResponseFuture<?, ?> nettyResponseFuture = (NettyResponseFuture<?, ?>) ctx.getAttachment();
             ctx.setAttachment(null);
 
             if (nettyResponseFuture != null) {
-                Throwable cause = event.getCause();
                 if (cause instanceof ReadTimeoutException) {
                     cause = new SocketTimeoutException("Read timeout");
                 }

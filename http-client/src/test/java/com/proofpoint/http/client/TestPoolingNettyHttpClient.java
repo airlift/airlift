@@ -17,6 +17,7 @@ package com.proofpoint.http.client;
 
 import com.google.common.collect.ImmutableSet;
 import com.proofpoint.http.client.netty.NettyAsyncHttpClient;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
 public class TestPoolingNettyHttpClient
@@ -28,8 +29,18 @@ public class TestPoolingNettyHttpClient
     public void setUp()
             throws Exception
     {
-        httpClient = new NettyAsyncHttpClient(new HttpClientConfig(), new AsyncHttpClientConfig().setEnableConnectionPooling(true), ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
+        httpClient = new NettyAsyncHttpClient(new HttpClientConfig(),
+                new AsyncHttpClientConfig().setEnableConnectionPooling(true),
+                ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
+
+    @AfterMethod
+    public void tearDown()
+            throws Exception
+    {
+        httpClient.close();
+    }
+
 
     @Override
     public <T, E extends Exception> T executeRequest(Request request, ResponseHandler<T, E> responseHandler)
@@ -39,10 +50,11 @@ public class TestPoolingNettyHttpClient
     }
 
     @Override
-    public <T, E extends Exception> T  executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        NettyAsyncHttpClient client = new NettyAsyncHttpClient(config);
-        return client.execute(request, responseHandler);
+        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient(config)) {
+            return client.execute(request, responseHandler);
+        }
     }
 }

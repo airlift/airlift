@@ -29,8 +29,7 @@ public class ApacheHttpClientTest
     public void setUp()
             throws Exception
     {
-        httpClient = new ApacheHttpClient(new HttpClientConfig(),
-                ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
+        httpClient = new ApacheHttpClient(new HttpClientConfig(), ImmutableSet.of(new TestingRequestFilter()));
     }
 
     @Override
@@ -44,11 +43,20 @@ public class ApacheHttpClientTest
     public <T, E extends Exception> T  executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        ApacheHttpClient client = new ApacheHttpClient(config);
-        return client.execute(request, responseHandler);
+        try (ApacheHttpClient client = new ApacheHttpClient(config)) {
+            return client.execute(request, responseHandler);
+        }
     }
 
-    @Test(enabled = false)
+    @Test(enabled = false, description = "Apache sync client does not handle this correctly")
+    @Override
+    public void testConnectReadRequestWriteJunkHangup()
+            throws Exception
+    {
+        super.testConnectReadRequestWriteJunkHangup();
+    }
+
+    @Test(enabled = false, description = "This test takes forever")
     @Override
     public void test100kGets()
             throws Exception

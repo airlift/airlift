@@ -29,6 +29,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.CoreConnectionPNames;
@@ -62,7 +63,7 @@ public class ApacheHttpClient
         this(config, Collections.<HttpRequestFilter>emptySet());
     }
 
-    public ApacheHttpClient(HttpClientConfig config, Set<HttpRequestFilter> requestFilters)
+    public ApacheHttpClient(HttpClientConfig config, Set<? extends HttpRequestFilter> requestFilters)
     {
         Preconditions.checkNotNull(config, "config is null");
         Preconditions.checkNotNull(requestFilters, "requestFilters is null");
@@ -78,6 +79,7 @@ public class ApacheHttpClient
 
         DefaultHttpClient defaultHttpClient = new DefaultHttpClient(connectionManager, httpParams);
         defaultHttpClient.setKeepAliveStrategy(new FixedIntervalKeepAliveStrategy(config.getKeepAliveInterval()));
+        defaultHttpClient.setHttpRequestRetryHandler(new DefaultHttpRequestRetryHandler(0, false));
         this.httpClient = defaultHttpClient;
 
         this.requestFilters = ImmutableList.copyOf(requestFilters);
