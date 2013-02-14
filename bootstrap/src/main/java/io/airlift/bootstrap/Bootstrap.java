@@ -15,6 +15,7 @@
  */
 package io.airlift.bootstrap;
 
+import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableSortedMap;
@@ -51,6 +52,8 @@ import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import static com.google.common.collect.Maps.fromProperties;
+
 /**
  * Entry point for an application built using the platform codebase.
  * <p/>
@@ -64,13 +67,72 @@ import java.util.TreeMap;
  */
 public class Bootstrap
 {
-    private final Logger log = Logger.get(Bootstrap.class);
+    private final Logger log = Logger.get("Bootstrap");
     private final Module[] modules;
+
+    private Map<String, String> requiredConfigurationProperties;
+    private Map<String, String> optionalConfigurationProperties;
+    private boolean initializeLogging = true;
     private boolean strictConfig = false;
+    private boolean logJmxInfo = false;
 
     public Bootstrap(Module... modules)
     {
         this.modules = Arrays.copyOf(modules, modules.length);
+    }
+
+    @Beta
+    public Bootstrap setRequiredConfigurationProperty(String key, String value)
+    {
+        if (this.requiredConfigurationProperties == null) {
+            this.requiredConfigurationProperties = new TreeMap<>();
+        }
+        this.requiredConfigurationProperties.put(key, value);
+        return this;
+    }
+
+    @Beta
+    public Bootstrap setRequiredConfigurationProperties(Map<String, String> requiredConfigurationProperties)
+    {
+        if (this.requiredConfigurationProperties == null) {
+            this.requiredConfigurationProperties = new TreeMap<>();
+        }
+        this.requiredConfigurationProperties.putAll(requiredConfigurationProperties);
+        return this;
+    }
+
+    @Beta
+    public Bootstrap setOptionalConfigurationProperty(String key, String value)
+    {
+        if (this.optionalConfigurationProperties == null) {
+            this.optionalConfigurationProperties = new TreeMap<>();
+        }
+        this.optionalConfigurationProperties.put(key, value);
+        return this;
+    }
+
+    @Beta
+    public Bootstrap setOptionalConfigurationProperties(Map<String, String> optionalConfigurationProperties)
+    {
+        if (this.optionalConfigurationProperties == null) {
+            this.optionalConfigurationProperties = new TreeMap<>();
+        }
+        this.optionalConfigurationProperties.putAll(optionalConfigurationProperties);
+        return this;
+    }
+
+    @Beta
+    public Bootstrap doNotInitializeLogging()
+    {
+        this.initializeLogging = false;
+        return this;
+    }
+
+    @Beta
+    public Bootstrap logJmxInfo()
+    {
+        this.logJmxInfo = false;
+        return this;
     }
 
     public Bootstrap strictConfig()
@@ -82,7 +144,9 @@ public class Bootstrap
     public Injector initialize()
             throws Exception
     {
-        Logging logging = new Logging();
+        if (initializeLogging) {
+            new Logging();
+        }
 
         Thread.currentThread().setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler()
         {
@@ -93,27 +157,39 @@ public class Bootstrap
             }
         });
 
-        // initialize configuration
-        log.info("Loading configuration");
-        ConfigurationLoader loader = new ConfigurationLoader();
+        Map<String, String> requiredProperties;
+        ConfigurationFactory configurationFactory;
+        if (requiredConfigurationProperties == null) {
+            // initialize configuration
+            log.info("Loading configuration");
+            ConfigurationLoader loader = new ConfigurationLoader();
 
-        Map<String, String> configFileProperties = Collections.emptyMap();
-        String configFile = System.getProperty("config");
-        if (configFile != null) {
-            configFileProperties = loader.loadPropertiesFrom(configFile);
+            requiredProperties = Collections.emptyMap();
+            String configFile = System.getProperty("config");
+            if (configFile != null) {
+                requiredProperties = loader.loadPropertiesFrom(configFile);
+            }
         }
-
+        else {
+            requiredProperties = requiredConfigurationProperties;
+        }
         SortedMap<String, String> properties = Maps.newTreeMap();
-        properties.putAll(configFileProperties);
-        properties.putAll(loader.getSystemProperties());
+        if (optionalConfigurationProperties != null) {
+            properties.putAll(optionalConfigurationProperties);
+        }
+        properties.putAll(requiredProperties);
+        properties.putAll(fromProperties(System.getProperties()));
         properties = ImmutableSortedMap.copyOf(properties);
 
-        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
+        configurationFactory = new ConfigurationFactory(properties);
 
-        // initialize logging
-        log.info("Initializing logging");
-        LoggingConfiguration configuration = configurationFactory.build(LoggingConfiguration.class);
-        logging.initialize(configuration);
+
+        if (initializeLogging) {
+            // initialize logging
+            log.info("Initializing logging");
+            LoggingConfiguration configuration = configurationFactory.build(LoggingConfiguration.class);
+            new Logging().initialize(configuration);
+        }
 
         // create warning logger now that we have logging initialized
         final WarningsMonitor warningsMonitor = new WarningsMonitor()
@@ -140,7 +216,7 @@ public class Bootstrap
         // at this point all config file properties should be used
         // so we can calculate the unused properties
         final TreeMap<String, String> unusedProperties = Maps.newTreeMap();
-        unusedProperties.putAll(configFileProperties);
+        unusedProperties.putAll(requiredProperties);
         unusedProperties.keySet().removeAll(configurationFactory.getUsedProperties());
 
         // Log effective configuration
@@ -153,7 +229,8 @@ public class Bootstrap
         if (!messages.isEmpty()) {
             moduleList.add(new ValidationErrorModule(messages));
         }
-        moduleList.add(new Module() {
+        moduleList.add(new Module()
+        {
             @Override
             public void configure(Binder binder)
             {
@@ -178,7 +255,7 @@ public class Bootstrap
                 @Override
                 public void configure(Binder binder)
                 {
-                    for (Entry<String,String> unusedProperty : unusedProperties.entrySet()) {
+                    for (Entry<String, String> unusedProperty : unusedProperties.entrySet()) {
                         binder.addError("Configuration property '%s=%s' was not used", unusedProperty.getKey(), unusedProperty.getValue());
                     }
                 }
@@ -193,7 +270,9 @@ public class Bootstrap
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
 
         // Log managed objects
-        logJMX(injector);
+        if (logJmxInfo) {
+            logJMX(injector);
+        }
 
         // Start services
         if (lifeCycleManager.size() > 0) {
@@ -225,7 +304,7 @@ public class Bootstrap
         // Warn about unused properties
         if (!unusedProperties.isEmpty()) {
             log.warn("UNUSED PROPERTIES");
-            for (Entry<String,String> unusedProperty : unusedProperties.entrySet()) {
+            for (Entry<String, String> unusedProperty : unusedProperties.entrySet()) {
                 log.warn("%s=%s", unusedProperty.getKey(), unusedProperty.getValue());
             }
             log.warn("");
@@ -268,8 +347,8 @@ public class Bootstrap
 
         ColumnPrinter columnPrinter = new ColumnPrinter();
 
-        columnPrinter.addColumn(COMPONENT_COLUMN);
-        columnPrinter.addColumn(ATTRIBUTE_NAME_COLUMN);
+//        columnPrinter.addColumn(COMPONENT_COLUMN);
+//        columnPrinter.addColumn(ATTRIBUTE_NAME_COLUMN);
         columnPrinter.addColumn(PROPERTY_NAME_COLUMN);
         columnPrinter.addColumn(DEFAULT_VALUE_COLUMN);
         columnPrinter.addColumn(CURRENT_VALUE_COLUMN);
@@ -278,8 +357,8 @@ public class Bootstrap
         for (ConfigRecord<?> record : configurationInspector.inspect(configurationFactory)) {
             String componentName = getComponentName(record);
             for (ConfigAttribute attribute : record.getAttributes()) {
-                columnPrinter.addValue(COMPONENT_COLUMN, componentName);
-                columnPrinter.addValue(ATTRIBUTE_NAME_COLUMN, attribute.getAttributeName());
+//                columnPrinter.addValue(COMPONENT_COLUMN, componentName);
+//                columnPrinter.addValue(ATTRIBUTE_NAME_COLUMN, attribute.getAttributeName());
                 columnPrinter.addValue(PROPERTY_NAME_COLUMN, attribute.getPropertyName());
                 columnPrinter.addValue(DEFAULT_VALUE_COLUMN, attribute.getDefaultValue());
                 columnPrinter.addValue(CURRENT_VALUE_COLUMN, attribute.getCurrentValue());

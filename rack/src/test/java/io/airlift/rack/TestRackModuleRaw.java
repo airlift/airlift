@@ -15,12 +15,10 @@
  */
 package io.airlift.rack;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
-import io.airlift.configuration.ConfigurationFactory;
-import io.airlift.configuration.ConfigurationModule;
+import io.airlift.bootstrap.Bootstrap;
+import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.discovery.client.testing.TestingDiscoveryModule;
 import io.airlift.http.client.ApacheHttpClient;
 import io.airlift.http.client.HttpClient;
@@ -42,24 +40,26 @@ public class TestRackModuleRaw
 {
     private HttpClient client;
     private TestingHttpServer server;
+    private LifeCycleManager lifeCycleManager;
 
     @BeforeMethod
     public void setup()
             throws Exception
     {
-        Injector injector = Guice.createInjector(
+        Bootstrap app = new Bootstrap(
                 new TestingHttpServerModule(),
                 new RackModule(),
                 new TestingNodeModule(),
-                new TestingDiscoveryModule(),
-                new ConfigurationModule(new ConfigurationFactory(
-                        ImmutableMap.<String, String>builder()
-                                .put("rackserver.rack-config-path", Resources.getResource("test/raw/config.ru").getFile())
-                                .build()
-                )));
+                new TestingDiscoveryModule());
 
+        Injector injector = app
+                .strictConfig()
+                .doNotInitializeLogging()
+                .setRequiredConfigurationProperty("rackserver.rack-config-path", Resources.getResource("test/raw/config.ru").getFile())
+                .initialize();
+
+        lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         server = injector.getInstance(TestingHttpServer.class);
-        server.start();
         client = new ApacheHttpClient();
     }
 
@@ -67,8 +67,8 @@ public class TestRackModuleRaw
     public void tearDown()
             throws Exception
     {
-        if (server != null) {
-            server.stop();
+        if (lifeCycleManager != null) {
+            lifeCycleManager.stop();
         }
     }
 
