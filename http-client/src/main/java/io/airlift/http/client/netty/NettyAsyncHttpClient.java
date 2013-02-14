@@ -13,6 +13,8 @@ import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.netty.NettyConnectionPool.ConnectionCallback;
+import io.airlift.http.client.netty.socks.Socks4ClientBootstrap;
+import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
@@ -68,9 +70,17 @@ public class NettyAsyncHttpClient
 
         HttpClientPipelineFactory pipelineFactory = new HttpClientPipelineFactory(executor, config.getReadTimeout(), asyncConfig.getMaxContentLength());
 
-        nettyConnectionPool = new NettyConnectionPool(channelFactory,
-                pipelineFactory,
-                config.getConnectTimeout(),
+        ClientBootstrap bootstrap;
+        if (config.getSocksProxy() == null) {
+            bootstrap = new ClientBootstrap(channelFactory);
+        } else {
+            bootstrap = new Socks4ClientBootstrap(channelFactory, config.getSocksProxy());
+        }
+        bootstrap.setPipelineFactory(pipelineFactory);
+        bootstrap.setOption("connectTimeoutMillis", (long) config.getConnectTimeout().toMillis());
+        bootstrap.setOption("soLinger", 0);
+
+        nettyConnectionPool = new NettyConnectionPool(bootstrap,
                 config.getMaxConnections(),
                 executor,
                 asyncConfig.isEnableConnectionPooling());
