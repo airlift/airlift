@@ -17,6 +17,7 @@ package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableSet;
 import io.airlift.http.client.netty.NettyAsyncHttpClient;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -32,6 +33,13 @@ public class TestNettyHttpClient
         httpClient = new NettyAsyncHttpClient(new HttpClientConfig(), new AsyncHttpClientConfig(), ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
 
+    @AfterMethod
+    public void tearDown()
+            throws Exception
+    {
+        httpClient.close();
+    }
+
     @Override
     public <T, E extends Exception> T executeRequest(Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
@@ -40,14 +48,15 @@ public class TestNettyHttpClient
     }
 
     @Override
-    public <T, E extends Exception> T  executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        NettyAsyncHttpClient client = new NettyAsyncHttpClient(config);
-        return client.execute(request, responseHandler);
+        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient(config)) {
+            return client.execute(request, responseHandler);
+        }
     }
 
-    @Test(enabled = false)
+    @Test(enabled = false, description = "This Netty client does reuse connections")
     @Override
     public void testKeepAlive()
             throws Exception
