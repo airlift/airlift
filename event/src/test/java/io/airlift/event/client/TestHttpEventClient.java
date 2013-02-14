@@ -19,8 +19,8 @@ import com.google.common.base.Throwables;
 import com.google.common.io.CharStreams;
 import io.airlift.discovery.client.HttpServiceSelector;
 import io.airlift.discovery.client.testing.StaticHttpServiceSelector;
-import io.airlift.http.client.ApacheAsyncHttpClient;
 import io.airlift.http.client.HttpClientConfig;
+import io.airlift.http.client.netty.NettyAsyncHttpClient;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.server.Server;
@@ -150,7 +150,7 @@ public class TestHttpEventClient
                 selector,
                 eventWriter,
                 new NodeInfo("test"),
-                new ApacheAsyncHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))));
+                new NettyAsyncHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))));
     }
 
     private Server createServer(final DummyServlet servlet)
