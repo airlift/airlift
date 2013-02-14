@@ -17,13 +17,18 @@ package io.airlift.http.client;
 
 import com.google.common.annotations.Beta;
 import io.airlift.configuration.Config;
+import io.airlift.units.DataSize;
+import io.airlift.units.DataSize.Unit;
 
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 
 @Beta
 public class AsyncHttpClientConfig
 {
-    private int workerThreads = 16;
+    private int workerThreads = Runtime.getRuntime().availableProcessors() * 4;;
+    private DataSize maxContentLength = new DataSize(16, Unit.MEGABYTE);
+    private boolean enableConnectionPooling;
 
     @Min(1)
     public int getWorkerThreads()
@@ -35,6 +40,31 @@ public class AsyncHttpClientConfig
     public AsyncHttpClientConfig setWorkerThreads(int workerThreads)
     {
         this.workerThreads = workerThreads;
+        return this;
+    }
+
+    @NotNull
+    public DataSize getMaxContentLength()
+    {
+        return maxContentLength;
+    }
+
+    @Config("http-client.max-content-length")
+    public AsyncHttpClientConfig setMaxContentLength(DataSize maxContentLength)
+    {
+        this.maxContentLength = maxContentLength;
+        return this;
+    }
+
+    public boolean isEnableConnectionPooling()
+    {
+        return enableConnectionPooling;
+    }
+
+    @Config("http-client.pool-connections")
+    public AsyncHttpClientConfig setEnableConnectionPooling(boolean enableConnectionPooling)
+    {
+        this.enableConnectionPooling = enableConnectionPooling;
         return this;
     }
 }

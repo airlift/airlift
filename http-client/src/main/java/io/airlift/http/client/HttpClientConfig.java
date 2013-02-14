@@ -16,6 +16,7 @@
 package io.airlift.http.client;
 
 import com.google.common.annotations.Beta;
+import com.google.common.net.HostAndPort;
 import io.airlift.configuration.Config;
 import io.airlift.units.Duration;
 import io.airlift.units.MinDuration;
@@ -32,6 +33,7 @@ public class HttpClientConfig
     private Duration keepAliveInterval = null;
     private int maxConnections = 200;
     private int maxConnectionsPerServer = 20;
+    private HostAndPort socksProxy;
 
     @NotNull
     @MinDuration("0ms")
@@ -96,6 +98,18 @@ public class HttpClientConfig
     public HttpClientConfig setMaxConnectionsPerServer(int maxConnectionsPerServer)
     {
         this.maxConnectionsPerServer = maxConnectionsPerServer;
+        return this;
+    }
+
+    public HostAndPort getSocksProxy()
+    {
+        return socksProxy;
+    }
+
+    @Config("http-client.socks-proxy")
+    public HttpClientConfig setSocksProxy(HostAndPort socksProxy)
+    {
+        this.socksProxy = socksProxy;
         return this;
     }
 }

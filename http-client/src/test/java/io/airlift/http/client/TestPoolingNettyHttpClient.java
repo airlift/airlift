@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Proofpoint, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,36 +16,45 @@
 package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableSet;
-import io.airlift.units.Duration;
+import io.airlift.http.client.netty.NettyAsyncHttpClient;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
-import java.util.concurrent.TimeUnit;
-
-public class AsyncHttpClientTest
+public class TestPoolingNettyHttpClient
         extends AbstractHttpClientTest
 {
-    private AsyncHttpClient httpClient;
+    private NettyAsyncHttpClient httpClient;
 
     @BeforeMethod
     public void setUp()
             throws Exception
     {
-        httpClient = new ApacheAsyncHttpClient(new HttpClientConfig().setKeepAliveInterval(new Duration(1, TimeUnit.MINUTES)),
-                ImmutableSet.of(new TestingRequestFilter()));
+        httpClient = new NettyAsyncHttpClient(new HttpClientConfig(),
+                new AsyncHttpClientConfig().setEnableConnectionPooling(true),
+                ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
+
+    @AfterMethod
+    public void tearDown()
+            throws Exception
+    {
+        httpClient.close();
+    }
+
 
     @Override
     public <T, E extends Exception> T executeRequest(Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        return httpClient.executeAsync(request, responseHandler).checkedGet();
+        return httpClient.execute(request, responseHandler);
     }
 
     @Override
-    public <T, E extends Exception> T  executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        AsyncHttpClient client = new ApacheAsyncHttpClient(config);
-        return client.executeAsync(request, responseHandler).checkedGet();
+        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient(config)) {
+            return client.execute(request, responseHandler);
+        }
     }
 }
