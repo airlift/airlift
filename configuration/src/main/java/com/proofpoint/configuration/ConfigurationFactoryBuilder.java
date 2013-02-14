@@ -79,6 +79,13 @@ public final class ConfigurationFactoryBuilder
         return this;
     }
 
+    public ConfigurationFactoryBuilder withRequiredProperties(Map<String, String> requiredConfigurationProperties)
+    {
+        properties.putAll(requiredConfigurationProperties);
+        expectToUse.addAll(requiredConfigurationProperties.keySet());
+        return this;
+    }
+
     public ConfigurationFactoryBuilder withMonitor(Monitor monitor)
     {
         this.monitor = monitor;

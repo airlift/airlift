@@ -65,6 +65,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>bootstrap</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <scope>test</scope>

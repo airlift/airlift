@@ -1,9 +1,8 @@
 package com.proofpoint.platform.skeleton;
 
-import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.proofpoint.configuration.ConfigurationFactory;
-import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.bootstrap.Bootstrap;
+import com.proofpoint.bootstrap.LifeCycleManager;
 import com.proofpoint.jmx.JmxHttpModule;
 import com.proofpoint.http.client.ApacheHttpClient;
 import com.proofpoint.http.client.HttpClient;
@@ -19,7 +18,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.net.URI;
-import java.util.Collections;
 
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
@@ -30,25 +28,27 @@ public class TestServer
 {
     private HttpClient client;
     private TestingHttpServer server;
+    private LifeCycleManager lifeCycleManager;
 
     @BeforeMethod
     public void setup()
             throws Exception
     {
-        // TODO: wrap all this stuff in a TestBootstrap class
-        Injector injector = Guice.createInjector(
+        Bootstrap app = new Bootstrap(
                 new TestingNodeModule(),
                 new TestingHttpServerModule(),
                 new JsonModule(),
                 new JaxrsModule(),
                 new JmxHttpModule(),
                 new JmxModule(),
-                new MainModule(),
-                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
+                new MainModule());
 
+        Injector injector = app
+                .doNotInitializeLogging()
+                .initialize();
+
+        lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         server = injector.getInstance(TestingHttpServer.class);
-
-        server.start();
         client = new ApacheHttpClient();
     }
 
@@ -56,8 +56,8 @@ public class TestServer
     public void teardown()
             throws Exception
     {
-        if (server != null) {
-            server.stop();
+        if (lifeCycleManager != null) {
+            lifeCycleManager.stop();
         }
     }
 

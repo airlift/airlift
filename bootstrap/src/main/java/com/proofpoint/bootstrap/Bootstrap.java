@@ -15,6 +15,7 @@
  */
 package com.proofpoint.bootstrap;
 
+import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.inject.Binder;
@@ -44,10 +45,14 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.TreeMap;
 
 import static com.proofpoint.event.client.EventBinder.eventBinder;
+
+import static com.google.common.collect.Maps.fromProperties;
 
 /**
  * Entry point for an application built using the platform codebase.
@@ -62,12 +67,50 @@ import static com.proofpoint.event.client.EventBinder.eventBinder;
  */
 public class Bootstrap
 {
-    private final Logger log = Logger.get(Bootstrap.class);
+    private final Logger log = Logger.get("Bootstrap");
     private final Module[] modules;
+
+    private Map<String, String> requiredConfigurationProperties = null;
+    private boolean initializeLogging = true;
+    private boolean logJmxInfo = false;
 
     public Bootstrap(Module... modules)
     {
         this.modules = Arrays.copyOf(modules, modules.length);
+    }
+
+    @Beta
+    public Bootstrap setRequiredConfigurationProperty(String key, String value)
+    {
+        if (this.requiredConfigurationProperties == null) {
+            this.requiredConfigurationProperties = new TreeMap<>();
+        }
+        this.requiredConfigurationProperties.put(key, value);
+        return this;
+    }
+
+    @Beta
+    public Bootstrap setRequiredConfigurationProperties(Map<String, String> requiredConfigurationProperties)
+    {
+        if (this.requiredConfigurationProperties == null) {
+            this.requiredConfigurationProperties = new TreeMap<>();
+        }
+        this.requiredConfigurationProperties.putAll(requiredConfigurationProperties);
+        return this;
+    }
+
+    @Beta
+    public Bootstrap doNotInitializeLogging()
+    {
+        this.initializeLogging = false;
+        return this;
+    }
+
+    @Beta
+    public Bootstrap logJmxInfo()
+    {
+        this.logJmxInfo = false;
+        return this;
     }
 
     @Deprecated
@@ -79,7 +122,9 @@ public class Bootstrap
     public Injector initialize()
             throws Exception
     {
-        Logging logging = new Logging();
+        if (initializeLogging) {
+            new Logging();
+        }
 
         Thread.currentThread().setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler()
         {
@@ -91,16 +136,27 @@ public class Bootstrap
         });
 
         // initialize configuration
-        log.info("Loading configuration");
-        final ConfigurationFactory configurationFactory = new ConfigurationFactoryBuilder()
-                .withFile(System.getProperty("config"))
-                .withSystemProperties()
-                .build();
+        ConfigurationFactory configurationFactory;
 
-        // initialize logging
-        log.info("Initializing logging");
-        LoggingConfiguration configuration = configurationFactory.build(LoggingConfiguration.class);
-        logging.initialize(configuration);
+        if (requiredConfigurationProperties == null) {
+            log.info("Loading configuration");
+            configurationFactory = new ConfigurationFactoryBuilder()
+                    .withFile(System.getProperty("config"))
+                    .withSystemProperties()
+                    .build();
+        }
+        else {
+            configurationFactory = new ConfigurationFactoryBuilder()
+                    .withRequiredProperties(requiredConfigurationProperties)
+                    .build();
+        }
+
+        if (initializeLogging) {
+            // initialize logging
+            log.info("Initializing logging");
+            LoggingConfiguration configuration = configurationFactory.build(LoggingConfiguration.class);
+            new Logging().initialize(configuration);
+        }
 
         // create warning logger now that we have logging initialized
         final List<String> warnings = new ArrayList<>();
@@ -136,7 +192,8 @@ public class Bootstrap
         if (!messages.isEmpty()) {
             moduleList.add(new ValidationErrorModule(messages));
         }
-        moduleList.add(new Module() {
+        moduleList.add(new Module()
+        {
             @Override
             public void configure(Binder binder)
             {
@@ -163,7 +220,9 @@ public class Bootstrap
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
 
         // Log managed objects
-        logJMX(injector);
+        if (logJmxInfo) {
+            logJMX(injector);
+        }
 
         // Start services
         if (lifeCycleManager.size() > 0) {
@@ -244,8 +303,8 @@ public class Bootstrap
 
         ColumnPrinter columnPrinter = new ColumnPrinter();
 
-        columnPrinter.addColumn(COMPONENT_COLUMN);
-        columnPrinter.addColumn(ATTRIBUTE_NAME_COLUMN);
+//        columnPrinter.addColumn(COMPONENT_COLUMN);
+//        columnPrinter.addColumn(ATTRIBUTE_NAME_COLUMN);
         columnPrinter.addColumn(PROPERTY_NAME_COLUMN);
         columnPrinter.addColumn(DEFAULT_VALUE_COLUMN);
         columnPrinter.addColumn(CURRENT_VALUE_COLUMN);
@@ -254,8 +313,8 @@ public class Bootstrap
         for (ConfigRecord<?> record : configurationInspector.inspect(configurationFactory)) {
             String componentName = record.getComponentName();
             for (ConfigAttribute attribute : record.getAttributes()) {
-                columnPrinter.addValue(COMPONENT_COLUMN, componentName);
-                columnPrinter.addValue(ATTRIBUTE_NAME_COLUMN, attribute.getAttributeName());
+//                columnPrinter.addValue(COMPONENT_COLUMN, componentName);
+//                columnPrinter.addValue(ATTRIBUTE_NAME_COLUMN, attribute.getAttributeName());
                 columnPrinter.addValue(PROPERTY_NAME_COLUMN, attribute.getPropertyName());
                 columnPrinter.addValue(DEFAULT_VALUE_COLUMN, attribute.getDefaultValue());
                 columnPrinter.addValue(CURRENT_VALUE_COLUMN, attribute.getCurrentValue());

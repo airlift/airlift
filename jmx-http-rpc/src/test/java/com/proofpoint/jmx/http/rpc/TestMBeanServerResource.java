@@ -18,12 +18,11 @@ package com.proofpoint.jmx.http.rpc;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.proofpoint.configuration.ConfigurationFactory;
-import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.bootstrap.Bootstrap;
+import com.proofpoint.bootstrap.LifeCycleManager;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
@@ -45,7 +44,6 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import java.lang.management.ManagementFactory;
-import java.util.Collections;
 import java.util.UUID;
 
 import static org.testng.Assert.assertEquals;
@@ -55,6 +53,7 @@ import static org.weakref.jmx.ObjectNames.generatedNameOf;
 
 public class TestMBeanServerResource
 {
+    private LifeCycleManager lifeCycleManager;
     private TestingHttpServer server;
     private MBeanServerConnection mbeanServerConnection;
     private MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
@@ -65,12 +64,11 @@ public class TestMBeanServerResource
     public void setup()
             throws Exception
     {
-        Injector injector = Guice.createInjector(
+        Bootstrap app = new Bootstrap(
                 new TestingNodeModule(),
                 new TestingHttpServerModule(),
                 new JsonModule(),
                 new JmxHttpRpcModule(TheServlet.class),
-                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())),
                 new Module()
                 {
                     @Override
@@ -81,8 +79,12 @@ public class TestMBeanServerResource
                     }
                 });
 
+        Injector injector = app
+                .doNotInitializeLogging()
+                .initialize();
+
+        lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         server = injector.getInstance(TestingHttpServer.class);
-        server.start();
 
         testMBean = injector.getInstance(TestMBean.class);
         testMBeanName = new ObjectName(generatedNameOf(TestMBean.class));
@@ -93,15 +95,14 @@ public class TestMBeanServerResource
                 new JMXServiceURL("service:jmx:" + server.getBaseUrl()),
                 ImmutableMap.of(JMXConnector.CREDENTIALS, new String[] {"foo", "bar"}));
         mbeanServerConnection = connect.getMBeanServerConnection();
-
     }
 
     @AfterMethod
     public void teardown()
             throws Exception
     {
-        if (server != null) {
-            server.stop();
+        if (lifeCycleManager != null) {
+            lifeCycleManager.stop();
             platformMBeanServer.unregisterMBean(testMBeanName);
         }
     }
