@@ -30,17 +30,17 @@ public class NettyHttpResponseChannelHandler
     }
 
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, MessageEvent event)
+    public void messageReceived(ChannelHandlerContext context, MessageEvent event)
             throws Exception
     {
-        Channel channel = ctx.getChannel();
-        NettyResponseFuture<?, ?> nettyResponseFuture = (NettyResponseFuture<?, ?>) ctx.getAttachment();
+        Channel channel = context.getChannel();
+        NettyResponseFuture<?, ?> nettyResponseFuture = (NettyResponseFuture<?, ?>) context.getAttachment();
 
         HttpResponse response;
         try {
             response = (HttpResponse) event.getMessage();
 
-
+            // this should not happen, but there may be race conditions that cause the context to be cleared
             if (nettyResponseFuture != null) {
                 // notify the caller
                 nettyResponseFuture.completed(response);
@@ -48,12 +48,11 @@ public class NettyHttpResponseChannelHandler
         }
         catch (Exception e) {
             // this should never happen, but be safe
-            nettyResponseFuture.setException(e);
-            nettyConnectionPool.destroyConnection(channel);
+            handleException(context, e);
             return;
         } finally {
             // release http response future
-            ctx.setAttachment(null);
+            context.setAttachment(null);
         }
 
         // If the server requested the connection be closed, close the connection
@@ -67,37 +66,38 @@ public class NettyHttpResponseChannelHandler
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent event)
+    public void exceptionCaught(ChannelHandlerContext context, ExceptionEvent event)
             throws Exception
     {
-        handleException(ctx, event.getCause());
+        handleException(context, event.getCause());
     }
 
     @Override
-    public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e)
+    public void channelDisconnected(ChannelHandlerContext context, ChannelStateEvent event)
             throws Exception
     {
-        handleException(ctx, new ClosedChannelException());
+        handleException(context, new ClosedChannelException());
     }
 
-    private void handleException(ChannelHandlerContext ctx, Throwable cause)
+    private void handleException(ChannelHandlerContext context, Throwable cause)
     {
         try {
-            NettyResponseFuture<?, ?> nettyResponseFuture = (NettyResponseFuture<?, ?>) ctx.getAttachment();
-            ctx.setAttachment(null);
+            NettyResponseFuture<?, ?> nettyResponseFuture = (NettyResponseFuture<?, ?>) context.getAttachment();
 
             if (nettyResponseFuture != null) {
                 if (cause instanceof ReadTimeoutException) {
-                    cause = new SocketTimeoutException("Read timeout");
+                    SocketTimeoutException socketTimeoutException = new SocketTimeoutException("Read timeout");
+                    socketTimeoutException.initCause(cause);
+                    cause = socketTimeoutException;
                 }
                 nettyResponseFuture.setException(cause);
             }
         }
         finally {
             // release http response future
-            ctx.setAttachment(null);
+            context.setAttachment(null);
 
-            nettyConnectionPool.destroyConnection(ctx.getChannel());
+            nettyConnectionPool.destroyConnection(context.getChannel());
         }
     }
 }

@@ -15,8 +15,8 @@ import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.http.client.netty.NettyConnectionPool.ConnectionCallback;
 import com.proofpoint.http.client.netty.socks.Socks4ClientBootstrap;
 import org.jboss.netty.bootstrap.ClientBootstrap;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
+import org.jboss.netty.buffer.ChannelBufferOutputStream;
+import org.jboss.netty.buffer.DynamicChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
@@ -26,13 +26,13 @@ import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 
-import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static org.jboss.netty.handler.codec.http.HttpHeaders.Names;
@@ -45,6 +45,7 @@ public class NettyAsyncHttpClient
 
     private final OrderedMemoryAwareThreadPoolExecutor executor;
     private final NettyConnectionPool nettyConnectionPool;
+    private final ExecutorService nettyThreadPool;
 
     public NettyAsyncHttpClient()
     {
@@ -64,11 +65,12 @@ public class NettyAsyncHttpClient
 
         this.requestFilters = ImmutableList.copyOf(requestFilters);
 
-        ChannelFactory channelFactory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
+        // Give netty an infinite thread "source"
+        // Netty will name the threads and will size the pool appropriately
+        this.nettyThreadPool = Executors.newCachedThreadPool();
+        ChannelFactory channelFactory = new NioClientSocketChannelFactory(nettyThreadPool, nettyThreadPool);
 
         executor = new OrderedMemoryAwareThreadPoolExecutor(asyncConfig.getWorkerThreads(), 0, 0);
-
-        HttpClientPipelineFactory pipelineFactory = new HttpClientPipelineFactory(executor, config.getReadTimeout(), asyncConfig.getMaxContentLength());
 
         ClientBootstrap bootstrap;
         if (config.getSocksProxy() == null) {
@@ -76,7 +78,6 @@ public class NettyAsyncHttpClient
         } else {
             bootstrap = new Socks4ClientBootstrap(channelFactory, config.getSocksProxy());
         }
-        bootstrap.setPipelineFactory(pipelineFactory);
         bootstrap.setOption("connectTimeoutMillis", (long) config.getConnectTimeout().toMillis());
         bootstrap.setOption("soLinger", 0);
 
@@ -85,8 +86,8 @@ public class NettyAsyncHttpClient
                 executor,
                 asyncConfig.isEnableConnectionPooling());
 
-        // give a the pipeline factory a reference to the connection pool so it can return connections when the request is complete
-        pipelineFactory.setNettyConnectionPool(nettyConnectionPool);
+        HttpClientPipelineFactory pipelineFactory = new HttpClientPipelineFactory(nettyConnectionPool, executor, config.getReadTimeout(), asyncConfig.getMaxContentLength());
+        bootstrap.setPipelineFactory(pipelineFactory);
     }
 
     public List<HttpRequestFilter> getRequestFilters()
@@ -101,7 +102,12 @@ public class NettyAsyncHttpClient
             nettyConnectionPool.close();
         }
         finally {
-            executor.shutdownNow(true);
+            try {
+                executor.shutdownNow(true);
+            }
+            finally {
+                nettyThreadPool.shutdownNow();
+            }
         }
     }
 
@@ -183,9 +189,9 @@ public class NettyAsyncHttpClient
         // set body
         BodyGenerator bodyGenerator = request.getBodyGenerator();
         if (bodyGenerator != null) {
-            ByteArrayOutputStream out = new ByteArrayOutputStream(64 * 1024);
+            DynamicChannelBuffer content = new DynamicChannelBuffer(64 * 1024);
+            ChannelBufferOutputStream out = new ChannelBufferOutputStream(content);
             bodyGenerator.write(out);
-            ChannelBuffer content = ChannelBuffers.copiedBuffer(out.toByteArray());
 
             nettyRequest.setHeader(Names.CONTENT_LENGTH, content.readableBytes());
             nettyRequest.setContent(content);
