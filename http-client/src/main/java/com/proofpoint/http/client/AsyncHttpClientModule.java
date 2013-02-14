@@ -22,6 +22,7 @@ import com.google.inject.Key;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
+import com.proofpoint.http.client.netty.NettyAsyncHttpClient;
 
 import java.lang.annotation.Annotation;
 import java.util.Set;
@@ -50,6 +51,7 @@ public class AsyncHttpClientModule
     {
         // bind the configuration
         bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(HttpClientConfig.class);
+        bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(AsyncHttpClientConfig.class);
 
         // bind the async client
         binder.bind(AsyncHttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(annotation)).in(Scopes.SINGLETON);
@@ -89,8 +91,9 @@ public class AsyncHttpClientModule
         public AsyncHttpClient get()
         {
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
+            AsyncHttpClientConfig asyncConfig = injector.getInstance(Key.get(AsyncHttpClientConfig.class, annotation));
             Set<HttpRequestFilter> filters = injector.getInstance(filterKey(annotation));
-            return new ApacheAsyncHttpClient(config, filters);
+            return new NettyAsyncHttpClient(config, asyncConfig, filters);
         }
     }
 

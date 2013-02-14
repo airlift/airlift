@@ -23,6 +23,7 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.http.client.netty.NettyAsyncHttpClient;
 import com.proofpoint.tracetoken.TraceTokenModule;
 import org.testng.annotations.Test;
 
@@ -163,7 +164,7 @@ public class TestHttpClientBinder
         if (httpClient instanceof ApacheHttpClient) {
             assertEquals(((ApacheHttpClient) httpClient).getRequestFilters().size(), filterCount);
         } else if (httpClient instanceof HttpClient) {
-            assertEquals(((ApacheAsyncHttpClient) httpClient).getRequestFilters().size(), filterCount);
+            assertEquals(((NettyAsyncHttpClient) httpClient).getRequestFilters().size(), filterCount);
         } else {
             fail("Unexpected HttpClient implementation " + httpClient.getClass().getName());
         }

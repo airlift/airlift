@@ -79,6 +79,11 @@ public class NettyAsyncHttpClient
         pipelineFactory.setNettyConnectionPool(nettyConnectionPool);
     }
 
+    public List<HttpRequestFilter> getRequestFilters()
+    {
+        return requestFilters;
+    }
+
     @Override
     public void close()
     {
