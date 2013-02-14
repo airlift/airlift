@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
-import org.jboss.netty.channel.ChannelHandler;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.handler.codec.http.HttpChunkAggregator;
@@ -17,7 +16,6 @@ import org.jboss.netty.util.HashedWheelTimer;
 import org.jboss.netty.util.Timer;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.jboss.netty.channel.Channels.pipeline;
 
@@ -26,23 +24,26 @@ public class HttpClientPipelineFactory
 {
     private final Timer timer = new HashedWheelTimer();
     private final OrderedMemoryAwareThreadPoolExecutor executor;
-    private final ChannelHandler timeoutHandler;
-    private final AtomicReference<NettyConnectionPool> nettyConnectionPoolReference = new AtomicReference<>();
+    private final ReadTimeoutHandler timeoutHandler;
+    private final NettyConnectionPool nettyConnectionPool;
     private final int maxContentLength;
 
-    public HttpClientPipelineFactory(OrderedMemoryAwareThreadPoolExecutor executor, Duration readTimeout, DataSize maxContentLength)
+    public HttpClientPipelineFactory(NettyConnectionPool nettyConnectionPool, OrderedMemoryAwareThreadPoolExecutor executor, Duration readTimeout, DataSize maxContentLength)
     {
+        Preconditions.checkNotNull(nettyConnectionPool, "nettyConnectionPool is null");
+        Preconditions.checkNotNull(executor, "executor is null");
+        Preconditions.checkNotNull(readTimeout, "readTimeout is null");
+        Preconditions.checkNotNull(maxContentLength, "maxContentLength is null");
+
+        this.nettyConnectionPool = nettyConnectionPool;
         this.executor = executor;
         this.timeoutHandler = new ReadTimeoutHandler(timer, (long) readTimeout.toMillis(), TimeUnit.MILLISECONDS);
-        this.maxContentLength = Ints.saturatedCast(maxContentLength.toBytes());
+        this.maxContentLength = Ints.checkedCast(maxContentLength.toBytes());
     }
 
     public ChannelPipeline getPipeline()
             throws Exception
     {
-        NettyConnectionPool nettyConnectionPool = nettyConnectionPoolReference.get();
-        Preconditions.checkState(nettyConnectionPool != null, "NettyConnectionPool has not been set");
-
         // Create a default pipeline implementation.
         ChannelPipeline pipeline = pipeline();
 
@@ -65,12 +66,5 @@ public class HttpClientPipelineFactory
         pipeline.addLast("handler", new NettyHttpResponseChannelHandler(nettyConnectionPool));
 
         return pipeline;
-    }
-
-    public void setNettyConnectionPool(NettyConnectionPool nettyConnectionPool)
-    {
-        if (!this.nettyConnectionPoolReference.compareAndSet(null, nettyConnectionPool)) {
-            throw new IllegalStateException("NettyConnectionPool already set");
-        }
     }
 }

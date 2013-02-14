@@ -1,9 +1,7 @@
 package io.airlift.http.client.netty;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.LinkedListMultimap;
 import com.google.common.net.HostAndPort;
 import com.google.common.net.InetAddresses;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -19,11 +17,13 @@ import javax.annotation.concurrent.ThreadSafe;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.net.URI;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * WARNING: Actual pooling is not tested yet.
+ */
 @ThreadSafe
 public class NettyConnectionPool
 {
@@ -34,10 +34,7 @@ public class NettyConnectionPool
     private final PermitQueue connectionPermits;
 
     @GuardedBy("this")
-    private final Multimap<HostAndPort, Channel> channelCache = ArrayListMultimap.create();
-
-    @GuardedBy("this")
-    private final LinkedList<LruHolder> lru = new LinkedList<>();
+    private final LinkedListMultimap<HostAndPort, Channel> channelCache = LinkedListMultimap.create();
 
     private final int maxConnections;
     private final AtomicInteger checkedOutConnections = new AtomicInteger();
@@ -57,8 +54,12 @@ public class NettyConnectionPool
 
     public void close()
     {
-        openChannels.close();
-        bootstrap.releaseExternalResources();
+        try {
+            openChannels.close();
+        }
+        finally {
+            bootstrap.releaseExternalResources();
+        }
     }
 
     public void execute(URI uri, final ConnectionCallback connectionCallback)
@@ -87,7 +88,7 @@ public class NettyConnectionPool
         }
     }
 
-    private synchronized void connectionPermitAcquired(InetSocketAddress remoteAddress, ConnectionCallback connectionCallback)
+    private void connectionPermitAcquired(InetSocketAddress remoteAddress, ConnectionCallback connectionCallback)
     {
         Preconditions.checkState(enablePooling, "Pooling is not enabled");
         Channel channel = null;
@@ -95,11 +96,10 @@ public class NettyConnectionPool
             HostAndPort key = toHostAndPort(remoteAddress);
 
             // find an existing connected channel
-            List<Channel> channels = (List<Channel>) channelCache.get(key);
+            List<Channel> channels = channelCache.get(key);
             while (channel == null && !channels.isEmpty()) {
                 // remove last
                 channel = channels.remove(channels.size() - 1);
-                lru.remove(new LruHolder(key, channel));
 
                 if (!channel.isConnected()) {
                     channel.close();
@@ -115,10 +115,9 @@ public class NettyConnectionPool
                 int checkedOutConnectionCount = this.checkedOutConnections.get();
 
                 int connectionsToDestroy = (checkedOutConnectionCount + pooledConnectionCount + 1) - maxConnections;
-                for (int i = 0; !lru.isEmpty() && i < connectionsToDestroy; i++) {
-                    LruHolder lruHolder = lru.removeFirst();
-                    channelCache.remove(lruHolder.getKey(), lruHolder.getChannel());
-                    lruHolder.getChannel().close();
+                for (int i = 0; !channels.isEmpty() && i < connectionsToDestroy; i++) {
+                    Channel victim = channels.remove(channels.size() - 1);
+                    victim.close();
                 }
             }
         }
@@ -151,7 +150,6 @@ public class NettyConnectionPool
                     if (remoteAddress != null) {
                         HostAndPort key = toHostAndPort(remoteAddress);
                         channelCache.put(key, channel);
-                        lru.addLast(new LruHolder(key, channel));
                         return;
                     }
                 }
@@ -210,6 +208,8 @@ public class NettyConnectionPool
                 try {
                     openChannels.add(channel);
 
+                    // todo add close callback handler to remove this from the cache
+
                     connectionCallback.run(channel);
                 }
                 catch (Throwable e) {
@@ -223,11 +223,14 @@ public class NettyConnectionPool
             }
             else {
                 Throwable cause = future.getCause();
-                boolean printCause = cause != null && cause.getMessage() != null;
-                SocketTimeoutException e = new SocketTimeoutException(printCause ? cause.getMessage() + " to " + remoteAddress : String.valueOf(remoteAddress));
-                if (cause != null) {
-                    e.initCause(cause);
+                String message = String.valueOf(remoteAddress);
+                if (cause != null && cause.getMessage() != null) {
+                   message = cause.getMessage() + " to " + remoteAddress;
                 }
+
+                SocketTimeoutException e = new SocketTimeoutException(message);
+                e.initCause(cause);
+
                 connectionCallback.onError(e);
             }
         }
@@ -239,66 +242,5 @@ public class NettyConnectionPool
                 throws Exception;
 
         void onError(Throwable throwable);
-    }
-
-    public static class LruHolder
-    {
-        private final HostAndPort key;
-        private final Channel channel;
-
-        public LruHolder(HostAndPort key, Channel channel)
-        {
-            this.key = key;
-            this.channel = channel;
-        }
-
-        public HostAndPort getKey()
-        {
-            return key;
-        }
-
-        public Channel getChannel()
-        {
-            return channel;
-        }
-
-        @Override
-        public boolean equals(Object o)
-        {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
-            LruHolder lruHolder = (LruHolder) o;
-
-            if (!channel.equals(lruHolder.channel)) {
-                return false;
-            }
-            if (!key.equals(lruHolder.key)) {
-                return false;
-            }
-
-            return true;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            int result = key.hashCode();
-            result = 31 * result + channel.hashCode();
-            return result;
-        }
-
-        @Override
-        public String toString()
-        {
-            return Objects.toStringHelper(this)
-                    .add("key", key)
-                    .add("channel", channel)
-                    .toString();
-        }
     }
 }
