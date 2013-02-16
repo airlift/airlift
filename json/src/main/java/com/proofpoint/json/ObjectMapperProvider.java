@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.KeyDeserializer;
 import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -31,8 +32,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 public class ObjectMapperProvider
         implements Provider<ObjectMapper>
@@ -41,6 +44,15 @@ public class ObjectMapperProvider
     private Map<Class<?>, KeyDeserializer> keyDeserializers;
     private Map<Class<?>, JsonSerializer<?>> jsonSerializers;
     private Map<Class<?>, JsonDeserializer<?>> jsonDeserializers;
+
+    private final Set<Module> modules = new HashSet<>();
+
+    public ObjectMapperProvider()
+    {
+        // add modules for Guava and Joda
+        modules.add(new GuavaModule());
+        modules.add(new JodaModule());
+    }
 
     @Inject(optional = true)
     public void setJsonSerializers(Map<Class<?>, JsonSerializer<?>> jsonSerializers)
@@ -66,6 +78,12 @@ public class ObjectMapperProvider
         this.keyDeserializers = keyDeserializers;
     }
 
+    @Inject(optional = true)
+    public void setModules(Set<Module> modules)
+    {
+        this.modules.addAll(modules);
+    }
+
     @Override
     public ObjectMapper get()
     {
@@ -86,10 +104,6 @@ public class ObjectMapperProvider
         objectMapper.disable(MapperFeature.AUTO_DETECT_SETTERS);
         objectMapper.disable(MapperFeature.AUTO_DETECT_GETTERS);
         objectMapper.disable(MapperFeature.AUTO_DETECT_IS_GETTERS);
-
-        // add modules for Guava and Joda
-        objectMapper.registerModule(new GuavaModule());
-        objectMapper.registerModule(new JodaModule());
 
         if (jsonSerializers != null || jsonDeserializers != null || keySerializers != null || keyDeserializers != null) {
             SimpleModule module = new SimpleModule(getClass().getName(), new Version(1, 0, 0, null));
@@ -113,6 +127,10 @@ public class ObjectMapperProvider
                     module.addKeyDeserializer(entry.getKey(), entry.getValue());
                 }
             }
+            modules.add(module);
+        }
+
+        for (Module module : modules) {
             objectMapper.registerModule(module);
         }
 

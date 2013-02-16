@@ -18,11 +18,13 @@ package com.proofpoint.json;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.KeyDeserializer;
+import com.fasterxml.jackson.databind.Module;
 import com.google.common.base.Preconditions;
 import com.google.inject.Binder;
 import com.google.inject.TypeLiteral;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.MapBinder;
+import com.google.inject.multibindings.Multibinder;
 
 public class JsonBinder
 {
@@ -30,6 +32,7 @@ public class JsonBinder
     private final MapBinder<Class<?>, KeyDeserializer> keyDeserializerMapBinder;
     private final MapBinder<Class<?>, JsonSerializer<?>> serializerMapBinder;
     private final MapBinder<Class<?>, JsonDeserializer<?>> deserializerMapBinder;
+    private final Multibinder<Module> moduleBinder;
 
     public static JsonBinder jsonBinder(Binder binder)
     {
@@ -42,6 +45,7 @@ public class JsonBinder
         keyDeserializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() { }, new TypeLiteral<KeyDeserializer>() {}, JsonKeySerde.class);
         serializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() { }, new TypeLiteral<JsonSerializer<?>>() {});
         deserializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() { }, new TypeLiteral<JsonDeserializer<?>>() {});
+        moduleBinder = Multibinder.newSetBinder(binder, Module.class);
     }
 
     public LinkedBindingBuilder<JsonSerializer<?>> addKeySerializerBinding(Class<?> type)
@@ -67,6 +71,12 @@ public class JsonBinder
         Preconditions.checkNotNull(type, "type is null");
         return deserializerMapBinder.addBinding(type);
     }
+
+    public LinkedBindingBuilder<Module> addModuleBinding()
+    {
+        return moduleBinder.addBinding();
+    }
+
 
     public <T> void bindSerializer(JsonSerializer<T> jsonSerializer)
     {
