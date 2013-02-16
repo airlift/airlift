@@ -44,16 +44,6 @@ public final class EquivalenceTester
     {
     }
 
-    @Deprecated
-    public static void check(Collection<?>... equivalenceClasses)
-    {
-        EquivalenceCheck<Object> tester = equivalenceTester();
-        for (Collection<?> equivalenceClass : equivalenceClasses) {
-            tester.addEquivalentGroup((Iterable<Object>)equivalenceClass);
-        }
-        tester.check();
-    }
-
     public static <T> EquivalenceCheck<T> equivalenceTester()
     {
         return new EquivalenceCheck<>();
@@ -291,20 +281,6 @@ public final class EquivalenceTester
         }
     }
 
-    @SafeVarargs
-    @Deprecated
-    public static <T extends Comparable<T>> void checkComparison(Iterable<T> initialGroup, Iterable<T> greaterGroup, Iterable<T>... moreGreaterGroup)
-    {
-        ComparisonCheck<T> tester = comparisonTester()
-                .addLesserGroup(initialGroup)
-                .addGreaterGroup(greaterGroup);
-
-        for (Iterable<T> equivalenceClass : moreGreaterGroup) {
-            tester.addGreaterGroup(equivalenceClass);
-        }
-        tester.check();
-    }
-
     public static InitialComparisonCheck comparisonTester()
     {
         return new InitialComparisonCheck();
@@ -335,7 +311,7 @@ public final class EquivalenceTester
 
     public static class ComparisonCheck <T extends Comparable<T>>
     {
-        private final EquivalenceCheck<T> equivalence = new EquivalenceCheck<T>();
+        private final EquivalenceCheck<T> equivalence = new EquivalenceCheck<>();
 
         private ComparisonCheck()
         {
@@ -356,7 +332,7 @@ public final class EquivalenceTester
 
         public void check()
         {
-            ImmutableList.Builder<ElementCheckFailure> builder = new ImmutableList.Builder<ElementCheckFailure>();
+            ImmutableList.Builder<ElementCheckFailure> builder = new ImmutableList.Builder<>();
 
             builder.addAll(equivalence.checkEquivalence());
 
