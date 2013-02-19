@@ -16,6 +16,7 @@
 package com.proofpoint.configuration;
 
 import com.google.common.annotations.Beta;
+import com.google.common.base.CaseFormat;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -54,6 +55,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static com.google.common.base.CaseFormat.LOWER_CAMEL;
+import static com.google.common.base.CaseFormat.UPPER_CAMEL;
 import static com.proofpoint.configuration.ConfigurationMetadata.isConfigClass;
 import static com.proofpoint.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
@@ -231,8 +234,16 @@ public final class ConfigurationFactory
         }
 
         for (ConstraintViolation<?> violation : VALIDATOR.validate(instance)) {
-            problems.addError("Constraint violation with property prefix '%s': %s %s (for class %s)",
-                    prefix, violation.getPropertyPath(), violation.getMessage(), configClass.getName());
+            AttributeMetadata attributeMetadata = configurationMetadata.getAttributes()
+                    .get(LOWER_CAMEL.to(UPPER_CAMEL, violation.getPropertyPath().toString()));
+            if (attributeMetadata != null) {
+                problems.addError("Constraint violation for property '%s': %s (for class %s)",
+                        prefix + attributeMetadata.getInjectionPoint().getProperty(), violation.getMessage(), configClass.getName());
+            }
+            else {
+                problems.addError("Constraint violation with property prefix '%s': %s %s (for class %s)",
+                        prefix, violation.getPropertyPath(), violation.getMessage(), configClass.getName());
+            }
         }
 
         return instance;
