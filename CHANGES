@@ -5,7 +5,10 @@ Platform 0.70
 Jackson 1.x has been upgraded to 2.1.x. This requires substantial code and
 dependency changes as all the artifacts are named differently and all the
 classes are in different packages. The upgrade guide has more details:
-http://wiki.fasterxml.com/JacksonUpgradeFrom19To20
+http://wiki.fasterxml.com/JacksonUpgradeFrom19To20.
+
+The Json module now also supports Jackson Modules (more details at
+http://wiki.fasterxml.com/JacksonFeatureModules).
 
 * True async http client
 
