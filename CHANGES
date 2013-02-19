@@ -52,7 +52,7 @@ has a method to return a factory that produces pretty-print codecs.
 
 * The HttpClient and AsyncHttpClients now implement Closeable and properly
   shutdown when used as lifecycle objects. Calling close shuts down the
-  connection pool for the underlying Apache HTTP client.
+  connection pool for the underlying Netty HTTP client.
 
 * DataSize and Duration can now be serialized as json
 
