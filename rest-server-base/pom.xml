@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>io.airlift</groupId>
     <artifactId>rest-server-base</artifactId>
-    <version>0.70-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>REST Server Base POM</name>
     <description>Airlift REST server base POM</description>
@@ -11,214 +9,37 @@
 
     <parent>
         <groupId>io.airlift</groupId>
-        <artifactId>library</artifactId>
+        <artifactId>airlift</artifactId>
         <version>0.70-SNAPSHOT</version>
-        <relativePath>../library/pom.xml</relativePath>
     </parent>
 
-    <inceptionYear>2010</inceptionYear>
-    <organization>
-        <name>Airlift</name>
-    </organization>
-    <licenses>
-        <license>
-            <name>Apache License 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
-
-    <developers>
-        <developer>
-            <id>dain</id>
-            <name>Dain Sundstrom</name>
-            <email>dain@iq80.com</email>
-        </developer>
-        <developer>
-            <id>mattstep</id>
-            <name>Matt Stephenson</name>
-            <email>mattstep@mattstep.net</email>
-        </developer>
-        <developer>
-            <id>randgalt</id>
-            <name>Jordan Zimmerman</name>
-            <email>jordan@proofpoint.com</email>
-        </developer>
-        <developer>
-            <id>mtraverso</id>
-            <name>Martin Traverso</name>
-            <email>mtraverso@gmail.com</email>
-        </developer>
-    </developers>
-
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <dep.airlift.version>${project.parent.version}</dep.airlift.version>
     </properties>
-
-    <scm>
-        <connection>scm:git:git://github.com/airlift/airlift.git</connection>
-        <developerConnection>scm:git:git@github.com:airlift/airlift.git</developerConnection>
-        <url>http://github.com/airlift/airlift/tree/master</url>
-    </scm>
-
-    <prerequisites>
-        <maven>3.0</maven>
-    </prerequisites>
-
-    <repositories>
-        <!-- TODO remove when jersey is in maven central -->
-        <repository>
-            <id>maven2-repository.dev.java.net</id>
-            <name>Java.net Repository for Maven</name>
-            <url>http://download.java.net/maven/2/</url>
-        </repository>
-    </repositories>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <inherited>false</inherited>
-                    <groupId>com.mycila.maven-license-plugin</groupId>
-                    <artifactId>maven-license-plugin</artifactId>
-                    <version>1.9.0</version>
-                    <configuration>
-                        <header>license-header.txt</header>
-                        <mapping>
-                            <java>SLASHSTAR_STYLE</java>
-                        </mapping>
-                        <excludes>
-                            <exclude>**/README.txt</exclude>
-                            <exclude>**/config.properties</exclude>
-                            <exclude>**/log.properties</exclude>
-                        </excludes>
-                    </configuration>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-gpg-plugin</artifactId>
-                    <version>1.4</version>
-                    <executions>
-                        <execution>
-                            <id>sign-artifacts</id>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>sign</goal>
-                            </goals>
-                            <configuration>
-                                <useAgent>true</useAgent>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
 
     <profiles>
         <profile>
-            <id>child-project-profile</id>
-            <!-- Activate profile in child projects, but not this project -->
+            <id>build-tarball</id>
             <activation>
                 <file>
-                    <missing>profile-activate-72946194395.do.not.remove</missing>
+                    <exists>.build-tarball</exists>
                 </file>
             </activation>
+
+            <dependencies>
+                <dependency>
+                    <groupId>io.airlift</groupId>
+                    <artifactId>launcher</artifactId>
+                    <classifier>bin</classifier>
+                    <type>tar.gz</type>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
 
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-enforcer-plugin</artifactId>
-                        <version>1.0.1</version>
-                        <executions>
-                            <execution>
-                                <id>enforce-versions</id>
-                                <goals>
-                                    <goal>enforce</goal>
-                                </goals>
-                                <configuration>
-                                    <rules>
-                                        <requireMavenVersion>
-                                            <version>3.0.0</version>
-                                        </requireMavenVersion>
-                                        <requireJavaVersion>
-                                            <version>1.7</version>
-                                        </requireJavaVersion>
-                                        <requirePluginVersions />
-                                        <bannedDependencies>
-                                            <excludes>
-                                                <exclude>com.google.collections:google-collections</exclude>
-                                                <exclude>com.google.guava:guava</exclude>
-                                            </excludes>
-                                            <includes>
-                                                <include>com.google.guava:guava:[10.0.1,)</include>
-                                            </includes>
-                                        </bannedDependencies>
-                                        <requireProperty>
-                                            <property>main-class</property>
-                                            <message>main-class property not defined</message>
-                                            <regex>.+</regex>
-                                            <regexMessage>main-class property is empty</regexMessage>
-                                        </requireProperty>
-                                    </rules>
-                                    <fail>true</fail>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <version>2.1.2</version>
-                        <configuration>
-                            <attach>true</attach>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>create-source-jar</id>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <version>2.3.2</version>
-                        <configuration>
-                            <source>1.7</source>
-                            <target>1.7</target>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-jar-plugin</artifactId>
-                        <version>2.3.1</version>
-                        <configuration>
-                            <archive>
-                                <manifest>
-                                    <mainClass>${main-class}</mainClass>
-                                    <addClasspath>true</addClasspath>
-                                    <useUniqueVersions>false</useUniqueVersions>
-                                </manifest>
-                                <manifestEntries>
-                                    <Implementation-Version>${project.version}</Implementation-Version>
-                                </manifestEntries>
-                            </archive>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-assembly-plugin</artifactId>
-                        <version>2.2</version>
-
                         <configuration>
                             <attach>false</attach>
                             <descriptorRefs>
@@ -229,7 +50,7 @@
                             <dependency>
                                 <groupId>io.airlift</groupId>
                                 <artifactId>packaging</artifactId>
-                                <version>0.70-SNAPSHOT</version>
+                                <version>${dep.airlift.version}</version>
                             </dependency>
                         </dependencies>
 
@@ -247,7 +68,6 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>build-helper-maven-plugin</artifactId>
-                        <version>1.5</version>
                         <executions>
                             <execution>
                                 <id>attach-distribution-tar.gz</id>
@@ -279,264 +99,6 @@
                                         </artifact>
                                     </artifacts>
                                 </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>cobertura-maven-plugin</artifactId>
-                        <version>2.4</version>
-                        <configuration>
-                            <formats>
-                                <format>xml</format>
-                            </formats>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>findbugs-maven-plugin</artifactId>
-                        <version>2.3.2</version>
-                        <configuration>
-                            <findbugsXmlOutput>true</findbugsXmlOutput>
-                            <xmlOutput>true</xmlOutput>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-install-plugin</artifactId>
-                        <version>2.3.1</version>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <version>2.4.3</version>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-deploy-plugin</artifactId>
-                        <version>2.5</version>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <version>2.8.1</version>
-                        <!-- Work around Cobertura incompatibilty with Java 7 -->
-                        <configuration>
-                            <argLine>-XX:-UseSplitVerifier</argLine>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>2.7</version>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-release-plugin</artifactId>
-                        <version>2.2.2</version>
-                        <configuration>
-                            <mavenExecutorId>forked-path</mavenExecutorId>
-                            <arguments>-Pchild-project-release</arguments>
-                            <preparationGoals>clean install</preparationGoals>
-                            <useReleaseProfile>false</useReleaseProfile>
-                            <pushChanges>false</pushChanges>
-                            <localCheckout>true</localCheckout>
-                            <tagNameFormat>@{project.version}</tagNameFormat>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>com.ning.maven.plugins</groupId>
-                        <artifactId>maven-duplicate-finder-plugin</artifactId>
-                        <version>1.0.3</version>
-                        <configuration>
-                            <exceptions>
-                                <exception>
-                                    <!-- Same jersey versions... -->
-                                    <conflictingDependencies>
-                                        <dependency>
-                                            <groupId>com.sun.jersey</groupId>
-                                            <artifactId>jersey-server</artifactId>
-                                            <version>1.9.1</version>
-                                        </dependency>
-                                        <dependency>
-                                            <groupId>com.sun.jersey</groupId>
-                                            <artifactId>jersey-core</artifactId>
-                                            <version>1.9.1</version>
-                                        </dependency>
-                                        <dependency>
-                                            <groupId>com.sun.jersey.contribs</groupId>
-                                            <artifactId>jersey-multipart</artifactId>
-                                            <version>1.9.1</version>
-                                        </dependency>
-                                    </conflictingDependencies>
-                                    <resources>
-                                        <resource>META-INF/jersey-module-version</resource>
-                                    </resources>
-                                </exception>
-
-                                <exception>
-                                    <!-- For bval-jsr303 -->
-                                    <conflictingDependencies>
-                                        <dependency>
-                                            <groupId>commons-beanutils</groupId>
-                                            <artifactId>commons-beanutils-core</artifactId>
-                                            <version>1.8.3</version>
-                                        </dependency>
-                                        <dependency>
-                                            <groupId>commons-collections</groupId>
-                                            <artifactId>commons-collections</artifactId>
-                                            <version>3.2.1</version>
-                                        </dependency>
-                                    </conflictingDependencies>
-                                    <classes>
-                                        <class>org.apache.commons.collections.ArrayStack</class>
-                                        <class>org.apache.commons.collections.Buffer</class>
-                                        <class>org.apache.commons.collections.BufferUnderflowException</class>
-                                        <class>org.apache.commons.collections.FastHashMap</class>
-                                    </classes>
-                                </exception>
-
-                                <exception>
-                                    <!-- https://github.com/apache/httpcore/commit/1411f34092eb44c0a689410291dc57adc62edee5 -->
-                                    <conflictingDependencies>
-                                        <dependency>
-                                            <groupId>org.apache.httpcomponents</groupId>
-                                            <artifactId>httpclient</artifactId>
-                                            <version>4.0.1</version>
-                                        </dependency>
-                                        <dependency>
-                                            <groupId>org.apache.httpcomponents</groupId>
-                                            <artifactId>httpcore</artifactId>
-                                            <version>4.2-beta1</version>
-                                        </dependency>
-                                    </conflictingDependencies>
-                                    <classes>
-                                        <class>org.apache.http.annotation.GuardedBy</class>
-                                        <class>org.apache.http.annotation.Immutable</class>
-                                        <class>org.apache.http.annotation.NotThreadSafe</class>
-                                        <class>org.apache.http.annotation.ThreadSafe</class>
-                                    </classes>
-                                </exception>
-                            </exceptions>
-
-                            <ignoredResources>
-                                <!-- For all the jetty packages -->
-                                <ignoredResource>about\.html</ignoredResource>
-                            </ignoredResources>
-
-                            <ignoredDependencies>
-                                <!-- jRuby complete isn't very safe, but we only use it in the rack project -->
-                                <dependency>
-                                    <groupId>org.jruby</groupId>
-                                    <artifactId>jruby-complete</artifactId>
-                                </dependency>
-                            </ignoredDependencies>
-
-                            <failBuildInCaseOfConflict>true</failBuildInCaseOfConflict>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>check</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>child-project-release</id>
-            <properties>
-                <skipTests>true</skipTests> <!-- tests run in the preparation step of the release -->
-            </properties>
-        </profile>
-
-        <profile>
-            <id>parent-project-profile</id>
-            <activation>
-                <file>
-                    <exists>profile-activate-72946194395.do.not.remove</exists>
-                </file>
-            </activation>
-
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>sonatype-nexus-snapshots</id>
-                    <name>Sonatype Nexus Snapshots</name>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-                </snapshotRepository>
-                <repository>
-                    <id>sonatype-nexus-staging</id>
-                    <name>Nexus Release Repository</name>
-                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-                </repository>
-            </distributionManagement>
-
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-release-plugin</artifactId>
-                        <version>2.2.2</version>
-                        <configuration>
-                            <mavenExecutorId>forked-path</mavenExecutorId>
-                            <arguments>-Psonatype-oss-release</arguments>
-                            <useReleaseProfile>false</useReleaseProfile>
-                            <pushChanges>false</pushChanges>
-                            <localCheckout>true</localCheckout>
-                            <preparationGoals>clean install</preparationGoals>
-                            <tagNameFormat>@{project.version}</tagNameFormat>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>sonatype-oss-release</id>
-            <properties>
-                <skipTests>true</skipTests> <!-- tests run in the preparation step of the release -->
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.4</version>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                                <configuration>
-                                    <useAgent>true</useAgent>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
                             </execution>
                         </executions>
                     </plugin>
