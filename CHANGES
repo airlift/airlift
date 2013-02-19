@@ -1,6 +1,7 @@
 * 0.70
 
 - Upgrade to Jackson 2.1.3
+- add support for Jackson modules
 - Change AsyncHttpClient to be a true async http client
 
 * 0.69
@@ -19,7 +20,7 @@
 
 - Dropped the Cassandra module
 - Improvements to EquivalenceTester
-- [Bug] Don't send entity in http client if there's no body generator 
+- [Bug] Don't send entity in http client if there's no body generator
 - [Bug] Use System.nanoTime() instead of System.currentTimeMillis for measuring time intervals
 - Upgrade to Apache httpclient 4.2.2
 - [Bug] Don't throw an exception from http request logger when wall clock time goes backwards
@@ -206,7 +207,7 @@
 - [Experimental] Added DataSize (similar to Duration)
 - [Experimental] Added ValidationAssertions.assertValidates and assertFailsValidation
 - [Bug] Discovery client fails when consuming static announcements
-- [Bug] MySQL connection timeouts using the wrong unit (ms vs s) 
+- [Bug] MySQL connection timeouts using the wrong unit (ms vs s)
 - [Bug] Jar manifest using the wrong file names when building snapshot versions
 
 * 0.41

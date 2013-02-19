@@ -5,7 +5,10 @@ Airlift 0.70
 Jackson 1.x has been upgraded to 2.1.x. This requires substantial code and
 dependency changes as all the artifacts are named differently and all the
 classes are in different packages. The upgrade guide has more details:
-http://wiki.fasterxml.com/JacksonUpgradeFrom19To20
+http://wiki.fasterxml.com/JacksonUpgradeFrom19To20.
+
+The Json module now also supports Jackson Modules (more details at
+http://wiki.fasterxml.com/JacksonFeatureModules).
 
 * True async http client
 
@@ -78,7 +81,7 @@ Starting with this version, the Cassandra module is no longer supported
 
 * In this release we have upgraded the following dependencies
 
-  - Apache HttpClient 4.2.2 
+  - Apache HttpClient 4.2.2
 
 
 Airlift 0.66
@@ -292,7 +295,7 @@ The HTTP client is still experimental.
 
 Platform 0.54
 
-This release removed the use of DocLava for generating javadocs for projects rest-server-base. 
+This release removed the use of DocLava for generating javadocs for projects rest-server-base.
 It was triggering a bug in javadoc that prevented some projects from building successfully.
 
 
@@ -310,7 +313,7 @@ prematurely.
 
 When developing servlet filters for use with the platform HTTP server, it is now possible
 to test these filters inside the TestingHttpServer. Bind the TestingHttpServerModule into your
-test injector along with the module that binds your servlet filter. 
+test injector along with the module that binds your servlet filter.
 
 * Rack packaging (JRuby on Rails)
 
@@ -375,14 +378,14 @@ Platform 0.51
 
 * Trace token support for http requests
 
-The http server can now deal with request trace tokens passed in via a 
+The http server can now deal with request trace tokens passed in via a
 request header (X-Proofpoint-TraceToken). The trace token is recorded
 in the request logs and is made available to application code via a
 TraceTokenManager object. If no token is provided, a new one is created
 automatically.
- 
+
 To enable this functionality, simply add a dependency to
-com.proofpoint.platform:trace-token and add TraceTokenModule to the list of 
+com.proofpoint.platform:trace-token and add TraceTokenModule to the list of
 guice modules for your application.
 
 * Event fields support Map and Multimap
@@ -779,6 +782,6 @@ annotations. Here's an example on how to use assertFailsValidation():
 * Bug fixes
 
 The following issues have been fixed:
-	- Discovery client fails when consuming static announcements
-	- MySQL connection timeouts using the wrong unit (ms vs s)
-	- Jar manifest using the wrong file names when building snapshot versions
+  - Discovery client fails when consuming static announcements
+  - MySQL connection timeouts using the wrong unit (ms vs s)
+  - Jar manifest using the wrong file names when building snapshot versions
