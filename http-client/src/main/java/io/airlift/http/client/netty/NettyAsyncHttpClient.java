@@ -4,6 +4,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.CheckedFuture;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.airlift.http.client.AsyncHttpClient;
 import io.airlift.http.client.AsyncHttpClientConfig;
 import io.airlift.http.client.BodyGenerator;
@@ -20,11 +21,13 @@ import org.jboss.netty.buffer.DynamicChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
+import org.jboss.netty.channel.socket.nio.NioWorkerPool;
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
 import org.jboss.netty.handler.codec.http.HttpMethod;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
+import org.jboss.netty.util.HashedWheelTimer;
 
 import java.net.URI;
 import java.util.Collection;
@@ -34,18 +37,26 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import static org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 
 public class NettyAsyncHttpClient
         implements AsyncHttpClient
 {
+    // The constants come directly from Netty but are private in Netty
+    // We need these default values to call the NioClientSocketChannelFactory constructor with a custom timer
+    private static final int DEFAULT_BOSS_COUNT = 1;
+    private static final int DEFAULT_IO_THREADS = Runtime.getRuntime().availableProcessors() * 2;
+
     private final RequestStats stats = new RequestStats();
     private final List<HttpRequestFilter> requestFilters;
 
     private final OrderedMemoryAwareThreadPoolExecutor executor;
     private final NettyConnectionPool nettyConnectionPool;
     private final ExecutorService nettyThreadPool;
+    private final HashedWheelTimer timer;
 
     public NettyAsyncHttpClient()
     {
@@ -65,12 +76,21 @@ public class NettyAsyncHttpClient
 
         this.requestFilters = ImmutableList.copyOf(requestFilters);
 
+        // shared timer for channel factory and read timeout channel handler
+        ThreadFactory timerThreadFactory = new ThreadFactoryBuilder().setNameFormat("http-client-timer-%s").setDaemon(true).build();
+        timer = new HashedWheelTimer(timerThreadFactory);
+
         // Give netty an infinite thread "source"
         // Netty will name the threads and will size the pool appropriately
-        this.nettyThreadPool = Executors.newCachedThreadPool();
-        ChannelFactory channelFactory = new NioClientSocketChannelFactory(nettyThreadPool, nettyThreadPool);
+        ThreadFactory nettyThreadFactory = new ThreadFactoryBuilder().setNameFormat("http-client-netty-%s").setDaemon(true).build();
+        this.nettyThreadPool = Executors.newCachedThreadPool(nettyThreadFactory);
+        ChannelFactory channelFactory = new NioClientSocketChannelFactory(nettyThreadPool,
+                DEFAULT_BOSS_COUNT,
+                new NioWorkerPool(nettyThreadPool, DEFAULT_IO_THREADS),
+                timer);
 
-        executor = new OrderedMemoryAwareThreadPoolExecutor(asyncConfig.getWorkerThreads(), 0, 0);
+        ThreadFactory workerThreadFactory = new ThreadFactoryBuilder().setNameFormat("http-client-worker-%s").setDaemon(true).build();
+        executor = new OrderedMemoryAwareThreadPoolExecutor(asyncConfig.getWorkerThreads(), 0, 0, 30, TimeUnit.SECONDS, workerThreadFactory);
 
         ClientBootstrap bootstrap;
         if (config.getSocksProxy() == null) {
@@ -86,7 +106,7 @@ public class NettyAsyncHttpClient
                 executor,
                 asyncConfig.isEnableConnectionPooling());
 
-        HttpClientPipelineFactory pipelineFactory = new HttpClientPipelineFactory(nettyConnectionPool, executor, config.getReadTimeout(), asyncConfig.getMaxContentLength());
+        HttpClientPipelineFactory pipelineFactory = new HttpClientPipelineFactory(nettyConnectionPool, timer, executor, config.getReadTimeout(), asyncConfig.getMaxContentLength());
         bootstrap.setPipelineFactory(pipelineFactory);
     }
 
@@ -106,7 +126,12 @@ public class NettyAsyncHttpClient
                 executor.shutdownNow(true);
             }
             finally {
-                nettyThreadPool.shutdownNow();
+                try {
+                    nettyThreadPool.shutdownNow();
+                }
+                finally {
+                    timer.stop();
+                }
             }
         }
     }
