@@ -12,7 +12,6 @@ import org.jboss.netty.handler.codec.http.HttpContentDecompressor;
 import org.jboss.netty.handler.execution.ExecutionHandler;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import org.jboss.netty.handler.timeout.ReadTimeoutHandler;
-import org.jboss.netty.util.HashedWheelTimer;
 import org.jboss.netty.util.Timer;
 
 import java.util.concurrent.TimeUnit;
@@ -22,14 +21,19 @@ import static org.jboss.netty.channel.Channels.pipeline;
 public class HttpClientPipelineFactory
         implements ChannelPipelineFactory
 {
-    private final Timer timer = new HashedWheelTimer();
+    private final Timer timer;
     private final OrderedMemoryAwareThreadPoolExecutor executor;
     private final ReadTimeoutHandler timeoutHandler;
     private final NettyConnectionPool nettyConnectionPool;
     private final int maxContentLength;
 
-    public HttpClientPipelineFactory(NettyConnectionPool nettyConnectionPool, OrderedMemoryAwareThreadPoolExecutor executor, Duration readTimeout, DataSize maxContentLength)
+    public HttpClientPipelineFactory(NettyConnectionPool nettyConnectionPool,
+            Timer timer,
+            OrderedMemoryAwareThreadPoolExecutor executor,
+            Duration readTimeout,
+            DataSize maxContentLength)
     {
+        this.timer = timer;
         Preconditions.checkNotNull(nettyConnectionPool, "nettyConnectionPool is null");
         Preconditions.checkNotNull(executor, "executor is null");
         Preconditions.checkNotNull(readTimeout, "readTimeout is null");
@@ -37,7 +41,7 @@ public class HttpClientPipelineFactory
 
         this.nettyConnectionPool = nettyConnectionPool;
         this.executor = executor;
-        this.timeoutHandler = new ReadTimeoutHandler(timer, (long) readTimeout.toMillis(), TimeUnit.MILLISECONDS);
+        this.timeoutHandler = new ReadTimeoutHandler(this.timer, (long) readTimeout.toMillis(), TimeUnit.MILLISECONDS);
         this.maxContentLength = Ints.checkedCast(maxContentLength.toBytes());
     }
 
