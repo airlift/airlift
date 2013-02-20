@@ -15,8 +15,11 @@
  */
 package io.airlift.jmx;
 
+import com.google.common.net.InetAddresses;
+
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
+import io.airlift.node.NodeInfo;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -24,8 +27,8 @@ import javax.management.MBeanServer;
 import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
+
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.rmi.registry.LocateRegistry;
 import java.util.Collections;
@@ -41,11 +44,11 @@ public class JmxAgent
     private final JMXServiceURL url;
 
     @Inject
-    public JmxAgent(MBeanServer server, JmxConfig config)
+    public JmxAgent(MBeanServer server, JmxConfig config, NodeInfo nodeInfo)
             throws IOException
     {
         if (config.getHostname() == null) {
-            host = InetAddress.getLocalHost().getHostAddress();
+            host = InetAddresses.toUriString(nodeInfo.getInternalIp());
         }
         else {
             host = config.getHostname();
