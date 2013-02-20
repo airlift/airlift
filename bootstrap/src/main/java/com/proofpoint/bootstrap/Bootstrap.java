@@ -34,14 +34,20 @@ import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.configuration.ConfigurationValidator;
 import com.proofpoint.configuration.ValidationErrorModule;
 import com.proofpoint.configuration.WarningsMonitor;
+import com.proofpoint.event.client.EventClient;
 import com.proofpoint.jmx.JmxInspector;
 import com.proofpoint.log.Logger;
 import com.proofpoint.log.Logging;
 import com.proofpoint.log.LoggingConfiguration;
 
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import static com.proofpoint.event.client.EventBinder.eventBinder;
 
 /**
  * Entry point for an application built using the platform codebase.
@@ -97,12 +103,14 @@ public class Bootstrap
         logging.initialize(configuration);
 
         // create warning logger now that we have logging initialized
+        final List<String> warnings = new ArrayList<>();
         final WarningsMonitor warningsMonitor = new WarningsMonitor()
         {
             @Override
             public void onWarning(String message)
             {
                 log.warn(message);
+                warnings.add(message);
             }
         };
 
@@ -133,6 +141,7 @@ public class Bootstrap
             public void configure(Binder binder)
             {
                 binder.bind(WarningsMonitor.class).toInstance(warningsMonitor);
+                eventBinder(binder).bindEventClient(ConfigWarningsEvent.class);
             }
         });
 
@@ -148,7 +157,7 @@ public class Bootstrap
         moduleList.add(modules);
 
         // create the injector
-        Injector injector = Guice.createInjector(Stage.PRODUCTION, moduleList.build());
+        final Injector injector = Guice.createInjector(Stage.PRODUCTION, moduleList.build());
 
         // Create the life-cycle manager
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
@@ -159,6 +168,21 @@ public class Bootstrap
         // Start services
         if (lifeCycleManager.size() > 0) {
             lifeCycleManager.start();
+        }
+
+        // Report config warnings
+        if (!warnings.isEmpty()) {
+            final EventClient eventClient = injector.getInstance(EventClient.class);
+            Timer warningsSenderTimer = new Timer("config-warnings-sender", true);
+            warningsSenderTimer.scheduleAtFixedRate(new TimerTask()
+            {
+                @Override
+                public void run()
+                {
+                    eventClient.post(new ConfigWarningsEvent(warnings));
+                }
+            }, 0, 24 * 60 * 60 * 1000);
+            lifeCycleManager.addInstance(warningsSenderTimer);
         }
 
         return injector;
