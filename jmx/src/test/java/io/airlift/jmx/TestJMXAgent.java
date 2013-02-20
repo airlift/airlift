@@ -15,15 +15,18 @@
  */
 package io.airlift.jmx;
 
+import io.airlift.node.NodeInfo;
 import org.testng.annotations.Test;
 
 import javax.management.MBeanServer;
 import javax.management.MBeanServerConnection;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
+
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.Inet4Address;
+import java.net.InetAddress;
 
 import static org.testng.Assert.assertTrue;
 
@@ -34,7 +37,7 @@ public class TestJMXAgent
             throws IOException
     {
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        JmxAgent agent = new JmxAgent(server, new JmxConfig());
+        JmxAgent agent = new JmxAgent(server, new JmxConfig(), new NodeInfo("test"));
         agent.start();
 
         JMXConnector connector = JMXConnectorFactory.connect(agent.getURL());
@@ -48,10 +51,10 @@ public class TestJMXAgent
     public void testSpecificHost()
             throws IOException
     {
-        final String host = Inet4Address.getLocalHost().getCanonicalHostName();
+        final String host = new NodeInfo("test").getInternalIp().getCanonicalHostName();
 
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        JmxAgent agent = new JmxAgent(server, new JmxConfig().setHostname(host));
+        JmxAgent agent = new JmxAgent(server, new JmxConfig().setHostname(host), new NodeInfo("test"));
         agent.start();
 
         JMXConnector connector = JMXConnectorFactory.connect(agent.getURL());
@@ -65,7 +68,7 @@ public class TestJMXAgent
     public void testSpecificHostAndPort()
             throws IOException
     {
-        final String host = Inet4Address.getLocalHost().getCanonicalHostName();
+        final String host = new NodeInfo("test").getInternalIp().getCanonicalHostName();
         final int port = NetUtils.findUnusedPort();
 
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
@@ -73,7 +76,7 @@ public class TestJMXAgent
                 .setRmiRegistryPort(port)
                 .setHostname(host);
 
-        JmxAgent agent = new JmxAgent(server, config);
+        JmxAgent agent = new JmxAgent(server, config, new NodeInfo("test"));
         agent.start();
 
         JMXConnector connector = JMXConnectorFactory.connect(agent.getURL());
