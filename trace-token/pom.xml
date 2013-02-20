@@ -3,12 +3,12 @@
     <groupId>io.airlift</groupId>
     <artifactId>trace-token</artifactId>
     <packaging>jar</packaging>
-    <version>0.70-SNAPSHOT</version>
+    <version>0.70</version>
 
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>0.70-SNAPSHOT</version>
+        <version>0.70</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
