@@ -15,13 +15,11 @@
  */
 package io.airlift.rack;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
-import io.airlift.configuration.ConfigurationFactory;
-import io.airlift.configuration.ConfigurationModule;
+import io.airlift.bootstrap.Bootstrap;
+import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 import io.airlift.discovery.client.Announcer;
 import io.airlift.discovery.client.DiscoveryLookupClient;
@@ -29,7 +27,6 @@ import io.airlift.discovery.client.ServiceAnnouncement;
 import io.airlift.discovery.client.ServiceDescriptor;
 import io.airlift.discovery.client.testing.InMemoryDiscoveryClient;
 import io.airlift.discovery.client.testing.TestingDiscoveryModule;
-import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.node.testing.TestingNodeModule;
 import org.testng.annotations.AfterMethod;
@@ -42,14 +39,14 @@ import static org.testng.Assert.assertEquals;
 
 public class TestRackAnnounce
 {
-    private TestingHttpServer server;
+    private LifeCycleManager lifeCycleManager;
 
     @AfterMethod
     public void tearDown()
             throws Exception
     {
-        if (server != null) {
-            server.stop();
+        if (lifeCycleManager != null) {
+            lifeCycleManager.stop();
         }
     }
 
@@ -57,20 +54,20 @@ public class TestRackAnnounce
     public void testAnnouncement()
             throws Exception
     {
-        Injector injector = Guice.createInjector(
+        Bootstrap app = new Bootstrap(
                 new TestingHttpServerModule(),
                 new RackModule(),
                 new TestingNodeModule(),
-                new TestingDiscoveryModule(),
-                new ConfigurationModule(new ConfigurationFactory(
-                        ImmutableMap.<String, String>builder()
-                                .put("rackserver.rack-config-path", Resources.getResource("test/raw/config.ru").getFile())
-                                .put("rackserver.announcement", "racktest")
-                                .build()
-                )));
+                new TestingDiscoveryModule());
 
-        server = injector.getInstance(TestingHttpServer.class);
-        server.start();
+        Injector injector = app
+                .strictConfig()
+                .doNotInitializeLogging()
+                .setRequiredConfigurationProperty("rackserver.rack-config-path", Resources.getResource("test/raw/config.ru").getFile())
+                .setRequiredConfigurationProperty("rackserver.announcement", "racktest")
+                .initialize();
+
+        lifeCycleManager = injector.getInstance(LifeCycleManager.class);
 
         injector.getInstance(Announcer.class).start();
 

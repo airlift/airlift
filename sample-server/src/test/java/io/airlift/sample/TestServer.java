@@ -18,10 +18,9 @@ package io.airlift.sample;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
-import io.airlift.configuration.ConfigurationFactory;
-import io.airlift.configuration.ConfigurationModule;
+import io.airlift.bootstrap.Bootstrap;
+import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.event.client.EventClient;
 import io.airlift.event.client.InMemoryEventClient;
 import io.airlift.event.client.InMemoryEventModule;
@@ -74,26 +73,31 @@ public class TestServer
     private final JsonCodec<Map<String, Object>> mapCodec = mapJsonCodec(String.class, Object.class);
     private final JsonCodec<List<Object>> listCodec = listJsonCodec(Object.class);
     private InMemoryEventClient eventClient;
+    private LifeCycleManager lifeCycleManager;
 
     @BeforeMethod
     public void setup()
             throws Exception
     {
-        // TODO: wrap all this stuff in a TestBootstrap class
-        Injector injector = Guice.createInjector(
+        Bootstrap app = new Bootstrap(
                 new TestingNodeModule(),
                 new InMemoryEventModule(),
                 new TestingHttpServerModule(),
                 new JsonModule(),
                 new JaxrsModule(),
-                new MainModule(),
-                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
+                new MainModule());
+
+        Injector injector = app
+                .strictConfig()
+                .doNotInitializeLogging()
+                .initialize();
+
+        lifeCycleManager = injector.getInstance(LifeCycleManager.class);
 
         server = injector.getInstance(TestingHttpServer.class);
         store = injector.getInstance(PersonStore.class);
         eventClient = (InMemoryEventClient) injector.getInstance(EventClient.class);
 
-        server.start();
         client = new ApacheHttpClient();
     }
 
@@ -101,8 +105,8 @@ public class TestServer
     public void teardown()
             throws Exception
     {
-        if (server != null) {
-            server.stop();
+        if (lifeCycleManager != null) {
+            lifeCycleManager.stop();
         }
     }
 
