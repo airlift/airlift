@@ -18,6 +18,7 @@ package com.proofpoint.rack;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
+import org.jruby.CompatVersion;
 import org.jruby.Ruby;
 import org.jruby.RubyHash;
 import org.jruby.RubyInstanceConfig;
@@ -87,6 +88,7 @@ public class RackServlet
     private RubyInstanceConfig createRuntimeConfig()
     {
         RubyInstanceConfig config = new RubyInstanceConfig();
+        config.setCompatVersion(CompatVersion.RUBY1_8);
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         if (classLoader == null) {
             classLoader = ClassLoader.getSystemClassLoader();

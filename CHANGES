@@ -68,7 +68,10 @@ now identifies the attribute's configuration property, if any.
 
 * DataSize and Duration can now be serialized as json
 
-* Upgrade jmxutils to 1.13
+* Library upgrades
+
+  - Upgrade jmxutils to 1.13
+  - Upgrade jruby to 1.7.3
 
 * H2 improvements
   - Improve validation of H2EmbeddedDataSource config
