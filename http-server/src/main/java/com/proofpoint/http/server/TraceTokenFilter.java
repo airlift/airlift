@@ -59,12 +59,7 @@ class TraceTokenFilter
         else {
             traceTokenManager.createAndRegisterNewRequestToken();
         }
-        try {
-            chain.doFilter(request, response);
-        }
-        finally {
-            traceTokenManager.clearRequestToken();
-        }
+        chain.doFilter(request, response);
     }
 
     @Override
