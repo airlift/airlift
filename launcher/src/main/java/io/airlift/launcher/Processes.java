@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Proofpoint, Inc.
+ * Copyright 2012 Proofpoint, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,12 +35,12 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-class Porting
+class Processes
 {
     private static final POSIX posix = POSIXFactory.getPOSIX(new OurPOSIXHandler(), true);
     public static final File NULL_FILE;
 
-    private Porting()
+    private Processes()
     {
     }
 

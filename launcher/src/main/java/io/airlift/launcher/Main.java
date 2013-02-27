@@ -16,7 +16,6 @@
 package io.airlift.launcher;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
 import io.airlift.command.Arguments;
 import io.airlift.command.Cli;
 import io.airlift.command.Command;
@@ -48,6 +47,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.jar.Manifest;
 
 import static com.google.common.base.Objects.firstNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Main
 {
@@ -239,15 +239,13 @@ public class Main
 
         static class KillStatus
         {
-            public final int code;
+            public final int exitCode;
             public final String msg;
 
-            public KillStatus(int code, String msg)
+            public KillStatus(int exitCode, String msg)
             {
-                Preconditions.checkNotNull(msg, "msg is null");
-
-                this.code = code;
-                this.msg = msg;
+                this.exitCode = exitCode;
+                this.msg = checkNotNull(msg, "msg is null");
             }
         }
 
@@ -256,22 +254,22 @@ public class Main
             PidFile pidFile = new PidFile(pidFilePath);
 
             for (int pidTriesLeft = 10; pidTriesLeft > 0; --pidTriesLeft) {
-                PidStatus pidStatus = pidFile.get();
+                PidStatus pidStatus = pidFile.getStatus();
                 if (!pidStatus.held) {
                    return new KillStatus(0, "Not running\n");
                 }
                 if (pidStatus.pid != 0) {
                     int pid = pidStatus.pid;
-                    Porting.kill(pid, graceful);
+                    Processes.kill(pid, graceful);
                     for (int waitTriesLeft = 60 * 10; waitTriesLeft > 0; --waitTriesLeft) {
-                        pidStatus = pidFile.get();
+                        pidStatus = pidFile.getStatus();
                         if (!pidStatus.held || pidStatus.pid != pid) {
                             return new KillStatus(0, (graceful ? "Stopped " : "Killed ") + pid + "\n");
                         }
                         if (waitTriesLeft == 1 && graceful) {
                             waitTriesLeft = 10;
                             graceful = false;
-                            Porting.kill(pid, graceful);
+                            Processes.kill(pid, graceful);
                         }
                         LockSupport.parkNanos(100_000_000);
                     }
@@ -295,7 +293,7 @@ public class Main
         {
             PidFile pidFile = new PidFile(pidFilePath);
 
-            PidStatus pidStatus = pidFile.get();
+            PidStatus pidStatus = pidFile.getStatus();
             if (pidStatus.held) {
                 String msg = "Already running";
                 if (pidStatus.pid != 0) {
@@ -359,7 +357,7 @@ public class Main
             try {
                 child = new ProcessBuilder(javaArgs)
                         .directory(new File(dataDir))
-                        .redirectInput(Porting.NULL_FILE)
+                        .redirectInput(Processes.NULL_FILE)
                         .redirectOutput(Redirect.INHERIT)
                         .redirectError(Redirect.INHERIT)
                         .start();
@@ -494,7 +492,7 @@ public class Main
             }
 
             if (daemon) {
-                Porting.detach();
+                Processes.detach();
             }
 
             try {
@@ -527,7 +525,7 @@ public class Main
         {
             PidFile pidFile = new PidFile(pidFilePath);
 
-            PidStatus pidStatus = pidFile.get();
+            PidStatus pidStatus = pidFile.getStatus();
             if (pidStatus.held) {
                 Integer pid = pidStatus.pid;
                 String msg = "Starting";
@@ -558,9 +556,9 @@ public class Main
         public void execute()
         {
             KillStatus killStatus = killProcess(true);
-            if (killStatus.code != 0) {
+            if (killStatus.exitCode != 0) {
                 System.out.print(killStatus.msg);
-                System.exit(killStatus.code);
+                System.exit(killStatus.exitCode);
             }
 
             super.execute();
@@ -575,16 +573,16 @@ public class Main
         {
             PidFile pidFile = new PidFile(pidFilePath);
 
-            PidStatus pidStatus = pidFile.get();
+            PidStatus pidStatus = pidFile.getStatus();
             if (!pidStatus.held) {
-                System.out.print("Not indicateRunning\n");
+                System.out.print("Not running\n");
                 System.exit(0);
             }
 
             KillStatus killStatus = killProcess(true);
-            if (killStatus.code != 0) {
+            if (killStatus.exitCode != 0) {
                 System.out.print(killStatus.msg);
-                System.exit(killStatus.code);
+                System.exit(killStatus.exitCode);
             }
 
             super.execute();
@@ -605,7 +603,7 @@ public class Main
         {
             KillStatus killStatus = killProcess(true);
             System.out.print(killStatus.msg);
-            System.exit(killStatus.code);
+            System.exit(killStatus.exitCode);
        }
     }
 
@@ -617,7 +615,7 @@ public class Main
         {
             KillStatus killStatus = killProcess(false);
             System.out.print(killStatus.msg);
-            System.exit(killStatus.code);
+            System.exit(killStatus.exitCode);
        }
     }
 
