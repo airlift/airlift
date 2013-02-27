@@ -35,12 +35,12 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-class Porting
+class Processes
 {
     private static final POSIX posix = POSIXFactory.getPOSIX(new OurPOSIXHandler(), true);
     public static final File NULL_FILE;
 
-    private Porting()
+    private Processes()
     {
     }
 

@@ -15,8 +15,6 @@
  */
 package com.proofpoint.launcher;
 
-import com.google.common.base.Preconditions;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -94,7 +92,7 @@ class PidFile
         // have not yet found a way to call fcntl(F_GETLK) from Java.
         try {
             pidChannel.truncate(0);
-            pidChannel.write(ByteBuffer.wrap((Integer.toString(Porting.getpid()) + "\n").getBytes()));
+            pidChannel.write(ByteBuffer.wrap((Integer.toString(Processes.getpid()) + "\n").getBytes()));
         }
         catch (IOException e) {
             throw new RuntimeException("Cannot write to pid file: " + e);
@@ -144,7 +142,7 @@ class PidFile
         notYetRunningLock = null;
     }
 
-    PidStatus get()
+    PidStatus getStatus()
     {
         FileLock fileLock;
         try {
