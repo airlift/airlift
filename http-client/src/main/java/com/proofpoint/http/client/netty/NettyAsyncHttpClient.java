@@ -158,7 +158,8 @@ public class NettyAsyncHttpClient
             request = requestFilter.filterRequest(request);
         }
 
-        Preconditions.checkArgument("http".equalsIgnoreCase(request.getUri().getScheme()), "%s only supports http requests", getClass().getSimpleName());
+        Preconditions.checkArgument("http".equalsIgnoreCase(request.getUri().getScheme()) || "https".equalsIgnoreCase(request.getUri().getScheme()),
+                "%s only supports http and https requests", getClass().getSimpleName());
 
         // create a future for the caller
         NettyResponseFuture<T, E> nettyResponseFuture = new NettyResponseFuture<>(request, responseHandler, stats);

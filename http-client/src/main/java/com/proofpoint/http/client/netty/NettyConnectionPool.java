@@ -1,5 +1,6 @@
 package com.proofpoint.http.client.netty;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.net.HostAndPort;
@@ -11,9 +12,13 @@ import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
+import org.jboss.netty.handler.ssl.SslHandler;
 
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.net.URI;
@@ -34,7 +39,7 @@ public class NettyConnectionPool
     private final PermitQueue connectionPermits;
 
     @GuardedBy("this")
-    private final LinkedListMultimap<HostAndPort, Channel> channelCache = LinkedListMultimap.create();
+    private final LinkedListMultimap<PoolKey, Channel> channelCache = LinkedListMultimap.create();
 
     private final int maxConnections;
     private final AtomicInteger checkedOutConnections = new AtomicInteger();
@@ -64,10 +69,15 @@ public class NettyConnectionPool
 
     public void execute(URI uri, final ConnectionCallback connectionCallback)
     {
+        final boolean isSsl = "https".equalsIgnoreCase(uri.getScheme());
         int port = uri.getPort();
         if (port < 0) {
-            // we do not support https
-            port = 80;
+            if (isSsl) {
+                port = 443;
+            }
+            else {
+                port = 80;
+            }
         }
         final InetSocketAddress remoteAddress = new InetSocketAddress(uri.getHost(), port);
 
@@ -78,22 +88,27 @@ public class NettyConnectionPool
                 @Override
                 public void run()
                 {
-                    connectionPermitAcquired(remoteAddress, connectionCallback);
+                    connectionPermitAcquired(isSsl, remoteAddress, connectionCallback);
                 }
             }, executor);
         }
         else {
             ChannelFuture future = bootstrap.connect(remoteAddress);
-            future.addListener(new CallbackConnectionListener(remoteAddress, connectionCallback, openChannels));
+            if (isSsl) {
+                future.addListener(new SslConnectionListener(remoteAddress, connectionCallback, openChannels));
+            }
+            else {
+                future.addListener(new CallbackConnectionListener(remoteAddress, connectionCallback, openChannels));
+            }
         }
     }
 
-    private void connectionPermitAcquired(InetSocketAddress remoteAddress, ConnectionCallback connectionCallback)
+    private void connectionPermitAcquired(boolean isSsl, InetSocketAddress remoteAddress, ConnectionCallback connectionCallback)
     {
         Preconditions.checkState(enablePooling, "Pooling is not enabled");
         Channel channel = null;
         synchronized (this) {
-            HostAndPort key = toHostAndPort(remoteAddress);
+            PoolKey key = new PoolKey(isSsl, remoteAddress);
 
             // find an existing connected channel
             List<Channel> channels = channelCache.get(key);
@@ -126,7 +141,12 @@ public class NettyConnectionPool
         if (channel == null) {
             // we have permission to own a connection, but no exiting connection was found
             ChannelFuture future = bootstrap.connect(remoteAddress);
-            future.addListener(new CallbackConnectionListener(remoteAddress, connectionCallback, openChannels));
+            if (isSsl) {
+                future.addListener(new SslConnectionListener(remoteAddress, connectionCallback, openChannels));
+            }
+            else {
+                future.addListener(new CallbackConnectionListener(remoteAddress, connectionCallback, openChannels));
+            }
         }
         else {
             try {
@@ -146,9 +166,10 @@ public class NettyConnectionPool
                 // if pooling return the connection
                 if (enablePooling && channel.isConnected()) {
                     InetSocketAddress remoteAddress = (InetSocketAddress) channel.getRemoteAddress();
+                    boolean isSsl = channel.getPipeline().get(SslHandler.class) != null;
                     // remote address should never be null for a connected socket, but be safe
                     if (remoteAddress != null) {
-                        HostAndPort key = toHostAndPort(remoteAddress);
+                        PoolKey key = new PoolKey(isSsl, remoteAddress);
                         channelCache.put(key, channel);
                         return;
                     }
@@ -177,12 +198,6 @@ public class NettyConnectionPool
                 connectionPermits.release();
             }
         }
-    }
-
-    private HostAndPort toHostAndPort(InetSocketAddress remoteAddress)
-    {
-        String address = InetAddresses.toAddrString(remoteAddress.getAddress());
-        return HostAndPort.fromParts(address, remoteAddress.getPort());
     }
 
     private static class CallbackConnectionListener
@@ -242,5 +257,102 @@ public class NettyConnectionPool
                 throws Exception;
 
         void onError(Throwable throwable);
+    }
+
+    private static class SslConnectionListener implements ChannelFutureListener
+    {
+
+        private final InetSocketAddress remoteAddress;
+        private final ConnectionCallback connectionCallback;
+        private final ChannelGroup openChannels;
+
+        public SslConnectionListener(InetSocketAddress remoteAddress, ConnectionCallback connectionCallback, ChannelGroup openChannels)
+        {
+            this.remoteAddress = remoteAddress;
+            this.connectionCallback = connectionCallback;
+            this.openChannels = openChannels;
+        }
+
+        @Override
+        public void operationComplete(ChannelFuture future)
+                throws Exception
+        {
+            CallbackConnectionListener callbackConnectionListener = new CallbackConnectionListener(remoteAddress, connectionCallback, openChannels);
+            if (future.isSuccess()) {
+                SSLParameters sslParameters = new SSLParameters();
+                sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
+
+                SSLEngine sslEngine = SSLContext.getDefault().createSSLEngine(remoteAddress.getHostName(), remoteAddress.getPort());
+                sslEngine.setSSLParameters(sslParameters);
+                sslEngine.setUseClientMode(true);
+
+                SslHandler sslHandler = new SslHandler(sslEngine);
+                future.getChannel().getPipeline().addBefore("codec", "ssl", sslHandler);
+                ChannelFuture handshakeFuture = sslHandler.handshake();
+                handshakeFuture.addListener(callbackConnectionListener);
+            }
+            else {
+                callbackConnectionListener.operationComplete(future);
+            }
+        }
+    }
+
+    private static class PoolKey
+    {
+        private boolean isSsl;
+        private HostAndPort hostAndPort;
+
+        PoolKey(boolean isSsl, InetSocketAddress remoteAddress)
+        {
+            this.isSsl = isSsl;
+            if (isSsl) {
+                // A connection using a hostname that matches the cert shouldn't be
+                // reused for another hostname that doesn't, so cannot use the IP as key.
+                hostAndPort = HostAndPort.fromParts(remoteAddress.getHostName(), remoteAddress.getPort());
+            }
+            else {
+                String address = InetAddresses.toAddrString(remoteAddress.getAddress());
+                hostAndPort = HostAndPort.fromParts(address, remoteAddress.getPort());
+            }
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            PoolKey poolKey = (PoolKey) o;
+
+            if (isSsl != poolKey.isSsl) {
+                return false;
+            }
+            if (!hostAndPort.equals(poolKey.hostAndPort)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = (isSsl ? 1 : 0);
+            result = 31 * result + hostAndPort.hashCode();
+            return result;
+        }
+
+        @Override
+        public String toString()
+        {
+            return Objects.toStringHelper(this)
+                    .add("isSsl", isSsl)
+                    .add("hostAndPort", hostAndPort)
+                    .toString();
+        }
     }
 }
