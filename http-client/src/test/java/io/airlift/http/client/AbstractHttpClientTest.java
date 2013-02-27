@@ -12,8 +12,10 @@ import io.airlift.units.Duration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -29,6 +31,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
@@ -46,6 +49,20 @@ public abstract class AbstractHttpClientTest
     protected EchoServlet servlet;
     protected Server server;
     protected URI baseURI;
+    private String scheme = "http";
+    private String host = "127.0.0.1";
+    private String keystore = null;
+
+    protected AbstractHttpClientTest()
+    {
+    }
+
+    protected AbstractHttpClientTest(String host, String keystore)
+    {
+        scheme = "https";
+        this.host = host;
+        this.keystore = keystore;
+    }
 
     public abstract <T, E extends Exception> T executeRequest(Request request, ResponseHandler<T, E> responseHandler)
             throws Exception;
@@ -64,14 +81,21 @@ public abstract class AbstractHttpClientTest
             socket.bind(new InetSocketAddress(0));
             port = socket.getLocalPort();
         }
-        baseURI = new URI("http", null, "127.0.0.1", port, null, null, null);
+        baseURI = new URI(scheme, null, host, port, null, null, null);
 
         Server server = new Server();
         server.setSendServerVersion(false);
 
         SelectChannelConnector httpConnector;
-        httpConnector = new SelectChannelConnector();
-        httpConnector.setName("http");
+        if (keystore != null) {
+            SslContextFactory sslContextFactory = new SslContextFactory(keystore);
+            sslContextFactory.setKeyStorePassword("changeit");
+            httpConnector = new SslSelectChannelConnector(sslContextFactory);
+        }
+        else {
+            httpConnector = new SelectChannelConnector();
+        }
+        httpConnector.setName(scheme);
         httpConnector.setPort(port);
         server.addConnector(httpConnector);
 
@@ -129,10 +153,10 @@ public abstract class AbstractHttpClientTest
         config.setConnectTimeout(new Duration(5, MILLISECONDS));
 
         Request request = prepareGet()
-                .setUri(URI.create("http://127.0.0.1:" + serverSocket.getLocalPort() + "/"))
+                .setUri(new URI(scheme, null, host, serverSocket.getLocalPort(), "/", null, null))
                 .build();
 
-        try (Socket clientSocket = new Socket("127.0.0.1", serverSocket.getLocalPort())) {
+        try (Socket clientSocket = new Socket(host, serverSocket.getLocalPort())) {
             executeRequest(config, request, new ResponseToStringHandler());
         }
         finally {
@@ -432,7 +456,7 @@ public abstract class AbstractHttpClientTest
     public void testConnectNoRead()
             throws Exception
     {
-        try (FakeServer fakeServer = new FakeServer(0, null, false)) {
+        try (FakeServer fakeServer = new FakeServer(scheme, host, 0, null, false)) {
             HttpClientConfig config = new HttpClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
             config.setReadTimeout(new Duration(10, MILLISECONDS));
@@ -445,7 +469,7 @@ public abstract class AbstractHttpClientTest
     public void testConnectNoReadClose()
             throws Exception
     {
-        try (FakeServer fakeServer = new FakeServer(0, null, true)) {
+        try (FakeServer fakeServer = new FakeServer(scheme, host, 0, null, true)) {
 
             HttpClientConfig config = new HttpClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
@@ -460,7 +484,7 @@ public abstract class AbstractHttpClientTest
     public void testConnectReadIncomplete()
             throws Exception
     {
-        try (FakeServer fakeServer = new FakeServer(10, null, false)) {
+        try (FakeServer fakeServer = new FakeServer(scheme, host, 10, null, false)) {
             HttpClientConfig config = new HttpClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
             config.setReadTimeout(new Duration(10, MILLISECONDS));
@@ -474,7 +498,7 @@ public abstract class AbstractHttpClientTest
     public void testConnectReadIncompleteClose()
             throws Exception
     {
-        try (FakeServer fakeServer = new FakeServer(10, null, true)) {
+        try (FakeServer fakeServer = new FakeServer(scheme, host, 10, null, true)) {
             HttpClientConfig config = new HttpClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
             config.setReadTimeout(new Duration(5, SECONDS));
@@ -487,7 +511,7 @@ public abstract class AbstractHttpClientTest
     public void testConnectReadRequestClose()
             throws Exception
     {
-        try (FakeServer fakeServer = new FakeServer(Long.MAX_VALUE, null, true)) {
+        try (FakeServer fakeServer = new FakeServer(scheme, host, Long.MAX_VALUE, null, true)) {
             HttpClientConfig config = new HttpClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
             config.setReadTimeout(new Duration(5, SECONDS));
@@ -500,7 +524,7 @@ public abstract class AbstractHttpClientTest
     public void testConnectReadRequestWriteJunkHangup()
             throws Exception
     {
-        try (FakeServer fakeServer = new FakeServer(10, "THIS\nIS\nJUNK\n\n".getBytes(), false)) {
+        try (FakeServer fakeServer = new FakeServer(scheme, host, 10, "THIS\nIS\nJUNK\n\n".getBytes(), false)) {
             HttpClientConfig config = new HttpClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
             config.setReadTimeout(new Duration(5, SECONDS));
@@ -536,11 +560,15 @@ public abstract class AbstractHttpClientTest
         private final byte[] writeBuffer;
         private final boolean closeConnectionImmediately;
         private final AtomicReference<Socket> connectionSocket = new AtomicReference<>();
+        private String scheme;
+        private String host;
 
 
-        private FakeServer(long readBytes, byte[] writeBuffer, boolean closeConnectionImmediately)
+        private FakeServer(String scheme, String host, long readBytes, byte[] writeBuffer, boolean closeConnectionImmediately)
                 throws Exception
         {
+            this.scheme = scheme;
+            this.host = host;
             this.writeBuffer = writeBuffer;
             this.readBytes = readBytes;
             this.serverSocket = new ServerSocket(0);
@@ -549,7 +577,12 @@ public abstract class AbstractHttpClientTest
 
         public URI getUri()
         {
-            return URI.create("http://127.0.0.1:" + serverSocket.getLocalPort() + "/");
+            try {
+                return new URI(scheme, null, host, serverSocket.getLocalPort(), "/", null, null);
+            }
+            catch (URISyntaxException e) {
+                throw new IllegalStateException(e);
+            }
         }
 
         @Override
