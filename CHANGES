@@ -44,14 +44,23 @@ or via the following config option:
 
     myclient.http-client.socks-proxy = localhost:1080
 
-* Disabled auto-detection of constructors and use of getters as setters in
-  Jackson.
-
 * Pretty-printed JSON
 
 The injected JsonCodecFactory and injected codecs no longer produce
 pretty-printed JSON. The previous behavior was a bug. JsonCodecFactory
 has a method to return a factory that produces pretty-print codecs.
+
+* Trace token included in log
+
+The trace token (and other MDC items) is now included in the server log.
+
+* Configuration error message improvement
+
+The error message that Configuration issues upon Bean validation failure
+now identifies the attribute's configuration property, if any.
+
+* Disabled auto-detection of constructors and use of getters as setters in
+  Jackson.
 
 * The HttpClient and AsyncHttpClients now implement Closeable and properly
   shutdown when used as lifecycle objects. Calling close shuts down the
@@ -66,9 +75,11 @@ has a method to return a factory that produces pretty-print codecs.
   - Allow use of H2 without an init script
   - Enable mvcc support for embedded H2
 
-* Support for v1 events has been removed
+* Removal of deprecated features
+  - Support for v1 events has been removed.
+  - The EquivalenceTester static check methods have been removed.
 
-* [Bug] Don't throw an exception from http request logger when wall clock time goes backwards
+* [Bug] Don't throw an exception from http request logger when wall clock time goes backwards.
 
 Platform 0.69
 
