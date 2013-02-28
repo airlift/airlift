@@ -29,7 +29,6 @@ public class HttpServerInfo
     private final URI httpUri;
     private final URI httpExternalUri;
     private final URI httpsUri;
-    private final URI httpsExternalUri;
     private final URI adminUri;
     private final URI adminExternalUri;
 
@@ -46,12 +45,10 @@ public class HttpServerInfo
         }
 
         if (config.isHttpsEnabled()) {
-            httpsUri = buildUri("https", InetAddresses.toUriString(nodeInfo.getInternalIp()), config.getHttpsPort());
-            httpsExternalUri = buildUri("https", nodeInfo.getExternalAddress(), httpsUri.getPort());
+            httpsUri = buildUri("https", nodeInfo.getInternalHostname(), config.getHttpsPort());
         }
         else {
             httpsUri = null;
-            httpsExternalUri = null;
         }
 
         if (config.isAdminEnabled()) {
@@ -82,11 +79,6 @@ public class HttpServerInfo
     public URI getHttpsUri()
     {
         return httpsUri;
-    }
-
-    public URI getHttpsExternalUri()
-    {
-        return httpsExternalUri;
     }
 
     public URI getAdminUri()

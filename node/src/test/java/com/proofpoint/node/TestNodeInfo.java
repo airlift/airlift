@@ -37,10 +37,11 @@ public class TestNodeInfo
         String binarySpec = "binary";
         String configSpec = "config";
         InetAddress internalIp = InetAddresses.forString("10.0.0.22");
+        String internalHostname = "internal.hostname";
         InetAddress bindIp = InetAddresses.forString("10.0.0.33");
         String externalAddress = "external";
 
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, nodeId, internalIp, bindIp, externalAddress, location, binarySpec, configSpec);
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, nodeId, internalIp, internalHostname, bindIp, externalAddress, location, binarySpec, configSpec);
         Assert.assertEquals(nodeInfo.getEnvironment(), ENVIRONMENT);
         Assert.assertEquals(nodeInfo.getPool(), POOL);
         Assert.assertEquals(nodeInfo.getNodeId(), nodeId);
@@ -63,7 +64,7 @@ public class TestNodeInfo
     @Test
     public void testDefaultAddresses()
     {
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", InetAddresses.forString("10.0.0.22"), null, null, null, null, null);
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", InetAddresses.forString("10.0.0.22"), null, null, null, null, null, null);
         Assert.assertEquals(nodeInfo.getExternalAddress(), "10.0.0.22");
         Assert.assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
     }
@@ -71,12 +72,18 @@ public class TestNodeInfo
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testInvalidEnvironment()
     {
-        new NodeInfo("ENV", POOL, null, null, null, null, null, null, null);
+        new NodeInfo("ENV", POOL, null, null, null, null, null, null, null, null);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testInvalidHostname()
+    {
+        new NodeInfo(ENVIRONMENT, POOL, null, null, "unqualified", null, null, null, null, null);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testInvalidPool()
     {
-        new NodeInfo(ENVIRONMENT, "POOL", null, null, null, null, null, null, null);
+        new NodeInfo(ENVIRONMENT, "POOL", null, null, null, null, null, null, null, null);
     }
 }

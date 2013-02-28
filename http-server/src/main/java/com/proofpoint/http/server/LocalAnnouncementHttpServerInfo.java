@@ -47,10 +47,4 @@ public class LocalAnnouncementHttpServerInfo implements AnnouncementHttpServerIn
     {
         return httpServerInfo.getHttpsUri();
     }
-
-    @Override
-    public URI getHttpsExternalUri()
-    {
-        return httpServerInfo.getHttpsExternalUri();
-    }
 }

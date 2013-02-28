@@ -23,5 +23,4 @@ public interface AnnouncementHttpServerInfo
     URI getHttpExternalUri();
 
     URI getHttpsUri();
-    URI getHttpsExternalUri();
 }

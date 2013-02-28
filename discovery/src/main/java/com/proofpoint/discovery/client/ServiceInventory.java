@@ -188,7 +188,7 @@ public class ServiceInventory
             }
         }
         catch (Exception e) {
-            logServerError("Error loading service inventory from %s", serviceInventoryUri.toASCIIString());
+            logServerError(e, "Error loading service inventory from %s", serviceInventoryUri.toASCIIString());
         }
     }
 
@@ -198,4 +198,11 @@ public class ServiceInventory
             log.error(message, args);
         }
     }
+    private void logServerError(Exception e, String message, Object... args)
+    {
+        if (serverUp.compareAndSet(true, false)) {
+            log.error(e, message, args);
+        }
+    }
+
 }

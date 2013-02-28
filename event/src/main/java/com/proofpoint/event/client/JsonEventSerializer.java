@@ -18,6 +18,7 @@ package com.proofpoint.event.client;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.google.common.collect.ImmutableMap;
+import com.proofpoint.node.NodeInfo;
 
 import javax.inject.Inject;
 
@@ -33,20 +34,20 @@ public class JsonEventSerializer
     private final Map<Class<?>, JsonSerializer<?>> serializers;
 
     @Inject
-    public JsonEventSerializer(Set<EventTypeMetadata<?>> eventTypes)
+    public JsonEventSerializer(NodeInfo nodeInfo, Set<EventTypeMetadata<?>> eventTypes)
     {
         checkNotNull(eventTypes, "eventTypes is null");
 
         ImmutableMap.Builder<Class<?>, JsonSerializer<?>> map = ImmutableMap.builder();
         for (EventTypeMetadata<?> eventType : eventTypes) {
-            map.put(eventType.getEventClass(), new EventJsonSerializer<>(eventType));
+            map.put(eventType.getEventClass(), new EventJsonSerializer<>(nodeInfo, eventType));
         }
         this.serializers = map.build();
     }
 
-    public JsonEventSerializer(Class<?>... eventClasses)
+    public JsonEventSerializer(NodeInfo nodeInfo, Class<?>... eventClasses)
     {
-        this(getValidEventTypeMetaDataSet(eventClasses));
+        this(nodeInfo, getValidEventTypeMetaDataSet(eventClasses));
     }
 
     public <T> void serialize(T event, JsonGenerator jsonGenerator)

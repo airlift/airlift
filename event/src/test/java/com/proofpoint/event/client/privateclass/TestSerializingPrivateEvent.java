@@ -21,6 +21,7 @@ import com.google.common.io.NullOutputStream;
 import com.proofpoint.event.client.EventField;
 import com.proofpoint.event.client.EventType;
 import com.proofpoint.event.client.JsonEventSerializer;
+import com.proofpoint.node.NodeInfo;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -31,7 +32,7 @@ public class TestSerializingPrivateEvent
     public void testSerialize()
             throws IOException
     {
-        JsonEventSerializer serializer = new JsonEventSerializer(PrivateEvent.class);
+        JsonEventSerializer serializer = new JsonEventSerializer(new NodeInfo("test"), PrivateEvent.class);
         JsonGenerator generator = new JsonFactory().createJsonGenerator(new NullOutputStream());
         serializer.serialize(new PrivateEvent(), generator);
     }

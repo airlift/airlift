@@ -19,6 +19,7 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.NullOutputStream;
 import com.proofpoint.event.client.NestedDummyEventClass.NestedPart;
+import com.proofpoint.node.NodeInfo;
 import org.joda.time.DateTime;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -42,7 +43,7 @@ public class TestJsonEventWriter
     {
         Set<EventTypeMetadata<?>> eventTypes = getValidEventTypeMetaDataSet(
                 FixedDummyEventClass.class, NestedDummyEventClass.class, CircularEventClass.class, ChainedCircularEventClass.class);
-        eventWriter = new JsonEventWriter(eventTypes);
+        eventWriter = new JsonEventWriter(new NodeInfo("test"), eventTypes);
     }
 
     @Test

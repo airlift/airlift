@@ -64,12 +64,6 @@ public class StaticAnnouncementHttpServerInfoImpl implements AnnouncementHttpSer
     }
 
     @Override
-    public URI getHttpsExternalUri()
-    {
-        return httpsExternalUri;
-    }
-
-    @Override
     public String toString()
     {
         return Objects.toStringHelper(this)

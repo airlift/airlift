@@ -48,6 +48,7 @@ public class TestNodeModule
 
         Assert.assertNotNull(nodeInfo.getInternalIp());
         Assert.assertFalse(nodeInfo.getInternalIp().isAnyLocalAddress());
+        Assert.assertNotNull(nodeInfo.getInternalHostname());
         Assert.assertNotNull(nodeInfo.getBindIp());
         Assert.assertTrue(nodeInfo.getBindIp().isAnyLocalAddress());
         Assertions.assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
@@ -68,11 +69,13 @@ public class TestNodeModule
         String binarySpec = "binary";
         String configSpec = "config";
         String publicIp = "10.0.0.22";
+        String internalHostname = "internal.hostname";
         ConfigurationFactory configFactory = new ConfigurationFactory(ImmutableMap.<String, String>builder()
                 .put("node.environment", environment)
                 .put("node.pool", pool)
                 .put("node.id", nodeId)
                 .put("node.ip", publicIp)
+                .put("node.hostname", internalHostname)
                 .put("node.location", location)
                 .put("node.binary-spec", binarySpec)
                 .put("node.config-spec", configSpec)
@@ -93,6 +96,7 @@ public class TestNodeModule
         Assertions.assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
 
         Assert.assertEquals(nodeInfo.getInternalIp(), InetAddresses.forString(publicIp));
+        Assert.assertEquals(nodeInfo.getInternalHostname(), "internal.hostname");
         Assert.assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
         Assertions.assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
 

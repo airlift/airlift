@@ -93,7 +93,6 @@ public class TestHttpAnnouncementBinder
 
         ServiceAnnouncement announcement = serviceAnnouncement("apple")
                 .addProperty("https", httpServerInfo.getHttpsUri().toASCIIString())
-                .addProperty("https-external", httpServerInfo.getHttpsExternalUri().toASCIIString())
                 .build();
 
         Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>()
@@ -130,7 +129,6 @@ public class TestHttpAnnouncementBinder
                 .addProperty("http", httpServerInfo.getHttpUri().toASCIIString())
                 .addProperty("http-external", httpServerInfo.getHttpExternalUri().toASCIIString())
                 .addProperty("https", httpServerInfo.getHttpsUri().toASCIIString())
-                .addProperty("https-external", httpServerInfo.getHttpsExternalUri().toASCIIString())
                 .build();
 
         Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>()
@@ -168,7 +166,6 @@ public class TestHttpAnnouncementBinder
                 .addProperty("http", httpServerInfo.getHttpUri().toASCIIString())
                 .addProperty("http-external", httpServerInfo.getHttpExternalUri().toASCIIString())
                 .addProperty("https", httpServerInfo.getHttpsUri().toASCIIString())
-                .addProperty("https-external", httpServerInfo.getHttpsExternalUri().toASCIIString())
                 .build();
 
         Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>()

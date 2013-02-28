@@ -19,6 +19,7 @@ import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Charsets;
+import com.proofpoint.node.NodeInfo;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -31,7 +32,7 @@ public class TestJsonEventSerializer
     public void testEventSerializer()
             throws Exception
     {
-        JsonEventSerializer eventSerializer = new JsonEventSerializer(FixedDummyEventClass.class);
+        JsonEventSerializer eventSerializer = new JsonEventSerializer(new NodeInfo("test"), FixedDummyEventClass.class);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         JsonGenerator jsonGenerator = new JsonFactory().createJsonGenerator(out, JsonEncoding.UTF8);

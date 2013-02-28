@@ -32,10 +32,14 @@ import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Singleton
 public class NodeInfo
 {
+    private static final Pattern HOST_EXCEPTION_MESSAGE_PATTERN = Pattern.compile("([-_a-zA-Z0-9]+):.*");
+
     private final String environment;
     private final String pool;
     private final String nodeId;
@@ -44,6 +48,7 @@ public class NodeInfo
     private final String configSpec;
     private final String instanceId = UUID.randomUUID().toString();
     private final InetAddress internalIp;
+    private final String internalHostname;
     private final String externalAddress;
     private final InetAddress bindIp;
     private final long startTime = System.currentTimeMillis();
@@ -60,6 +65,7 @@ public class NodeInfo
                 config.getPool(),
                 config.getNodeId(),
                 config.getNodeInternalIp(),
+                config.getNodeInternalHostname(),
                 config.getNodeBindIp(),
                 config.getNodeExternalAddress(),
                 config.getLocation(),
@@ -72,6 +78,7 @@ public class NodeInfo
             String pool,
             String nodeId,
             InetAddress internalIp,
+            String internalHostname,
             InetAddress bindIp,
             String externalAddress,
             String location,
@@ -108,6 +115,14 @@ public class NodeInfo
         }
         else {
             this.internalIp = findPublicIp();
+        }
+
+        if (internalHostname != null) {
+            Preconditions.checkArgument(internalHostname.matches(NodeConfig.HOSTNAME_REGEXP), String.format("hostname '%s' is invalid", environment));
+            this.internalHostname = internalHostname;
+        }
+        else {
+            this.internalHostname = findPublicHostname();
         }
 
         if (bindIp != null) {
@@ -205,6 +220,22 @@ public class NodeInfo
     public InetAddress getInternalIp()
     {
         return internalIp;
+    }
+
+    /**
+     * The internal network hostname the server should use when announcing its location to other machines.
+     * This ip address should available to all machines within the environment, but may not be globally routable.
+     * If this is not set, the following algorithm is used to choose the public ip:
+     * <ol>
+     * <li>InetAddress.getLocalHost().getHostName()</li>
+     * <li>The hostname parsed out of the message of the exception thrown above</li>
+     * <li>The internal IP</li>
+     * </ol>
+     */
+    @Managed
+    public String getInternalHostname()
+    {
+        return internalHostname;
     }
 
     /**
@@ -327,5 +358,21 @@ public class NodeInfo
                 !address.isAnyLocalAddress() &&
                 !address.isLoopbackAddress() &&
                 !address.isMulticastAddress();
+    }
+
+    private String findPublicHostname()
+    {
+        try {
+            return InetAddress.getLocalHost().getHostName().toLowerCase();
+        }
+        catch (UnknownHostException e) {
+            // Java 7u5 and later on MacOS sometimes throws this unless the local hostname is in DNS
+            // or hosts file. The exception message is the hostname followed by a colon and an error message.
+            final Matcher matcher = HOST_EXCEPTION_MESSAGE_PATTERN.matcher(e.getMessage());
+            if (matcher.matches()) {
+                return matcher.group(1).toLowerCase();
+            }
+            return InetAddresses.toUriString(internalIp);
+        }
     }
 }

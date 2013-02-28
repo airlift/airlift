@@ -26,6 +26,7 @@ import java.net.InetAddress;
 public class NodeConfig
 {
     public static final String ENV_REGEXP = "[a-z0-9][_a-z0-9]*";
+    public static final String HOSTNAME_REGEXP = "[a-z0-9][_a-z0-9]*(?:\\.[a-z0-9][_a-z0-9]*)+";
     public static final String POOL_REGEXP = "[a-z0-9][_a-z0-9]*";
 
     private String environment;
@@ -33,6 +34,7 @@ public class NodeConfig
     private String nodeId;
     private String location;
     private InetAddress nodeInternalIp;
+    private String nodeInternalHostname;
     private String nodeExternalAddress;
     private InetAddress nodeBindIp;
     private String binarySpec;
@@ -108,6 +110,19 @@ public class NodeConfig
         if (nodeInternalIp != null) {
             this.nodeInternalIp = InetAddresses.forString(nodeInternalIp);
         }
+        return this;
+    }
+
+    @Pattern(regexp = HOSTNAME_REGEXP, message = "is malformed")
+    public String getNodeInternalHostname()
+    {
+        return nodeInternalHostname;
+    }
+
+    @Config("node.hostname")
+    public NodeConfig setNodeInternalHostname(String nodeInternalHostname)
+    {
+        this.nodeInternalHostname = nodeInternalHostname;
         return this;
     }
 

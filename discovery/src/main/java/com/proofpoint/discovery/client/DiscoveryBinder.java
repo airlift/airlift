@@ -121,7 +121,6 @@ public class DiscoveryBinder
             }
             if (httpServerInfo.getHttpsUri() != null) {
                 builder.addProperty("https", httpServerInfo.getHttpsUri().toString());
-                builder.addProperty("https-external", httpServerInfo.getHttpsExternalUri().toString());
             }
             return builder.build();
         }

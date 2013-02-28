@@ -19,6 +19,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.google.common.base.Preconditions;
+import com.proofpoint.node.NodeInfo;
 import org.joda.time.DateTime;
 
 import java.io.IOException;
@@ -32,18 +33,16 @@ class EventJsonSerializer<T>
         extends JsonSerializer<T>
 {
     
-    private static final Pattern HOST_EXCEPTION_MESSAGE_PATTERN = Pattern.compile("([-_a-zA-Z0-9]+):.*");
-
     private final EventTypeMetadata<T> eventTypeMetadata;
     private final String hostName;
 
-    public EventJsonSerializer(EventTypeMetadata<T> eventTypeMetadata)
+    public EventJsonSerializer(NodeInfo nodeInfo, EventTypeMetadata<T> eventTypeMetadata)
     {
         Preconditions.checkNotNull(eventTypeMetadata, "eventTypeMetadata is null");
 
         this.eventTypeMetadata = eventTypeMetadata;
         if (eventTypeMetadata.getHostField() == null) {
-            hostName = EventJsonSerializer.getLocalHostName();
+            hostName = nodeInfo.getInternalHostname();
         }
         else {
             hostName = null;
@@ -94,21 +93,5 @@ class EventJsonSerializer<T>
 
         jsonGenerator.writeEndObject();
         jsonGenerator.flush();
-    }
-
-    static String getLocalHostName()
-    {
-        try {
-            return InetAddress.getLocalHost().getHostName();
-        }
-        catch (UnknownHostException e) {
-            // Java 7u5 and later on MacOS sometimes throws this unless the local hostname is in DNS
-            // or hosts file. The exception message is the hostname followed by a colon and an error message.
-            final Matcher matcher = HOST_EXCEPTION_MESSAGE_PATTERN.matcher(e.getMessage());
-            if (matcher.matches()) {
-                return matcher.group(1);
-            }
-            return "unknown";
-        }
     }
 }

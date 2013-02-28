@@ -142,14 +142,15 @@ public class TestHttpEventClient
     private HttpEventClient newEventClient(List<URI> uris)
     {
         HttpServiceSelector selector = new StaticHttpServiceSelector("collector", "general", uris);
+        NodeInfo nodeInfo = new NodeInfo("test");
 
         Set<EventTypeMetadata<?>> eventTypes = getValidEventTypeMetaDataSet(FixedDummyEventClass.class);
-        JsonEventWriter eventWriter = new JsonEventWriter(eventTypes);
+        JsonEventWriter eventWriter = new JsonEventWriter(nodeInfo, eventTypes);
 
         return new HttpEventClient(
                 selector,
                 eventWriter,
-                new NodeInfo("test"),
+                nodeInfo,
                 new NettyAsyncHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))));
     }
 
