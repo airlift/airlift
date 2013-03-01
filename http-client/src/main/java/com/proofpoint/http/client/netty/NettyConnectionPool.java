@@ -93,13 +93,7 @@ public class NettyConnectionPool
             }, executor);
         }
         else {
-            ChannelFuture future = bootstrap.connect(remoteAddress);
-            if (isSsl) {
-                future.addListener(new SslConnectionListener(remoteAddress, connectionCallback, openChannels));
-            }
-            else {
-                future.addListener(new CallbackConnectionListener(remoteAddress, connectionCallback, openChannels));
-            }
+            openConnecton(isSsl, remoteAddress, connectionCallback);
         }
     }
 
@@ -140,13 +134,7 @@ public class NettyConnectionPool
         checkedOutConnections.incrementAndGet();
         if (channel == null) {
             // we have permission to own a connection, but no exiting connection was found
-            ChannelFuture future = bootstrap.connect(remoteAddress);
-            if (isSsl) {
-                future.addListener(new SslConnectionListener(remoteAddress, connectionCallback, openChannels));
-            }
-            else {
-                future.addListener(new CallbackConnectionListener(remoteAddress, connectionCallback, openChannels));
-            }
+            openConnecton(isSsl, remoteAddress, connectionCallback);
         }
         else {
             try {
@@ -156,6 +144,17 @@ public class NettyConnectionPool
             catch (Throwable e) {
                 connectionCallback.onError(e);
             }
+        }
+    }
+
+    private void openConnecton(boolean isSsl, InetSocketAddress remoteAddress, ConnectionCallback connectionCallback)
+    {
+        ChannelFuture future = bootstrap.connect(remoteAddress);
+        if (isSsl) {
+            future.addListener(new SslConnectionListener(remoteAddress, connectionCallback, openChannels));
+        }
+        else {
+            future.addListener(new CallbackConnectionListener(remoteAddress, connectionCallback, openChannels));
         }
     }
 
@@ -299,8 +298,8 @@ public class NettyConnectionPool
 
     private static class PoolKey
     {
-        private boolean isSsl;
-        private HostAndPort hostAndPort;
+        private final boolean isSsl;
+        private final HostAndPort hostAndPort;
 
         PoolKey(boolean isSsl, InetSocketAddress remoteAddress)
         {
@@ -317,33 +316,23 @@ public class NettyConnectionPool
         }
 
         @Override
-        public boolean equals(Object o)
+        public int hashCode()
         {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
-            PoolKey poolKey = (PoolKey) o;
-
-            if (isSsl != poolKey.isSsl) {
-                return false;
-            }
-            if (!hostAndPort.equals(poolKey.hostAndPort)) {
-                return false;
-            }
-
-            return true;
+            return Objects.hashCode(isSsl, hostAndPort);
         }
 
         @Override
-        public int hashCode()
+        public boolean equals(Object obj)
         {
-            int result = (isSsl ? 1 : 0);
-            result = 31 * result + hostAndPort.hashCode();
-            return result;
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null || getClass() != obj.getClass()) {
+                return false;
+            }
+            final PoolKey other = (PoolKey) obj;
+            return Objects.equal(this.isSsl, other.isSsl) &&
+                    Objects.equal(this.hostAndPort, other.hostAndPort);
         }
 
         @Override
