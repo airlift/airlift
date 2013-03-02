@@ -17,6 +17,7 @@ package com.proofpoint.http.server;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.primitives.Ints;
 import com.proofpoint.event.client.EventClient;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.tracetoken.TraceTokenManager;
@@ -111,7 +112,9 @@ public class HttpServer
             httpConnector.setMaxIdleTime((int) config.getNetworkMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
             httpConnector.setStatsOn(true);
             httpConnector.setHost(nodeInfo.getBindIp().getHostAddress());
-
+            if (config.getMaxRequestHeaderSize() != null) {
+                httpConnector.setRequestHeaderSize(Ints.checkedCast(config.getMaxRequestHeaderSize().toBytes()));
+            }
             server.addConnector(httpConnector);
         }
 
@@ -126,6 +129,9 @@ public class HttpServer
             httpsConnector.setPassword(config.getKeystorePassword());
             httpsConnector.setMaxIdleTime((int) config.getNetworkMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
             httpsConnector.setHost(nodeInfo.getBindIp().getHostAddress());
+            if (config.getMaxRequestHeaderSize() != null) {
+                httpsConnector.setRequestHeaderSize(Ints.checkedCast(config.getMaxRequestHeaderSize().toBytes()));
+            }
             httpsConnector.setAllowRenegotiate(true);
 
             server.addConnector(httpsConnector);
@@ -149,6 +155,9 @@ public class HttpServer
             adminConnector.setMaxIdleTime((int) config.getNetworkMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
             adminConnector.setStatsOn(true);
             adminConnector.setHost(nodeInfo.getBindIp().getHostAddress());
+            if (config.getMaxRequestHeaderSize() != null) {
+                adminConnector.setRequestHeaderSize(Ints.checkedCast(config.getMaxRequestHeaderSize().toBytes()));
+            }
 
             QueuedThreadPool adminThreadPool = new QueuedThreadPool(config.getAdminMaxThreads());
             adminThreadPool.setName("http-admin-worker");

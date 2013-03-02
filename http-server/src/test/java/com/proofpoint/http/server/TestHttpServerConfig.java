@@ -17,6 +17,7 @@ package com.proofpoint.http.server;
 
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.testing.ConfigAssertions;
+import com.proofpoint.units.DataSize;
 import com.proofpoint.units.Duration;
 import org.testng.annotations.Test;
 
@@ -46,9 +47,10 @@ public class TestHttpServerConfig
                 .setAdminPort(0)
                 .setAdminMinThreads(2)
                 .setAdminMaxThreads(20)
+                .setMaxRequestHeaderSize(null)
         );
     }
-
+ 
     @Test
     public void testExplicitPropertyMappings()
     {
@@ -70,6 +72,7 @@ public class TestHttpServerConfig
                 .put("http-server.admin.port", "3")
                 .put("http-server.admin.threads.min", "3")
                 .put("http-server.admin.threads.max", "4")
+                .put("http-server.max-request-header-size", "32kB")
                 .build();
 
         HttpServerConfig expected = new HttpServerConfig()
@@ -85,6 +88,7 @@ public class TestHttpServerConfig
                 .setMaxThreads(500)
                 .setThreadMaxIdleTime(new Duration(10, TimeUnit.MINUTES))
                 .setNetworkMaxIdleTime(new Duration(20, TimeUnit.MINUTES))
+                .setMaxRequestHeaderSize(new DataSize(32, DataSize.Unit.KILOBYTE))
                 .setUserAuthFile("/auth")
                 .setAdminEnabled(false)
                 .setAdminPort(3)

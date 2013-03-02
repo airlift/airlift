@@ -18,6 +18,7 @@ package com.proofpoint.http.server;
 import com.proofpoint.configuration.Config;
 import com.proofpoint.configuration.ConfigSecuritySensitive;
 import com.proofpoint.configuration.LegacyConfig;
+import com.proofpoint.units.DataSize;
 import com.proofpoint.units.Duration;
 
 import javax.validation.constraints.Min;
@@ -40,6 +41,7 @@ public class HttpServerConfig
     private int maxThreads = 200;
     private Duration threadMaxIdleTime = new Duration(1, TimeUnit.MINUTES);
     private Duration networkMaxIdleTime = new Duration(200, TimeUnit.SECONDS);
+    private DataSize maxRequestHeaderSize;
 
     private String userAuthFile;
 
@@ -282,6 +284,18 @@ public class HttpServerConfig
     public HttpServerConfig setAdminMaxThreads(int adminMaxThreads)
     {
         this.adminMaxThreads = adminMaxThreads;
+        return this;
+    }
+
+    public DataSize getMaxRequestHeaderSize()
+    {
+        return maxRequestHeaderSize;
+    }
+
+    @Config("http-server.max-request-header-size")
+    public HttpServerConfig setMaxRequestHeaderSize(DataSize maxRequestHeaderSize)
+    {
+        this.maxRequestHeaderSize = maxRequestHeaderSize;
         return this;
     }
 }
