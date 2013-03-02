@@ -17,6 +17,7 @@ package io.airlift.http.server;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.primitives.Ints;
 import io.airlift.event.client.EventClient;
 import io.airlift.node.NodeInfo;
 import io.airlift.tracetoken.TraceTokenManager;
@@ -47,6 +48,7 @@ import javax.annotation.PreDestroy;
 import javax.management.MBeanServer;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -111,7 +113,9 @@ public class HttpServer
             httpConnector.setMaxIdleTime((int) config.getNetworkMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
             httpConnector.setStatsOn(true);
             httpConnector.setHost(nodeInfo.getBindIp().getHostAddress());
-
+            if (config.getMaxRequestHeaderSize() != null) {
+                httpConnector.setRequestHeaderSize(Ints.checkedCast(config.getMaxRequestHeaderSize().toBytes()));
+            }
             server.addConnector(httpConnector);
         }
 
@@ -126,6 +130,9 @@ public class HttpServer
             httpsConnector.setPassword(config.getKeystorePassword());
             httpsConnector.setMaxIdleTime((int) config.getNetworkMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
             httpsConnector.setHost(nodeInfo.getBindIp().getHostAddress());
+            if (config.getMaxRequestHeaderSize() != null) {
+                httpsConnector.setRequestHeaderSize(Ints.checkedCast(config.getMaxRequestHeaderSize().toBytes()));
+            }
             httpsConnector.setAllowRenegotiate(true);
 
             server.addConnector(httpsConnector);
@@ -149,6 +156,9 @@ public class HttpServer
             adminConnector.setMaxIdleTime((int) config.getNetworkMaxIdleTime().convertTo(TimeUnit.MILLISECONDS));
             adminConnector.setStatsOn(true);
             adminConnector.setHost(nodeInfo.getBindIp().getHostAddress());
+            if (config.getMaxRequestHeaderSize() != null) {
+                adminConnector.setRequestHeaderSize(Ints.checkedCast(config.getMaxRequestHeaderSize().toBytes()));
+            }
 
             QueuedThreadPool adminThreadPool = new QueuedThreadPool(config.getAdminMaxThreads());
             adminThreadPool.setName("http-admin-worker");

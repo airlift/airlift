@@ -17,9 +17,11 @@ package io.airlift.http.server;
 
 import io.airlift.configuration.Config;
 import io.airlift.configuration.LegacyConfig;
+import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 
 import javax.validation.constraints.Min;
+
 import java.util.concurrent.TimeUnit;
 
 public class HttpServerConfig
@@ -39,6 +41,7 @@ public class HttpServerConfig
     private int maxThreads = 200;
     private Duration threadMaxIdleTime = new Duration(1, TimeUnit.MINUTES);
     private Duration networkMaxIdleTime = new Duration(200, TimeUnit.SECONDS);
+    private DataSize maxRequestHeaderSize;
 
     private String userAuthFile;
 
@@ -280,6 +283,18 @@ public class HttpServerConfig
     public HttpServerConfig setAdminMaxThreads(int adminMaxThreads)
     {
         this.adminMaxThreads = adminMaxThreads;
+        return this;
+    }
+
+    public DataSize getMaxRequestHeaderSize()
+    {
+        return maxRequestHeaderSize;
+    }
+
+    @Config("http-server.max-request-header-size")
+    public HttpServerConfig setMaxRequestHeaderSize(DataSize maxRequestHeaderSize)
+    {
+        this.maxRequestHeaderSize = maxRequestHeaderSize;
         return this;
     }
 }
