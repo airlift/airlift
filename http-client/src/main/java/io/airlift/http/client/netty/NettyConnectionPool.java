@@ -281,7 +281,7 @@ public class NettyConnectionPool
                 SSLParameters sslParameters = new SSLParameters();
                 sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
 
-                SSLEngine sslEngine = SSLContext.getDefault().createSSLEngine(remoteAddress.getHostName(), remoteAddress.getPort());
+                SSLEngine sslEngine = SSLContext.getDefault().createSSLEngine(remoteAddress.getHostString(), remoteAddress.getPort());
                 sslEngine.setSSLParameters(sslParameters);
                 sslEngine.setUseClientMode(true);
 
@@ -307,7 +307,7 @@ public class NettyConnectionPool
             if (isSsl) {
                 // A connection using a hostname that matches the cert shouldn't be
                 // reused for another hostname that doesn't, so cannot use the IP as key.
-                hostAndPort = HostAndPort.fromParts(remoteAddress.getHostName(), remoteAddress.getPort());
+                hostAndPort = HostAndPort.fromParts(remoteAddress.getHostString(), remoteAddress.getPort());
             }
             else {
                 String address = InetAddresses.toAddrString(remoteAddress.getAddress());
