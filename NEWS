@@ -1,3 +1,39 @@
+Airlift 0.71
+
+* New build system
+
+Removed the library POM. Uses the airbase project as base pom for building.
+
+* Global dependency upgrades
+
+- Jetty to 8.1.9
+- Guava to 13.0.1
+- BVal to 0.5
+- slf4j to 1.7.2
+- logback to 1.0.9
+- Jersey to 1.17
+- Joda Time to 2.1
+- TestNG to 6.8
+- Mockito to 1.9.5
+- Hamcrest to 1.3
+
+* Specific dependency upgrades
+
+- JMX: jcommander to 1.30
+- DBPool: mysql connector to 5.1.23
+- DBPool: h2 to 1.3.170
+- httpclient, rest-server-base: httpclient to 4.2.3
+- httpclient, rest-server-base: httpcore to 4.2.3
+
+* Dependency changes
+
+com.google.code.findbugs:jsr305 was replaced with com.google.code.findbugs:annotations
+
+The jsr305 jar contains only the JSR 305 annotations while the
+annotations jar also contains additional, Findbugs specific
+annotations.
+
+
 Airlift 0.70
 
 * Upgrade to Jackson 2.1.x
