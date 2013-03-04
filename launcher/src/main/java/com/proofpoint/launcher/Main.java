@@ -566,7 +566,7 @@ public class Main
     }
 
     @Command(name = "try-restart", description = "Restart server gracefully if it is already running")
-    public static class TryRestartCommand extends StartCommand
+    public static class TryRestartCommand extends RestartCommand
     {
         @Override
         public void execute()
@@ -577,12 +577,6 @@ public class Main
             if (!pidStatus.held) {
                 System.out.print("Not running\n");
                 System.exit(0);
-            }
-
-            KillStatus killStatus = killProcess(true);
-            if (killStatus.exitCode != 0) {
-                System.out.print(killStatus.msg);
-                System.exit(killStatus.exitCode);
             }
 
             super.execute();

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # Copyright 2010 Proofpoint, Inc.
 #
@@ -33,4 +33,4 @@
 #
 # Requires Java to be in PATH
 
-exec java -jar $(dirname $(dirname $0))/lib/launcher.jar ${@+"$@"}
+exec java -jar "$(dirname $(dirname $0))/lib/launcher.jar" ${@+"$@"}
