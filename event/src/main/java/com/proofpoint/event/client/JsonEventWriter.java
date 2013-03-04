@@ -19,10 +19,11 @@ import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.node.NodeInfo;
+import com.proofpoint.event.client.EventClient.EventGenerator;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import java.io.IOException;
@@ -30,31 +31,35 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.Set;
 
-public class JsonEventWriter
+import static com.google.common.base.Preconditions.checkNotNull;
+
+class JsonEventWriter
 {
+    private final NodeInfo nodeInfo;
     private final JsonFactory jsonFactory;
-    private final Map<Class<?>, JsonSerializer<?>> serializers;
+    private final Map<Class<?>, EventTypeMetadata<?>> metadataMap;
 
     @Inject
     public JsonEventWriter(NodeInfo nodeInfo, Set<EventTypeMetadata<?>> eventTypes)
     {
-        Preconditions.checkNotNull(eventTypes, "eventTypes is null");
+        this.nodeInfo = checkNotNull(nodeInfo, "nodeInfo is null");
+        checkNotNull(eventTypes, "eventTypes is null");
 
         this.jsonFactory = new JsonFactory();
 
-        ImmutableMap.Builder<Class<?>, JsonSerializer<?>> serializerBuilder = ImmutableMap.builder();
+        ImmutableMap.Builder<Class<?>, EventTypeMetadata<?>> metadataBuilder = ImmutableMap.builder();
 
         for (EventTypeMetadata<?> eventType : eventTypes) {
-            serializerBuilder.put(eventType.getEventClass(), new EventJsonSerializer<>(nodeInfo, eventType));
+            metadataBuilder.put(eventType.getEventClass(), eventType);
         }
-        this.serializers = serializerBuilder.build();
+        this.metadataMap = metadataBuilder.build();
     }
 
-    public <T> void writeEvents(EventClient.EventGenerator<T> events, OutputStream out)
+    public <T> void writeEvents(EventGenerator<T> events, @Nullable final String token, OutputStream out)
             throws IOException
     {
-        Preconditions.checkNotNull(events, "events is null");
-        Preconditions.checkNotNull(out, "out is null");
+        checkNotNull(events, "events is null");
+        checkNotNull(out, "out is null");
 
         final JsonGenerator jsonGenerator = jsonFactory.createJsonGenerator(out, JsonEncoding.UTF8);
 
@@ -66,7 +71,7 @@ public class JsonEventWriter
             public void post(T event)
                     throws IOException
             {
-                JsonSerializer<T> serializer = getSerializer(event);
+                JsonSerializer<T> serializer = getSerializer(event, token);
                 if (serializer == null) {
                     throw new InvalidEventException("Event class [%s] has not been registered as an event", event.getClass().getName());
                 }
@@ -80,8 +85,9 @@ public class JsonEventWriter
     }
 
     @SuppressWarnings("unchecked")
-    private <T> JsonSerializer<T> getSerializer(T event)
+    private <T> JsonSerializer<T> getSerializer(T event, @Nullable String token)
     {
-        return (JsonSerializer<T>) serializers.get(event.getClass());
+        return new EventJsonSerializer<>(nodeInfo, token,
+                (EventTypeMetadata<T>) metadataMap.get(event.getClass()));
     }
 }

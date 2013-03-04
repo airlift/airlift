@@ -23,10 +23,11 @@ import com.google.common.util.concurrent.Futures;
 import java.net.URI;
 import java.util.Arrays;
 
-public class NullEventClient implements EventClient
+public final class NullEventClient implements EventClient
 {
     @Override
-    public <T> CheckedFuture<Void, RuntimeException> post(T... events)
+    @SafeVarargs
+    public final <T> CheckedFuture<Void, RuntimeException> post(T... events)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(events, "event is null");

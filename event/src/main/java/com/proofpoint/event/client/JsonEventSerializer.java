@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.node.NodeInfo;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import java.io.IOException;
@@ -31,18 +32,20 @@ import static com.proofpoint.event.client.EventTypeMetadata.getValidEventTypeMet
 
 public class JsonEventSerializer
 {
-    private final Map<Class<?>, JsonSerializer<?>> serializers;
+    private final NodeInfo nodeinfo;
+    private final Map<Class<?>, EventTypeMetadata<?>> metadataMap;
 
     @Inject
     public JsonEventSerializer(NodeInfo nodeInfo, Set<EventTypeMetadata<?>> eventTypes)
     {
+        this.nodeinfo = checkNotNull(nodeInfo, "nodeInfo is null");
         checkNotNull(eventTypes, "eventTypes is null");
 
-        ImmutableMap.Builder<Class<?>, JsonSerializer<?>> map = ImmutableMap.builder();
+        ImmutableMap.Builder<Class<?>, EventTypeMetadata<?>> map = ImmutableMap.builder();
         for (EventTypeMetadata<?> eventType : eventTypes) {
-            map.put(eventType.getEventClass(), new EventJsonSerializer<>(nodeInfo, eventType));
+            map.put(eventType.getEventClass(), eventType);
         }
-        this.serializers = map.build();
+        this.metadataMap = map.build();
     }
 
     public JsonEventSerializer(NodeInfo nodeInfo, Class<?>... eventClasses)
@@ -50,13 +53,13 @@ public class JsonEventSerializer
         this(nodeInfo, getValidEventTypeMetaDataSet(eventClasses));
     }
 
-    public <T> void serialize(T event, JsonGenerator jsonGenerator)
+    public <T> void serialize(T event, @Nullable String token, JsonGenerator jsonGenerator)
             throws IOException
     {
         checkNotNull(event, "event is null");
         checkNotNull(jsonGenerator, "jsonGenerator is null");
 
-        JsonSerializer<T> serializer = getSerializer(event);
+        JsonSerializer<T> serializer = getSerializer(event, token);
         if (serializer == null) {
             throw new InvalidEventException("Event class [%s] has not been registered as an event", event.getClass().getName());
         }
@@ -65,8 +68,9 @@ public class JsonEventSerializer
     }
 
     @SuppressWarnings("unchecked")
-    private <T> JsonSerializer<T> getSerializer(T event)
+    private <T> JsonSerializer<T> getSerializer(T event, @Nullable String token)
     {
-        return (JsonSerializer<T>) serializers.get(event.getClass());
+        return new EventJsonSerializer<>(nodeinfo,
+                token, (EventTypeMetadata<T>) metadataMap.get(event.getClass()));
     }
 }

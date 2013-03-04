@@ -30,9 +30,11 @@ import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeInfo;
+import com.proofpoint.tracetoken.TraceTokenManager;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
+import javax.annotation.Nullable;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,18 +56,21 @@ public class HttpEventClient
     private final JsonEventWriter eventWriter;
     private final AsyncHttpClient httpClient;
     private final NodeInfo nodeInfo;
+    private final TraceTokenManager traceTokenManager;
 
     @Inject
     public HttpEventClient(
             @ServiceType("collector") HttpServiceSelector serviceSelector,
             JsonEventWriter eventWriter,
             NodeInfo nodeInfo,
-            @ForEventClient AsyncHttpClient httpClient)
+            @ForEventClient AsyncHttpClient httpClient,
+            TraceTokenManager traceTokenManager)
     {
         this.serviceSelector = checkNotNull(serviceSelector, "serviceSelector is null");
         this.eventWriter = checkNotNull(eventWriter, "eventWriter is null");
         this.nodeInfo = checkNotNull(nodeInfo, "nodeInfo is null");
         this.httpClient = checkNotNull(httpClient, "httpClient is null");
+        this.traceTokenManager = checkNotNull(traceTokenManager, "traceTokenManager is null");
     }
 
     @Flatten
@@ -106,6 +111,7 @@ public class HttpEventClient
     public <T> CheckedFuture<Void, RuntimeException> post(EventGenerator<T> eventGenerator)
     {
         checkNotNull(eventGenerator, "eventGenerator is null");
+        String token = traceTokenManager.getCurrentRequestToken();
 
         List<URI> uris = serviceSelector.selectHttpService();
 
@@ -118,7 +124,7 @@ public class HttpEventClient
                 .setUri(uris.get(0).resolve("/v2/event"))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setBodyGenerator(new JsonEntityWriter<T>(eventWriter, eventGenerator))
+                .setBodyGenerator(new JsonEntityWriter<>(eventWriter, eventGenerator, token))
                 .build();
         return httpClient.executeAsync(request, new EventResponseHandler(serviceSelector.getType(), serviceSelector.getPool()));
     }
@@ -128,18 +134,21 @@ public class HttpEventClient
     {
         private final JsonEventWriter eventWriter;
         private final EventGenerator<T> events;
+        private final String token;
 
-        public JsonEntityWriter(JsonEventWriter eventWriter, EventGenerator<T> events)
+        public JsonEntityWriter(JsonEventWriter eventWriter, EventGenerator<T> events, @Nullable String token)
         {
             this.eventWriter = checkNotNull(eventWriter, "eventWriter is null");
             this.events = checkNotNull(events, "events is null");
+            this.token = token;
         }
+
 
         @Override
         public void write(OutputStream out)
                 throws Exception
         {
-            eventWriter.writeEvents(events, out);
+            eventWriter.writeEvents(events, token, out);
         }
     }
 

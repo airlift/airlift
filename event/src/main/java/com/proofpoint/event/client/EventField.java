@@ -20,6 +20,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import static com.google.common.base.CaseFormat.LOWER_CAMEL;
+import static com.google.common.base.CaseFormat.UPPER_UNDERSCORE;
+
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface EventField
@@ -32,11 +35,12 @@ public @interface EventField
         DATA,
         HOST,
         TIMESTAMP,
+        TRACE_TOKEN,
         UUID;
 
         public String getFieldName()
         {
-            return name().toLowerCase();
+            return UPPER_UNDERSCORE.to(LOWER_CAMEL, name());
         }
     }
 }

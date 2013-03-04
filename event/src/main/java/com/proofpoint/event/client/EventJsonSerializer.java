@@ -18,29 +18,27 @@ package com.proofpoint.event.client;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.google.common.base.Preconditions;
 import com.proofpoint.node.NodeInfo;
 import org.joda.time.DateTime;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 class EventJsonSerializer<T>
         extends JsonSerializer<T>
 {
-    
+
+    private final String token;
     private final EventTypeMetadata<T> eventTypeMetadata;
     private final String hostName;
 
-    public EventJsonSerializer(NodeInfo nodeInfo, EventTypeMetadata<T> eventTypeMetadata)
+    public EventJsonSerializer(NodeInfo nodeInfo, @Nullable String token, EventTypeMetadata<T> eventTypeMetadata)
     {
-        Preconditions.checkNotNull(eventTypeMetadata, "eventTypeMetadata is null");
-
-        this.eventTypeMetadata = eventTypeMetadata;
+        this.token = token;
+        this.eventTypeMetadata = checkNotNull(eventTypeMetadata, "eventTypeMetadata is null");
         if (eventTypeMetadata.getHostField() == null) {
             hostName = nodeInfo.getInternalHostname();
         }
@@ -83,6 +81,14 @@ class EventJsonSerializer<T>
         else {
             jsonGenerator.writeFieldName("timestamp");
             EventDataType.DATETIME.writeFieldValue(jsonGenerator, new DateTime());
+        }
+
+        if (eventTypeMetadata.getTraceTokenField() != null) {
+            eventTypeMetadata.getTraceTokenField().writeField(jsonGenerator, event);
+        }
+        else if (token != null) {
+            jsonGenerator.writeFieldName("traceToken");
+            EventDataType.STRING.writeFieldValue(jsonGenerator, token);
         }
 
         jsonGenerator.writeObjectFieldStart("data");

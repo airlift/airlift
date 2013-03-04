@@ -18,6 +18,7 @@ package com.proofpoint.event.client;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.NullOutputStream;
+import com.proofpoint.event.client.EventClient.EventGenerator;
 import com.proofpoint.event.client.NestedDummyEventClass.NestedPart;
 import com.proofpoint.node.NodeInfo;
 import org.joda.time.DateTime;
@@ -50,7 +51,7 @@ public class TestJsonEventWriter
     public void testEventWriter()
             throws Exception
     {
-        assertEventJson(createEventGenerator(TestingUtils.getEvents()), "events.json");
+        assertEventJson(createEventGenerator(TestingUtils.getEvents()), "sample-trace-token", "events.json");
     }
 
     @Test
@@ -60,7 +61,14 @@ public class TestJsonEventWriter
         FixedDummyEventClass event = new FixedDummyEventClass(
                 "localhost", new DateTime("2011-09-09T01:59:59.999Z"), UUID.fromString("1ea8ca34-db36-11e0-b76f-8b7d505ab1ad"), 123, null);
 
-        assertEventJson(createEventGenerator(ImmutableList.of(event)), "nullValue.json");
+        assertEventJson(createEventGenerator(ImmutableList.of(event)), "sample-trace-token", "nullValue.json");
+    }
+
+    @Test
+    public void testNullToken()
+            throws Exception
+    {
+        assertEventJson(createEventGenerator(TestingUtils.getEvents()), null, "nullToken.json");
     }
 
     @Test
@@ -74,14 +82,14 @@ public class TestJsonEventWriter
                 ImmutableList.of(new NestedPart("listFirst", new NestedPart("listSecond", null)), new NestedPart("listThird", null))
         );
 
-        assertEventJson(createEventGenerator(ImmutableList.of(nestedEvent)), "nested.json");
+        assertEventJson(createEventGenerator(ImmutableList.of(nestedEvent)), "sample-trace-token", "nested.json");
     }
 
     @Test(expectedExceptions = InvalidEventException.class, expectedExceptionsMessageRegExp = "Cycle detected in event data:.*")
     public void testCircularEvent()
             throws Exception
     {
-        eventWriter.writeEvents(createEventGenerator(ImmutableList.of(new CircularEventClass())), new NullOutputStream());
+        eventWriter.writeEvents(createEventGenerator(ImmutableList.of(new CircularEventClass())), null, new NullOutputStream());
     }
 
     @Test(expectedExceptions = InvalidEventException.class, expectedExceptionsMessageRegExp = "Cycle detected in event data:.*")
@@ -97,15 +105,15 @@ public class TestJsonEventWriter
 
         ChainedCircularEventClass event = new ChainedCircularEventClass(a);
 
-        eventWriter.writeEvents(createEventGenerator(ImmutableList.of(event)), new NullOutputStream());
+        eventWriter.writeEvents(createEventGenerator(ImmutableList.of(event)), null, new NullOutputStream());
     }
 
-    private void assertEventJson(EventClient.EventGenerator<?> events, String resource)
+    private void assertEventJson(EventGenerator<?> events, String token, String resource)
             throws Exception
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-        eventWriter.writeEvents(events, out);
+        eventWriter.writeEvents(events, token, out);
 
         String json = out.toString(Charsets.UTF_8.name());
         assertEquals(json, TestingUtils.getNormalizedJson(resource));

@@ -22,6 +22,7 @@ import com.proofpoint.discovery.client.testing.StaticHttpServiceSelector;
 import com.proofpoint.http.client.HttpClientConfig;
 import com.proofpoint.http.client.netty.NettyAsyncHttpClient;
 import com.proofpoint.node.NodeInfo;
+import com.proofpoint.tracetoken.TraceTokenManager;
 import com.proofpoint.units.Duration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -146,12 +147,14 @@ public class TestHttpEventClient
 
         Set<EventTypeMetadata<?>> eventTypes = getValidEventTypeMetaDataSet(FixedDummyEventClass.class);
         JsonEventWriter eventWriter = new JsonEventWriter(nodeInfo, eventTypes);
+        TraceTokenManager traceTokenManager = new TraceTokenManager();
+        traceTokenManager.registerRequestToken("sample-trace-token");
 
         return new HttpEventClient(
                 selector,
                 eventWriter,
                 nodeInfo,
-                new NettyAsyncHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))));
+                new NettyAsyncHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))), traceTokenManager);
     }
 
     private Server createServer(final DummyServlet servlet)

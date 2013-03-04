@@ -33,7 +33,8 @@ public class InMemoryEventClient implements EventClient
     private final List<Object> events = newArrayList();
 
     @Override
-    public <T> CheckedFuture<Void, RuntimeException> post(T... events)
+    @SafeVarargs
+    public final <T> CheckedFuture<Void, RuntimeException> post(T... events)
             throws IllegalArgumentException
     {
         return post(Arrays.asList(events));

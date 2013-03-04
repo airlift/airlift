@@ -3,6 +3,7 @@
     "uuid":"8e248a16-da86-11e0-9e77-9fc96e21a396",
     "host":"localhost",
     "timestamp":"2011-09-09T01:35:28.333Z",
+    "traceToken":"sample-trace-token",
     "data":{
         "intValue":5678,
         "stringValue":"foo"

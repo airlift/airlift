@@ -38,7 +38,7 @@ public class TestJsonEventSerializer
         JsonGenerator jsonGenerator = new JsonFactory().createJsonGenerator(out, JsonEncoding.UTF8);
 
         FixedDummyEventClass event = TestingUtils.getEvents().get(0);
-        eventSerializer.serialize(event, jsonGenerator);
+        eventSerializer.serialize(event, "sample-trace-token", jsonGenerator);
 
         String json = out.toString(Charsets.UTF_8.name());
         assertEquals(json, TestingUtils.getNormalizedJson("event.json"));

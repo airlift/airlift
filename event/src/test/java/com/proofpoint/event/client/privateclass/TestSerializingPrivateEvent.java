@@ -34,7 +34,7 @@ public class TestSerializingPrivateEvent
     {
         JsonEventSerializer serializer = new JsonEventSerializer(new NodeInfo("test"), PrivateEvent.class);
         JsonGenerator generator = new JsonFactory().createJsonGenerator(new NullOutputStream());
-        serializer.serialize(new PrivateEvent(), generator);
+        serializer.serialize(new PrivateEvent(), "sample-trace-token", generator);
     }
 
     @EventType("Private")
