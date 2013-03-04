@@ -39,7 +39,6 @@ public class TestHttpAnnouncementBinder
         final StaticAnnouncementHttpServerInfoImpl httpServerInfo = new StaticAnnouncementHttpServerInfoImpl(
                 URI.create("http://127.0.0.1:4444"),
                 URI.create("http://example.com:4444"),
-                null,
                 null
         );
 
@@ -74,7 +73,6 @@ public class TestHttpAnnouncementBinder
         final StaticAnnouncementHttpServerInfoImpl httpServerInfo = new StaticAnnouncementHttpServerInfoImpl(
                 null,
                 null,
-                URI.create("https://127.0.0.1:4444"),
                 URI.create("https://example.com:4444")
         );
 
@@ -108,7 +106,6 @@ public class TestHttpAnnouncementBinder
         final StaticAnnouncementHttpServerInfoImpl httpServerInfo = new StaticAnnouncementHttpServerInfoImpl(
                 URI.create("http://127.0.0.1:4444"),
                 URI.create("http://example.com:4444"),
-                URI.create("https://127.0.0.1:4444"),
                 URI.create("https://example.com:4444")
         );
 
@@ -144,7 +141,6 @@ public class TestHttpAnnouncementBinder
         final StaticAnnouncementHttpServerInfoImpl httpServerInfo = new StaticAnnouncementHttpServerInfoImpl(
                 URI.create("http://127.0.0.1:4444"),
                 URI.create("http://example.com:4444"),
-                URI.create("https://127.0.0.1:4444"),
                 URI.create("https://example.com:4444")
         );
 

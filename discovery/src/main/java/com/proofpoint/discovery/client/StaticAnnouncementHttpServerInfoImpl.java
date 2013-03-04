@@ -26,23 +26,17 @@ public class StaticAnnouncementHttpServerInfoImpl implements AnnouncementHttpSer
     private final URI httpExternalUri;
 
     private final URI httpsUri;
-    private final URI httpsExternalUri;
 
-    public StaticAnnouncementHttpServerInfoImpl(URI httpUri, URI httpExternalUri, URI httpsUri, URI httpsExternalUri)
+    public StaticAnnouncementHttpServerInfoImpl(URI httpUri, URI httpExternalUri, URI httpsUri)
     {
         Preconditions.checkArgument(
                 (httpUri == null && httpExternalUri == null) ||
                 (httpUri != null && httpExternalUri != null),
                 "httpUri and httpExternalUri must both be null or both non-null");
-        Preconditions.checkArgument(
-                (httpsUri == null && httpsExternalUri == null) ||
-                (httpsUri != null && httpsExternalUri != null),
-                "httpsUri and httpsExternalUri must both be null or both non-null");
 
         this.httpUri = httpUri;
         this.httpExternalUri = httpExternalUri;
         this.httpsUri = httpsUri;
-        this.httpsExternalUri = httpsExternalUri;
     }
 
     @Override
@@ -70,7 +64,6 @@ public class StaticAnnouncementHttpServerInfoImpl implements AnnouncementHttpSer
                 .add("httpUri", httpUri)
                 .add("httpExternalUri", httpExternalUri)
                 .add("httpsUri", httpsUri)
-                .add("httpsExternalUri", httpsExternalUri)
                 .toString();
     }
 }
