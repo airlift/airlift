@@ -54,7 +54,7 @@ has a method to return a factory that produces pretty-print codecs.
 
 The trace token (and other MDC items) is now included in the server log.
 
-* Configuration error message improvement
+* Configuration error message improved
 
 The error message that Configuration issues upon Bean validation failure
 now identifies the attribute's configuration property, if any.
@@ -78,9 +78,11 @@ now identifies the attribute's configuration property, if any.
   - Allow use of H2 without an init script
   - Enable mvcc support for embedded H2
 
-* Removal of deprecated features
+* Removed deprecated features
   - Support for v1 events has been removed.
   - The EquivalenceTester static check methods have been removed.
+
+* [Bug] HTTPS servers are now announced in discovery using the hostname, not an IP address
 
 * [Bug] Don't throw an exception from http request logger when wall clock time goes backwards.
 
