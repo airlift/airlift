@@ -16,6 +16,7 @@
 package com.proofpoint.bootstrap;
 
 import com.google.common.annotations.Beta;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.inject.Binder;
@@ -74,6 +75,8 @@ public class Bootstrap
     private boolean initializeLogging = true;
     private boolean logJmxInfo = false;
 
+    private boolean initialized = false;
+
     public Bootstrap(Module... modules)
     {
         this.modules = Arrays.copyOf(modules, modules.length);
@@ -122,6 +125,9 @@ public class Bootstrap
     public Injector initialize()
             throws Exception
     {
+        Preconditions.checkState(!initialized, "Already initialized");
+        initialized = true;
+
         if (initializeLogging) {
             new Logging();
         }
