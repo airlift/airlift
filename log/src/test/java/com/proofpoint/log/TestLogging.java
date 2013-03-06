@@ -61,8 +61,8 @@ public class TestLogging
         File                    tempLogFile2 = new File(tempDir, "temp2.tmp");
         Files.touch(tempLogFile2);
 
-        Logging                 logging = new Logging();
-        logging.initialize(configuration);
+        Logging logging = Logging.initialize();
+        logging.configure(configuration);
 
         assertTrue(logFile1.exists());
         assertTrue(logFile2.exists());
