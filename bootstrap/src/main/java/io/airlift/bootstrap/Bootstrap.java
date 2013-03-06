@@ -16,6 +16,7 @@
 package io.airlift.bootstrap;
 
 import com.google.common.annotations.Beta;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableSortedMap;
@@ -75,6 +76,8 @@ public class Bootstrap
     private boolean initializeLogging = true;
     private boolean strictConfig = false;
     private boolean logJmxInfo = false;
+
+    private boolean initialized = false;
 
     public Bootstrap(Module... modules)
     {
@@ -144,8 +147,12 @@ public class Bootstrap
     public Injector initialize()
             throws Exception
     {
+        Preconditions.checkState(!initialized, "Already initialized");
+        initialized = true;
+
+        Logging logging = null;
         if (initializeLogging) {
-            new Logging();
+            logging = Logging.initialize();
         }
 
         Thread.currentThread().setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler()
@@ -184,11 +191,11 @@ public class Bootstrap
         configurationFactory = new ConfigurationFactory(properties);
 
 
-        if (initializeLogging) {
+        if (logging != null) {
             // initialize logging
             log.info("Initializing logging");
             LoggingConfiguration configuration = configurationFactory.build(LoggingConfiguration.class);
-            new Logging().initialize(configuration);
+            logging.configure(configuration);
         }
 
         // create warning logger now that we have logging initialized

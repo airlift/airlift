@@ -25,9 +25,9 @@ class LoggingOutputStream
         extends ByteArrayOutputStream
 {
     private final String lineSeparator;
-    private final org.slf4j.Logger logger;
+    private final Logger logger;
 
-    public LoggingOutputStream(org.slf4j.Logger logger)
+    public LoggingOutputStream(Logger logger)
     {
         super();
         this.logger = logger;

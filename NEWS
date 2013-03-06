@@ -83,6 +83,11 @@ version of airlift in the parent pom is recommended:
 `dep.airlift.version` is picked up when the project is built and
 `dep.packaging.version` is used when the project is packaged.
 
+* Logging
+
+The io.airlift.log.Logger API was updated to work directly against Java's built-in
+logging APIs. This is intended to make it easier to allow code that runs in isolated
+classloaders to use the logging system and should have no visible effects.
 
 Airlift 0.70
 

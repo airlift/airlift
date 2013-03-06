@@ -15,9 +15,9 @@
  */
 package io.airlift.log;
 
-import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.jul.LevelChangePropagator;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.OutputStreamAppender;
 import ch.qos.logback.core.rolling.RollingFileAppender;
@@ -52,15 +52,18 @@ public class Logging
     private static final String PATTERN = "%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}\\t%5p\\t%t\\t%c\\t%m%n";
     private final LoggerContext context;
     private final ch.qos.logback.classic.Logger root;
-    private final Logger log = Logger.get(Logging.class);
+    private final static Logger log = Logger.get(Logging.class);
     private OutputStreamAppender<ILoggingEvent> consoleAppender;
 
     private static final String TEMP_FILE_EXTENSION = ".tmp";
     private static final String LOG_FILE_EXTENSION = ".log";
 
-    // keep a reference to the original System.err so that we can rewire logging to the right place if this
-    // class is created multiple times
-    private static final OutputStream stderr = new NonCloseableOutputStream(System.err);
+    private static Logging instance;
+
+    public enum Level
+    {
+        DEBUG, INFO, WARN, ERROR
+    }
 
     /**
      * Sets up default logging:
@@ -68,7 +71,16 @@ public class Logging
      * - INFO level
      * - Log entries are written to stderr
      */
-    public Logging()
+    public static synchronized Logging initialize()
+    {
+        if (instance == null) {
+            instance = new Logging();
+        }
+
+        return instance;
+    }
+
+    private Logging()
     {
         // initialize root logger
         root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
@@ -76,24 +88,29 @@ public class Logging
         // assume SLF4J is bound to logback in the current environment
         context = (LoggerContext) LoggerFactory.getILoggerFactory();
         context.reset();
-        root.setLevel(Level.INFO);
 
-        rewireStdStreams();
+        LevelChangePropagator levelPropagator = new LevelChangePropagator();
+        levelPropagator.setContext(context);
+        context.addListener(levelPropagator);
+
+        root.setLevel(ch.qos.logback.classic.Level.INFO);
+
         redirectJULToSLF4j();
+        rewireStdStreams();
     }
 
     private void rewireStdStreams()
     {
-        redirectSlf4jTo(stderr);
+        redirectSlf4jTo(new NonCloseableOutputStream(System.err));
         log.info("Logging to stderr");
 
-        redirectStdStreamsToSlf4j();
+        redirectStdStreams();
     }
 
-    private void redirectStdStreamsToSlf4j()
+    private void redirectStdStreams()
     {
-        System.setOut(new PrintStream(new LoggingOutputStream(LoggerFactory.getLogger("stdout")), true));
-        System.setErr(new PrintStream(new LoggingOutputStream(LoggerFactory.getLogger("stderr")), true));
+        System.setOut(new PrintStream(new LoggingOutputStream(Logger.get("stdout")), true));
+        System.setErr(new PrintStream(new LoggingOutputStream(Logger.get("stderr")), true));
     }
 
     private void redirectSlf4jTo(OutputStream stream)
@@ -178,13 +195,20 @@ public class Logging
         processLevels(properties);
     }
 
+    public void setLevel(String loggerName, Level level)
+    {
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(loggerName);
+        logger.setLevel(ch.qos.logback.classic.Level.toLevel(level.toString()));
+    }
+
     private void processLevels(Properties properties)
     {
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
             String name = entry.getKey().toString();
+            String level = entry.getValue().toString();
 
             ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(name);
-            logger.setLevel(Level.toLevel(entry.getValue().toString()));
+            logger.setLevel(ch.qos.logback.classic.Level.toLevel(level));
         }
     }
 
@@ -218,7 +242,7 @@ public class Logging
         }
     }
 
-    public void initialize(LoggingConfiguration config)
+    public void configure(LoggingConfiguration config)
             throws IOException
     {
         if (config.getLogPath() == null && !config.isConsoleEnabled()) {

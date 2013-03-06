@@ -22,6 +22,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.OutputStreamAppender;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
+import io.airlift.log.Logging;
 import io.airlift.testing.Assertions;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeMethod;
@@ -61,6 +62,8 @@ public class TestRackServlet
     public void testSimpleRequestWithLogging()
             throws IOException, ServletException
     {
+        Logging.initialize();
+
         String expectedMessage = "FooBarBaz";
 
         OutputStream stream = new ByteArrayOutputStream();
