@@ -15,360 +15,330 @@
  */
 package com.proofpoint.log;
 
-import org.mockito.ArgumentMatcher;
+import com.google.common.collect.ImmutableList;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.IllegalFormatException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class TestLogger
 {
+    private MockHandler handler;
+    private Logger logger;
+    private java.util.logging.Logger inner;
+
+    @BeforeMethod
+    public void setUp()
+            throws Exception
+    {
+        handler = new MockHandler();
+
+        inner = java.util.logging.Logger.getAnonymousLogger();
+        inner.setUseParentHandlers(false);
+        inner.setLevel(Level.ALL);
+        inner.addHandler(handler);
+
+        logger = new Logger(inner);
+    }
+
+    @AfterMethod
+    public void teardown()
+    {
+        assertTrue(handler.isEmpty(), "Some log messages were not verified by test");
+    }
+
     @Test
     public void testIsDebugEnabled()
     {
-        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
-        when(mockLogger.isDebugEnabled()).thenReturn(true);
-
-        Logger logger = new Logger(mockLogger);
-
+        inner.setLevel(Level.FINE);
         assertTrue(logger.isDebugEnabled());
+
+        inner.setLevel(Level.INFO);
+        assertFalse(logger.isDebugEnabled());
+
+        inner.setLevel(Level.WARNING);
+        assertFalse(logger.isDebugEnabled());
+
+        inner.setLevel(Level.SEVERE);
+        assertFalse(logger.isDebugEnabled());
     }
 
     @Test
     public void testDebugFormat()
     {
-        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
-        when(mockLogger.isDebugEnabled()).thenReturn(true);
-
-        Logger logger = new Logger(mockLogger);
+        inner.setLevel(Level.FINE);
         logger.debug("hello, %s", "you");
 
-        verify(mockLogger).debug("hello, you");
+        assertLog(Level.FINE, "hello, you");
     }
 
     @Test
     public void testInfoFormat()
     {
-        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
-        when(mockLogger.isInfoEnabled()).thenReturn(true);
-
-        Logger logger = new Logger(mockLogger);
+        inner.setLevel(Level.INFO);
         logger.info("hello, %s", "you");
 
-        verify(mockLogger).info("hello, you");
+        assertLog(Level.INFO, "hello, you");
     }
 
     @Test
     public void testWarnFormat()
     {
-        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
-        when(mockLogger.isWarnEnabled()).thenReturn(true);
+        inner.setLevel(Level.WARNING);
 
         // message-only version
-        Logger logger = new Logger(mockLogger);
         logger.warn("hello, %s", "you");
-
-        verify(mockLogger).warn("hello, you", (Throwable) null);
+        assertLog(Level.WARNING, "hello, you");
 
         // throwable with message
         @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         Throwable exception = new Throwable();
-
         logger.warn(exception, "got exception: %s", "foo");
-        verify(mockLogger).warn("got exception: foo", exception);
+        assertLog(Level.WARNING, "got exception: foo", exception);
     }
 
     @Test
     public void testErrorFormat()
     {
-        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
-        when(mockLogger.isErrorEnabled()).thenReturn(true);
-
         // message-only version
-        Logger logger = new Logger(mockLogger);
         logger.error("hello, %s", "you");
-
-        verify(mockLogger).error("hello, you", (Throwable) null);
+        assertLog(Level.SEVERE, "hello, you");
 
         // throwable with message
         @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         Throwable exception = new Throwable();
 
         logger.error(exception, "got exception: %s", "foo");
-        verify(mockLogger).error("got exception: foo", exception);
+        assertLog(Level.SEVERE, "got exception: foo", exception);
 
         // throwable alone
         @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         Throwable exception2 = new Throwable("the message");
         logger.error(exception2);
-        verify(mockLogger).error(exception2.getMessage(), exception2);
+        assertLog(Level.SEVERE, exception2.getMessage(), exception2);
     }
-
 
     @Test
     public void testDebugShortCircuit()
     {
-        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
-
-        when(mockLogger.isDebugEnabled()).thenReturn(false);
-
-        Logger logger = new Logger(mockLogger);
+        inner.setLevel(Level.OFF);
         logger.debug("hello");
-
-        verifyNoCalls(mockLogger);
+        assertTrue(handler.isEmpty());
     }
 
     @Test
     public void testInfoShortCircuit()
     {
-        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
-
-        when(mockLogger.isInfoEnabled()).thenReturn(false);
-
-        Logger logger = new Logger(mockLogger);
+        inner.setLevel(Level.OFF);
         logger.info("hello");
-
-        verifyNoCalls(mockLogger);
+        assertTrue(handler.isEmpty());
     }
 
     @Test
     public void testWarnShortCircuit()
     {
-        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
-
-        when(mockLogger.isWarnEnabled()).thenReturn(false);
-
-        Logger logger = new Logger(mockLogger);
+        inner.setLevel(Level.OFF);
         logger.warn("hello");
-
-        verifyNoCalls(mockLogger);
+        assertTrue(handler.isEmpty());
     }
 
     @Test
     public void testWarnWithThrowableShortCircuit()
     {
-        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
-
-        when(mockLogger.isWarnEnabled()).thenReturn(false);
-
-        Logger logger = new Logger(mockLogger);
+        inner.setLevel(Level.OFF);
 
         @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         Throwable e = new Throwable();
         logger.warn(e, "hello");
 
-        verifyNoCalls(mockLogger);
+        assertTrue(handler.isEmpty());
     }
 
     @Test
     public void testErrorShortCircuit()
     {
-        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
-
-        when(mockLogger.isErrorEnabled()).thenReturn(false);
-
-        Logger logger = new Logger(mockLogger);
-        logger.warn("hello");
-
-        verifyNoCalls(mockLogger);
+        inner.setLevel(Level.OFF);
+        logger.error("hello");
+        assertTrue(handler.isEmpty());
     }
 
     @Test
     public void testErrorWithThrowableShortCircuit()
     {
-        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
-
-        when(mockLogger.isErrorEnabled()).thenReturn(false);
-
-        Logger logger = new Logger(mockLogger);
+        inner.setLevel(Level.OFF);
 
         @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         Throwable e = new Throwable();
         logger.error(e, "hello");
 
-        verifyNoCalls(mockLogger);
+        assertTrue(handler.isEmpty());
     }
 
     @Test
     public void testErrorWithThrowableNoMessageShortCircuit()
     {
-        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
-
-        when(mockLogger.isErrorEnabled()).thenReturn(false);
-
-        Logger logger = new Logger(mockLogger);
+        inner.setLevel(Level.OFF);
 
         @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         Throwable e = new Throwable();
         logger.error(e);
 
-        verifyNoCalls(mockLogger);
+        assertTrue(handler.isEmpty());
     }
 
 
     @Test
     public void testInsufficientArgsLogsErrorForDebug()
     {
-        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
-        Logger logger = new Logger(mockLogger);
-
-        when(mockLogger.isDebugEnabled()).thenReturn(true);
-
         String format = "some message: %s, %d";
         String param = "blah";
         logger.debug(format, param);
 
-        verify(mockLogger).error(stringThatContains("Invalid format", "DEBUG", format, param),
-                any(IllegalFormatException.class));
+
+        assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "DEBUG", format, param), IllegalArgumentException.class);
+        assertLog(Level.FINE, String.format("'%s' [%s]", format, param));
     }
 
     @Test
     public void testInsufficientArgsLogsErrorForInfo()
     {
-        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
-        Logger logger = new Logger(mockLogger);
-
-        when(mockLogger.isInfoEnabled()).thenReturn(true);
-
         String format = "some message: %s, %d";
         String param = "blah";
         logger.info(format, param);
 
-        verify(mockLogger).error(stringThatContains("Invalid format", "INFO", format, param),
-                any(IllegalFormatException.class));
+
+        assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "INFO", format, param), IllegalArgumentException.class);
+        assertLog(Level.INFO, String.format("'%s' [%s]", format, param));
     }
 
     @Test
     public void testInsufficientArgsLogsErrorForWarn()
     {
-        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
-        Logger logger = new Logger(mockLogger);
-
-        when(mockLogger.isWarnEnabled()).thenReturn(true);
-
         String format = "some message: %s, %d";
         String param = "blah";
         logger.warn(format, param);
 
-        verify(mockLogger).error(stringThatContains("Invalid format", "WARN", format, param),
-                any(IllegalFormatException.class));
+        assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "WARN", format, param), IllegalArgumentException.class);
+        assertLog(Level.WARNING, String.format("'%s' [%s]", format, param));
     }
 
     @Test
     public void testInsufficientArgsLogsErrorForError()
     {
-        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
-        Logger logger = new Logger(mockLogger);
-
-        when(mockLogger.isErrorEnabled()).thenReturn(true);
-
         String format = "some message: %s, %d";
         String param = "blah";
         logger.error(format, param);
 
-        verify(mockLogger).error(stringThatContains("Invalid format", "ERROR", format, param),
-                any(IllegalFormatException.class));
+        assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "ERROR", format, param), IllegalArgumentException.class);
+        assertLog(Level.SEVERE, String.format("'%s' [%s]", format, param));
     }
 
     @Test
     public void testInsufficientArgsLogsOriginalExceptionForWarn()
     {
-        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
-        Logger logger = new Logger(mockLogger);
-
-        when(mockLogger.isWarnEnabled()).thenReturn(true);
-
         Throwable exception = new Throwable("foo");
         String format = "some message: %s, %d";
         String param = "blah";
         logger.warn(exception, format, param);
 
-        verify(mockLogger).error(stringThatContains("Invalid format", "WARN", format, param),
-                any(IllegalFormatException.class));
-
-        verify(mockLogger).warn(stringThatContains(format, param), eq(exception));
+        assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "WARN", format, param), IllegalArgumentException.class);
+        assertLog(Level.WARNING, String.format("'%s' [%s]", format, param), exception);
     }
 
     @Test
     public void testInsufficientArgsLogsOriginalExceptionForError()
     {
-        org.slf4j.Logger mockLogger = mock(org.slf4j.Logger.class);
-        Logger logger = new Logger(mockLogger);
-
-        when(mockLogger.isErrorEnabled()).thenReturn(true);
-
         Throwable exception = new Throwable("foo");
         String format = "some message: %s, %d";
         String param = "blah";
         logger.error(exception, format, param);
 
-        verify(mockLogger).error(stringThatContains("Invalid format", "ERROR", format, param),
-                any(IllegalFormatException.class));
-
-        verify(mockLogger).error(stringThatContains(format, param), eq(exception));
+        assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "ERROR", format, param), IllegalArgumentException.class);
+        assertLog(Level.SEVERE, String.format("'%s' [%s]", format, param), exception);
     }
 
-    private void verifyNoCalls(org.slf4j.Logger mockLogger)
+
+    private void assertLog(Level level, String message, Throwable exception)
     {
-        verify(mockLogger, never()).debug(any(String.class));
-        verify(mockLogger, never()).debug(any(String.class), any(Object.class));
-        verify(mockLogger, never()).debug(any(String.class), any(Object.class), any(Object.class));
-        verify(mockLogger, never()).debug(any(String.class), any(Object[].class));
-        verify(mockLogger, never()).debug(any(String.class), any(Throwable.class));
-
-        verify(mockLogger, never()).info(any(String.class));
-        verify(mockLogger, never()).info(any(String.class), any(Object.class));
-        verify(mockLogger, never()).info(any(String.class), any(Object.class), any(Object.class));
-        verify(mockLogger, never()).info(any(String.class), any(Object[].class));
-        verify(mockLogger, never()).info(any(String.class), any(Throwable.class));
-
-        verify(mockLogger, never()).warn(any(String.class));
-        verify(mockLogger, never()).warn(any(String.class), any(Object.class));
-        verify(mockLogger, never()).warn(any(String.class), any(Object.class), any(Object.class));
-        verify(mockLogger, never()).warn(any(String.class), any(Object[].class));
-        verify(mockLogger, never()).warn(any(String.class), any(Throwable.class));
-
-        verify(mockLogger, never()).error(any(String.class));
-        verify(mockLogger, never()).error(any(String.class), any(Object.class));
-        verify(mockLogger, never()).error(any(String.class), any(Object.class), any(Object.class));
-        verify(mockLogger, never()).error(any(String.class), any(Object[].class));
-        verify(mockLogger, never()).error(any(String.class), any(Throwable.class));
+        LogRecord record = handler.takeRecord();
+        assertEquals(record.getLevel(), level);
+        assertEquals(record.getMessage(), message);
+        assertEquals(record.getThrown(), exception);
     }
 
-    /**
-     * A mockito-compatible matcher that matches a string argument that contains all the provided substrings
-     *
-     * @param substrings the substrings to test for
-     * @return a mockito mock argument
-     */
-    private static String stringThatContains(final String... substrings)
+    private void assertLog(Level level, String message)
     {
-        return argThat(new ArgumentMatcher<String>()
-        {
-            @Override
-            public boolean matches(Object argument)
-            {
-                if (!(argument instanceof String)) {
-                    return false;
-                }
+        LogRecord record = handler.takeRecord();
+        assertEquals(record.getLevel(), level);
+        assertEquals(record.getMessage(), message);
+        assertNull(record.getThrown());
+    }
 
-                String stringArgument = (String) argument;
-                for (String str : substrings) {
-                    if (!stringArgument.contains(str)) {
-                        return false;
-                    }
-                }
+    private void assertLogLike(Level level, List<String> substrings, Class<? extends Throwable> exceptionClass)
+    {
+        LogRecord record = handler.takeRecord();
+        assertEquals(record.getLevel(), level);
+        assertTrue(stringContains(record.getMessage(), substrings));
+        assertTrue(exceptionClass.isAssignableFrom(record.getThrown().getClass()));
+    }
 
-                return true;
+    private boolean stringContains(String value, List<String> substrings)
+    {
+        for (String str : substrings) {
+            if (!value.contains(str)) {
+                return false;
             }
-        });
+        }
+
+        return true;
+    }
+
+    private static class MockHandler
+        extends Handler
+    {
+        private final List<LogRecord> records = new ArrayList<>();
+
+        private MockHandler()
+        {
+            setLevel(Level.ALL);
+        }
+
+        @Override
+        public void publish(LogRecord record)
+        {
+            records.add(record);
+        }
+
+        @Override
+        public void flush()
+        {
+        }
+
+        @Override
+        public void close()
+                throws SecurityException
+        {
+        }
+
+        public LogRecord takeRecord()
+        {
+            assertTrue(!records.isEmpty(), "No messages logged");
+            return records.remove(0);
+        }
+
+        public boolean isEmpty()
+        {
+            return records.isEmpty();
+        }
     }
 }

@@ -17,19 +17,22 @@ package com.proofpoint.log;
 
 import ch.qos.logback.classic.Level;
 import com.google.inject.Inject;
-import org.slf4j.LoggerFactory;
 
 import java.util.IllegalFormatException;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static java.util.logging.Level.FINE;
+import static java.util.logging.Level.INFO;
+import static java.util.logging.Level.SEVERE;
+import static java.util.logging.Level.WARNING;
 
 public class Logger
 {
-    private final org.slf4j.Logger logger;
+    private final java.util.logging.Logger logger;
 
     @Inject
-    Logger(org.slf4j.Logger logger)
+    Logger(java.util.logging.Logger logger)
     {
         this.logger = logger;
     }
@@ -42,8 +45,7 @@ public class Logger
      */
     public static Logger get(Class<?> clazz)
     {
-        org.slf4j.Logger logger = LoggerFactory.getLogger(clazz);
-        return new Logger(logger);
+        return get(clazz.getName());
     }
 
     /**
@@ -54,7 +56,7 @@ public class Logger
      */
     public static Logger get(String name)
     {
-        org.slf4j.Logger logger = LoggerFactory.getLogger(name);
+        java.util.logging.Logger logger = java.util.logging.Logger.getLogger(name);
         return new Logger(logger);
     }
 
@@ -73,16 +75,16 @@ public class Logger
      */
     public void debug(String format, Object... args)
     {
-        if (logger.isDebugEnabled()) {
+        if (logger.isLoggable(FINE)) {
             String message;
             try {
                 message = format(format, args);
             }
             catch (IllegalFormatException e) {
-                logger.error(illegalFormatMessageFor(Level.DEBUG, format, args), e);
+                logger.log(SEVERE, illegalFormatMessageFor(Level.DEBUG, format, args), e);
                 message = rawMessageFor(format, args);
             }
-            logger.debug(message);
+            logger.fine(message);
         }
     }
 
@@ -102,16 +104,16 @@ public class Logger
      */
     public void debug(Throwable exception, String format, Object... args)
     {
-        if (logger.isDebugEnabled()) {
+        if (logger.isLoggable(FINE)) {
             String message;
             try {
                 message = format(format, args);
             }
             catch (IllegalFormatException e) {
-                logger.error(illegalFormatMessageFor(Level.DEBUG, format, args), e);
+                logger.log(SEVERE, illegalFormatMessageFor(Level.DEBUG, format, args), e);
                 message = rawMessageFor(format, args);
             }
-            logger.debug(message, exception);
+            logger.log(FINE, message, exception);
         }
     }
 
@@ -130,13 +132,13 @@ public class Logger
      */
     public void info(String format, Object... args)
     {
-        if (logger.isInfoEnabled()) {
+        if (logger.isLoggable(INFO)) {
             String message;
             try {
                 message = format(format, args);
             }
             catch (IllegalFormatException e) {
-                logger.error(illegalFormatMessageFor(Level.INFO, format, args), e);
+                logger.log(SEVERE, illegalFormatMessageFor(Level.INFO, format, args), e);
                 message = rawMessageFor(format, args);
             }
             logger.info(message);
@@ -159,16 +161,16 @@ public class Logger
      */
     public void warn(Throwable exception, String format, Object... args)
     {
-        if (logger.isWarnEnabled()) {
+        if (logger.isLoggable(WARNING)) {
             String message;
             try {
                 message = format(format, args);
             }
             catch (IllegalFormatException e) {
-                logger.error(illegalFormatMessageFor(Level.WARN, format, args), e);
+                logger.log(SEVERE, illegalFormatMessageFor(Level.WARN, format, args), e);
                 message = rawMessageFor(format, args);
             }
-            logger.warn(message, exception);
+            logger.log(WARNING, message, exception);
         }
     }
 
@@ -206,16 +208,16 @@ public class Logger
      */
     public void error(Throwable exception, String format, Object... args)
     {
-        if (logger.isErrorEnabled()) {
+        if (logger.isLoggable(SEVERE)) {
             String message;
             try {
                 message = format(format, args);
             }
             catch (IllegalFormatException e) {
-                logger.error(illegalFormatMessageFor(Level.ERROR, format, args), e);
+                logger.log(SEVERE, illegalFormatMessageFor(Level.ERROR, format, args), e);
                 message = rawMessageFor(format, args);
             }
-            logger.error(message, exception);
+            logger.log(SEVERE, message, exception);
         }
     }
 
@@ -231,8 +233,8 @@ public class Logger
      */
     public void error(Throwable exception)
     {
-        if (logger.isErrorEnabled()) {
-            logger.error(exception.getMessage(), exception);
+        if (logger.isLoggable(SEVERE)) {
+            logger.log(SEVERE, exception.getMessage(), exception);
         }
     }
 
@@ -256,12 +258,12 @@ public class Logger
 
     public boolean isDebugEnabled()
     {
-        return logger.isDebugEnabled();
+        return logger.isLoggable(FINE);
     }
 
     public boolean isInfoEnabled()
     {
-        return logger.isInfoEnabled();
+        return logger.isLoggable(INFO);
     }
 
     private String illegalFormatMessageFor(Level level, String message, Object... args)

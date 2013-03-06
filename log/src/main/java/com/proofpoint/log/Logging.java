@@ -15,9 +15,9 @@
  */
 package com.proofpoint.log;
 
-import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.jul.LevelChangePropagator;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.OutputStreamAppender;
@@ -66,6 +66,11 @@ public class Logging
 
     private static Logging instance;
 
+    public enum Level
+    {
+        DEBUG, INFO, WARN, ERROR
+    }
+
     /**
      * Sets up default logging:
      * <p/>
@@ -89,10 +94,15 @@ public class Logging
         // assume SLF4J is bound to logback in the current environment
         context = (LoggerContext) LoggerFactory.getILoggerFactory();
         context.reset();
-        root.setLevel(Level.INFO);
 
-        rewireStdStreams();
+        LevelChangePropagator levelPropagator = new LevelChangePropagator();
+        levelPropagator.setContext(context);
+        context.addListener(levelPropagator);
+
+        root.setLevel(ch.qos.logback.classic.Level.INFO);
+
         redirectJULToSLF4j();
+        rewireStdStreams();
     }
 
     @SuppressWarnings("IOResourceOpenedButNotSafelyClosed")
@@ -101,15 +111,15 @@ public class Logging
         redirectSlf4jTo(new NonCloseableOutputStream(System.err));
         log.info("Logging to stderr");
 
-        redirectStdStreamsToSlf4j();
+        redirectStdStreams();
     }
 
     @SuppressWarnings("IOResourceOpenedButNotSafelyClosed")
-    private void redirectStdStreamsToSlf4j()
+    private void redirectStdStreams()
     {
         try {
-            System.setOut(new PrintStream(new LoggingOutputStream(LoggerFactory.getLogger("stdout")), true, "UTF-8"));
-            System.setErr(new PrintStream(new LoggingOutputStream(LoggerFactory.getLogger("stderr")), true, "UTF-8"));
+            System.setOut(new PrintStream(new LoggingOutputStream(Logger.get("stdout")), true, "UTF-8"));
+            System.setErr(new PrintStream(new LoggingOutputStream(Logger.get("stderr")), true, "UTF-8"));
         }
         catch (UnsupportedEncodingException ignored) {
         }
@@ -198,13 +208,20 @@ public class Logging
         processLevels(properties);
     }
 
+    public void setLevel(String loggerName, Level level)
+    {
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(loggerName);
+        logger.setLevel(ch.qos.logback.classic.Level.toLevel(level.toString()));
+    }
+
     private void processLevels(Properties properties)
     {
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
             String name = entry.getKey().toString();
+            String level = entry.getValue().toString();
 
             ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(name);
-            logger.setLevel(Level.toLevel(entry.getValue().toString()));
+            logger.setLevel(ch.qos.logback.classic.Level.toLevel(level));
         }
     }
 
