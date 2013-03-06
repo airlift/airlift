@@ -14,7 +14,7 @@
     </parent>
 
     <properties>
-        <dep.airlift.version>${project.parent.version}</dep.airlift.version>
+        <dep.airlift.version>0.71</dep.airlift.version>
     </properties>
 
     <dependencies>
