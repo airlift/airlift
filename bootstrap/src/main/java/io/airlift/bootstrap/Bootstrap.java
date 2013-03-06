@@ -150,8 +150,9 @@ public class Bootstrap
         Preconditions.checkState(!initialized, "Already initialized");
         initialized = true;
 
+        Logging logging = null;
         if (initializeLogging) {
-            new Logging();
+            logging = Logging.initialize();
         }
 
         Thread.currentThread().setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler()
@@ -190,11 +191,11 @@ public class Bootstrap
         configurationFactory = new ConfigurationFactory(properties);
 
 
-        if (initializeLogging) {
+        if (logging != null) {
             // initialize logging
             log.info("Initializing logging");
             LoggingConfiguration configuration = configurationFactory.build(LoggingConfiguration.class);
-            new Logging().initialize(configuration);
+            logging.configure(configuration);
         }
 
         // create warning logger now that we have logging initialized

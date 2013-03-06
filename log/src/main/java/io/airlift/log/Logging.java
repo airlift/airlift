@@ -58,9 +58,7 @@ public class Logging
     private static final String TEMP_FILE_EXTENSION = ".tmp";
     private static final String LOG_FILE_EXTENSION = ".log";
 
-    // keep a reference to the original System.err so that we can rewire logging to the right place if this
-    // class is created multiple times
-    private static final OutputStream stderr = new NonCloseableOutputStream(System.err);
+    private static Logging instance;
 
     /**
      * Sets up default logging:
@@ -68,7 +66,16 @@ public class Logging
      * - INFO level
      * - Log entries are written to stderr
      */
-    public Logging()
+    public static synchronized Logging initialize()
+    {
+        if (instance == null) {
+            instance = new Logging();
+        }
+
+        return instance;
+    }
+
+    private Logging()
     {
         // initialize root logger
         root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
@@ -84,7 +91,7 @@ public class Logging
 
     private void rewireStdStreams()
     {
-        redirectSlf4jTo(stderr);
+        redirectSlf4jTo(new NonCloseableOutputStream(System.err));
         log.info("Logging to stderr");
 
         redirectStdStreamsToSlf4j();
@@ -218,7 +225,7 @@ public class Logging
         }
     }
 
-    public void initialize(LoggingConfiguration config)
+    public void configure(LoggingConfiguration config)
             throws IOException
     {
         if (config.getLogPath() == null && !config.isConsoleEnabled()) {
