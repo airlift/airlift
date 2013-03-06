@@ -23,8 +23,8 @@
         <air.check.fail-basic>true</air.check.fail-basic>
         <air.check.skip-pmd>true</air.check.skip-pmd>
 
-        <dep.airlift.version>0.72-SNAPSHOT</dep.airlift.version>
-        <dep.packaging.version>0.71</dep.packaging.version>
+        <dep.airlift.version>${project.version}</dep.airlift.version>
+        <dep.packaging.version>${project.version}</dep.packaging.version>
     </properties>
 
     <organization>
