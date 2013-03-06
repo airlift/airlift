@@ -73,6 +73,68 @@ public class TestLogging
         assertTrue(new File(tempDir, "temp2.log").exists());
     }
 
+    @Test
+    public void testPropagatesLevels()
+            throws Exception
+    {
+        Logging logging = Logging.initialize();
+        Logger logger = Logger.get("testPropagatesLevels");
+
+        logging.setLevel("testPropagatesLevels", Logging.Level.ERROR);
+        assertFalse(logger.isDebugEnabled());
+        assertFalse(logger.isInfoEnabled());
+
+        logging.setLevel("testPropagatesLevels", Logging.Level.WARN);
+        assertFalse(logger.isDebugEnabled());
+        assertFalse(logger.isInfoEnabled());
+
+        logging.setLevel("testPropagatesLevels", Logging.Level.INFO);
+        assertFalse(logger.isDebugEnabled());
+        assertTrue(logger.isInfoEnabled());
+
+        logging.setLevel("testPropagatesLevels", Logging.Level.DEBUG);
+        assertTrue(logger.isDebugEnabled());
+        assertTrue(logger.isInfoEnabled());
+    }
+
+    @Test
+    public void testPropagatesLevelsHierarchical()
+            throws Exception
+    {
+        Logging logging = Logging.initialize();
+        Logger logger = Logger.get("testPropagatesLevelsHierarchical.child");
+
+        logging.setLevel("testPropagatesLevelsHierarchical", Logging.Level.ERROR);
+        assertFalse(logger.isDebugEnabled());
+        assertFalse(logger.isInfoEnabled());
+
+        logging.setLevel("testPropagatesLevelsHierarchical", Logging.Level.WARN);
+        assertFalse(logger.isDebugEnabled());
+        assertFalse(logger.isInfoEnabled());
+
+        logging.setLevel("testPropagatesLevelsHierarchical", Logging.Level.INFO);
+        assertFalse(logger.isDebugEnabled());
+        assertTrue(logger.isInfoEnabled());
+
+        logging.setLevel("testPropagatesLevelsHierarchical", Logging.Level.DEBUG);
+        assertTrue(logger.isDebugEnabled());
+        assertTrue(logger.isInfoEnabled());
+    }
+
+    @Test
+    public void testChildLevelOverridesParent()
+            throws Exception
+    {
+        Logging logging = Logging.initialize();
+        Logger logger = Logger.get("testChildLevelOverridesParent.child");
+
+        logging.setLevel("testChildLevelOverridesParent", Logging.Level.DEBUG);
+        logging.setLevel("testChildLevelOverridesParent.child", Logging.Level.ERROR);
+        assertFalse(logger.isDebugEnabled());
+        assertFalse(logger.isInfoEnabled());
+    }
+
+
     private File createTempDir()
             throws IOException
     {
