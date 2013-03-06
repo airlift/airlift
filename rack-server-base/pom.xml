@@ -10,11 +10,11 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>0.71</version>
+        <version>0.72-SNAPSHOT</version>
     </parent>
 
     <properties>
-        <dep.airlift.version>0.71</dep.airlift.version>
+        <dep.airlift.version>0.72-SNAPSHOT</dep.airlift.version>
     </properties>
 
     <dependencies>
