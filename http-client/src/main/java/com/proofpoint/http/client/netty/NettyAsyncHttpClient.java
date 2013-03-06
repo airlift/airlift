@@ -28,6 +28,8 @@ import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import org.jboss.netty.util.HashedWheelTimer;
+import org.weakref.jmx.Flatten;
+import org.weakref.jmx.Managed;
 
 import java.net.URI;
 import java.util.Collection;
@@ -143,6 +145,8 @@ public class NettyAsyncHttpClient
         return executeAsync(request, responseHandler).checkedGet();
     }
 
+    @Managed
+    @Flatten
     @Override
     public RequestStats getStats()
     {

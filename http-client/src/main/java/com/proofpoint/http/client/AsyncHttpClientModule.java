@@ -30,6 +30,7 @@ import java.util.Set;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.http.client.CompositeQualifierImpl.compositeQualifier;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 @Beta
 public class AsyncHttpClientModule
@@ -61,6 +62,9 @@ public class AsyncHttpClientModule
 
         // kick off the binding for the filter set
         newSetBinder(binder, HttpRequestFilter.class, filterQualifier(annotation));
+
+        // export stats
+        newExporter(binder).export(AsyncHttpClient.class).annotatedWith(annotation).withGeneratedName();
     }
 
     @Override
