@@ -18,10 +18,13 @@ package io.airlift.discovery.client;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.io.CharStreams;
+import com.google.common.net.HttpHeaders;
+import com.google.common.net.MediaType;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
 import io.airlift.http.client.AsyncHttpClient;
+import io.airlift.http.client.CacheControl;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.Response;
 import io.airlift.http.client.ResponseHandler;
@@ -30,9 +33,6 @@ import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
 
 import javax.inject.Provider;
-import javax.ws.rs.core.CacheControl;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -46,6 +46,8 @@ import static io.airlift.http.client.Request.Builder.preparePut;
 
 public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementClient
 {
+    private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
+
     private final Provider<URI> discoveryServiceURI;
     private final NodeInfo nodeInfo;
     private final JsonCodec<Announcement> announcementCodec;
@@ -82,7 +84,7 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
         Request request = preparePut()
                 .setUri(URI.create(uri + "/v1/announcement/" + nodeInfo.getNodeId()))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
-                .setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setHeader("Content-Type", MEDIA_TYPE_JSON.toString())
                 .setBodyGenerator(jsonBodyGenerator(announcementCodec, announcement))
                 .build();
         return httpClient.executeAsync(request, new DiscoveryResponseHandler<Duration>("Announcement")
