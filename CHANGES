@@ -1,3 +1,7 @@
+* 0.74
+
+- Remove experimental from all artifact names
+
 * 0.73
 - [BUG] Always notify http response handler of errors
 - Properly name http client threads

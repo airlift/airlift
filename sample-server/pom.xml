@@ -68,12 +68,12 @@
 
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>discovery-experimental</artifactId>
+            <artifactId>discovery</artifactId>
         </dependency>
 
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>event-experimental</artifactId>
+            <artifactId>event</artifactId>
         </dependency>
 
         <dependency>
@@ -108,7 +108,7 @@
 
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>jmx-http-rpc-experimental</artifactId>
+            <artifactId>jmx-http-rpc</artifactId>
         </dependency>
 
         <dependency>
@@ -123,12 +123,12 @@
 
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>jmx-http-experimental</artifactId>
+            <artifactId>jmx-http</artifactId>
         </dependency>
 
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>http-client-experimental</artifactId>
+            <artifactId>http-client</artifactId>
         </dependency>
 
         <!-- for testing -->

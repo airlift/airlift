@@ -70,7 +70,7 @@
             <unpack>true</unpack>
             <outputDirectory>/</outputDirectory>
             <includes>
-                <include>io.airlift:rack-launcher-experimental</include>
+                <include>io.airlift:rack-launcher</include>
             </includes>
         </dependencySet>
     </dependencySets>

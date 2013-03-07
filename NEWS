@@ -1,3 +1,11 @@
+Airlift 0.74
+
+* Experimental modules
+
+The trailing "-experimental" has been removed from all artifact names.
+Any APIs that are experimental should be annotated with @Beta instead.
+
+
 Airlift 0.73
 
 * AsyncHttpClient fixes
