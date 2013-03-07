@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>jmx-http-experimental</artifactId>
+    <artifactId>jmx-http</artifactId>
     <packaging>jar</packaging>
 
     <parent>
@@ -13,20 +13,17 @@
     <dependencies>
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>discovery-experimental</artifactId>
-            <version>0.75-SNAPSHOT</version>
+            <artifactId>discovery</artifactId>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>http-server</artifactId>
-            <version>0.74-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>json</artifactId>
-            <version>0.75-SNAPSHOT</version>
         </dependency>
 
         <dependency>

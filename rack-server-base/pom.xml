@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.proofpoint.platform</groupId>
-    <artifactId>rack-server-base-experimental</artifactId>
+    <artifactId>rack-server-base</artifactId>
     <version>0.75-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>rack-server-base</name>
@@ -76,13 +76,13 @@
     <dependencies>
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>rack-experimental</artifactId>
+            <artifactId>rack</artifactId>
             <version>0.75-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>rack-launcher-experimental</artifactId>
+            <artifactId>rack-launcher</artifactId>
             <version>0.75-SNAPSHOT</version>
             <classifier>bin</classifier>
             <type>tar.gz</type>
@@ -192,7 +192,7 @@
                         <dependencies>
                             <dependency>
                                 <groupId>com.proofpoint.platform</groupId>
-                                <artifactId>rack-packaging-experimental</artifactId>
+                                <artifactId>rack-packaging</artifactId>
                                 <version>0.75-SNAPSHOT</version>
                             </dependency>
                         </dependencies>

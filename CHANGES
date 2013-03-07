@@ -1,5 +1,10 @@
 Platform 0.75
 
+* Experimental modules
+
+  The trailing "-experimental" has been removed from all artifact names.
+  Any APIs that are experimental should be annotated with @Beta instead.
+
 * We moved the /v1/jmx/mbean resource to /admin/jmx/mbean on the admin port.
 
 * We removed the jmx-http-rpc-experimental artifact and the JmxHttpRpcModule

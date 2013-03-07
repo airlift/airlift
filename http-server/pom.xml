@@ -29,7 +29,7 @@
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>event-experimental</artifactId>
+            <artifactId>event</artifactId>
         </dependency>
 
         <dependency>
@@ -39,7 +39,7 @@
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>discovery-experimental</artifactId>
+            <artifactId>discovery</artifactId>
         </dependency>
 
         <dependency>
@@ -59,7 +59,7 @@
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>http-client-experimental</artifactId>
+            <artifactId>http-client</artifactId>
         </dependency>
 
         <dependency>

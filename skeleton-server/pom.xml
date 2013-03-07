@@ -51,12 +51,12 @@
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>discovery-experimental</artifactId>
+            <artifactId>discovery</artifactId>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>event-experimental</artifactId>
+            <artifactId>event</artifactId>
         </dependency>
 
         <dependency>
@@ -111,12 +111,12 @@
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>jmx-http-experimental</artifactId>
+            <artifactId>jmx-http</artifactId>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>http-client-experimental</artifactId>
+            <artifactId>http-client</artifactId>
         </dependency>
 
         <!-- for packaging -->

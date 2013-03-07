@@ -113,7 +113,7 @@
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>http-client-experimental</artifactId>
+            <artifactId>http-client</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

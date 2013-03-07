@@ -29,7 +29,7 @@
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>event-experimental</artifactId>
+            <artifactId>event</artifactId>
         </dependency>
 
         <dependency>

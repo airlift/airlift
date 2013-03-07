@@ -70,7 +70,7 @@
             <unpack>true</unpack>
             <outputDirectory>/</outputDirectory>
             <includes>
-                <include>com.proofpoint.platform:rack-launcher-experimental</include>
+                <include>com.proofpoint.platform:rack-launcher</include>
             </includes>
         </dependencySet>
     </dependencySets>
