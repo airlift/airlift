@@ -65,9 +65,10 @@ import static com.proofpoint.http.client.Request.Builder.preparePost;
 import static com.proofpoint.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static com.proofpoint.http.client.StringResponseHandler.createStringResponseHandler;
+import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static com.google.common.net.HttpHeaders.REFERER;
+import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static java.util.Collections.nCopies;
-import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
-import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -266,7 +267,7 @@ public class TestHttpServerModule
                     preparePost().setUri(requestUri)
                             .addHeader(USER_AGENT, userAgent)
                             .addHeader(CONTENT_TYPE, requestContentType)
-                            .addHeader("Referer", referrer)
+                            .addHeader(REFERER, referrer)
                             .addHeader("X-Proofpoint-TraceToken", token)
                             .setBodyGenerator(createStaticBodyGenerator(requestBody, Charsets.UTF_8))
                             .build(),

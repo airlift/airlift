@@ -17,6 +17,7 @@ package com.proofpoint.event.client;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
+import com.google.common.net.MediaType;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
@@ -35,7 +36,6 @@ import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
 import javax.annotation.Nullable;
-import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -51,6 +51,7 @@ public class HttpEventClient
         implements EventClient
 {
     private static final Logger log = Logger.get(HttpEventClient.class);
+    private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
 
     private final HttpServiceSelector serviceSelector;
     private final JsonEventWriter eventWriter;
@@ -123,7 +124,7 @@ public class HttpEventClient
         Request request = preparePost()
                 .setUri(uris.get(0).resolve("/v2/event"))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
-                .setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setHeader("Content-Type", MEDIA_TYPE_JSON.toString())
                 .setBodyGenerator(new JsonEntityWriter<>(eventWriter, eventGenerator, token))
                 .build();
         return httpClient.executeAsync(request, new EventResponseHandler(serviceSelector.getType(), serviceSelector.getPool()));

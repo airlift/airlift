@@ -18,10 +18,12 @@ package com.proofpoint.discovery.client;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.io.CharStreams;
+import com.google.common.net.HttpHeaders;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
 import com.proofpoint.http.client.AsyncHttpClient;
+import com.proofpoint.http.client.CacheControl;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.Request.Builder;
 import com.proofpoint.http.client.RequestStats;
@@ -34,8 +36,6 @@ import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
 import javax.inject.Provider;
-import javax.ws.rs.core.CacheControl;
-import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -43,10 +43,10 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 
 import static com.proofpoint.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
+import static com.proofpoint.http.client.HttpStatus.NOT_MODIFIED;
+import static com.proofpoint.http.client.HttpStatus.OK;
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static java.lang.String.format;
-import static javax.ws.rs.core.Response.Status.NOT_MODIFIED;
-import static javax.ws.rs.core.Response.Status.OK;
 
 public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
 {
@@ -131,11 +131,11 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
                 Duration maxAge = extractMaxAge(response);
                 String eTag = response.getHeader(HttpHeaders.ETAG);
 
-                if (NOT_MODIFIED.getStatusCode() == response.getStatusCode() && serviceDescriptors != null) {
+                if (NOT_MODIFIED.code() == response.getStatusCode() && serviceDescriptors != null) {
                     return new ServiceDescriptors(serviceDescriptors, maxAge, eTag);
                 }
 
-                if (OK.getStatusCode() != response.getStatusCode()) {
+                if (OK.code() != response.getStatusCode()) {
                     throw new DiscoveryException(format("Lookup of %s failed with status code %s", type, response.getStatusCode()));
                 }
 
