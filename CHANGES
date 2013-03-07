@@ -54,10 +54,13 @@ has a method to return a factory that produces pretty-print codecs.
 
 The trace token (and other MDC items) is now included in the server log.
 
-* Configuration error message improved
+* Configuration improvements
 
-The error message that Configuration issues upon Bean validation failure
-now identifies the attribute's configuration property, if any.
+  - The error message that Configuration issues upon Bean validation failure
+    now identifies the attribute's configuration property, if any.
+
+  - Configuration warnings are now sent to the event service upon startup
+    and once a day thereafter.
 
 * Disabled auto-detection of constructors and use of getters as setters in
   Jackson.
