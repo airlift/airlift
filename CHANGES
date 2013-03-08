@@ -50,9 +50,10 @@ The injected JsonCodecFactory and injected codecs no longer produce
 pretty-printed JSON. The previous behavior was a bug. JsonCodecFactory
 has a method to return a factory that produces pretty-print codecs.
 
-* Trace token included in log
+* Trace token improvements
 
-The trace token (and other MDC items) is now included in the server log.
+  - The trace token (and other MDC items) is now included in the server log.
+  - The trace token is now included in events.
 
 * Configuration improvements
 
