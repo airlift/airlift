@@ -15,6 +15,7 @@
  */
 package com.proofpoint.configuration;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.inject.Binding;
 import com.google.inject.ConfigurationException;
@@ -43,6 +44,11 @@ public class ConfigurationValidator
     }
 
     public List<Message> validate(Module... modules)
+    {
+        return validate(ImmutableList.copyOf(modules));
+    }
+
+    public List<Message> validate(Iterable<? extends Module> modules)
     {
         final List<Message> messages = Lists.newArrayList();
 

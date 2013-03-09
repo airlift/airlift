@@ -44,7 +44,6 @@ import com.proofpoint.log.LoggingConfiguration;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
@@ -69,7 +68,7 @@ import static com.google.common.collect.Maps.fromProperties;
 public class Bootstrap
 {
     private final Logger log = Logger.get("Bootstrap");
-    private final Module[] modules;
+    private final List<Module> modules;
 
     private Map<String, String> requiredConfigurationProperties = null;
     private boolean initializeLogging = true;
@@ -79,7 +78,12 @@ public class Bootstrap
 
     public Bootstrap(Module... modules)
     {
-        this.modules = Arrays.copyOf(modules, modules.length);
+        this(ImmutableList.copyOf(modules));
+    }
+
+    public Bootstrap(Iterable<? extends Module> modules)
+    {
+        this.modules = ImmutableList.copyOf(modules);
     }
 
     @Beta
@@ -218,7 +222,7 @@ public class Bootstrap
                 binder.requireExplicitBindings();
             }
         });
-        moduleList.add(modules);
+        moduleList.addAll(modules);
 
         // create the injector
         final Injector injector = Guice.createInjector(Stage.PRODUCTION, moduleList.build());
