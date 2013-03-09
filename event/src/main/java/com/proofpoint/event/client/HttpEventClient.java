@@ -23,6 +23,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.ServiceType;
+import com.proofpoint.discovery.client.ServiceUnavailableException;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.BodyGenerator;
 import com.proofpoint.http.client.Request;
