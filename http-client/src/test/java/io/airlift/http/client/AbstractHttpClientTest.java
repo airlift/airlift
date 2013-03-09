@@ -164,6 +164,24 @@ public abstract class AbstractHttpClientTest
         }
     }
 
+    @Test(expectedExceptions = Exception.class) // TODO: consider making this a ConnectException
+    public void testConnectionRefused()
+            throws Exception
+    {
+        ServerSocket serverSocket = new ServerSocket(0, 1);
+        int port = serverSocket.getLocalPort();
+        serverSocket.close();
+
+        HttpClientConfig config = new HttpClientConfig();
+        config.setConnectTimeout(new Duration(5, MILLISECONDS));
+
+        Request request = prepareGet()
+                .setUri(new URI(scheme, null, host, port, "/", null, null))
+                .build();
+
+        executeRequest(config, request, new ResponseToStringHandler());
+    }
+
     @Test
     public void testDeleteMethod()
             throws Exception
