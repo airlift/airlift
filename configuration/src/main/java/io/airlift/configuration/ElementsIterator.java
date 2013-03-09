@@ -15,6 +15,7 @@
  */
 package io.airlift.configuration;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -24,17 +25,18 @@ import com.google.inject.spi.Elements;
 import java.util.Iterator;
 import java.util.List;
 
-class ElementsIterator implements Module, Iterable<Element>
+class ElementsIterator
+        implements Module, Iterable<Element>
 {
     private final List<Element> boundElements;
-    private final List<Element>         elements;
+    private final List<Element> elements;
 
-    /**
-     * Modules to get elements for
-     *
-     * @param modules the modules
-     */
     public ElementsIterator(Module... modules)
+    {
+        this(ImmutableList.copyOf(modules));
+    }
+
+    public ElementsIterator(Iterable<? extends Module> modules)
     {
         elements = Elements.getElements(modules);
         boundElements = Lists.newArrayList(elements);
@@ -43,7 +45,7 @@ class ElementsIterator implements Module, Iterable<Element>
     @Override
     public void configure(Binder binder)
     {
-        Module      baseModule = Elements.getModule(boundElements);
+        Module baseModule = Elements.getModule(boundElements);
         binder.install(baseModule);
     }
 
@@ -53,10 +55,9 @@ class ElementsIterator implements Module, Iterable<Element>
      *
      * @param element the element to unbind
      */
-    public void     unbindElement(Element element)
+    public void unbindElement(Element element)
     {
-        if ( element == null )
-        {
+        if (element == null) {
             throw new IllegalStateException();
         }
         boundElements.remove(element);

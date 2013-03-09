@@ -95,7 +95,7 @@ class ColumnPrinter
     void print(PrintWriter out)
     {
         for (String s : generate()) {
-            out.println(s);
+            out.println(s.trim());
         }
     }
 
@@ -104,7 +104,7 @@ class ColumnPrinter
      *
      * @return lines
      */
-    List<String> generate()
+    private List<String> generate()
     {
         List<String> lines = Lists.newArrayList();
         StringBuilder workStr = new StringBuilder();
