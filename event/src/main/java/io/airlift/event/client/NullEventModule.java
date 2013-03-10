@@ -19,6 +19,10 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 
+/**
+ * @deprecated Use EventModule instead
+ */
+@Deprecated
 public class NullEventModule implements Module
 {
     @Override

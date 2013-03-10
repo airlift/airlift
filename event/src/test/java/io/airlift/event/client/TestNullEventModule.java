@@ -21,6 +21,7 @@ import org.testng.annotations.BeforeMethod;
 
 public class TestNullEventModule extends AbstractTestNullEventClient
 {
+    @SuppressWarnings("deprecation")
     @BeforeMethod
     public void setup()
             throws Exception

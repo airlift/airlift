@@ -16,14 +16,21 @@
 package io.airlift.event.client;
 
 import com.google.inject.Binder;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
+
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 
 public class InMemoryEventModule implements Module
 {
     @Override
     public void configure(Binder binder)
     {
-        binder.bind(EventClient.class).to(InMemoryEventClient.class).in(Scopes.SINGLETON);
+        // for backwards compatibility
+        binder.install(new EventModule());
+
+        binder.bind(InMemoryEventClient.class).in(Scopes.SINGLETON);
+        newSetBinder(binder, EventClient.class).addBinding().to(Key.get(InMemoryEventClient.class)).in(Scopes.SINGLETON);
     }
 }

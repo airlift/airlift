@@ -15,17 +15,19 @@
  */
 package io.airlift.event.client;
 
-import org.testng.annotations.BeforeMethod;
+import com.google.inject.Binder;
+import com.google.inject.Module;
+import com.google.inject.Scopes;
 
-public class TestInMemoryEventClient extends AbstractTestInMemoryEventClient
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
+
+public class EventModule
+        implements Module
 {
-
-    @BeforeMethod
-    public void setup()
-            throws Exception
+    @Override
+    public void configure(Binder binder)
     {
-        inMemoryEventClient = new InMemoryEventClient();
-        eventClient = inMemoryEventClient;
+        binder.bind(EventClient.class).to(MultiEventClient.class).in(Scopes.SINGLETON);
+        newSetBinder(binder, EventClient.class);
     }
-
 }

@@ -30,10 +30,9 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationModule;
-import io.airlift.event.client.EventClient;
+import io.airlift.event.client.EventModule;
 import io.airlift.event.client.InMemoryEventClient;
 import io.airlift.event.client.InMemoryEventModule;
-import io.airlift.event.client.NullEventModule;
 import io.airlift.http.client.ApacheHttpClient;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
@@ -105,7 +104,7 @@ public class TestHttpServerModule
         Injector injector = Guice.createInjector(new HttpServerModule(),
                 new NodeModule(),
                 new ConfigurationModule(configFactory),
-                new NullEventModule(),
+                new EventModule(),
                 new Module()
                 {
                     @Override
@@ -133,7 +132,7 @@ public class TestHttpServerModule
         Injector injector = Guice.createInjector(new HttpServerModule(),
                 new NodeModule(),
                 new ConfigurationModule(configFactory),
-                new NullEventModule(),
+                new EventModule(),
                 new Module()
                 {
                     @Override
@@ -174,7 +173,7 @@ public class TestHttpServerModule
         Injector injector = Guice.createInjector(new HttpServerModule(),
                 new NodeModule(),
                 new ConfigurationModule(configFactory),
-                new NullEventModule(),
+                new EventModule(),
                 new Module()
                 {
                     @Override
@@ -236,7 +235,7 @@ public class TestHttpServerModule
                 });
 
         HttpServerInfo httpServerInfo = injector.getInstance(HttpServerInfo.class);
-        InMemoryEventClient eventClient = (InMemoryEventClient) injector.getInstance(EventClient.class);
+        InMemoryEventClient eventClient = injector.getInstance(InMemoryEventClient.class);
         EchoServlet echoServlet = (EchoServlet) injector.getInstance(Key.get(Servlet.class, TheServlet.class));
 
         HttpServer server = injector.getInstance(HttpServer.class);

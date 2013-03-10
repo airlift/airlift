@@ -21,7 +21,6 @@ import com.google.common.io.Resources;
 import com.google.inject.Injector;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
-import io.airlift.event.client.EventClient;
 import io.airlift.event.client.InMemoryEventClient;
 import io.airlift.event.client.InMemoryEventModule;
 import io.airlift.http.client.ApacheHttpClient;
@@ -96,7 +95,7 @@ public class TestServer
 
         server = injector.getInstance(TestingHttpServer.class);
         store = injector.getInstance(PersonStore.class);
-        eventClient = (InMemoryEventClient) injector.getInstance(EventClient.class);
+        eventClient = injector.getInstance(InMemoryEventClient.class);
 
         client = new ApacheHttpClient();
     }

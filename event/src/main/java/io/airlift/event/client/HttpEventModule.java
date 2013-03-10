@@ -16,23 +16,28 @@
 package io.airlift.event.client;
 
 import com.google.inject.Binder;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
 
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
-import static org.weakref.jmx.guice.MBeanModule.newExporter;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class HttpEventModule implements Module
 {
     @Override
     public void configure(Binder binder)
     {
+        // for backwards compatibility
+        binder.install(new EventModule());
+
         binder.bind(JsonEventWriter.class).in(Scopes.SINGLETON);
 
-        binder.bind(EventClient.class).to(HttpEventClient.class).in(Scopes.SINGLETON);
+        binder.bind(HttpEventClient.class).in(Scopes.SINGLETON);
+        newSetBinder(binder, EventClient.class).addBinding().to(Key.get(HttpEventClient.class)).in(Scopes.SINGLETON);
         newExporter(binder).export(EventClient.class).withGeneratedName();
         discoveryBinder(binder).bindHttpSelector("collector");
 
@@ -40,6 +45,6 @@ public class HttpEventModule implements Module
         httpClientBinder(binder).bindAsyncHttpClient("event", ForEventClient.class);
 
         // Kick off the binding of Set<EventTypeMetadata> in case no events are bound
-        Multibinder.newSetBinder(binder, new TypeLiteral<EventTypeMetadata<?>>() {});
+        newSetBinder(binder, new TypeLiteral<EventTypeMetadata<?>>() {});
     }
 }
