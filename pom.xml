@@ -113,6 +113,7 @@
         <module>json</module>
         <module>launcher</module>
         <module>log</module>
+        <module>log-manager</module>
         <module>node</module>
         <module>packaging</module>
         <module>rack-launcher</module>
@@ -220,6 +221,12 @@
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>log</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>log-manager</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
 

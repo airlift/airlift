@@ -15,9 +15,7 @@
  */
 package io.airlift.log;
 
-import ch.qos.logback.classic.Level;
-import com.google.inject.Inject;
-
+import javax.inject.Inject;
 import java.util.IllegalFormatException;
 
 import static java.lang.String.format;
@@ -81,7 +79,7 @@ public class Logger
                 message = format(format, args);
             }
             catch (IllegalFormatException e) {
-                logger.log(SEVERE, illegalFormatMessageFor(Level.DEBUG, format, args), e);
+                logger.log(SEVERE, illegalFormatMessageFor("DEBUG", format, args), e);
                 message = rawMessageFor(format, args);
             }
             logger.fine(message);
@@ -110,7 +108,7 @@ public class Logger
                 message = format(format, args);
             }
             catch (IllegalFormatException e) {
-                logger.log(SEVERE, illegalFormatMessageFor(Level.DEBUG, format, args), e);
+                logger.log(SEVERE, illegalFormatMessageFor("DEBUG", format, args), e);
                 message = rawMessageFor(format, args);
             }
             logger.log(FINE, message, exception);
@@ -138,7 +136,7 @@ public class Logger
                 message = format(format, args);
             }
             catch (IllegalFormatException e) {
-                logger.log(SEVERE, illegalFormatMessageFor(Level.INFO, format, args), e);
+                logger.log(SEVERE, illegalFormatMessageFor("INFO", format, args), e);
                 message = rawMessageFor(format, args);
             }
             logger.info(message);
@@ -167,7 +165,7 @@ public class Logger
                 message = format(format, args);
             }
             catch (IllegalFormatException e) {
-                logger.log(SEVERE, illegalFormatMessageFor(Level.WARN, format, args), e);
+                logger.log(SEVERE, illegalFormatMessageFor("WARN", format, args), e);
                 message = rawMessageFor(format, args);
             }
             logger.log(WARNING, message, exception);
@@ -214,7 +212,7 @@ public class Logger
                 message = format(format, args);
             }
             catch (IllegalFormatException e) {
-                logger.log(SEVERE, illegalFormatMessageFor(Level.ERROR, format, args), e);
+                logger.log(SEVERE, illegalFormatMessageFor("ERROR", format, args), e);
                 message = rawMessageFor(format, args);
             }
             logger.log(SEVERE, message, exception);
@@ -266,7 +264,7 @@ public class Logger
         return logger.isLoggable(INFO);
     }
 
-    private String illegalFormatMessageFor(Level level, String message, Object... args)
+    private String illegalFormatMessageFor(String level, String message, Object... args)
     {
         return format("Invalid format string while trying to log: %s '%s' %s", level, message, asList(args));
     }
