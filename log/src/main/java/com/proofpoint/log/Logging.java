@@ -223,7 +223,7 @@ public class Logging
         }
 
         if (config.getLogPath() != null) {
-            logToFile(config.getLogPath(), config.getMaxHistory(), config.getMaxSegmentSizeInBytes());
+            logToFile(config.getLogPath(), config.getMaxHistory(), config.getMaxSegmentSize().toBytes());
         }
 
         // logback keeps a internal list of errors that it encounters as the logging system is being

@@ -16,14 +16,17 @@
 package com.proofpoint.log;
 
 import com.proofpoint.configuration.Config;
+import com.proofpoint.configuration.LegacyConfig;
+import com.proofpoint.units.DataSize;
+import com.proofpoint.units.DataSize.Unit;
 
 public class LoggingConfiguration
 {
     private boolean consoleEnabled = true;
-    private String logPath;
-    private long maxSegmentSizeInBytes = 100 * 1024 * 1024;  // TODO: need "size" unit similar to Duration
+    private String logPath = null;
+    private DataSize maxSegmentSize = new DataSize(100, Unit.MEGABYTE);
     private int maxHistory = 30;
-    private String levelsFile;
+    private String levelsFile = null;
 
     public boolean isConsoleEnabled()
     {
@@ -49,15 +52,22 @@ public class LoggingConfiguration
         return this;
     }
 
-    public long getMaxSegmentSizeInBytes()
+    public DataSize getMaxSegmentSize()
     {
-        return maxSegmentSizeInBytes;
+        return maxSegmentSize;
     }
 
-    @Config("log.max-size-in-bytes")
+    @Config("log.max-size")
+    public LoggingConfiguration setMaxSegmentSize(DataSize maxSegmentSize)
+    {
+        this.maxSegmentSize = maxSegmentSize;
+        return this;
+    }
+
+    @LegacyConfig(value = "log.max-size-in-bytes", replacedBy = "log.max-size")
     public LoggingConfiguration setMaxSegmentSizeInBytes(long maxSegmentSizeInBytes)
     {
-        this.maxSegmentSizeInBytes = maxSegmentSizeInBytes;
+        this.maxSegmentSize = new DataSize(maxSegmentSizeInBytes, Unit.BYTE);
         return this;
     }
 
