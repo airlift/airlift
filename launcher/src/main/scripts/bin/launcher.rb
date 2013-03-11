@@ -76,6 +76,7 @@ def strip(string)
 end
 
 class Pid
+  attr_accessor :path
   def initialize(path, options = {})
     raise "Nil path provided" if path.nil?
     @options = options
@@ -106,7 +107,12 @@ class Pid
 
   def get
     begin
-      File.open(@path) { |f| f.read.to_i }
+      pid = File.open(@path) { |f| f.read.to_i }
+      if pid <= 0
+        puts "Pid file #{@path} contains invalid pid #{pid}" if @options[:verbose]
+        return nil
+      end
+      pid
     rescue Errno::ENOENT
       puts "Can't find pid file #{@path}" if @options[:verbose]
     end
@@ -184,7 +190,7 @@ def run(options)
 end
 
 def start(options)
-  pid_file = Pid.new(options[:pid_file])
+  pid_file = Pid.new(options[:pid_file], options)
   if pid_file.alive?
     return :success, "Already running as #{pid_file.get}"
   end
@@ -207,7 +213,7 @@ end
 
 
 def stop(options)
-  pid_file = Pid.new(options[:pid_file])
+  pid_file = Pid.new(options[:pid_file], options)
 
   if !pid_file.alive?
     pid_file.clear
@@ -236,7 +242,7 @@ def restart(options)
 end
 
 def kill(options)
-  pid_file = Pid.new(options[:pid_file])
+  pid_file = Pid.new(options[:pid_file], options)
 
   if !pid_file.alive?
     pid_file.clear
@@ -257,15 +263,14 @@ def kill(options)
 end
 
 def status(options)
-  pid_file = Pid.new(options[:pid_file])
+  pid_file = Pid.new(options[:pid_file], options)
 
   if pid_file.get.nil?
     return :not_running, "Not running"
   elsif pid_file.alive?
     return :running, "Running as #{pid_file.get}"
   else
-    # todo this is wrong. how do you get path from the pid_file
-    return :not_running_with_pid_file, "Program is dead and pid file #{pid_file.get} exists"
+    return :not_running_with_pid_file, "Program is dead and pid file #{pid_file.path} exists"
   end
 end
 
