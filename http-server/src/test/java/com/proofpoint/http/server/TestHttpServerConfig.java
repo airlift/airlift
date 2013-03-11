@@ -18,6 +18,7 @@ package com.proofpoint.http.server;
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.testing.ConfigAssertions;
 import com.proofpoint.units.DataSize;
+import com.proofpoint.units.DataSize.Unit;
 import com.proofpoint.units.Duration;
 import org.testng.annotations.Test;
 
@@ -38,6 +39,8 @@ public class TestHttpServerConfig
                 .setKeystorePassword(null)
                 .setLogPath("var/log/http-request.log")
                 .setLogRetentionTime((new Duration(90, TimeUnit.DAYS)))
+                .setLogMaxSegmentSize(new DataSize(100, Unit.MEGABYTE))
+                .setLogMaxHistory(30)
                 .setMinThreads(2)
                 .setMaxThreads(200)
                 .setThreadMaxIdleTime(new Duration(1, TimeUnit.MINUTES))
@@ -63,6 +66,8 @@ public class TestHttpServerConfig
                 .put("http-server.https.keystore.key", "keystore password")
                 .put("http-server.log.path", "/log")
                 .put("http-server.log.retention-time", "1d")
+                .put("http-server.log.max-size", "1GB")
+                .put("http-server.log.max-history", "25")
                 .put("http-server.threads.min", "100")
                 .put("http-server.threads.max", "500")
                 .put("http-server.threads.max-idle-time", "10m")
@@ -84,6 +89,8 @@ public class TestHttpServerConfig
                 .setKeystorePassword("keystore password")
                 .setLogPath("/log")
                 .setLogRetentionTime(new Duration(1, TimeUnit.DAYS))
+                .setLogMaxSegmentSize(new DataSize(1, Unit.GIGABYTE))
+                .setLogMaxHistory(25)
                 .setMinThreads(100)
                 .setMaxThreads(500)
                 .setThreadMaxIdleTime(new Duration(10, TimeUnit.MINUTES))

@@ -19,7 +19,9 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.OutputStreamAppender;
+import ch.qos.logback.core.encoder.Encoder;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
@@ -53,7 +55,7 @@ public class Logging
     private static final String PATTERN = "%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}\\t%5p\\t%t\\t%c\\t%X\\t%m%n";
     private final LoggerContext context;
     private final ch.qos.logback.classic.Logger root;
-    private final Logger log = Logger.get(Logging.class);
+    private static final Logger log = Logger.get(Logging.class);
     private OutputStreamAppender<ILoggingEvent> consoleAppender;
 
     private static final String TEMP_FILE_EXTENSION = ".tmp";
@@ -123,16 +125,21 @@ public class Logging
     {
         log.info("Logging to %s", logPath);
 
-        recoverTempFiles(logPath);
-
         PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setPattern(PATTERN);
         encoder.setContext(context);
         encoder.start();
 
-        RollingFileAppender<ILoggingEvent> fileAppender = new RollingFileAppender<>();
-        TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
-        SizeAndTimeBasedFNATP<ILoggingEvent> triggeringPolicy = new SizeAndTimeBasedFNATP<>();
+        root.addAppender(createFileAppender(logPath, maxHistory, maxSizeInBytes, encoder, context));
+    }
+
+    public static <T> Appender<T> createFileAppender(String logPath, int maxHistory, long maxSizeInBytes, Encoder<T> encoder, LoggerContext context)
+    {
+        recoverTempFiles(logPath);
+
+        RollingFileAppender<T> fileAppender = new RollingFileAppender<>();
+        TimeBasedRollingPolicy<T> rollingPolicy = new TimeBasedRollingPolicy<>();
+        SizeAndTimeBasedFNATP<T> triggeringPolicy = new SizeAndTimeBasedFNATP<>();
 
         rollingPolicy.setContext(context);
         rollingPolicy.setFileNamePattern(logPath + "-%d{yyyy-MM-dd}.%i.log.gz");
@@ -152,7 +159,7 @@ public class Logging
         fileAppender.setRollingPolicy(rollingPolicy);
         fileAppender.setContext(context);
         fileAppender.start();
-        root.addAppender(fileAppender);
+        return fileAppender;
     }
 
     private void redirectJULToSLF4j()
@@ -185,7 +192,7 @@ public class Logging
         }
     }
 
-    private void recoverTempFiles(String logPath)
+    private static void recoverTempFiles(String logPath)
     {
         // logback has a tendency to leave around temp files if it is interrupted
         // these .tmp files are log files that are about to be compressed.

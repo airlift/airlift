@@ -19,6 +19,7 @@ import com.proofpoint.configuration.Config;
 import com.proofpoint.configuration.ConfigSecuritySensitive;
 import com.proofpoint.configuration.LegacyConfig;
 import com.proofpoint.units.DataSize;
+import com.proofpoint.units.DataSize.Unit;
 import com.proofpoint.units.Duration;
 
 import javax.validation.constraints.Min;
@@ -36,6 +37,8 @@ public class HttpServerConfig
 
     private String logPath = "var/log/http-request.log";
     private Duration logRetentionTime = new Duration(90, TimeUnit.DAYS);
+    private DataSize logMaxSegmentSize = new DataSize(100, Unit.MEGABYTE);
+    private int logMaxHistory = 30;
 
     private int minThreads = 2;
     private int maxThreads = 200;
@@ -187,15 +190,41 @@ public class HttpServerConfig
         return setThreadMaxIdleTime(new Duration(millis, TimeUnit.MILLISECONDS));
     }
 
+    @Deprecated
     public Duration getLogRetentionTime()
     {
         return logRetentionTime;
     }
 
+    @Deprecated
     @Config("http-server.log.retention-time")
     public HttpServerConfig setLogRetentionTime(Duration logRetentionTime)
     {
         this.logRetentionTime = logRetentionTime;
+        return this;
+    }
+
+    public DataSize getLogMaxSegmentSize()
+    {
+        return logMaxSegmentSize;
+    }
+
+    @Config("http-server.log.max-size")
+    public HttpServerConfig setLogMaxSegmentSize(DataSize logMaxSegmentSize)
+    {
+        this.logMaxSegmentSize = logMaxSegmentSize;
+        return this;
+    }
+
+    public int getLogMaxHistory()
+    {
+        return logMaxHistory;
+    }
+
+    @Config("http-server.log.max-history")
+    public HttpServerConfig setLogMaxHistory(int logMaxHistory)
+    {
+        this.logMaxHistory = logMaxHistory;
         return this;
     }
 

@@ -15,19 +15,20 @@
  */
 package com.proofpoint.http.server;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.core.Appender;
+import ch.qos.logback.core.encoder.EncoderBase;
 import com.proofpoint.event.client.EventClient;
+import com.proofpoint.log.Logging;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
 import org.joda.time.format.ISODateTimeFormat;
 
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 
 import static com.proofpoint.http.server.HttpRequestEvent.createHttpRequestEvent;
 
@@ -37,23 +38,19 @@ class DelimitedRequestLog
     // Tab-separated
     // Time, ip, method, url, user, agent, response code, request length, response length, response time
 
-    private final RolloverFileOutputStream out;
-    private final Writer writer;
-
-    private final DateTimeFormatter isoFormatter;
     private final TraceTokenManager traceTokenManager;
     private final EventClient eventClient;
     private final CurrentTimeMillisProvider currentTimeMillisProvider;
+    private final Appender<HttpRequestEvent> appender;
 
-    public DelimitedRequestLog(String filename, int retainDays, TraceTokenManager traceTokenManager, EventClient eventClient)
+    public DelimitedRequestLog(String filename, int maxHistory, long maxSizeInBytes, TraceTokenManager traceTokenManager, EventClient eventClient)
             throws IOException
     {
-        this(filename, retainDays, traceTokenManager, eventClient, new SystemCurrentTimeMillisProvider());
+        this(filename, maxHistory, maxSizeInBytes, traceTokenManager, eventClient, new SystemCurrentTimeMillisProvider());
     }
 
     public DelimitedRequestLog(String filename,
-            int retainDays,
-            TraceTokenManager traceTokenManager,
+            int maxHistory, long maxSizeInBytes, TraceTokenManager traceTokenManager,
             EventClient eventClient,
             CurrentTimeMillisProvider currentTimeMillisProvider)
             throws IOException
@@ -61,13 +58,8 @@ class DelimitedRequestLog
         this.traceTokenManager = traceTokenManager;
         this.eventClient = eventClient;
         this.currentTimeMillisProvider = currentTimeMillisProvider;
-        out = new RolloverFileOutputStream(filename, true, retainDays);
-        writer = new OutputStreamWriter(out);
 
-        isoFormatter = new DateTimeFormatterBuilder()
-                .append(ISODateTimeFormat.dateHourMinuteSecondFraction())
-                .appendTimeZoneOffset("Z", true, 2, 2)
-                .toFormatter();
+        appender = Logging.createFileAppender(filename, maxHistory, maxSizeInBytes, new EventEncoder(), new LoggerContext());
     }
 
     public void log(Request request, Response response)
@@ -75,39 +67,8 @@ class DelimitedRequestLog
         long currentTime = currentTimeMillisProvider.getCurrentTimeMillis();
         HttpRequestEvent event = createHttpRequestEvent(request, response, traceTokenManager, currentTime);
 
-        StringBuilder builder = new StringBuilder();
-        builder.append(isoFormatter.print(event.getTimeStamp()))
-                .append('\t')
-                .append(event.getClientAddress())
-                .append('\t')
-                .append(event.getMethod())
-                .append('\t')
-                .append(request.getUri()) // TODO: escape
-                .append('\t')
-                .append(event.getUser())
-                .append('\t')
-                .append(event.getAgent()) // TODO: escape
-                .append('\t')
-                .append(event.getResponseCode())
-                .append('\t')
-                .append(event.getRequestSize())
-                .append('\t')
-                .append(event.getResponseSize())
-                .append('\t')
-                .append(event.getTimeToLastByte())
-                .append('\t')
-                .append(event.getTraceToken())
-                .append('\n');
-
-        String line = builder.toString();
-        synchronized (writer) {
-            try {
-                writer.write(line);
-                writer.flush();
-            }
-            catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+        synchronized (appender) {
+            appender.doAppend(event);
         }
 
         eventClient.post(event);
@@ -121,7 +82,7 @@ class DelimitedRequestLog
     public void stop()
             throws Exception
     {
-        out.close();
+        appender.stop();
     }
 
     public boolean isRunning()
@@ -160,5 +121,52 @@ class DelimitedRequestLog
 
     public void removeLifeCycleListener(Listener listener)
     {
+    }
+
+    private static class EventEncoder extends EncoderBase<HttpRequestEvent>
+    {
+
+        private DateTimeFormatter isoFormatter = new DateTimeFormatterBuilder()
+                        .append(ISODateTimeFormat.dateHourMinuteSecondFraction())
+                        .appendTimeZoneOffset("Z", true, 2, 2)
+                        .toFormatter();
+
+        @Override
+        public void doEncode(HttpRequestEvent event)
+                throws IOException
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.append(isoFormatter.print(event.getTimeStamp()))
+                    .append('\t')
+                    .append(event.getClientAddress())
+                    .append('\t')
+                    .append(event.getMethod())
+                    .append('\t')
+                    .append(event.getRequestUri()) // TODO: escape
+                    .append('\t')
+                    .append(event.getUser())
+                    .append('\t')
+                    .append(event.getAgent()) // TODO: escape
+                    .append('\t')
+                    .append(event.getResponseCode())
+                    .append('\t')
+                    .append(event.getRequestSize())
+                    .append('\t')
+                    .append(event.getResponseSize())
+                    .append('\t')
+                    .append(event.getTimeToLastByte())
+                    .append('\t')
+                    .append(event.getTraceToken())
+                    .append('\n');
+
+            outputStream.write(builder.toString().getBytes("UTF-8"));
+            outputStream.flush();
+        }
+
+        @Override
+        public void close()
+                throws IOException
+        {
+        }
     }
 }
