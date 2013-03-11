@@ -1,3 +1,13 @@
+Airlift 0.72
+
+* Multiple Event Implementations
+
+The event system now support multiple back end implementations simultaneously.
+Events are simply sent to each back end.  The existing event implementations
+have been retrofitted and no code changes are necessary.  The NullEventModule
+has been deprecated in favor of the new EventModule, which has no event
+contains the base event system with no back end implementation installed.
+
 Airlift 0.71
 
 * New build system

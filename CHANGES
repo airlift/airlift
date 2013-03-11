@@ -1,3 +1,6 @@
+* 0.72
+- Event client supports multiple backend implementations simultaneously
+
 * 0.71
 
 - JMXAgent now uses NodeInfo to find IP address to bind to.
