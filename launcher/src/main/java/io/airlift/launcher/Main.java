@@ -580,8 +580,11 @@ public class Main
     }
 
     @Command(name = "try-restart", description = "Restart server gracefully if it is already running")
-    public static class TryRestartCommand extends StartCommand
+    public static class TryRestartCommand extends LauncherCommand
     {
+        @Arguments(description = "Arguments to pass to server")
+        public final List<String> args = new LinkedList<>();
+
         @Override
         public void execute()
         {
@@ -599,7 +602,7 @@ public class Main
                 System.exit(killStatus.exitCode);
             }
 
-            super.execute();
+            start(args, true);
        }
     }
 
