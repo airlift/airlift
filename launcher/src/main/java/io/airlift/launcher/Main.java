@@ -237,59 +237,7 @@ public class Main
             execute();
         }
 
-        static class KillStatus
-        {
-            public final int exitCode;
-            public final String msg;
-
-            public KillStatus(int exitCode, String msg)
-            {
-                this.exitCode = exitCode;
-                this.msg = checkNotNull(msg, "msg is null");
-            }
-        }
-
-        KillStatus killProcess(boolean graceful)
-        {
-            PidFile pidFile = new PidFile(pidFilePath);
-
-            for (int pidTriesLeft = 10; pidTriesLeft > 0; --pidTriesLeft) {
-                PidStatus pidStatus = pidFile.getStatus();
-                if (!pidStatus.held) {
-                   return new KillStatus(0, "Not running\n");
-                }
-                if (pidStatus.pid != 0) {
-                    int pid = pidStatus.pid;
-                    Processes.kill(pid, graceful);
-                    for (int waitTriesLeft = 60 * 10; waitTriesLeft > 0; --waitTriesLeft) {
-                        pidStatus = pidFile.getStatus();
-                        if (!pidStatus.held || pidStatus.pid != pid) {
-                            return new KillStatus(0, (graceful ? "Stopped " : "Killed ") + pid + "\n");
-                        }
-                        if (waitTriesLeft == 1 && graceful) {
-                            waitTriesLeft = 10;
-                            graceful = false;
-                            Processes.kill(pid, graceful);
-                        }
-                        LockSupport.parkNanos(100_000_000);
-                    }
-                    return new KillStatus(STATUS_GENERIC_ERROR, "Process " + pid + " refuses to die\n");
-                }
-                LockSupport.parkNanos(100_000_000);
-            }
-            return new KillStatus(STATUS_GENERIC_ERROR, "Unable to get server pid\n");
-        }
-    }
-
-    @Command(name = "start", description = "Start server")
-    public static class StartCommand extends LauncherCommand
-    {
-        @Arguments(description = "Arguments to pass to server")
-        public final List<String> args = new LinkedList<>();
-        boolean daemon = true;
-
-        @Override
-        public void execute()
+        protected void start(List<String> args, boolean daemon)
         {
             PidFile pidFile = new PidFile(pidFilePath);
 
@@ -399,14 +347,74 @@ public class Main
             System.out.print("Started as " + pidStatus.pid + "\n");
             System.exit(0);
         }
+
+        static class KillStatus
+        {
+            public final int exitCode;
+            public final String msg;
+
+            public KillStatus(int exitCode, String msg)
+            {
+                this.exitCode = exitCode;
+                this.msg = checkNotNull(msg, "msg is null");
+            }
+        }
+
+        KillStatus killProcess(boolean graceful)
+        {
+            PidFile pidFile = new PidFile(pidFilePath);
+
+            for (int pidTriesLeft = 10; pidTriesLeft > 0; --pidTriesLeft) {
+                PidStatus pidStatus = pidFile.getStatus();
+                if (!pidStatus.held) {
+                   return new KillStatus(0, "Not running\n");
+                }
+                if (pidStatus.pid != 0) {
+                    int pid = pidStatus.pid;
+                    Processes.kill(pid, graceful);
+                    for (int waitTriesLeft = 60 * 10; waitTriesLeft > 0; --waitTriesLeft) {
+                        pidStatus = pidFile.getStatus();
+                        if (!pidStatus.held || pidStatus.pid != pid) {
+                            return new KillStatus(0, (graceful ? "Stopped " : "Killed ") + pid + "\n");
+                        }
+                        if (waitTriesLeft == 1 && graceful) {
+                            waitTriesLeft = 10;
+                            graceful = false;
+                            Processes.kill(pid, graceful);
+                        }
+                        LockSupport.parkNanos(100_000_000);
+                    }
+                    return new KillStatus(STATUS_GENERIC_ERROR, "Process " + pid + " refuses to die\n");
+                }
+                LockSupport.parkNanos(100_000_000);
+            }
+            return new KillStatus(STATUS_GENERIC_ERROR, "Unable to get server pid\n");
+        }
+    }
+
+    @Command(name = "start", description = "Start server")
+    public static class StartCommand extends LauncherCommand
+    {
+        @Arguments(description = "Arguments to pass to server")
+        public final List<String> args = new LinkedList<>();
+
+        @Override
+        public void execute()
+        {
+            start(args, true);
+        }
     }
 
     @Command(name = "run", description = "Start server in foreground")
-    public static class RunCommand extends StartCommand
+    public static class RunCommand extends LauncherCommand
     {
-        public RunCommand()
+        @Arguments(description = "Arguments to pass to server")
+        public final List<String> args = new LinkedList<>();
+
+        @Override
+        public void execute()
         {
-            daemon = false;
+            start(args, false);
         }
    }
 
@@ -550,8 +558,11 @@ public class Main
     }
 
     @Command(name = "restart", description = "Restart server gracefully")
-    public static class RestartCommand extends StartCommand
+    public static class RestartCommand extends LauncherCommand
     {
+        @Arguments(description = "Arguments to pass to server")
+        public final List<String> args = new LinkedList<>();
+
         @Override
         public void execute()
         {
@@ -561,7 +572,7 @@ public class Main
                 System.exit(killStatus.exitCode);
             }
 
-            super.execute();
+            start(args, true);
        }
     }
 
