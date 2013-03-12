@@ -348,6 +348,75 @@ public class Main
             System.exit(0);
         }
 
+        protected void invokeMain(List<String> args, boolean daemon)
+        {
+            if (!installPath.equals(dataDir)) {
+                // symlink etc directory into data directory
+                // this is needed to support programs that reference etc/xyz from within their config files (e.g., log.levels-file=etc/log.properties)
+                try {
+                    Files.delete(Paths.get(dataDir, "etc"));
+                }
+                catch (IOException ignored) {
+                }
+                try {
+                    Files.createSymbolicLink(Paths.get(dataDir, "etc"), Paths.get(installPath, "etc"));
+                }
+                catch (IOException ignored) {
+                }
+            }
+
+            URL mainResource;
+            try {
+                mainResource = new URL(launcherResource.toString().replaceFirst("/launcher.jar!", "/main.jar!"));
+            }
+            catch (MalformedURLException e) {
+                // Can't happen
+                throw new RuntimeException(e);
+            }
+            Manifest manifest = null;
+            try {
+                manifest = new Manifest(mainResource.openStream());
+            }
+            catch (IOException e) {
+                System.err.print("Unable to open main jar manifest: " + e + "\n");
+                System.exit(STATUS_GENERIC_ERROR);
+            }
+
+            String mainClassName = manifest.getMainAttributes().getValue("Main-Class");
+            if (mainClassName == null) {
+                System.err.print("Unable to get Main-Class attribute from main jar manifest\n");
+                System.exit(STATUS_GENERIC_ERROR);
+            }
+
+            Class<?> mainClass = null;
+            try {
+                mainClass = Class.forName(mainClassName);
+            }
+            catch (ClassNotFoundException e) {
+                System.err.print("Unable to load class " + mainClassName + ": " + e + "\n");
+                System.exit(STATUS_GENERIC_ERROR);
+            }
+            Method mainClassMethod = null;
+            try {
+                mainClassMethod = mainClass.getMethod("main", String[].class);
+            }
+            catch (NoSuchMethodException e) {
+                System.err.print("Unable to find main method: " + e + "\n");
+                System.exit(STATUS_GENERIC_ERROR);
+            }
+
+            if (daemon) {
+                Processes.detach();
+            }
+
+            try {
+                mainClassMethod.invoke(null, (Object) args.toArray(new String[0]));
+            }
+            catch (Exception e) {
+                System.exit(STATUS_GENERIC_ERROR);
+            }
+        }
+
         static class KillStatus
         {
             public final int exitCode;
@@ -422,8 +491,7 @@ public class Main
     public static class StartClientCommand extends LauncherCommand
     {
         @Arguments(description = "Arguments to pass to server")
-        public final List<String> argList = new LinkedList<>();
-        boolean daemon = true;
+        public final List<String> args = new LinkedList<>();
 
         @SuppressWarnings("StaticNonFinalField")
         private static PidFile pidFile = null; // static so it doesn't destruct and drop lock when main thread exits
@@ -431,97 +499,32 @@ public class Main
         @Override
         public void execute()
         {
-            if (daemon) {
-                //noinspection AssignmentToStaticFieldFromInstanceMethod
-                pidFile = new PidFile(pidFilePath);
-
-                try {
-                    pidFile.indicateStarting();
-                }
-                catch (AlreadyRunningException e) {
-                    System.err.print(e.getMessage() + "\n");
-                    System.exit(0);
-                }
-            }
-
-            if (!installPath.equals(dataDir)) {
-                // symlink etc directory into data directory
-                // this is needed to support programs that reference etc/xyz from within their config files (e.g., log.levels-file=etc/log.properties)
-                try {
-                    Files.delete(Paths.get(dataDir, "etc"));
-                }
-                catch (IOException ignored) {
-                }
-                try {
-                    Files.createSymbolicLink(Paths.get(dataDir, "etc"), Paths.get(installPath, "etc"));
-                }
-                catch (IOException ignored) {
-                }
-            }
-
-            URL mainResource;
-            try {
-                mainResource = new URL(launcherResource.toString().replaceFirst("/launcher.jar!", "/main.jar!"));
-            }
-            catch (MalformedURLException e) {
-                // Can't happen
-                throw new RuntimeException(e);
-            }
-            Manifest manifest = null;
-            try {
-                manifest = new Manifest(mainResource.openStream());
-            }
-            catch (IOException e) {
-                System.err.print("Unable to open main jar manifest: " + e + "\n");
-                System.exit(STATUS_GENERIC_ERROR);
-            }
-
-            String mainClassName = manifest.getMainAttributes().getValue("Main-Class");
-            if (mainClassName == null) {
-                System.err.print("Unable to get Main-Class attribute from main jar manifest\n");
-                System.exit(STATUS_GENERIC_ERROR);
-            }
-
-            Class<?> mainClass = null;
-            try {
-                mainClass = Class.forName(mainClassName);
-            }
-            catch (ClassNotFoundException e) {
-                System.err.print("Unable to load class " + mainClassName + ": " + e + "\n");
-                System.exit(STATUS_GENERIC_ERROR);
-            }
-            Method mainClassMethod = null;
-            try {
-                mainClassMethod = mainClass.getMethod("main", String[].class);
-            }
-            catch (NoSuchMethodException e) {
-                System.err.print("Unable to find main method: " + e + "\n");
-                System.exit(STATUS_GENERIC_ERROR);
-            }
-
-            if (daemon) {
-                Processes.detach();
-            }
+            pidFile = new PidFile(pidFilePath);
 
             try {
-                mainClassMethod.invoke(null, (Object) argList.toArray(new String[0]));
+                pidFile.indicateStarting();
             }
-            catch (Exception e) {
-                System.exit(STATUS_GENERIC_ERROR);
+            catch (AlreadyRunningException e) {
+                System.err.print(e.getMessage() + "\n");
+                System.exit(0);
             }
 
-            if (daemon) {
-                pidFile.indicateRunning();
-            }
+            invokeMain(args, true);
+
+            pidFile.indicateRunning();
         }
     }
 
     @Command(name = "run-client", description = "Internal use only", hidden = true)
-    public static class RunClientCommand extends StartClientCommand
+    public static class RunClientCommand extends LauncherCommand
     {
-        public RunClientCommand()
+        @Arguments(description = "Arguments to pass to server")
+        public final List<String> args = new LinkedList<>();
+
+        @Override
+        public void execute()
         {
-            daemon = false;
+            invokeMain(args, false);
         }
     }
 
