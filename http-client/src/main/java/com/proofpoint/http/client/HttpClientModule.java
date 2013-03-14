@@ -24,7 +24,11 @@ import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 
+import javax.annotation.PreDestroy;
+
 import java.lang.annotation.Annotation;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -72,6 +76,7 @@ class HttpClientModule
 
     private static class HttpClientProvider implements Provider<HttpClient>
     {
+        private final List<ApacheHttpClient> clients = new ArrayList<>();
         private final Class<? extends Annotation> annotation;
         private Injector injector;
 
@@ -87,12 +92,22 @@ class HttpClientModule
             this.injector = injector;
         }
 
+        @PreDestroy
+        public void destroy()
+        {
+            for (ApacheHttpClient client : clients) {
+                client.close();
+            }
+        }
+
         @Override
         public HttpClient get()
         {
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
             Set<HttpRequestFilter> filters = injector.getInstance(filterKey(annotation));
-            return new ApacheHttpClient(config, filters);
+            ApacheHttpClient client = new ApacheHttpClient(config, filters);
+            clients.add(client);
+            return client;
         }
     }
 
