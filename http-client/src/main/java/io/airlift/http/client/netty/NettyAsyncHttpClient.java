@@ -31,6 +31,8 @@ import org.jboss.netty.util.HashedWheelTimer;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
+import javax.annotation.PreDestroy;
+
 import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
@@ -117,6 +119,7 @@ public class NettyAsyncHttpClient
         return requestFilters;
     }
 
+    @PreDestroy
     @Override
     public void close()
     {
