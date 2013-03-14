@@ -97,10 +97,6 @@
 
                                 <replace file="${project.build.directory}/archetype/src/main/resources/archetype-resources/pom.xml">
                                     <replacefilter>
-                                        <replacetoken><![CDATA[<relativePath>../rest-server-base/pom.xml</relativePath>]]></replacetoken>
-                                        <replacevalue />
-                                    </replacefilter>
-                                    <replacefilter>
                                         <replacetoken><![CDATA[<air.main.basedir>${project.parent.basedir}</air.main.basedir>]]></replacetoken>
                                         <replacevalue />
                                     </replacefilter>
@@ -124,6 +120,16 @@
                                     <replacefilter>
                                         <replacetoken><![CDATA[<build>]]></replacetoken>
                                         <replacevalue><![CDATA[
+  <parent>
+      <groupId>io.airlift</groupId>
+      <artifactId>airbase</artifactId>
+      <version>5</version>
+  </parent>
+
+  <properties>
+    <air.check.skip-all>true</air.check.skip-all>
+  </properties>
+
   <description>Sample server archetype</description>
   <url>http://github.com/airlift/airlift</url>
 

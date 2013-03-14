@@ -119,6 +119,16 @@
                                     <replacefilter>
                                         <replacetoken><![CDATA[<build>]]></replacetoken>
                                         <replacevalue><![CDATA[
+  <parent>
+      <groupId>io.airlift</groupId>
+      <artifactId>airbase</artifactId>
+      <version>5</version>
+  </parent>
+
+  <properties>
+    <air.check.skip-all>true</air.check.skip-all>
+  </properties>
+
   <description>Skeleton server archetype</description>
   <url>http://github.com/airlift/airlift</url>
 
