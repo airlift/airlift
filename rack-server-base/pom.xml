@@ -13,10 +13,6 @@
         <version>0.72-SNAPSHOT</version>
     </parent>
 
-    <properties>
-        <dep.airlift.version>${project.parent.version}</dep.airlift.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.airlift</groupId>
