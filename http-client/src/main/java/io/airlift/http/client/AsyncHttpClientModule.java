@@ -24,7 +24,11 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import io.airlift.http.client.netty.NettyAsyncHttpClient;
 
+import javax.annotation.PreDestroy;
+
 import java.lang.annotation.Annotation;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
@@ -76,6 +80,7 @@ public class AsyncHttpClientModule
 
     private static class HttpClientProvider implements Provider<AsyncHttpClient>
     {
+        private final List<NettyAsyncHttpClient> clients = new ArrayList<>();
         private final Class<? extends Annotation> annotation;
         private Injector injector;
 
@@ -91,13 +96,23 @@ public class AsyncHttpClientModule
             this.injector = injector;
         }
 
+        @PreDestroy
+        public void destroy()
+        {
+            for (NettyAsyncHttpClient client : clients) {
+                client.close();
+            }
+        }
+
         @Override
         public AsyncHttpClient get()
         {
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
             AsyncHttpClientConfig asyncConfig = injector.getInstance(Key.get(AsyncHttpClientConfig.class, annotation));
             Set<HttpRequestFilter> filters = injector.getInstance(filterKey(annotation));
-            return new NettyAsyncHttpClient(config, asyncConfig, filters);
+            NettyAsyncHttpClient client = new NettyAsyncHttpClient(config, asyncConfig, filters);
+            clients.add(client);
+            return client;
         }
     }
 
