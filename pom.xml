@@ -5,7 +5,7 @@
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>platform</artifactId>
     <packaging>pom</packaging>
-    <version>0.70-SNAPSHOT</version>
+    <version>0.70</version>
     <name>platform</name>
     <description>Proofpoint platform</description>
     <url>http://github.com/proofpoint/platform</url>
@@ -13,7 +13,7 @@
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>library</artifactId>
-        <version>0.70-SNAPSHOT</version>
+        <version>0.70</version>
         <relativePath>library/pom.xml</relativePath>
     </parent>
 
