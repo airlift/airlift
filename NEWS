@@ -8,6 +8,17 @@ have been retrofitted and no code changes are necessary.  The NullEventModule
 has been deprecated in favor of the new EventModule, which has no event
 contains the base event system with no back end implementation installed.
 
+* Removal of jax-rs classes from clients
+
+We have replaced all uses of jax-rs classes in clients with classes from Guava
+or new classes in the Airlift http client.  In particular, the HttpHeaders and
+MediaType classes in jax-rs has been replaced with HttpHeaders and MediaType
+in Guava, and the Status and CacheControl classes have been replaced with
+HttpStatus and CacheControl in the Airlift http-client.  This reduces the size
+of clients and avoids some packing problems with the latest jax-rs releases.
+Any existing code can continue to use the jax-rs versions of these classes, but
+jax-rs is no longer required.
+
 Airlift 0.71
 
 * New build system
