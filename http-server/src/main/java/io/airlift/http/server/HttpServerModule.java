@@ -21,6 +21,7 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.airlift.configuration.ConfigurationModule;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
+import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import org.weakref.jmx.guice.MBeanModule;
 
 import javax.servlet.Filter;
@@ -62,6 +63,7 @@ public class HttpServerModule
         binder.bind(RequestStats.class).in(Scopes.SINGLETON);
         Multibinder.newSetBinder(binder, Filter.class, TheServlet.class);
         Multibinder.newSetBinder(binder, Filter.class, TheAdminServlet.class);
+        Multibinder.newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
 
         MBeanModule.newExporter(binder).export(RequestStats.class).withGeneratedName();
 

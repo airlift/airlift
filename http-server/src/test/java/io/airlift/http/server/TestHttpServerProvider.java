@@ -24,6 +24,7 @@ import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
+import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.node.NodeInfo;
 import io.airlift.testing.FileUtils;
 import io.airlift.tracetoken.TraceTokenManager;
@@ -200,6 +201,7 @@ public class TestHttpServerProvider
                 config,
                 new DummyServlet(),
                 ImmutableSet.<Filter>of(new DummyFilter()),
+                ImmutableSet.<HttpResourceBinding>of(),
                 ImmutableSet.<Filter>of(),
                 new RequestStats(),
                 new NullEventClient());
