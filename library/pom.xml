@@ -48,6 +48,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
+        <dep.jetty.version>8.1.10.v20130312</dep.jetty.version>
         <dep.slf4j.version>1.7.5</dep.slf4j.version>
 
         <!-- Controls all the checkers run when building the project. -->
@@ -554,7 +555,7 @@
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-server</artifactId>
-                <version>8.1.10.v20130312</version>
+                <version>${dep.jetty.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.eclipse.jetty.orbit</groupId>
@@ -566,37 +567,37 @@
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-servlet</artifactId>
-                <version>8.1.10.v20130312</version>
+                <version>${dep.jetty.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-util</artifactId>
-                <version>8.1.10.v20130312</version>
+                <version>${dep.jetty.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-servlets</artifactId>
-                <version>8.1.10.v20130312</version>
+                <version>${dep.jetty.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-security</artifactId>
-                <version>8.1.10.v20130312</version>
+                <version>${dep.jetty.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-jmx</artifactId>
-                <version>8.1.10.v20130312</version>
+                <version>${dep.jetty.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-http</artifactId>
-                <version>8.1.10.v20130312</version>
+                <version>${dep.jetty.version}</version>
             </dependency>
 
             <dependency>

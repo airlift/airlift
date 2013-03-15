@@ -19,6 +19,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
 import com.proofpoint.event.client.EventClient;
+import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.jmx.MBeanContainer;
@@ -72,6 +73,7 @@ public class HttpServer
             Servlet theServlet,
             Map<String, String> parameters,
             Set<Filter> filters,
+            Set<HttpResourceBinding> resources,
             Servlet theAdminServlet,
             Map<String, String> adminParameters,
             Set<Filter> adminFilters,
@@ -187,11 +189,17 @@ public class HttpServer
          *           |       |--- security handler
          *           |       |--- user provided filters
          *           |       |--- the servlet (normally GuiceContainer)
+         *           |       |--- resource handlers
          *           |--- log handler
          *    |-- admin context handler
          *           \ --- the admin servlet
          */
         HandlerCollection handlers = new HandlerCollection();
+
+        for (HttpResourceBinding resource : resources) {
+            handlers.addHandler(new ClassPathResourceHandler(resource.getBaseUri(), resource.getClassPathResourceBase(), resource.getWelcomeFiles()));
+        }
+
         handlers.addHandler(createServletContext(theServlet, parameters, filters, tokenManager, loginService, "http", "https"));
         RequestLogHandler logHandler = createLogHandler(config, tokenManager, eventClient);
         if (logHandler != null) {

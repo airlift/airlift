@@ -20,6 +20,7 @@ import com.google.inject.Inject;
 import com.proofpoint.event.client.EventClient;
 import com.proofpoint.event.client.NullEventClient;
 import com.proofpoint.http.server.HttpServer;
+import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 import com.proofpoint.http.server.HttpServerConfig;
 import com.proofpoint.http.server.HttpServerInfo;
 import com.proofpoint.http.server.RequestStats;
@@ -59,6 +60,7 @@ public class TestingHttpServer extends HttpServer
                 servlet,
                 initParameters,
                 ImmutableSet.copyOf(filters),
+                ImmutableSet.<HttpResourceBinding>of(),
                 null,
                 null,
                 ImmutableSet.<Filter>of(),

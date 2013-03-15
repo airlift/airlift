@@ -21,6 +21,7 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.discovery.client.AnnouncementHttpServerInfo;
+import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 
 import javax.servlet.Filter;
 
@@ -62,6 +63,7 @@ public class HttpServerModule
         binder.bind(RequestStats.class).in(Scopes.SINGLETON);
         Multibinder.newSetBinder(binder, Filter.class, TheServlet.class);
         Multibinder.newSetBinder(binder, Filter.class, TheAdminServlet.class);
+        Multibinder.newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
 
         newExporter(binder).export(RequestStats.class).withGeneratedName();
 

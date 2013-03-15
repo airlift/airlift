@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.proofpoint.event.client.EventClient;
+import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.security.LoginService;
@@ -44,6 +45,7 @@ public class HttpServerProvider
     private final NodeInfo nodeInfo;
     private final HttpServerConfig config;
     private final Servlet theServlet;
+    private final Set<HttpResourceBinding> resources;
     private Map<String, String> servletInitParameters = ImmutableMap.of();
     private Servlet theAdminServlet;
     private Map<String, String> adminServletInitParameters = ImmutableMap.of();
@@ -61,6 +63,7 @@ public class HttpServerProvider
             HttpServerConfig config,
             @TheServlet Servlet theServlet,
             @TheServlet Set<Filter> filters,
+            @TheServlet Set<HttpResourceBinding> resources,
             @TheAdminServlet Set<Filter> adminFilters,
             RequestStats stats,
             EventClient eventClient)
@@ -70,6 +73,7 @@ public class HttpServerProvider
         Preconditions.checkNotNull(config, "config is null");
         Preconditions.checkNotNull(theServlet, "theServlet is null");
         Preconditions.checkNotNull(filters, "filters is null");
+        Preconditions.checkNotNull(resources, "resources is null");
         Preconditions.checkNotNull(adminFilters, "adminFilters is null");
         Preconditions.checkNotNull(stats, "stats is null");
         Preconditions.checkNotNull(eventClient, "eventClient is null");
@@ -79,6 +83,7 @@ public class HttpServerProvider
         this.config = config;
         this.theServlet = theServlet;
         this.filters = ImmutableSet.copyOf(filters);
+        this.resources = ImmutableSet.copyOf(resources);
         this.adminFilters = ImmutableSet.copyOf(adminFilters);
         this.stats = stats;
         this.eventClient = eventClient;
@@ -129,6 +134,7 @@ public class HttpServerProvider
                     theServlet,
                     servletInitParameters,
                     filters,
+                    resources,
                     theAdminServlet,
                     adminServletInitParameters,
                     adminFilters,
