@@ -1,8 +1,9 @@
 package io.airlift.http.client.netty;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.AbstractFuture;
-import com.google.common.util.concurrent.CheckedFuture;
+import io.airlift.http.client.AsyncHttpClient.AsyncHttpResponseFuture;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
@@ -13,18 +14,29 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class NettyResponseFuture<T, E extends Exception>
         extends AbstractFuture<T>
-        implements CheckedFuture<T, E>
+        implements AsyncHttpResponseFuture<T, E>
 {
+    public enum NettyAsyncHttpState
+    {
+        WAITING_FOR_CONNECTION,
+        SENDING_REQUEST,
+        WAITING_FOR_RESPONSE,
+        PROCESSING_RESPONSE,
+        DONE,
+        FAILED,
+        CANCELED
+    }
+
     private final long requestStart = System.nanoTime();
+    private final AtomicReference<NettyAsyncHttpState> state = new AtomicReference<>(NettyAsyncHttpState.WAITING_FOR_CONNECTION);
     private final Request request;
     private final ResponseHandler<T, E> responseHandler;
     private final RequestStats stats;
 
-    private final AtomicBoolean canceled = new AtomicBoolean();
 
     public NettyResponseFuture(Request request, ResponseHandler<T, E> responseHandler, RequestStats stats)
     {
@@ -33,23 +45,42 @@ public class NettyResponseFuture<T, E extends Exception>
         this.stats = stats;
     }
 
+    public String getState()
+    {
+        return state.get().toString();
+    }
+
+    protected void setState(NettyAsyncHttpState state)
+    {
+        this.state.set(state);
+    }
+
     @Override
     protected boolean setException(Throwable throwable)
     {
-        return !canceled.get() && super.setException(throwable);
+        if (state.get() == NettyAsyncHttpState.CANCELED) {
+            return false;
+        }
+
+        if (throwable instanceof CancellationException) {
+            state.set(NettyAsyncHttpState.CANCELED);
+        } else {
+            state.set(NettyAsyncHttpState.FAILED);
+        }
+        return super.setException(throwable);
     }
 
     @Override
     public boolean cancel(boolean mayInterruptIfRunning)
     {
         // Currently, we do not cancel pending requests
-        canceled.set(true);
+        state.set(NettyAsyncHttpState.CANCELED);
         return super.cancel(mayInterruptIfRunning);
     }
 
     protected void completed(HttpResponse httpResponse)
     {
-        if (canceled.get()) {
+        if (state.get() == NettyAsyncHttpState.CANCELED) {
             return;
         }
 
@@ -57,10 +88,13 @@ public class NettyResponseFuture<T, E extends Exception>
         // since the response is fully cached in memory at this point
         long responseStart = System.nanoTime();
 
-        NettyResponse response = new NettyResponse(httpResponse);
+        state.set(NettyAsyncHttpState.PROCESSING_RESPONSE);
+        NettyResponse response = null;
         try {
+            response = new NettyResponse(httpResponse);
             T value = responseHandler.handle(request, response);
             set(value);
+            state.set(NettyAsyncHttpState.DONE);
         }
         catch (Exception e) {
             setException(new ExceptionFromResponseHandler(e));
@@ -69,12 +103,14 @@ public class NettyResponseFuture<T, E extends Exception>
             Duration responseProcessingTime = Duration.nanosSince(responseStart);
             Duration requestProcessingTime = new Duration(responseStart - requestStart, TimeUnit.NANOSECONDS);
 
-            stats.record(request.getMethod(),
-                    response.getStatusCode(),
-                    response.getBytesRead(),
-                    response.getBytesRead(),
-                    requestProcessingTime,
-                    responseProcessingTime);
+            if (response != null) {
+                stats.record(request.getMethod(),
+                        response.getStatusCode(),
+                        response.getBytesRead(),
+                        response.getBytesRead(),
+                        requestProcessingTime,
+                        responseProcessingTime);
+            }
         }
     }
 
@@ -125,6 +161,16 @@ public class NettyResponseFuture<T, E extends Exception>
             }
         }
         return responseHandler.handleException(request, e);
+    }
+
+    @Override
+    public String toString()
+    {
+        return Objects.toStringHelper(this)
+                .add("requestStart", requestStart)
+                .add("state", state)
+                .add("request", request)
+                .toString();
     }
 
     private static class ExceptionFromResponseHandler
