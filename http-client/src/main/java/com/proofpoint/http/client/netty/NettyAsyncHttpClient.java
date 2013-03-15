@@ -3,7 +3,6 @@ package com.proofpoint.http.client.netty;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.AsyncHttpClientConfig;
@@ -14,12 +13,15 @@ import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.http.client.netty.NettyConnectionPool.ConnectionCallback;
+import com.proofpoint.http.client.netty.NettyResponseFuture.NettyAsyncHttpState;
 import com.proofpoint.http.client.netty.socks.Socks4ClientBootstrap;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBufferOutputStream;
 import org.jboss.netty.buffer.DynamicChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioWorkerPool;
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
@@ -32,7 +34,6 @@ import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
 import javax.annotation.PreDestroy;
-
 import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
@@ -157,7 +158,7 @@ public class NettyAsyncHttpClient
     }
 
     @Override
-    public <T, E extends Exception> CheckedFuture<T, E> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> NettyResponseFuture<T, E> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
             throws E
     {
         // process the request through the filters
@@ -248,11 +249,33 @@ public class NettyAsyncHttpClient
         public void run(Channel channel)
                 throws Exception
         {
+            nettyResponseFuture.setState(NettyAsyncHttpState.SENDING_REQUEST);
+
             // add the response handler to the channel object, so we can notify caller when request is complete
             channel.getPipeline().getContext(NettyHttpResponseChannelHandler.class).setAttachment(nettyResponseFuture);
-            
+
             HttpRequest nettyRequest = buildNettyHttpRequest(request);
-            channel.write(nettyRequest);
+            channel.write(nettyRequest).addListener(new ChannelFutureListener()
+            {
+                @Override
+                public void operationComplete(ChannelFuture future)
+                        throws Exception
+                {
+                    if (future.isSuccess()) {
+                        nettyResponseFuture.setState(NettyAsyncHttpState.WAITING_FOR_RESPONSE);
+                    }
+                    else if (future.isCancelled()) {
+                        nettyResponseFuture.setException(new CanceledRequestException());
+                    }
+                    else {
+                        Throwable cause = future.getCause();
+                        if (cause == null) {
+                            cause = new UnknownError();
+                        }
+                        nettyResponseFuture.setException(cause);
+                    }
+                }
+            });
         }
 
         @Override

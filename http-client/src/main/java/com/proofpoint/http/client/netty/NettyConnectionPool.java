@@ -235,6 +235,9 @@ public class NettyConnectionPool
                     }
                 }
             }
+            else if (future.isCancelled()) {
+                connectionCallback.onError(new CanceledRequestException());
+            }
             else {
                 Throwable cause = future.getCause();
                 String message = String.valueOf(remoteAddress);
