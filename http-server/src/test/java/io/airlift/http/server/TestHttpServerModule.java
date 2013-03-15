@@ -21,6 +21,8 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.Files;
+import com.google.common.net.HttpHeaders;
+import com.google.common.net.MediaType;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -35,6 +37,8 @@ import io.airlift.event.client.InMemoryEventClient;
 import io.airlift.event.client.InMemoryEventModule;
 import io.airlift.http.client.ApacheHttpClient;
 import io.airlift.http.client.HttpClient;
+import io.airlift.http.client.HttpStatus;
+import io.airlift.http.client.HttpUriBuilder;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.node.NodeInfo;
@@ -62,15 +66,19 @@ import java.util.Map.Entry;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.HttpHeaders.REFERER;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
+import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
+import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
 import static java.util.Collections.nCopies;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 public class TestHttpServerModule
 {
@@ -180,8 +188,11 @@ public class TestHttpServerModule
                     public void configure(Binder binder)
                     {
                         binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
-                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
                         Multibinder.newSetBinder(binder, Filter.class, TheServlet.class).addBinding().to(DummyFilter.class).in(Scopes.SINGLETON);
+                        httpServerBinder(binder).bindResource("/", "webapp/user").withWelcomeFile("user-welcome.txt");
+                        httpServerBinder(binder).bindResource("/", "webapp/user2");
+                        httpServerBinder(binder).bindResource("path", "webapp/user").withWelcomeFile("user-welcome.txt");
+                        httpServerBinder(binder).bindResource("path", "webapp/user2");
                     }
                 });
 
@@ -194,19 +205,41 @@ public class TestHttpServerModule
             HttpClient client = new ApacheHttpClient();
 
             // test servlet bound correctly
-            StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
+            URI httpUri = httpServerInfo.getHttpUri();
+            StatusResponse response = client.execute(prepareGet().setUri(httpUri).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
 
             // test filter bound correctly
-            response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri().resolve("/filter")).build(), createStatusResponseHandler());
+            response = client.execute(prepareGet().setUri(httpUri.resolve("/filter")).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_PAYMENT_REQUIRED);
             assertEquals(response.getStatusMessage(), "filtered");
+
+            // test http resources
+            assertResource(httpUri, client, "", "welcome user!");
+            assertResource(httpUri, client, "user-welcome.txt", "welcome user!");
+            assertResource(httpUri, client, "user.txt", "user");
+            assertResource(httpUri, client, "user2.txt", "user2");
+            assertResource(httpUri, client, "path", "welcome user!");
+            assertResource(httpUri, client, "path/", "welcome user!");
+            assertResource(httpUri, client, "path/user-welcome.txt", "welcome user!");
+            assertResource(httpUri, client, "path/user.txt", "user");
+            assertResource(httpUri, client, "path/user2.txt", "user2");
         }
         finally {
             server.stop();
         }
+    }
+
+    private void assertResource(URI baseUri, HttpClient client, String path, String contents)
+    {
+        HttpUriBuilder uriBuilder = uriBuilderFrom(baseUri);
+        StringResponse data = client.execute(prepareGet().setUri(uriBuilder.appendPath(path).build()).build(), createStringResponseHandler());
+        assertEquals(data.getStatusCode(), HttpStatus.OK.code());
+        MediaType contentType = MediaType.parse(data.getHeader(HttpHeaders.CONTENT_TYPE));
+        assertTrue(PLAIN_TEXT_UTF_8.is(contentType), "Expected text/plain but got " + contentType);
+        assertEquals(data.getBody().trim(), contents);
     }
 
     @Test
