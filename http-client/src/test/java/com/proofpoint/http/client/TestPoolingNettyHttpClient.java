@@ -29,8 +29,9 @@ public class TestPoolingNettyHttpClient
     public void setUp()
             throws Exception
     {
-        httpClient = new NettyAsyncHttpClient(new HttpClientConfig(),
-                new AsyncHttpClientConfig().setEnableConnectionPooling(true),
+        httpClient = new NettyAsyncHttpClient("test",
+                new HttpClientConfig(),
+                new NettyAsyncHttpClientConfig().setEnableConnectionPooling(true),
                 ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
 

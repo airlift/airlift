@@ -24,11 +24,16 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 @Beta
-public class AsyncHttpClientConfig
+public class NettyAsyncHttpClientConfig
 {
-    private int workerThreads = Runtime.getRuntime().availableProcessors() * 4;;
+    private int workerThreads = Runtime.getRuntime().availableProcessors() * 4;
     private DataSize maxContentLength = new DataSize(16, Unit.MEGABYTE);
     private boolean enableConnectionPooling;
+
+    private int ioBossThreads = 1;
+    private int ioWorkerThreads = Runtime.getRuntime().availableProcessors() * 2;
+
+
 
     @Min(1)
     public int getWorkerThreads()
@@ -37,7 +42,7 @@ public class AsyncHttpClientConfig
     }
 
     @Config("http-client.threads")
-    public AsyncHttpClientConfig setWorkerThreads(int workerThreads)
+    public NettyAsyncHttpClientConfig setWorkerThreads(int workerThreads)
     {
         this.workerThreads = workerThreads;
         return this;
@@ -50,7 +55,7 @@ public class AsyncHttpClientConfig
     }
 
     @Config("http-client.max-content-length")
-    public AsyncHttpClientConfig setMaxContentLength(DataSize maxContentLength)
+    public NettyAsyncHttpClientConfig setMaxContentLength(DataSize maxContentLength)
     {
         this.maxContentLength = maxContentLength;
         return this;
@@ -62,9 +67,35 @@ public class AsyncHttpClientConfig
     }
 
     @Config("http-client.pool-connections")
-    public AsyncHttpClientConfig setEnableConnectionPooling(boolean enableConnectionPooling)
+    public NettyAsyncHttpClientConfig setEnableConnectionPooling(boolean enableConnectionPooling)
     {
         this.enableConnectionPooling = enableConnectionPooling;
+        return this;
+    }
+
+    @Min(1)
+    public int getIoBossThreads()
+    {
+        return ioBossThreads;
+    }
+
+    @Config("http-client.io-boss-threads")
+    public NettyAsyncHttpClientConfig setIoBossThreads(int ioBossThreads)
+    {
+        this.ioBossThreads = ioBossThreads;
+        return this;
+    }
+
+    @Min(2)
+    public int getIoWorkerThreads()
+    {
+        return ioWorkerThreads;
+    }
+
+    @Config("http-client.io-worker-threads")
+    public NettyAsyncHttpClientConfig setIoWorkerThreads(int ioWorkerThreads)
+    {
+        this.ioWorkerThreads = ioWorkerThreads;
         return this;
     }
 }
