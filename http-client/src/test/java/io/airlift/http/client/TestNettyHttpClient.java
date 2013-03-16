@@ -30,7 +30,7 @@ public class TestNettyHttpClient
     public void setUp()
             throws Exception
     {
-        httpClient = new NettyAsyncHttpClient(new HttpClientConfig(), new AsyncHttpClientConfig(), ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
+        httpClient = new NettyAsyncHttpClient("test", new HttpClientConfig(), new NettyAsyncHttpClientConfig(), ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
 
     @AfterMethod

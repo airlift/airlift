@@ -45,7 +45,7 @@ public class TestNettyHttpsClient
     {
         originalTrustStore = System.getProperty(JAVAX_NET_SSL_TRUST_STORE);
         System.setProperty(JAVAX_NET_SSL_TRUST_STORE, getResource("localhost.keystore").getPath());
-        httpClient = new NettyAsyncHttpClient(new HttpClientConfig(), new AsyncHttpClientConfig(), ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
+        httpClient = new NettyAsyncHttpClient("test", new HttpClientConfig(), new NettyAsyncHttpClientConfig(), ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
 
     @AfterMethod

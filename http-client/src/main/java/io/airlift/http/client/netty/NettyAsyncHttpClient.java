@@ -5,10 +5,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.airlift.http.client.AsyncHttpClient;
-import io.airlift.http.client.AsyncHttpClientConfig;
 import io.airlift.http.client.BodyGenerator;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
+import io.airlift.http.client.NettyAsyncHttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
@@ -25,15 +25,18 @@ import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioWorkerPool;
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
+import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import org.jboss.netty.handler.codec.http.HttpMethod;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import org.jboss.netty.util.HashedWheelTimer;
+import org.jboss.netty.util.ThreadNameDeterminer;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
 import javax.annotation.PreDestroy;
+
 import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,16 +48,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import static org.jboss.netty.handler.codec.http.HttpHeaders.Names;
-
 public class NettyAsyncHttpClient
         implements AsyncHttpClient
 {
-    // The constants come directly from Netty but are private in Netty
-    // We need these default values to call the NioClientSocketChannelFactory constructor with a custom timer
-    private static final int DEFAULT_BOSS_COUNT = 1;
-    private static final int DEFAULT_IO_THREADS = Runtime.getRuntime().availableProcessors() * 2;
-
     private final RequestStats stats = new RequestStats();
     private final List<HttpRequestFilter> requestFilters;
 
@@ -70,31 +66,34 @@ public class NettyAsyncHttpClient
 
     public NettyAsyncHttpClient(HttpClientConfig config)
     {
-        this(config, new AsyncHttpClientConfig(), Collections.<HttpRequestFilter>emptySet());
+        this("unnamed", config, new NettyAsyncHttpClientConfig(), Collections.<HttpRequestFilter>emptySet());
     }
 
-    public NettyAsyncHttpClient(HttpClientConfig config, AsyncHttpClientConfig asyncConfig, Set<? extends HttpRequestFilter> requestFilters)
+    public NettyAsyncHttpClient(String name, HttpClientConfig config, NettyAsyncHttpClientConfig asyncConfig, Set<? extends HttpRequestFilter> requestFilters)
     {
+        Preconditions.checkNotNull(name, "name is null");
         Preconditions.checkNotNull(config, "config is null");
         Preconditions.checkNotNull(asyncConfig, "asyncConfig is null");
         Preconditions.checkNotNull(requestFilters, "requestFilters is null");
 
         this.requestFilters = ImmutableList.copyOf(requestFilters);
 
+        String namePrefix = "http-client-" + name;
+
         // shared timer for channel factory and read timeout channel handler
-        ThreadFactory timerThreadFactory = new ThreadFactoryBuilder().setNameFormat("http-client-timer-%s").setDaemon(true).build();
+        ThreadFactory timerThreadFactory = new ThreadFactoryBuilder().setNameFormat(namePrefix + "-timer-%s").setDaemon(true).build();
         timer = new HashedWheelTimer(timerThreadFactory);
 
         // Give netty an infinite thread "source"
         // Netty will name the threads and will size the pool appropriately
-        ThreadFactory nettyThreadFactory = new ThreadFactoryBuilder().setNameFormat("http-client-netty-%s").setDaemon(true).build();
+        ThreadFactory nettyThreadFactory = new ThreadFactoryBuilder().setNameFormat(namePrefix + "-netty-%s").setDaemon(true).build();
         this.nettyThreadPool = Executors.newCachedThreadPool(nettyThreadFactory);
         ChannelFactory channelFactory = new NioClientSocketChannelFactory(nettyThreadPool,
-                DEFAULT_BOSS_COUNT,
-                new NioWorkerPool(nettyThreadPool, DEFAULT_IO_THREADS),
+                asyncConfig.getIoBossThreads(),
+                new NioWorkerPool(nettyThreadPool, asyncConfig.getIoWorkerThreads(), ThreadNameDeterminer.CURRENT),
                 timer);
 
-        ThreadFactory workerThreadFactory = new ThreadFactoryBuilder().setNameFormat("http-client-worker-%s").setDaemon(true).build();
+        ThreadFactory workerThreadFactory = new ThreadFactoryBuilder().setNameFormat(namePrefix + "-worker-%s").setDaemon(true).build();
         executor = new OrderedMemoryAwareThreadPoolExecutor(asyncConfig.getWorkerThreads(), 0, 0, 30, TimeUnit.SECONDS, workerThreadFactory);
 
         ClientBootstrap bootstrap;

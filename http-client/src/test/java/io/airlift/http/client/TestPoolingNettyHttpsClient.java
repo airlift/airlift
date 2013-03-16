@@ -40,8 +40,9 @@ public class TestPoolingNettyHttpsClient
     {
         originalTrustStore = System.getProperty(JAVAX_NET_SSL_TRUST_STORE);
         System.setProperty(JAVAX_NET_SSL_TRUST_STORE, getResource("localhost.keystore").getPath());
-        httpClient = new NettyAsyncHttpClient(new HttpClientConfig(),
-                new AsyncHttpClientConfig().setEnableConnectionPooling(true),
+        httpClient = new NettyAsyncHttpClient("test",
+                new HttpClientConfig(),
+                new NettyAsyncHttpClientConfig().setEnableConnectionPooling(true),
                 ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
 
