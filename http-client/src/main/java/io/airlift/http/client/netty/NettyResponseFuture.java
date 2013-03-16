@@ -7,6 +7,7 @@ import io.airlift.http.client.AsyncHttpClient.AsyncHttpResponseFuture;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
+import io.airlift.log.Logger;
 import io.airlift.units.Duration;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 
@@ -55,6 +56,8 @@ public class NettyResponseFuture<T, E extends Exception>
         this.state.set(state);
     }
 
+    private static final Logger log = Logger.get(NettyResponseFuture.class);
+
     @Override
     protected boolean setException(Throwable throwable)
     {
@@ -67,6 +70,30 @@ public class NettyResponseFuture<T, E extends Exception>
         } else {
             state.set(NettyAsyncHttpState.FAILED);
         }
+        if (throwable == null) {
+            throwable = new Throwable("Throwable is null");
+            log.error(throwable, "Something is broken");
+        }
+
+        // todo change response handler interface to accept throwable
+        Exception exception;
+        if (throwable instanceof Exception) {
+            exception = (Exception) throwable;
+        } else {
+            exception = new Exception(throwable.getMessage(), throwable);
+        }
+
+        // give handler a chance to rewrite exception, and let them know there was a problem
+        try {
+            E e = responseHandler.handleException(request, exception);
+            if (e != null) {
+                throwable = e;
+            }
+        }
+        catch (Throwable t) {
+            throwable = t;
+        }
+
         return super.setException(throwable);
     }
 

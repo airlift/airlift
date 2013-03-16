@@ -270,7 +270,7 @@ public class NettyAsyncHttpClient
                     else {
                         Throwable cause = future.getCause();
                         if (cause == null) {
-                            cause = new UnknownError();
+                            cause = new UnknownRequestException();
                         }
                         nettyResponseFuture.setException(cause);
                     }
