@@ -90,6 +90,9 @@ public class NettyHttpResponseChannelHandler
                     socketTimeoutException.initCause(cause);
                     cause = socketTimeoutException;
                 }
+                if (cause == null) {
+                    cause = new UnknownRequestException();
+                }
                 nettyResponseFuture.setException(cause);
             }
         }
