@@ -23,14 +23,16 @@ import org.testng.annotations.Test;
 
 import java.util.Map;
 
-public class TestAsyncHttpClientConfig
+public class TestNettyAsyncHttpClientConfig
 {
     @Test
     public void testDefaults()
     {
-        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(AsyncHttpClientConfig.class)
+        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(NettyAsyncHttpClientConfig.class)
                 .setWorkerThreads(Runtime.getRuntime().availableProcessors() * 4)
                 .setMaxContentLength(new DataSize(16, Unit.MEGABYTE))
+                .setIoBossThreads(1)
+                .setIoWorkerThreads(Runtime.getRuntime().availableProcessors() * 2)
                 .setEnableConnectionPooling(false));
     }
 
@@ -41,11 +43,15 @@ public class TestAsyncHttpClientConfig
                 .put("http-client.threads", "33")
                 .put("http-client.max-content-length", "1GB")
                 .put("http-client.pool-connections", "true")
+                .put("http-client.io-worker-threads", "20")
+                .put("http-client.io-boss-threads", "2")
                 .build();
 
-        AsyncHttpClientConfig expected = new AsyncHttpClientConfig()
+        NettyAsyncHttpClientConfig expected = new NettyAsyncHttpClientConfig()
                 .setWorkerThreads(33)
                 .setMaxContentLength(new DataSize(1, Unit.GIGABYTE))
+                .setIoBossThreads(2)
+                .setIoWorkerThreads(20)
                 .setEnableConnectionPooling(true);
 
         ConfigAssertions.assertFullMapping(properties, expected);

@@ -56,10 +56,10 @@ public class AsyncHttpClientModule
     {
         // bind the configuration
         bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(HttpClientConfig.class);
-        bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(AsyncHttpClientConfig.class);
+        bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(NettyAsyncHttpClientConfig.class);
 
         // bind the async client
-        binder.bind(AsyncHttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(annotation)).in(Scopes.SINGLETON);
+        binder.bind(AsyncHttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(name, annotation)).in(Scopes.SINGLETON);
 
         // bind the a sync client also
         binder.bind(HttpClient.class).annotatedWith(annotation).to(Key.get(AsyncHttpClient.class, annotation));
@@ -81,11 +81,13 @@ public class AsyncHttpClientModule
     private static class HttpClientProvider implements Provider<AsyncHttpClient>
     {
         private final List<NettyAsyncHttpClient> clients = new ArrayList<>();
+        private final String name;
         private final Class<? extends Annotation> annotation;
         private Injector injector;
 
-        private HttpClientProvider(Class<? extends Annotation> annotation)
+        private HttpClientProvider(String name, Class<? extends Annotation> annotation)
         {
+            this.name = name;
             this.annotation = annotation;
         }
 
@@ -108,9 +110,9 @@ public class AsyncHttpClientModule
         public AsyncHttpClient get()
         {
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
-            AsyncHttpClientConfig asyncConfig = injector.getInstance(Key.get(AsyncHttpClientConfig.class, annotation));
+            NettyAsyncHttpClientConfig asyncConfig = injector.getInstance(Key.get(NettyAsyncHttpClientConfig.class, annotation));
             Set<HttpRequestFilter> filters = injector.getInstance(filterKey(annotation));
-            NettyAsyncHttpClient client = new NettyAsyncHttpClient(config, asyncConfig, filters);
+            NettyAsyncHttpClient client = new NettyAsyncHttpClient(name, config, asyncConfig, filters);
             clients.add(client);
             return client;
         }
