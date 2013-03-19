@@ -1,5 +1,6 @@
 package io.airlift.http.client.netty;
 
+import com.google.common.annotations.Beta;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -48,6 +49,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+@Beta
 public class NettyAsyncHttpClient
         implements AsyncHttpClient
 {

@@ -1,7 +1,9 @@
 package io.airlift.http.client;
 
+import com.google.common.annotations.Beta;
 import com.google.common.util.concurrent.CheckedFuture;
 
+@Beta
 public interface AsyncHttpClient
         extends HttpClient
 {

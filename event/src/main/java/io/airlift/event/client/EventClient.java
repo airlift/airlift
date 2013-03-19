@@ -15,10 +15,12 @@
  */
 package io.airlift.event.client;
 
+import com.google.common.annotations.Beta;
 import com.google.common.util.concurrent.CheckedFuture;
 
 import java.io.IOException;
 
+@Beta
 public interface EventClient
 {
     <T> CheckedFuture<Void, RuntimeException> post(T... event)

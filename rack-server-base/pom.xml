@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>rack-server-base-experimental</artifactId>
+    <artifactId>rack-server-base</artifactId>
     <packaging>pom</packaging>
     <name>rack-server-base</name>
     <description>Airlift Rack Server base POM</description>
@@ -16,12 +16,12 @@
     <dependencies>
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>rack-experimental</artifactId>
+            <artifactId>rack</artifactId>
         </dependency>
 
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>rack-launcher-experimental</artifactId>
+            <artifactId>rack-launcher</artifactId>
             <classifier>bin</classifier>
             <type>tar.gz</type>
             <scope>runtime</scope>
@@ -91,7 +91,7 @@
                         <dependencies>
                             <dependency>
                                 <groupId>io.airlift</groupId>
-                                <artifactId>rack-packaging-experimental</artifactId>
+                                <artifactId>rack-packaging</artifactId>
                                 <version>${dep.airlift.version}</version>
                             </dependency>
                         </dependencies>

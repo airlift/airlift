@@ -17,6 +17,7 @@ package io.airlift.event.client;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
+import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableMap;
 
 import javax.inject.Inject;
@@ -28,6 +29,7 @@ import java.util.Set;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static io.airlift.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 
+@Beta
 public class JsonEventSerializer
 {
     private final Map<Class<?>, JsonSerializer<?>> serializers;

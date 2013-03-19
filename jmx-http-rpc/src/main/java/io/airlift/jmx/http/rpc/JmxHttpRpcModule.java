@@ -15,6 +15,7 @@
  */
 package io.airlift.jmx.http.rpc;
 
+import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
 import com.google.inject.Inject;
@@ -39,6 +40,7 @@ import static io.airlift.configuration.ConfigurationModule.bindConfig;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 
+@Beta
 public class JmxHttpRpcModule implements Module
 {
     private final Class<? extends Annotation> bindingAnnotation;
