@@ -13,30 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.http.client;
+package com.proofpoint.http.client.netty;
 
 import com.google.common.collect.ImmutableSet;
+import com.proofpoint.http.client.AbstractHttpClientTest;
+import com.proofpoint.http.client.HttpClientConfig;
+import com.proofpoint.http.client.HttpRequestFilter;
+import com.proofpoint.http.client.Request;
+import com.proofpoint.http.client.ResponseHandler;
+import com.proofpoint.http.client.TestingRequestFilter;
 import com.proofpoint.http.client.netty.NettyAsyncHttpClient;
-import com.proofpoint.units.Duration;
+import com.proofpoint.http.client.netty.NettyAsyncHttpClientConfig;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
-import java.net.SocketTimeoutException;
-import java.net.URI;
 
 import static com.google.common.io.Resources.getResource;
-import static com.proofpoint.http.client.Request.Builder.prepareGet;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class TestNettyHttpsClient
+public class TestPoolingNettyHttpsClient
         extends AbstractHttpClientTest
 {
     private static final String JAVAX_NET_SSL_TRUST_STORE = "javax.net.ssl.trustStore";
     private String originalTrustStore;
+    private NettyIoPool ioPool;
     private NettyAsyncHttpClient httpClient;
 
-    TestNettyHttpsClient()
+    TestPoolingNettyHttpsClient()
     {
         super("localhost", getResource("localhost.keystore").toString());
     }
@@ -47,7 +48,12 @@ public class TestNettyHttpsClient
     {
         originalTrustStore = System.getProperty(JAVAX_NET_SSL_TRUST_STORE);
         System.setProperty(JAVAX_NET_SSL_TRUST_STORE, getResource("localhost.keystore").getPath());
-        httpClient = new NettyAsyncHttpClient("test", new HttpClientConfig(), new NettyAsyncHttpClientConfig(), ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
+        ioPool = new NettyIoPool();
+        httpClient = new NettyAsyncHttpClient("test",
+                ioPool,
+                new HttpClientConfig(),
+                new NettyAsyncHttpClientConfig().setEnableConnectionPooling(true),
+                ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
 
     @AfterMethod
@@ -74,28 +80,8 @@ public class TestNettyHttpsClient
     public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient(config)) {
+        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient(config, ioPool)) {
             return client.execute(request, responseHandler);
         }
-    }
-
-    @Test(enabled = false, description = "This Netty client does reuse connections")
-    @Override
-    public void testKeepAlive()
-            throws Exception
-    {
-        super.testKeepAlive();
-    }
-
-    @Test(expectedExceptions = SocketTimeoutException.class)
-    public void testCertHostnameMismatch()
-            throws Exception
-    {
-        URI uri = new URI("https", null, "127.0.0.1", baseURI.getPort(), "/", null, null);
-        Request request = prepareGet()
-                .setUri(uri)
-                .build();
-
-        executeRequest(request, new ResponseToStringHandler());
     }
 }

@@ -24,9 +24,12 @@ import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.proofpoint.http.client.netty.NettyAsyncHttpClient;
+import com.proofpoint.http.client.netty.NettyIoPool;
+import com.proofpoint.http.client.netty.NettyIoPoolConfig;
+import com.proofpoint.log.Logger;
+import com.proofpoint.http.client.netty.NettyAsyncHttpClientConfig;
 
 import javax.annotation.PreDestroy;
-
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,12 +40,15 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.http.client.CompositeQualifierImpl.compositeQualifier;
+import static com.proofpoint.http.client.netty.NettyIoPool.createNettyIoPool;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 @Beta
 public class AsyncHttpClientModule
         extends AbstractHttpClientModule
 {
+    private static final Logger log = Logger.get(AsyncHttpClientModule.class);
+
     protected AsyncHttpClientModule(String name, Class<? extends Annotation> annotation)
     {
         super(name, annotation, null);
@@ -59,12 +65,22 @@ public class AsyncHttpClientModule
         return filterQualifier(annotation);
     }
 
+    void withPrivateIoThreadPool()
+    {
+        bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(NettyIoPoolConfig.class);
+        binder.bind(NettyIoPool.class).annotatedWith(annotation).toProvider(new NettyIoPoolProvider(name, annotation)).in(Scopes.SINGLETON);
+    }
+
     @Override
     public void configure()
     {
         // bind the configuration
         bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(HttpClientConfig.class);
         bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(NettyAsyncHttpClientConfig.class);
+
+        // Shared thread pool
+        bindConfig(binder).to(NettyIoPoolConfig.class);
+        binder.bind(NettyIoPool.class).in(Scopes.SINGLETON);
 
         // bind the async client
         binder.bind(AsyncHttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(name, annotation)).in(Scopes.SINGLETON);
@@ -102,7 +118,6 @@ public class AsyncHttpClientModule
         @Inject
         public void setInjector(Injector injector)
         {
-
             this.injector = injector;
         }
 
@@ -120,9 +135,46 @@ public class AsyncHttpClientModule
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
             NettyAsyncHttpClientConfig asyncConfig = injector.getInstance(Key.get(NettyAsyncHttpClientConfig.class, annotation));
             Set<HttpRequestFilter> filters = injector.getInstance(filterKey(annotation));
-            NettyAsyncHttpClient client = new NettyAsyncHttpClient(name, config, asyncConfig, filters);
+
+            NettyIoPool ioPool;
+            if (injector.getExistingBinding(Key.get(NettyIoPool.class, annotation)) != null) {
+                ioPool = injector.getInstance(Key.get(NettyIoPool.class, annotation));
+                log.debug("HttpClient %s uses private IO thread pool", name);
+            }
+            else {
+                log.debug("HttpClient %s uses shared IO thread pool", name);
+                ioPool = injector.getInstance(NettyIoPool.class);
+            }
+
+            NettyAsyncHttpClient client = new NettyAsyncHttpClient(name, ioPool, config, asyncConfig, filters);
             clients.add(client);
             return client;
+        }
+    }
+
+    private static class NettyIoPoolProvider implements Provider<NettyIoPool>
+    {
+        private final String name;
+        private final Class<? extends Annotation> annotation;
+        private Injector injector;
+
+        private NettyIoPoolProvider(String name, Class<? extends Annotation> annotation)
+        {
+            this.name = name;
+            this.annotation = annotation;
+        }
+
+        @Inject
+        public void setInjector(Injector injector)
+        {
+            this.injector = injector;
+        }
+
+        @Override
+        public NettyIoPool get()
+        {
+            NettyIoPoolConfig ioPoolConfig = injector.getInstance(Key.get(NettyIoPoolConfig.class, annotation));
+            return createNettyIoPool(name, ioPoolConfig);
         }
     }
 

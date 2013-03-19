@@ -1,7 +1,8 @@
-package com.proofpoint.http.client;
+package com.proofpoint.http.client.netty;
 
+import com.proofpoint.http.client.HttpClientConfig;
+import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.StringResponseHandler.StringResponse;
-import com.proofpoint.http.client.netty.NettyAsyncHttpClient;
 import org.testng.annotations.Test;
 
 import java.net.URI;
@@ -34,7 +35,8 @@ public class TestNettyHttpClientSocksProxy {
         HttpClientConfig config = new HttpClientConfig();
         config.setSocksProxy(fromParts("localhost", 1080));
 
-        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient(config)) {
+        try (NettyIoPool provider = new NettyIoPool();
+                NettyAsyncHttpClient client = new NettyAsyncHttpClient(config, provider)) {
             StringResponse json = client.execute(request, createStringResponseHandler());
             System.out.println(json.getBody());
         }

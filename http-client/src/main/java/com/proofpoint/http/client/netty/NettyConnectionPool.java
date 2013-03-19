@@ -19,6 +19,8 @@ import javax.annotation.concurrent.ThreadSafe;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
+
+import java.io.Closeable;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.net.URI;
@@ -31,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @ThreadSafe
 public class NettyConnectionPool
+    implements Closeable
 {
     private final ChannelGroup openChannels = new DefaultChannelGroup("http-client");
     private final ClientBootstrap bootstrap;
@@ -57,6 +60,7 @@ public class NettyConnectionPool
         this.enablePooling = enablePooling;
     }
 
+    @Override
     public void close()
     {
         try {

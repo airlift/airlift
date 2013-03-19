@@ -3,12 +3,12 @@ package com.proofpoint.http.client.netty;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.Closeables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.BodyGenerator;
 import com.proofpoint.http.client.HttpClientConfig;
 import com.proofpoint.http.client.HttpRequestFilter;
-import com.proofpoint.http.client.NettyAsyncHttpClientConfig;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.ResponseHandler;
@@ -23,7 +23,6 @@ import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
-import org.jboss.netty.channel.socket.nio.NioWorkerPool;
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
 import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import org.jboss.netty.handler.codec.http.HttpMethod;
@@ -31,20 +30,16 @@ import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import org.jboss.netty.util.HashedWheelTimer;
-import org.jboss.netty.util.ThreadNameDeterminer;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
 import javax.annotation.PreDestroy;
-
 import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
@@ -56,22 +51,26 @@ public class NettyAsyncHttpClient
 
     private final OrderedMemoryAwareThreadPoolExecutor executor;
     private final NettyConnectionPool nettyConnectionPool;
-    private final ExecutorService nettyThreadPool;
     private final HashedWheelTimer timer;
 
-    public NettyAsyncHttpClient()
+    public NettyAsyncHttpClient(NettyIoPool ioPool)
     {
-        this(new HttpClientConfig());
+        this(new HttpClientConfig(), ioPool);
     }
 
-    public NettyAsyncHttpClient(HttpClientConfig config)
+    public NettyAsyncHttpClient(HttpClientConfig config, NettyIoPool ioPool)
     {
-        this("unnamed", config, new NettyAsyncHttpClientConfig(), Collections.<HttpRequestFilter>emptySet());
+        this("unnamed", ioPool, config, new NettyAsyncHttpClientConfig(), Collections.<HttpRequestFilter>emptySet());
     }
 
-    public NettyAsyncHttpClient(String name, HttpClientConfig config, NettyAsyncHttpClientConfig asyncConfig, Set<? extends HttpRequestFilter> requestFilters)
+    public NettyAsyncHttpClient(String name,
+            NettyIoPool ioPool,
+            HttpClientConfig config,
+            NettyAsyncHttpClientConfig asyncConfig,
+            Set<? extends HttpRequestFilter> requestFilters)
     {
         Preconditions.checkNotNull(name, "name is null");
+        Preconditions.checkNotNull(ioPool, "ioPool is null");
         Preconditions.checkNotNull(config, "config is null");
         Preconditions.checkNotNull(asyncConfig, "asyncConfig is null");
         Preconditions.checkNotNull(requestFilters, "requestFilters is null");
@@ -81,25 +80,18 @@ public class NettyAsyncHttpClient
         String namePrefix = "http-client-" + name;
 
         // shared timer for channel factory and read timeout channel handler
-        ThreadFactory timerThreadFactory = new ThreadFactoryBuilder().setNameFormat(namePrefix + "-timer-%s").setDaemon(true).build();
-        timer = new HashedWheelTimer(timerThreadFactory);
+        this.timer = new HashedWheelTimer(new ThreadFactoryBuilder().setNameFormat(namePrefix + "-timer-%s").setDaemon(true).build());
 
-        // Give netty an infinite thread "source"
-        // Netty will name the threads and will size the pool appropriately
-        ThreadFactory nettyThreadFactory = new ThreadFactoryBuilder().setNameFormat(namePrefix + "-netty-%s").setDaemon(true).build();
-        this.nettyThreadPool = Executors.newCachedThreadPool(nettyThreadFactory);
-        ChannelFactory channelFactory = new NioClientSocketChannelFactory(nettyThreadPool,
-                asyncConfig.getIoBossThreads(),
-                new NioWorkerPool(nettyThreadPool, asyncConfig.getIoWorkerThreads(), ThreadNameDeterminer.CURRENT),
-                timer);
+        ChannelFactory channelFactory = new NioClientSocketChannelFactory(ioPool.getBossPool(), ioPool.getWorkerPool());
 
         ThreadFactory workerThreadFactory = new ThreadFactoryBuilder().setNameFormat(namePrefix + "-worker-%s").setDaemon(true).build();
-        executor = new OrderedMemoryAwareThreadPoolExecutor(asyncConfig.getWorkerThreads(), 0, 0, 30, TimeUnit.SECONDS, workerThreadFactory);
+        this.executor = new OrderedMemoryAwareThreadPoolExecutor(asyncConfig.getWorkerThreads(), 0, 0, 30, TimeUnit.SECONDS, workerThreadFactory);
 
         ClientBootstrap bootstrap;
         if (config.getSocksProxy() == null) {
             bootstrap = new ClientBootstrap(channelFactory);
-        } else {
+        }
+        else {
             bootstrap = new Socks4ClientBootstrap(channelFactory, config.getSocksProxy());
         }
         bootstrap.setOption("connectTimeoutMillis", (long) config.getConnectTimeout().toMillis());
@@ -119,25 +111,17 @@ public class NettyAsyncHttpClient
         return requestFilters;
     }
 
+    @SuppressWarnings("deprecation")
     @PreDestroy
     @Override
     public void close()
     {
+        Closeables.closeQuietly(nettyConnectionPool);
         try {
-            nettyConnectionPool.close();
+            timer.stop();
         }
-        finally {
-            try {
-                executor.shutdownNow(true);
-            }
-            finally {
-                try {
-                    nettyThreadPool.shutdownNow();
-                }
-                finally {
-                    timer.stop();
-                }
-            }
+        catch(Exception e) {
+            // ignored
         }
     }
 

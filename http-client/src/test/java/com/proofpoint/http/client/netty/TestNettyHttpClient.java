@@ -13,10 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.http.client;
+package com.proofpoint.http.client.netty;
 
 import com.google.common.collect.ImmutableSet;
+import com.proofpoint.http.client.AbstractHttpClientTest;
+import com.proofpoint.http.client.HttpClientConfig;
+import com.proofpoint.http.client.HttpRequestFilter;
+import com.proofpoint.http.client.Request;
+import com.proofpoint.http.client.ResponseHandler;
+import com.proofpoint.http.client.TestingRequestFilter;
 import com.proofpoint.http.client.netty.NettyAsyncHttpClient;
+import com.proofpoint.http.client.netty.NettyAsyncHttpClientConfig;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -24,19 +31,22 @@ import org.testng.annotations.Test;
 public class TestNettyHttpClient
         extends AbstractHttpClientTest
 {
+    private NettyIoPool ioPool;
     private NettyAsyncHttpClient httpClient;
 
     @BeforeMethod
     public void setUp()
             throws Exception
     {
-        httpClient = new NettyAsyncHttpClient("test", new HttpClientConfig(), new NettyAsyncHttpClientConfig(), ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
+        ioPool = new NettyIoPool();
+        httpClient = new NettyAsyncHttpClient("test", ioPool, new HttpClientConfig(), new NettyAsyncHttpClientConfig(), ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
 
     @AfterMethod
     public void tearDown()
             throws Exception
     {
+        ioPool.close();
         httpClient.close();
     }
 
@@ -51,7 +61,7 @@ public class TestNettyHttpClient
     public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient(config)) {
+        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient(config, ioPool)) {
             return client.execute(request, responseHandler);
         }
     }

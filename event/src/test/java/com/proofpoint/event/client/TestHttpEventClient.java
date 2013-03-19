@@ -19,8 +19,11 @@ import com.google.common.base.Throwables;
 import com.google.common.io.CharStreams;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.testing.StaticHttpServiceSelector;
+import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
-import com.proofpoint.http.client.netty.NettyAsyncHttpClient;
+import com.proofpoint.http.client.netty.NettyAsyncHttpClientConfig;
+import com.proofpoint.http.client.netty.NettyIoPoolConfig;
+import com.proofpoint.http.client.netty.testing.TestingNettyAsyncHttpClient;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import com.proofpoint.units.Duration;
@@ -64,6 +67,7 @@ public class TestHttpEventClient
     private HttpEventClient client;
     private Server server;
     private URI baseUri;
+    private AsyncHttpClient httpClient;
 
     @Test(expectedExceptions = ServiceUnavailableException.class, expectedExceptionsMessageRegExp = ".*is not available.*")
     public void testFutureFailsWhenServiceUnavailable()
@@ -126,6 +130,10 @@ public class TestHttpEventClient
     public void setup()
             throws Exception
     {
+        httpClient = TestingNettyAsyncHttpClient.getClientForTesting(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS)),
+                new NettyAsyncHttpClientConfig(),
+                new NettyIoPoolConfig());
+
         servlet = new DummyServlet();
         server = createServer(servlet);
         server.start();
@@ -138,6 +146,8 @@ public class TestHttpEventClient
         if (server != null) {
             server.stop();
         }
+
+        httpClient.close();
     }
 
     private HttpEventClient newEventClient(List<URI> uris)
@@ -154,7 +164,8 @@ public class TestHttpEventClient
                 selector,
                 eventWriter,
                 nodeInfo,
-                new NettyAsyncHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))), traceTokenManager);
+                httpClient,
+                traceTokenManager);
     }
 
     private Server createServer(final DummyServlet servlet)

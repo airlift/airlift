@@ -26,7 +26,9 @@ import com.google.inject.PrivateBinder;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.http.client.netty.NettyAsyncHttpClient;
+import com.proofpoint.http.client.netty.NettyIoPool;
 import com.proofpoint.tracetoken.TraceTokenModule;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.weakref.jmx.Managed;
 
@@ -41,6 +43,8 @@ import static com.proofpoint.http.client.HttpClientBinder.httpClientBinder;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNotSame;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
@@ -96,6 +100,8 @@ public class TestHttpClientBinder
         assertSame(httpClient, asyncHttpClient);
         assertFilterCount(httpClient, 3);
         assertFilterCount(asyncHttpClient, 3);
+
+        injector.getInstance(NettyIoPool.class).close();
     }
 
     @Test
@@ -160,6 +166,109 @@ public class TestHttpClientBinder
         assertSame(injector.getInstance(Key.get(HttpClient.class, FooClient.class)), client);
         assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias1.class)), client);
         assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias2.class)), client);
+
+        injector.getInstance(NettyIoPool.class).close();
+    }
+
+    @Test
+    public void testMultipleAsyncClients()
+    {
+        Injector injector = Guice.createInjector(
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class);
+                        httpClientBinder(binder).bindAsyncHttpClient("bar", BarClient.class);
+                    }
+                },
+                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
+
+        AsyncHttpClient fooClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
+        AsyncHttpClient barClient = injector.getInstance(Key.get(AsyncHttpClient.class, BarClient.class));
+        Assert.assertNotSame(fooClient, barClient);
+
+        assertNull(injector.getExistingBinding(Key.get(NettyIoPool.class, FooClient.class)));
+        assertNull(injector.getExistingBinding(Key.get(NettyIoPool.class, BarClient.class)));
+
+        injector.getInstance(NettyIoPool.class).close();
+    }
+
+    @Test
+    public void testPrivateThreadPool()
+    {
+        Injector injector = Guice.createInjector(
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class).withPrivateIoThreadPool();
+                    }
+                },
+                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
+
+        AsyncHttpClient fooClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
+        assertNotNull(fooClient);
+
+        assertNotNull(injector.getExistingBinding(Key.get(NettyIoPool.class, FooClient.class)));
+
+        injector.getInstance(NettyIoPool.class).close();
+        injector.getInstance(Key.get(NettyIoPool.class, FooClient.class)).close();
+    }
+
+    @Test
+    public void testMultiplePrivateThreadPools()
+    {
+        Injector injector = Guice.createInjector(
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class).withPrivateIoThreadPool();
+                        httpClientBinder(binder).bindAsyncHttpClient("bar", BarClient.class).withPrivateIoThreadPool();
+                    }
+                },
+                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
+
+        AsyncHttpClient fooClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
+        AsyncHttpClient barClient = injector.getInstance(Key.get(AsyncHttpClient.class, BarClient.class));
+        Assert.assertNotSame(fooClient, barClient);
+
+        assertNotNull(injector.getExistingBinding(Key.get(NettyIoPool.class, FooClient.class)));
+        assertNotNull(injector.getExistingBinding(Key.get(NettyIoPool.class, BarClient.class)));
+
+        injector.getInstance(NettyIoPool.class).close();
+        injector.getInstance(Key.get(NettyIoPool.class, FooClient.class)).close();
+        injector.getInstance(Key.get(NettyIoPool.class, BarClient.class)).close();
+    }
+
+    @Test
+    public void testMultiplePrivateAndSharedThreadPools()
+    {
+        Injector injector = Guice.createInjector(
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class);
+                        httpClientBinder(binder).bindAsyncHttpClient("bar", BarClient.class).withPrivateIoThreadPool();
+                    }
+                },
+                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
+
+        AsyncHttpClient fooClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
+        AsyncHttpClient barClient = injector.getInstance(Key.get(AsyncHttpClient.class, BarClient.class));
+        assertNotSame(fooClient, barClient);
+
+        assertNull(injector.getExistingBinding(Key.get(NettyIoPool.class, FooClient.class)));
+        assertNotNull(injector.getExistingBinding(Key.get(NettyIoPool.class, BarClient.class)));
+
+        injector.getInstance(NettyIoPool.class).close();
+        injector.getInstance(Key.get(NettyIoPool.class, BarClient.class)).close();
     }
 
     @Test

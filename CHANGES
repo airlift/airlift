@@ -54,16 +54,20 @@ jax-rs is no longer required.
 
 * AsyncHttpClient fixes
 
-This release contains a number of fixes for the AsyncHttpClient and additional
-changes to ease debugging of async requests. In some cases the ResponseHandler
-would not be notified of errors with the handleException method, even though
-the future returned from the executeAsync method would be notified of the
-error. To help with debugging, the executeAsync method now returns an
-AsyncHttpResponseFuture which has a new method getState that can be used to
-determine the current state of the http request. This is helpful when requests
-seem to get lost after execution. Finally, we have changed the Netty setup to
-properly name the worker threads, so you can more easily find the http client
-threads.
+ - This release contains a number of fixes for the AsyncHttpClient and additional
+   changes to ease debugging of async requests. In some cases the ResponseHandler
+   would not be notified of errors with the handleException method, even though
+   the future returned from the executeAsync method would be notified of the
+   error. To help with debugging, the executeAsync method now returns an
+   AsyncHttpResponseFuture which has a new method getState that can be used to
+   determine the current state of the http request. This is helpful when requests
+   seem to get lost after execution. Finally, we have changed the Netty setup to
+   properly name the worker threads, so you can more easily find the http client
+   threads.
+
+ - AsyncHttpClient (Netty based) now shares I/O pools by default. To get a
+   private IO pool, use withPrivateIoThreadPool() when binding the client.
+   The pools running user code are still per-client.
 
 * Temporarily allow the characters .:=,- in event names once again.
 
