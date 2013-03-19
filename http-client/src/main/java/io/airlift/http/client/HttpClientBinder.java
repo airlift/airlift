@@ -15,6 +15,7 @@
  */
 package io.airlift.http.client;
 
+import com.google.common.annotations.Beta;
 import com.google.inject.Binder;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.Multibinder;
@@ -25,6 +26,7 @@ import java.util.Collection;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 
+@Beta
 public class HttpClientBinder
 {
     private final Binder binder;

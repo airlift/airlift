@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
@@ -50,6 +51,7 @@ import java.util.Set;
 
 import static io.airlift.json.JsonBinder.jsonBinder;
 
+@Beta
 public class JmxHttpModule implements Module
 {
     @Override
