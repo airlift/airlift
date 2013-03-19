@@ -17,6 +17,7 @@ package com.proofpoint.event.client;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
+import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.node.NodeInfo;
 
@@ -30,6 +31,7 @@ import java.util.Set;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 
+@Beta
 public class JsonEventSerializer
 {
     private final NodeInfo nodeinfo;

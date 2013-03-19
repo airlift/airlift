@@ -1,9 +1,11 @@
 package com.proofpoint.http.client;
 
+import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.Map;
 
+@Beta
 public enum HttpStatus
 {
     CONTINUE(100, "Continue"),

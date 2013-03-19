@@ -15,6 +15,7 @@
  */
 package com.proofpoint.event.client;
 
+import com.google.common.annotations.Beta;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
@@ -25,6 +26,7 @@ import java.util.List;
 
 import static com.proofpoint.event.client.EventTypeMetadata.getEventTypeMetadata;
 
+@Beta
 public class EventBinder
 {
     public static EventBinder eventBinder(Binder binder)
