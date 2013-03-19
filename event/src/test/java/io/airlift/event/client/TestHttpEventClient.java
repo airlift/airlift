@@ -15,12 +15,16 @@
  */
 package io.airlift.event.client;
 
+import io.airlift.http.client.netty.testing.TestingNettyAsyncHttpClient;
+
 import com.google.common.base.Throwables;
 import com.google.common.io.CharStreams;
 import io.airlift.discovery.client.HttpServiceSelector;
 import io.airlift.discovery.client.testing.StaticHttpServiceSelector;
+import io.airlift.http.client.AsyncHttpClient;
 import io.airlift.http.client.HttpClientConfig;
-import io.airlift.http.client.netty.NettyAsyncHttpClient;
+import io.airlift.http.client.netty.NettyAsyncHttpClientConfig;
+import io.airlift.http.client.netty.NettyIoPoolConfig;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.server.Server;
@@ -37,6 +41,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
@@ -63,6 +68,7 @@ public class TestHttpEventClient
     private HttpEventClient client;
     private Server server;
     private URI baseUri;
+    private AsyncHttpClient httpClient;
 
     @Test(expectedExceptions = ServiceUnavailableException.class, expectedExceptionsMessageRegExp = ".*is not available.*")
     public void testFutureFailsWhenServiceUnavailable()
@@ -125,6 +131,10 @@ public class TestHttpEventClient
     public void setup()
             throws Exception
     {
+        httpClient = TestingNettyAsyncHttpClient.getClientForTesting(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS)),
+                new NettyAsyncHttpClientConfig(),
+                new NettyIoPoolConfig());
+
         servlet = new DummyServlet();
         server = createServer(servlet);
         server.start();
@@ -137,6 +147,8 @@ public class TestHttpEventClient
         if (server != null) {
             server.stop();
         }
+
+        httpClient.close();
     }
 
     private HttpEventClient newEventClient(List<URI> uris)
@@ -150,7 +162,7 @@ public class TestHttpEventClient
                 selector,
                 eventWriter,
                 new NodeInfo("test"),
-                new NettyAsyncHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))));
+                httpClient);
     }
 
     private Server createServer(final DummyServlet servlet)

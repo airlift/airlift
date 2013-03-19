@@ -13,50 +13,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.http.client;
+package io.airlift.http.client.netty;
 
 import com.google.common.collect.ImmutableSet;
-import io.airlift.http.client.netty.NettyAsyncHttpClient;
+import io.airlift.http.client.AbstractHttpClientTest;
+import io.airlift.http.client.HttpClientConfig;
+import io.airlift.http.client.HttpRequestFilter;
+import io.airlift.http.client.Request;
+import io.airlift.http.client.ResponseHandler;
+import io.airlift.http.client.TestingRequestFilter;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
-import static com.google.common.io.Resources.getResource;
-
-public class TestPoolingNettyHttpsClient
+public class TestNettyHttpClient
         extends AbstractHttpClientTest
 {
-    private static final String JAVAX_NET_SSL_TRUST_STORE = "javax.net.ssl.trustStore";
-    private String originalTrustStore;
+    private NettyIoPool ioPool;
     private NettyAsyncHttpClient httpClient;
-
-    TestPoolingNettyHttpsClient()
-    {
-        super("localhost", getResource("localhost.keystore").toString());
-    }
 
     @BeforeMethod
     public void setUp()
             throws Exception
     {
-        originalTrustStore = System.getProperty(JAVAX_NET_SSL_TRUST_STORE);
-        System.setProperty(JAVAX_NET_SSL_TRUST_STORE, getResource("localhost.keystore").getPath());
-        httpClient = new NettyAsyncHttpClient("test",
-                new HttpClientConfig(),
-                new NettyAsyncHttpClientConfig().setEnableConnectionPooling(true),
-                ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
+        ioPool = new NettyIoPool();
+        httpClient = new NettyAsyncHttpClient("test", ioPool, new HttpClientConfig(), new NettyAsyncHttpClientConfig(), ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
 
     @AfterMethod
     public void tearDown()
             throws Exception
     {
+        ioPool.close();
         httpClient.close();
-        if (originalTrustStore != null) {
-            System.setProperty(JAVAX_NET_SSL_TRUST_STORE, originalTrustStore);
-        }
-        else {
-            System.clearProperty(JAVAX_NET_SSL_TRUST_STORE);
-        }
     }
 
     @Override
@@ -70,8 +59,16 @@ public class TestPoolingNettyHttpsClient
     public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient(config)) {
+        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient(config, ioPool)) {
             return client.execute(request, responseHandler);
         }
+    }
+
+    @Test(enabled = false, description = "This Netty client does reuse connections")
+    @Override
+    public void testKeepAlive()
+            throws Exception
+    {
+        super.testKeepAlive();
     }
 }

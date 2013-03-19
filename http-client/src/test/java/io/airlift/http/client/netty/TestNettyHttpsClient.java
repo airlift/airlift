@@ -13,10 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.http.client;
+package io.airlift.http.client.netty;
 
 import com.google.common.collect.ImmutableSet;
-import io.airlift.http.client.netty.NettyAsyncHttpClient;
+import io.airlift.http.client.AbstractHttpClientTest;
+import io.airlift.http.client.HttpClientConfig;
+import io.airlift.http.client.HttpRequestFilter;
+import io.airlift.http.client.Request;
+import io.airlift.http.client.ResponseHandler;
+import io.airlift.http.client.TestingRequestFilter;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -32,6 +37,7 @@ public class TestNettyHttpsClient
 {
     private static final String JAVAX_NET_SSL_TRUST_STORE = "javax.net.ssl.trustStore";
     private String originalTrustStore;
+    private NettyIoPool ioPool;
     private NettyAsyncHttpClient httpClient;
 
     TestNettyHttpsClient()
@@ -45,7 +51,8 @@ public class TestNettyHttpsClient
     {
         originalTrustStore = System.getProperty(JAVAX_NET_SSL_TRUST_STORE);
         System.setProperty(JAVAX_NET_SSL_TRUST_STORE, getResource("localhost.keystore").getPath());
-        httpClient = new NettyAsyncHttpClient("test", new HttpClientConfig(), new NettyAsyncHttpClientConfig(), ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
+        this.ioPool = new NettyIoPool();
+        this.httpClient = new NettyAsyncHttpClient("test", ioPool, new HttpClientConfig(), new NettyAsyncHttpClientConfig(), ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
 
     @AfterMethod
@@ -53,6 +60,7 @@ public class TestNettyHttpsClient
             throws Exception
     {
         httpClient.close();
+        ioPool.close();
         if (originalTrustStore != null) {
             System.setProperty(JAVAX_NET_SSL_TRUST_STORE, originalTrustStore);
         }
@@ -72,7 +80,7 @@ public class TestNettyHttpsClient
     public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient(config)) {
+        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient(config, ioPool)) {
             return client.execute(request, responseHandler);
         }
     }

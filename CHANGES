@@ -1,6 +1,9 @@
 * 0.74
 
 - Remove experimental from all artifact names
+- AsyncHttpClient (Netty based) now shares I/O pools by default. To get a 
+  private IO pool, use withPrivateIoThreadPool() when binding the client.
+  The pools running user code are still per-client.
 
 * 0.73
 - [BUG] Always notify http response handler of errors

@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.http.client;
+package io.airlift.http.client.netty;
+
+import io.airlift.http.client.netty.NettyAsyncHttpClientConfig;
 
 import com.google.common.collect.ImmutableMap;
 import io.airlift.configuration.testing.ConfigAssertions;
@@ -31,8 +33,6 @@ public class TestNettyAsyncHttpClientConfig
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(NettyAsyncHttpClientConfig.class)
                 .setWorkerThreads(Runtime.getRuntime().availableProcessors() * 4)
                 .setMaxContentLength(new DataSize(16, Unit.MEGABYTE))
-                .setIoBossThreads(1)
-                .setIoWorkerThreads(Runtime.getRuntime().availableProcessors() * 2)
                 .setEnableConnectionPooling(false));
     }
 
@@ -43,15 +43,11 @@ public class TestNettyAsyncHttpClientConfig
                 .put("http-client.threads", "33")
                 .put("http-client.max-content-length", "1GB")
                 .put("http-client.pool-connections", "true")
-                .put("http-client.io-worker-threads", "20")
-                .put("http-client.io-boss-threads", "2")
                 .build();
 
         NettyAsyncHttpClientConfig expected = new NettyAsyncHttpClientConfig()
                 .setWorkerThreads(33)
                 .setMaxContentLength(new DataSize(1, Unit.GIGABYTE))
-                .setIoBossThreads(2)
-                .setIoWorkerThreads(20)
                 .setEnableConnectionPooling(true);
 
         ConfigAssertions.assertFullMapping(properties, expected);
