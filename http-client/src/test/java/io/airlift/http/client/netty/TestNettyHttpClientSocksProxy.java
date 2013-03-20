@@ -1,7 +1,8 @@
-package io.airlift.http.client;
+package io.airlift.http.client.netty;
 
+import io.airlift.http.client.HttpClientConfig;
+import io.airlift.http.client.Request;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
-import io.airlift.http.client.netty.NettyAsyncHttpClient;
 import org.testng.annotations.Test;
 
 import java.net.URI;
@@ -34,7 +35,8 @@ public class TestNettyHttpClientSocksProxy {
         HttpClientConfig config = new HttpClientConfig();
         config.setSocksProxy(fromParts("localhost", 1080));
 
-        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient(config)) {
+        try (NettyIoPool provider = new NettyIoPool();
+                NettyAsyncHttpClient client = new NettyAsyncHttpClient(config, provider)) {
             StringResponse json = client.execute(request, createStringResponseHandler());
             System.out.println(json.getBody());
         }
