@@ -20,6 +20,8 @@ import org.jboss.netty.buffer.ChannelBuffers;
 
 import java.net.InetAddress;
 
+import static com.google.common.base.Charsets.UTF_8;
+
 /**
  * static helper for dealing with socks protocol.
  *
@@ -40,7 +42,7 @@ public class SocksProtocols
         if (address == null) {
             throw new IllegalArgumentException("address is null");
         }
-        byte[] userBytes = System.getProperty("user.name", "").getBytes();
+        byte[] userBytes = System.getProperty("user.name", "").getBytes(UTF_8);
         ChannelBuffer handshake = ChannelBuffers.dynamicBuffer(9 + userBytes.length);
         handshake.writeByte(SOCKS_VERSION_4); // SOCKS version
         handshake.writeByte(CONNECT); // CONNECT
@@ -56,8 +58,8 @@ public class SocksProtocols
         if (hostName == null) {
             throw new IllegalArgumentException("hostName is null");
         }
-        byte[] userBytes = System.getProperty("user.name", "").getBytes();
-        byte[] hostNameBytes = hostName.getBytes();
+        byte[] userBytes = System.getProperty("user.name", "").getBytes(UTF_8);
+        byte[] hostNameBytes = hostName.getBytes(UTF_8);
         ChannelBuffer handshake = ChannelBuffers.dynamicBuffer(10 + userBytes.length + hostNameBytes.length);
         handshake.writeByte(SOCKS_VERSION_4); // SOCKS version
         handshake.writeByte(CONNECT); // CONNECT

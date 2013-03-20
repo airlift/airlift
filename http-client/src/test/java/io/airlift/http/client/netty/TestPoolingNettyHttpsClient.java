@@ -16,12 +16,15 @@
 package io.airlift.http.client.netty;
 
 import com.google.common.collect.ImmutableSet;
-import io.airlift.http.client.AbstractHttpClientTest;
-import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
+import io.airlift.http.client.TestingRequestFilter;
+
+import io.airlift.http.client.AbstractHttpClientTest;
+import io.airlift.http.client.AsyncHttpClient;
+import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
-import io.airlift.http.client.TestingRequestFilter;
+import io.airlift.http.client.netty.testing.TestingNettyAsyncHttpClient;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
@@ -32,8 +35,7 @@ public class TestPoolingNettyHttpsClient
 {
     private static final String JAVAX_NET_SSL_TRUST_STORE = "javax.net.ssl.trustStore";
     private String originalTrustStore;
-    private NettyIoPool ioPool;
-    private NettyAsyncHttpClient httpClient;
+    private AsyncHttpClient httpClient;
 
     TestPoolingNettyHttpsClient()
     {
@@ -46,11 +48,9 @@ public class TestPoolingNettyHttpsClient
     {
         originalTrustStore = System.getProperty(JAVAX_NET_SSL_TRUST_STORE);
         System.setProperty(JAVAX_NET_SSL_TRUST_STORE, getResource("localhost.keystore").getPath());
-        ioPool = new NettyIoPool();
-        httpClient = new NettyAsyncHttpClient("test",
-                ioPool,
-                new HttpClientConfig(),
+        httpClient = TestingNettyAsyncHttpClient.getClientForTesting(new HttpClientConfig(),
                 new NettyAsyncHttpClientConfig().setEnableConnectionPooling(true),
+                new NettyIoPoolConfig(),
                 ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
 
@@ -59,7 +59,6 @@ public class TestPoolingNettyHttpsClient
             throws Exception
     {
         httpClient.close();
-        ioPool.close();
         if (originalTrustStore != null) {
             System.setProperty(JAVAX_NET_SSL_TRUST_STORE, originalTrustStore);
         }
@@ -79,7 +78,7 @@ public class TestPoolingNettyHttpsClient
     public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient(config, ioPool)) {
+        try (AsyncHttpClient client = TestingNettyAsyncHttpClient.getClientForTesting(config, new NettyAsyncHttpClientConfig(), new NettyIoPoolConfig())) {
             return client.execute(request, responseHandler);
         }
     }
