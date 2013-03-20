@@ -63,12 +63,7 @@ public class NettyConnectionPool
     @Override
     public void close()
     {
-        try {
-            openChannels.close();
-        }
-        finally {
-            bootstrap.releaseExternalResources();
-        }
+        openChannels.close();
     }
 
     public void execute(URI uri, final ConnectionCallback connectionCallback)

@@ -1,10 +1,5 @@
 package io.airlift.http.client.netty.testing;
 
-import io.airlift.http.client.netty.NettyAsyncHttpClient;
-import io.airlift.http.client.netty.NettyAsyncHttpClientConfig;
-import io.airlift.http.client.netty.NettyIoPool;
-import io.airlift.http.client.netty.NettyIoPoolConfig;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Closeables;
 import io.airlift.http.client.AsyncHttpClient;
@@ -13,6 +8,12 @@ import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
+import io.airlift.http.client.netty.NettyAsyncHttpClient;
+import io.airlift.http.client.netty.NettyAsyncHttpClientConfig;
+import io.airlift.http.client.netty.NettyIoPool;
+import io.airlift.http.client.netty.NettyIoPoolConfig;
+
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -27,22 +28,27 @@ public class TestingNettyAsyncHttpClient
 
     public static AsyncHttpClient getClientForTesting()
     {
-        return new TestingNettyAsyncHttpClient(new HttpClientConfig(), new NettyAsyncHttpClientConfig(), new NettyIoPoolConfig());
+        return getClientForTesting(new HttpClientConfig(), new NettyAsyncHttpClientConfig(), new NettyIoPoolConfig());
     }
 
     public static AsyncHttpClient getClientForTesting(HttpClientConfig httpClientConfig, NettyAsyncHttpClientConfig asyncHttpClientConfig, NettyIoPoolConfig ioPoolConfig)
     {
+        return getClientForTesting(httpClientConfig, asyncHttpClientConfig, ioPoolConfig, ImmutableSet.<HttpRequestFilter>of());
+    }
+
+    public static AsyncHttpClient getClientForTesting(HttpClientConfig httpClientConfig, NettyAsyncHttpClientConfig asyncHttpClientConfig, NettyIoPoolConfig ioPoolConfig, Set<? extends HttpRequestFilter> filters)
+    {
         checkNotNull(httpClientConfig, "httpClientConfig is null");
         checkNotNull(asyncHttpClientConfig, "asyncHttpClientConfig is null");
         checkNotNull(ioPoolConfig, "ioPoolConfig is null");
+        checkNotNull(filters, "filters is null");
 
-        return new TestingNettyAsyncHttpClient(httpClientConfig, asyncHttpClientConfig, ioPoolConfig);
+        return new TestingNettyAsyncHttpClient(httpClientConfig, asyncHttpClientConfig, ioPoolConfig, filters);
     }
-
-    private TestingNettyAsyncHttpClient(HttpClientConfig httpClientConfig, NettyAsyncHttpClientConfig asyncHttpClientConfig, NettyIoPoolConfig ioPoolConfig)
+    private TestingNettyAsyncHttpClient(HttpClientConfig httpClientConfig, NettyAsyncHttpClientConfig asyncHttpClientConfig, NettyIoPoolConfig ioPoolConfig, Set<? extends HttpRequestFilter> filters)
     {
         this.ioPool = new NettyIoPool(ioPoolConfig);
-        this.httpClient = new NettyAsyncHttpClient("testing", ioPool, httpClientConfig, asyncHttpClientConfig, ImmutableSet.<HttpRequestFilter>of());
+        this.httpClient = new NettyAsyncHttpClient("testing", ioPool, httpClientConfig, asyncHttpClientConfig, filters);
     }
 
     @Override

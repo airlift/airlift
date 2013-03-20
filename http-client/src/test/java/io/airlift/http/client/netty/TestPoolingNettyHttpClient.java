@@ -17,29 +17,28 @@ package io.airlift.http.client.netty;
 
 import com.google.common.collect.ImmutableSet;
 import io.airlift.http.client.AbstractHttpClientTest;
+import io.airlift.http.client.AsyncHttpClient;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingRequestFilter;
+import io.airlift.http.client.netty.testing.TestingNettyAsyncHttpClient;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
 public class TestPoolingNettyHttpClient
         extends AbstractHttpClientTest
 {
-    private NettyIoPool ioPool;
-    private NettyAsyncHttpClient httpClient;
+    private AsyncHttpClient httpClient;
 
     @BeforeMethod
     public void setUp()
             throws Exception
     {
-        this.ioPool = new NettyIoPool();
-        httpClient = new NettyAsyncHttpClient("test",
-                this.ioPool,
-                new HttpClientConfig(),
+        httpClient = TestingNettyAsyncHttpClient.getClientForTesting(new HttpClientConfig(),
                 new NettyAsyncHttpClientConfig().setEnableConnectionPooling(true),
+                new NettyIoPoolConfig(),
                 ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
 
@@ -47,7 +46,6 @@ public class TestPoolingNettyHttpClient
     public void tearDown()
             throws Exception
     {
-        ioPool.close();
         httpClient.close();
     }
 
@@ -63,7 +61,7 @@ public class TestPoolingNettyHttpClient
     public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient(config, ioPool)) {
+        try (AsyncHttpClient client = TestingNettyAsyncHttpClient.getClientForTesting(config,  new NettyAsyncHttpClientConfig(),  new NettyIoPoolConfig())) {
             return client.execute(request, responseHandler);
         }
     }
