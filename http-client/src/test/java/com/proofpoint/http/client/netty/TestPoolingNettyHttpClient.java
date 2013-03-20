@@ -17,29 +17,28 @@ package com.proofpoint.http.client.netty;
 
 import com.google.common.collect.ImmutableSet;
 import com.proofpoint.http.client.AbstractHttpClientTest;
+import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
 import com.proofpoint.http.client.HttpRequestFilter;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.http.client.TestingRequestFilter;
+import com.proofpoint.http.client.netty.testing.TestingNettyAsyncHttpClient;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
 public class TestPoolingNettyHttpClient
         extends AbstractHttpClientTest
 {
-    private NettyIoPool ioPool;
-    private NettyAsyncHttpClient httpClient;
+    private AsyncHttpClient httpClient;
 
     @BeforeMethod
     public void setUp()
             throws Exception
     {
-        this.ioPool = new NettyIoPool();
-        httpClient = new NettyAsyncHttpClient("test",
-                ioPool,
-                new HttpClientConfig(),
+        httpClient = TestingNettyAsyncHttpClient.getClientForTesting(new HttpClientConfig(),
                 new NettyAsyncHttpClientConfig().setEnableConnectionPooling(true),
+                new NettyIoPoolConfig(),
                 ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
 
@@ -47,7 +46,6 @@ public class TestPoolingNettyHttpClient
     public void tearDown()
             throws Exception
     {
-        ioPool.close();
         httpClient.close();
     }
 
@@ -63,7 +61,7 @@ public class TestPoolingNettyHttpClient
     public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient(config, ioPool)) {
+        try (AsyncHttpClient client = TestingNettyAsyncHttpClient.getClientForTesting(config,  new NettyAsyncHttpClientConfig(),  new NettyIoPoolConfig())) {
             return client.execute(request, responseHandler);
         }
     }

@@ -116,7 +116,15 @@ public class NettyAsyncHttpClient
     @Override
     public void close()
     {
+        try {
+           executor.shutdownNow();
+        }
+        catch (Exception e) {
+            // ignored
+        }
+
         Closeables.closeQuietly(nettyConnectionPool);
+
         try {
             timer.stop();
         }
