@@ -39,11 +39,12 @@ public class Request
     public Request(URI uri, String method, ListMultimap<String, String> headers, BodyGenerator bodyGenerator)
     {
         Preconditions.checkNotNull(uri, "uri is null");
-        Preconditions.checkNotNull(uri.getHost(), "uri does not have a host: %s", uri);
         Preconditions.checkNotNull(method, "method is null");
-        Preconditions.checkNotNull(uri.getScheme(), "uri does not have a scheme: %s", uri);
-        String scheme = uri.getScheme().toLowerCase();
-        Preconditions.checkArgument(!"http".equals(scheme) || !"https".equals(scheme), "uri scheme must be http or https: %s", uri);
+        if (uri.getScheme() != null)
+        {
+            String scheme = uri.getScheme().toLowerCase();
+            Preconditions.checkArgument(!"http".equals(scheme) || !"https".equals(scheme), "uri scheme must be http or https: %s", uri);
+        }
 
         this.uri = validateUri(uri);
         this.method = method;
