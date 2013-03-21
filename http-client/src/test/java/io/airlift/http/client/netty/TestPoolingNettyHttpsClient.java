@@ -16,15 +16,12 @@
 package io.airlift.http.client.netty;
 
 import com.google.common.collect.ImmutableSet;
-import io.airlift.http.client.HttpRequestFilter;
-import io.airlift.http.client.TestingRequestFilter;
-
 import io.airlift.http.client.AbstractHttpClientTest;
 import io.airlift.http.client.AsyncHttpClient;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
-import io.airlift.http.client.netty.testing.TestingNettyAsyncHttpClient;
+import io.airlift.http.client.TestingRequestFilter;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
@@ -48,10 +45,12 @@ public class TestPoolingNettyHttpsClient
     {
         originalTrustStore = System.getProperty(JAVAX_NET_SSL_TRUST_STORE);
         System.setProperty(JAVAX_NET_SSL_TRUST_STORE, getResource("localhost.keystore").getPath());
-        httpClient = TestingNettyAsyncHttpClient.getClientForTesting(new HttpClientConfig(),
+        httpClient = new StandaloneNettyAsyncHttpClient(
+                "test",
+                new HttpClientConfig(),
                 new NettyAsyncHttpClientConfig().setEnableConnectionPooling(true),
                 new NettyIoPoolConfig(),
-                ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
+                ImmutableSet.of(new TestingRequestFilter()));
     }
 
     @AfterMethod
@@ -78,7 +77,7 @@ public class TestPoolingNettyHttpsClient
     public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        try (AsyncHttpClient client = TestingNettyAsyncHttpClient.getClientForTesting(config, new NettyAsyncHttpClientConfig(), new NettyIoPoolConfig())) {
+        try (AsyncHttpClient client = new StandaloneNettyAsyncHttpClient("test", config)) {
             return client.execute(request, responseHandler);
         }
     }
