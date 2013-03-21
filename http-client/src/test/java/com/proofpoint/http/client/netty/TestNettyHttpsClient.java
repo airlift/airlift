@@ -18,12 +18,9 @@ package com.proofpoint.http.client.netty;
 import com.google.common.collect.ImmutableSet;
 import com.proofpoint.http.client.AbstractHttpClientTest;
 import com.proofpoint.http.client.HttpClientConfig;
-import com.proofpoint.http.client.HttpRequestFilter;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.http.client.TestingRequestFilter;
-import com.proofpoint.http.client.netty.NettyAsyncHttpClient;
-import com.proofpoint.http.client.netty.NettyAsyncHttpClientConfig;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -53,8 +50,8 @@ public class TestNettyHttpsClient
     {
         originalTrustStore = System.getProperty(JAVAX_NET_SSL_TRUST_STORE);
         System.setProperty(JAVAX_NET_SSL_TRUST_STORE, getResource("localhost.keystore").getPath());
-        this.ioPool = new NettyIoPool();
-        this.httpClient = new NettyAsyncHttpClient("test", ioPool, new HttpClientConfig(), new NettyAsyncHttpClientConfig(), ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
+        this.ioPool = new NettyIoPool("test");
+        this.httpClient = new NettyAsyncHttpClient("test", ioPool, new HttpClientConfig(), new NettyAsyncHttpClientConfig(), ImmutableSet.of(new TestingRequestFilter()));
     }
 
     @AfterMethod
@@ -82,7 +79,7 @@ public class TestNettyHttpsClient
     public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient(config, ioPool)) {
+        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient("test", config, ioPool)) {
             return client.execute(request, responseHandler);
         }
     }

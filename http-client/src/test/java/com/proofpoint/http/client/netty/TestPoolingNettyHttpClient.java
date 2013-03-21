@@ -19,11 +19,9 @@ import com.google.common.collect.ImmutableSet;
 import com.proofpoint.http.client.AbstractHttpClientTest;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
-import com.proofpoint.http.client.HttpRequestFilter;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.http.client.TestingRequestFilter;
-import com.proofpoint.http.client.netty.testing.TestingNettyAsyncHttpClient;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
@@ -36,10 +34,12 @@ public class TestPoolingNettyHttpClient
     public void setUp()
             throws Exception
     {
-        httpClient = TestingNettyAsyncHttpClient.getClientForTesting(new HttpClientConfig(),
+        httpClient = new StandaloneNettyAsyncHttpClient(
+                "test",
+                new HttpClientConfig(),
                 new NettyAsyncHttpClientConfig().setEnableConnectionPooling(true),
                 new NettyIoPoolConfig(),
-                ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
+                ImmutableSet.of(new TestingRequestFilter()));
     }
 
     @AfterMethod
@@ -48,7 +48,6 @@ public class TestPoolingNettyHttpClient
     {
         httpClient.close();
     }
-
 
     @Override
     public <T, E extends Exception> T executeRequest(Request request, ResponseHandler<T, E> responseHandler)
@@ -61,7 +60,7 @@ public class TestPoolingNettyHttpClient
     public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        try (AsyncHttpClient client = TestingNettyAsyncHttpClient.getClientForTesting(config,  new NettyAsyncHttpClientConfig(),  new NettyIoPoolConfig())) {
+        try (AsyncHttpClient client = new StandaloneNettyAsyncHttpClient("test", config)) {
             return client.execute(request, responseHandler);
         }
     }

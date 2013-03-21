@@ -40,7 +40,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.http.client.CompositeQualifierImpl.compositeQualifier;
-import static com.proofpoint.http.client.netty.NettyIoPool.createNettyIoPool;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 @Beta
@@ -80,7 +79,7 @@ public class AsyncHttpClientModule
 
         // Shared thread pool
         bindConfig(binder).to(NettyIoPoolConfig.class);
-        binder.bind(NettyIoPool.class).in(Scopes.SINGLETON);
+        binder.bind(NettyIoPool.class).toProvider(SharedNettyIoPoolProvider.class).in(Scopes.SINGLETON);
 
         // bind the async client
         binder.bind(AsyncHttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(name, annotation)).in(Scopes.SINGLETON);
@@ -102,7 +101,8 @@ public class AsyncHttpClientModule
         binder.bind(HttpClient.class).annotatedWith(alias).to(Key.get(AsyncHttpClient.class, annotation));
     }
 
-    private static class HttpClientProvider implements Provider<AsyncHttpClient>
+    private static class HttpClientProvider
+            implements Provider<AsyncHttpClient>
     {
         private final List<NettyAsyncHttpClient> clients = new ArrayList<>();
         private final String name;
@@ -152,7 +152,17 @@ public class AsyncHttpClientModule
         }
     }
 
-    private static class NettyIoPoolProvider implements Provider<NettyIoPool>
+    private static class SharedNettyIoPoolProvider
+            extends NettyIoPoolProvider
+    {
+        private SharedNettyIoPoolProvider()
+        {
+            super("shared", null);
+        }
+    }
+
+    private static class NettyIoPoolProvider
+            implements Provider<NettyIoPool>
     {
         private final String name;
         private final Class<? extends Annotation> annotation;
@@ -173,9 +183,14 @@ public class AsyncHttpClientModule
         @Override
         public NettyIoPool get()
         {
-            NettyIoPoolConfig ioPoolConfig = injector.getInstance(Key.get(NettyIoPoolConfig.class, annotation));
-            return createNettyIoPool(name, ioPoolConfig);
+            NettyIoPoolConfig config = injector.getInstance(keyFromNullable(NettyIoPoolConfig.class, annotation));
+            return new NettyIoPool(name, config);
         }
+    }
+
+    private static <T> Key<T> keyFromNullable(Class<T> type, Class<? extends Annotation> annotation)
+    {
+        return (annotation != null) ? Key.get(type, annotation) : Key.get(type);
     }
 
     private static Key<Set<HttpRequestFilter>> filterKey(Class<? extends Annotation> annotation)

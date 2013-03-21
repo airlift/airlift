@@ -35,8 +35,8 @@ public class TestNettyHttpClientSocksProxy {
         HttpClientConfig config = new HttpClientConfig();
         config.setSocksProxy(fromParts("localhost", 1080));
 
-        try (NettyIoPool provider = new NettyIoPool();
-                NettyAsyncHttpClient client = new NettyAsyncHttpClient(config, provider)) {
+        try (NettyIoPool provider = new NettyIoPool("test");
+                NettyAsyncHttpClient client = new NettyAsyncHttpClient("test", config, provider)) {
             StringResponse json = client.execute(request, createStringResponseHandler());
             System.out.println(json.getBody());
         }

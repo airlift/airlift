@@ -21,12 +21,10 @@ import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.testing.StaticHttpServiceSelector;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
-import com.proofpoint.http.client.netty.NettyAsyncHttpClientConfig;
-import com.proofpoint.http.client.netty.NettyIoPoolConfig;
-import com.proofpoint.http.client.netty.testing.TestingNettyAsyncHttpClient;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import com.proofpoint.units.Duration;
+import com.proofpoint.http.client.netty.StandaloneNettyAsyncHttpClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -130,9 +128,8 @@ public class TestHttpEventClient
     public void setup()
             throws Exception
     {
-        httpClient = TestingNettyAsyncHttpClient.getClientForTesting(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS)),
-                new NettyAsyncHttpClientConfig(),
-                new NettyIoPoolConfig());
+        httpClient = new StandaloneNettyAsyncHttpClient("test",
+                new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS)));
 
         servlet = new DummyServlet();
         server = createServer(servlet);

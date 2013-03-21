@@ -53,14 +53,9 @@ public class NettyAsyncHttpClient
     private final NettyConnectionPool nettyConnectionPool;
     private final HashedWheelTimer timer;
 
-    public NettyAsyncHttpClient(NettyIoPool ioPool)
+    public NettyAsyncHttpClient(String name, HttpClientConfig config, NettyIoPool ioPool)
     {
-        this(new HttpClientConfig(), ioPool);
-    }
-
-    public NettyAsyncHttpClient(HttpClientConfig config, NettyIoPool ioPool)
-    {
-        this("unnamed", ioPool, config, new NettyAsyncHttpClientConfig(), Collections.<HttpRequestFilter>emptySet());
+        this(name, ioPool, config, new NettyAsyncHttpClientConfig(), Collections.<HttpRequestFilter>emptySet());
     }
 
     public NettyAsyncHttpClient(String name,

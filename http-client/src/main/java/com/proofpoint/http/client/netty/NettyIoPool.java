@@ -16,7 +16,6 @@
 package com.proofpoint.http.client.netty;
 
 import com.google.common.annotations.Beta;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.jboss.netty.channel.socket.nio.NioClientBossPool;
 import org.jboss.netty.channel.socket.nio.NioWorkerPool;
@@ -24,7 +23,6 @@ import org.jboss.netty.util.HashedWheelTimer;
 import org.jboss.netty.util.ThreadNameDeterminer;
 
 import javax.annotation.PreDestroy;
-import javax.inject.Inject;
 
 import java.io.Closeable;
 import java.util.concurrent.ExecutorService;
@@ -43,24 +41,12 @@ public class NettyIoPool
     private final NioClientBossPool bossPool;
     private final String name;
 
-    public static NettyIoPool createNettyIoPool(String name, NettyIoPoolConfig config)
+    public NettyIoPool(String name)
     {
-        return new NettyIoPool(name, config);
+        this(name, new NettyIoPoolConfig());
     }
 
-    @VisibleForTesting
-    NettyIoPool()
-    {
-        this(new NettyIoPoolConfig());
-    }
-
-    @Inject
-    public NettyIoPool(NettyIoPoolConfig config)
-    {
-        this("shared", config);
-    }
-
-    private NettyIoPool(String name, NettyIoPoolConfig config)
+    public NettyIoPool(String name, NettyIoPoolConfig config)
     {
         this.name = checkNotNull(name, "name is null");
         checkNotNull(config, "config is null");

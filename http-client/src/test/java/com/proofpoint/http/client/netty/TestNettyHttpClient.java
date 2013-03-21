@@ -38,7 +38,7 @@ public class TestNettyHttpClient
     public void setUp()
             throws Exception
     {
-        ioPool = new NettyIoPool();
+        ioPool = new NettyIoPool("test");
         httpClient = new NettyAsyncHttpClient("test", ioPool, new HttpClientConfig(), new NettyAsyncHttpClientConfig(), ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
 
@@ -61,7 +61,7 @@ public class TestNettyHttpClient
     public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient(config, ioPool)) {
+        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient("test", config, ioPool)) {
             return client.execute(request, responseHandler);
         }
     }
