@@ -18,7 +18,6 @@ package io.airlift.http.client.netty;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.http.client.AbstractHttpClientTest;
 import io.airlift.http.client.HttpClientConfig;
-import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingRequestFilter;
@@ -51,8 +50,8 @@ public class TestNettyHttpsClient
     {
         originalTrustStore = System.getProperty(JAVAX_NET_SSL_TRUST_STORE);
         System.setProperty(JAVAX_NET_SSL_TRUST_STORE, getResource("localhost.keystore").getPath());
-        this.ioPool = new NettyIoPool();
-        this.httpClient = new NettyAsyncHttpClient("test", ioPool, new HttpClientConfig(), new NettyAsyncHttpClientConfig(), ImmutableSet.<HttpRequestFilter>of(new TestingRequestFilter()));
+        this.ioPool = new NettyIoPool("test");
+        this.httpClient = new NettyAsyncHttpClient("test", ioPool, new HttpClientConfig(), new NettyAsyncHttpClientConfig(), ImmutableSet.of(new TestingRequestFilter()));
     }
 
     @AfterMethod
@@ -80,7 +79,7 @@ public class TestNettyHttpsClient
     public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient(config, ioPool)) {
+        try (NettyAsyncHttpClient client = new NettyAsyncHttpClient("test", config, ioPool)) {
             return client.execute(request, responseHandler);
         }
     }
