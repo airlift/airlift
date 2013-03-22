@@ -65,7 +65,7 @@ public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<
     {
         String contentType = response.getHeader("Content-Type");
         if (!MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
-            return new JsonResponse<>(response.getStatusCode(), response.getStatusMessage(), response.getHeaders(), jsonCodec);
+            return new JsonResponse<>(response.getStatusCode(), response.getStatusMessage(), response.getHeaders());
         }
         try {
             String json = CharStreams.toString(new InputStreamReader(response.getInputStream(), Charsets.UTF_8));
@@ -83,30 +83,41 @@ public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<
         private final String statusMessage;
         private final ListMultimap<String, String> headers;
         private final boolean hasValue;
-        private final JsonCodec<T> jsonCodec;
         private final String json;
-        private T value;
+        private final T value;
+        private final IllegalArgumentException exception;
 
-        public JsonResponse(int statusCode, String statusMessage, ListMultimap<String, String> headers, JsonCodec<T> jsonCodec)
+        public JsonResponse(int statusCode, String statusMessage, ListMultimap<String, String> headers)
         {
             this.statusCode = statusCode;
             this.statusMessage = statusMessage;
-            this.jsonCodec = jsonCodec;
             this.headers = ImmutableListMultimap.copyOf(headers);
 
             this.hasValue = false;
             this.json = null;
+            this.value = null;
+            this.exception = null;
         }
 
         public JsonResponse(int statusCode, String statusMessage, ListMultimap<String, String> headers, JsonCodec<T> jsonCodec, String json)
         {
             this.statusCode = statusCode;
             this.statusMessage = statusMessage;
-            this.jsonCodec = jsonCodec;
             this.headers = ImmutableListMultimap.copyOf(headers);
 
-            this.hasValue = true;
             this.json = json;
+
+            T value = null;
+            IllegalArgumentException exception = null;
+            try {
+                value = jsonCodec.fromJson(json);
+            }
+            catch (IllegalArgumentException e) {
+                exception = e;
+            }
+            this.hasValue = (exception == null);
+            this.value = value;
+            this.exception = exception;
         }
 
         public int getStatusCode()
@@ -135,21 +146,23 @@ public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<
 
         public boolean hasValue()
         {
-            return json != null;
+            return hasValue;
         }
 
         public T getValue()
         {
             Preconditions.checkState(hasValue, "Response does not contain a JSON value");
-            if (value == null) {
-                value = jsonCodec.fromJson(json);
-            }
             return value;
         }
 
         public String getJson()
         {
             return json;
+        }
+
+        public IllegalArgumentException getException()
+        {
+            return exception;
         }
 
         @Override
