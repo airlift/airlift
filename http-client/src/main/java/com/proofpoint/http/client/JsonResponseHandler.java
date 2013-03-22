@@ -62,7 +62,10 @@ public class JsonResponseHandler<T> implements ResponseHandler<T, RuntimeExcepti
         if (exception instanceof ConnectException) {
             return new RuntimeException("Server refused connection: " + request.getUri().toASCIIString(), exception);
         }
-        return Throwables.propagate(exception);
+        if (exception instanceof RuntimeException) {
+            return (RuntimeException) exception;
+        }
+        return new RuntimeException(exception);
     }
 
     @Override

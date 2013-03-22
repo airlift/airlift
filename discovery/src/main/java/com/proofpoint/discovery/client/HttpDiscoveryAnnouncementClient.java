@@ -169,7 +169,7 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
                 return new DiscoveryException(name + " was canceled");
             }
             if (exception instanceof DiscoveryException) {
-                throw (DiscoveryException) exception;
+                return (DiscoveryException) exception;
             }
 
             return new DiscoveryException(name + " failed", exception);
