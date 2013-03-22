@@ -45,7 +45,7 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
     private final int maxRetries;
 
     @Inject
-    public BalancingAsyncHttpClient(HttpServiceSelector serviceSelector, AsyncHttpClient httpClient, BalancingHttpClientConfig config)
+    public BalancingAsyncHttpClient(@ForBalancingHttpClient HttpServiceSelector serviceSelector, @ForBalancingHttpClient AsyncHttpClient httpClient, BalancingHttpClientConfig config)
     {
         this.serviceSelector = checkNotNull(serviceSelector, "serviceSelector is null");
         this.httpClient = checkNotNull(httpClient, "httpClient is null");

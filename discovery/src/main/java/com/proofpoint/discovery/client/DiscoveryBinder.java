@@ -15,23 +15,40 @@
  */
 package com.proofpoint.discovery.client;
 
-import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
 import com.google.inject.Inject;
+import com.google.inject.Key;
+import com.google.inject.PrivateBinder;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
+import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.Multibinder;
 import com.proofpoint.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
+import com.proofpoint.discovery.client.http.BalancingAsyncHttpClient;
+import com.proofpoint.discovery.client.http.BalancingHttpClient;
+import com.proofpoint.discovery.client.http.BalancingHttpClientConfig;
+import com.proofpoint.discovery.client.http.ForBalancingHttpClient;
+import com.proofpoint.http.client.AsyncHttpClient;
+import com.proofpoint.http.client.HttpClient;
+import com.proofpoint.http.client.HttpClientBinder.AbstractHttpClientBindingBuilder;
+import com.proofpoint.http.client.HttpClientBinder.HttpClientAsyncBindingBuilder;
+import com.proofpoint.http.client.HttpClientBinder.HttpClientBindingBuilder;
+import com.proofpoint.http.client.HttpRequestFilter;
 
+import java.lang.annotation.Annotation;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
+import static com.proofpoint.http.client.HttpClientBinder.httpClientPrivateBinder;
 
 public class DiscoveryBinder
 {
     public static DiscoveryBinder discoveryBinder(Binder binder)
     {
-        Preconditions.checkNotNull(binder, "binder is null");
+        checkNotNull(binder, "binder is null");
         return new DiscoveryBinder(binder);
     }
 
@@ -40,39 +57,39 @@ public class DiscoveryBinder
 
     protected DiscoveryBinder(Binder binder)
     {
-        Preconditions.checkNotNull(binder, "binder is null");
+        checkNotNull(binder, "binder is null");
         this.binder = binder;
         this.serviceAnnouncementBinder = Multibinder.newSetBinder(binder, ServiceAnnouncement.class);
     }
 
     public void bindSelector(String type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        checkNotNull(type, "type is null");
         bindSelector(serviceType(type));
     }
 
     public void bindSelector(ServiceType serviceType)
     {
-        Preconditions.checkNotNull(serviceType, "serviceType is null");
+        checkNotNull(serviceType, "serviceType is null");
         bindConfig(binder).annotatedWith(serviceType).prefixedWith("discovery." + serviceType.value()).to(ServiceSelectorConfig.class);
         binder.bind(ServiceSelector.class).annotatedWith(serviceType).toProvider(new ServiceSelectorProvider(serviceType.value())).in(Scopes.SINGLETON);
     }
 
     public void bindServiceAnnouncement(ServiceAnnouncement announcement)
     {
-        Preconditions.checkNotNull(announcement, "announcement is null");
+        checkNotNull(announcement, "announcement is null");
         serviceAnnouncementBinder.addBinding().toInstance(announcement);
     }
 
     public void bindServiceAnnouncement(Provider<ServiceAnnouncement> announcementProvider)
     {
-        Preconditions.checkNotNull(announcementProvider, "announcementProvider is null");
+        checkNotNull(announcementProvider, "announcementProvider is null");
         serviceAnnouncementBinder.addBinding().toProvider(announcementProvider);
     }
 
     public <T extends ServiceAnnouncement> void bindServiceAnnouncement(Class<? extends Provider<T>> announcementProviderClass)
     {
-        Preconditions.checkNotNull(announcementProviderClass, "announcementProviderClass is null");
+        checkNotNull(announcementProviderClass, "announcementProviderClass is null");
         serviceAnnouncementBinder.addBinding().toProvider(announcementProviderClass);
     }
 
@@ -85,15 +102,57 @@ public class DiscoveryBinder
 
     public void bindHttpSelector(String type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        checkNotNull(type, "type is null");
         bindHttpSelector(serviceType(type));
     }
 
     public void bindHttpSelector(ServiceType serviceType)
     {
-        Preconditions.checkNotNull(serviceType, "serviceType is null");
+        checkNotNull(serviceType, "serviceType is null");
         bindSelector(serviceType);
         binder.bind(HttpServiceSelector.class).annotatedWith(serviceType).toProvider(new HttpServiceSelectorProvider(serviceType.value())).in(Scopes.SINGLETON);
+    }
+
+    public BalancingHttpClientBindingBuilder bindHttpClient(String type, Class<? extends Annotation> annotation)
+    {
+        return bindHttpClient(serviceType(checkNotNull(type, "type is null")), annotation);
+    }
+
+    public BalancingHttpClientBindingBuilder bindHttpClient(ServiceType serviceType, Class<? extends Annotation> annotation)
+    {
+        checkNotNull(serviceType, "serviceType is null");
+        checkNotNull(annotation, "annotation is null");
+
+        bindHttpSelector(serviceType);
+        PrivateBinder privateBinder = binder.newPrivateBinder();
+        privateBinder.bind(HttpServiceSelector.class).annotatedWith(ForBalancingHttpClient.class).to(Key.get(HttpServiceSelector.class, serviceType));
+        HttpClientBindingBuilder delegateBindingBuilder = httpClientPrivateBinder(privateBinder, binder).bindHttpClient(serviceType.value(), ForBalancingHttpClient.class);
+        bindConfig(binder).prefixedWith(serviceType.value()).to(BalancingHttpClientConfig.class);
+        privateBinder.bind(HttpClient.class).annotatedWith(annotation).to(BalancingHttpClient.class).in(Scopes.SINGLETON);
+        privateBinder.expose(HttpClient.class).annotatedWith(annotation);
+
+        return new BalancingHttpClientBindingBuilder(binder, annotation, delegateBindingBuilder);
+    }
+
+    public BalancingHttpClientAsyncBindingBuilder bindAsyncHttpClient(String type, Class<? extends Annotation> annotation)
+    {
+        return bindAsyncHttpClient(serviceType(checkNotNull(type, "type is null")), annotation);
+    }
+
+    public BalancingHttpClientAsyncBindingBuilder bindAsyncHttpClient(ServiceType serviceType, Class<? extends Annotation> annotation)
+    {
+        checkNotNull(serviceType, "serviceType is null");
+        checkNotNull(annotation, "annotation is null");
+
+        bindHttpSelector(serviceType);
+        PrivateBinder privateBinder = binder.newPrivateBinder();
+        privateBinder.bind(HttpServiceSelector.class).annotatedWith(ForBalancingHttpClient.class).to(Key.get(HttpServiceSelector.class, serviceType));
+        HttpClientAsyncBindingBuilder delegateBindingBuilder = httpClientPrivateBinder(privateBinder, binder).bindAsyncHttpClient(serviceType.value(), ForBalancingHttpClient.class);
+        bindConfig(binder).prefixedWith(serviceType.value()).to(BalancingHttpClientConfig.class);
+        privateBinder.bind(AsyncHttpClient.class).annotatedWith(annotation).to(BalancingAsyncHttpClient.class).in(Scopes.SINGLETON);
+        privateBinder.expose(AsyncHttpClient.class).annotatedWith(annotation);
+
+        return new BalancingHttpClientAsyncBindingBuilder(binder, annotation, delegateBindingBuilder);
     }
 
     static class HttpAnnouncementProvider implements Provider<ServiceAnnouncement>
@@ -123,6 +182,82 @@ public class DiscoveryBinder
                 builder.addProperty("https", httpServerInfo.getHttpsUri().toString());
             }
             return builder.build();
+        }
+    }
+
+    public static class BalancingHttpClientBindingBuilder
+        extends AbstractBalancingHttpClientBindingBuilder<HttpClient, BalancingHttpClientBindingBuilder, HttpClientBindingBuilder>
+    {
+        public BalancingHttpClientBindingBuilder(Binder binder, Class<? extends Annotation> annotation, HttpClientBindingBuilder delegateBindingBuilder)
+        {
+            super(binder, HttpClient.class, annotation, delegateBindingBuilder);
+        }
+    }
+
+    public static class BalancingHttpClientAsyncBindingBuilder
+    extends AbstractBalancingHttpClientBindingBuilder<AsyncHttpClient, BalancingHttpClientAsyncBindingBuilder, HttpClientAsyncBindingBuilder>
+    {
+        public BalancingHttpClientAsyncBindingBuilder(Binder binder, Class<? extends Annotation> annotation, HttpClientAsyncBindingBuilder delegateBindingBuilder)
+        {
+            super(binder, AsyncHttpClient.class, annotation, delegateBindingBuilder);
+        }
+
+        public BalancingHttpClientAsyncBindingBuilder withPrivateIoThreadPool()
+        {
+            super.delegateBindingBuilder.withPrivateIoThreadPool();
+            return this;
+        }
+    }
+
+    protected abstract static class AbstractBalancingHttpClientBindingBuilder<T, B extends AbstractBalancingHttpClientBindingBuilder<T, B, D>, D extends AbstractHttpClientBindingBuilder<D>>
+    {
+
+        private final Binder binder;
+        private final Class<T> aClass;
+        private final Class<? extends Annotation> annotation;
+        protected final D delegateBindingBuilder;
+
+        public AbstractBalancingHttpClientBindingBuilder(Binder binder, Class<T> aClass, Class<? extends Annotation> annotation, D delegateBindingBuilder)
+        {
+            this.binder = binder;
+            this.aClass = aClass;
+            this.annotation = annotation;
+            this.delegateBindingBuilder = delegateBindingBuilder;
+        }
+
+        @SuppressWarnings("unchecked")
+        public B withAlias(Class<? extends Annotation> alias)
+        {
+            binder.bind(aClass).annotatedWith(alias).to(Key.get(aClass, annotation));
+            return (B) this;
+        }
+
+        @SuppressWarnings("unchecked")
+        public B withAliases(ImmutableList<Class<? extends Annotation>> aliases)
+        {
+            for (Class<? extends Annotation> alias : aliases) {
+                binder.bind(aClass).annotatedWith(alias).to(Key.get(aClass, annotation));
+            }
+            return (B) this;
+        }
+
+        public LinkedBindingBuilder<HttpRequestFilter> addFilterBinding()
+        {
+            return delegateBindingBuilder.addFilterBinding();
+        }
+
+        @SuppressWarnings("unchecked")
+        public B withFilter(Class<? extends HttpRequestFilter> filterClass)
+        {
+            delegateBindingBuilder.withFilter(filterClass);
+            return (B) this;
+        }
+
+        @SuppressWarnings("unchecked")
+        public B withTracing()
+        {
+            delegateBindingBuilder.withTracing();
+            return (B) this;
         }
     }
 }

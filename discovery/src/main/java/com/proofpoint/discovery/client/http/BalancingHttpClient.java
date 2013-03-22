@@ -38,7 +38,7 @@ public final class BalancingHttpClient implements HttpClient
     private final int maxRetries;
 
     @Inject
-    public BalancingHttpClient(HttpServiceSelector serviceSelector, HttpClient httpClient, BalancingHttpClientConfig config)
+    public BalancingHttpClient(@ForBalancingHttpClient HttpServiceSelector serviceSelector, @ForBalancingHttpClient HttpClient httpClient, BalancingHttpClientConfig config)
     {
         this.serviceSelector = checkNotNull(serviceSelector, "serviceSelector is null");
         this.httpClient = checkNotNull(httpClient, "httpClient is null");

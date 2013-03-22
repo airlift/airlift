@@ -103,7 +103,7 @@ public class HttpClientBinder
         }
     }
 
-    protected abstract static class AbstractHttpClientBindingBuilder<T extends AbstractHttpClientBindingBuilder<T>>
+    public abstract static class AbstractHttpClientBindingBuilder<T extends AbstractHttpClientBindingBuilder<T>>
     {
         protected final AbstractHttpClientModule module;
         private final Multibinder<HttpRequestFilter> multibinder;
