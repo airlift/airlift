@@ -164,6 +164,7 @@ public class AsyncHttpClientModule
     private static class NettyIoPoolProvider
             implements Provider<NettyIoPool>
     {
+        private final List<NettyIoPool> pools = new ArrayList<>();
         private final String name;
         private final Class<? extends Annotation> annotation;
         private Injector injector;
@@ -180,11 +181,21 @@ public class AsyncHttpClientModule
             this.injector = injector;
         }
 
+        @PreDestroy
+        public void destroy()
+        {
+            for (NettyIoPool pool : pools) {
+                pool.close();
+            }
+        }
+
         @Override
         public NettyIoPool get()
         {
             NettyIoPoolConfig config = injector.getInstance(keyFromNullable(NettyIoPoolConfig.class, annotation));
-            return new NettyIoPool(name, config);
+            NettyIoPool pool = new NettyIoPool(name, config);
+            pools.add(pool);
+            return pool;
         }
     }
 
