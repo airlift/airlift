@@ -20,6 +20,7 @@ import com.google.inject.Inject;
 import io.airlift.event.client.EventClient;
 import io.airlift.event.client.NullEventClient;
 import io.airlift.http.server.HttpServer;
+import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.HttpServerConfig;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.RequestStats;
@@ -59,6 +60,7 @@ public class TestingHttpServer extends HttpServer
                 servlet,
                 initParameters,
                 ImmutableSet.copyOf(filters),
+                ImmutableSet.<HttpResourceBinding>of(),
                 null,
                 null,
                 ImmutableSet.<Filter>of(),
