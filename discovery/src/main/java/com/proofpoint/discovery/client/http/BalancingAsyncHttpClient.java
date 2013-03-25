@@ -57,6 +57,9 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
     public <T, E extends Exception> AsyncHttpResponseFuture<T, E> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
     {
         checkArgument(!request.getUri().isAbsolute(), request.getUri() + " is not a relative URI");
+        checkArgument(request.getUri().getHost() == null, request.getUri() + " has a host component");
+        String path = request.getUri().getPath();
+        checkArgument(path == null || !path.startsWith("/"), request.getUri() + " path starts with '/'");
 
         List<URI> uris = serviceSelector.selectHttpService();
         if (uris.isEmpty()) {
@@ -73,6 +76,9 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
         RetryingResponseHandler<T, E> retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler);
 
         URI uri = uris.get(attempt % uris.size());
+        if (uri.getPath() == null || uri.getPath().isEmpty()) {
+            uri = uri.resolve("/");
+        }
         ++attempt;
         // TODO - skip if uri is persistently failing
 

@@ -46,13 +46,13 @@ public class TestBalancingHttpClient
         serviceSelector = mock(HttpServiceSelector.class);
         when(serviceSelector.selectHttpService()).thenReturn(ImmutableList.of(
                 URI.create("http://s1.example.com"),
-                URI.create("http://s2.example.com")
+                URI.create("http://s2.example.com/")
         ));
         httpClient = new TestingHttpClient("PUT");
         balancingHttpClient = new BalancingHttpClient(serviceSelector, httpClient,
                 new BalancingHttpClientConfig().setMaxRetries(2));
         bodyGenerator = mock(BodyGenerator.class);
-        request = preparePut().setUri(URI.create("/v1/service")).setBodyGenerator(bodyGenerator).build();
+        request = preparePut().setUri(URI.create("v1/service")).setBodyGenerator(bodyGenerator).build();
         response = mock(Response.class);
         when(response.getStatusCode()).thenReturn(204);
     }
@@ -373,6 +373,30 @@ public class TestBalancingHttpClient
 
         verify(mockClient).close();
         verifyNoMoreInteractions(mockClient);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = ".* is not a relative URI")
+    public void testURIWithScheme()
+            throws Exception
+    {
+        request = preparePut().setUri(new URI("http", null, "/v1/service", null)).setBodyGenerator(bodyGenerator).build();
+        balancingHttpClient.execute(request, mock(ResponseHandler.class));
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = ".* has a host component")
+    public void testURIWithHost()
+            throws Exception
+    {
+        request = preparePut().setUri(new URI(null, "example.com", "v1/service", null)).setBodyGenerator(bodyGenerator).build();
+        balancingHttpClient.execute(request, mock(ResponseHandler.class));
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = ".* path starts with '/'")
+    public void testURIWithAbsolutePath()
+            throws Exception
+    {
+        request = preparePut().setUri(new URI(null, null, "/v1/service", null)).setBodyGenerator(bodyGenerator).build();
+        balancingHttpClient.execute(request, mock(ResponseHandler.class));
     }
 
     class TestingHttpClient implements HttpClient

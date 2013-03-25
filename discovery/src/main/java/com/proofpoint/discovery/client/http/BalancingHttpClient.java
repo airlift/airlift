@@ -51,6 +51,9 @@ public final class BalancingHttpClient implements HttpClient
             throws E
     {
         checkArgument(!request.getUri().isAbsolute(), request.getUri() + " is not a relative URI");
+        checkArgument(request.getUri().getHost() == null, request.getUri() + " has a host component");
+        String path = request.getUri().getPath();
+        checkArgument(path == null || !path.startsWith("/"), request.getUri() + " path starts with '/'");
 
         List<URI> uris = serviceSelector.selectHttpService();
         if (uris.isEmpty()) {
@@ -63,6 +66,9 @@ public final class BalancingHttpClient implements HttpClient
 
         for (int attempt = 0; ; ++attempt) {
             URI uri = uris.get(attempt % uris.size());
+            if (uri.getPath() == null || uri.getPath().isEmpty()) {
+                uri = uri.resolve("/");
+            }
             // TODO - skip if uri is persistently failing
 
             Request subRequest = Request.Builder.fromRequest(request)
