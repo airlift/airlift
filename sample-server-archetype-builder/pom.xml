@@ -145,28 +145,7 @@
     </license>
   </licenses>
 
-  <developers>
-    <developer>
-      <id>dain</id>
-      <name>Dain Sundstrom</name>
-      <email>dain@iq80.com</email>
-    </developer>
-    <developer>
-      <id>randgalt</id>
-      <name>Jordan Zimmerman</name>
-      <email>jordan@proofpoint.com</email>
-    </developer>
-    <developer>
-      <id>mtraverso</id>
-      <name>Martin Traverso</name>
-      <email>mtraverso@gmail.com</email>
-    </developer>
-    <developer>
-      <id>mattstep</id>
-      <name>Matt Stephenson</name>
-      <email>mattstep@mattstep.net</email>
-    </developer>
-  </developers>
+  <developers/>
 
   <scm>
     <connection>scm:git:git://github.com/airlift/airlift.git</connection>

@@ -39,56 +39,7 @@
     </licenses>
 
     <developers>
-        <developer>
-            <id>ahong</id>
-            <name>Alfred Hong</name>
-            <email>ahong@proofpoint.com</email>
-        </developer>
-        <developer>
-            <id>altitude</id>
-            <name>Alex Tang</name>
-            <email>altitude@proofpoint.com</email>
-        </developer>
-        <developer>
-            <id>dain</id>
-            <name>Dain Sundstrom</name>
-            <email>dain@iq80.com</email>
-        </developer>
-        <developer>
-            <id>electrum</id>
-            <name>David Phillips</name>
-            <email>david@acz.org</email>
-        </developer>
-        <developer>
-            <id>randgalt</id>
-            <name>Jordan Zimmerman</name>
-            <email>jordan@proofpoint.com</email>
-        </developer>
-        <developer>
-            <id>mattstep</id>
-            <name>Matt Stephenson</name>
-            <email>mattstep@mattstep.net</email>
-        </developer>
-        <developer>
-            <id>mkent</id>
-            <name>Mark Kent</name>
-            <email>mkent@proofpoint.com</email>
-        </developer>
-        <developer>
-            <id>hgschmie</id>
-            <name>Henning Schmiedehausen</name>
-            <email>henning@schmiedehausen.org</email>
-        </developer>
-        <developer>
-            <id>mtraverso</id>
-            <name>Martin Traverso</name>
-            <email>mtraverso@gmail.com</email>
-        </developer>
-        <developer>
-            <id>rick.wong</id>
-            <name>Rick Wong</name>
-            <email>rick.wong@proofpoint.com</email>
-        </developer>
+        <!-- see git log -->
     </developers>
 
     <scm>
