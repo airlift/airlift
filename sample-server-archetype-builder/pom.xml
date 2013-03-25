@@ -8,7 +8,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>0.74-SNAPSHOT</version>
+        <version>0.74</version>
     </parent>
 
     <properties>
@@ -145,7 +145,7 @@
     </license>
   </licenses>
 
-  <developers/>
+  <developers />
 
   <scm>
     <connection>scm:git:git://github.com/airlift/airlift.git</connection>
