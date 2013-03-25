@@ -15,6 +15,7 @@
  */
 package com.proofpoint.jmx;
 
+import com.google.common.net.InetAddresses;
 import com.google.inject.Inject;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeInfo;
@@ -40,11 +41,11 @@ public class JmxAgent
     private final JMXServiceURL url;
 
     @Inject
-    public JmxAgent(MBeanServer server, NodeInfo nodeinfo, JmxConfig config)
+    public JmxAgent(MBeanServer server, JmxConfig config, NodeInfo nodeinfo)
             throws IOException
     {
         if (config.getHostname() == null) {
-            host = nodeinfo.getInternalIp().getHostAddress();
+            host = InetAddresses.toUriString(nodeinfo.getInternalIp());
         }
         else {
             host = config.getHostname();
