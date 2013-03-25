@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.airlift</groupId>
     <artifactId>rack-packaging</artifactId>
-    <version>0.74</version>
+    <version>0.75-SNAPSHOT</version>
     <name>rack-packaging</name>
     <description>Assembly for building a galaxy binary for the Platform Rack Server</description>
     <packaging>jar</packaging>
@@ -15,6 +15,6 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>0.74</version>
+        <version>0.75-SNAPSHOT</version>
     </parent>
 </project>
