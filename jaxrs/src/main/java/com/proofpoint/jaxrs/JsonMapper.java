@@ -16,9 +16,6 @@
 package com.proofpoint.jaxrs;
 
 
-import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
-import com.proofpoint.log.Logger;
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -27,6 +24,10 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.util.JSONPObject;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.net.HttpHeaders;
+import com.google.inject.Inject;
+import com.proofpoint.log.Logger;
 import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.spi.container.WebApplication;
 import org.apache.bval.jsr303.ApacheValidationProvider;
@@ -43,7 +44,6 @@ import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -171,6 +171,9 @@ class JsonMapper
             OutputStream outputStream)
             throws IOException
     {
+        // Prevent broken browser from attempting to render the json as html
+        httpHeaders.add(HttpHeaders.X_CONTENT_TYPE_OPTIONS, "nosniff");
+
         JsonGenerator jsonGenerator = objectMapper.getJsonFactory().createJsonGenerator(outputStream, JsonEncoding.UTF8);
 
         // Important: we are NOT to close the underlying stream after

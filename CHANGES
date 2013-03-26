@@ -73,6 +73,10 @@ jax-rs is no longer required.
 
 * Temporarily allow the characters .:=,- in event names once again.
 
+* Add "X-Content-Type-Options: nosniff" header to all json responses to prevent
+  broken browsers from rendering the json as html, which is a potential XSS
+  vulnerability
+
 Platform 0.70
 
 * Upgrade Jackson to 2.1.3
