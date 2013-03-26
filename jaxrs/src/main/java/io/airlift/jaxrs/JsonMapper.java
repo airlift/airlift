@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.net.HttpHeaders;
 import com.google.inject.Inject;
 import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.spi.container.WebApplication;
@@ -180,6 +181,9 @@ class JsonMapper
             OutputStream outputStream)
             throws IOException
     {
+        // Prevent broken browser from attempting to render the json as html
+        httpHeaders.add(HttpHeaders.X_CONTENT_TYPE_OPTIONS, "nosniff");
+
         JsonGenerator jsonGenerator = objectMapper.getJsonFactory().createJsonGenerator(outputStream, JsonEncoding.UTF8);
 
         // Important: we are NOT to close the underlying stream after
