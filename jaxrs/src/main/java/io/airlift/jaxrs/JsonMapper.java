@@ -16,9 +16,12 @@
 package io.airlift.jaxrs;
 
 import com.fasterxml.jackson.core.JsonEncoding;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.SerializableString;
+import com.fasterxml.jackson.core.io.CharacterEscapes;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -45,7 +48,6 @@ import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -184,7 +186,10 @@ class JsonMapper
         // Prevent broken browser from attempting to render the json as html
         httpHeaders.add(HttpHeaders.X_CONTENT_TYPE_OPTIONS, "nosniff");
 
-        JsonGenerator jsonGenerator = objectMapper.getJsonFactory().createJsonGenerator(outputStream, JsonEncoding.UTF8);
+        JsonFactory jsonFactory = objectMapper.getJsonFactory();
+        jsonFactory.setCharacterEscapes(HTMLCharacterEscapes.INSTANCE);
+
+        JsonGenerator jsonGenerator = jsonFactory.createJsonGenerator(outputStream, JsonEncoding.UTF8);
 
         // Important: we are NOT to close the underlying stream after
         // mapping, so we need to instruct generator:
@@ -238,6 +243,9 @@ class JsonMapper
 
     private boolean isPrettyPrintRequested()
     {
+        if (webApplication == null) {
+            return false;
+        }
         HttpContext httpContext = webApplication.getThreadLocalHttpContext();
         if (httpContext == null) {
             return false;
@@ -252,6 +260,9 @@ class JsonMapper
 
     private String getJsonpFunctionName()
     {
+        if (webApplication == null) {
+            return null;
+        }
         HttpContext httpContext = webApplication.getThreadLocalHttpContext();
         if (httpContext == null) {
             return null;
@@ -275,5 +286,40 @@ class JsonMapper
         }
 
         return messages.build();
+    }
+
+    private static class HTMLCharacterEscapes
+            extends CharacterEscapes
+    {
+        private static final HTMLCharacterEscapes INSTANCE = new HTMLCharacterEscapes();
+
+        private final int[] asciiEscapes;
+
+        private HTMLCharacterEscapes()
+        {
+            // start with set of characters known to require escaping (double-quote, backslash etc)
+            int[] esc = CharacterEscapes.standardAsciiEscapesForJSON();
+
+            // and force escaping of a few others:
+            esc['<'] = CharacterEscapes.ESCAPE_STANDARD;
+            esc['>'] = CharacterEscapes.ESCAPE_STANDARD;
+            esc['&'] = CharacterEscapes.ESCAPE_STANDARD;
+            esc['\''] = CharacterEscapes.ESCAPE_STANDARD;
+
+            asciiEscapes = esc;
+        }
+
+        @Override
+        public int[] getEscapeCodesForAscii()
+        {
+            return asciiEscapes;
+        }
+
+        @Override
+        public SerializableString getEscapeSequence(int ch)
+        {
+            // no further escaping (beyond ASCII chars) needed:
+            return null;
+        }
     }
 }
