@@ -19,19 +19,61 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Charsets;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ForwardingMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.ListMultimap;
+import com.google.common.net.HttpHeaders;
+import com.proofpoint.json.JsonCodec;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.MultivaluedMap;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipException;
 
 public class TestJsonMapper
 {
+    @Test
+    public void testSuccess()
+            throws IOException
+    {
+        assertRoundTrip("value");
+        assertRoundTrip("<");
+        assertRoundTrip(">");
+        assertRoundTrip("&");
+        assertRoundTrip("<>'&");
+    }
+
+    private void assertRoundTrip(String value)
+            throws IOException
+    {
+        JsonCodec<String> jsonCodec = JsonCodec.jsonCodec(String.class);
+        JsonMapper jsonMapper = new JsonMapper(new ObjectMapper(), null);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        MultivaluedMap<String, Object> headers = GuavaMultivaluedMap.create();
+        jsonMapper.writeTo(value, String.class, null, null, null, headers, outputStream);
+
+        String json = new String(outputStream.toByteArray(), Charsets.UTF_8);
+        Assert.assertTrue(!json.contains("<"));
+        Assert.assertTrue(!json.contains(">"));
+        Assert.assertTrue(!json.contains("'"));
+        Assert.assertTrue(!json.contains("&"));
+        Assert.assertEquals(jsonCodec.fromJson(json), value);
+
+        Assert.assertEquals(headers.getFirst(HttpHeaders.X_CONTENT_TYPE_OPTIONS), "nosniff");
+    }
+
     @Test
     public void testEOFExceptionReturnsJsonMapperParsingException()
             throws IOException
@@ -177,6 +219,48 @@ public class TestJsonMapper
         {
             this.firstField = firstField;
             this.secondField = secondField;
+        }
+    }
+    static class GuavaMultivaluedMap<K, V> extends ForwardingMap<K, List<V>>
+                implements MultivaluedMap<K, V>
+    {
+        private final ListMultimap<K, V> multimap;
+
+        static <K, V> GuavaMultivaluedMap<K, V> create()
+        {
+            return new GuavaMultivaluedMap<>(ArrayListMultimap.<K, V>create());
+        }
+
+        private GuavaMultivaluedMap(ListMultimap<K, V> multimap)
+        {
+            this.multimap = multimap;
+        }
+
+        @Override
+        public void putSingle(K key, V value)
+        {
+            multimap.removeAll(key);
+            multimap.put(key, value);
+        }
+
+        @Override
+        @SuppressWarnings({"RedundantCast"})
+        protected Map<K, List<V>> delegate()
+        {
+            // forced cast
+            return (Map<K, List<V>>) (Object) multimap.asMap();
+        }
+
+        @Override
+        public void add(K key, V value)
+        {
+            multimap.put(key, value);
+        }
+
+        @Override
+        public V getFirst(K key)
+        {
+            return Iterables.getFirst(multimap.get(key), null);
         }
     }
 }
