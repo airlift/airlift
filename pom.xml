@@ -19,9 +19,9 @@
     <inceptionYear>2010</inceptionYear>
 
     <properties>
+        <air.check.skip-extended>true</air.check.skip-extended>
         <air.check.fail-all>false</air.check.fail-all>
         <air.check.fail-basic>true</air.check.fail-basic>
-        <air.check.skip-pmd>true</air.check.skip-pmd>
 
         <dep.airlift.version>0.75-SNAPSHOT</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
