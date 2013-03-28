@@ -1,5 +1,8 @@
 package io.airlift.stats;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 import org.weakref.jmx.Managed;
 
@@ -72,5 +75,44 @@ public class DecayCounter
     private long getTickInSeconds()
     {
         return TimeUnit.NANOSECONDS.toSeconds(ticker.read());
+    }
+
+    public DecayCounterSnapshot snapshot()
+    {
+        return new DecayCounterSnapshot(getCount(), getRate());
+    }
+
+    public static class DecayCounterSnapshot
+    {
+        private final double count;
+        private final double rate;
+
+        @JsonCreator
+        public DecayCounterSnapshot(@JsonProperty("count") double count, @JsonProperty("rate") double rate)
+        {
+            this.count = count;
+            this.rate = rate;
+        }
+
+        @JsonProperty
+        public double getCount()
+        {
+            return count;
+        }
+
+        @JsonProperty
+        public double getRate()
+        {
+            return rate;
+        }
+
+        @Override
+        public String toString()
+        {
+            return Objects.toStringHelper(this)
+                    .add("count", count)
+                    .add("rate", rate)
+                    .toString();
+        }
     }
 }
