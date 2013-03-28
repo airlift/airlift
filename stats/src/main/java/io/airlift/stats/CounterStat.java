@@ -15,7 +15,10 @@
  */
 package io.airlift.stats;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.Beta;
+import io.airlift.stats.DecayCounter.DecayCounterSnapshot;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
@@ -62,5 +65,54 @@ public class CounterStat
     public DecayCounter getFifteenMinute()
     {
         return fifteenMinute;
+    }
+
+    public CounterStatSnapshot snapshot()
+    {
+        return new CounterStatSnapshot(getTotalCount(), getOneMinute().snapshot(), getFiveMinute().snapshot(), getFifteenMinute().snapshot());
+    }
+
+    public static class CounterStatSnapshot
+    {
+        private final long totalCount;
+        private final DecayCounterSnapshot oneMinute;
+        private final DecayCounterSnapshot fiveMinute;
+        private final DecayCounterSnapshot fifteenMinute;
+
+        @JsonCreator
+        public CounterStatSnapshot(@JsonProperty("totalCount") long totalCount,
+                @JsonProperty("oneMinute") DecayCounterSnapshot oneMinute,
+                @JsonProperty("fiveMinute") DecayCounterSnapshot fiveMinute,
+                @JsonProperty("fifteenMinute") DecayCounterSnapshot fifteenMinute)
+        {
+            this.totalCount = totalCount;
+            this.oneMinute = oneMinute;
+            this.fiveMinute = fiveMinute;
+            this.fifteenMinute = fifteenMinute;
+        }
+
+        @JsonProperty
+        public long getTotalCount()
+        {
+            return totalCount;
+        }
+
+        @JsonProperty
+        public DecayCounterSnapshot getOneMinute()
+        {
+            return oneMinute;
+        }
+
+        @JsonProperty
+        public DecayCounterSnapshot getFiveMinute()
+        {
+            return fiveMinute;
+        }
+
+        @JsonProperty
+        public DecayCounterSnapshot getFifteenMinute()
+        {
+            return fifteenMinute;
+        }
     }
 }

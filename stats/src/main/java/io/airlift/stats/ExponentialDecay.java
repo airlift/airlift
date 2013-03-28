@@ -28,6 +28,12 @@ public final class ExponentialDecay
         return 1.0 / TimeUnit.MINUTES.toSeconds(15);
     }
 
+    public static double seconds(int seconds)
+    {
+        // alpha for a target weight of 1/E at the specified number of seconds
+        return 1.0 / seconds;
+    }
+
     /**
      * Compute the alpha decay factor such that the weight of an entry with age 'targetAgeInSeconds' is targetWeight'
      */

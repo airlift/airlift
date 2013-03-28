@@ -104,6 +104,8 @@ public class ObjectMapperProvider
         objectMapper.disable(MapperFeature.AUTO_DETECT_SETTERS);
         objectMapper.disable(MapperFeature.AUTO_DETECT_GETTERS);
         objectMapper.disable(MapperFeature.AUTO_DETECT_IS_GETTERS);
+        objectMapper.disable(MapperFeature.USE_GETTERS_AS_SETTERS);
+        objectMapper.disable(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS);
 
         if (jsonSerializers != null || jsonDeserializers != null || keySerializers != null || keyDeserializers != null) {
             SimpleModule module = new SimpleModule(getClass().getName(), new Version(1, 0, 0, null));
