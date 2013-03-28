@@ -100,7 +100,7 @@ public class JmxHttpModule implements Module
         }
     }
 
-    static class TabularDataSerializer
+    public static class TabularDataSerializer
             extends StdSerializer<TabularData>
     {
         public TabularDataSerializer()
@@ -136,7 +136,7 @@ public class JmxHttpModule implements Module
 
     }
 
-    static class CompositeDataSerializer
+    public static class CompositeDataSerializer
             extends StdSerializer<CompositeData>
     {
         public CompositeDataSerializer()

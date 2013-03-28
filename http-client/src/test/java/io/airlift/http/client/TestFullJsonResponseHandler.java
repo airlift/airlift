@@ -96,7 +96,7 @@ public class TestFullJsonResponseHandler
         assertEquals(response.getValue().getAge(), 0);
     }
 
-    private static class User
+    public static class User
     {
         private final String name;
         private final int age;

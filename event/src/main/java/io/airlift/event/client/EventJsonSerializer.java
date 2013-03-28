@@ -26,7 +26,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.UUID;
 
-class EventJsonSerializer<T>
+public class EventJsonSerializer<T>
         extends JsonSerializer<T>
 {
     private final EventTypeMetadata<T> eventTypeMetadata;
