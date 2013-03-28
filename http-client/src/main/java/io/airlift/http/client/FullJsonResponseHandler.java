@@ -17,8 +17,6 @@ package io.airlift.http.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.CharStreams;
@@ -27,6 +25,7 @@ import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.json.JsonCodec;
 
 import javax.annotation.concurrent.NotThreadSafe;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ConnectException;
@@ -151,7 +150,9 @@ public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<
 
         public T getValue()
         {
-            Preconditions.checkState(hasValue, "Response does not contain a JSON value");
+            if (!hasValue) {
+                throw new IllegalStateException("Response does not contain a JSON value", exception);
+            }
             return value;
         }
 

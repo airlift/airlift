@@ -17,6 +17,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public class TestFullJsonResponseHandler
@@ -55,6 +56,22 @@ public class TestFullJsonResponseHandler
         assertFalse(response.hasValue());
         assertEquals(response.getException().getMessage(),
                 "Invalid [simple type, class io.airlift.http.client.TestFullJsonResponseHandler$User] json string");
+    }
+
+    @Test
+    public void testInvalidJsonGetValue()
+    {
+        String json = "{\"age\": \"foo\"}";
+        JsonResponse<User> response = handler.handle(null, mockResponse(OK, JSON_UTF_8, json));
+
+        try {
+            response.getValue();
+            fail("expected exception");
+        }
+        catch (IllegalStateException e) {
+            assertEquals(e.getMessage(), "Response does not contain a JSON value");
+            assertEquals(e.getCause(), response.getException());
+        }
     }
 
     @Test
