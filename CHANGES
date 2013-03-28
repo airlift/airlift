@@ -1,3 +1,9 @@
+* 0.75
+
+- Add "X-Content-Type-Options: nosniff" header to all json responses to prevent
+  broken browsers from rendering the json as html, which is a potential XSS
+  vulnerability
+
 * 0.74
 
 - Remove experimental from all artifact names
