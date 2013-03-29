@@ -15,18 +15,21 @@
  */
 package com.proofpoint.platform.sample;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.proofpoint.event.client.InMemoryEventClient;
+import com.proofpoint.platform.sample.PersonStore.StoreEntry;
 import com.proofpoint.units.Duration;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 import static com.proofpoint.platform.sample.PersonEvent.personAdded;
 import static com.proofpoint.platform.sample.PersonEvent.personRemoved;
 import static com.proofpoint.platform.sample.PersonEvent.personUpdated;
-import static java.util.Arrays.asList;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -129,8 +132,27 @@ public class TestPersonStore
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
         store.put("bar", new Person("bar@example.com", "Mr Bar"));
 
-        assertEquals(store.getAll().size(), 2);
-        assertEquals(store.getAll(), asList(new Person("foo@example.com", "Mr Foo"), new Person("bar@example.com", "Mr Bar")));
-    }
+        Collection<StoreEntry> entries = store.getAll();
+        assertEquals(entries.size(), 2);
 
+        StoreEntry fooEntry = Iterables.find(entries, new Predicate<StoreEntry>()
+        {
+            @Override
+            public boolean apply(StoreEntry input)
+            {
+                return input.getId().equals("foo");
+            }
+        });
+        assertEquals(fooEntry.getPerson(), new Person("foo@example.com", "Mr Foo"));
+
+        StoreEntry barEntry = Iterables.find(entries, new Predicate<StoreEntry>()
+        {
+            @Override
+            public boolean apply(StoreEntry input)
+            {
+                return input.getId().equals("bar");
+            }
+        });
+        assertEquals(barEntry.getPerson(), new Person("bar@example.com", "Mr Bar"));
+    }
 }

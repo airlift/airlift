@@ -20,6 +20,8 @@ import com.google.common.base.Objects;
 
 import java.net.URI;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class PersonWithSelf
 {
     private final Person person;
@@ -33,7 +35,7 @@ public class PersonWithSelf
     private PersonWithSelf(Person person, URI self)
     {
         this.person = person;
-        this.self = self;
+        this.self = checkNotNull(self);
     }
 
     @JsonProperty
@@ -71,5 +73,14 @@ public class PersonWithSelf
         }
         final PersonWithSelf other = (PersonWithSelf) obj;
         return Objects.equal(this.person, other.person) && Objects.equal(this.self, other.self);
+    }
+
+    @Override
+    public String toString()
+    {
+        return Objects.toStringHelper(this)
+                .add("person", person)
+                .add("self", self)
+                .toString();
     }
 }

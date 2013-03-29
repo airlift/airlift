@@ -17,6 +17,7 @@ package com.proofpoint.platform.sample;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Objects;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
@@ -40,5 +41,14 @@ public class PersonRepresentation
     public Person toPerson()
     {
         return new Person(email, name);
+    }
+
+    @Override
+    public String toString()
+    {
+        return Objects.toStringHelper(this)
+                .add("email", email)
+                .add("name", name)
+                .toString();
     }
 }

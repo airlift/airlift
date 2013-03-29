@@ -19,12 +19,14 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
 import com.google.inject.Inject;
 import com.proofpoint.event.client.EventClient;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
 import java.util.Collection;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
@@ -97,8 +99,32 @@ public class PersonStore
         return removedPerson != null;
     }
 
-    public Collection<Person> getAll()
+    public Collection<StoreEntry> getAll()
     {
-        return ImmutableList.copyOf(persons.values());
+        Builder<StoreEntry> builder = ImmutableList.builder();
+        for (Entry<String, Person> entry : persons.entrySet()) {
+            builder.add(new StoreEntry(entry));
+        }
+        return builder.build();
+    }
+
+    public static class StoreEntry
+    {
+        private final Entry<String,Person> entry;
+
+        private StoreEntry(Entry<String, Person> entry)
+        {
+            this.entry = entry;
+        }
+
+        public String getId()
+        {
+            return entry.getKey();
+        }
+
+        public Person getPerson()
+        {
+            return entry.getValue();
+        }
     }
 }

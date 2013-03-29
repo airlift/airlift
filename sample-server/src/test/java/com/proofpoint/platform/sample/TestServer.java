@@ -17,6 +17,7 @@ package com.proofpoint.platform.sample;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 import com.google.inject.Injector;
 import com.proofpoint.bootstrap.Bootstrap;
@@ -39,6 +40,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -127,13 +129,14 @@ public class TestServer
         store.put("bar", new Person("bar@example.com", "Mr Bar"));
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
 
-        List<Object> expected = listCodec.fromJson(Resources.toString(Resources.getResource("list.json"), Charsets.UTF_8));
+        List<Object> expected = new ArrayList<>();
+        expected.add(ImmutableMap.of("self", uriFor("/v1/person/foo").toString(), "name", "Mr Foo", "email", "foo@example.com"));
+        expected.add(ImmutableMap.of("self", uriFor("/v1/person/bar").toString(), "name", "Mr Bar", "email", "bar@example.com"));
 
         List<Object> actual = client.execute(
                 prepareGet().setUri(uriFor("/v1/person")).build(),
                 createJsonResponseHandler(listCodec));
-
-        assertEqualsIgnoreOrder(expected, actual);
+        assertEqualsIgnoreOrder(actual, expected);
     }
 
     @Test
