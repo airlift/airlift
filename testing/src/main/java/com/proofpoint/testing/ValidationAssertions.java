@@ -25,7 +25,6 @@ import java.lang.annotation.Annotation;
 import java.util.Set;
 
 import static java.lang.String.format;
-import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 @Beta
@@ -40,8 +39,22 @@ public class ValidationAssertions
 
     public static <T> T assertValidates(T object, String message)
     {
-        assertTrue(VALIDATOR.validate(object).isEmpty(),
-                   format("%sexpected:<%s> to pass validation", toMessageString(message), object));
+        Set<ConstraintViolation<T>> violations = VALIDATOR.validate(object);
+        if (violations.isEmpty()) {
+            return object;
+        }
+        StringBuilder builder = new StringBuilder(toMessageString(message));
+        builder.append("expected:<").append(object).append("> to pass validation:");
+        for (ConstraintViolation<T> violation : violations) {
+            builder.append("\n\t")
+                    .append(violation.getPropertyPath().toString())
+                    .append(" failed validation for ")
+                    .append(violation.getConstraintDescriptor().getAnnotation().annotationType().getName())
+                    .append(" with message '")
+                    .append(violation.getMessage())
+                    .append("'");
+        }
+        fail(builder.toString());
         return object;
     }
 

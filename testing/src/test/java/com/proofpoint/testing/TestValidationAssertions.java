@@ -50,7 +50,7 @@ public class TestValidationAssertions
         }
         catch (AssertionError e) {
             ok = true;
-            verifyExceptionMessage(e, null, INVALID_OBJECT, null, null);
+            verifyExceptionMessage(e, null, INVALID_OBJECT, "value", NotNull.class);
         }
         assertTrue(ok, "Expected AssertionError");
     }
@@ -119,10 +119,10 @@ public class TestValidationAssertions
         String actualMessage = e.getMessage();
         Assert.assertNotNull(actualMessage);
         if (message != null) {
-            assertTrue(actualMessage.startsWith(message + " "));
+            assertTrue(actualMessage.startsWith(message + " "), "message '" + actualMessage + "' starts with '" + message + "'");
         }
         else {
-            assertFalse(actualMessage.startsWith(" "));
+            assertFalse(actualMessage.startsWith(" "), "message '" + message + "' doesn't start with space");
         }
 
         assertContains(actualMessage, "<" + value + ">");
