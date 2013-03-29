@@ -51,7 +51,7 @@ public class TestPersonRepresentation
         assertEquals(personRepresentation.toPerson(), new Person("foo@example.com", "Mr Foo"));
     }
 
-    @Test(enabled = false) // todo fails due to bug
+    @Test
     public void testNoEmail()
     {
         map.remove("email");
@@ -65,7 +65,7 @@ public class TestPersonRepresentation
         assertFailsValidation(decodeJson(codec, map), "email", "is malformed", Pattern.class);
     }
 
-    @Test(enabled = false) // todo fails due to bug
+    @Test
     public void testNoName()
     {
         map.remove("name");

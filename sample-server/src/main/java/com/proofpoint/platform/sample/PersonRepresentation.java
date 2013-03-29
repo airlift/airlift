@@ -21,38 +21,24 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 
-import java.net.URI;
-
 public class PersonRepresentation
 {
-    private final Person person;
+
+    @NotNull(message = "is missing")
+    @Pattern(regexp = "[^@]+@[^@]+", message = "is malformed")
+    private String email;
+    @NotNull(message = "is missing")
+    private String name;
 
     @JsonCreator
     public PersonRepresentation(@JsonProperty("email") String email, @JsonProperty("name") String name)
     {
-        this(new Person(email, name));
-    }
-
-    private PersonRepresentation(Person person)
-    {
-        this.person = person;
-    }
-
-    @NotNull(message = "is missing")
-    @Pattern(regexp = "[^@]+@[^@]+", message = "is malformed")
-    public String getEmail()
-    {
-        return person.getEmail();
-    }
-
-    @NotNull(message = "is missing")
-    public String getName()
-    {
-        return person.getName();
+        this.email = email;
+        this.name = name;
     }
 
     public Person toPerson()
     {
-        return person;
+        return new Person(email, name);
     }
 }
