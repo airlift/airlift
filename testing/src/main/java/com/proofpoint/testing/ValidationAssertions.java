@@ -45,6 +45,13 @@ public class ValidationAssertions
         }
         StringBuilder builder = new StringBuilder(toMessageString(message));
         builder.append("expected:<").append(object).append("> to pass validation:");
+        appendViolations(builder, violations);
+        fail(builder.toString());
+        return object;
+    }
+
+    private static <T> void appendViolations(StringBuilder builder, Set<ConstraintViolation<T>> violations)
+    {
         for (ConstraintViolation<T> violation : violations) {
             builder.append("\n\t")
                     .append(violation.getPropertyPath().toString())
@@ -54,8 +61,6 @@ public class ValidationAssertions
                     .append(violation.getMessage())
                     .append("'");
         }
-        fail(builder.toString());
-        return object;
     }
 
     public static <T> void assertFailsValidation(T object, String field, String expectedErrorMessage, Class<? extends Annotation> annotation, String message)
@@ -81,13 +86,20 @@ public class ValidationAssertions
             }
         }
 
-        fail(format("%sexpected %s.%s for <%s> to fail validation for %s with message '%s'",
-                    toMessageString(message),
-                    object.getClass().getName(),
-                    field,
-                    object,
-                    annotation.getName(),
-                    expectedErrorMessage));
+        StringBuilder builder = new StringBuilder(format("%sexpected %s.%s for <%s> to fail validation for %s with message '%s'",
+                toMessageString(message),
+                object.getClass().getName(),
+                field,
+                object,
+                annotation.getName(),
+                expectedErrorMessage));
+        if (violations.isEmpty()) {
+            builder.append(" but it passed");
+        } else {
+            builder.append(" but it failed for other fields:");
+            appendViolations(builder, violations);
+        }
+        fail(builder.toString());
     }
 
     public static <T> void assertFailsValidation(T object, String field, String expectedErrorMessage, Class<? extends Annotation> annotation)
