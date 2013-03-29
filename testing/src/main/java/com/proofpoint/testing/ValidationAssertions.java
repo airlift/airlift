@@ -33,15 +33,16 @@ public class ValidationAssertions
 {
     private static final Validator VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
 
-    public static void assertValidates(Object object)
+    public static <T> T assertValidates(T object)
     {
-        assertValidates(object, null);
+        return assertValidates(object, null);
     }
 
-    public static void assertValidates(Object object, String message)
+    public static <T> T assertValidates(T object, String message)
     {
         assertTrue(VALIDATOR.validate(object).isEmpty(),
                    format("%sexpected:<%s> to pass validation", toMessageString(message), object));
+        return object;
     }
 
     public static <T> void assertFailsValidation(T object, String field, String expectedErrorMessage, Class<? extends Annotation> annotation, String message)

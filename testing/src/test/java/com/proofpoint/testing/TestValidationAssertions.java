@@ -25,6 +25,7 @@ import static com.proofpoint.testing.Assertions.assertContains;
 import static com.proofpoint.testing.ValidationAssertions.assertFailsValidation;
 import static com.proofpoint.testing.ValidationAssertions.assertValidates;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 public class TestValidationAssertions
@@ -36,8 +37,8 @@ public class TestValidationAssertions
     @Test
     public void testAssertValidates()
     {
-        assertValidates(VALID_OBJECT);
-        assertValidates(VALID_OBJECT, MESSAGE);
+        assertSame(assertValidates(VALID_OBJECT), VALID_OBJECT);
+        assertSame(assertValidates(VALID_OBJECT, MESSAGE), VALID_OBJECT);
     }
 
     @Test
