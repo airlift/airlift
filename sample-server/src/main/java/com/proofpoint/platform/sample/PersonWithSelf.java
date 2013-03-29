@@ -15,44 +15,61 @@
  */
 package com.proofpoint.platform.sample;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
+import com.google.common.base.Objects;
 
 import java.net.URI;
 
-public class PersonRepresentation
+public class PersonWithSelf
 {
     private final Person person;
+    private final URI self;
 
-    @JsonCreator
-    public PersonRepresentation(@JsonProperty("email") String email, @JsonProperty("name") String name)
+    public static PersonWithSelf from(Person person, URI self)
     {
-        this(new Person(email, name));
+        return new PersonWithSelf(person, self);
     }
 
-    private PersonRepresentation(Person person)
+    private PersonWithSelf(Person person, URI self)
     {
         this.person = person;
+        this.self = self;
     }
 
-    @NotNull(message = "is missing")
-    @Pattern(regexp = "[^@]+@[^@]+", message = "is malformed")
+    @JsonProperty
     public String getEmail()
     {
         return person.getEmail();
     }
 
-    @NotNull(message = "is missing")
+    @JsonProperty
     public String getName()
     {
         return person.getName();
     }
 
-    public Person toPerson()
+    @JsonProperty
+    public URI getSelf()
     {
-        return person;
+        return self;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hashCode(person, self);
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        final PersonWithSelf other = (PersonWithSelf) obj;
+        return Objects.equal(this.person, other.person) && Objects.equal(this.self, other.self);
     }
 }

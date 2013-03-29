@@ -31,7 +31,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
-import static com.proofpoint.platform.sample.PersonRepresentation.from;
+import static com.proofpoint.platform.sample.PersonWithSelf.from;
 
 @Path("/v1/person/{id: \\w+}")
 public class PersonResource

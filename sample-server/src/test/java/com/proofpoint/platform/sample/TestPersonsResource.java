@@ -24,6 +24,7 @@ import javax.ws.rs.core.Response;
 import java.util.Collection;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static com.proofpoint.platform.sample.PersonWithSelf.from;
 import static com.proofpoint.testing.Assertions.assertInstanceOf;
 import static org.testng.Assert.assertEquals;
 
@@ -58,8 +59,8 @@ public class TestPersonsResource
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
         assertInstanceOf(response.getEntity(), Collection.class);
         assertEquals((Collection<?>) response.getEntity(), newArrayList(
-                new PersonRepresentation("foo@example.com", "Mr Foo", null),
-                new PersonRepresentation("bar@example.com", "Mr Bar", null)
+                from(new Person("foo@example.com", "Mr Foo"), null),
+                from(new Person("bar@example.com", "Mr Bar"), null)
         ));
     }
 

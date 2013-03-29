@@ -27,6 +27,7 @@ import java.net.URI;
 import static com.proofpoint.platform.sample.PersonEvent.personAdded;
 import static com.proofpoint.platform.sample.PersonEvent.personRemoved;
 import static com.proofpoint.platform.sample.PersonEvent.personUpdated;
+import static com.proofpoint.platform.sample.PersonWithSelf.from;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -58,7 +59,7 @@ public class TestPersonResource
 
         Response response = resource.get("foo", MockUriInfo.from(URI.create("http://localhost/v1/person/1")));
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
-        assertEquals(response.getEntity(), new PersonRepresentation("foo@example.com", "Mr Foo", URI.create("http://localhost/v1/person/1")));
+        assertEquals(response.getEntity(), from(new Person("foo@example.com", "Mr Foo"), URI.create("http://localhost/v1/person/1")));
         assertNull(response.getMetadata().get("Content-Type")); // content type is set by jersey based on @Produces
     }
 
@@ -71,7 +72,7 @@ public class TestPersonResource
     @Test
     public void testAdd()
     {
-        Response response = resource.put("foo", new PersonRepresentation("foo@example.com", "Mr Foo", null));
+        Response response = resource.put("foo", new PersonRepresentation("foo@example.com", "Mr Foo"));
 
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
         assertNull(response.getEntity());
@@ -88,7 +89,7 @@ public class TestPersonResource
     @Test(expectedExceptions = NullPointerException.class)
     public void testPutNullId()
     {
-        resource.put(null, new PersonRepresentation("foo@example.com", "Mr Foo", null));
+        resource.put(null, new PersonRepresentation("foo@example.com", "Mr Foo"));
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -102,7 +103,7 @@ public class TestPersonResource
     {
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
 
-        Response response = resource.put("foo", new PersonRepresentation("bar@example.com", "Mr Bar", null));
+        Response response = resource.put("foo", new PersonRepresentation("bar@example.com", "Mr Bar"));
 
         assertEquals(response.getStatus(), Response.Status.NO_CONTENT.getStatusCode());
         assertNull(response.getEntity());

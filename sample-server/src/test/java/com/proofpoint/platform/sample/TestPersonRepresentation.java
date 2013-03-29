@@ -43,17 +43,6 @@ public class TestPersonRepresentation
                 "email", "foo@example.com"));
     }
 
-    // TODO: add equivalence test
-
-    @Test
-    public void testJsonRoundTrip()
-    {
-        PersonRepresentation expected = new PersonRepresentation("alice@example.com", "Alice", null);
-        String json = codec.toJson(expected);
-        PersonRepresentation actual = codec.fromJson(json);
-        assertEquals(actual, expected);
-    }
-
     @Test
     public void testJsonDecode()
     {
