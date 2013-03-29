@@ -15,17 +15,33 @@
  */
 package com.proofpoint.platform.sample;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Resources;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.proofpoint.json.JsonCodec;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+import java.util.Map;
+
 import static com.proofpoint.json.JsonCodec.jsonCodec;
+import static com.proofpoint.json.testing.JsonTester.decodeJson;
+import static com.proofpoint.testing.ValidationAssertions.assertFailsValidation;
+import static com.proofpoint.testing.ValidationAssertions.assertValidates;
 import static org.testng.Assert.assertEquals;
 
 public class TestPersonRepresentation
 {
     private final JsonCodec<PersonRepresentation> codec = jsonCodec(PersonRepresentation.class);
+    private Map<String,String> map;
+
+    @BeforeMethod
+    public void setup() {
+        map = Maps.newHashMap(ImmutableMap.of(
+                "name", "Mr Foo",
+                "email", "foo@example.com"));
+    }
 
     // TODO: add equivalence test
 
@@ -40,13 +56,30 @@ public class TestPersonRepresentation
 
     @Test
     public void testJsonDecode()
-            throws Exception
     {
-        PersonRepresentation expected = new PersonRepresentation("foo@example.com", "Mr Foo", null);
+        PersonRepresentation personRepresentation = decodeJson(codec, map);
+        assertValidates(personRepresentation);
+        assertEquals(personRepresentation.toPerson(), new Person("foo@example.com", "Mr Foo"));
+    }
 
-        String json = Resources.toString(Resources.getResource("single.json"), Charsets.UTF_8);
-        PersonRepresentation actual = codec.fromJson(json);
+    @Test(enabled = false) // todo fails due to bug
+    public void testNoEmail()
+    {
+        map.remove("email");
+        assertFailsValidation(decodeJson(codec, map), "email", "is missing", NotNull.class);
+    }
 
-        assertEquals(actual, expected);
+    @Test
+    public void testInvalidEmail()
+    {
+        map.put("email", "invalid");
+        assertFailsValidation(decodeJson(codec, map), "email", "is malformed", Pattern.class);
+    }
+
+    @Test(enabled = false) // todo fails due to bug
+    public void testNoName()
+    {
+        map.remove("name");
+        assertFailsValidation(decodeJson(codec, map), "name", "is missing", NotNull.class);
     }
 }
