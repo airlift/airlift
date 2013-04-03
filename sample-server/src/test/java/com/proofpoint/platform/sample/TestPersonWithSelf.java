@@ -15,29 +15,25 @@
  */
 package com.proofpoint.platform.sample;
 
-import com.proofpoint.json.JsonCodec;
+import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.Test;
 
 import java.net.URI;
 
-import static com.proofpoint.json.JsonCodec.jsonCodec;
-import static org.testng.Assert.assertEquals;
+import static com.proofpoint.json.testing.JsonTester.assertJsonEncode;
 
 public class TestPersonWithSelf
 {
-    private final JsonCodec<PersonWithSelf> codec = jsonCodec(PersonWithSelf.class);
-
     // TODO: add equivalence test
 
     @Test
     public void testJsonEncode()
     {
-        PersonWithSelf expected = PersonWithSelf.from(new Person("alice@example.com", "Alice"), URI.create("http://example.com/foo"));
-        assertEquals(codec.toJson(expected).replaceAll("\r\n", "\n"),
-                "{\n" +
-                "  \"self\" : \"http://example.com/foo\",\n" +
-                "  \"name\" : \"Alice\",\n" +
-                "  \"email\" : \"alice@example.com\"\n" +
-                "}");
+        assertJsonEncode(PersonWithSelf.from(new Person("alice@example.com", "Alice"), URI.create("http://example.com/foo")),
+                ImmutableMap.of(
+                        "self", "http://example.com/foo",
+                        "name", "Alice",
+                        "email", "alice@example.com"
+                ));
     }
 }
