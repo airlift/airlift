@@ -1,3 +1,7 @@
+Airlift 0.76
+
+* Rack server support has been moved to a separate project: airlift-rack
+
 Airlift 0.75
 
 * Minor bug fixes

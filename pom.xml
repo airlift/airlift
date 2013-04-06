@@ -68,16 +68,10 @@
         <module>log-manager</module>
         <module>node</module>
         <module>packaging</module>
-        <module>rack-launcher</module>
-        <module>rack-packaging</module>
-        <module>rack</module>
         <module>stats</module>
         <module>testing</module>
         <module>trace-token</module>
         <module>units</module>
-
-        <!-- base poms -->
-        <module>rack-server-base</module>
 
         <!-- skeleton / sample code -->
         <module>skeleton-server</module>
@@ -196,26 +190,6 @@
 
             <dependency>
                 <groupId>io.airlift</groupId>
-                <artifactId>rack-launcher</artifactId>
-                <version>${dep.airlift.version}</version>
-                <classifier>bin</classifier>
-                <type>tar.gz</type>
-            </dependency>
-
-            <dependency>
-                <groupId>io.airlift</groupId>
-                <artifactId>rack-packaging</artifactId>
-                <version>${dep.airlift.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.airlift</groupId>
-                <artifactId>rack</artifactId>
-                <version>${dep.airlift.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.airlift</groupId>
                 <artifactId>stats</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
@@ -299,11 +273,6 @@
         <pluginManagement>
             <plugins>
                 <plugin>
-                    <groupId>io.airlift</groupId>
-                    <artifactId>bundler-packaging-plugin</artifactId>
-                    <version>1.1</version>
-                </plugin>
-                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-antrun-plugin</artifactId>
                     <version>1.7</version>
@@ -323,6 +292,7 @@
             </plugins>
         </pluginManagement>
     </build>
+
     <profiles>
         <profile>
             <id>airlift-release</id>
@@ -343,4 +313,3 @@
         </profile>
     </profiles>
 </project>
-
