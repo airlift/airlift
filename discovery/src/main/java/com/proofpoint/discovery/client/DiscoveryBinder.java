@@ -27,6 +27,8 @@ import com.google.inject.multibindings.Multibinder;
 import com.proofpoint.discovery.client.announce.AnnouncementHttpServerInfo;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement.ServiceAnnouncementBuilder;
+import com.proofpoint.discovery.client.balance.HttpServiceBalancer;
+import com.proofpoint.discovery.client.balance.HttpServiceBalancerProvider;
 import com.proofpoint.discovery.client.http.BalancingAsyncHttpClient;
 import com.proofpoint.discovery.client.http.BalancingHttpClient;
 import com.proofpoint.discovery.client.http.BalancingHttpClientConfig;
@@ -77,6 +79,19 @@ public class DiscoveryBinder
         binder.bind(ServiceSelector.class).annotatedWith(serviceType).toProvider(new ServiceSelectorProvider(serviceType.value())).in(Scopes.SINGLETON);
     }
 
+    public void bindHttpBalancer(String type)
+    {
+        checkNotNull(type, "type is null");
+        bindHttpBalancer(serviceType(type));
+    }
+
+    public void bindHttpBalancer(ServiceType serviceType)
+    {
+        checkNotNull(serviceType, "serviceType is null");
+        bindConfig(binder).annotatedWith(serviceType).prefixedWith("discovery." + serviceType.value()).to(ServiceSelectorConfig.class);
+        binder.bind(HttpServiceBalancer.class).annotatedWith(serviceType).toProvider(new HttpServiceBalancerProvider(serviceType.value())).in(Scopes.SINGLETON);
+    }
+
     public void bindServiceAnnouncement(ServiceAnnouncement announcement)
     {
         checkNotNull(announcement, "announcement is null");
@@ -125,9 +140,9 @@ public class DiscoveryBinder
         checkNotNull(serviceType, "serviceType is null");
         checkNotNull(annotation, "annotation is null");
 
-        bindHttpSelector(serviceType);
+        bindHttpBalancer(serviceType);
         PrivateBinder privateBinder = binder.newPrivateBinder();
-        privateBinder.bind(HttpServiceSelector.class).annotatedWith(ForBalancingHttpClient.class).to(Key.get(HttpServiceSelector.class, serviceType));
+        privateBinder.bind(HttpServiceBalancer.class).annotatedWith(ForBalancingHttpClient.class).to(Key.get(HttpServiceBalancer.class, serviceType));
         HttpClientBindingBuilder delegateBindingBuilder = httpClientPrivateBinder(privateBinder, binder).bindHttpClient(serviceType.value(), ForBalancingHttpClient.class);
         bindConfig(binder).prefixedWith(serviceType.value()).to(BalancingHttpClientConfig.class);
         privateBinder.bind(HttpClient.class).annotatedWith(annotation).to(BalancingHttpClient.class).in(Scopes.SINGLETON);
@@ -146,9 +161,9 @@ public class DiscoveryBinder
         checkNotNull(serviceType, "serviceType is null");
         checkNotNull(annotation, "annotation is null");
 
-        bindHttpSelector(serviceType);
+        bindHttpBalancer(serviceType);
         PrivateBinder privateBinder = binder.newPrivateBinder();
-        privateBinder.bind(HttpServiceSelector.class).annotatedWith(ForBalancingHttpClient.class).to(Key.get(HttpServiceSelector.class, serviceType));
+        privateBinder.bind(HttpServiceBalancer.class).annotatedWith(ForBalancingHttpClient.class).to(Key.get(HttpServiceBalancer.class, serviceType));
         HttpClientAsyncBindingBuilder delegateBindingBuilder = httpClientPrivateBinder(privateBinder, binder).bindAsyncHttpClient(serviceType.value(), ForBalancingHttpClient.class);
         bindConfig(binder).prefixedWith(serviceType.value()).to(BalancingHttpClientConfig.class);
         privateBinder.bind(AsyncHttpClient.class).annotatedWith(annotation).to(BalancingAsyncHttpClient.class).in(Scopes.SINGLETON);

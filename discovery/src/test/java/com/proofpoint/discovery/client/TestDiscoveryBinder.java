@@ -29,6 +29,7 @@ import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.discovery.client.DiscoveryBinder.BalancingHttpClientBindingBuilder;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
+import com.proofpoint.discovery.client.balance.HttpServiceBalancer;
 import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.HttpClient;
@@ -57,7 +58,7 @@ public class TestDiscoveryBinder
 {
 
     @Test
-    public void testBindSelector()
+    public void testBindAnnouncements()
             throws Exception
     {
         Injector injector = Guice.createInjector(
@@ -79,7 +80,7 @@ public class TestDiscoveryBinder
     }
 
     @Test
-    public void testBindSelectorProviderClass()
+    public void testBindAnnouncementProviderClass()
             throws Exception
     {
         Injector injector = Guice.createInjector(
@@ -101,7 +102,7 @@ public class TestDiscoveryBinder
     }
 
     @Test
-    public void testBindSelectorProviderInstance()
+    public void testBindAnnouncementProviderInstance()
             throws Exception
     {
         Injector injector = Guice.createInjector(
@@ -196,6 +197,82 @@ public class TestDiscoveryBinder
         );
 
         assertCanCreateServiceSelector(injector, "apple", "apple-pool");
+    }
+
+    @Test
+    public void testBindHttpServiceBalancerString()
+            throws Exception
+    {
+        Injector injector = Guice.createInjector(
+                new TestModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        discoveryBinder(binder).bindHttpBalancer("apple");
+                    }
+                }
+        );
+
+        Assert.assertNotNull(injector.getInstance(Key.get(HttpServiceBalancer.class, serviceType("apple"))));
+    }
+
+    @Test
+    public void testBindHttpServiceBalancerAnnotation()
+            throws Exception
+    {
+        Injector injector = Guice.createInjector(
+                new TestModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        discoveryBinder(binder).bindHttpBalancer(serviceType("apple"));
+                    }
+                }
+        );
+
+        Assert.assertNotNull(injector.getInstance(Key.get(HttpServiceBalancer.class, serviceType("apple"))));
+    }
+
+    @Test
+    public void testBindHttpServiceBalancerStringWithPool()
+            throws Exception
+    {
+        Injector injector = Guice.createInjector(
+                new TestModule(ImmutableMap.of("discovery.apple.pool", "apple-pool")),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        discoveryBinder(binder).bindHttpBalancer("apple");
+                    }
+                }
+        );
+
+        Assert.assertNotNull(injector.getInstance(Key.get(HttpServiceBalancer.class, serviceType("apple"))));
+    }
+
+    @Test
+    public void testBindHttpServiceBalancerAnnotationWithPool()
+            throws Exception
+    {
+        Injector injector = Guice.createInjector(
+                new TestModule(ImmutableMap.of("discovery.apple.pool", "apple-pool")),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        discoveryBinder(binder).bindHttpBalancer(serviceType("apple"));
+                    }
+                }
+        );
+
+        Assert.assertNotNull(injector.getInstance(Key.get(HttpServiceBalancer.class, serviceType("apple"))));
     }
 
     @Test

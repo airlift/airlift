@@ -3,6 +3,7 @@ package com.proofpoint.discovery.client.http;
 import com.google.common.collect.ImmutableList;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.ServiceUnavailableException;
+import com.proofpoint.discovery.client.balance.HttpServiceBalancerImpl;
 import com.proofpoint.http.client.BodyGenerator;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
@@ -49,7 +50,7 @@ public class TestBalancingHttpClient
                 URI.create("http://s2.example.com/")
         ));
         httpClient = new TestingHttpClient("PUT");
-        balancingHttpClient = new BalancingHttpClient(serviceSelector, httpClient,
+        balancingHttpClient = new BalancingHttpClient(new HttpServiceBalancerImpl(serviceSelector), httpClient,
                 new BalancingHttpClientConfig().setMaxRetries(2));
         bodyGenerator = mock(BodyGenerator.class);
         request = preparePut().setUri(URI.create("v1/service")).setBodyGenerator(bodyGenerator).build();
@@ -343,7 +344,7 @@ public class TestBalancingHttpClient
         when(serviceSelector.getType()).thenReturn("test-type");
         when(serviceSelector.getPool()).thenReturn("test-pool");
 
-        balancingHttpClient = new BalancingHttpClient(serviceSelector, httpClient,
+        balancingHttpClient = new BalancingHttpClient(new HttpServiceBalancerImpl(serviceSelector), httpClient,
                 new BalancingHttpClientConfig().setMaxRetries(2));
 
         balancingHttpClient.execute(request, mock(ResponseHandler.class));
@@ -356,7 +357,7 @@ public class TestBalancingHttpClient
         HttpClient mockClient = mock(HttpClient.class);
         when(mockClient.getStats()).thenReturn(requestStats);
 
-        balancingHttpClient = new BalancingHttpClient(serviceSelector, mockClient, new BalancingHttpClientConfig());
+        balancingHttpClient = new BalancingHttpClient(new HttpServiceBalancerImpl(serviceSelector), mockClient, new BalancingHttpClientConfig());
         assertSame(balancingHttpClient.getStats(), requestStats);
 
         verify(mockClient).getStats();
@@ -368,7 +369,7 @@ public class TestBalancingHttpClient
     {
         HttpClient mockClient = mock(HttpClient.class);
 
-        balancingHttpClient = new BalancingHttpClient(serviceSelector, mockClient, new BalancingHttpClientConfig());
+        balancingHttpClient = new BalancingHttpClient(new HttpServiceBalancerImpl(serviceSelector), mockClient, new BalancingHttpClientConfig());
         balancingHttpClient.close();
 
         verify(mockClient).close();

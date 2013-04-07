@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.ServiceUnavailableException;
+import com.proofpoint.discovery.client.balance.HttpServiceBalancerImpl;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.BodyGenerator;
 import com.proofpoint.http.client.Request;
@@ -53,7 +54,7 @@ public class TestBalancingAsyncHttpClient
                 URI.create("http://s2.example.com/")
         ));
         httpClient = new TestingAsyncHttpClient("PUT");
-        balancingAsyncHttpClient = new BalancingAsyncHttpClient(serviceSelector, httpClient,
+        balancingAsyncHttpClient = new BalancingAsyncHttpClient(new HttpServiceBalancerImpl(serviceSelector), httpClient,
                 new BalancingHttpClientConfig().setMaxRetries(2));
         bodyGenerator = mock(BodyGenerator.class);
         request = preparePut().setUri(URI.create("v1/service")).setBodyGenerator(bodyGenerator).build();
@@ -372,7 +373,7 @@ public class TestBalancingAsyncHttpClient
         when(serviceSelector.getType()).thenReturn("test-type");
         when(serviceSelector.getPool()).thenReturn("test-pool");
 
-        balancingAsyncHttpClient = new BalancingAsyncHttpClient(serviceSelector, httpClient,
+        balancingAsyncHttpClient = new BalancingAsyncHttpClient(new HttpServiceBalancerImpl(serviceSelector), httpClient,
                 new BalancingHttpClientConfig().setMaxRetries(2));
 
         balancingAsyncHttpClient.execute(request, mock(ResponseHandler.class));
@@ -385,7 +386,7 @@ public class TestBalancingAsyncHttpClient
         AsyncHttpClient mockClient = mock(AsyncHttpClient.class);
         when(mockClient.getStats()).thenReturn(requestStats);
 
-        balancingAsyncHttpClient = new BalancingAsyncHttpClient(serviceSelector, mockClient, new BalancingHttpClientConfig());
+        balancingAsyncHttpClient = new BalancingAsyncHttpClient(new HttpServiceBalancerImpl(serviceSelector), mockClient, new BalancingHttpClientConfig());
         assertSame(balancingAsyncHttpClient.getStats(), requestStats);
 
         verify(mockClient).getStats();
@@ -397,7 +398,7 @@ public class TestBalancingAsyncHttpClient
     {
         AsyncHttpClient mockClient = mock(AsyncHttpClient.class);
 
-        balancingAsyncHttpClient = new BalancingAsyncHttpClient(serviceSelector, mockClient, new BalancingHttpClientConfig());
+        balancingAsyncHttpClient = new BalancingAsyncHttpClient(new HttpServiceBalancerImpl(serviceSelector), mockClient, new BalancingHttpClientConfig());
         balancingAsyncHttpClient.close();
 
         verify(mockClient).close();

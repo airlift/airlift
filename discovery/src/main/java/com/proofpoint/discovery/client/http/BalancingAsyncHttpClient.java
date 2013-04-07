@@ -18,10 +18,8 @@ package com.proofpoint.discovery.client.http;
 
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.balance.HttpServiceAttempt;
 import com.proofpoint.discovery.client.balance.HttpServiceBalancer;
-import com.proofpoint.discovery.client.balance.HttpServiceBalancerImpl;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
@@ -46,9 +44,9 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
     private final int maxRetries;
 
     @Inject
-    public BalancingAsyncHttpClient(@ForBalancingHttpClient HttpServiceSelector serviceSelector, @ForBalancingHttpClient AsyncHttpClient httpClient, BalancingHttpClientConfig config)
+    public BalancingAsyncHttpClient(@ForBalancingHttpClient HttpServiceBalancer pool, @ForBalancingHttpClient AsyncHttpClient httpClient, BalancingHttpClientConfig config)
     {
-        pool = new HttpServiceBalancerImpl(serviceSelector);
+        this.pool = checkNotNull(pool, "pool is null");
         this.httpClient = checkNotNull(httpClient, "httpClient is null");
         maxRetries = checkNotNull(config, "config is null").getMaxRetries();
     }

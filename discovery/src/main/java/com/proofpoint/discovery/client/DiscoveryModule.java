@@ -26,6 +26,7 @@ import com.proofpoint.discovery.client.announce.Announcer;
 import com.proofpoint.discovery.client.announce.DiscoveryAnnouncementClient;
 import com.proofpoint.discovery.client.announce.HttpDiscoveryAnnouncementClient;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
+import com.proofpoint.discovery.client.balance.HttpServiceBalancerFactory;
 
 import java.net.URI;
 import java.util.concurrent.ScheduledExecutorService;
@@ -64,6 +65,7 @@ public class DiscoveryModule implements Module
         Multibinder.newSetBinder(binder, ServiceAnnouncement.class);
 
         binder.bind(ServiceSelectorFactory.class).to(CachingServiceSelectorFactory.class).in(Scopes.SINGLETON);
+        binder.bind(HttpServiceBalancerFactory.class).in(Scopes.SINGLETON);
 
         newExporter(binder).export(ServiceInventory.class).withGeneratedName();
     }

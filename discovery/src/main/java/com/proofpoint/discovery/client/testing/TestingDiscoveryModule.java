@@ -28,6 +28,7 @@ import com.proofpoint.discovery.client.DiscoveryLookupClient;
 import com.proofpoint.discovery.client.ForDiscoveryClient;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
 import com.proofpoint.discovery.client.ServiceSelectorFactory;
+import com.proofpoint.discovery.client.balance.HttpServiceBalancerFactory;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -49,6 +50,7 @@ public class TestingDiscoveryModule implements Module
         Multibinder.newSetBinder(binder, ServiceAnnouncement.class);
 
         binder.bind(ServiceSelectorFactory.class).to(SimpleServiceSelectorFactory.class).in(Scopes.SINGLETON);
+        binder.bind(HttpServiceBalancerFactory.class).in(Scopes.SINGLETON);
     }
 
     @Provides
