@@ -19,7 +19,9 @@ package com.proofpoint.discovery.client.http;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.proofpoint.discovery.client.HttpServiceSelector;
-import com.proofpoint.discovery.client.ServiceUnavailableException;
+import com.proofpoint.discovery.client.balance.HttpServiceAttempt;
+import com.proofpoint.discovery.client.balance.HttpServiceBalancer;
+import com.proofpoint.discovery.client.balance.HttpServiceBalancerImpl;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
@@ -27,7 +29,6 @@ import com.proofpoint.http.client.ResponseHandler;
 
 import javax.inject.Inject;
 import java.net.URI;
-import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -40,14 +41,14 @@ import static java.lang.String.format;
 public final class BalancingAsyncHttpClient implements AsyncHttpClient
 {
 
-    private final HttpServiceSelector serviceSelector;
+    private final HttpServiceBalancer pool;
     private final AsyncHttpClient httpClient;
     private final int maxRetries;
 
     @Inject
     public BalancingAsyncHttpClient(@ForBalancingHttpClient HttpServiceSelector serviceSelector, @ForBalancingHttpClient AsyncHttpClient httpClient, BalancingHttpClientConfig config)
     {
-        this.serviceSelector = checkNotNull(serviceSelector, "serviceSelector is null");
+        pool = new HttpServiceBalancerImpl(serviceSelector);
         this.httpClient = checkNotNull(httpClient, "httpClient is null");
         maxRetries = checkNotNull(config, "config is null").getMaxRetries();
     }
@@ -61,26 +62,17 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
         String path = request.getUri().getPath();
         checkArgument(path == null || !path.startsWith("/"), request.getUri() + " path starts with '/'");
 
-        List<URI> uris = serviceSelector.selectHttpService();
-        if (uris.isEmpty()) {
-            throw new ServiceUnavailableException(serviceSelector.getType(), serviceSelector.getPool());
-        }
-
-        int attempt = 0;
-
-        return attemptQuery(request, responseHandler, uris, attempt, maxRetries);
+        return attemptQuery(request, responseHandler, pool.createAttempt(), maxRetries);
     }
 
-    private <T, E extends Exception> AsyncHttpResponseFuture<T, E> attemptQuery(Request request, ResponseHandler<T, E> responseHandler, List<URI> uris, int attempt, int retriesLeft)
+    private <T, E extends Exception> AsyncHttpResponseFuture<T, E> attemptQuery(Request request, ResponseHandler<T, E> responseHandler, HttpServiceAttempt attempt, int retriesLeft)
     {
         RetryingResponseHandler<T, E> retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler);
 
-        URI uri = uris.get(attempt % uris.size());
+        URI uri = attempt.getUri();
         if (uri.getPath() == null || uri.getPath().isEmpty()) {
             uri = uri.resolve("/");
         }
-        ++attempt;
-        // TODO - skip if uri is persistently failing
 
         Request subRequest = Request.Builder.fromRequest(request)
                 .setUri(uri.resolve(request.getUri()))
@@ -89,7 +81,7 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
         if (retriesLeft > 0) {
             --retriesLeft;
             AsyncHttpResponseFuture<T, RetryException> future = httpClient.executeAsync(subRequest, retryingResponseHandler);
-            return new RetryFuture<>(future, request, responseHandler, uris, attempt, uri, retriesLeft);
+            return new RetryFuture<>(future, request, responseHandler, attempt, uri, retriesLeft);
         }
         else {
             return httpClient.executeAsync(subRequest, responseHandler);
@@ -122,13 +114,13 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
 
         private final Request request;
         private final ResponseHandler<T,E> responseHandler;
-        private final int attempt;
+        private final HttpServiceAttempt attempt;
         private final URI uri;
         private AsyncHttpResponseFuture<T, ?> subFuture;
         private final Object subFutureLock = new Object();
         boolean retried = false;
 
-        public RetryFuture(final AsyncHttpResponseFuture<T, RetryException> future, final Request request, final ResponseHandler<T, E> responseHandler, final List<URI> uris, final int attempt, URI uri, final int retriesLeft)
+        public RetryFuture(final AsyncHttpResponseFuture<T, RetryException> future, final Request request, final ResponseHandler<T, E> responseHandler, final HttpServiceAttempt attempt, URI uri, final int retriesLeft)
         {
             this.request = request;
             this.responseHandler = responseHandler;
@@ -142,15 +134,18 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
                 {
                     try {
                         set(future.checkedGet());
+                        attempt.markGood();
                     }
                     catch (InnerHandlerException e) {
                         setException(e.getCause());
+                        attempt.markBad();
                     }
                     catch (RetryException e) {
+                        attempt.markBad();
                         final AsyncHttpResponseFuture<T, ?> attemptFuture;
                         synchronized (subFutureLock) {
                             try {
-                                attemptFuture = attemptQuery(request, responseHandler, uris, attempt, retriesLeft);
+                                attemptFuture = attemptQuery(request, responseHandler, attempt.tryNext(), retriesLeft);
                             }
                             catch (RuntimeException e1) {
                                 setException(e1); // todo send to responsehandler here?
@@ -182,6 +177,7 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
         {
 
             if (super.cancel(mayInterruptIfRunning)) {
+                // todo attempt.cancel() ?
                 synchronized (subFutureLock) {
                     if (subFuture != null) {
                         subFuture.cancel(mayInterruptIfRunning);
@@ -223,6 +219,7 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
             }
 
             if (e instanceof ExecutionException) {
+                // noinspection unchecked
                 return (E) e.getCause();
             }
 

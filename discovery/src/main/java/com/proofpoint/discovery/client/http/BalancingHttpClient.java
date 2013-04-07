@@ -17,7 +17,9 @@ package com.proofpoint.discovery.client.http;
 
 
 import com.proofpoint.discovery.client.HttpServiceSelector;
-import com.proofpoint.discovery.client.ServiceUnavailableException;
+import com.proofpoint.discovery.client.balance.HttpServiceAttempt;
+import com.proofpoint.discovery.client.balance.HttpServiceBalancer;
+import com.proofpoint.discovery.client.balance.HttpServiceBalancerImpl;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
@@ -25,7 +27,6 @@ import com.proofpoint.http.client.ResponseHandler;
 
 import javax.inject.Inject;
 import java.net.URI;
-import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -33,14 +34,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public final class BalancingHttpClient implements HttpClient
 {
 
-    private final HttpServiceSelector serviceSelector;
+    private final HttpServiceBalancer pool;
     private final HttpClient httpClient;
     private final int maxRetries;
 
     @Inject
     public BalancingHttpClient(@ForBalancingHttpClient HttpServiceSelector serviceSelector, @ForBalancingHttpClient HttpClient httpClient, BalancingHttpClientConfig config)
     {
-        this.serviceSelector = checkNotNull(serviceSelector, "serviceSelector is null");
+        pool = new HttpServiceBalancerImpl(serviceSelector);
         this.httpClient = checkNotNull(httpClient, "httpClient is null");
         maxRetries = checkNotNull(config, "config is null").getMaxRetries();
     }
@@ -55,21 +56,16 @@ public final class BalancingHttpClient implements HttpClient
         String path = request.getUri().getPath();
         checkArgument(path == null || !path.startsWith("/"), request.getUri() + " path starts with '/'");
 
-        List<URI> uris = serviceSelector.selectHttpService();
-        if (uris.isEmpty()) {
-            throw new ServiceUnavailableException(serviceSelector.getType(), serviceSelector.getPool());
-        }
-
+        HttpServiceAttempt attempt = pool.createAttempt();
         int retriesLeft = maxRetries;
 
         RetryingResponseHandler<T, E> retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler);
 
-        for (int attempt = 0; ; ++attempt) {
-            URI uri = uris.get(attempt % uris.size());
+        for (;;) {
+            URI uri = attempt.getUri();
             if (uri.getPath() == null || uri.getPath().isEmpty()) {
                 uri = uri.resolve("/");
             }
-            // TODO - skip if uri is persistently failing
 
             Request subRequest = Request.Builder.fromRequest(request)
                     .setUri(uri.resolve(request.getUri()))
@@ -78,17 +74,35 @@ public final class BalancingHttpClient implements HttpClient
             if (retriesLeft > 0) {
                 --retriesLeft;
                 try {
-                    return httpClient.execute(subRequest, retryingResponseHandler);
+                    T t = httpClient.execute(subRequest, retryingResponseHandler);
+                    attempt.markGood();
+                    return t;
                 }
                 catch (InnerHandlerException e) {
+                    attempt.markBad(); // todo We don't retry on handler exceptions. Should we mark bad?
                     //noinspection unchecked
                     throw (E) e.getCause();
                 }
                 catch (RetryException ignored) {
+                    attempt.markBad();
+                    attempt = attempt.tryNext();
                 }
             }
             else {
-                return httpClient.execute(subRequest, responseHandler);
+                try {
+                    T t = httpClient.execute(subRequest, responseHandler);
+                    attempt.markGood();
+                    return t;
+                }
+                catch (RuntimeException e) {
+                    attempt.markBad();
+                    throw e;
+                }
+                catch (Exception e) {
+                    attempt.markBad();
+                    // noinspection unchecked
+                    throw (E) e;
+                }
             }
         }
     }
