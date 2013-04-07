@@ -20,11 +20,11 @@ import com.google.common.io.Resources;
 import com.google.inject.Injector;
 import com.proofpoint.bootstrap.Bootstrap;
 import com.proofpoint.bootstrap.LifeCycleManager;
-import com.proofpoint.discovery.client.AnnouncementHttpServerInfo;
-import com.proofpoint.discovery.client.Announcer;
 import com.proofpoint.discovery.client.DiscoveryLookupClient;
-import com.proofpoint.discovery.client.ServiceAnnouncement;
 import com.proofpoint.discovery.client.ServiceDescriptor;
+import com.proofpoint.discovery.client.announce.AnnouncementHttpServerInfo;
+import com.proofpoint.discovery.client.announce.Announcer;
+import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
 import com.proofpoint.discovery.client.testing.InMemoryDiscoveryClient;
 import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
@@ -34,7 +34,7 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
-import static com.proofpoint.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static com.proofpoint.discovery.client.announce.ServiceAnnouncement.serviceAnnouncement;
 import static org.testng.Assert.assertEquals;
 
 public class TestRackAnnounce

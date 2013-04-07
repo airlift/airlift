@@ -16,12 +16,12 @@
 package com.proofpoint.rack;
 
 import com.google.inject.Inject;
-import com.proofpoint.discovery.client.AnnouncementHttpServerInfo;
-import com.proofpoint.discovery.client.Announcer;
-import com.proofpoint.discovery.client.ServiceAnnouncement;
+import com.proofpoint.discovery.client.announce.AnnouncementHttpServerInfo;
+import com.proofpoint.discovery.client.announce.Announcer;
+import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
 
-import static com.proofpoint.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
-import static com.proofpoint.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static com.proofpoint.discovery.client.announce.ServiceAnnouncement.ServiceAnnouncementBuilder;
+import static com.proofpoint.discovery.client.announce.ServiceAnnouncement.serviceAnnouncement;
 
 public class RackAnnouncer
 {

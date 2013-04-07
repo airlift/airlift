@@ -25,11 +25,10 @@ import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.proofpoint.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
+import static com.proofpoint.discovery.client.announce.DiscoveryAnnouncementClient.DEFAULT_DELAY;
 
 public class CachingServiceSelector implements ServiceSelector
 {

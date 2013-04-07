@@ -15,7 +15,7 @@
  */
 package com.proofpoint.http.server;
 
-import com.proofpoint.discovery.client.AnnouncementHttpServerInfo;
+import com.proofpoint.discovery.client.announce.AnnouncementHttpServerInfo;
 
 import javax.inject.Inject;
 import java.net.URI;

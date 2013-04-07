@@ -20,7 +20,7 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.discovery.client.AnnouncementHttpServerInfo;
+import com.proofpoint.discovery.client.announce.AnnouncementHttpServerInfo;
 import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 
 import javax.servlet.Filter;

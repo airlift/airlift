@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.discovery.client;
+package com.proofpoint.discovery.client.announce;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.proofpoint.discovery.client.announce.AnnouncementHttpServerInfo;
 
 import java.net.URI;
 

@@ -22,6 +22,9 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
+import com.proofpoint.discovery.client.announce.AnnouncementHttpServerInfo;
+import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
+import com.proofpoint.discovery.client.announce.StaticAnnouncementHttpServerInfoImpl;
 import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -29,7 +32,7 @@ import org.testng.annotations.Test;
 import java.net.URI;
 import java.util.Set;
 
-import static com.proofpoint.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static com.proofpoint.discovery.client.announce.ServiceAnnouncement.serviceAnnouncement;
 
 public class TestHttpAnnouncementBinder
 {

@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.discovery.client;
+package com.proofpoint.discovery.client.announce;
 
 import com.google.common.util.concurrent.CheckedFuture;
+import com.proofpoint.discovery.client.DiscoveryException;
 import com.proofpoint.units.Duration;
 
 import java.util.Set;

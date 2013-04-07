@@ -17,7 +17,7 @@ package com.proofpoint.platform.skeleton;
 
 import com.google.inject.Injector;
 import com.proofpoint.bootstrap.Bootstrap;
-import com.proofpoint.discovery.client.Announcer;
+import com.proofpoint.discovery.client.announce.Announcer;
 import com.proofpoint.discovery.client.DiscoveryModule;
 import com.proofpoint.event.client.HttpEventModule;
 import com.proofpoint.jmx.JmxHttpModule;

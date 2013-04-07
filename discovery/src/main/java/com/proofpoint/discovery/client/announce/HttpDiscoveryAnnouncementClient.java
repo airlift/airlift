@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.discovery.client;
+package com.proofpoint.discovery.client.announce;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
@@ -23,6 +23,8 @@ import com.google.common.net.MediaType;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
+import com.proofpoint.discovery.client.DiscoveryException;
+import com.proofpoint.discovery.client.ForDiscoveryClient;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.CacheControl;
 import com.proofpoint.http.client.Request;

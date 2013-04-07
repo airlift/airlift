@@ -22,17 +22,15 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.proofpoint.discovery.client.Announcer;
-import com.proofpoint.discovery.client.DiscoveryAnnouncementClient;
+import com.proofpoint.discovery.client.announce.Announcer;
+import com.proofpoint.discovery.client.announce.DiscoveryAnnouncementClient;
 import com.proofpoint.discovery.client.DiscoveryLookupClient;
 import com.proofpoint.discovery.client.ForDiscoveryClient;
-import com.proofpoint.discovery.client.ServiceAnnouncement;
+import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
 import com.proofpoint.discovery.client.ServiceSelectorFactory;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-
-import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 
 public class TestingDiscoveryModule implements Module
 {

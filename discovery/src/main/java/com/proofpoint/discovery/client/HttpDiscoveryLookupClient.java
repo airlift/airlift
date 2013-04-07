@@ -42,7 +42,7 @@ import java.net.URI;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 
-import static com.proofpoint.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
+import static com.proofpoint.discovery.client.announce.DiscoveryAnnouncementClient.DEFAULT_DELAY;
 import static com.proofpoint.http.client.HttpStatus.NOT_MODIFIED;
 import static com.proofpoint.http.client.HttpStatus.OK;
 import static com.proofpoint.http.client.Request.Builder.prepareGet;

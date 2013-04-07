@@ -21,6 +21,11 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
+import com.proofpoint.discovery.client.announce.Announcement;
+import com.proofpoint.discovery.client.announce.Announcer;
+import com.proofpoint.discovery.client.announce.DiscoveryAnnouncementClient;
+import com.proofpoint.discovery.client.announce.HttpDiscoveryAnnouncementClient;
+import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
 
 import java.net.URI;
 import java.util.concurrent.ScheduledExecutorService;
