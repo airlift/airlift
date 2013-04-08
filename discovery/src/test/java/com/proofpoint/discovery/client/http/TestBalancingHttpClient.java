@@ -1,9 +1,8 @@
 package com.proofpoint.discovery.client.http;
 
-import com.google.common.collect.ImmutableList;
-import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.ServiceUnavailableException;
-import com.proofpoint.discovery.client.balance.HttpServiceBalancerImpl;
+import com.proofpoint.discovery.client.balance.HttpServiceAttempt;
+import com.proofpoint.discovery.client.balance.HttpServiceBalancer;
 import com.proofpoint.http.client.BodyGenerator;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
@@ -33,7 +32,10 @@ import static org.testng.Assert.fail;
 
 public class TestBalancingHttpClient
 {
-    private HttpServiceSelector serviceSelector;
+    private HttpServiceBalancer serviceBalancer;
+    private HttpServiceAttempt serviceAttempt1;
+    private HttpServiceAttempt serviceAttempt2;
+    private HttpServiceAttempt serviceAttempt3;
     private BalancingHttpClient balancingHttpClient;
     private BodyGenerator bodyGenerator;
     private Request request;
@@ -44,13 +46,19 @@ public class TestBalancingHttpClient
     protected void setUp()
             throws Exception
     {
-        serviceSelector = mock(HttpServiceSelector.class);
-        when(serviceSelector.selectHttpService()).thenReturn(ImmutableList.of(
-                URI.create("http://s1.example.com"),
-                URI.create("http://s2.example.com/")
-        ));
+        serviceBalancer = mock(HttpServiceBalancer.class);
+        serviceAttempt1 = mock(HttpServiceAttempt.class);
+        serviceAttempt2 = mock(HttpServiceAttempt.class);
+        serviceAttempt3 = mock(HttpServiceAttempt.class);
+        when(serviceBalancer.createAttempt()).thenReturn(serviceAttempt1);
+        when(serviceAttempt1.getUri()).thenReturn(URI.create("http://s1.example.com"));
+        when(serviceAttempt1.tryNext()).thenReturn(serviceAttempt2);
+        when(serviceAttempt2.getUri()).thenReturn(URI.create("http://s2.example.com/"));
+        when(serviceAttempt2.tryNext()).thenReturn(serviceAttempt3);
+        when(serviceAttempt3.getUri()).thenReturn(URI.create("http://s1.example.com"));
+        when(serviceAttempt3.tryNext()).thenThrow(new AssertionError("Unexpected call to serviceAttempt3.tryNext()"));
         httpClient = new TestingHttpClient("PUT");
-        balancingHttpClient = new BalancingHttpClient(new HttpServiceBalancerImpl(serviceSelector), httpClient,
+        balancingHttpClient = new BalancingHttpClient(serviceBalancer, httpClient,
                 new BalancingHttpClientConfig().setMaxRetries(2));
         bodyGenerator = mock(BodyGenerator.class);
         request = preparePut().setUri(URI.create("v1/service")).setBodyGenerator(bodyGenerator).build();
@@ -72,10 +80,11 @@ public class TestBalancingHttpClient
 
         httpClient.assertDone();
 
-        verify(serviceSelector).selectHttpService();
+        verify(serviceAttempt1).getUri();
+        verify(serviceAttempt1).markGood();
         verify(response).getStatusCode();
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceSelector, bodyGenerator, response, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, bodyGenerator, response, responseHandler);
     }
 
     @Test
@@ -98,10 +107,11 @@ public class TestBalancingHttpClient
 
         httpClient.assertDone();
 
-        verify(serviceSelector).selectHttpService();
+        verify(serviceAttempt1).getUri();
+        verify(serviceAttempt1).markBad();
         verify(response).getStatusCode();
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceSelector, bodyGenerator, response, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, bodyGenerator, response, responseHandler);
     }
 
     @Test
@@ -119,10 +129,14 @@ public class TestBalancingHttpClient
 
         httpClient.assertDone();
 
-        verify(serviceSelector).selectHttpService();
+        verify(serviceAttempt1).getUri();
+        verify(serviceAttempt1).markBad();
+        verify(serviceAttempt1).tryNext();
+        verify(serviceAttempt2).getUri();
+        verify(serviceAttempt2).markGood();
         verify(response).getStatusCode();
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceSelector, bodyGenerator, response, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler);
     }
 
     @Test
@@ -143,11 +157,15 @@ public class TestBalancingHttpClient
 
         httpClient.assertDone();
 
-        verify(serviceSelector).selectHttpService();
+        verify(serviceAttempt1).getUri();
+        verify(serviceAttempt1).markBad();
+        verify(serviceAttempt1).tryNext();
+        verify(serviceAttempt2).getUri();
+        verify(serviceAttempt2).markGood();
         verify(response408).getStatusCode();
         verify(response).getStatusCode();
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceSelector, bodyGenerator, response, responseHandler, response408);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler, response408);
     }
 
     @Test
@@ -168,11 +186,15 @@ public class TestBalancingHttpClient
 
         httpClient.assertDone();
 
-        verify(serviceSelector).selectHttpService();
+        verify(serviceAttempt1).getUri();
+        verify(serviceAttempt1).markBad();
+        verify(serviceAttempt1).tryNext();
+        verify(serviceAttempt2).getUri();
+        verify(serviceAttempt2).markGood();
         verify(response500).getStatusCode();
         verify(response).getStatusCode();
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceSelector, bodyGenerator, response, responseHandler, response500);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler, response500);
     }
 
     @Test
@@ -193,11 +215,15 @@ public class TestBalancingHttpClient
 
         httpClient.assertDone();
 
-        verify(serviceSelector).selectHttpService();
+        verify(serviceAttempt1).getUri();
+        verify(serviceAttempt1).markBad();
+        verify(serviceAttempt1).tryNext();
+        verify(serviceAttempt2).getUri();
+        verify(serviceAttempt2).markGood();
         verify(response502).getStatusCode();
         verify(response).getStatusCode();
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceSelector, bodyGenerator, response, responseHandler, response502);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler, response502);
     }
 
     @Test
@@ -218,11 +244,15 @@ public class TestBalancingHttpClient
 
         httpClient.assertDone();
 
-        verify(serviceSelector).selectHttpService();
+        verify(serviceAttempt1).getUri();
+        verify(serviceAttempt1).markBad();
+        verify(serviceAttempt1).tryNext();
+        verify(serviceAttempt2).getUri();
+        verify(serviceAttempt2).markGood();
         verify(response503).getStatusCode();
         verify(response).getStatusCode();
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceSelector, bodyGenerator, response, responseHandler, response503);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler, response503);
     }
 
     @Test
@@ -243,15 +273,19 @@ public class TestBalancingHttpClient
 
         httpClient.assertDone();
 
-        verify(serviceSelector).selectHttpService();
+        verify(serviceAttempt1).getUri();
+        verify(serviceAttempt1).markBad();
+        verify(serviceAttempt1).tryNext();
+        verify(serviceAttempt2).getUri();
+        verify(serviceAttempt2).markGood();
         verify(response504).getStatusCode();
         verify(response).getStatusCode();
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceSelector, bodyGenerator, response, responseHandler, response504);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler, response504);
     }
 
     @Test
-    public void testRetryWraparound()
+    public void testSuccessOnLastTry()
             throws Exception
     {
         Response response503 = mock(Response.class);
@@ -269,10 +303,17 @@ public class TestBalancingHttpClient
 
         httpClient.assertDone();
 
-        verify(serviceSelector).selectHttpService();
+        verify(serviceAttempt1).getUri();
+        verify(serviceAttempt1).markBad();
+        verify(serviceAttempt1).tryNext();
+        verify(serviceAttempt2).getUri();
+        verify(serviceAttempt2).markBad();
+        verify(serviceAttempt2).tryNext();
+        verify(serviceAttempt3).getUri();
+        verify(serviceAttempt3).markGood();
         verify(response503).getStatusCode();
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceSelector, bodyGenerator, response, responseHandler, response503);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, response, responseHandler, response503);
     }
 
     @Test
@@ -301,10 +342,17 @@ public class TestBalancingHttpClient
 
         httpClient.assertDone();
 
-        verify(serviceSelector).selectHttpService();
+        verify(serviceAttempt1).getUri();
+        verify(serviceAttempt1).markBad();
+        verify(serviceAttempt1).tryNext();
+        verify(serviceAttempt2).getUri();
+        verify(serviceAttempt2).markBad();
+        verify(serviceAttempt2).tryNext();
+        verify(serviceAttempt3).getUri();
+        verify(serviceAttempt3).markBad();
         verify(response503).getStatusCode();
         verify(responseHandler).handleException(any(Request.class), same(connectException));
-        verifyNoMoreInteractions(serviceSelector, bodyGenerator, response, responseHandler, response503);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, response, responseHandler, response503);
     }
 
     @Test
@@ -328,10 +376,17 @@ public class TestBalancingHttpClient
 
         httpClient.assertDone();
 
-        verify(serviceSelector).selectHttpService();
+        verify(serviceAttempt1).getUri();
+        verify(serviceAttempt1).markBad();
+        verify(serviceAttempt1).tryNext();
+        verify(serviceAttempt2).getUri();
+        verify(serviceAttempt2).markBad();
+        verify(serviceAttempt2).tryNext();
+        verify(serviceAttempt3).getUri();
+        // todo the mock responseHandler is swallowing the error -- verify(serviceAttempt3).markBad();
         verify(response503).getStatusCode();
         verify(responseHandler).handle(any(Request.class), same(response408));
-        verifyNoMoreInteractions(serviceSelector, bodyGenerator, response, responseHandler, response503, response408);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, /* todo serviceAttempt3,*/ bodyGenerator, response, responseHandler, response503, response408);
     }
 
     @Test(expectedExceptions = ServiceUnavailableException.class,
@@ -339,12 +394,10 @@ public class TestBalancingHttpClient
     public void testNoServers()
             throws Exception
     {
-        serviceSelector = mock(HttpServiceSelector.class);
-        when(serviceSelector.selectHttpService()).thenReturn(ImmutableList.<URI>of());
-        when(serviceSelector.getType()).thenReturn("test-type");
-        when(serviceSelector.getPool()).thenReturn("test-pool");
+        serviceBalancer = mock(HttpServiceBalancer.class);
+        when(serviceBalancer.createAttempt()).thenThrow(new ServiceUnavailableException("test-type", "test-pool"));
 
-        balancingHttpClient = new BalancingHttpClient(new HttpServiceBalancerImpl(serviceSelector), httpClient,
+        balancingHttpClient = new BalancingHttpClient(serviceBalancer, httpClient,
                 new BalancingHttpClientConfig().setMaxRetries(2));
 
         balancingHttpClient.execute(request, mock(ResponseHandler.class));
@@ -357,11 +410,11 @@ public class TestBalancingHttpClient
         HttpClient mockClient = mock(HttpClient.class);
         when(mockClient.getStats()).thenReturn(requestStats);
 
-        balancingHttpClient = new BalancingHttpClient(new HttpServiceBalancerImpl(serviceSelector), mockClient, new BalancingHttpClientConfig());
+        balancingHttpClient = new BalancingHttpClient(serviceBalancer, mockClient, new BalancingHttpClientConfig());
         assertSame(balancingHttpClient.getStats(), requestStats);
 
         verify(mockClient).getStats();
-        verifyNoMoreInteractions(mockClient);
+        verifyNoMoreInteractions(mockClient, serviceBalancer);
     }
 
     @Test
@@ -369,11 +422,11 @@ public class TestBalancingHttpClient
     {
         HttpClient mockClient = mock(HttpClient.class);
 
-        balancingHttpClient = new BalancingHttpClient(new HttpServiceBalancerImpl(serviceSelector), mockClient, new BalancingHttpClientConfig());
+        balancingHttpClient = new BalancingHttpClient(serviceBalancer, mockClient, new BalancingHttpClientConfig());
         balancingHttpClient.close();
 
         verify(mockClient).close();
-        verifyNoMoreInteractions(mockClient);
+        verifyNoMoreInteractions(mockClient, serviceBalancer);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = ".* is not a relative URI")
