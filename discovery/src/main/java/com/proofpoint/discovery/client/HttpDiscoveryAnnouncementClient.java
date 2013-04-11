@@ -24,13 +24,13 @@ import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
 import com.proofpoint.http.client.AsyncHttpClient;
+import com.proofpoint.http.client.CacheControl;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.json.JsonCodec;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.units.Duration;
-import com.proofpoint.http.client.CacheControl;
 
 import javax.inject.Provider;
 import java.io.IOException;

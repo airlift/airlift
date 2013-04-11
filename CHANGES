@@ -1,3 +1,27 @@
+Platform 0.71
+
+* Log rotation changes
+
+The HTTP request log is now uses the same log rotation semantics as the server
+log. The request log rotation is configured using the new
+"http-server.log.max-size" and "http-server.log.max-history" configuration
+options. The old "http-server.log.retention-time" configuration option is
+deprecated and does nothing.
+
+The "log.max-size" configuration option takes a DataSize and replaces the
+now-legacy "log.max-size-in-bytes" option.
+
+* Removal of jax-rs classes from clients
+
+We have replaced all uses of jax-rs classes in clients with classes from Guava
+or new classes in the Platform http client. In particular, the HttpHeaders and
+MediaType classes in jax-rs has been replaced with HttpHeaders and MediaType
+in Guava, and the Status and CacheControl classes have been replaced with
+HttpStatus and CacheControl in the Platform http-client. This reduces the size
+of clients and avoids some packing problems with the latest jax-rs releases.
+Any existing code can continue to use the jax-rs versions of these classes, but
+jax-rs is no longer required.
+
 Platform 0.70
 
 * Upgrade Jackson to 2.1.3
