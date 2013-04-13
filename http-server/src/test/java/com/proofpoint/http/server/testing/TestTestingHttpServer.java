@@ -15,7 +15,6 @@
  */
 package com.proofpoint.http.server.testing;
 
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
@@ -29,8 +28,6 @@ import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.http.client.ApacheHttpClient;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
-import com.proofpoint.http.client.Request;
-import com.proofpoint.http.client.StatusResponseHandler;
 import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.server.HttpServerConfig;
 import com.proofpoint.http.server.HttpServerInfo;
@@ -55,7 +52,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
@@ -63,7 +59,6 @@ import static com.proofpoint.http.client.StatusResponseHandler.createStatusRespo
 import static com.proofpoint.testing.Assertions.assertGreaterThan;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static javax.ws.rs.HttpMethod.GET;
 import static org.testng.Assert.assertEquals;
 
 public class TestTestingHttpServer
