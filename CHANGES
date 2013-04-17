@@ -17,8 +17,8 @@ The REST server launcher has been rewritten in Java. Changes include:
 
  - Fixes numerous race conditions.
  - Implements the force-reload command required by the specification the
-   launcher allegedly implements
- - Removes dependency on Ruby
+   launcher allegedly implements.
+ - Removes dependency on Ruby.
  - The launcher waits for the server to finish initialization (return from
    main method) and returns an error status code if initialization fails.
  - The launcher will no longer hang if the server fails to stop.
@@ -34,7 +34,7 @@ of clients and avoids some packing problems with the latest jax-rs releases.
 Any existing code can continue to use the jax-rs versions of these classes, but
 jax-rs is no longer required.
 
-* [Bug] Event names once again allow the characters .:=,-
+* Temporarily allow the characters .:=, in event names once again.
 
 Platform 0.70
 
