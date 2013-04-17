@@ -11,6 +11,18 @@ deprecated and does nothing.
 The "log.max-size" configuration option takes a DataSize and replaces the
 now-legacy "log.max-size-in-bytes" option.
 
+* Launcher reimplemented in Java
+
+The REST server launcher has been rewritten in Java. Changes include:
+
+ - Fixes numerous race conditions.
+ - Implements the force-reload command required by the specification the
+   launcher allegedly implements
+ - Removes dependency on Ruby
+ - The launcher waits for the server to finish initialization (return from
+   main method) and returns an error status code if initialization fails.
+ - The launcher will no longer hang if the server fails to stop.
+
 * Removal of jax-rs classes from clients
 
 We have replaced all uses of jax-rs classes in clients with classes from Guava
@@ -21,6 +33,8 @@ HttpStatus and CacheControl in the Platform http-client. This reduces the size
 of clients and avoids some packing problems with the latest jax-rs releases.
 Any existing code can continue to use the jax-rs versions of these classes, but
 jax-rs is no longer required.
+
+* [Bug] Event names once again allow the characters .:=,-
 
 Platform 0.70
 
