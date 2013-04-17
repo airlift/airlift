@@ -34,7 +34,7 @@ of clients and avoids some packing problems with the latest jax-rs releases.
 Any existing code can continue to use the jax-rs versions of these classes, but
 jax-rs is no longer required.
 
-* Temporarily allow the characters .:=, in event names once again.
+* Temporarily allow the characters .:=,- in event names once again.
 
 Platform 0.70
 
