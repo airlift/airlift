@@ -352,7 +352,7 @@ final class EventTypeMetadata<T>
 
     private static boolean isValidEventName(String name)
     {
-        return name.matches("[A-Z][A-Za-z0-9]*");
+        return name.matches("[A-Z][A-Za-z0-9.:=,-]*");
     }
 
     List<String> getErrors()
