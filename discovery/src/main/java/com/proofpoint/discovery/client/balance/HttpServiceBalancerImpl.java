@@ -15,33 +15,47 @@
  */
 package com.proofpoint.discovery.client.balance;
 
-import com.proofpoint.discovery.client.HttpServiceSelector;
+import com.google.common.annotations.Beta;
+import com.google.common.collect.ImmutableSet;
+import com.proofpoint.discovery.client.ServiceSelectorConfig;
 import com.proofpoint.discovery.client.ServiceUnavailableException;
 
-import javax.inject.Inject;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class HttpServiceBalancerImpl implements HttpServiceBalancer
 {
-    private HttpServiceSelector serviceSelector;
+    private final String type;
+    private final String pool;
+    private final AtomicReference<Set<URI>> httpUris = new AtomicReference<>((Set<URI>) ImmutableSet.<URI>of());
 
-    @Inject
-    public HttpServiceBalancerImpl(HttpServiceSelector serviceSelector)
+    public HttpServiceBalancerImpl(String type, ServiceSelectorConfig selectorConfig)
     {
-        this.serviceSelector = checkNotNull(serviceSelector, "serviceSelector is null");
+        this.type = checkNotNull(type, "type is null");
+        pool = checkNotNull(selectorConfig, "selectorConfig is null").getPool();
     }
 
     @Override
     public HttpServiceAttempt createAttempt()
     {
-        List<URI> uris = serviceSelector.selectHttpService();
-        if (uris.isEmpty()) {
-            throw new ServiceUnavailableException(serviceSelector.getType(), serviceSelector.getPool());
+        List<URI> httpUris = new ArrayList<>(this.httpUris.get());
+        if (httpUris.isEmpty()) {
+            throw new ServiceUnavailableException(type, pool);
         }
-        return new HttpServiceAttemptImpl(uris, 0);
+        Collections.shuffle(httpUris);
+        return new HttpServiceAttemptImpl(httpUris, 0);
+    }
+
+    @Beta
+    public void updateHttpUris(Set<URI> newHttpUris)
+    {
+        httpUris.set(ImmutableSet.copyOf(newHttpUris));
     }
 
     private class HttpServiceAttemptImpl implements HttpServiceAttempt

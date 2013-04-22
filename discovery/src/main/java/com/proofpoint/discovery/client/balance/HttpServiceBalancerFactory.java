@@ -17,10 +17,8 @@ package com.proofpoint.discovery.client.balance;
 
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
-import com.proofpoint.discovery.client.CachingServiceSelector;
 import com.proofpoint.discovery.client.DiscoveryLookupClient;
 import com.proofpoint.discovery.client.ForDiscoveryClient;
-import com.proofpoint.discovery.client.HttpServiceSelectorImpl;
 import com.proofpoint.discovery.client.ServiceDescriptorsUpdater;
 import com.proofpoint.discovery.client.ServiceSelectorConfig;
 
@@ -45,11 +43,10 @@ public final class HttpServiceBalancerFactory
         Preconditions.checkNotNull(type, "type is null");
         Preconditions.checkNotNull(selectorConfig, "selectorConfig is null");
 
-        // todo factor out use of ServiceSelector
-        CachingServiceSelector serviceSelector = new CachingServiceSelector(type, selectorConfig);
-        ServiceDescriptorsUpdater updater = new ServiceDescriptorsUpdater(serviceSelector, type, selectorConfig, lookupClient, executor);
+        HttpServiceBalancerImpl balancer = new HttpServiceBalancerImpl(type, selectorConfig);
+        ServiceDescriptorsUpdater updater = new ServiceDescriptorsUpdater(new HttpServiceUpdaterAdapter(balancer), type, selectorConfig, lookupClient, executor);
         updater.start();
 
-        return new HttpServiceBalancerImpl(new HttpServiceSelectorImpl(serviceSelector));
+        return balancer;
     }
 }
