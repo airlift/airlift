@@ -16,11 +16,9 @@
 package com.proofpoint.discovery.client;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeoutException;
 
 public class CachingServiceSelectorFactory implements ServiceSelectorFactory
 {
@@ -41,8 +39,9 @@ public class CachingServiceSelectorFactory implements ServiceSelectorFactory
         Preconditions.checkNotNull(type, "type is null");
         Preconditions.checkNotNull(selectorConfig, "selectorConfig is null");
 
-        CachingServiceSelector serviceSelector = new CachingServiceSelector(type, selectorConfig, lookupClient, executor);
-        serviceSelector.start();
+        CachingServiceSelector serviceSelector = new CachingServiceSelector(type, selectorConfig);
+        ServiceDescriptorsUpdater updater = new ServiceDescriptorsUpdater(serviceSelector, type, selectorConfig, lookupClient, executor);
+        updater.start();
 
         return serviceSelector;
     }

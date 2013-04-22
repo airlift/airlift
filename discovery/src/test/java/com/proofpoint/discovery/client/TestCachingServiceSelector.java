@@ -39,6 +39,9 @@ public class TestCachingServiceSelector
 
     private ScheduledExecutorService executor;
     private NodeInfo nodeInfo;
+    private InMemoryDiscoveryClient discoveryClient;
+    private CachingServiceSelector serviceSelector;
+    private ServiceDescriptorsUpdater updater;
 
     @BeforeMethod
     protected void setUp()
@@ -47,6 +50,14 @@ public class TestCachingServiceSelector
         executor = new ScheduledThreadPoolExecutor(10,
                 new ThreadFactoryBuilder().setNameFormat("Discovery-%s").setDaemon(true).build());
         nodeInfo = new NodeInfo("environment");
+        discoveryClient = new InMemoryDiscoveryClient(nodeInfo);
+        serviceSelector = new CachingServiceSelector("apple",
+                new ServiceSelectorConfig().setPool("pool")
+        );
+        updater = new ServiceDescriptorsUpdater(serviceSelector, "apple",
+                new ServiceSelectorConfig().setPool("pool"),
+                discoveryClient,
+                executor);
     }
 
     @AfterMethod
@@ -59,23 +70,13 @@ public class TestCachingServiceSelector
     @Test
     public void testBasics()
     {
-        CachingServiceSelector serviceSelector = new CachingServiceSelector("type",
-                new ServiceSelectorConfig().setPool("pool"),
-                new InMemoryDiscoveryClient(nodeInfo),
-                executor);
-
-        Assert.assertEquals(serviceSelector.getType(), "type");
+        Assert.assertEquals(serviceSelector.getType(), "apple");
         Assert.assertEquals(serviceSelector.getPool(), "pool");
     }
 
     @Test
     public void testNotStartedEmpty()
     {
-        CachingServiceSelector serviceSelector = new CachingServiceSelector("type",
-                new ServiceSelectorConfig().setPool("pool"),
-                new InMemoryDiscoveryClient(nodeInfo),
-                executor);
-
         Assert.assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
     }
 
@@ -83,12 +84,7 @@ public class TestCachingServiceSelector
     public void testStartedEmpty()
             throws Exception
     {
-        CachingServiceSelector serviceSelector = new CachingServiceSelector("type",
-                new ServiceSelectorConfig().setPool("pool"),
-                new InMemoryDiscoveryClient(nodeInfo),
-                executor);
-
-        serviceSelector.start();
+        updater.start();
 
         Assert.assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
     }
@@ -96,16 +92,10 @@ public class TestCachingServiceSelector
     @Test
     public void testNotStartedWithServices()
     {
-        InMemoryDiscoveryClient discoveryClient = new InMemoryDiscoveryClient(nodeInfo);
         discoveryClient.addDiscoveredService(APPLE_1_SERVICE);
         discoveryClient.addDiscoveredService(APPLE_2_SERVICE);
         discoveryClient.addDiscoveredService(DIFFERENT_TYPE);
         discoveryClient.addDiscoveredService(DIFFERENT_POOL);
-
-        CachingServiceSelector serviceSelector = new CachingServiceSelector("apple",
-                new ServiceSelectorConfig().setPool("pool"),
-                discoveryClient,
-                executor);
 
         Assert.assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
     }
@@ -114,18 +104,12 @@ public class TestCachingServiceSelector
     public void testStartedWithServices()
             throws Exception
     {
-        InMemoryDiscoveryClient discoveryClient = new InMemoryDiscoveryClient(nodeInfo);
         discoveryClient.addDiscoveredService(APPLE_1_SERVICE);
         discoveryClient.addDiscoveredService(APPLE_2_SERVICE);
         discoveryClient.addDiscoveredService(DIFFERENT_TYPE);
         discoveryClient.addDiscoveredService(DIFFERENT_POOL);
 
-        CachingServiceSelector serviceSelector = new CachingServiceSelector("apple",
-                new ServiceSelectorConfig().setPool("pool"),
-                discoveryClient,
-                executor);
-
-        serviceSelector.start();
+        updater.start();
 
         Thread.sleep(100);
 

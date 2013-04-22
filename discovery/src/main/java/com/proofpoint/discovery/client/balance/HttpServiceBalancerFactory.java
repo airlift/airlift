@@ -21,6 +21,7 @@ import com.proofpoint.discovery.client.CachingServiceSelector;
 import com.proofpoint.discovery.client.DiscoveryLookupClient;
 import com.proofpoint.discovery.client.ForDiscoveryClient;
 import com.proofpoint.discovery.client.HttpServiceSelectorImpl;
+import com.proofpoint.discovery.client.ServiceDescriptorsUpdater;
 import com.proofpoint.discovery.client.ServiceSelectorConfig;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -45,8 +46,9 @@ public final class HttpServiceBalancerFactory
         Preconditions.checkNotNull(selectorConfig, "selectorConfig is null");
 
         // todo factor out use of ServiceSelector
-        CachingServiceSelector serviceSelector = new CachingServiceSelector(type, selectorConfig, lookupClient, executor);
-        serviceSelector.start();
+        CachingServiceSelector serviceSelector = new CachingServiceSelector(type, selectorConfig);
+        ServiceDescriptorsUpdater updater = new ServiceDescriptorsUpdater(serviceSelector, type, selectorConfig, lookupClient, executor);
+        updater.start();
 
         return new HttpServiceBalancerImpl(new HttpServiceSelectorImpl(serviceSelector));
     }
