@@ -15,6 +15,7 @@
  */
 package com.proofpoint.configuration;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.inject.Binder;
 import com.google.inject.CreationException;
@@ -143,6 +144,43 @@ public class TestConfigurationFactoryBuilder
         TestMonitor monitor = new TestMonitor();
         final ConfigurationFactory configurationFactory = new ConfigurationFactoryBuilder()
                 .withMonitor(monitor)
+                .withFile(System.getProperty("config"))
+                .withSystemProperties()
+                .build();
+
+        System.getProperties().remove("config");
+
+        try {
+            createInjector(configurationFactory, new Module()
+            {
+                @Override
+                public void configure(Binder binder)
+                {
+                    ConfigurationModule.bindConfig(binder).to(AnnotatedSetter.class);
+                }
+            });
+
+            Assert.fail("Expected an exception in object creation due to unused configuration");
+        } catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(0);
+            monitor.assertMatchingErrorRecorded("Configuration property 'unused' was not used");
+            Assertions.assertContainsAllOf(e.getMessage(), "Configuration property 'unused' was not used");
+        }
+    }
+
+    @Test
+    public void testUnusedConfigFromApplicationDefaultsThrowsError()
+            throws IOException
+    {
+        final File file = File.createTempFile("config", ".properties", tempDir);
+
+        System.setProperty("config", file.getAbsolutePath());
+
+        TestMonitor monitor = new TestMonitor();
+        final ConfigurationFactory configurationFactory = new ConfigurationFactoryBuilder()
+                .withMonitor(monitor)
+                .withApplicationDefaults(ImmutableMap.of("unused", "foo"))
                 .withFile(System.getProperty("config"))
                 .withSystemProperties()
                 .build();

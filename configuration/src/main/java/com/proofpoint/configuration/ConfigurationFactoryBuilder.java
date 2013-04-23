@@ -15,6 +15,7 @@
  */
 package com.proofpoint.configuration;
 
+import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.Problems.Monitor;
 
 import javax.annotation.Nullable;
@@ -38,6 +39,7 @@ public final class ConfigurationFactoryBuilder
     private final Set<String> expectToUse = new HashSet<>();
     private Monitor monitor = Problems.NULL_MONITOR;
     private final List<String> errors = new ArrayList<>();
+    private Map<String,String> applicationDefaults = ImmutableMap.of();
 
     /**
      * Loads properties from the given file
@@ -86,6 +88,13 @@ public final class ConfigurationFactoryBuilder
         return this;
     }
 
+    public ConfigurationFactoryBuilder withApplicationDefaults(Map<String, String> applicationDefaults)
+    {
+        this.applicationDefaults = ImmutableMap.copyOf(applicationDefaults);
+        expectToUse.addAll(applicationDefaults.keySet());
+        return this;
+    }
+
     public ConfigurationFactoryBuilder withMonitor(Monitor monitor)
     {
         this.monitor = monitor;
@@ -94,7 +103,7 @@ public final class ConfigurationFactoryBuilder
 
     public ConfigurationFactory build()
     {
-        return new ConfigurationFactory(properties, expectToUse, errors, monitor);
+        return new ConfigurationFactory(properties, applicationDefaults, expectToUse, errors, monitor);
     }
 
     private void mergeProperties(Properties properties)

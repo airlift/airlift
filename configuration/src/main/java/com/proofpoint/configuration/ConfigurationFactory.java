@@ -56,6 +56,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
+import static com.google.common.base.Objects.firstNonNull;
 import static com.proofpoint.configuration.ConfigurationMetadata.isConfigClass;
 import static com.proofpoint.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
@@ -65,6 +66,7 @@ public final class ConfigurationFactory
     private static final Validator VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
 
     private final Map<String, String> properties;
+    private final Map<String, String> applicationDefaults;
     private final Problems.Monitor monitor;
     private final Set<String> unusedProperties = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
     private final Collection<String> initialErrors;
@@ -75,13 +77,14 @@ public final class ConfigurationFactory
 
     public ConfigurationFactory(Map<String, String> properties)
     {
-        this(properties, properties.keySet(), ImmutableList.<String>of(), Problems.NULL_MONITOR);
+        this(properties, ImmutableMap.<String, String>of(), properties.keySet(), ImmutableList.<String>of(), Problems.NULL_MONITOR);
     }
 
-    ConfigurationFactory(Map<String, String> properties, Set<String> expectToUse, Collection<String> errors, final Monitor monitor)
+    ConfigurationFactory(Map<String, String> properties, Map<String, String> applicationDefaults, Set<String> expectToUse, Collection<String> errors, final Monitor monitor)
     {
         this.monitor = monitor;
         this.properties = ImmutableMap.copyOf(properties);
+        this.applicationDefaults = ImmutableMap.copyOf(applicationDefaults);
         unusedProperties.addAll(expectToUse);
         initialErrors = ImmutableList.copyOf(errors);
 
@@ -229,6 +232,9 @@ public final class ConfigurationFactory
                 if (!value.isEmpty() && properties.get(prefix + value) != null) {
                     problems.addError("Defunct property '%s' (class [%s]) cannot be configured.", prefix + value, configClass.toString());
                 }
+                if (!value.isEmpty() && applicationDefaults.get(prefix + value) != null) {
+                    problems.addError("Defunct property '%s' (class [%s]) cannot have an application default.", prefix + value, configClass.toString());
+                }
             }
         }
 
@@ -271,10 +277,6 @@ public final class ConfigurationFactory
             return;
         }
 
-        if (injectionPoint.getSetter().isAnnotationPresent(Deprecated.class)) {
-            problems.addWarning("Configuration property '%s' is deprecated and should not be used", prefix + injectionPoint.getProperty());
-        }
-
         Object value = getInjectedValue(attribute, injectionPoint, prefix, problems);
 
         try {
@@ -298,7 +300,17 @@ public final class ConfigurationFactory
         }
 
         problems.throwIfHasErrors();
-        return operativeInjectionData.operativeInjectionPoint;
+
+        InjectionPointMetaData injectionPoint = operativeInjectionData.operativeInjectionPoint;
+        if (injectionPoint != null) {
+            if (injectionPoint.getSetter().isAnnotationPresent(Deprecated.class)) {
+                problems.addWarning("Configuration property '%s' is deprecated and should not be used", prefix + injectionPoint.getProperty());
+            }
+
+            return injectionPoint;
+        }
+
+        return operativeInjectionData.defaultInjectionPoint;
     }
 
     private class OperativeInjectionData
@@ -309,6 +321,7 @@ public final class ConfigurationFactory
 
         private String operativeDescription = null;
         InjectionPointMetaData operativeInjectionPoint = null;
+        InjectionPointMetaData defaultInjectionPoint = null;
 
         public OperativeInjectionData(AttributeMetadata attribute, String prefix, Problems problems)
         {
@@ -341,8 +354,17 @@ public final class ConfigurationFactory
                         break;
                     }
                 }
+                //todo prohibit application defaults for configmap
             }
             else {
+                if (applicationDefaults.get(fullName) != null) {
+                    if (isLegacy) {
+                        defaultLegacy(fullName);
+                    }
+                    else {
+                        defaultInjectionPoint = injectionPoint;
+                    }
+                }
                 String value = properties.get(fullName);
                 if (value != null) {
                     if (isLegacy) {
@@ -371,11 +393,21 @@ public final class ConfigurationFactory
 
         private void warnLegacy(String fullName)
         {
+            problems.addWarning("Configuration %s", getLegacyDescription(fullName));
+        }
+
+        private void defaultLegacy(String fullName)
+        {
+            problems.addError("Application default %s", getLegacyDescription(fullName));
+        }
+
+        private String getLegacyDescription(String fullName)
+        {
             String replacement = "deprecated.";
             if (attribute.getInjectionPoint() != null) {
                 replacement = format("replaced. Use '%s' instead.", prefix + attribute.getInjectionPoint().getProperty());
             }
-            problems.addWarning("Configuration property '%s' has been %s", fullName, replacement);
+            return format("property '%s' has been %s", fullName, replacement);
         }
     }
 
@@ -388,7 +420,7 @@ public final class ConfigurationFactory
         if (configMap != null) {
             return getInjectedMap(attribute, injectionPoint, name + ".", problems, configMap.key(), configMap.value());
         }
-        String value = properties.get(name);
+        String value = firstNonNull(properties.get(name), applicationDefaults.get(name));
 
         if (value == null) {
             return null;
