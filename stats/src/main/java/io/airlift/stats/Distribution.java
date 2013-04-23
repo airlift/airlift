@@ -38,6 +38,11 @@ public class Distribution
         digest.add(value);
     }
 
+    public synchronized void add(long value, long count)
+    {
+        digest.add(value, count);
+    }
+
     @Managed
     public synchronized double getMaxError()
     {
