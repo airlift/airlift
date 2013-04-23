@@ -173,6 +173,34 @@ public class TestQuantileDigest
     }
 
     @Test
+    public void testWeightedValues()
+    {
+        QuantileDigest digest = new QuantileDigest(1);
+
+        digest.add(0, 3);
+        digest.add(2, 1);
+        digest.add(4, 5);
+        digest.add(5, 1);
+        digest.validate();
+
+        // should have no compressions with so few values and the allowed error
+        assertEquals(digest.getCompressions(), 0);
+        assertEquals(digest.getConfidenceFactor(), 0.0);
+
+        assertEquals(digest.getQuantile(0.0), 0);
+        assertEquals(digest.getQuantile(0.1), 0);
+        assertEquals(digest.getQuantile(0.2), 0);
+        assertEquals(digest.getQuantile(0.3), 2);
+        assertEquals(digest.getQuantile(0.4), 4);
+        assertEquals(digest.getQuantile(0.5), 4);
+        assertEquals(digest.getQuantile(0.6), 4);
+        assertEquals(digest.getQuantile(0.7), 4);
+        assertEquals(digest.getQuantile(0.8), 4);
+        assertEquals(digest.getQuantile(0.9), 5);
+        assertEquals(digest.getQuantile(1), 5);
+    }
+
+    @Test
     public void testBatchQuantileQuery()
             throws Exception
     {
