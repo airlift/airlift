@@ -18,6 +18,7 @@ package com.proofpoint.discovery.client;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
@@ -26,13 +27,16 @@ import com.proofpoint.discovery.client.announce.Announcer;
 import com.proofpoint.discovery.client.announce.DiscoveryAnnouncementClient;
 import com.proofpoint.discovery.client.announce.HttpDiscoveryAnnouncementClient;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
+import com.proofpoint.discovery.client.balance.HttpServiceBalancer;
 import com.proofpoint.discovery.client.balance.HttpServiceBalancerFactory;
+import com.proofpoint.discovery.client.balance.HttpServiceBalancerImpl;
 
 import java.net.URI;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
+import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
 import static com.proofpoint.http.client.HttpClientBinder.httpClientBinder;
 import static com.proofpoint.json.JsonCodecBinder.jsonCodecBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
@@ -42,6 +46,25 @@ public class DiscoveryModule implements Module
     @Override
     public void configure(Binder binder)
     {
+        // Binding these .toInstance() results in inexplicable NullPointerException errors during injection
+        final HttpServiceBalancerImpl discoveryBalancer = new HttpServiceBalancerImpl("discovery", new ServiceSelectorConfig());
+        binder.bind(HttpServiceBalancer.class).annotatedWith(serviceType("discovery")).toProvider(new Provider<HttpServiceBalancer>()
+        {
+            @Override
+            public HttpServiceBalancer get()
+            {
+                return discoveryBalancer;
+            }
+        }).in(Scopes.SINGLETON);
+        binder.bind(HttpServiceBalancerImpl.class).annotatedWith(serviceType("discovery")).toProvider(new Provider<HttpServiceBalancerImpl>()
+        {
+            @Override
+            public HttpServiceBalancerImpl get()
+            {
+                return discoveryBalancer;
+            }
+        }).in(Scopes.SINGLETON);
+
         // bind service inventory
         binder.bind(ServiceInventory.class).in(Scopes.SINGLETON);
         bindConfig(binder).to(ServiceInventoryConfig.class);

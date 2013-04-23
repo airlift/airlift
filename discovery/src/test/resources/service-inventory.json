@@ -2,6 +2,17 @@
     "environment": "test",
     "services": [
         {
+            "id": "B34A5780-AC49-11E2-9E96-0800200C9A66",
+            "nodeId": "F29D4780-AC49-11E2-9E96-0800200C9A66",
+            "type": "apple",
+            "pool": "general",
+            "location": "/localhost",
+            "state": "RUNNING",
+            "properties": {
+                "http": "http://localhost:8410"
+            }
+        },
+        {
             "id": "C8A9EE64-0476-452C-8638-8E72F3EE3CA6",
             "nodeId": "597A741E-9968-40E2-BB4D-7AF26DE18689",
             "type": "discovery",
