@@ -23,8 +23,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
-import com.proofpoint.http.client.HttpClient;
-import com.proofpoint.http.client.Request.Builder;
 import com.proofpoint.json.JsonCodec;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeInfo;
@@ -44,8 +42,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static com.proofpoint.http.client.JsonResponseHandler.createJsonResponseHandler;
-import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 public class ServiceInventory
@@ -55,9 +51,7 @@ public class ServiceInventory
     private final String environment;
     private final URI serviceInventoryUri;
     private final Duration updateInterval;
-    private final NodeInfo nodeInfo;
     private final JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec;
-    private final HttpClient httpClient;
 
     private final AtomicReference<List<ServiceDescriptor>> serviceDescriptors = new AtomicReference<List<ServiceDescriptor>>(ImmutableList.<ServiceDescriptor>of());
     private final ScheduledExecutorService executorService = newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("service-inventory-%s").setDaemon(true).build());
@@ -67,24 +61,19 @@ public class ServiceInventory
     @Inject
     public ServiceInventory(ServiceInventoryConfig config,
             NodeInfo nodeInfo,
-            JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec,
-            @ForDiscoveryClient HttpClient httpClient)
+            JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec)
     {
         Preconditions.checkNotNull(config, "config is null");
-        Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
         Preconditions.checkNotNull(serviceDescriptorsCodec, "serviceDescriptorsCodec is null");
-        Preconditions.checkNotNull(httpClient, "httpClient is null");
 
-        this.nodeInfo = nodeInfo;
         this.environment = nodeInfo.getEnvironment();
         this.serviceInventoryUri = config.getServiceInventoryUri();
         updateInterval = config.getUpdateInterval();
         this.serviceDescriptorsCodec = serviceDescriptorsCodec;
-        this.httpClient = httpClient;
 
         if (serviceInventoryUri != null) {
             String scheme = serviceInventoryUri.getScheme().toLowerCase();
-            Preconditions.checkArgument(scheme.equals("http") || scheme.equals("https") || scheme.equals("file"), "Service inventory uri must have a http, https, or file scheme");
+            Preconditions.checkArgument(scheme.equals("file"), "Service inventory uri must have a file scheme");
 
             try {
                 updateServiceInventory();
@@ -163,17 +152,9 @@ public class ServiceInventory
 
         try {
             ServiceDescriptorsRepresentation serviceDescriptorsRepresentation;
-            if (serviceInventoryUri.getScheme().toLowerCase().startsWith("http")) {
-                Builder requestBuilder = prepareGet()
-                        .setUri(serviceInventoryUri)
-                        .setHeader("User-Agent", nodeInfo.getNodeId());
-                serviceDescriptorsRepresentation = httpClient.execute(requestBuilder.build(), createJsonResponseHandler(serviceDescriptorsCodec));
-            }
-            else {
-                File file = new File(serviceInventoryUri);
-                String json = Files.toString(file, Charsets.UTF_8);
-                serviceDescriptorsRepresentation = serviceDescriptorsCodec.fromJson(json);
-            }
+            File file = new File(serviceInventoryUri);
+            String json = Files.toString(file, Charsets.UTF_8);
+            serviceDescriptorsRepresentation = serviceDescriptorsCodec.fromJson(json);
 
             if (!environment.equals(serviceDescriptorsRepresentation.getEnvironment())) {
                 logServerError("Expected environment to be %s, but was %s", environment, serviceDescriptorsRepresentation.getEnvironment());
