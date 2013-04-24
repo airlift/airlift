@@ -21,7 +21,6 @@ import com.google.common.io.CharStreams;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
 import com.google.common.util.concurrent.CheckedFuture;
-import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
 import com.proofpoint.discovery.client.DiscoveryException;
 import com.proofpoint.discovery.client.ForDiscoveryClient;
@@ -34,7 +33,6 @@ import com.proofpoint.json.JsonCodec;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.units.Duration;
 
-import javax.inject.Provider;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -50,24 +48,20 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
 {
     private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
 
-    private final Provider<URI> discoveryServiceURI;
     private final NodeInfo nodeInfo;
     private final JsonCodec<Announcement> announcementCodec;
     private final AsyncHttpClient httpClient;
 
     @Inject
-    public HttpDiscoveryAnnouncementClient(@ForDiscoveryClient Provider<URI> discoveryServiceURI,
-            NodeInfo nodeInfo,
+    public HttpDiscoveryAnnouncementClient(NodeInfo nodeInfo,
             JsonCodec<Announcement> announcementCodec,
             @ForDiscoveryClient AsyncHttpClient httpClient)
     {
-        Preconditions.checkNotNull(discoveryServiceURI, "discoveryServiceURI is null");
         Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
         Preconditions.checkNotNull(announcementCodec, "announcementCodec is null");
         Preconditions.checkNotNull(httpClient, "httpClient is null");
 
         this.nodeInfo = nodeInfo;
-        this.discoveryServiceURI = discoveryServiceURI;
         this.announcementCodec = announcementCodec;
         this.httpClient = httpClient;
     }
@@ -77,14 +71,9 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
     {
         Preconditions.checkNotNull(services, "services is null");
 
-        URI uri = discoveryServiceURI.get();
-        if (uri == null) {
-            return Futures.immediateFailedCheckedFuture(new DiscoveryException("No discovery servers are available"));
-        }
-
         Announcement announcement = new Announcement(nodeInfo.getEnvironment(), nodeInfo.getNodeId(), nodeInfo.getPool(), nodeInfo.getLocation(), services);
         Request request = preparePut()
-                .setUri(URI.create(uri + "/v1/announcement/" + nodeInfo.getNodeId()))
+                .setUri(URI.create("v1/announcement/" + nodeInfo.getNodeId()))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
                 .setHeader("Content-Type", MEDIA_TYPE_JSON.toString())
                 .setBodyGenerator(jsonBodyGenerator(announcementCodec, announcement))
@@ -100,8 +89,7 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
                     throw new DiscoveryException(String.format("Announcement failed with status code %s: %s", statusCode, getBodyForError(response)));
                 }
 
-                Duration maxAge = extractMaxAge(response);
-                return maxAge;
+                return extractMaxAge(response);
             }
         });
     }
@@ -124,13 +112,8 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
     @Override
     public CheckedFuture<Void, DiscoveryException> unannounce()
     {
-        URI uri = discoveryServiceURI.get();
-        if (uri == null) {
-            return Futures.immediateFailedCheckedFuture(new DiscoveryException("No discovery servers are available"));
-        }
-
         Request request = prepareDelete()
-                .setUri(URI.create(uri + "/v1/announcement/" + nodeInfo.getNodeId()))
+                .setUri(URI.create("v1/announcement/" + nodeInfo.getNodeId()))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
                 .build();
         return httpClient.executeAsync(request, new DiscoveryResponseHandler<Void>("Unannouncement"));

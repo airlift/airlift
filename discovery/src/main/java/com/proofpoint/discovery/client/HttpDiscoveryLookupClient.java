@@ -20,7 +20,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.io.CharStreams;
 import com.google.common.net.HttpHeaders;
 import com.google.common.util.concurrent.CheckedFuture;
-import com.google.common.util.concurrent.Futures;
 import com.google.inject.Inject;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.CacheControl;
@@ -35,7 +34,6 @@ import com.proofpoint.units.Duration;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
-import javax.inject.Provider;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -51,25 +49,21 @@ import static java.lang.String.format;
 public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
 {
     private final String environment;
-    private final Provider<URI> discoveryServiceURI;
     private final NodeInfo nodeInfo;
     private final JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec;
     private final AsyncHttpClient httpClient;
 
     @Inject
-    public HttpDiscoveryLookupClient(@ForDiscoveryClient Provider<URI> discoveryServiceURI,
-            NodeInfo nodeInfo,
+    public HttpDiscoveryLookupClient(NodeInfo nodeInfo,
             JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec,
             @ForDiscoveryClient AsyncHttpClient httpClient)
     {
-        Preconditions.checkNotNull(discoveryServiceURI, "discoveryServiceURI is null");
         Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
         Preconditions.checkNotNull(serviceDescriptorsCodec, "serviceDescriptorsCodec is null");
         Preconditions.checkNotNull(httpClient, "httpClient is null");
 
         this.nodeInfo = nodeInfo;
         this.environment = nodeInfo.getEnvironment();
-        this.discoveryServiceURI = discoveryServiceURI;
         this.serviceDescriptorsCodec = serviceDescriptorsCodec;
         this.httpClient = httpClient;
     }
@@ -107,12 +101,7 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
     {
         Preconditions.checkNotNull(type, "type is null");
 
-        URI uri = discoveryServiceURI.get();
-        if (uri == null) {
-            return Futures.immediateFailedCheckedFuture(new DiscoveryException("No discovery servers are available"));
-        }
-
-        uri = URI.create(uri + "/v1/service/" + type + "/");
+        URI uri = URI.create("v1/service/" + type + "/");
         if (pool != null) {
             uri = uri.resolve(pool);
         }

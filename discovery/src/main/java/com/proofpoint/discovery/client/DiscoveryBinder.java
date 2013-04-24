@@ -158,10 +158,15 @@ public class DiscoveryBinder
 
     public BalancingHttpClientAsyncBindingBuilder bindAsyncHttpClient(ServiceType serviceType, Class<? extends Annotation> annotation)
     {
+        bindHttpBalancer(serviceType);
+        return bindAsyncHttpClientWithBalancer(serviceType, annotation);
+    }
+
+    BalancingHttpClientAsyncBindingBuilder bindAsyncHttpClientWithBalancer(ServiceType serviceType, Class<? extends Annotation> annotation)
+    {
         checkNotNull(serviceType, "serviceType is null");
         checkNotNull(annotation, "annotation is null");
 
-        bindHttpBalancer(serviceType);
         PrivateBinder privateBinder = binder.newPrivateBinder();
         privateBinder.bind(HttpServiceBalancer.class).annotatedWith(ForBalancingHttpClient.class).to(Key.get(HttpServiceBalancer.class, serviceType));
         HttpClientAsyncBindingBuilder delegateBindingBuilder = httpClientPrivateBinder(privateBinder, binder).bindAsyncHttpClient(serviceType.value(), ForBalancingHttpClient.class);

@@ -31,13 +31,12 @@ import com.proofpoint.discovery.client.balance.HttpServiceBalancer;
 import com.proofpoint.discovery.client.balance.HttpServiceBalancerFactory;
 import com.proofpoint.discovery.client.balance.HttpServiceBalancerImpl;
 
-import java.net.URI;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
+import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
 import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
-import static com.proofpoint.http.client.HttpClientBinder.httpClientBinder;
 import static com.proofpoint.json.JsonCodecBinder.jsonCodecBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
@@ -79,7 +78,7 @@ public class DiscoveryModule implements Module
         jsonCodecBinder(binder).bindJsonCodec(Announcement.class);
 
         // bind the http client
-        httpClientBinder(binder).bindAsyncHttpClient("discovery", ForDiscoveryClient.class);
+        discoveryBinder(binder).bindAsyncHttpClientWithBalancer(serviceType("discovery"), ForDiscoveryClient.class);
 
         // bind announcer
         binder.bind(Announcer.class).in(Scopes.SINGLETON);
@@ -98,30 +97,5 @@ public class DiscoveryModule implements Module
     public ScheduledExecutorService createDiscoveryExecutor()
     {
         return new ScheduledThreadPoolExecutor(5, new ThreadFactoryBuilder().setNameFormat("Discovery-%s").setDaemon(true).build());
-    }
-
-    @Provides
-    @ForDiscoveryClient
-    public URI getDiscoveryUri(ServiceInventory serviceInventory, DiscoveryClientConfig config)
-    {
-        Iterable<ServiceDescriptor> discovery = serviceInventory.getServiceDescriptors("discovery");
-        for (ServiceDescriptor descriptor : discovery) {
-            if (descriptor.getState() != ServiceState.RUNNING) {
-                continue;
-            }
-
-            try {
-                return new URI(descriptor.getProperties().get("https"));
-            } catch (Exception ignored) {
-            }
-            try {
-                return new URI(descriptor.getProperties().get("http"));
-            } catch (Exception ignored) {
-            }
-        }
-        if (config != null) {
-            return config.getDiscoveryServiceURI();
-        }
-        return null;
     }
 }
