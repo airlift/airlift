@@ -18,6 +18,7 @@ package com.proofpoint.http.client;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 
+import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -28,11 +29,13 @@ abstract class AbstractHttpClientModule
     protected final String name;
     protected final Class<? extends Annotation> annotation;
     protected Binder binder;
+    protected Binder rootBinder;
 
-    protected AbstractHttpClientModule(String name, Class<? extends Annotation> annotation)
+    protected AbstractHttpClientModule(String name, Class<? extends Annotation> annotation, @Nullable Binder rootBinder)
     {
         this.name = checkNotNull(name, "name is null");
         this.annotation = checkNotNull(annotation, "annotation is null");
+        this.rootBinder = rootBinder;
     }
 
     @Override

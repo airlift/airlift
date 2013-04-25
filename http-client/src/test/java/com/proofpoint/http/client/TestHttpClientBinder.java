@@ -18,14 +18,17 @@ package com.proofpoint.http.client;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.PrivateBinder;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.http.client.netty.NettyAsyncHttpClient;
 import com.proofpoint.tracetoken.TraceTokenModule;
 import org.testng.annotations.Test;
+import org.weakref.jmx.Managed;
 
 import javax.inject.Qualifier;
 import java.lang.annotation.ElementType;
@@ -40,6 +43,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class TestHttpClientBinder
 {
@@ -158,6 +162,48 @@ public class TestHttpClientBinder
         assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias2.class)), client);
     }
 
+    @Test
+    public void testPrivateBindClient()
+    {
+        Injector injector = Guice.createInjector(
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        newExporter(binder).export(ManagedClass.class);
+                        PrivateBinder privateBinder = binder.newPrivateBinder();
+                        HttpClientBinder.httpClientPrivateBinder(privateBinder, binder).bindHttpClient("foo", FooClient.class);
+                        privateBinder.bind(ExposeHttpClient.class);
+                        privateBinder.expose(ExposeHttpClient.class);
+                    }
+                },
+                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
+
+        assertNotNull(injector.getInstance(ExposeHttpClient.class).httpClient);
+    }
+
+    @Test
+    public void testPrivateBindAsyncClient()
+    {
+        Injector injector = Guice.createInjector(
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        newExporter(binder).export(ManagedClass.class);
+                        PrivateBinder privateBinder = binder.newPrivateBinder();
+                        HttpClientBinder.httpClientPrivateBinder(privateBinder, binder).bindAsyncHttpClient("foo", FooClient.class);
+                        privateBinder.bind(ExposeHttpClient.class);
+                        privateBinder.expose(ExposeHttpClient.class);
+                    }
+                },
+                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
+
+        assertNotNull(injector.getInstance(ExposeHttpClient.class).httpClient);
+    }
+
     private static void assertFilterCount(HttpClient httpClient, int filterCount)
     {
         assertNotNull(httpClient);
@@ -212,6 +258,26 @@ public class TestHttpClientBinder
         public Request filterRequest(Request request)
         {
             return request;
+        }
+    }
+
+    private static class ExposeHttpClient
+    {
+        public final HttpClient httpClient;
+
+        @Inject
+        private ExposeHttpClient(@FooClient HttpClient httpClient)
+        {
+            this.httpClient = httpClient;
+        }
+    }
+
+    private static class ManagedClass
+    {
+        @Managed
+        public int getInt()
+        {
+            return 0;
         }
     }
 }

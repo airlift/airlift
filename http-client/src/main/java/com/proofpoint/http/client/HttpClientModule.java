@@ -16,6 +16,7 @@
 package com.proofpoint.http.client;
 
 import com.google.common.annotations.Beta;
+import com.google.inject.Binder;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -26,6 +27,7 @@ import com.google.inject.TypeLiteral;
 import java.lang.annotation.Annotation;
 import java.util.Set;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.http.client.CompositeQualifierImpl.compositeQualifier;
@@ -35,9 +37,9 @@ import static org.weakref.jmx.guice.ExportBinder.newExporter;
 class HttpClientModule
         extends AbstractHttpClientModule
 {
-    HttpClientModule(String name, Class<? extends Annotation> annotation)
+    HttpClientModule(String name, Class<? extends Annotation> annotation, Binder rootBinder)
     {
-        super(name, annotation);
+        super(name, annotation, checkNotNull(rootBinder, "rootBinder is null"));
     }
 
     @Override
@@ -59,7 +61,7 @@ class HttpClientModule
         newSetBinder(binder, HttpRequestFilter.class, filterQualifier(annotation));
 
         // export stats
-        newExporter(binder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
+        newExporter(rootBinder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
     }
 
     @Override

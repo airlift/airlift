@@ -28,29 +28,36 @@ import static com.google.inject.multibindings.Multibinder.newSetBinder;
 public class HttpClientBinder
 {
     private final Binder binder;
+    private final Binder rootBinder;
 
-    private HttpClientBinder(Binder binder)
+    private HttpClientBinder(Binder binder, Binder rootBinder)
     {
         this.binder = checkNotNull(binder, "binder is null");
+        this.rootBinder = checkNotNull(rootBinder, "rootBinder is null");
     }
 
     public static HttpClientBinder httpClientBinder(Binder binder)
     {
-        return new HttpClientBinder(binder);
+        return new HttpClientBinder(binder, binder);
+    }
+
+    public static HttpClientBinder httpClientPrivateBinder(Binder privateBinder, Binder rootBinder)
+    {
+        return new HttpClientBinder(privateBinder, rootBinder);
     }
 
     public HttpClientBindingBuilder bindHttpClient(String name, Class<? extends Annotation> annotation)
     {
         checkNotNull(name, "name is null");
         checkNotNull(annotation, "annotation is null");
-        return createBindingBuilder(new HttpClientModule(name, annotation));
+        return createBindingBuilder(new HttpClientModule(name, annotation, rootBinder));
     }
 
     public HttpClientBindingBuilder bindAsyncHttpClient(String name, Class<? extends Annotation> annotation)
     {
         checkNotNull(name, "name is null");
         checkNotNull(annotation, "annotation is null");
-        return createBindingBuilder(new AsyncHttpClientModule(name, annotation));
+        return createBindingBuilder(new AsyncHttpClientModule(name, annotation, rootBinder));
     }
 
     private HttpClientBindingBuilder createBindingBuilder(AbstractHttpClientModule module)
