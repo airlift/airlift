@@ -21,8 +21,11 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
 import com.google.inject.CreationException;
 import com.google.inject.Guice;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.inject.PrivateBinder;
+import com.google.inject.Scopes;
 import com.google.inject.spi.Message;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -32,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import static com.proofpoint.testing.Assertions.assertInstanceOf;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -82,6 +84,24 @@ import static org.testng.Assert.fail;
         for (Config1 config1 : mapComplex.getMap().values()) {
             verifyConfig(config1);
         }
+    }
+
+    @Test
+    public void testPrivateBinder()
+    {
+        Module module = new Module()
+        {
+            @Override
+            public void configure(Binder binder)
+            {
+                PrivateBinder privateBinder = binder.newPrivateBinder();
+                privateBinder.install(createModule(Config1.class, null));
+                privateBinder.bind(ExposeConfig.class).in(Scopes.SINGLETON);
+                privateBinder.expose(ExposeConfig.class);
+            }
+        };
+        Injector injector = createInjector(properties, module);
+        verifyConfig(injector.getInstance(ExposeConfig.class).config1);
     }
 
     private static void verifyConfig(Config1 config)
@@ -168,5 +188,16 @@ import static org.testng.Assert.fail;
             builder.put(prefix + "." + entry.getKey(), entry.getValue());
         }
         return builder.build();
+    }
+
+    private static class ExposeConfig
+    {
+        public final Config1 config1;
+
+        @Inject
+        private ExposeConfig(Config1 config1)
+        {
+            this.config1 = config1;
+        }
     }
 }

@@ -28,6 +28,7 @@ The REST server launcher has been rewritten in Java. Changes include:
  - The ConfigurationFactory(Map<String, String> properties) constructor
    (typically used in unit tests) is now strict, requiring all supplied
    properties to be used.
+ - Configuration bound inside private binders now works correctly.
 
 * Removal of jax-rs classes from clients
 

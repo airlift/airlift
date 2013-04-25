@@ -23,6 +23,7 @@ import com.google.inject.Provider;
 import com.google.inject.spi.DefaultElementVisitor;
 import com.google.inject.spi.Element;
 import com.google.inject.spi.Message;
+import com.google.inject.spi.PrivateElements;
 import com.google.inject.spi.ProviderInstanceBinding;
 
 import java.util.List;
@@ -79,6 +80,16 @@ public class ConfigurationValidator
                             }
                         }
 
+                    }
+
+                    return null;
+                }
+
+                @Override
+                public Void visit(PrivateElements privateElements)
+                {
+                    for (Element element : privateElements.getElements()) {
+                        element.acceptVisitor(this);
                     }
 
                     return null;

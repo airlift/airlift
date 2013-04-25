@@ -4,6 +4,7 @@ import com.google.common.collect.Iterators;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Module;
+import com.google.inject.PrivateBinder;
 import com.google.inject.spi.Message;
 import com.proofpoint.configuration.ConfigurationFactoryTest.AnnotatedSetter;
 import com.proofpoint.configuration.ConfigurationFactoryTest.LegacyMapConfigPresent;
@@ -115,6 +116,27 @@ public class TestConfigurationInspector
                 .value("MapA[k1]StringB", "map-a.k1.string-b", "defaultB", "this is b", "")
                 .value("MapA[k2]StringA", "map-a.k2.string-a", "defaultA", "this is k2 a", "")
                 .value("MapA[k2]StringB", "map-a.k2.string-b", "defaultB", "this is k2 b", "")
+                .end();
+    }
+
+    @Test
+    public void testPrivateBinderConfig()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("string-value", "some value");
+        properties.put("boolean-value", "true");
+        inspect(properties, new Module()
+        {
+            @Override
+            public void configure(Binder binder)
+            {
+                PrivateBinder privateBinder = binder.newPrivateBinder();
+                ConfigurationModule.bindConfig(privateBinder).to(AnnotatedSetter.class);
+            }
+        })
+                .component("ConfigurationFactoryTest$AnnotatedSetter")
+                .value("BooleanValue", "boolean-value", "false", "true", "")
+                .value("StringValue", "string-value", "null", "some value", "")
                 .end();
     }
 
