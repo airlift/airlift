@@ -23,6 +23,12 @@ The REST server launcher has been rewritten in Java. Changes include:
    main method) and returns an error status code if initialization fails.
  - The launcher will no longer hang if the server fails to stop.
 
+* Configuration improvements
+
+ - The ConfigurationFactory(Map<String, String> properties) constructor
+   (typically used in unit tests) is now strict, requiring all supplied
+   properties to be used.
+
 * Removal of jax-rs classes from clients
 
 We have replaced all uses of jax-rs classes in clients with classes from Guava

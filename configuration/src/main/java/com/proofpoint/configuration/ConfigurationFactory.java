@@ -16,7 +16,6 @@
 package com.proofpoint.configuration;
 
 import com.google.common.annotations.Beta;
-import com.google.common.base.CaseFormat;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -76,7 +75,7 @@ public final class ConfigurationFactory
 
     public ConfigurationFactory(Map<String, String> properties)
     {
-        this(properties, Collections.<String>emptySet(), ImmutableList.<String>of(), Problems.NULL_MONITOR);
+        this(properties, properties.keySet(), ImmutableList.<String>of(), Problems.NULL_MONITOR);
     }
 
     ConfigurationFactory(Map<String, String> properties, Set<String> expectToUse, Collection<String> errors, final Monitor monitor)
@@ -196,7 +195,7 @@ public final class ConfigurationFactory
 
         problems.throwIfHasErrors();
 
-        return new ConfigurationHolder<T>(instance, problems);
+        return new ConfigurationHolder<>(instance, problems);
     }
 
     private <T> T build(Class<T> configClass, String prefix, Problems problems)
