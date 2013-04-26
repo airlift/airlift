@@ -146,6 +146,11 @@ public class Distribution
         return result;
     }
 
+    public synchronized List<Long> getPercentiles(List<Double> percentiles)
+    {
+        return digest.getQuantiles(percentiles);
+    }
+
     public synchronized DistributionSnapshot snapshot()
     {
         List<Long> quantiles = digest.getQuantiles(ImmutableList.of(0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99));
