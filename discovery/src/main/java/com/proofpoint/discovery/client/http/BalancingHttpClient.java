@@ -53,7 +53,13 @@ public final class BalancingHttpClient implements HttpClient
         String path = request.getUri().getPath();
         checkArgument(path == null || !path.startsWith("/"), request.getUri() + " path starts with '/'");
 
-        HttpServiceAttempt attempt = pool.createAttempt();
+        HttpServiceAttempt attempt;
+        try {
+            attempt = pool.createAttempt();
+        }
+        catch (RuntimeException e) {
+            throw responseHandler.handleException(request, e);
+        }
         int retriesLeft = maxRetries;
 
         RetryingResponseHandler<T, E> retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler);
@@ -82,7 +88,12 @@ public final class BalancingHttpClient implements HttpClient
                 }
                 catch (RetryException ignored) {
                     attempt.markBad();
-                    attempt = attempt.tryNext();
+                    try {
+                        attempt = attempt.tryNext();
+                    }
+                    catch (RuntimeException e) {
+                        throw responseHandler.handleException(request, e);
+                    }
                 }
             }
             else {

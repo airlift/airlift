@@ -1,6 +1,5 @@
 package com.proofpoint.discovery.client.http;
 
-import com.proofpoint.discovery.client.ServiceUnavailableException;
 import com.proofpoint.discovery.client.balance.HttpServiceAttempt;
 import com.proofpoint.discovery.client.balance.HttpServiceBalancer;
 import com.proofpoint.http.client.BodyGenerator;
@@ -9,6 +8,7 @@ import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
+import org.mockito.ArgumentCaptor;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -389,18 +389,67 @@ public class TestBalancingHttpClient
         verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, /* todo serviceAttempt3,*/ bodyGenerator, response, responseHandler, response503, response408);
     }
 
-    @Test(expectedExceptions = ServiceUnavailableException.class,
-            expectedExceptionsMessageRegExp = "Service type=\\[test-type], pool=\\[test-pool] is not available")
-    public void testNoServers()
+    @Test
+    public void testCreateAttemptException()
             throws Exception
     {
         serviceBalancer = mock(HttpServiceBalancer.class);
-        when(serviceBalancer.createAttempt()).thenThrow(new ServiceUnavailableException("test-type", "test-pool"));
+        RuntimeException balancerException = new RuntimeException("test balancer exception");
+        when(serviceBalancer.createAttempt()).thenThrow(balancerException);
 
         balancingHttpClient = new BalancingHttpClient(serviceBalancer, httpClient,
                 new BalancingHttpClientConfig().setMaxRetries(2));
 
-        balancingHttpClient.execute(request, mock(ResponseHandler.class));
+        ResponseHandler responseHandler = mock(ResponseHandler.class);
+        RuntimeException handlerException = new RuntimeException("test responseHandler exception");
+        when(responseHandler.handleException(any(Request.class), any(Exception.class))).thenReturn(handlerException);
+
+        try {
+            balancingHttpClient.execute(request, responseHandler);
+            fail("Exception not thrown");
+        }
+        catch (RuntimeException e) {
+            assertSame(e, handlerException, "Exception thrown by BalancingHttpClient");
+        }
+
+        ArgumentCaptor<Exception> captor = ArgumentCaptor.forClass(Exception.class);
+        verify(responseHandler).handleException(same(request), captor.capture());
+        assertSame(captor.getValue(), balancerException, "Exception passed to ResponseHandler");
+        verifyNoMoreInteractions(responseHandler);
+    }
+
+    @Test
+    public void testNextAttemptException()
+            throws Exception
+    {
+        httpClient.expectCall("http://s1.example.com/v1/service", new ConnectException());
+
+        serviceBalancer = mock(HttpServiceBalancer.class);
+        serviceAttempt1 = mock(HttpServiceAttempt.class);
+        when(serviceBalancer.createAttempt()).thenReturn(serviceAttempt1);
+        when(serviceAttempt1.getUri()).thenReturn(URI.create("http://s1.example.com"));
+        RuntimeException balancerException = new RuntimeException("test balancer exception");
+        when(serviceAttempt1.tryNext()).thenThrow(balancerException);
+
+        balancingHttpClient = new BalancingHttpClient(serviceBalancer, httpClient,
+                new BalancingHttpClientConfig().setMaxRetries(2));
+
+        ResponseHandler responseHandler = mock(ResponseHandler.class);
+        RuntimeException handlerException = new RuntimeException("test responseHandler exception");
+        when(responseHandler.handleException(any(Request.class), any(Exception.class))).thenReturn(handlerException);
+
+        try {
+            balancingHttpClient.execute(request, responseHandler);
+            fail("Exception not thrown");
+        }
+        catch (RuntimeException e) {
+            assertSame(e, handlerException, "Exception thrown by BalancingHttpClient");
+        }
+
+        ArgumentCaptor<Exception> captor = ArgumentCaptor.forClass(Exception.class);
+        verify(responseHandler).handleException(same(request), captor.capture());
+        assertSame(captor.getValue(), balancerException, "Exception passed to ResponseHandler");
+        verifyNoMoreInteractions(responseHandler);
     }
 
     @Test

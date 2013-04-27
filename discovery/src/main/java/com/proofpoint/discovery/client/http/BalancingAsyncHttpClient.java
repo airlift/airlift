@@ -60,7 +60,15 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
         String path = request.getUri().getPath();
         checkArgument(path == null || !path.startsWith("/"), request.getUri() + " path starts with '/'");
 
-        return attemptQuery(request, responseHandler, pool.createAttempt(), maxRetries);
+        HttpServiceAttempt attempt;
+        try {
+            attempt = pool.createAttempt();
+        }
+        catch (RuntimeException e) {
+            return new ImmediateFailedAsyncHttpResponseFuture<>(responseHandler.handleException(request, e));
+        }
+
+        return attemptQuery(request, responseHandler, attempt, maxRetries);
     }
 
     private <T, E extends Exception> AsyncHttpResponseFuture<T, E> attemptQuery(Request request, ResponseHandler<T, E> responseHandler, HttpServiceAttempt attempt, int retriesLeft)
@@ -142,8 +150,16 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
                         attempt.markBad();
                         final AsyncHttpResponseFuture<T, ?> attemptFuture;
                         synchronized (subFutureLock) {
+                            HttpServiceAttempt nextAttempt = null;
                             try {
-                                attemptFuture = attemptQuery(request, responseHandler, attempt.tryNext(), retriesLeft);
+                                nextAttempt = attempt.tryNext();
+                            }
+                            catch (RuntimeException e1) {
+                                setException(responseHandler.handleException(request, e1));
+                                return;
+                            }
+                            try {
+                                attemptFuture = attemptQuery(request, responseHandler, nextAttempt, retriesLeft);
                             }
                             catch (RuntimeException e1) {
                                 setException(e1); // todo send to responsehandler here?
@@ -233,6 +249,39 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
                 }
                 return format("Attempt %s to %s: %s", attempt, uri, subFuture.getState());
             }
+        }
+    }
+
+    private static class ImmediateFailedAsyncHttpResponseFuture<T, E extends Exception>
+            extends AbstractFuture<T>
+            implements AsyncHttpResponseFuture<T, E>
+    {
+
+        private final E exception;
+
+        public ImmediateFailedAsyncHttpResponseFuture(E exception)
+        {
+            this.exception = exception;
+        }
+
+        @Override
+        public String getState()
+        {
+            return "Failed with exception " + exception;
+        }
+
+        @Override
+        public T checkedGet()
+                throws E
+        {
+            throw exception;
+        }
+
+        @Override
+        public T checkedGet(long timeout, TimeUnit unit)
+                throws TimeoutException, E
+        {
+            throw exception;
         }
     }
 }
