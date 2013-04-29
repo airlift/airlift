@@ -16,7 +16,6 @@
 package com.proofpoint.discovery.client.balance;
 
 import com.google.common.collect.ImmutableSet;
-import com.proofpoint.discovery.client.ServiceSelectorConfig;
 import com.proofpoint.discovery.client.ServiceUnavailableException;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -34,9 +33,7 @@ public class TestHttpServiceBalancerImpl
     protected void setUp()
             throws Exception
     {
-        httpServiceBalancer = new HttpServiceBalancerImpl("apple",
-                new ServiceSelectorConfig().setPool("pool")
-        );
+        httpServiceBalancer = new HttpServiceBalancerImpl("type=[apple], pool=[pool]");
     }
 
     @Test(expectedExceptions = ServiceUnavailableException.class)

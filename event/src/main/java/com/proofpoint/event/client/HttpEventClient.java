@@ -118,7 +118,7 @@ public class HttpEventClient
         List<URI> uris = serviceSelector.selectHttpService();
 
         if (uris.isEmpty()) {
-            return Futures.<Void, RuntimeException>immediateFailedCheckedFuture(new ServiceUnavailableException(serviceSelector.getType(), serviceSelector.getPool()));
+            return Futures.<Void, RuntimeException>immediateFailedCheckedFuture(new ServiceUnavailableException("type=[" + serviceSelector.getType() + "], pool=[" + serviceSelector.getPool() + "]"));
         }
 
         // todo this doesn't really work due to returning the future which can fail without being retried

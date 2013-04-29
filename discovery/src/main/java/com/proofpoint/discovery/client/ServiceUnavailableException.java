@@ -20,23 +20,8 @@ import static java.lang.String.format;
 public class ServiceUnavailableException
         extends RuntimeException
 {
-    private final String service;
-    private final String pool;
-
-    public ServiceUnavailableException(String type, String pool)
+    public ServiceUnavailableException(String description)
     {
-        super(format("Service type=[%s], pool=[%s] is not available", type, pool));
-        this.service = type;
-        this.pool = pool;
-    }
-
-    public String getType()
-    {
-        return service;
-    }
-
-    public String getPool()
-    {
-        return pool;
+        super(format("Service %s has no instances", description));
     }
 }

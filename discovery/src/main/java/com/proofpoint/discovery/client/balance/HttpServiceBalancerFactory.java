@@ -24,6 +24,8 @@ import com.proofpoint.discovery.client.ServiceSelectorConfig;
 
 import java.util.concurrent.ScheduledExecutorService;
 
+import static java.lang.String.format;
+
 public final class HttpServiceBalancerFactory
 {
     private final DiscoveryLookupClient lookupClient;
@@ -43,7 +45,7 @@ public final class HttpServiceBalancerFactory
         Preconditions.checkNotNull(type, "type is null");
         Preconditions.checkNotNull(selectorConfig, "selectorConfig is null");
 
-        HttpServiceBalancerImpl balancer = new HttpServiceBalancerImpl(type, selectorConfig);
+        HttpServiceBalancerImpl balancer = new HttpServiceBalancerImpl(format("type=[%s], pool=[%s]", type, selectorConfig.getPool()));
         ServiceDescriptorsUpdater updater = new ServiceDescriptorsUpdater(new HttpServiceUpdaterAdapter(balancer), type, selectorConfig, lookupClient, executor);
         updater.start();
 

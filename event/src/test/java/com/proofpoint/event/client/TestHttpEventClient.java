@@ -68,7 +68,7 @@ public class TestHttpEventClient
     private URI baseUri;
     private AsyncHttpClient httpClient;
 
-    @Test(expectedExceptions = ServiceUnavailableException.class, expectedExceptionsMessageRegExp = ".*is not available.*")
+    @Test(expectedExceptions = ServiceUnavailableException.class, expectedExceptionsMessageRegExp = ".*has no instances.*")
     public void testFutureFailsWhenServiceUnavailable()
             throws ExecutionException, InterruptedException
     {

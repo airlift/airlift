@@ -17,7 +17,6 @@ package com.proofpoint.discovery.client.balance;
 
 import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableSet;
-import com.proofpoint.discovery.client.ServiceSelectorConfig;
 import com.proofpoint.discovery.client.ServiceUnavailableException;
 
 import java.net.URI;
@@ -31,14 +30,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class HttpServiceBalancerImpl implements HttpServiceBalancer
 {
-    private final String type;
-    private final String pool;
     private final AtomicReference<Set<URI>> httpUris = new AtomicReference<>((Set<URI>) ImmutableSet.<URI>of());
+    private final String description;
 
-    public HttpServiceBalancerImpl(String type, ServiceSelectorConfig selectorConfig)
+    public HttpServiceBalancerImpl(String description)
     {
-        this.type = checkNotNull(type, "type is null");
-        pool = checkNotNull(selectorConfig, "selectorConfig is null").getPool();
+        this.description = checkNotNull(description, "description is null");
     }
 
     @Override
@@ -46,7 +43,7 @@ public class HttpServiceBalancerImpl implements HttpServiceBalancer
     {
         List<URI> httpUris = new ArrayList<>(this.httpUris.get());
         if (httpUris.isEmpty()) {
-            throw new ServiceUnavailableException(type, pool);
+            throw new ServiceUnavailableException(description);
         }
         Collections.shuffle(httpUris);
         return new HttpServiceAttemptImpl(httpUris, 0);

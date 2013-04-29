@@ -46,7 +46,7 @@ public class DiscoveryModule implements Module
     public void configure(Binder binder)
     {
         // Binding these .toInstance() results in inexplicable NullPointerException errors during injection
-        final HttpServiceBalancerImpl discoveryBalancer = new HttpServiceBalancerImpl("discovery", new ServiceSelectorConfig());
+        final HttpServiceBalancerImpl discoveryBalancer = new HttpServiceBalancerImpl("discovery");
         binder.bind(HttpServiceBalancer.class).annotatedWith(serviceType("discovery")).toProvider(new Provider<HttpServiceBalancer>()
         {
             @Override
