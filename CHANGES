@@ -94,6 +94,10 @@ jax-rs is no longer required.
 
 * Library upgrades
 
+  - Jetty 8.1.10
+  - Guava 14.0.1
+  - slf4j 1.7.5
+  - logback 1.0.11
   - Jersey 1.17.1
   - TestNG 6.8.1
 

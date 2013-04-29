@@ -26,13 +26,11 @@
         <dependency>
             <groupId>javax.validation</groupId>
             <artifactId>validation-api</artifactId>
-            <version>1.0.0.GA</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.bval</groupId>
             <artifactId>bval-jsr303</artifactId>
-            <version>0.3-incubating</version>
         </dependency>
     </dependencies>
 
