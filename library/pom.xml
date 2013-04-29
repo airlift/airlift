@@ -47,6 +47,24 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Controls all the checkers run when building the project. -->
+        <!-- Can be activated with -Dplatform.check.skip-all=true on the command line. -->
+        <platform.check.skip-all>false</platform.check.skip-all>
+        <!-- Controls the basic checkers run when building the project. -->
+        <platform.check.skip-basic>${platform.check.skip-all}</platform.check.skip-basic>
+        <!-- Controls the extended checkers run when building the project. -->
+        <platform.check.skip-extended>${platform.check.skip-all}</platform.check.skip-extended>
+
+        <!-- basic checks -->
+        <platform.check.skip-duplicate-finder>${platform.check.skip-basic}</platform.check.skip-duplicate-finder>
+
+        <platform.check.fail-all>true</platform.check.fail-all>
+        <platform.check.fail-basic>${platform.check.fail-all}</platform.check.fail-basic>
+        <platform.check.fail-extended>${platform.check.fail-all}</platform.check.fail-extended>
+
+        <!-- basic checks -->
+        <platform.check.fail-duplicate-finder>${platform.check.fail-basic}</platform.check.fail-duplicate-finder>
     </properties>
 
     <scm>
@@ -59,6 +77,111 @@
         <maven>3.0</maven>
     </prerequisites>
 
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>com.ning.maven.plugins</groupId>
+                    <artifactId>maven-duplicate-finder-plugin</artifactId>
+                    <version>1.0.3</version>
+                    <configuration>
+                        <skip>${platform.check.skip-duplicate-finder}</skip>
+                        <failBuildInCaseOfConflict>${platform.check.fail-duplicate-finder}</failBuildInCaseOfConflict>
+                        <exceptions>
+                            <exception>
+                                <!-- Same jersey versions... -->
+                                <conflictingDependencies>
+                                    <dependency>
+                                        <groupId>com.sun.jersey</groupId>
+                                        <artifactId>jersey-server</artifactId>
+                                        <version>1.9.1</version>
+                                    </dependency>
+                                    <dependency>
+                                        <groupId>com.sun.jersey</groupId>
+                                        <artifactId>jersey-core</artifactId>
+                                        <version>1.9.1</version>
+                                    </dependency>
+                                    <dependency>
+                                        <groupId>com.sun.jersey.contribs</groupId>
+                                        <artifactId>jersey-multipart</artifactId>
+                                        <version>1.9.1</version>
+                                    </dependency>
+                                </conflictingDependencies>
+                                <resources>
+                                    <resource>META-INF/jersey-module-version</resource>
+                                </resources>
+                            </exception>
+
+                            <exception>
+                                <!-- For bval-jsr303 -->
+                                <conflictingDependencies>
+                                    <dependency>
+                                        <groupId>commons-beanutils</groupId>
+                                        <artifactId>commons-beanutils-core</artifactId>
+                                        <version>1.8.3</version>
+                                    </dependency>
+                                    <dependency>
+                                        <groupId>commons-collections</groupId>
+                                        <artifactId>commons-collections</artifactId>
+                                        <version>3.2.1</version>
+                                    </dependency>
+                                </conflictingDependencies>
+                                <classes>
+                                    <class>org.apache.commons.collections.ArrayStack</class>
+                                    <class>org.apache.commons.collections.Buffer</class>
+                                    <class>org.apache.commons.collections.BufferUnderflowException</class>
+                                    <class>org.apache.commons.collections.FastHashMap</class>
+                                </classes>
+                            </exception>
+
+                            <exception>
+                                <!-- https://github.com/apache/httpcore/commit/1411f34092eb44c0a689410291dc57adc62edee5 -->
+                                <conflictingDependencies>
+                                    <dependency>
+                                        <groupId>org.apache.httpcomponents</groupId>
+                                        <artifactId>httpclient</artifactId>
+                                        <version>4.0.1</version>
+                                    </dependency>
+                                    <dependency>
+                                        <groupId>org.apache.httpcomponents</groupId>
+                                        <artifactId>httpcore</artifactId>
+                                        <version>4.2-beta1</version>
+                                    </dependency>
+                                </conflictingDependencies>
+                                <classes>
+                                    <class>org.apache.http.annotation.GuardedBy</class>
+                                    <class>org.apache.http.annotation.Immutable</class>
+                                    <class>org.apache.http.annotation.NotThreadSafe</class>
+                                    <class>org.apache.http.annotation.ThreadSafe</class>
+                                </classes>
+                            </exception>
+                        </exceptions>
+
+                        <ignoredResources>
+                            <!-- For all the jetty packages -->
+                            <ignoredResource>about\.html</ignoredResource>
+                        </ignoredResources>
+
+                        <ignoredDependencies>
+                            <!-- jRuby complete isn't very safe, but we only use it in the rack project -->
+                            <dependency>
+                                <groupId>org.jruby</groupId>
+                                <artifactId>jruby-complete</artifactId>
+                            </dependency>
+                        </ignoredDependencies>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
     <distributionManagement>
         <snapshotRepository>
             <id>sonatype-nexus-snapshots</id>
