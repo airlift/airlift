@@ -18,11 +18,11 @@ package com.proofpoint.platform.sample;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import org.weakref.jmx.guice.MBeanModule;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
 import static com.proofpoint.event.client.EventBinder.eventBinder;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class MainModule
         implements Module
@@ -33,7 +33,7 @@ public class MainModule
         binder.disableCircularProxies();
 
         binder.bind(PersonStore.class).in(Scopes.SINGLETON);
-        MBeanModule.newExporter(binder).export(PersonStore.class).withGeneratedName();
+        newExporter(binder).export(PersonStore.class).withGeneratedName();
 
         binder.bind(PersonsResource.class).in(Scopes.SINGLETON);
         binder.bind(PersonResource.class).in(Scopes.SINGLETON);

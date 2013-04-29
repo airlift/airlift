@@ -21,7 +21,6 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import org.weakref.jmx.guice.MBeanModule;
 
 import java.net.URI;
 import java.util.concurrent.ScheduledExecutorService;
@@ -30,6 +29,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.http.client.HttpClientBinder.httpClientBinder;
 import static com.proofpoint.json.JsonCodecBinder.jsonCodecBinder;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class DiscoveryModule implements Module
 {
@@ -60,7 +60,7 @@ public class DiscoveryModule implements Module
 
         binder.bind(ServiceSelectorFactory.class).to(CachingServiceSelectorFactory.class).in(Scopes.SINGLETON);
 
-        MBeanModule.newExporter(binder).export(ServiceInventory.class).withGeneratedName();
+        newExporter(binder).export(ServiceInventory.class).withGeneratedName();
     }
 
     @Provides

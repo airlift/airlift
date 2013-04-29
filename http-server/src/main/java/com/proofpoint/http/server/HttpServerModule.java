@@ -21,12 +21,11 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.discovery.client.AnnouncementHttpServerInfo;
-import com.proofpoint.event.client.EventBinder;
-import org.weakref.jmx.guice.MBeanModule;
 
 import javax.servlet.Filter;
 
 import static com.proofpoint.event.client.EventBinder.eventBinder;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 /**
  * Provides a fully configured instance of an http server,
@@ -64,7 +63,7 @@ public class HttpServerModule
         Multibinder.newSetBinder(binder, Filter.class, TheServlet.class);
         Multibinder.newSetBinder(binder, Filter.class, TheAdminServlet.class);
 
-        MBeanModule.newExporter(binder).export(RequestStats.class).withGeneratedName();
+        newExporter(binder).export(RequestStats.class).withGeneratedName();
 
         ConfigurationModule.bindConfig(binder).to(HttpServerConfig.class);
 

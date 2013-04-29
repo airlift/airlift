@@ -23,7 +23,7 @@ import com.google.inject.multibindings.Multibinder;
 
 import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
 import static com.proofpoint.http.client.HttpClientBinder.httpClientBinder;
-import static org.weakref.jmx.guice.MBeanModule.newExporter;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class HttpEventModule implements Module
 {
