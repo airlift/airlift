@@ -83,35 +83,11 @@
                 <plugin>
                     <groupId>com.ning.maven.plugins</groupId>
                     <artifactId>maven-duplicate-finder-plugin</artifactId>
-                    <version>1.0.3</version>
+                    <version>1.0.4</version>
                     <configuration>
                         <skip>${platform.check.skip-duplicate-finder}</skip>
                         <failBuildInCaseOfConflict>${platform.check.fail-duplicate-finder}</failBuildInCaseOfConflict>
                         <exceptions>
-                            <exception>
-                                <!-- Same jersey versions... -->
-                                <conflictingDependencies>
-                                    <dependency>
-                                        <groupId>com.sun.jersey</groupId>
-                                        <artifactId>jersey-server</artifactId>
-                                        <version>1.9.1</version>
-                                    </dependency>
-                                    <dependency>
-                                        <groupId>com.sun.jersey</groupId>
-                                        <artifactId>jersey-core</artifactId>
-                                        <version>1.9.1</version>
-                                    </dependency>
-                                    <dependency>
-                                        <groupId>com.sun.jersey.contribs</groupId>
-                                        <artifactId>jersey-multipart</artifactId>
-                                        <version>1.9.1</version>
-                                    </dependency>
-                                </conflictingDependencies>
-                                <resources>
-                                    <resource>META-INF/jersey-module-version</resource>
-                                </resources>
-                            </exception>
-
                             <exception>
                                 <!-- For bval-jsr303 -->
                                 <conflictingDependencies>
@@ -160,6 +136,7 @@
                         <ignoredResources>
                             <!-- For all the jetty packages -->
                             <ignoredResource>about\.html</ignoredResource>
+                            <ignoredResource>META-INF/.*</ignoredResource>
                         </ignoredResources>
 
                         <ignoredDependencies>
@@ -340,25 +317,25 @@
             <dependency>
                 <groupId>com.sun.jersey</groupId>
                 <artifactId>jersey-core</artifactId>
-                <version>1.9.1</version>
+                <version>1.17.1</version>
             </dependency>
 
             <dependency>
                 <groupId>com.sun.jersey.contribs</groupId>
                 <artifactId>jersey-guice</artifactId>
-                <version>1.9.1</version>
+                <version>1.17.1</version>
             </dependency>
 
             <dependency>
                 <groupId>com.sun.jersey.contribs</groupId>
                 <artifactId>jersey-multipart</artifactId>
-                <version>1.9.1</version>
+                <version>1.17.1</version>
             </dependency>
 
             <dependency>
                 <groupId>com.sun.jersey</groupId>
                 <artifactId>jersey-server</artifactId>
-                <version>1.9.1</version>
+                <version>1.17.1</version>
             </dependency>
 
             <dependency>
