@@ -50,7 +50,7 @@
         <dependency>
             <groupId>com.beust</groupId>
             <artifactId>jcommander</artifactId>
-            <version>1.12</version>
+            <version>1.30</version>
             <scope>test</scope>
         </dependency>
 

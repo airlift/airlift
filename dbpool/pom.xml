@@ -50,14 +50,14 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.15</version>
+            <version>5.1.24</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <version>1.3.154</version>
+            <version>1.3.171</version>
             <optional>true</optional>
         </dependency>
 
