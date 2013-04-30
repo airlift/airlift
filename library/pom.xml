@@ -140,7 +140,15 @@
                                     <exclude>com.google.collections:google-collections</exclude>
                                     <!-- but not the badly numbered ones... -->
                                     <exclude>com.google.guava:guava</exclude>
-                                 </excludes>
+                                    <!-- Clashes with com.google.code.findbugs:annotations and having both jars -->
+                                    <!-- as a dependency then clashes with the dependency checker (because it -->
+                                    <!-- is not very good at handling annotations). Use the annotations jar -->
+                                    <!-- instead which has all jsr305 annotations and the additional findbugs -->
+                                    <!-- stuff. -->
+                                    <exclude>com.google.code.findbugs:jsr305</exclude>
+                                    <!-- Use the official version at javax.servlet:javax.servlet-api -->
+                                    <exclude>org.eclipse.jetty.orbit:javax.servlet</exclude>
+                                </excludes>
                                 <includes>
                                     <!-- whitelist the well numbered guava releases -->
                                     <include>com.google.guava:guava:[10.0.1,)</include>
@@ -392,6 +400,23 @@
                 <version>0.71-SNAPSHOT</version>
             </dependency>
 
+            <!-- Java APIs -->
+            <dependency>
+                <groupId>javax.inject</groupId>
+                <artifactId>javax.inject</artifactId>
+                <version>1</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.servlet</groupId>
+                <artifactId>javax.servlet-api</artifactId>
+                <version>3.0.1</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.validation</groupId>
+                <artifactId>validation-api</artifactId>
+                <version>1.0.0.GA</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
@@ -447,12 +472,6 @@
             </dependency>
 
             <dependency>
-                <groupId>javax.inject</groupId>
-                <artifactId>javax.inject</artifactId>
-                <version>1</version>
-            </dependency>
-
-            <dependency>
                 <groupId>com.sun.jersey</groupId>
                 <artifactId>jersey-core</artifactId>
                 <version>1.17.1</version>
@@ -486,12 +505,6 @@
                 <groupId>joda-time</groupId>
                 <artifactId>joda-time</artifactId>
                 <version>2.1</version>
-            </dependency>
-
-            <dependency>
-                <groupId>javax.validation</groupId>
-                <artifactId>validation-api</artifactId>
-                <version>1.0.0.GA</version>
             </dependency>
 
             <dependency>
@@ -564,6 +577,12 @@
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-server</artifactId>
                 <version>8.1.10.v20130312</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.eclipse.jetty.orbit</groupId>
+                        <artifactId>javax.servlet</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
@@ -603,14 +622,8 @@
             </dependency>
 
             <dependency>
-                <groupId>org.eclipse.jetty.orbit</groupId>
-                <artifactId>javax.servlet</artifactId>
-                <version>3.0.0.v201112011016</version>
-            </dependency>
-
-            <dependency>
                 <groupId>com.google.code.findbugs</groupId>
-                <artifactId>jsr305</artifactId>
+                <artifactId>annotations</artifactId>
                 <version>2.0.1</version>
             </dependency>
 

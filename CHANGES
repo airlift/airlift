@@ -92,6 +92,18 @@ jax-rs is no longer required.
   broken browsers from rendering the json as html, which is a potential XSS
   vulnerability
 
+* Dependency changes
+
+com.google.code.findbugs:jsr305 was replaced with
+com.google.code.findbugs:annotations
+
+The jsr305 jar contains only the JSR 305 annotations while the
+annotations jar also contains additional, Findbugs specific
+annotations.
+
+org.eclipse.jetty.orbit:javax.servlet was replaced with
+javax.servlet:javax.servlet-api
+
 * Library upgrades
 
   - Jetty 8.1.10
