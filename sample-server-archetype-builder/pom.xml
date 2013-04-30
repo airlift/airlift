@@ -105,7 +105,7 @@
                                         <replacetoken><![CDATA[<main-class>com.proofpoint.platform.sample.Main</main-class>]]></replacetoken>
                                         <replacevalue><![CDATA[<main-class>${package}.Main</main-class>]]></replacevalue>
                                     </replacefilter>
-                                    <!-- King of the lame:  can't have a literal ${artifictId} in a value anywhere in a pom or it gets interpolated so split the property across two replacements -->
+                                    <!-- King of the lame:  can't have a literal ${artifactId} in a value anywhere in a pom or it gets interpolated so split the property across two replacements -->
                                     <replacefilter>
                                         <replacetoken><![CDATA[<name>]]></replacetoken>
                                         <replacevalue><![CDATA[<name>${]]></replacevalue>
