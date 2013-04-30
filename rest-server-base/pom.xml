@@ -121,42 +121,16 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-enforcer-plugin</artifactId>
-                        <version>1.0.1</version>
-                        <executions>
-                            <execution>
-                                <id>enforce-versions</id>
-                                <goals>
-                                    <goal>enforce</goal>
-                                </goals>
-                                <configuration>
-                                    <rules>
-                                        <requireMavenVersion>
-                                            <version>3.0.0</version>
-                                        </requireMavenVersion>
-                                        <requireJavaVersion>
-                                            <version>1.7</version>
-                                        </requireJavaVersion>
-                                        <requirePluginVersions />
-                                        <bannedDependencies>
-                                            <excludes>
-                                                <exclude>com.google.collections:google-collections</exclude>
-                                                <exclude>com.google.guava:guava</exclude>
-                                            </excludes>
-                                            <includes>
-                                                <include>com.google.guava:guava:[10.0.1,)</include>
-                                            </includes>
-                                        </bannedDependencies>
-                                        <requireProperty>
-                                            <property>main-class</property>
-                                            <message>main-class property not defined</message>
-                                            <regex>.+</regex>
-                                            <regexMessage>main-class property is empty</regexMessage>
-                                        </requireProperty>
-                                    </rules>
-                                    <fail>true</fail>
-                                </configuration>
-                            </execution>
-                        </executions>
+                        <configuration>
+                            <rules combine.children="append">
+                                <requireProperty>
+                                    <property>main-class</property>
+                                    <message>The main-class property must be specified when building a platform tarball.</message>
+                                    <regex>.+</regex>
+                                    <regexMessage>The main-class property can not be empty.</regexMessage>
+                                </requireProperty>
+                            </rules>
+                        </configuration>
                     </plugin>
 
                     <plugin>
@@ -189,7 +163,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-jar-plugin</artifactId>
-                        <version>2.3.1</version>
                         <configuration>
                             <archive>
                                 <manifest>
@@ -296,20 +269,8 @@
 
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-install-plugin</artifactId>
-                        <version>2.3.1</version>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-resources-plugin</artifactId>
                         <version>2.4.3</version>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-deploy-plugin</artifactId>
-                        <version>2.5</version>
                     </plugin>
 
                     <plugin>

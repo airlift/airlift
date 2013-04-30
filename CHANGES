@@ -108,7 +108,11 @@ jax-rs is no longer required.
 
 * Maven plugin upgrades
 
+  - maven-deploy-plugin 2.7
   - maven-duplicate-finder-plugin 1.0.4
+  - maven-enforcer-plugin 1.2
+  - maven-install-plugin 2.4
+  - maven-jar-plugin 2.4
 
 Platform 0.70
 
