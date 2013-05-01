@@ -52,6 +52,19 @@ of clients and avoids some packing problems with the latest jax-rs releases.
 Any existing code can continue to use the jax-rs versions of these classes, but
 jax-rs is no longer required.
 
+* AsyncHttpClient fixes
+
+This release contains a number of fixes for the AsyncHttpClient and additional
+changes to ease debugging of async requests. In some cases the ResponseHandler
+would not be notified of errors with the handleException method, even though
+the future returned from the executeAsync method would be notified of the
+error. To help with debugging, the executeAsync method now returns an
+AsyncHttpResponseFuture which has a new method getState that can be used to
+determine the current state of the http request. This is helpful when requests
+seem to get lost after execution. Finally, we have changed the Netty setup to
+properly name the worker threads, so you can more easily find the http client
+threads.
+
 * Temporarily allow the characters .:=,- in event names once again.
 
 Platform 0.70
