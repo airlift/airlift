@@ -34,6 +34,8 @@ task is logging initialization, which can now be disabled with the new
 doNotInitializeLogging() method.  For an example of a Bootstrap test see
 com.proofpoint.platform.sample.TestServer.
 
+* ValidationAssertions.assertValidates() now returns its argument.
+
 * Configuration improvements
 
  - The ConfigurationFactory(Map<String, String> properties) constructor
