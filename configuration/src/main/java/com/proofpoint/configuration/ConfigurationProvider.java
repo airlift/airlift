@@ -77,6 +77,13 @@ public class ConfigurationProvider<T> implements Provider<T>
         return configurationFactory.build(this, warningsMonitor);
     }
 
+    T getDefaults()
+    {
+        Preconditions.checkNotNull(configurationFactory, "configurationFactory");
+
+        return configurationFactory.buildDefaults(this);
+    }
+
     @Override
     public boolean equals(Object o)
     {
@@ -89,11 +96,8 @@ public class ConfigurationProvider<T> implements Provider<T>
 
         ConfigurationProvider<?> that = (ConfigurationProvider<?>) o;
 
-        if (!key.equals(that.key)) {
-            return false;
-        }
+        return key.equals(that.key);
 
-        return true;
     }
 
     @Override

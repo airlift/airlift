@@ -80,7 +80,7 @@ public class ConfigurationInspector
 
         public static <T> ConfigRecord<T> createConfigRecord(ConfigurationProvider<T> configurationProvider)
         {
-            return new ConfigRecord<T>(configurationProvider);
+            return new ConfigRecord<>(configurationProvider);
         }
 
         private ConfigRecord(ConfigurationProvider<T> configurationProvider)
@@ -102,17 +102,23 @@ public class ConfigurationInspector
                 // this is catch throwable because we may get an AssertionError
             }
 
+            T defaults = null;
+            try {
+                defaults = configurationProvider.getDefaults();
+            }
+            catch (Throwable ignored) {
+            }
+
             String prefix = configurationProvider.getPrefix();
             prefix = prefix == null ? "" : (prefix + ".");
 
             ImmutableSortedSet.Builder<ConfigAttribute> builder = ImmutableSortedSet.naturalOrder();
-            enumerateConfig(metadata, instance, prefix, builder, "");
+            enumerateConfig(metadata, instance, defaults, prefix, builder, "");
             attributes = builder.build();
         }
 
-        private static <T> void enumerateConfig(ConfigurationMetadata<T> metadata, T instance, String prefix, Builder<ConfigAttribute> builder, String attributePrefix)
+        private static <T> void enumerateConfig(ConfigurationMetadata<T> metadata, T instance, T defaults, String prefix, Builder<ConfigAttribute> builder, String attributePrefix)
         {
-            T defaults = newDefaultInstance(metadata);
             for (AttributeMetadata attribute : metadata.getAttributes().values()) {
                 String propertyName = prefix + attribute.getInjectionPoint().getProperty();
                 Method getter = attribute.getGetter();
@@ -161,6 +167,7 @@ public class ConfigurationInspector
                 if (valueConfigClass != null) {
                     enumerateConfig(ConfigurationMetadata.getConfigurationMetadata(valueConfigClass),
                             entry.getValue(),
+                            newDefaultInstance(ConfigurationMetadata.getConfigurationMetadata(valueConfigClass)),
                             propertyName + "." + entry.getKey().toString() + ".",
                             builder,
                             attributeName + "[" + entry.getKey().toString() + "]");

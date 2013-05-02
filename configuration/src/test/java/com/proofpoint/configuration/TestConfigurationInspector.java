@@ -1,5 +1,8 @@
 package com.proofpoint.configuration;
 
+import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
@@ -20,6 +23,7 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeMap;
 
+import static com.google.common.base.Objects.firstNonNull;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -28,9 +32,15 @@ public class TestConfigurationInspector
 
     private static final String PACKAGE_NAME = "com.proofpoint.configuration.";
 
-    private static InspectionVerifier inspect(Map<String, String> properties, Module module)
+    private static InspectionVerifier inspect(Map<String, String> properties, Map<String, String> applicationDefaults, Module module)
     {
-        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(
+                properties,
+                firstNonNull(applicationDefaults, ImmutableMap.<String, String>of()),
+                properties.keySet(),
+                ImmutableList.<String>of(),
+                Problems.NULL_MONITOR
+        );
         List<Message> messages = new ConfigurationValidator(configurationFactory, null).validate(module);
         Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
         return new InspectionVerifier(new ConfigurationInspector().inspect(configurationFactory));
@@ -42,7 +52,7 @@ public class TestConfigurationInspector
         Map<String, String> properties = new TreeMap<>();
         properties.put("string-value", "some value");
         properties.put("boolean-value", "true");
-        inspect(properties, new Module()
+        inspect(properties, null, new Module()
         {
             @Override
             public void configure(Binder binder)
@@ -57,11 +67,58 @@ public class TestConfigurationInspector
     }
 
     @Test
+    public void testSimpleConfigWithApplicationDefaults()
+    {
+        Map<String, String> properties = ImmutableMap.of(
+                "string-value", "some value",
+                "boolean-value", "false"
+        );
+        Map<String, String> applicationDefaults = ImmutableMap.of(
+                "string-value", "some default value",
+                "boolean-value", "true"
+        );
+        inspect(properties, applicationDefaults, new Module()
+        {
+            @Override
+            public void configure(Binder binder)
+            {
+                ConfigurationModule.bindConfig(binder).to(AnnotatedSetter.class);
+            }
+        })
+                .component("ConfigurationFactoryTest$AnnotatedSetter")
+                .value("BooleanValue", "boolean-value", "true", "false", "")
+                .value("StringValue", "string-value", "some default value", "some value", "")
+                .end();
+    }
+
+    @Test
     public void testSecuritySensitiveConfig()
     {
         Map<String, String> properties = new TreeMap<>();
         properties.put("value", "some value");
-        inspect(properties, new Module()
+        inspect(properties, null, new Module()
+        {
+            @Override
+            public void configure(Binder binder)
+            {
+                ConfigurationModule.bindConfig(binder).to(SetterSensitiveClass.class);
+            }
+        })
+                .component("ConfigurationMetadataTest$SetterSensitiveClass")
+                .value("Value", "value", "[REDACTED]", "[REDACTED]", "description")
+                .end();
+    }
+
+    @Test
+    public void testSecuritySensitiveConfigWithApplicationDefaults()
+    {
+        Map<String, String> properties = ImmutableMap.of(
+                "value", "some value"
+        );
+        Map<String, String> applicationDefaults = ImmutableMap.of(
+                "value", "some default value"
+        );
+        inspect(properties, applicationDefaults, new Module()
         {
             @Override
             public void configure(Binder binder)
@@ -80,7 +137,7 @@ public class TestConfigurationInspector
         Map<String, String> properties = new TreeMap<>();
         properties.put("map-a.a", "this is a");
         properties.put("map-a.b", "this is b");
-        inspect(properties, new Module()
+        inspect(properties, null, new Module()
         {
             @Override
             public void configure(Binder binder)
@@ -103,7 +160,7 @@ public class TestConfigurationInspector
         properties.put("map-a.k1.string-b", "this is b");
         properties.put("map-a.k2.string-value", "this is k2 a");
         properties.put("map-a.k2.string-b", "this is k2 b");
-        inspect(properties, new Module()
+        inspect(properties, null, new Module()
         {
             @Override
             public void configure(Binder binder)
@@ -125,7 +182,7 @@ public class TestConfigurationInspector
         Map<String, String> properties = new TreeMap<>();
         properties.put("string-value", "some value");
         properties.put("boolean-value", "true");
-        inspect(properties, new Module()
+        inspect(properties, null, new Module()
         {
             @Override
             public void configure(Binder binder)

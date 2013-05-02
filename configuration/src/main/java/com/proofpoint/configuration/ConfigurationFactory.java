@@ -190,18 +190,23 @@ public final class ConfigurationFactory
         return instance;
     }
 
+    <T> T buildDefaults(ConfigurationProvider<T> configurationProvider)
+    {
+        return build(configurationProvider.getConfigClass(), configurationProvider.getPrefix(), true, new Problems());
+    }
+
     private <T> ConfigurationHolder<T> build(Class<T> configClass, String prefix)
     {
         Problems problems = new Problems(monitor);
 
-        final T instance = build(configClass, prefix, problems);
+        final T instance = build(configClass, prefix, false, problems);
 
         problems.throwIfHasErrors();
 
         return new ConfigurationHolder<>(instance, problems);
     }
 
-    private <T> T build(Class<T> configClass, String prefix, Problems problems)
+    private <T> T build(Class<T> configClass, String prefix, boolean isDefault, Problems problems)
     {
         if (configClass == null) {
             throw new NullPointerException("configClass is null");
@@ -220,10 +225,14 @@ public final class ConfigurationFactory
 
         for (AttributeMetadata attribute : configurationMetadata.getAttributes().values()) {
             try {
-                setConfigProperty(instance, attribute, prefix, problems);
+                setConfigProperty(instance, attribute, prefix, isDefault, problems);
             } catch (InvalidConfigurationException e) {
                 problems.addError(e.getCause(), e.getMessage());
             }
+        }
+
+        if (isDefault) {
+            return instance;
         }
 
         // Check that none of the defunct properties are still in use
@@ -266,18 +275,18 @@ public final class ConfigurationFactory
         }
     }
 
-    private <T> void setConfigProperty(T instance, AttributeMetadata attribute, String prefix, Problems problems)
+    private <T> void setConfigProperty(T instance, AttributeMetadata attribute, String prefix, boolean isDefault, Problems problems)
             throws InvalidConfigurationException
     {
         // Get property value
-        ConfigurationMetadata.InjectionPointMetaData injectionPoint = findOperativeInjectionPoint(attribute, prefix, problems);
+        ConfigurationMetadata.InjectionPointMetaData injectionPoint = findOperativeInjectionPoint(attribute, prefix, isDefault, problems);
 
         // If we did not get an injection point, do not call the setter
         if (injectionPoint == null) {
             return;
         }
 
-        Object value = getInjectedValue(attribute, injectionPoint, prefix, problems);
+        Object value = getInjectedValue(attribute, injectionPoint, prefix, isDefault, problems);
 
         try {
             injectionPoint.getSetter().invoke(instance, value);
@@ -289,7 +298,7 @@ public final class ConfigurationFactory
         }
     }
 
-    private ConfigurationMetadata.InjectionPointMetaData findOperativeInjectionPoint(AttributeMetadata attribute, String prefix, Problems problems)
+    private ConfigurationMetadata.InjectionPointMetaData findOperativeInjectionPoint(AttributeMetadata attribute, String prefix, boolean isDefault, Problems problems)
             throws ConfigurationException
     {
         OperativeInjectionData operativeInjectionData = new OperativeInjectionData(attribute, prefix, problems);
@@ -299,15 +308,17 @@ public final class ConfigurationFactory
             operativeInjectionData.consider(injectionPoint, true);
         }
 
-        problems.throwIfHasErrors();
+        if (!isDefault) {
+            problems.throwIfHasErrors();
 
-        InjectionPointMetaData injectionPoint = operativeInjectionData.operativeInjectionPoint;
-        if (injectionPoint != null) {
-            if (injectionPoint.getSetter().isAnnotationPresent(Deprecated.class)) {
-                problems.addWarning("Configuration property '%s' is deprecated and should not be used", prefix + injectionPoint.getProperty());
+            InjectionPointMetaData injectionPoint = operativeInjectionData.operativeInjectionPoint;
+            if (injectionPoint != null) {
+                if (injectionPoint.getSetter().isAnnotationPresent(Deprecated.class)) {
+                    problems.addWarning("Configuration property '%s' is deprecated and should not be used", prefix + injectionPoint.getProperty());
+                }
+
+                return injectionPoint;
             }
-
-            return injectionPoint;
         }
 
         return operativeInjectionData.defaultInjectionPoint;
@@ -411,7 +422,7 @@ public final class ConfigurationFactory
         }
     }
 
-    private Object getInjectedValue(AttributeMetadata attribute, InjectionPointMetaData injectionPoint, String prefix, Problems problems)
+    private Object getInjectedValue(AttributeMetadata attribute, InjectionPointMetaData injectionPoint, String prefix, boolean isDefault, Problems problems)
             throws InvalidConfigurationException
     {
         // Get the property value
@@ -420,8 +431,11 @@ public final class ConfigurationFactory
         if (configMap != null) {
             return getInjectedMap(attribute, injectionPoint, name + ".", problems, configMap.key(), configMap.value());
         }
-        String value = firstNonNull(properties.get(name), applicationDefaults.get(name));
 
+        String value = properties.get(name);
+        if (isDefault || value == null) {
+            value = applicationDefaults.get(name);
+        }
         if (value == null) {
             return null;
         }
@@ -499,7 +513,7 @@ public final class ConfigurationFactory
             final V value;
             if (valueIsConfigClass) {
                 try {
-                    value = build(valueClass, name + keyString, problems);
+                    value = build(valueClass, name + keyString, false, problems);
                 }
                 catch (ConfigurationException ignored) {
                     continue;
