@@ -42,8 +42,9 @@ We created a JsonTester utility class for unit testing JSON encoders and
 decoders. JsonTester.assertJsonEncode() asserts that a given object encodes
 to an expected JSON strucure. JsonTester.decodeJson returns the result of
 decoding a given JSON structure with a given codec. In either case, the
-JSON structure is specified as an Object, which can be a String, a List of
-JSON structures, or a Map of String to JSON structures.
+JSON structure is specified as an Object, which can be a String, an Integer,
+a Double, a Boolean, null, a List of JSON structures, or a Map of String to
+JSON structures.
 
 See TestPersonWithSelf and TestPersonRepresentation in the sample server for
 examples of how to use JsonTester.
