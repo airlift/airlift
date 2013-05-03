@@ -46,8 +46,7 @@ public class TestPersonRepresentation
     @Test
     public void testJsonDecode()
     {
-        PersonRepresentation personRepresentation = decodeJson(codec, map);
-        assertValidates(personRepresentation);
+        PersonRepresentation personRepresentation = assertValidates(decodeJson(codec, map));
         assertEquals(personRepresentation.toPerson(), new Person("foo@example.com", "Mr Foo"));
     }
 

@@ -15,6 +15,7 @@
  */
 package com.proofpoint.platform.sample;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 
 import javax.annotation.concurrent.Immutable;
@@ -45,41 +46,30 @@ public class Person
     }
 
     @Override
-    public boolean equals(Object o)
+    public int hashCode()
     {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        Person person = (Person) o;
-
-        if (email != null ? !email.equals(person.email) : person.email != null) {
-            return false;
-        }
-        if (name != null ? !name.equals(person.name) : person.name != null) {
-            return false;
-        }
-
-        return true;
+        return Objects.hashCode(email, name);
     }
 
     @Override
-    public int hashCode()
+    public boolean equals(Object obj)
     {
-        int result = email != null ? email.hashCode() : 0;
-        result = 31 * result + (name != null ? name.hashCode() : 0);
-        return result;
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        final Person other = (Person) obj;
+        return Objects.equal(this.email, other.email) && Objects.equal(this.name, other.name);
     }
 
     @Override
     public String toString()
     {
-        return "Person{" +
-                "email='" + email + '\'' +
-                ", name='" + name + '\'' +
-                '}';
+        return Objects.toStringHelper(this)
+                .add("email", email)
+                .add("name", name)
+                .toString();
     }
 }

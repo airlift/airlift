@@ -65,37 +65,22 @@ public class PersonEvent
     }
 
     @Override
-    public boolean equals(Object o)
+    public int hashCode()
     {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        PersonEvent that = (PersonEvent) o;
-
-        if (operation != that.operation) {
-            return false;
-        }
-        if (!person.equals(that.person)) {
-            return false;
-        }
-        if (!personId.equals(that.personId)) {
-            return false;
-        }
-
-        return true;
+        return Objects.hashCode(operation, personId, person);
     }
 
     @Override
-    public int hashCode()
+    public boolean equals(Object obj)
     {
-        int result = operation.hashCode();
-        result = 31 * result + personId.hashCode();
-        result = 31 * result + person.hashCode();
-        return result;
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        final PersonEvent other = (PersonEvent) obj;
+        return Objects.equal(this.operation, other.operation) && Objects.equal(this.personId, other.personId) && Objects.equal(this.person, other.person);
     }
 
     @Override
