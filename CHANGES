@@ -84,6 +84,8 @@ jax-rs is no longer required.
    private IO pool, use withPrivateIoThreadPool() when binding the client.
    The pools running user code are still per-client.
 
+ - AsyncHttpClient.executeAsync() no longer throws E.
+
 * Temporarily allow the characters .:=,- in event names once again.
 
 * Add "X-Content-Type-Options: nosniff" header to all json responses to prevent
