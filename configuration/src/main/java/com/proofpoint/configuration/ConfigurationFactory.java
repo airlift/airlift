@@ -365,7 +365,11 @@ public final class ConfigurationFactory
                         break;
                     }
                 }
-                //todo prohibit application defaults for configmap
+                for (String key : applicationDefaults.keySet()) {
+                    if (key.startsWith(mapPrefix)) {
+                        problems.addError("Cannot have application default property '%s' for a configuration map '%s'", key, fullName);
+                    }
+                }
             }
             else {
                 if (applicationDefaults.get(fullName) != null) {

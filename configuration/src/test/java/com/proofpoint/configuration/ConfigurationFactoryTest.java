@@ -482,6 +482,56 @@ public class ConfigurationFactoryTest
     }
 
     @Test
+    public void testMapApplicationDefaultsThrows()
+    {
+        Map<String, String> applicationDefaults = ImmutableMap.of(
+            "map-a.k3", "this is a"
+        );
+        TestMonitor monitor = new TestMonitor();
+        try {
+            createInjector(ImmutableMap.<String, String>of(), applicationDefaults, monitor, new Module()
+            {
+                public void configure(Binder binder)
+                {
+                    ConfigurationModule.bindConfig(binder).to(MapConfigPresent.class);
+                }
+            });
+
+            Assert.fail("Expected an exception in object creation due to use of application default for map config");
+        }
+        catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(0);
+            Assertions.assertContainsAllOf(e.getMessage(), "Cannot have application default property", "map-a.k3", "for a configuration map");
+        }
+    }
+
+    @Test
+    public void testMapValueApplicationDefaultsThrows()
+    {
+        Map<String, String> applicationDefaults = ImmutableMap.of(
+            "map-b.k3.string-value", "this is a"
+        );
+        TestMonitor monitor = new TestMonitor();
+        try {
+            createInjector(ImmutableMap.<String, String>of(), applicationDefaults, monitor, new Module()
+            {
+                public void configure(Binder binder)
+                {
+                    ConfigurationModule.bindConfig(binder).to(MapConfigPresent.class);
+                }
+            });
+
+            Assert.fail("Expected an exception in object creation due to use of application default for map config");
+        }
+        catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(0);
+            Assertions.assertContainsAllOf(e.getMessage(), "Cannot have application default property", "map-b.k3.string-value", "for a configuration map");
+        }
+    }
+
+    @Test
     public void testConfigurationThroughLegacyMapConfig()
     {
         Map<String, String> properties = new TreeMap<>();
@@ -1005,6 +1055,36 @@ public class ConfigurationFactoryTest
         void setIntValue(int value)
         {
             this.myIntValue = value;
+        }
+    }
+
+    static class MapConfigPresent
+    {
+        private Map<String, String> mapA = new HashMap<>();
+        private Map<String, Config1> mapB = new HashMap<>();
+
+        Map<String, String> getMapA()
+        {
+            return mapA;
+        }
+
+        @Config("map-a")
+        @ConfigMap
+        void setMapA(Map<String, String> mapValue)
+        {
+            this.mapA = ImmutableMap.copyOf(mapValue);
+        }
+
+        private Map<String, Config1> getMapB()
+        {
+            return mapB;
+        }
+
+        @Config("map-b")
+        @ConfigMap(Config1.class)
+        public void setMapB(Map<String, Config1> mapValue)
+        {
+            this.mapB = ImmutableMap.copyOf(mapValue);
         }
     }
 
