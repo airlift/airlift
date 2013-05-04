@@ -149,6 +149,8 @@ public class ConfigurationFactoryTest
                     ConfigurationModule.bindConfig(binder).to(LegacyConfigPresent.class);
                 }
             });
+
+            Assert.fail("Expected an exception in object creation due to use of conflicting configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
@@ -174,6 +176,8 @@ public class ConfigurationFactoryTest
                     ConfigurationModule.bindConfig(binder).to(LegacyConfigPresent.class);
                 }
             });
+
+            Assert.fail("Expected an exception in object creation due to use of conflicting configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
@@ -301,20 +305,23 @@ public class ConfigurationFactoryTest
     }
 
     @Test
-    public void testFailedBeanValidation()
+    public void testFailedBeanValidationThrows()
     {
-        Map<String, String> properties = Maps.newHashMap();
-        // string-value left at invalid default
-        properties.put("int-value", "5000");  // out of range
+        Map<String, String> properties = ImmutableMap.of(
+                // string-value left at invalid default
+                "int-value", "5000"  // out of range
+        );
         TestMonitor monitor = new TestMonitor();
         try {
-            Injector injector = createInjector(properties, monitor, new Module()
+            createInjector(properties, monitor, new Module()
             {
                 public void configure(Binder binder)
                 {
                     ConfigurationModule.bindConfig(binder).to(BeanValidationClass.class);
                 }
             });
+
+            Assert.fail("Expected an exception in object creation due to bean validation failure");
         } catch (CreationException e) {
             monitor.assertNumberOfErrors(2);
             monitor.assertNumberOfWarnings(0);
@@ -362,6 +369,8 @@ public class ConfigurationFactoryTest
                     ConfigurationModule.bindConfig(binder).to(LegacyMapConfigPresent.class);
                 }
             });
+
+            Assert.fail("Expected an exception in object creation due to use of conflicting configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
@@ -374,10 +383,11 @@ public class ConfigurationFactoryTest
     @Test
     public void testConfigurationWithRedundantDeprecatedMapConfigThrows()
     {
-        Map<String, String> properties = new TreeMap<>();
-        properties.put("map-value.k", "this is a");
-        properties.put("deprecated-map-value.k3", "this is a");
-        properties.put("map-b.k2", "this is b");
+        Map<String, String> properties = ImmutableMap.of(
+                "map-value.k", "this is a",
+                "deprecated-map-value.k3", "this is a",
+                "map-b.k2", "this is b"
+        );
         TestMonitor monitor = new TestMonitor();
         try {
             createInjector(properties, monitor, new Module()
@@ -387,6 +397,8 @@ public class ConfigurationFactoryTest
                     ConfigurationModule.bindConfig(binder).to(LegacyMapConfigPresent.class);
                 }
             });
+
+            Assert.fail("Expected an exception in object creation due to use of conflicting configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
@@ -461,6 +473,8 @@ public class ConfigurationFactoryTest
                     ConfigurationModule.bindConfig(binder).to(LegacyMapValueConfigPresent.class);
                 }
             });
+
+            Assert.fail("Expected an exception in object creation due to use of conflicting configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
@@ -486,6 +500,8 @@ public class ConfigurationFactoryTest
                     ConfigurationModule.bindConfig(binder).to(LegacyMapValueConfigPresent.class);
                 }
             });
+
+            Assert.fail("Expected an exception in object creation due to use of conflicting configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
@@ -604,6 +620,8 @@ public class ConfigurationFactoryTest
                     ConfigurationModule.bindConfig(binder).to(IntegerLegacyMapConfig.class);
                 }
             });
+
+            Assert.fail("Expected an exception in object creation due to use of conflicting configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
@@ -626,6 +644,8 @@ public class ConfigurationFactoryTest
                     ConfigurationModule.bindConfig(binder).to(IntegerStringMapConfig.class);
                 }
             });
+
+            Assert.fail("Expected an exception in object creation due to use of invalid configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
@@ -649,6 +669,8 @@ public class ConfigurationFactoryTest
                     ConfigurationModule.bindConfig(binder).to(IntegerLegacyMapConfig.class);
                 }
             });
+
+            Assert.fail("Expected an exception in object creation due to use of invalid configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
@@ -855,6 +877,7 @@ public class ConfigurationFactoryTest
 
         @Deprecated
         @LegacyConfig(value = "deprecated-map-value", replacedBy = "map-a")
+        @ConfigMap
         private void setDeprecatedMapA(Map<String, String> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);
