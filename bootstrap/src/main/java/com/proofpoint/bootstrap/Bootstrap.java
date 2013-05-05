@@ -50,9 +50,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeMap;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.event.client.EventBinder.eventBinder;
-
-import static com.google.common.collect.Maps.fromProperties;
 
 /**
  * Entry point for an application built using the platform codebase.
@@ -73,6 +72,7 @@ public class Bootstrap
     private Map<String, String> requiredConfigurationProperties = null;
     private boolean initializeLogging = true;
     private boolean logJmxInfo = false;
+    private Map<String, String> applicationDefaults = null;
 
     private boolean initialized = false;
 
@@ -120,6 +120,13 @@ public class Bootstrap
         return this;
     }
 
+    public Bootstrap withApplicationDefaults(Map<String, String> applicationDefaults)
+    {
+        Preconditions.checkState(applicationDefaults == null, "applicationDefaults already specified");
+        this.applicationDefaults = checkNotNull(applicationDefaults, "applicationDefaults is null");
+        return this;
+    }
+
     @Deprecated
     public Bootstrap strictConfig()
     {
@@ -147,20 +154,20 @@ public class Bootstrap
         });
 
         // initialize configuration
-        ConfigurationFactory configurationFactory;
-
+        ConfigurationFactoryBuilder builder = new ConfigurationFactoryBuilder();
+        if (applicationDefaults != null) {
+            builder = builder.withApplicationDefaults(applicationDefaults);
+        }
         if (requiredConfigurationProperties == null) {
             log.info("Loading configuration");
-            configurationFactory = new ConfigurationFactoryBuilder()
+            builder = builder
                     .withFile(System.getProperty("config"))
-                    .withSystemProperties()
-                    .build();
+                    .withSystemProperties();
         }
         else {
-            configurationFactory = new ConfigurationFactoryBuilder()
-                    .withRequiredProperties(requiredConfigurationProperties)
-                    .build();
+            builder = builder.withRequiredProperties(requiredConfigurationProperties);
         }
+        ConfigurationFactory configurationFactory = builder.build();
 
         if (logging != null) {
             // initialize logging
