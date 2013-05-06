@@ -86,6 +86,11 @@ jax-rs is no longer required.
 
  - AsyncHttpClient.executeAsync() no longer throws E.
 
+* Binding of HTTP static content
+
+We added HttpServerBinder, which binds static resources to be served by the
+http server.
+
 * Temporarily allow the characters .:=,- in event names once again.
 
 * Add "X-Content-Type-Options: nosniff" header to all json responses to prevent
