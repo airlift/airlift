@@ -217,6 +217,27 @@ public abstract class AbstractHttpClientTest
         }
     }
 
+
+    @Test
+    public void testBadPort()
+            throws Exception
+    {
+        HttpClientConfig config = new HttpClientConfig();
+        config.setConnectTimeout(new Duration(5, MILLISECONDS));
+
+        Request request = prepareGet()
+                .setUri(new URI(scheme, null, host, 70_000, "/", null, null))
+                .build();
+
+        try {
+            executeRequest(config, request, new CaptureExceptionResponseHandler());
+            fail("expected exception");
+        }
+        catch (CapturedException e) {
+            assertInstanceOf(e.getCause(), IllegalArgumentException.class);
+        }
+    }
+
     @Test
     public void testDeleteMethod()
             throws Exception
