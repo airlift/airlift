@@ -135,6 +135,7 @@ javax.servlet:javax.servlet-api
   - maven-enforcer-plugin 1.2
   - maven-install-plugin 2.4
   - maven-jar-plugin 2.4
+  - maven-javadoc-plugin 2.9
 
 Platform 0.70
 

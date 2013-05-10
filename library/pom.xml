@@ -47,9 +47,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.build.targetJdk>1.7</project.build.targetJdk>
 
-        <dep.jetty.version>8.1.10.v20130312</dep.jetty.version>
-        <dep.slf4j.version>1.7.5</dep.slf4j.version>
+        <!-- Default jvm size for compiler, tests etc. -->
+        <platform.build.jvmsize>1024m</platform.build.jvmsize>
 
         <!-- Controls all the checkers run when building the project. -->
         <!-- Can be activated with -Dplatform.check.skip-all=true on the command line. -->
@@ -70,6 +71,9 @@
         <!-- basic checks -->
         <platform.check.fail-enforcer>${platform.check.fail-basic}</platform.check.fail-enforcer>
         <platform.check.fail-duplicate-finder>${platform.check.fail-basic}</platform.check.fail-duplicate-finder>
+
+        <dep.jetty.version>8.1.10.v20130312</dep.jetty.version>
+        <dep.slf4j.version>1.7.5</dep.slf4j.version>
     </properties>
 
     <scm>
@@ -121,12 +125,6 @@
                         <fail>${platform.check.fail-enforcer}</fail>
                         <failFast>false</failFast>
                         <rules>
-                            <requireMavenVersion>
-                                <version>3.0.0</version>
-                            </requireMavenVersion>
-                            <requireJavaVersion>
-                                <version>1.7</version>
-                            </requireJavaVersion>
                             <requirePluginVersions />
                             <bannedDependencies>
                                 <excludes>
@@ -155,8 +153,36 @@
                                     <include>com.google.guava:guava:[10.0.1,)</include>
                                 </includes>
                             </bannedDependencies>
+                            <requireMavenVersion>
+                                <version>3.0.0</version>
+                            </requireMavenVersion>
+                            <requireJavaVersion>
+                                <version>${project.build.targetJdk}</version>
+                            </requireJavaVersion>
                         </rules>
                     </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>2.9</version>
+                    <configuration>
+                        <source>${project.build.targetJdk}</source>
+                        <target>${project.build.targetJdk}</target>
+                        <encoding>${project.build.sourceEncoding}</encoding>
+                        <maxmemory>${platform.build.jvmsize}</maxmemory>
+                        <additionalparam>-quiet</additionalparam>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>attach-javadocs</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
 
                 <plugin>
