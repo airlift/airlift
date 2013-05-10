@@ -130,6 +130,7 @@ javax.servlet:javax.servlet-api
 
 * Maven plugin upgrades
 
+  - maven-compiler-plugin 3.0
   - maven-deploy-plugin 2.7
   - maven-duplicate-finder-plugin 1.0.4
   - maven-enforcer-plugin 1.2
