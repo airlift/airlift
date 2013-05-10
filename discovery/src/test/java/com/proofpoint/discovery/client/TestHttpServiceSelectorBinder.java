@@ -36,6 +36,7 @@ import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
 import static com.proofpoint.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
+import static com.proofpoint.testing.Assertions.assertEqualsIgnoreOrder;
 import static org.testng.Assert.assertEquals;
 
 public class TestHttpServiceSelectorBinder
@@ -131,10 +132,10 @@ public class TestHttpServiceSelectorBinder
 
         InMemoryDiscoveryClient discoveryClient = injector.getInstance(InMemoryDiscoveryClient.class);
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", "fake://server-http").build(),
-                serviceAnnouncement("apple").addProperty("https", "fake://server-https").build()));
+                serviceAnnouncement("apple").addProperty("http", "fake://server-http-dontuse").addProperty("https", "fake://server-https").build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertEquals(selector.selectHttpService(), ImmutableList.of(URI.create("fake://server-https"), URI.create("fake://server-http")));
+        assertEqualsIgnoreOrder(selector.selectHttpService(), ImmutableList.of(URI.create("fake://server-https"), URI.create("fake://server-http")));
     }
 
     @Test

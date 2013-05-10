@@ -54,20 +54,18 @@ public class HttpServiceSelectorImpl implements HttpServiceSelector
             return ImmutableList.of();
         }
 
-        // favor https over http
-        List<URI> httpsUri = Lists.newArrayList();
+        List<URI> httpUri = Lists.newArrayList();
         for (ServiceDescriptor serviceDescriptor : serviceDescriptors) {
             String https = serviceDescriptor.getProperties().get("https");
             if (https != null) {
                 try {
-                    httpsUri.add(new URI(https));
+                    httpUri.add(new URI(https));
+                    continue;
                 }
                 catch (URISyntaxException ignored) {
                 }
             }
-        }
-        List<URI> httpUri = Lists.newArrayList();
-        for (ServiceDescriptor serviceDescriptor : serviceDescriptors) {
+
             String http = serviceDescriptor.getProperties().get("http");
             if (http != null) {
                 try {
@@ -78,9 +76,7 @@ public class HttpServiceSelectorImpl implements HttpServiceSelector
             }
         }
 
-        // return random(https) + random(http)
-        Collections.shuffle(httpsUri);
         Collections.shuffle(httpUri);
-        return ImmutableList.<URI>builder().addAll(httpsUri).addAll(httpUri).build();
+        return ImmutableList.copyOf(httpUri);
     }
 }
