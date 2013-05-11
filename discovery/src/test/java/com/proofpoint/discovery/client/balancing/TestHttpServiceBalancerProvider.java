@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.discovery.client;
+package com.proofpoint.discovery.client.balancing;
 
-import com.proofpoint.discovery.client.balance.HttpServiceBalancerProvider;
+import com.proofpoint.discovery.client.balancing.HttpServiceBalancerProvider;
 import org.testng.annotations.Test;
 
 import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;

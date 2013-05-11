@@ -28,7 +28,7 @@ import com.proofpoint.discovery.client.announce.AnnouncementHttpServerInfo;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement.ServiceAnnouncementBuilder;
 import com.proofpoint.http.client.balancing.HttpServiceBalancer;
-import com.proofpoint.discovery.client.balance.HttpServiceBalancerProvider;
+import com.proofpoint.discovery.client.balancing.HttpServiceBalancerProvider;
 import com.proofpoint.http.client.balancing.BalancingAsyncHttpClient;
 import com.proofpoint.http.client.balancing.BalancingHttpClient;
 import com.proofpoint.http.client.balancing.BalancingHttpClientConfig;

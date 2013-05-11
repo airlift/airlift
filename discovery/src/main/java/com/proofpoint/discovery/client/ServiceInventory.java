@@ -25,7 +25,7 @@ import com.google.common.io.Files;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
-import com.proofpoint.discovery.client.balance.HttpServiceUpdaterAdapter;
+import com.proofpoint.discovery.client.balancing.HttpServiceUpdaterAdapter;
 import com.proofpoint.json.JsonCodec;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeInfo;
