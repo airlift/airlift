@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.discovery.client.balance;
+package com.proofpoint.http.client.balancing;
 
 import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableSet;
-import com.proofpoint.discovery.client.ServiceUnavailableException;
 
 import java.net.URI;
 import java.util.ArrayList;

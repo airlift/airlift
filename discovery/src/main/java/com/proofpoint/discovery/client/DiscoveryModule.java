@@ -27,9 +27,9 @@ import com.proofpoint.discovery.client.announce.Announcer;
 import com.proofpoint.discovery.client.announce.DiscoveryAnnouncementClient;
 import com.proofpoint.discovery.client.announce.HttpDiscoveryAnnouncementClient;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
-import com.proofpoint.discovery.client.balance.HttpServiceBalancer;
+import com.proofpoint.http.client.balancing.HttpServiceBalancer;
 import com.proofpoint.discovery.client.balance.HttpServiceBalancerFactory;
-import com.proofpoint.discovery.client.balance.HttpServiceBalancerImpl;
+import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;

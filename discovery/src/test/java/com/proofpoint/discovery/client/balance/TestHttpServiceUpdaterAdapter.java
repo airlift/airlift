@@ -22,6 +22,7 @@ import com.proofpoint.discovery.client.ServiceDescriptor;
 import com.proofpoint.discovery.client.ServiceDescriptorsUpdater;
 import com.proofpoint.discovery.client.ServiceSelectorConfig;
 import com.proofpoint.discovery.client.ServiceState;
+import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
 import com.proofpoint.discovery.client.testing.InMemoryDiscoveryClient;
 import com.proofpoint.node.NodeInfo;
 import org.mockito.ArgumentCaptor;

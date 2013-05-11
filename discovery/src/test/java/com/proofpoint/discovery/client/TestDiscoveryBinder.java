@@ -29,7 +29,7 @@ import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.discovery.client.DiscoveryBinder.BalancingHttpClientBindingBuilder;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
-import com.proofpoint.discovery.client.balance.HttpServiceBalancer;
+import com.proofpoint.http.client.balancing.HttpServiceBalancer;
 import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.HttpClient;

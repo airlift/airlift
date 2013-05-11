@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Proofpoint, Inc.
+ * Copyright 2013 Proofpoint, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.discovery.client;
+package com.proofpoint.http.client.balancing;
 
-import static java.lang.String.format;
-
-public class ServiceUnavailableException
-        extends RuntimeException
+class RetryException extends Exception
 {
-    public ServiceUnavailableException(String description)
+    public RetryException()
     {
-        super(format("Service %s has no instances", description));
+    }
+
+    RetryException(Exception cause)
+    {
+        super(cause);
     }
 }

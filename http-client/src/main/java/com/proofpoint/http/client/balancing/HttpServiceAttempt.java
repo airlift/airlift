@@ -13,19 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.discovery.client.http;
+package com.proofpoint.http.client.balancing;
 
-import com.google.inject.BindingAnnotation;
+import com.google.common.annotations.Beta;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import java.net.URI;
 
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-@Retention(RUNTIME)
-@Target(PARAMETER)
-@BindingAnnotation
-public @interface ForBalancingHttpClient
+@Beta
+public interface HttpServiceAttempt
 {
+    public URI getUri();
+    public void markGood();
+    public void markBad();
+    public HttpServiceAttempt tryNext();
 }

@@ -13,17 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.discovery.client.balance;
+package com.proofpoint.http.client.balancing;
 
-import com.google.common.annotations.Beta;
+import com.proofpoint.configuration.Config;
 
-import java.net.URI;
-
-@Beta
-public interface HttpServiceAttempt
+public class BalancingHttpClientConfig
 {
-    public URI getUri();
-    public void markGood();
-    public void markBad();
-    public HttpServiceAttempt tryNext();
+    private int maxRetries = 2;
+
+    public int getMaxRetries()
+    {
+        return maxRetries;
+    }
+
+    @Config("http-client.max-retries")
+    public BalancingHttpClientConfig setMaxRetries(int maxRetries)
+    {
+        this.maxRetries = maxRetries;
+        return this;
+    }
 }

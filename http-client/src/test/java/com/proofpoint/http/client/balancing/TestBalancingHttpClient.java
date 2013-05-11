@@ -1,7 +1,5 @@
-package com.proofpoint.discovery.client.http;
+package com.proofpoint.http.client.balancing;
 
-import com.proofpoint.discovery.client.balance.HttpServiceAttempt;
-import com.proofpoint.discovery.client.balance.HttpServiceBalancer;
 import com.proofpoint.http.client.BodyGenerator;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;

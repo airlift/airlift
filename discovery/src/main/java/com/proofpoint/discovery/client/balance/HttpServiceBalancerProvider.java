@@ -22,6 +22,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Provider;
 import com.proofpoint.discovery.client.ServiceSelectorConfig;
+import com.proofpoint.http.client.balancing.HttpServiceBalancer;
 
 import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
 

@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.discovery.client.balance;
+package com.proofpoint.http.client.balancing;
 
 import com.google.common.collect.ImmutableSet;
-import com.proofpoint.discovery.client.ServiceUnavailableException;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;

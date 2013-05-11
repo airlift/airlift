@@ -1,9 +1,7 @@
-package com.proofpoint.discovery.client.http;
+package com.proofpoint.http.client.balancing;
 
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.CheckedFuture;
-import com.proofpoint.discovery.client.balance.HttpServiceAttempt;
-import com.proofpoint.discovery.client.balance.HttpServiceBalancer;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.BodyGenerator;
 import com.proofpoint.http.client.Request;

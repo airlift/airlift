@@ -18,7 +18,7 @@ package com.proofpoint.discovery.client;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
-import com.proofpoint.discovery.client.balance.HttpServiceBalancerImpl;
+import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
 import com.proofpoint.json.JsonCodec;
 import com.proofpoint.node.NodeInfo;
 import org.mockito.ArgumentCaptor;

@@ -18,7 +18,7 @@ package com.proofpoint.event.client;
 import com.google.common.base.Throwables;
 import com.google.common.io.CharStreams;
 import com.proofpoint.discovery.client.HttpServiceSelector;
-import com.proofpoint.discovery.client.ServiceUnavailableException;
+import com.proofpoint.http.client.balancing.ServiceUnavailableException;
 import com.proofpoint.discovery.client.testing.StaticHttpServiceSelector;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.HttpClientConfig;

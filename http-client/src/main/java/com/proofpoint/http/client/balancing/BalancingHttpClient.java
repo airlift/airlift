@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.discovery.client.http;
+package com.proofpoint.http.client.balancing;
 
-import com.proofpoint.discovery.client.balance.HttpServiceAttempt;
-import com.proofpoint.discovery.client.balance.HttpServiceBalancer;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;

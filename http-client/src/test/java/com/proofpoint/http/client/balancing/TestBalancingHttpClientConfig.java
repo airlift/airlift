@@ -1,4 +1,4 @@
-package com.proofpoint.discovery.client.http;
+package com.proofpoint.http.client.balancing;
 
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.testing.ConfigAssertions;
