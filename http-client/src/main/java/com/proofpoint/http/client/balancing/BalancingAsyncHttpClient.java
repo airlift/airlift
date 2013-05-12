@@ -144,6 +144,10 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
                         setException(e.getCause());
                         attempt.markBad();
                     }
+                    catch (FailureStatusException e) {
+                        set((T) e.result);
+                        attempt.markBad();
+                    }
                     catch (RetryException e) {
                         attempt.markBad();
                         final AsyncHttpResponseFuture<T, ?> attemptFuture;

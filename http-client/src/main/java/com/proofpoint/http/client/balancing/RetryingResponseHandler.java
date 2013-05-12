@@ -47,7 +47,19 @@ final class RetryingResponseHandler<T, E extends Exception>
             case 502:
             case 503:
             case 504:
-                throw new RetryException();
+                String retryHeader = response.getHeader("X-Proofpoint-Retry");
+                if (!("no".equalsIgnoreCase(retryHeader))) {
+                    throw new RetryException();
+                }
+
+                Object result;
+                try {
+                    result = innerHandler.handle(originalRequest, response);
+                }
+                catch (Exception e) {
+                    throw new InnerHandlerException(e);
+                }
+                throw new FailureStatusException(result);
         }
 
         try {

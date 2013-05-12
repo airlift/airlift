@@ -166,6 +166,7 @@ public class TestBalancingAsyncHttpClient
         verify(serviceAttempt2).getUri();
         verify(serviceAttempt2).markGood();
         verify(response408).getStatusCode();
+        verify(response408).getHeader("X-Proofpoint-Retry");
         verify(response).getStatusCode();
         verify(responseHandler).handle(any(Request.class), same(response));
         verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler, response408);
@@ -195,6 +196,7 @@ public class TestBalancingAsyncHttpClient
         verify(serviceAttempt2).getUri();
         verify(serviceAttempt2).markGood();
         verify(response500).getStatusCode();
+        verify(response500).getHeader("X-Proofpoint-Retry");
         verify(response).getStatusCode();
         verify(responseHandler).handle(any(Request.class), same(response));
         verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler, response500);
@@ -224,6 +226,7 @@ public class TestBalancingAsyncHttpClient
         verify(serviceAttempt2).getUri();
         verify(serviceAttempt2).markGood();
         verify(response502).getStatusCode();
+        verify(response502).getHeader("X-Proofpoint-Retry");
         verify(response).getStatusCode();
         verify(responseHandler).handle(any(Request.class), same(response));
         verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler, response502);
@@ -253,6 +256,7 @@ public class TestBalancingAsyncHttpClient
         verify(serviceAttempt2).getUri();
         verify(serviceAttempt2).markGood();
         verify(response503).getStatusCode();
+        verify(response503).getHeader("X-Proofpoint-Retry");
         verify(response).getStatusCode();
         verify(responseHandler).handle(any(Request.class), same(response));
         verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler, response503);
@@ -282,9 +286,36 @@ public class TestBalancingAsyncHttpClient
         verify(serviceAttempt2).getUri();
         verify(serviceAttempt2).markGood();
         verify(response504).getStatusCode();
+        verify(response504).getHeader("X-Proofpoint-Retry");
         verify(response).getStatusCode();
         verify(responseHandler).handle(any(Request.class), same(response));
         verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler, response504);
+    }
+
+    @Test
+    public void testNoRetryHeader()
+            throws Exception
+    {
+        Response response500 = mock(Response.class);
+        when(response500.getStatusCode()).thenReturn(500);
+        when(response500.getHeader("X-Proofpoint-Retry")).thenReturn("no");
+
+        httpClient.expectCall("http://s1.example.com/v1/service", response500);
+
+        ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
+        when(responseHandler.handle(any(Request.class), same(response500))).thenReturn("test response");
+
+        String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
+        assertEquals(returnValue, "test response", "return value from .execute()");
+
+        httpClient.assertDone();
+
+        verify(serviceAttempt1).getUri();
+        verify(serviceAttempt1).markBad();
+        verify(response500).getStatusCode();
+        verify(response500).getHeader("X-Proofpoint-Retry");
+        verify(responseHandler).handle(any(Request.class), same(response500));
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler, response500);
     }
 
     @Test
@@ -315,6 +346,7 @@ public class TestBalancingAsyncHttpClient
         verify(serviceAttempt3).getUri();
         // todo not capturing result of final try -- verify(serviceAttempt3).markGood();
         verify(response503).getStatusCode();
+        verify(response503).getHeader("X-Proofpoint-Retry");
         verify(responseHandler).handle(any(Request.class), same(response));
         verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, response, responseHandler, response503);
     }
@@ -348,6 +380,7 @@ public class TestBalancingAsyncHttpClient
         verify(serviceAttempt3).getUri();
         // todo not capturing result of final try -- verify(serviceAttempt3).markGood();
         verify(response503).getStatusCode();
+        verify(response503).getHeader("X-Proofpoint-Retry");
         verify(responseHandler).handle(any(Request.class), same(response));
         verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, response, responseHandler, response503);
     }
@@ -387,6 +420,7 @@ public class TestBalancingAsyncHttpClient
         verify(serviceAttempt3).getUri();
         // todo not capturing result of final try -- verify(serviceAttempt3).markBad();
         verify(response503).getStatusCode();
+        verify(response503).getHeader("X-Proofpoint-Retry");
         verify(responseHandler).handleException(any(Request.class), same(connectException));
         verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, response, responseHandler, response503);
     }
@@ -421,6 +455,7 @@ public class TestBalancingAsyncHttpClient
         verify(serviceAttempt3).getUri();
         // todo not capturing result of final try -- verify(serviceAttempt3).markBad();
         verify(response503).getStatusCode();
+        verify(response503).getHeader("X-Proofpoint-Retry");
         verify(responseHandler).handle(any(Request.class), same(response408));
         verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, response, responseHandler, response503, response408);
     }

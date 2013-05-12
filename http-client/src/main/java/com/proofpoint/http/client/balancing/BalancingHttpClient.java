@@ -80,9 +80,13 @@ public final class BalancingHttpClient implements HttpClient
                     return t;
                 }
                 catch (InnerHandlerException e) {
-                    attempt.markBad(); // todo We don't retry on handler exceptions. Should we mark bad?
+                    attempt.markBad();
                     //noinspection unchecked
                     throw (E) e.getCause();
+                }
+                catch (FailureStatusException e) {
+                    attempt.markBad();
+                    return (T) e.result;
                 }
                 catch (RetryException ignored) {
                     attempt.markBad();
