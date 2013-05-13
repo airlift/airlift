@@ -1,3 +1,7 @@
+Platform 0.72
+
+Temporarily allow event names to start with lowercase letters, etc.
+
 Platform 0.71
 
 * Log rotation changes
