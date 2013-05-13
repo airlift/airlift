@@ -21,10 +21,24 @@ import org.testng.annotations.Test;
 import java.net.URI;
 
 import static com.proofpoint.json.testing.JsonTester.assertJsonEncode;
+import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
 
 public class TestPersonWithSelf
 {
-    // TODO: add equivalence test
+    @Test
+    public void testEquivalence()
+    {
+        Person fooPerson = new Person("foo@example.com", "Mr Foo");
+        Person fooPerson2 = new Person("foo@example.com", "Mr Foo");
+        Person barPerson = new Person("bar@example.com", "Mr Bar");
+        Person barPerson2 = new Person("bar@example.com", "Mr Bar");
+        equivalenceTester()
+                .addEquivalentGroup(PersonWithSelf.from(fooPerson, URI.create("http://example.com")), PersonWithSelf.from(fooPerson2, URI.create("http://example.com")))
+                .addEquivalentGroup(PersonWithSelf.from(fooPerson, URI.create("https://example.com")), PersonWithSelf.from(fooPerson2, URI.create("https://example.com")))
+                .addEquivalentGroup(PersonWithSelf.from(barPerson, URI.create("http://example.com")), PersonWithSelf.from(barPerson2, URI.create("http://example.com")))
+                .addEquivalentGroup(PersonWithSelf.from(barPerson, URI.create("https://example.com")), PersonWithSelf.from(barPerson2, URI.create("https://example.com")))
+                .check();
+    }
 
     @Test
     public void testJsonEncode()
