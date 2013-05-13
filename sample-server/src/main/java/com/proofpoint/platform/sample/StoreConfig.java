@@ -19,6 +19,7 @@ import com.google.common.base.Preconditions;
 import com.proofpoint.configuration.Config;
 import com.proofpoint.configuration.LegacyConfig;
 import com.proofpoint.units.Duration;
+import com.proofpoint.units.MinDuration;
 
 import javax.validation.constraints.NotNull;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +45,7 @@ public class StoreConfig
         return this;
     }
 
-    @NotNull
+    @MinDuration(value = "1m", message = "must be at least 1m")
     Duration getTtl()
     {
         return ttl;

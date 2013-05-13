@@ -17,11 +17,16 @@ package com.proofpoint.platform.sample;
 
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.testing.ConfigAssertions;
+import com.proofpoint.testing.ValidationAssertions;
 import com.proofpoint.units.Duration;
+import com.proofpoint.units.MinDuration;
 import org.testng.annotations.Test;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import static com.proofpoint.testing.ValidationAssertions.assertFailsValidation;
+import static com.proofpoint.testing.ValidationAssertions.assertValidates;
 
 public class TestStoreConfig
 {
@@ -57,5 +62,12 @@ public class TestStoreConfig
                 .build();
 
         ConfigAssertions.assertDeprecatedEquivalence(StoreConfig.class, currentProperties, oldProperties);
+    }
+
+    @Test
+    public void testMinTtl() {
+        assertValidates(new StoreConfig().setTtl(new Duration(1, TimeUnit.MINUTES)));
+        assertFailsValidation(new StoreConfig().setTtl(new Duration(59, TimeUnit.SECONDS)),
+                "ttl", "must be at least 1m", MinDuration.class);
     }
 }
