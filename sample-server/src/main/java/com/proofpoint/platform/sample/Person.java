@@ -16,9 +16,10 @@
 package com.proofpoint.platform.sample;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 
 import javax.annotation.concurrent.Immutable;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 @Immutable
 public class Person
@@ -28,8 +29,8 @@ public class Person
 
     public Person(String email, String name)
     {
-        Preconditions.checkNotNull(email, "email is null");
-        Preconditions.checkNotNull(name, "name is null");
+        checkNotNull(email, "email is null");
+        checkNotNull(name, "name is null");
 
         this.email = email;
         this.name = name;

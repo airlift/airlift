@@ -15,7 +15,6 @@
  */
 package com.proofpoint.platform.sample;
 
-import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
@@ -30,6 +29,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class PersonStore
 {
     private final ConcurrentMap<String, Person> persons;
@@ -38,8 +39,8 @@ public class PersonStore
     @Inject
     public PersonStore(StoreConfig config, EventClient eventClient)
     {
-        Preconditions.checkNotNull(config, "config must not be null");
-        Preconditions.checkNotNull(eventClient, "eventClient is null");
+        checkNotNull(config, "config must not be null");
+        checkNotNull(eventClient, "eventClient is null");
 
         Cache<String, Person> personCache = CacheBuilder.newBuilder()
                 .expireAfterWrite((long) config.getTtl().toMillis(), TimeUnit.MILLISECONDS)
@@ -57,7 +58,7 @@ public class PersonStore
 
     public Person get(String id)
     {
-        Preconditions.checkNotNull(id, "id must not be null");
+        checkNotNull(id, "id must not be null");
 
         Person person = persons.get(id);
         if (person != null) {
@@ -71,8 +72,8 @@ public class PersonStore
      */
     public boolean put(String id, Person person)
     {
-        Preconditions.checkNotNull(id, "id must not be null");
-        Preconditions.checkNotNull(person, "person must not be null");
+        checkNotNull(id, "id must not be null");
+        checkNotNull(person, "person must not be null");
 
         boolean added = persons.put(id, person) == null;
         if (added) {
@@ -89,7 +90,7 @@ public class PersonStore
      */
     public boolean delete(String id)
     {
-        Preconditions.checkNotNull(id, "id must not be null");
+        checkNotNull(id, "id must not be null");
 
         Person removedPerson = persons.remove(id);
         if (removedPerson != null) {

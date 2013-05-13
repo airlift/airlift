@@ -1,9 +1,10 @@
 package com.proofpoint.platform.sample;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 import com.proofpoint.event.client.EventField;
 import com.proofpoint.event.client.EventType;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 @EventType("Person")
 public class PersonEvent
@@ -31,9 +32,9 @@ public class PersonEvent
 
     private PersonEvent(Operation operation, String personId, Person person)
     {
-        Preconditions.checkNotNull(operation, "operation is null");
-        Preconditions.checkNotNull(personId, "id is null");
-        Preconditions.checkNotNull(person, "person is null");
+        checkNotNull(operation, "operation is null");
+        checkNotNull(personId, "id is null");
+        checkNotNull(person, "person is null");
 
         this.operation = operation;
         this.personId = personId;

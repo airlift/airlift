@@ -15,7 +15,6 @@
  */
 package com.proofpoint.platform.sample;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.inject.Inject;
@@ -31,6 +30,7 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 import java.net.URI;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.platform.sample.PersonWithSelf.from;
 
 @Path("/v1/person")
@@ -41,7 +41,7 @@ public class PersonsResource
     @Inject
     public PersonsResource(PersonStore store)
     {
-        Preconditions.checkNotNull(store, "store must not be null");
+        checkNotNull(store, "store must not be null");
 
         this.store = store;
     }
