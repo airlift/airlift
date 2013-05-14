@@ -52,6 +52,9 @@
         <!-- Default jvm size for compiler, tests etc. -->
         <platform.build.jvmsize>1024m</platform.build.jvmsize>
 
+        <!-- define the forkmode for tests. Default is 'once' -->
+        <platform.test.fork-mode>once</platform.test.fork-mode>
+
         <!-- Controls all the checkers run when building the project. -->
         <!-- Can be activated with -Dplatform.check.skip-all=true on the command line. -->
         <platform.check.skip-all>false</platform.check.skip-all>
@@ -189,6 +192,24 @@
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.14</version>
+                    <configuration>
+                        <!-- Work around Cobertura incompatibilty with Java 7 -->
+                        <argLine>-XX:-UseSplitVerifier</argLine>
+                        <systemPropertyVariables>
+                            <file.encoding>${project.build.sourceEncoding}</file.encoding>
+                            <sun.jnu.encoding>${project.build.sourceEncoding}</sun.jnu.encoding>
+                            <user.timezone>UTC</user.timezone>
+                            <java.awt.headless>true</java.awt.headless>
+                        </systemPropertyVariables>
+                        <forkMode>${platform.test.fork-mode}</forkMode>
+                        <runOrder>random</runOrder>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>2.9</version>
                     <configuration>
@@ -294,6 +315,11 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
 
             <plugin>
