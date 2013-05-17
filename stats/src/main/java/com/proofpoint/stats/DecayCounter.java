@@ -5,6 +5,8 @@ import org.weakref.jmx.Managed;
 
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 /*
  * A counter that decays exponentially. Values are weighted according to the formula
  *     w(t, α) = e^(-α * t), where α is the decay factor and t is the age in seconds
@@ -13,7 +15,7 @@ import java.util.concurrent.TimeUnit;
  * http://www.research.att.com/people/Cormode_Graham/library/publications/CormodeShkapenyukSrivastavaXu09.pdf
  * to not have to rely on a timer that decays the value periodically
  */
-public class DecayCounter
+public final class DecayCounter
 {
     // needs to be such that Math.exp(alpha * seconds) does not grow too big
     static final long RESCALE_THRESHOLD_SECONDS = 50;
@@ -22,7 +24,7 @@ public class DecayCounter
     private final Ticker ticker;
 
     private long landmarkInSeconds;
-    private double count;
+    private double count = 0.0;
 
     public DecayCounter(double alpha)
     {
@@ -31,12 +33,18 @@ public class DecayCounter
 
     public DecayCounter(double alpha, Ticker ticker)
     {
+        checkArgument(alpha > 0.0, "alpha is non-positive");
         this.alpha = alpha;
         this.ticker = ticker;
         landmarkInSeconds = getTickInSeconds();
     }
 
-    public synchronized void add(long value)
+    public void add(long value)
+    {
+        add((double) value);
+    }
+
+    public synchronized void add(double value)
     {
         long nowInSeconds = getTickInSeconds();
 
