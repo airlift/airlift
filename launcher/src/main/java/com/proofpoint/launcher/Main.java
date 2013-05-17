@@ -33,17 +33,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ProcessBuilder.Redirect;
 import java.lang.reflect.Method;
-import java.net.JarURLConnection;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.locks.LockSupport;
+import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
 import static com.google.common.base.Objects.firstNonNull;
@@ -81,7 +79,6 @@ public class Main
 
     abstract static class LauncherCommand implements Runnable
     {
-        final URL launcherResource;
         final String installPath;
 
         @Option(type = OptionType.GLOBAL, name = {"-v", "--verbose"}, description = "Run verbosely")
@@ -117,23 +114,14 @@ public class Main
 
         LauncherCommand()
         {
-            ClassLoader classLoader = Main.class.getClassLoader();
-            launcherResource = classLoader.getResource("META-INF/MANIFEST.MF");
+            URL launcherResource = Main.class.getProtectionDomain().getCodeSource().getLocation();
             if (launcherResource == null) {
-                System.err.print("Unable to get path of launcher jar manifest\n");
+                System.err.print("Unable to get path of launcher jar\n");
                 System.exit(STATUS_GENERIC_ERROR);
             }
 
-            URLConnection urlConnection = null;
             try {
-                urlConnection = new URL(launcherResource.toString().replaceFirst("!.*", "!/")).openConnection();
-            }
-            catch (IOException e) {
-                System.err.print("Unable to open launcher jar: " + e);
-                System.exit(STATUS_GENERIC_ERROR);
-            }
-            try {
-                installPath = new File(((JarURLConnection) urlConnection).getJarFileURL().toURI()).getParentFile().getParent();
+                installPath = new File(launcherResource.toURI()).getParentFile().getParent();
             }
             catch (URISyntaxException e) {
                 // Can't happen
@@ -367,17 +355,9 @@ public class Main
                 }
             }
 
-            URL mainResource;
-            try {
-                mainResource = new URL(launcherResource.toString().replaceFirst("/launcher.jar!", "/main.jar!"));
-            }
-            catch (MalformedURLException e) {
-                // Can't happen
-                throw new RuntimeException(e);
-            }
             Manifest manifest = null;
             try {
-                manifest = new Manifest(mainResource.openStream());
+                manifest = new JarFile(installPath + "/lib/main.jar").getManifest();
             }
             catch (IOException e) {
                 System.err.print("Unable to open main jar manifest: " + e + "\n");

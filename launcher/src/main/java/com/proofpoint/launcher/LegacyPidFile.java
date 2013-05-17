@@ -42,20 +42,17 @@ public class LegacyPidFile implements PidStatusSource
             if (line != null) {
                 int pid = Integer.decode(line);
                 if (Processes.exists(pid)) {
-                    PidStatus pidStatus = new PidStatus();
-                    pidStatus.held = true;
-                    pidStatus.pid = pid;
-                    return pidStatus;
+                    return PidStatus.heldBy(pid);
                 }
             }
         }
         catch (FileNotFoundException e) {
-            return new PidStatus();
+            return PidStatus.notHeld();
         }
         catch (IOException | NumberFormatException ignored) {
         }
 
         new File(pidFilePath).delete();
-        return new PidStatus();
+        return PidStatus.notHeld();
     }
 }

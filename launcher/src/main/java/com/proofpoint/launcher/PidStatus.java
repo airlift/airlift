@@ -17,6 +17,22 @@ package com.proofpoint.launcher;
 
 class PidStatus
 {
-    public boolean held = false;
-    public Integer pid = 0;
+    public final boolean held;
+    public final int pid;
+
+    private PidStatus(boolean held, int pid)
+    {
+        this.held = held;
+        this.pid = pid;
+    }
+
+    public static PidStatus notHeld()
+    {
+        return new PidStatus(false, 0);
+    }
+
+    public static PidStatus heldBy(int pid)
+    {
+        return new PidStatus(true, pid);
+    }
 }
