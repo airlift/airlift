@@ -29,7 +29,7 @@ import java.util.concurrent.locks.LockSupport;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @SuppressWarnings("FieldCanBeLocal")
-class PidFile
+class PidFile implements PidStatusSource
 {
     // Starting , Refreshing, Pausing, Paused, Resuming, Stopping, Running
     private static final int STARTING = 1;
@@ -119,7 +119,7 @@ class PidFile
                     return Integer.decode(line);
                 }
             }
-            catch (IOException e) {
+            catch (IOException | NumberFormatException e) {
                 throw new RuntimeException("Cannot read pid file: " + e);
             }
             LockSupport.parkNanos(10_000_000);
@@ -142,7 +142,8 @@ class PidFile
         notYetRunningLock = null;
     }
 
-    PidStatus getStatus()
+    @Override
+    public PidStatus getStatus()
     {
         FileLock fileLock;
         try {

@@ -94,6 +94,16 @@ class Processes
         }
     }
 
+    public static boolean exists(int pid)
+    {
+        if (System.getProperty("os.name").startsWith("Windows")) {
+            return false;
+        }
+        else {
+            return posix.kill(pid, 0) == 0;
+        }
+    }
+
     private static final class OurPOSIXHandler implements POSIXHandler
     {
         @Override

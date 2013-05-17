@@ -101,6 +101,7 @@ public class Main
 
         @Option(type = OptionType.GLOBAL, name = "--pid-file", description = "Path to pid file. Defaults to DATA_DIR/var/run/launcher.pid")
         public String pidFilePath = null;
+        public String legacyPidFilePath = null;
 
         @Option(type = OptionType.GLOBAL, name = "--log-file", description = "Path to log file. Defaults to DATA_DIR/var/log/launcher.log")
         public String logPath = null;
@@ -214,7 +215,8 @@ public class Main
             dataDir = firstNonNull(systemProperties.getProperty("node.data-dir"), dataDir);
 
             if (pidFilePath == null) {
-                pidFilePath = dataDir + "/var/run/launcher.pid";
+                pidFilePath = dataDir + "/var/run/platform.pid";
+                legacyPidFilePath = dataDir + "/var/run/launcher.pid";
             }
             else {
                 launcherArgs.add("--pid-file");
@@ -431,12 +433,17 @@ public class Main
 
         KillStatus killProcess(boolean graceful)
         {
-            PidFile pidFile = new PidFile(pidFilePath);
+            PidStatusSource pidFile = new PidFile(pidFilePath);
 
             for (int pidTriesLeft = 10; pidTriesLeft > 0; --pidTriesLeft) {
                 PidStatus pidStatus = pidFile.getStatus();
                 if (!pidStatus.held) {
-                   return new KillStatus(0, "Not running\n");
+                    if (legacyPidFilePath != null) {
+                        pidFile = new LegacyPidFile(legacyPidFilePath);
+                        legacyPidFilePath = null;
+                        continue;
+                    }
+                    return new KillStatus(0, "Not running\n");
                 }
                 if (pidStatus.pid != 0) {
                     int pid = pidStatus.pid;
