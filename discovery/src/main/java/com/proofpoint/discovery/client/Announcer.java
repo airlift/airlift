@@ -66,11 +66,7 @@ public class Announcer
         Preconditions.checkState(!executor.isShutdown(), "Announcer has been destroyed");
         if (started.compareAndSet(false, true)) {
             // announce immediately, if discovery is running
-            try {
-                announce().checkedGet(30, TimeUnit.SECONDS);
-            }
-            catch (Exception ignored) {
-            }
+            announce();
         }
     }
 
