@@ -171,20 +171,17 @@ class PidFile implements PidStatusSource
 
     private PidStatus getPidStatus(FileLock fileLock)
     {
-        PidStatus pidStatus = new PidStatus();
-        pidStatus.held = (fileLock == null);
         if (fileLock == null) {
-            pidStatus.pid = readPid();
-        }
-        else {
-            try {
-                fileLock.release();
-            }
-            catch (IOException ignored) {
-            }
+            return PidStatus.heldBy(readPid());
         }
 
-        return pidStatus;
+        try {
+            fileLock.release();
+        }
+        catch (IOException ignored) {
+        }
+
+        return PidStatus.notHeld();
     }
 
     PidStatus waitRunning()
