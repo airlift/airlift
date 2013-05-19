@@ -12,7 +12,7 @@ import static com.proofpoint.http.client.FullJsonResponseHandler.JsonResponse;
 import static com.proofpoint.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
 import static com.proofpoint.http.client.HttpStatus.INTERNAL_SERVER_ERROR;
 import static com.proofpoint.http.client.HttpStatus.OK;
-import static com.proofpoint.http.client.MockResponse.mockResponse;
+import static com.proofpoint.http.client.testing.TestingResponse.mockResponse;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
