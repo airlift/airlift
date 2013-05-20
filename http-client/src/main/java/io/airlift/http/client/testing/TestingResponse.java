@@ -1,4 +1,4 @@
-package io.airlift.http.client;
+package io.airlift.http.client.testing;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableListMultimap;
@@ -6,6 +6,8 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.io.CountingInputStream;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
+import io.airlift.http.client.HttpStatus;
+import io.airlift.http.client.Response;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -14,19 +16,19 @@ import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class MockResponse
+public class TestingResponse
         implements Response
 {
     private final HttpStatus status;
     private final ListMultimap<String, String> headers;
     private final CountingInputStream countingInputStream;
 
-    public MockResponse(HttpStatus status, ListMultimap<String, String> headers, byte[] bytes)
+    public TestingResponse(HttpStatus status, ListMultimap<String, String> headers, byte[] bytes)
     {
         this(status, headers, new ByteArrayInputStream(checkNotNull(bytes, "bytes is null")));
     }
 
-    public MockResponse(HttpStatus status, ListMultimap<String, String> headers, InputStream input)
+    public TestingResponse(HttpStatus status, ListMultimap<String, String> headers, InputStream input)
     {
         this.status = checkNotNull(status, "status is null");
         this.headers = ImmutableListMultimap.copyOf(checkNotNull(headers, "headers is null"));
@@ -78,6 +80,6 @@ public class MockResponse
 
     public static Response mockResponse(HttpStatus status, MediaType type, String content)
     {
-        return new MockResponse(status, contentType(type), content.getBytes(Charsets.UTF_8));
+        return new TestingResponse(status, contentType(type), content.getBytes(Charsets.UTF_8));
     }
 }

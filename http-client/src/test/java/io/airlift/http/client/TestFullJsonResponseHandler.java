@@ -12,7 +12,7 @@ import static io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
 import static io.airlift.http.client.HttpStatus.INTERNAL_SERVER_ERROR;
 import static io.airlift.http.client.HttpStatus.OK;
-import static io.airlift.http.client.MockResponse.mockResponse;
+import static io.airlift.http.client.testing.TestingResponse.mockResponse;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
