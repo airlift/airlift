@@ -19,8 +19,9 @@ import javax.annotation.concurrent.ThreadSafe;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
-
 import java.io.Closeable;
+import java.io.IOException;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.net.URI;
@@ -78,21 +79,26 @@ public class NettyConnectionPool
                 port = 80;
             }
         }
-        final InetSocketAddress remoteAddress = new InetSocketAddress(uri.getHost(), port);
+        try {
+            final InetSocketAddress remoteAddress = new InetSocketAddress(uri.getHost(), port);
 
-        if (enablePooling) {
-            ListenableFuture<?> acquireFuture = connectionPermits.acquire();
-            acquireFuture.addListener(new Runnable()
-            {
-                @Override
-                public void run()
+            if (enablePooling) {
+                ListenableFuture<?> acquireFuture = connectionPermits.acquire();
+                acquireFuture.addListener(new Runnable()
                 {
-                    connectionPermitAcquired(isSsl, remoteAddress, connectionCallback);
-                }
-            }, executor);
+                    @Override
+                    public void run()
+                    {
+                        connectionPermitAcquired(isSsl, remoteAddress, connectionCallback);
+                    }
+                }, executor);
+            }
+            else {
+                openConnecton(isSsl, remoteAddress, connectionCallback);
+            }
         }
-        else {
-            openConnecton(isSsl, remoteAddress, connectionCallback);
+        catch (Throwable e) {
+            connectionCallback.onError(e);
         }
     }
 
@@ -239,15 +245,13 @@ public class NettyConnectionPool
             }
             else {
                 Throwable cause = future.getCause();
-                String message = String.valueOf(remoteAddress);
-                if (cause != null && cause.getMessage() != null) {
-                   message = cause.getMessage() + " to " + remoteAddress;
+                if (cause instanceof ConnectException && cause.getMessage().equalsIgnoreCase("connection timed out")) {
+                    // rewrite lame non-type specific-netty timeout exception
+                    cause = new SocketTimeoutException("Connection to " + remoteAddress + " timed out");
+                } else if (cause == null) {
+                    cause = new IOException("Connection to " + remoteAddress + " failed for an unknown reason");
                 }
-
-                SocketTimeoutException e = new SocketTimeoutException(message);
-                e.initCause(cause);
-
-                connectionCallback.onError(e);
+                connectionCallback.onError(cause);
             }
         }
     }
