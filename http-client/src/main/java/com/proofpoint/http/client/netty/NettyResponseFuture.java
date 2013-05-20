@@ -75,25 +75,6 @@ public class NettyResponseFuture<T, E extends Exception>
             log.error(throwable, "Something is broken");
         }
 
-        // todo change response handler interface to accept throwable
-        Exception exception;
-        if (throwable instanceof Exception) {
-            exception = (Exception) throwable;
-        } else {
-            exception = new Exception(throwable.getMessage(), throwable);
-        }
-
-        // give handler a chance to rewrite exception, and let them know there was a problem
-        try {
-            E e = responseHandler.handleException(request, exception);
-            if (e != null) {
-                throwable = e;
-            }
-        }
-        catch (Throwable t) {
-            throwable = t;
-        }
-
         return super.setException(throwable);
     }
 
@@ -148,7 +129,11 @@ public class NettyResponseFuture<T, E extends Exception>
         try {
             return get();
         }
-        catch (InterruptedException | CancellationException | ExecutionException e) {
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw mapException(e);
+        }
+        catch (CancellationException | ExecutionException e) {
             throw mapException(e);
         }
     }
@@ -160,7 +145,11 @@ public class NettyResponseFuture<T, E extends Exception>
         try {
             return get(timeout, unit);
         }
-        catch (InterruptedException | CancellationException | ExecutionException e) {
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw mapException(e);
+        }
+        catch (CancellationException | ExecutionException e) {
             throw mapException(e);
         }
     }

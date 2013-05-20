@@ -33,6 +33,7 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.nio.channels.UnresolvedAddressException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
@@ -213,7 +214,10 @@ public abstract class AbstractHttpClientTest
             fail("Expected exception");
         }
         catch (CapturedException e) {
-            assertInstanceOf(e.getCause(), UnknownHostException.class, e.getCause().toString());
+            Throwable cause = e.getCause();
+            if (!(cause instanceof UnknownHostException) && !(cause instanceof UnresolvedAddressException)) {
+                fail("Expected UnknownHostException or UnresolvedAddressException, but got " + cause.getClass().getName());
+            }
         }
     }
 
