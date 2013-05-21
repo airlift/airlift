@@ -53,8 +53,8 @@ public class HttpServerInfo
 
         if (config.isAdminEnabled()) {
             if (config.isHttpsEnabled()) {
-                adminUri = buildUri("https", InetAddresses.toUriString(nodeInfo.getInternalIp()), config.getAdminPort());
-                adminExternalUri = buildUri("https", nodeInfo.getExternalAddress(), adminUri.getPort());
+                adminUri = buildUri("https", nodeInfo.getInternalHostname(), config.getAdminPort());
+                adminExternalUri = null;
             } else {
                 adminUri = buildUri("http", InetAddresses.toUriString(nodeInfo.getInternalIp()), config.getAdminPort());
                 adminExternalUri = buildUri("http", nodeInfo.getExternalAddress(), adminUri.getPort());
@@ -96,13 +96,9 @@ public class HttpServerInfo
         try {
             // 0 means select a random port
             if (port == 0) {
-                ServerSocket socket = new ServerSocket();
-                try {
+                try (ServerSocket socket = new ServerSocket()) {
                     socket.bind(new InetSocketAddress(0));
                     port = socket.getLocalPort();
-                }
-                finally {
-                    socket.close();
                 }
             }
 
