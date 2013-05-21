@@ -1,5 +1,9 @@
 Platform 0.73
 
+* Upon startup, the main thread will no longer wait for the initial discovery announcement.
+
+* [Bug] Don't create javadoc on non-release builds.
+
 * Maven plugin upgrades
 
  - maven-resources-plugin 2.6
