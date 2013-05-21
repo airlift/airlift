@@ -2,6 +2,10 @@ Platform 0.73
 
 * Upon startup, the main thread will no longer wait for the initial discovery announcement.
 
+* The new launcher can now shut down a server started by the old launcher.
+
+* [Bug] The new launcher can now more reliably find the installation directory.
+
 * [Bug] Don't create javadoc on non-release builds.
 
 * Maven plugin upgrades
