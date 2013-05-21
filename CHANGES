@@ -1,6 +1,7 @@
 * 0.76
 
 - Rack server support has been moved to a separate project: airlift-rack
+- Added TestingHttpClient to simplify testing
 
 * 0.75
 
