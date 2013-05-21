@@ -24,8 +24,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.spi.Message;
-import com.proofpoint.testing.Assertions;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import javax.validation.constraints.Max;
@@ -38,6 +36,10 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static com.google.common.base.Objects.firstNonNull;
+import static com.proofpoint.testing.Assertions.assertContainsAllOf;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.fail;
 
 public class ConfigurationFactoryTest
 {
@@ -58,11 +60,11 @@ public class ConfigurationFactoryTest
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to conflicting configuration");
+            fail("Expected an exception in object creation due to conflicting configuration");
         } catch (CreationException e) {
             monitor.assertNumberOfErrors(2);
-            Assertions.assertContainsAllOf(e.getMessage(), "not a valid setter", "getStringValue") ;
-            Assertions.assertContainsAllOf(e.getMessage(), "not a valid setter", "isBooleanValue") ;
+            assertContainsAllOf(e.getMessage(), "not a valid setter", "getStringValue") ;
+            assertContainsAllOf(e.getMessage(), "not a valid setter", "isBooleanValue") ;
         }
     }
 
@@ -83,9 +85,9 @@ public class ConfigurationFactoryTest
         AnnotatedSetter annotatedSetter = injector.getInstance(AnnotatedSetter.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        Assert.assertNotNull(annotatedSetter);
-        Assert.assertEquals(annotatedSetter.getStringValue(), "some value");
-        Assert.assertEquals(annotatedSetter.isBooleanValue(), true);
+        assertNotNull(annotatedSetter);
+        assertEquals(annotatedSetter.getStringValue(), "some value");
+        assertEquals(annotatedSetter.isBooleanValue(), true);
     }
 
     @Test
@@ -106,9 +108,9 @@ public class ConfigurationFactoryTest
         AnnotatedSetter annotatedSetter = injector.getInstance(AnnotatedSetter.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        Assert.assertNotNull(annotatedSetter);
-        Assert.assertEquals(annotatedSetter.getStringValue(), "some value");
-        Assert.assertEquals(annotatedSetter.isBooleanValue(), true);
+        assertNotNull(annotatedSetter);
+        assertEquals(annotatedSetter.getStringValue(), "some value");
+        assertEquals(annotatedSetter.isBooleanValue(), true);
     }
 
     @Test
@@ -133,9 +135,9 @@ public class ConfigurationFactoryTest
         AnnotatedSetter annotatedSetter = injector.getInstance(AnnotatedSetter.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        Assert.assertNotNull(annotatedSetter);
-        Assert.assertEquals(annotatedSetter.getStringValue(), "some value");
-        Assert.assertEquals(annotatedSetter.isBooleanValue(), false);
+        assertNotNull(annotatedSetter);
+        assertEquals(annotatedSetter.getStringValue(), "some value");
+        assertEquals(annotatedSetter.isBooleanValue(), false);
     }
 
     @Test
@@ -155,9 +157,9 @@ public class ConfigurationFactoryTest
         LegacyConfigPresent legacyConfigPresent = injector.getInstance(LegacyConfigPresent.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        Assert.assertNotNull(legacyConfigPresent);
-        Assert.assertEquals(legacyConfigPresent.getStringA(), "this is a");
-        Assert.assertEquals(legacyConfigPresent.getStringB(), "this is b");
+        assertNotNull(legacyConfigPresent);
+        assertEquals(legacyConfigPresent.getStringA(), "this is a");
+        assertEquals(legacyConfigPresent.getStringB(), "this is b");
     }
 
     @Test
@@ -178,9 +180,9 @@ public class ConfigurationFactoryTest
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
         monitor.assertMatchingWarningRecorded("string-value", "replaced", "Use 'string-a'");
-        Assert.assertNotNull(legacyConfigPresent);
-        Assert.assertEquals(legacyConfigPresent.getStringA(), "this is a");
-        Assert.assertEquals(legacyConfigPresent.getStringB(), "this is b");
+        assertNotNull(legacyConfigPresent);
+        assertEquals(legacyConfigPresent.getStringA(), "this is a");
+        assertEquals(legacyConfigPresent.getStringB(), "this is b");
     }
 
     @Test
@@ -206,9 +208,9 @@ public class ConfigurationFactoryTest
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
         monitor.assertMatchingWarningRecorded("string-value", "replaced", "Use 'string-a'");
-        Assert.assertNotNull(legacyConfigPresent);
-        Assert.assertEquals(legacyConfigPresent.getStringA(), "this is a");
-        Assert.assertEquals(legacyConfigPresent.getStringB(), "this is b");
+        assertNotNull(legacyConfigPresent);
+        assertEquals(legacyConfigPresent.getStringA(), "this is a");
+        assertEquals(legacyConfigPresent.getStringB(), "this is b");
     }
 
     @Test
@@ -228,13 +230,13 @@ public class ConfigurationFactoryTest
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to use of conflicting configuration");
+            fail("Expected an exception in object creation due to use of conflicting configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(1);
             monitor.assertMatchingWarningRecorded("string-value", "replaced", "Use 'string-a'");
-            Assertions.assertContainsAllOf(e.getMessage(), "string-value", "conflicts with property", "string-a");
+            assertContainsAllOf(e.getMessage(), "string-value", "conflicts with property", "string-a");
         }
     }
 
@@ -255,14 +257,14 @@ public class ConfigurationFactoryTest
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to use of conflicting configuration");
+            fail("Expected an exception in object creation due to use of conflicting configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(2);
             monitor.assertMatchingWarningRecorded("string-value", "replaced", "Use 'string-a'");
             monitor.assertMatchingWarningRecorded("deprecated-string-value", "replaced", "Use 'string-a'");
-            Assertions.assertContainsAllOf(e.getMessage(), "string-value", "conflicts with property", "deprecated-string-value");
+            assertContainsAllOf(e.getMessage(), "string-value", "conflicts with property", "deprecated-string-value");
         }
     }
 
@@ -283,12 +285,12 @@ public class ConfigurationFactoryTest
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to conflicting configuration");
+            fail("Expected an exception in object creation due to conflicting configuration");
         } catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(1);
             monitor.assertMatchingWarningRecorded("string-value", "replaced", "Use 'string-a'");
-            Assertions.assertContainsAllOf(e.getMessage(), "string-value", "conflicts with property", "string-a") ;
+            assertContainsAllOf(e.getMessage(), "string-value", "conflicts with property", "string-a") ;
         }
     }
 
@@ -309,11 +311,11 @@ public class ConfigurationFactoryTest
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to conflicting configuration");
+            fail("Expected an exception in object creation due to conflicting configuration");
         } catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
-            Assertions.assertContainsAllOf(e.getMessage(),"Application default property", "string-value", "has been replaced", "string-a") ;
+            assertContainsAllOf(e.getMessage(), "Application default property", "string-value", "has been replaced", "string-a") ;
         }
     }
 
@@ -333,9 +335,9 @@ public class ConfigurationFactoryTest
         DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        Assert.assertNotNull(deprecatedConfigPresent);
-        Assert.assertEquals(deprecatedConfigPresent.getStringA(), "defaultA");
-        Assert.assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
+        assertNotNull(deprecatedConfigPresent);
+        assertEquals(deprecatedConfigPresent.getStringA(), "defaultA");
+        assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
     }
 
     @Test
@@ -356,9 +358,9 @@ public class ConfigurationFactoryTest
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
         monitor.assertMatchingWarningRecorded("string-a", "deprecated and should not be used");
-        Assert.assertNotNull(deprecatedConfigPresent);
-        Assert.assertEquals(deprecatedConfigPresent.getStringA(), "this is a");
-        Assert.assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
+        assertNotNull(deprecatedConfigPresent);
+        assertEquals(deprecatedConfigPresent.getStringA(), "this is a");
+        assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
     }
 
     @Test
@@ -379,9 +381,9 @@ public class ConfigurationFactoryTest
         DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        Assert.assertNotNull(deprecatedConfigPresent);
-        Assert.assertEquals(deprecatedConfigPresent.getStringA(), "this is a");
-        Assert.assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
+        assertNotNull(deprecatedConfigPresent);
+        assertEquals(deprecatedConfigPresent.getStringA(), "this is a");
+        assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
     }
 
     @Test
@@ -400,7 +402,7 @@ public class ConfigurationFactoryTest
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to use of defunct config");
+            fail("Expected an exception in object creation due to use of defunct config");
         } catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
@@ -425,7 +427,7 @@ public class ConfigurationFactoryTest
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to use of defunct config");
+            fail("Expected an exception in object creation due to use of defunct config");
         } catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
@@ -450,9 +452,9 @@ public class ConfigurationFactoryTest
         BeanValidationClass beanValidationClass = injector.getInstance(BeanValidationClass.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        Assert.assertNotNull(beanValidationClass);
-        Assert.assertEquals(beanValidationClass.getStringValue(), "has a value");
-        Assert.assertEquals(beanValidationClass.getIntValue(), 50);
+        assertNotNull(beanValidationClass);
+        assertEquals(beanValidationClass.getStringValue(), "has a value");
+        assertEquals(beanValidationClass.getIntValue(), 50);
     }
 
     @Test
@@ -472,7 +474,7 @@ public class ConfigurationFactoryTest
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to bean validation failure");
+            fail("Expected an exception in object creation due to bean validation failure");
         } catch (CreationException e) {
             monitor.assertNumberOfErrors(2);
             monitor.assertNumberOfWarnings(0);
@@ -497,12 +499,12 @@ public class ConfigurationFactoryTest
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to use of application default for map config");
+            fail("Expected an exception in object creation due to use of application default for map config");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
-            Assertions.assertContainsAllOf(e.getMessage(), "Cannot have application default property", "map-a.k3", "for a configuration map");
+            assertContainsAllOf(e.getMessage(), "Cannot have application default property", "map-a.k3", "for a configuration map");
         }
     }
 
@@ -522,12 +524,12 @@ public class ConfigurationFactoryTest
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to use of application default for map config");
+            fail("Expected an exception in object creation due to use of application default for map config");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
-            Assertions.assertContainsAllOf(e.getMessage(), "Cannot have application default property", "map-b.k3.string-value", "for a configuration map");
+            assertContainsAllOf(e.getMessage(), "Cannot have application default property", "map-b.k3.string-value", "for a configuration map");
         }
     }
 
@@ -549,9 +551,9 @@ public class ConfigurationFactoryTest
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
         monitor.assertMatchingWarningRecorded("map-value", "replaced", "Use 'map-a'");
-        Assert.assertNotNull(legacyMapConfigPresent);
-        Assert.assertEquals(legacyMapConfigPresent.getMapA(), ImmutableMap.<String,String>of("k", "this is a"));
-        Assert.assertEquals(legacyMapConfigPresent.getMapB(), ImmutableMap.<String,String>of("k2", "this is b"));
+        assertNotNull(legacyMapConfigPresent);
+        assertEquals(legacyMapConfigPresent.getMapA(), ImmutableMap.<String, String>of("k", "this is a"));
+        assertEquals(legacyMapConfigPresent.getMapB(), ImmutableMap.<String, String>of("k2", "this is b"));
     }
 
     @Test
@@ -571,13 +573,13 @@ public class ConfigurationFactoryTest
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to use of conflicting configuration");
+            fail("Expected an exception in object creation due to use of conflicting configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(1);
             monitor.assertMatchingWarningRecorded("map-value", "replaced", "Use 'map-a'");
-            Assertions.assertContainsAllOf(e.getMessage(), "map-value", "conflicts with map property prefix", "map-a");
+            assertContainsAllOf(e.getMessage(), "map-value", "conflicts with map property prefix", "map-a");
         }
     }
 
@@ -599,14 +601,14 @@ public class ConfigurationFactoryTest
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to use of conflicting configuration");
+            fail("Expected an exception in object creation due to use of conflicting configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(2);
             monitor.assertMatchingWarningRecorded("map-value", "replaced", "Use 'map-a'");
             monitor.assertMatchingWarningRecorded("deprecated-map-value", "replaced", "Use 'map-a'");
-            Assertions.assertContainsAllOf(e.getMessage(), "map-value", "conflicts with map property prefix", "deprecated-map-value");
+            assertContainsAllOf(e.getMessage(), "map-value", "conflicts with map property prefix", "deprecated-map-value");
         }
     }
 
@@ -629,9 +631,9 @@ public class ConfigurationFactoryTest
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
         monitor.assertMatchingWarningRecorded("map-a", "deprecated and should not be used");
-        Assert.assertNotNull(deprecatedMapConfigPresent);
-        Assert.assertEquals(deprecatedMapConfigPresent.getMapA(), ImmutableMap.<String,String>of("k1", "this is a"));
-        Assert.assertEquals(deprecatedMapConfigPresent.getMapB(), ImmutableMap.<String,String>of("k2", "this is b"));
+        assertNotNull(deprecatedMapConfigPresent);
+        assertEquals(deprecatedMapConfigPresent.getMapA(), ImmutableMap.<String, String>of("k1", "this is a"));
+        assertEquals(deprecatedMapConfigPresent.getMapB(), ImmutableMap.<String, String>of("k2", "this is b"));
     }
 
 
@@ -653,9 +655,9 @@ public class ConfigurationFactoryTest
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
         monitor.assertMatchingWarningRecorded("map-a.k.string-value", "replaced", "Use 'map-a.k.string-a'");
-        Assert.assertNotNull(legacyMapValueConfigPresent);
-        Assert.assertEquals(legacyMapValueConfigPresent.getMapA().get("k").getStringA(), "this is a");
-        Assert.assertEquals(legacyMapValueConfigPresent.getMapA().get("k").getStringB(), "this is b");
+        assertNotNull(legacyMapValueConfigPresent);
+        assertEquals(legacyMapValueConfigPresent.getMapA().get("k").getStringA(), "this is a");
+        assertEquals(legacyMapValueConfigPresent.getMapA().get("k").getStringB(), "this is b");
     }
 
     @Test
@@ -675,13 +677,13 @@ public class ConfigurationFactoryTest
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to use of conflicting configuration");
+            fail("Expected an exception in object creation due to use of conflicting configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(1);
             monitor.assertMatchingWarningRecorded("map-a.k.string-value", "replaced", "Use 'map-a.k.string-a'");
-            Assertions.assertContainsAllOf(e.getMessage(), "map-a.k.string-value", "conflicts with property", "map-a.k.string-a");
+            assertContainsAllOf(e.getMessage(), "map-a.k.string-value", "conflicts with property", "map-a.k.string-a");
         }
     }
 
@@ -702,14 +704,14 @@ public class ConfigurationFactoryTest
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to use of conflicting configuration");
+            fail("Expected an exception in object creation due to use of conflicting configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(2);
             monitor.assertMatchingWarningRecorded("map-a.k.string-value", "replaced", "Use 'map-a.k.string-a'");
             monitor.assertMatchingWarningRecorded("map-a.k.deprecated-string-value", "replaced", "Use 'map-a.k.string-a'");
-            Assertions.assertContainsAllOf(e.getMessage(), "map-a.k.string-value", "conflicts with property", "map-a.k.deprecated-string-value");
+            assertContainsAllOf(e.getMessage(), "map-a.k.string-value", "conflicts with property", "map-a.k.deprecated-string-value");
         }
     }
 
@@ -731,9 +733,9 @@ public class ConfigurationFactoryTest
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
         monitor.assertMatchingWarningRecorded("map-a.k.string-a", "deprecated and should not be used");
-        Assert.assertNotNull(deprecatedMapValueConfigPresent);
-        Assert.assertEquals(deprecatedMapValueConfigPresent.getMapA().get("k").getStringA(), "this is a");
-        Assert.assertEquals(deprecatedMapValueConfigPresent.getMapA().get("k").getStringB(), "this is b");
+        assertNotNull(deprecatedMapValueConfigPresent);
+        assertEquals(deprecatedMapValueConfigPresent.getMapA().get("k").getStringA(), "this is a");
+        assertEquals(deprecatedMapValueConfigPresent.getMapA().get("k").getStringB(), "this is b");
     }
 
 
@@ -753,7 +755,7 @@ public class ConfigurationFactoryTest
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to use of defunct config");
+            fail("Expected an exception in object creation due to use of defunct config");
         } catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
@@ -778,9 +780,9 @@ public class ConfigurationFactoryTest
         MapValueBeanValidationClass mapValueBeanValidationClass = injector.getInstance(MapValueBeanValidationClass.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        Assert.assertNotNull(mapValueBeanValidationClass);
-        Assert.assertEquals(mapValueBeanValidationClass.getMapA().get("k").getStringValue(), "has a value");
-        Assert.assertEquals(mapValueBeanValidationClass.getMapA().get("k").getIntValue(), 50);
+        assertNotNull(mapValueBeanValidationClass);
+        assertEquals(mapValueBeanValidationClass.getMapA().get("k").getStringValue(), "has a value");
+        assertEquals(mapValueBeanValidationClass.getMapA().get("k").getIntValue(), 50);
     }
 
     @Test
@@ -822,12 +824,12 @@ public class ConfigurationFactoryTest
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to use of conflicting configuration");
+            fail("Expected an exception in object creation due to use of conflicting configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
-            Assertions.assertContainsAllOf(e.getMessage(),"Configuration property prefixes", "'map-a.1337'", "'map-a.01337'", "convert to the same map key", "setMapA");
+            assertContainsAllOf(e.getMessage(), "Configuration property prefixes", "'map-a.1337'", "'map-a.01337'", "convert to the same map key", "setMapA");
         }
     }
 
@@ -846,12 +848,12 @@ public class ConfigurationFactoryTest
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to use of invalid configuration");
+            fail("Expected an exception in object creation due to use of invalid configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
-            Assertions.assertContainsAllOf(e.getMessage(), "Configuration map has non-configuration value class java.lang.String, so key '1337' cannot be followed by '.'",
+            assertContainsAllOf(e.getMessage(), "Configuration map has non-configuration value class java.lang.String, so key '1337' cannot be followed by '.'",
                     "property 'map-a.1337.string-a'", "setMapA");
         }
     }
@@ -871,12 +873,12 @@ public class ConfigurationFactoryTest
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to use of invalid configuration");
+            fail("Expected an exception in object creation due to use of invalid configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
-            Assertions.assertContainsAllOf(e.getMessage(),"Could not coerce map key 'k' to java.lang.Integer", "property prefix 'map-a.k'", "setMapA");
+            assertContainsAllOf(e.getMessage(), "Could not coerce map key 'k' to java.lang.Integer", "property prefix 'map-a.k'", "setMapA");
         }
     }
 

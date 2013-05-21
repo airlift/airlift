@@ -56,7 +56,6 @@ import java.util.concurrent.ConcurrentMap;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
-import static com.google.common.base.Objects.firstNonNull;
 import static com.proofpoint.configuration.ConfigurationMetadata.isConfigClass;
 import static com.proofpoint.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
@@ -238,11 +237,12 @@ public final class ConfigurationFactory
         // Check that none of the defunct properties are still in use
         if (configClass.isAnnotationPresent(DefunctConfig.class)) {
             for (String value : configClass.getAnnotation(DefunctConfig.class).value()) {
-                if (!value.isEmpty() && properties.get(prefix + value) != null) {
-                    problems.addError("Defunct property '%s' (class [%s]) cannot be configured.", prefix + value, configClass.toString());
+                String key = prefix + value;
+                if (!value.isEmpty() && properties.get(key) != null) {
+                    problems.addError("Defunct property '%s' (class [%s]) cannot be configured.", key, configClass.toString());
                 }
-                if (!value.isEmpty() && applicationDefaults.get(prefix + value) != null) {
-                    problems.addError("Defunct property '%s' (class [%s]) cannot have an application default.", prefix + value, configClass.toString());
+                if (!value.isEmpty() && applicationDefaults.get(key) != null) {
+                    problems.addError("Defunct property '%s' (class [%s]) cannot have an application default.", key, configClass.toString());
                 }
             }
         }

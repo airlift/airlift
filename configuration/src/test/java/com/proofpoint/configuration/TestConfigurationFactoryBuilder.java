@@ -24,9 +24,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.spi.Message;
 import com.proofpoint.configuration.ConfigurationFactoryTest.AnnotatedSetter;
-import com.proofpoint.testing.Assertions;
 import com.proofpoint.testing.FileUtils;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -38,7 +36,9 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
 
+import static com.proofpoint.testing.Assertions.assertContainsAllOf;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.fail;
 
 public class TestConfigurationFactoryBuilder
 {
@@ -160,12 +160,12 @@ public class TestConfigurationFactoryBuilder
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to unused configuration");
+            fail("Expected an exception in object creation due to unused configuration");
         } catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
             monitor.assertMatchingErrorRecorded("Configuration property 'unused' was not used");
-            Assertions.assertContainsAllOf(e.getMessage(), "Configuration property 'unused' was not used");
+            assertContainsAllOf(e.getMessage(), "Configuration property 'unused' was not used");
         }
     }
 
@@ -197,12 +197,12 @@ public class TestConfigurationFactoryBuilder
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to unused configuration");
+            fail("Expected an exception in object creation due to unused configuration");
         } catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
             monitor.assertMatchingErrorRecorded("Configuration property 'unused' was not used");
-            Assertions.assertContainsAllOf(e.getMessage(), "Configuration property 'unused' was not used");
+            assertContainsAllOf(e.getMessage(), "Configuration property 'unused' was not used");
         }
     }
 
@@ -237,12 +237,12 @@ public class TestConfigurationFactoryBuilder
                 }
             });
 
-            Assert.fail("Expected an exception in object creation due to duplicate configuration");
+            fail("Expected an exception in object creation due to duplicate configuration");
         } catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
             monitor.assertMatchingErrorRecorded("Duplicate configuration property 'string-value' in file " + file.getAbsolutePath());
-            Assertions.assertContainsAllOf(e.getMessage(), "Duplicate configuration property 'string-value' in file " + file.getAbsolutePath());
+            assertContainsAllOf(e.getMessage(), "Duplicate configuration property 'string-value' in file " + file.getAbsolutePath());
         }
 
     }

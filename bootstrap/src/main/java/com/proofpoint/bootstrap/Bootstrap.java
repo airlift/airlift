@@ -16,7 +16,6 @@
 package com.proofpoint.bootstrap;
 
 import com.google.common.annotations.Beta;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.inject.Binder;
@@ -51,6 +50,7 @@ import java.util.TimerTask;
 import java.util.TreeMap;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.proofpoint.event.client.EventBinder.eventBinder;
 
 /**
@@ -122,7 +122,7 @@ public class Bootstrap
 
     public Bootstrap withApplicationDefaults(Map<String, String> applicationDefaults)
     {
-        Preconditions.checkState(applicationDefaults == null, "applicationDefaults already specified");
+        checkState(applicationDefaults == null, "applicationDefaults already specified");
         this.applicationDefaults = checkNotNull(applicationDefaults, "applicationDefaults is null");
         return this;
     }
@@ -136,7 +136,7 @@ public class Bootstrap
     public Injector initialize()
             throws Exception
     {
-        Preconditions.checkState(!initialized, "Already initialized");
+        checkState(!initialized, "Already initialized");
         initialized = true;
 
         Logging logging = null;

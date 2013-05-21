@@ -1,6 +1,5 @@
 package com.proofpoint.configuration;
 
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
