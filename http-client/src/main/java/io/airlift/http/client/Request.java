@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Map.Entry;
 
 import static com.google.common.base.Objects.equal;
@@ -62,6 +63,15 @@ public class Request
     public String getMethod()
     {
         return method;
+    }
+
+    public String getHeader(String name)
+    {
+        List<String> values = headers.get(name);
+        if (values != null && !values.isEmpty()) {
+            return values.get(0);
+        }
+        return null;
     }
 
     public ListMultimap<String, String> getHeaders()
