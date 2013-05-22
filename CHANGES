@@ -6,9 +6,17 @@ Platform 0.73
 * Upon startup, the main thread will no longer wait for the initial discovery
   announcement.
 
-* The new launcher can now shut down a server started by the old launcher.
+* Launcher fixes
 
-* [Bug] The new launcher can now more reliably find the installation directory.
+  - Many jvm.config files were depending on the old launcher's interpreting
+    spaces and other shell metacharacters. The launcher will now print an
+    error message and refuse to start if the jvm.config file contains spaces
+    or shell quotes, unless the jvm.config file contains the comment
+    "# allow spaces".
+
+  - The new launcher can now shut down a server started by the old launcher.
+
+  - [Bug] The new launcher can now more reliably find the installation directory.
 
 * [Bug] Don't create javadoc on non-release builds.
 
