@@ -189,7 +189,7 @@ public class Main
                 String[] split = s.split("=", 2);
                 String key = split[0];
                 if (key.equals("config")) {
-                    System.out.print("Config can not be passed in a -D argument. Use --config instead\n");
+                    System.out.println("Config can not be passed in a -D argument. Use --config instead");
                     System.exit(STATUS_INVALID_ARGS);
                 }
 
@@ -220,7 +220,7 @@ public class Main
 
             if (verbose) {
                 for (String key : systemProperties.stringPropertyNames()) {
-                    System.out.print(key + "=" + systemProperties.getProperty(key) + "\n");
+                    System.out.println(key + "=" + systemProperties.getProperty(key));
                 }
             }
 
@@ -237,7 +237,7 @@ public class Main
                 if (pidStatus.pid != 0) {
                     msg += " as " + pidStatus.pid;
                 }
-                System.err.print(msg + "\n");
+                System.err.println(msg);
                 System.exit(0);
             }
 
@@ -245,24 +245,37 @@ public class Main
             javaArgs.add("java");
 
             if (!new File(configPath).exists()) {
-                System.err.print("Config file is missing: " + configPath);
+                System.err.println("Config file is missing: " + configPath);
                 System.exit(STATUS_CONFIG_MISSING);
             }
 
             try (BufferedReader jvmReader = new BufferedReader(new FileReader(jvmConfigPath))) {
                 String line;
+                boolean allowSpaces = false;
                 while ((line = jvmReader.readLine()) != null) {
                     if (!line.matches("\\s*(?:#.*)?")) {
-                        javaArgs.add(line.trim());
+                        line = line.trim();
+                        if (!allowSpaces && line.matches(".*[ '\"\\\\].*")) {
+                            System.err.println("JVM config file line contains space or other shell metacharacter: " + line);
+                            System.err.println("JVM config file format is one argument per line, no shell quoting.");
+                            System.err.println("To indicate you know what you're doing, add before this line the comment line:");
+                            System.err.println("# allow spaces");
+                            System.exit(STATUS_GENERIC_ERROR);
+                        }
+
+                        javaArgs.add(line);
+                    }
+                    else if (line.matches("(?i)\\s*#\\s*allow\\s+spaces\\s*")) {
+                        allowSpaces = true;
                     }
                 }
             }
             catch (FileNotFoundException e) {
-                System.err.print("JVM config file is missing: " + jvmConfigPath);
+                System.err.println("JVM config file is missing: " + jvmConfigPath);
                 System.exit(STATUS_CONFIG_MISSING);
             }
             catch (IOException e) {
-                System.err.print("Error reading JVM config file: " + e);
+                System.err.println("Error reading JVM config file: " + e);
                 System.exit(STATUS_CONFIG_MISSING);
             }
 
@@ -288,7 +301,7 @@ public class Main
             javaArgs.addAll(args);
 
             if (verbose) {
-                System.out.print(Joiner.on(' ').join(javaArgs) + "\n");
+                System.out.println(Joiner.on(' ').join(javaArgs));
             }
 
             Process child = null;
@@ -320,7 +333,7 @@ public class Main
                     if (status == 0) {
                         status = STATUS_GENERIC_ERROR;
                     }
-                    System.err.print("Failed to start\n");
+                    System.err.println("Failed to start");
                     System.exit(status);
                 }
                 catch (IllegalThreadStateException ignored) {
@@ -328,13 +341,13 @@ public class Main
                 pidStatus = pidFile.waitRunning();
                 if (!pidStatus.held) {
                     if (verbose) {
-                        System.out.print("Waiting for child to lock pid file\n");
+                        System.out.println("Waiting for child to lock pid file");
                     }
                     LockSupport.parkNanos(100_000_000);
                 }
             } while (!pidStatus.held);
 
-            System.out.print("Started as " + pidStatus.pid + "\n");
+            System.out.println("Started as " + pidStatus.pid);
             System.exit(0);
         }
 
@@ -360,13 +373,13 @@ public class Main
                 manifest = new JarFile(installPath + "/lib/main.jar").getManifest();
             }
             catch (IOException e) {
-                System.err.print("Unable to open main jar manifest: " + e + "\n");
+                System.err.println("Unable to open main jar manifest: " + e + "\n");
                 System.exit(STATUS_GENERIC_ERROR);
             }
 
             String mainClassName = manifest.getMainAttributes().getValue("Main-Class");
             if (mainClassName == null) {
-                System.err.print("Unable to get Main-Class attribute from main jar manifest\n");
+                System.err.println("Unable to get Main-Class attribute from main jar manifest");
                 System.exit(STATUS_GENERIC_ERROR);
             }
 
@@ -375,7 +388,7 @@ public class Main
                 mainClass = Class.forName(mainClassName);
             }
             catch (ClassNotFoundException e) {
-                System.err.print("Unable to load class " + mainClassName + ": " + e + "\n");
+                System.err.println("Unable to load class " + mainClassName + ": " + e);
                 System.exit(STATUS_GENERIC_ERROR);
             }
             Method mainClassMethod = null;
@@ -383,7 +396,7 @@ public class Main
                 mainClassMethod = mainClass.getMethod("main", String[].class);
             }
             catch (NoSuchMethodException e) {
-                System.err.print("Unable to find main method: " + e + "\n");
+                System.err.println("Unable to find main method: " + e);
                 System.exit(STATUS_GENERIC_ERROR);
             }
 
@@ -492,7 +505,7 @@ public class Main
                 pidFile.indicateStarting();
             }
             catch (AlreadyRunningException e) {
-                System.err.print(e.getMessage() + "\n");
+                System.err.println(e.getMessage());
                 System.exit(0);
             }
 
@@ -538,7 +551,7 @@ public class Main
                 if (pid != 0) {
                     msg += " as " + pid;
                 }
-                System.out.print(msg + "\n");
+                System.out.println(msg);
                 System.exit(0);
             }
 
@@ -566,7 +579,7 @@ public class Main
         {
             KillStatus killStatus = killProcess(true);
             if (killStatus.exitCode != 0) {
-                System.out.print(killStatus.msg);
+                System.out.println(killStatus.msg);
                 System.exit(killStatus.exitCode);
             }
 
@@ -587,13 +600,13 @@ public class Main
 
             PidStatus pidStatus = pidFile.getStatus();
             if (!pidStatus.held) {
-                System.out.print("Not running\n");
+                System.out.println("Not running");
                 System.exit(0);
             }
 
             KillStatus killStatus = killProcess(true);
             if (killStatus.exitCode != 0) {
-                System.out.print(killStatus.msg);
+                System.out.println(killStatus.msg);
                 System.exit(killStatus.exitCode);
             }
 
@@ -614,7 +627,7 @@ public class Main
         public void execute()
         {
             KillStatus killStatus = killProcess(true);
-            System.out.print(killStatus.msg);
+            System.out.println(killStatus.msg);
             System.exit(killStatus.exitCode);
        }
     }
@@ -626,7 +639,7 @@ public class Main
         public void execute()
         {
             KillStatus killStatus = killProcess(false);
-            System.out.print(killStatus.msg);
+            System.out.println(killStatus.msg);
             System.exit(killStatus.exitCode);
        }
     }
@@ -654,8 +667,8 @@ public class Main
                 status = STATUS_INVALID_ARGS;
             }
 
-            System.err.print(e.getMessage());
-            System.err.print("\n\n");
+            System.err.println(e.getMessage());
+            System.err.print("\n");
             cli.parse("help").run();
 
             System.exit(status);
