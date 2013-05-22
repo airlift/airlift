@@ -1,6 +1,10 @@
 Platform 0.73
 
-* Upon startup, the main thread will no longer wait for the initial discovery announcement.
+* Applications can now use Bootstrap.withApplicationDefaults() to specify
+  default configuration values.
+
+* Upon startup, the main thread will no longer wait for the initial discovery
+  announcement.
 
 * The new launcher can now shut down a server started by the old launcher.
 
