@@ -22,7 +22,6 @@ import com.proofpoint.discovery.client.DiscoveryModule;
 import com.proofpoint.event.client.HttpEventModule;
 import com.proofpoint.http.server.HttpServerModule;
 import com.proofpoint.jmx.JmxModule;
-import com.proofpoint.jmx.http.rpc.JmxHttpRpcModule;
 import com.proofpoint.json.JsonModule;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeModule;
@@ -44,8 +43,7 @@ public class Main
                 new JsonModule(),
                 new MBeanModule(),
                 new RackModule(),
-                new JmxModule(),
-                new JmxHttpRpcModule());
+                new JmxModule());
 
         try {
             Injector injector = app.initialize();

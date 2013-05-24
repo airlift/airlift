@@ -24,7 +24,6 @@ import com.proofpoint.jmx.JmxHttpModule;
 import com.proofpoint.http.server.HttpServerModule;
 import com.proofpoint.jaxrs.JaxrsModule;
 import com.proofpoint.jmx.JmxModule;
-import com.proofpoint.jmx.http.rpc.JmxHttpRpcModule;
 import com.proofpoint.json.JsonModule;
 import com.proofpoint.log.LogJmxModule;
 import com.proofpoint.log.Logger;
@@ -48,7 +47,6 @@ public class Main
                 new MBeanModule(),
                 new JmxModule(),
                 new JmxHttpModule(),
-                new JmxHttpRpcModule(),
                 new LogJmxModule(),
                 new HttpEventModule(),
                 new TraceTokenModule(),

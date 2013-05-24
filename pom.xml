@@ -222,7 +222,6 @@
         <module>jaxrs</module>
         <module>jmx</module>
         <module>jmx-http</module>
-        <module>jmx-http-rpc</module>
         <module>bootstrap</module>
         <module>configuration</module>
         <module>discovery</module>

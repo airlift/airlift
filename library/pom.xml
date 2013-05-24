@@ -150,6 +150,8 @@
                                     <exclude>com.google.code.findbugs:jsr305</exclude>
                                     <!-- Use the official version at javax.servlet:javax.servlet-api -->
                                     <exclude>org.eclipse.jetty.orbit:javax.servlet</exclude>
+                                    <!-- removed -->
+                                    <exclude>com.proofpoint.platform:jmx-http-rpc-experimental</exclude>
                                 </excludes>
                                 <includes>
                                     <!-- whitelist the well numbered guava releases -->
@@ -428,12 +430,6 @@
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>jmx</artifactId>
-                <version>0.75-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.proofpoint.platform</groupId>
-                <artifactId>jmx-http-rpc-experimental</artifactId>
                 <version>0.75-SNAPSHOT</version>
             </dependency>
 

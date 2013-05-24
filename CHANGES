@@ -1,5 +1,8 @@
 Platform 0.75
 
+* We removed the jmx-http-rpc-experimental artifact and the JmxHttpRpcModule
+  it defined.
+
 * We explicitly specified UTF-8 as the charset for configuration property
   files.
 
