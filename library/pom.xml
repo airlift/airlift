@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>library</artifactId>
-    <version>0.73</version>
+    <version>0.74-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Library POM</name>
     <description>Library POM</description>
@@ -374,73 +374,73 @@
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>bootstrap</artifactId>
-                <version>0.73</version>
+                <version>0.74-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>configuration</artifactId>
-                <version>0.73</version>
+                <version>0.74-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>dbpool</artifactId>
-                <version>0.73</version>
+                <version>0.74-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>discovery-experimental</artifactId>
-                <version>0.73</version>
+                <version>0.74-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>event-experimental</artifactId>
-                <version>0.73</version>
+                <version>0.74-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>jaxrs</artifactId>
-                <version>0.73</version>
+                <version>0.74-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>http-server</artifactId>
-                <version>0.73</version>
+                <version>0.74-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>http-client-experimental</artifactId>
-                <version>0.73</version>
+                <version>0.74-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>json</artifactId>
-                <version>0.73</version>
+                <version>0.74-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>jmx</artifactId>
-                <version>0.73</version>
+                <version>0.74-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>jmx-http-rpc-experimental</artifactId>
-                <version>0.73</version>
+                <version>0.74-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>launcher</artifactId>
-                <version>0.73</version>
+                <version>0.74-SNAPSHOT</version>
                 <classifier>bin</classifier>
                 <type>tar.gz</type>
             </dependency>
@@ -448,43 +448,43 @@
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>log</artifactId>
-                <version>0.73</version>
+                <version>0.74-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>node</artifactId>
-                <version>0.73</version>
+                <version>0.74-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>stats</artifactId>
-                <version>0.73</version>
+                <version>0.74-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>units</artifactId>
-                <version>0.73</version>
+                <version>0.74-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>testing</artifactId>
-                <version>0.73</version>
+                <version>0.74-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>trace-token</artifactId>
-                <version>0.73</version>
+                <version>0.74-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>jmx-http-experimental</artifactId>
-                <version>0.73</version>
+                <version>0.74-SNAPSHOT</version>
             </dependency>
 
             <!-- Java APIs -->
