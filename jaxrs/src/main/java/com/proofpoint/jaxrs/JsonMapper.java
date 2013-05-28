@@ -30,11 +30,11 @@ import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HttpHeaders;
 import com.google.inject.Inject;
+import com.proofpoint.http.server.QueryStringFilter;
 import com.proofpoint.log.Logger;
-import com.sun.jersey.api.core.HttpContext;
-import com.sun.jersey.spi.container.WebApplication;
 import org.apache.bval.jsr303.ApacheValidationProvider;
 
+import javax.annotation.Nullable;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
@@ -43,7 +43,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
@@ -54,6 +53,8 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Set;
+
+import static com.sun.jersey.api.uri.UriComponent.decodeQuery;
 
 // This code is based on JacksonJsonProvider
 @Provider
@@ -83,14 +84,13 @@ class JsonMapper
     public static final Logger log = Logger.get(JsonMapper.class);
 
     private final ObjectMapper objectMapper;
-
-    private final WebApplication webApplication;
+    private final QueryStringFilter queryStringFilter;
 
     @Inject
-    public JsonMapper(ObjectMapper objectMapper, WebApplication webApplication)
+    public JsonMapper(ObjectMapper objectMapper, QueryStringFilter queryStringFilter)
     {
         this.objectMapper = objectMapper;
-        this.webApplication = webApplication;
+        this.queryStringFilter = queryStringFilter;
     }
 
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType)
@@ -177,7 +177,7 @@ class JsonMapper
         // Prevent broken browser from attempting to render the json as html
         httpHeaders.add(HttpHeaders.X_CONTENT_TYPE_OPTIONS, "nosniff");
 
-        JsonFactory jsonFactory = objectMapper.getJsonFactory();
+        JsonFactory jsonFactory = objectMapper.getFactory();
         jsonFactory.setCharacterEscapes(HTMLCharacterEscapes.INSTANCE);
 
         JsonGenerator jsonGenerator = jsonFactory.createJsonGenerator(outputStream, JsonEncoding.UTF8);
@@ -234,38 +234,28 @@ class JsonMapper
 
     private boolean isPrettyPrintRequested()
     {
-        if (webApplication == null) {
+        if (queryStringFilter == null) {
             return false;
         }
-        HttpContext httpContext = webApplication.getThreadLocalHttpContext();
-        if (httpContext == null) {
+        String queryString = queryStringFilter.getQueryString();
+        if (queryString == null) {
             return false;
         }
-        UriInfo uriInfo = httpContext.getUriInfo();
-        if (uriInfo == null) {
-            return false;
-        }
-        MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
-        return queryParameters != null && queryParameters.containsKey("pretty");
+        MultivaluedMap<String, String> queryParameters = decodeQuery(queryString, false);
+        return queryParameters.containsKey("pretty");
     }
 
+    @Nullable
     private String getJsonpFunctionName()
     {
-        if (webApplication == null) {
+        if (queryStringFilter == null) {
             return null;
         }
-        HttpContext httpContext = webApplication.getThreadLocalHttpContext();
-        if (httpContext == null) {
+        String queryString = queryStringFilter.getQueryString();
+        if (queryString == null) {
             return null;
         }
-        UriInfo uriInfo = httpContext.getUriInfo();
-        if (uriInfo == null) {
-            return null;
-        }
-        MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
-        if (queryParameters == null) {
-            return null;
-        }
+        MultivaluedMap<String, String> queryParameters = decodeQuery(queryString, false);
         return queryParameters.getFirst("jsonp");
     }
 

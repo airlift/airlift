@@ -30,7 +30,7 @@ import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 /**
  * Provides a fully configured instance of an http server,
- * ready to use with Guice (via {@link com.google.inject.servlet.GuiceFilter})
+ * ready to use with Guice (via {@link com.sun.jersey.guice.spi.container.servlet.GuiceContainer})
  * <p/>
  * Features:
  *    - HTTP/HTTPS
@@ -60,6 +60,7 @@ public class HttpServerModule
 
         binder.bind(HttpServer.class).toProvider(HttpServerProvider.class).in(Scopes.SINGLETON);
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
+        binder.bind(QueryStringFilter.class).in(Scopes.SINGLETON);
         binder.bind(RequestStats.class).in(Scopes.SINGLETON);
         Multibinder.newSetBinder(binder, Filter.class, TheServlet.class);
         Multibinder.newSetBinder(binder, Filter.class, TheAdminServlet.class);

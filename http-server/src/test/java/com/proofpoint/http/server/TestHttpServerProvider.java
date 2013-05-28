@@ -204,6 +204,7 @@ public class TestHttpServerProvider
                 ImmutableSet.<HttpResourceBinding>of(),
                 ImmutableSet.<Filter>of(),
                 new RequestStats(),
+                new QueryStringFilter(),
                 new NullEventClient());
         serverProvider.setTheAdminServlet(new DummyServlet());
         serverProvider.setLoginService(loginServiceProvider.get());

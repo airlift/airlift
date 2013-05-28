@@ -21,14 +21,9 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.proofpoint.http.server.TheServlet;
-import com.sun.jersey.core.util.FeaturesAndProperties;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
-import com.sun.jersey.spi.MessageBodyWorkers;
-import com.sun.jersey.spi.container.ExceptionMapperContext;
-import com.sun.jersey.spi.container.WebApplication;
 
 import javax.servlet.Servlet;
-import javax.ws.rs.ext.Providers;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,39 +45,9 @@ public class JaxrsModule implements Module
     @TheServlet
     public Map<String, String> createTheServletParams()
     {
-        Map<String, String> initParams = new HashMap<String, String>();
+        Map<String, String> initParams = new HashMap<>();
         initParams.put("com.sun.jersey.spi.container.ContainerRequestFilters", OverrideMethodFilter.class.getName());
 
         return initParams;
-    }
-
-    @Provides
-    public WebApplication webApp(GuiceContainer guiceContainer)
-    {
-        return guiceContainer.getWebApplication();
-    }
-
-    @Provides
-    public Providers providers(WebApplication webApplication)
-    {
-        return webApplication.getProviders();
-    }
-
-    @Provides
-    public FeaturesAndProperties featuresAndProperties(WebApplication webApplication)
-    {
-        return webApplication.getFeaturesAndProperties();
-    }
-
-    @Provides
-    public MessageBodyWorkers messageBodyWorkers(WebApplication webApplication)
-    {
-        return webApplication.getMessageBodyWorkers();
-    }
-
-    @Provides
-    public ExceptionMapperContext exceptionMapperContext(WebApplication webApplication)
-    {
-        return webApplication.getExceptionMapperContext();
     }
 }

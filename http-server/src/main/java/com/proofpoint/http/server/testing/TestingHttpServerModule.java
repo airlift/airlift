@@ -20,17 +20,15 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.proofpoint.http.server.HttpServer;
-import com.proofpoint.http.server.HttpServerConfig;
-import com.proofpoint.http.server.HttpServerInfo;
-import com.proofpoint.http.server.TheServlet;
-
-import javax.servlet.Filter;
 import com.proofpoint.discovery.client.AnnouncementHttpServerInfo;
 import com.proofpoint.http.server.HttpServer;
 import com.proofpoint.http.server.HttpServerConfig;
 import com.proofpoint.http.server.HttpServerInfo;
 import com.proofpoint.http.server.LocalAnnouncementHttpServerInfo;
+import com.proofpoint.http.server.QueryStringFilter;
+import com.proofpoint.http.server.TheServlet;
+
+import javax.servlet.Filter;
 
 public class TestingHttpServerModule
         implements Module
@@ -49,6 +47,7 @@ public class TestingHttpServerModule
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
         binder.bind(TestingHttpServer.class).in(Scopes.SINGLETON);
         binder.bind(HttpServer.class).to(Key.get(TestingHttpServer.class));
+        binder.bind(QueryStringFilter.class).in(Scopes.SINGLETON);
         Multibinder.newSetBinder(binder, Filter.class, TheServlet.class);
         binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class);
     }

@@ -15,7 +15,6 @@
  */
 package com.proofpoint.http.server;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -33,6 +32,8 @@ import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import java.util.Map;
 import java.util.Set;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Provides an instance of a Jetty server ready to be configured with
@@ -54,6 +55,7 @@ public class HttpServerProvider
     private final RequestStats stats;
     private final Set<Filter> filters;
     private final Set<Filter> adminFilters;
+    private QueryStringFilter queryStringFilter;
     private TraceTokenManager traceTokenManager;
     private final EventClient eventClient;
 
@@ -66,17 +68,19 @@ public class HttpServerProvider
             @TheServlet Set<HttpResourceBinding> resources,
             @TheAdminServlet Set<Filter> adminFilters,
             RequestStats stats,
+            QueryStringFilter queryStringFilter,
             EventClient eventClient)
     {
-        Preconditions.checkNotNull(httpServerInfo, "httpServerInfo is null");
-        Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
-        Preconditions.checkNotNull(config, "config is null");
-        Preconditions.checkNotNull(theServlet, "theServlet is null");
-        Preconditions.checkNotNull(filters, "filters is null");
-        Preconditions.checkNotNull(resources, "resources is null");
-        Preconditions.checkNotNull(adminFilters, "adminFilters is null");
-        Preconditions.checkNotNull(stats, "stats is null");
-        Preconditions.checkNotNull(eventClient, "eventClient is null");
+        checkNotNull(httpServerInfo, "httpServerInfo is null");
+        checkNotNull(nodeInfo, "nodeInfo is null");
+        checkNotNull(config, "config is null");
+        checkNotNull(theServlet, "theServlet is null");
+        checkNotNull(filters, "filters is null");
+        checkNotNull(resources, "resources is null");
+        checkNotNull(adminFilters, "adminFilters is null");
+        checkNotNull(stats, "stats is null");
+        checkNotNull(queryStringFilter, "queryStringFilter is null");
+        checkNotNull(eventClient, "eventClient is null");
 
         this.httpServerInfo = httpServerInfo;
         this.nodeInfo = nodeInfo;
@@ -86,6 +90,7 @@ public class HttpServerProvider
         this.resources = ImmutableSet.copyOf(resources);
         this.adminFilters = ImmutableSet.copyOf(adminFilters);
         this.stats = stats;
+        this.queryStringFilter = queryStringFilter;
         this.eventClient = eventClient;
     }
 
@@ -140,6 +145,7 @@ public class HttpServerProvider
                     adminFilters,
                     mbeanServer,
                     loginService,
+                    queryStringFilter,
                     traceTokenManager,
                     stats,
                     eventClient);

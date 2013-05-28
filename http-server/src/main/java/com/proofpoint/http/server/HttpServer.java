@@ -15,7 +15,6 @@
  */
 package com.proofpoint.http.server;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
 import com.proofpoint.event.client.EventClient;
@@ -56,6 +55,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 
@@ -79,15 +79,17 @@ public class HttpServer
             Set<Filter> adminFilters,
             MBeanServer mbeanServer,
             LoginService loginService,
+            QueryStringFilter queryStringFilter,
             TraceTokenManager tokenManager,
             RequestStats stats,
             EventClient eventClient)
             throws IOException
     {
-        Preconditions.checkNotNull(httpServerInfo, "httpServerInfo is null");
-        Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
-        Preconditions.checkNotNull(config, "config is null");
-        Preconditions.checkNotNull(theServlet, "theServlet is null");
+        checkNotNull(httpServerInfo, "httpServerInfo is null");
+        checkNotNull(nodeInfo, "nodeInfo is null");
+        checkNotNull(config, "config is null");
+        checkNotNull(queryStringFilter, "queryStringFilter is null");
+        checkNotNull(theServlet, "theServlet is null");
 
         Server server = new Server();
         server.setSendServerVersion(false);
@@ -183,6 +185,8 @@ public class HttpServer
          * server
          *    |--- statistics handler
          *           |--- context handler
+         *           |       |--- timing filter
+         *           |       |--- query string filter
          *           |       |--- trace token filter
          *           |       |--- gzip response filter
          *           |       |--- gzip request filter
@@ -200,7 +204,7 @@ public class HttpServer
             handlers.addHandler(new ClassPathResourceHandler(resource.getBaseUri(), resource.getClassPathResourceBase(), resource.getWelcomeFiles()));
         }
 
-        handlers.addHandler(createServletContext(theServlet, parameters, filters, tokenManager, loginService, "http", "https"));
+        handlers.addHandler(createServletContext(theServlet, parameters, filters, queryStringFilter, tokenManager, loginService, "http", "https"));
         RequestLogHandler logHandler = createLogHandler(config, tokenManager, eventClient);
         if (logHandler != null) {
             handlers.addHandler(logHandler);
@@ -216,7 +220,7 @@ public class HttpServer
 
         HandlerList rootHandlers = new HandlerList();
         if (theAdminServlet != null && config.isAdminEnabled()) {
-            rootHandlers.addHandler(createServletContext(theAdminServlet, adminParameters, adminFilters, tokenManager, loginService, "admin"));
+            rootHandlers.addHandler(createServletContext(theAdminServlet, adminParameters, adminFilters, queryStringFilter, tokenManager, loginService, "admin"));
         }
         rootHandlers.addHandler(statsHandler);
         server.setHandler(rootHandlers);
@@ -230,6 +234,7 @@ public class HttpServer
     private static ServletContextHandler createServletContext(Servlet theServlet,
             Map<String, String> parameters,
             Set<Filter> filters,
+            QueryStringFilter queryStringFilter,
             TraceTokenManager tokenManager,
             LoginService loginService,
             String... connectorNames)
@@ -237,6 +242,7 @@ public class HttpServer
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
 
         context.addFilter(new FilterHolder(new TimingFilter()), "/*", null);
+        context.addFilter(new FilterHolder(queryStringFilter), "/*", null);
         if (tokenManager != null) {
             context.addFilter(new FilterHolder(new TraceTokenFilter(tokenManager)), "/*", null);
         }
