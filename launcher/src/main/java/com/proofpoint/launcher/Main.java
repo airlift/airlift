@@ -555,6 +555,14 @@ public class Main
                 System.exit(0);
             }
 
+            if (legacyPidFilePath != null) {
+                pidStatus = new LegacyPidFile(legacyPidFilePath).getStatus();
+                if (pidStatus.held) {
+                    System.out.println("Running as " + pidStatus.pid);
+                    System.exit(0);
+                }
+            }
+
             System.out.println("Not running");
             System.exit(STATUS_NOT_RUNNING);
         }
