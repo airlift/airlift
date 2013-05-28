@@ -206,7 +206,6 @@ public class TestHttpServerProvider
                 new RequestStats(),
                 new QueryStringFilter(),
                 new NullEventClient());
-        serverProvider.setTheAdminServlet(new DummyServlet());
         serverProvider.setLoginService(loginServiceProvider.get());
         serverProvider.setTokenManager(new TraceTokenManager());
         server = serverProvider.get();

@@ -48,7 +48,6 @@ public class HttpServerProvider
     private final Servlet theServlet;
     private final Set<HttpResourceBinding> resources;
     private Map<String, String> servletInitParameters = ImmutableMap.of();
-    private Servlet theAdminServlet;
     private Map<String, String> adminServletInitParameters = ImmutableMap.of();
     private MBeanServer mbeanServer;
     private LoginService loginService;
@@ -101,12 +100,6 @@ public class HttpServerProvider
     }
 
     @Inject(optional = true)
-    public void setTheAdminServlet(@TheAdminServlet Servlet theAdminServlet)
-    {
-        this.theAdminServlet = theAdminServlet;
-    }
-
-    @Inject(optional = true)
     public void setAdminServletInitParameters(@TheAdminServlet Map<String, String> parameters)
     {
         this.adminServletInitParameters = ImmutableMap.copyOf(parameters);
@@ -140,7 +133,6 @@ public class HttpServerProvider
                     servletInitParameters,
                     filters,
                     resources,
-                    theAdminServlet,
                     adminServletInitParameters,
                     adminFilters,
                     mbeanServer,

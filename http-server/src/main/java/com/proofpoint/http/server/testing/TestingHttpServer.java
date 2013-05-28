@@ -15,6 +15,7 @@
  */
 package com.proofpoint.http.server.testing;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.proofpoint.event.client.EventClient;
@@ -62,8 +63,7 @@ public class TestingHttpServer extends HttpServer
                 initParameters,
                 ImmutableSet.copyOf(filters),
                 ImmutableSet.<HttpResourceBinding>of(),
-                null,
-                null,
+                ImmutableMap.<String, String>of(),
                 ImmutableSet.<Filter>of(),
                 null,
                 null,
