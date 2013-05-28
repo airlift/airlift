@@ -1,5 +1,7 @@
 Platform 0.75
 
+* We moved the /v1/jmx/mbean resource to /admin/jmx/mbean on the admin port.
+
 * We removed the jmx-http-rpc-experimental artifact and the JmxHttpRpcModule
   it defined.
 

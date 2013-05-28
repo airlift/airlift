@@ -30,9 +30,13 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
+import com.google.inject.Inject;
 import com.google.inject.Module;
+import com.google.inject.Provider;
 import com.google.inject.Scopes;
-import com.proofpoint.discovery.client.DiscoveryBinder;
+import com.proofpoint.discovery.client.ServiceAnnouncement;
+import com.proofpoint.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
+import com.proofpoint.http.server.HttpServerInfo;
 import sun.management.LazyCompositeData;
 
 import javax.management.MalformedObjectNameException;
@@ -40,14 +44,16 @@ import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.OpenType;
 import javax.management.openmbean.TabularData;
-
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.InetAddress;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
+import static com.proofpoint.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static com.proofpoint.json.JsonBinder.jsonBinder;
 
 public class JmxHttpModule implements Module
@@ -70,7 +76,8 @@ public class JmxHttpModule implements Module
         jsonBinder(binder).addSerializerBinding(LazyCompositeData.class).to(CompositeDataSerializer.class);
 
         // todo move this to the jmx announcement when this module is promoted from experimental
-        DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("jmx-http");
+        ServiceAnnouncementBuilder serviceAnnouncementBuilder = serviceAnnouncement("jmx-http");
+        discoveryBinder(binder).bindServiceAnnouncement(new JmxHttpAnnouncementProvider(serviceAnnouncementBuilder));
     }
 
     static class ObjectNameDeserializer
@@ -229,5 +236,37 @@ public class JmxHttpModule implements Module
             }
         }
         return builder.build();
+    }
+
+    static class JmxHttpAnnouncementProvider implements Provider<ServiceAnnouncement>
+    {
+        private final ServiceAnnouncementBuilder builder;
+        private HttpServerInfo httpServerInfo;
+
+        public JmxHttpAnnouncementProvider(ServiceAnnouncementBuilder serviceAnnouncementBuilder)
+        {
+            builder = serviceAnnouncementBuilder;
+        }
+
+        @Inject
+        public synchronized void setHttpServerInfo(HttpServerInfo httpServerInfo)
+        {
+            this.httpServerInfo = httpServerInfo;
+        }
+
+        @Override
+        public synchronized ServiceAnnouncement get()
+        {
+            if (httpServerInfo.getAdminUri() != null) {
+                URI adminUri = httpServerInfo.getAdminUri();
+                if (adminUri.getScheme().equals("http")) {
+                    builder.addProperty("http", adminUri.toString());
+                    builder.addProperty("http-external", httpServerInfo.getAdminExternalUri().toString());
+                } else if (adminUri.getScheme().equals("https")) {
+                    builder.addProperty("https", adminUri.toString());
+                }
+            }
+            return builder.build();
+        }
     }
 }
