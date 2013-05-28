@@ -158,24 +158,28 @@ public class NodeConfig
         return this;
     }
 
+    @Deprecated
     public String getBinarySpec()
     {
         return binarySpec;
     }
 
     @Config("node.binary-spec")
+    @Deprecated
     public NodeConfig setBinarySpec(String binarySpec)
     {
         this.binarySpec = binarySpec;
         return this;
     }
 
+    @Deprecated
     public String getConfigSpec()
     {
         return configSpec;
     }
 
     @Config("node.config-spec")
+    @Deprecated
     public NodeConfig setConfigSpec(String configSpec)
     {
         this.configSpec = configSpec;
