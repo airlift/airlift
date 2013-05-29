@@ -26,7 +26,6 @@ import com.fasterxml.jackson.core.io.CharacterEscapes;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HttpHeaders;
 import com.google.inject.Inject;
@@ -34,7 +33,6 @@ import com.proofpoint.http.server.QueryStringFilter;
 import com.proofpoint.log.Logger;
 import org.apache.bval.jsr303.ApacheValidationProvider;
 
-import javax.annotation.Nullable;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
@@ -221,11 +219,6 @@ class JsonMapper
             writer = objectMapper.writer();
         }
 
-        String jsonpFunctionName = getJsonpFunctionName();
-        if (jsonpFunctionName != null) {
-            value = new JSONPObject(jsonpFunctionName, value, rootType);
-        }
-
         writer.writeValue(jsonGenerator, value);
 
         // add a newline so when you use curl it looks nice
@@ -243,20 +236,6 @@ class JsonMapper
         }
         MultivaluedMap<String, String> queryParameters = decodeQuery(queryString, false);
         return queryParameters.containsKey("pretty");
-    }
-
-    @Nullable
-    private String getJsonpFunctionName()
-    {
-        if (queryStringFilter == null) {
-            return null;
-        }
-        String queryString = queryStringFilter.getQueryString();
-        if (queryString == null) {
-            return null;
-        }
-        MultivaluedMap<String, String> queryParameters = decodeQuery(queryString, false);
-        return queryParameters.getFirst("jsonp");
     }
 
     private static class HTMLCharacterEscapes
