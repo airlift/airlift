@@ -265,7 +265,7 @@ public class Main
 
                         javaArgs.add(line);
                     }
-                    else if (line.matches("(?i)\\s*#\\s*allow\\s+spaces\\s+")) {
+                    else if (line.matches("(?i)\\s*#\\s*allow\\s+spaces\\s*")) {
                         allowSpaces = true;
                     }
                 }
