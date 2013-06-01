@@ -15,6 +15,7 @@
  */
 package com.proofpoint.stats;
 
+import com.proofpoint.stats.TimedStat.BlockTimer;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -92,6 +93,20 @@ public class TimedStatTest
                 return null;
             }
         });
+
+        assertEquals(stat.getCount(), 1);
+        assertEquals(stat.getMin(), stat.getMax());
+        assertGreaterThanOrEqual(stat.getMax(), 10.0);
+    }
+
+    @Test
+    public void timeTry()
+            throws Exception
+    {
+        TimedStat stat = new TimedStat();
+        try (BlockTimer ignored = stat.time()) {
+            LockSupport.parkNanos(10L * 1000 * 1000 * 1000);
+        }
 
         assertEquals(stat.getCount(), 1);
         assertEquals(stat.getMin(), stat.getMax());

@@ -136,4 +136,19 @@ public class TimedStat
         addValue(Duration.nanosSince(start));
         return result;
     }
+
+    public BlockTimer time() {
+        return new BlockTimer();
+    }
+
+    public class BlockTimer implements AutoCloseable
+    {
+        private final long start = System.nanoTime();
+
+        @Override
+        public void close()
+        {
+            addValue(Duration.nanosSince(start));
+        }
+    }
 }
