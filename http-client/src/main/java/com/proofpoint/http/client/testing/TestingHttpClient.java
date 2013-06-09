@@ -1,9 +1,7 @@
 package com.proofpoint.http.client.testing;
 
 import com.google.common.base.Function;
-import com.google.common.util.concurrent.CheckedFuture;
-import com.google.common.util.concurrent.ForwardingCheckedFuture;
-import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -14,9 +12,12 @@ import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.units.Duration;
 
-import javax.annotation.Nullable;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -61,16 +62,7 @@ public class TestingHttpClient
             }
         });
 
-        CheckedFuture<T, E> checkedFuture = Futures.makeChecked(future, new Function<Exception, E>()
-        {
-            @Override
-            public E apply(@Nullable Exception input)
-            {
-                return responseHandler.handleException(request, input);
-            }
-        });
-
-        return new TestingAsyncHttpResponseFuture<>(checkedFuture, state);
+        return new TestingAsyncHttpResponseFuture<>(future, state, request, responseHandler);
     }
 
     @Override
@@ -103,7 +95,7 @@ public class TestingHttpClient
                     requestProcessingTime,
                     null);
             if (e instanceof Exception) {
-                throw responseHandler.handleException(request, (Exception) e);
+                return responseHandler.handleException(request, (Exception) e);
             } else {
                 throw e;
             }
@@ -140,29 +132,57 @@ public class TestingHttpClient
         closed.set(true);
     }
 
-    private static class TestingAsyncHttpResponseFuture<T, E extends Exception>
-            extends ForwardingCheckedFuture<T, E>
+    private class TestingAsyncHttpResponseFuture<T, E extends Exception>
+            extends AbstractFuture<T>
             implements AsyncHttpResponseFuture<T, E>
     {
-        private final CheckedFuture<T, E> delegate;
         private final AtomicReference<String> state;
+        private final ListenableFuture<T> future;
+        private final Request request;
+        private final ResponseHandler<T,E> responseHandler;
 
-        private TestingAsyncHttpResponseFuture(CheckedFuture<T, E> delegate, AtomicReference<String> state)
+        private TestingAsyncHttpResponseFuture(ListenableFuture<T> future, AtomicReference<String> state, Request request, ResponseHandler<T, E> responseHandler)
         {
-            this.delegate = delegate;
+            this.future = future;
             this.state = state;
-        }
-
-        @Override
-        protected CheckedFuture<T, E> delegate()
-        {
-            return delegate;
+            this.request = request;
+            this.responseHandler = responseHandler;
         }
 
         @Override
         public String getState()
         {
             return state.get();
+        }
+
+        @Override
+        public T checkedGet()
+                throws E
+        {
+            try {
+                return future.get();
+            }
+            catch (CancellationException | InterruptedException e) {
+                return responseHandler.handleException(request, e);
+            }
+            catch (ExecutionException e) {
+                throw (E) e.getCause();
+            }
+        }
+
+        @Override
+        public T checkedGet(long timeout, TimeUnit unit)
+                throws TimeoutException, E
+        {
+            try {
+                return future.get(timeout, unit);
+            }
+            catch (CancellationException | InterruptedException e) {
+                return responseHandler.handleException(request, e);
+            }
+            catch (ExecutionException e) {
+                throw (E) e.getCause();
+            }
         }
     }
 }

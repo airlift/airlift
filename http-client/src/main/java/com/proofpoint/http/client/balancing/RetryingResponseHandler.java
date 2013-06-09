@@ -38,11 +38,12 @@ final class RetryingResponseHandler<T, E extends Exception>
     }
 
     @Override
-    public RetryException handleException(Request request, Exception exception)
+    public T handleException(Request request, Exception exception)
+            throws RetryException
     {
         log.warn(exception, "Exception querying %s",
                 request.getUri().resolve("/"));
-        return new RetryException();
+        throw new RetryException();
     }
 
     @Override

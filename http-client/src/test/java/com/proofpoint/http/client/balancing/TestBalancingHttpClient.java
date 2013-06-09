@@ -398,7 +398,7 @@ public class TestBalancingHttpClient
 
         ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
         Exception testException = new Exception("test exception");
-        when(responseHandler.handleException(any(Request.class), same(connectException))).thenReturn(testException);
+        when(responseHandler.handleException(any(Request.class), same(connectException))).thenThrow(testException);
 
         try {
             String returnValue = balancingHttpClient.execute(request, responseHandler);
@@ -418,6 +418,38 @@ public class TestBalancingHttpClient
         verify(serviceAttempt2).next();
         verify(serviceAttempt3).getUri();
         verify(serviceAttempt3).markBad();
+        verify(responseHandler).handleException(any(Request.class), same(connectException));
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, response, responseHandler);
+    }
+
+    @Test
+    public void testGiveUpOnHttpClientExceptionWithDefault()
+            throws Exception
+    {
+        Response response503 = mock(Response.class);
+        when(response503.getStatusCode()).thenReturn(503);
+        ConnectException connectException = new ConnectException();
+
+        httpClient.expectCall("http://s1.example.com/v1/service", new ConnectException());
+        httpClient.expectCall("http://s2.example.com/v1/service", response503);
+        httpClient.expectCall("http://s1.example.com/v1/service", connectException);
+
+        ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
+        when(responseHandler.handleException(any(Request.class), same(connectException))).thenReturn("test response");
+
+        String returnValue = balancingHttpClient.execute(request, responseHandler);
+        assertEquals(returnValue, "test response");
+
+        httpClient.assertDone();
+
+        verify(serviceAttempt1).getUri();
+        verify(serviceAttempt1).markBad();
+        verify(serviceAttempt1).next();
+        verify(serviceAttempt2).getUri();
+        verify(serviceAttempt2).markBad();
+        verify(serviceAttempt2).next();
+        verify(serviceAttempt3).getUri();
+        verify(serviceAttempt3).markGood(); // todo incorrectly recording result of final try -- verify(serviceAttempt3).markBad();
         verify(responseHandler).handleException(any(Request.class), same(connectException));
         verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, response, responseHandler);
     }
@@ -468,7 +500,7 @@ public class TestBalancingHttpClient
 
         ResponseHandler responseHandler = mock(ResponseHandler.class);
         RuntimeException handlerException = new RuntimeException("test responseHandler exception");
-        when(responseHandler.handleException(any(Request.class), any(Exception.class))).thenReturn(handlerException);
+        when(responseHandler.handleException(any(Request.class), any(Exception.class))).thenThrow(handlerException);
 
         try {
             balancingHttpClient.execute(request, responseHandler);
@@ -502,7 +534,7 @@ public class TestBalancingHttpClient
 
         ResponseHandler responseHandler = mock(ResponseHandler.class);
         RuntimeException handlerException = new RuntimeException("test responseHandler exception");
-        when(responseHandler.handleException(any(Request.class), any(Exception.class))).thenReturn(handlerException);
+        when(responseHandler.handleException(any(Request.class), any(Exception.class))).thenThrow(handlerException);
 
         try {
             balancingHttpClient.execute(request, responseHandler);
@@ -614,7 +646,7 @@ public class TestBalancingHttpClient
 
             Object response = responses.remove(0);
             if (response instanceof Exception) {
-                throw responseHandler.handleException(request, (Exception) response);
+                return responseHandler.handleException(request, (Exception) response);
             }
             return responseHandler.handle(request, (Response) response);
         }

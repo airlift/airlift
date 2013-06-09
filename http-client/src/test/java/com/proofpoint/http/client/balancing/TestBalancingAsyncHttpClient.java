@@ -435,7 +435,7 @@ public class TestBalancingAsyncHttpClient
 
         ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
         Exception testException = new Exception("test exception");
-        when(responseHandler.handleException(any(Request.class), same(connectException))).thenReturn(testException);
+        when(responseHandler.handleException(any(Request.class), same(connectException))).thenThrow(testException);
 
         try {
             String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
@@ -444,6 +444,38 @@ public class TestBalancingAsyncHttpClient
         catch (Exception e) {
             assertSame(e, testException);
         }
+
+        httpClient.assertDone();
+
+        verify(serviceAttempt1).getUri();
+        verify(serviceAttempt1).markBad();
+        verify(serviceAttempt1).next();
+        verify(serviceAttempt2).getUri();
+        verify(serviceAttempt2).markBad();
+        verify(serviceAttempt2).next();
+        verify(serviceAttempt3).getUri();
+        // todo not capturing result of final try -- verify(serviceAttempt3).markBad();
+        verify(responseHandler).handleException(any(Request.class), same(connectException));
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, response, responseHandler);
+    }
+
+    @Test
+    public void testGiveUpOnHttpClientExceptionWithDefault()
+            throws Exception
+    {
+        Response response503 = mock(Response.class);
+        when(response503.getStatusCode()).thenReturn(503);
+        ConnectException connectException = new ConnectException();
+
+        httpClient.expectCall("http://s1.example.com/v1/service", new ConnectException());
+        httpClient.expectCall("http://s2.example.com/v1/service", response503);
+        httpClient.expectCall("http://s1.example.com/v1/service", connectException);
+
+        ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
+        when(responseHandler.handleException(any(Request.class), same(connectException))).thenReturn("test response");
+
+        String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
+        assertEquals(returnValue, "test response");
 
         httpClient.assertDone();
 
@@ -505,7 +537,7 @@ public class TestBalancingAsyncHttpClient
 
         ResponseHandler responseHandler = mock(ResponseHandler.class);
         RuntimeException handlerException = new RuntimeException("test responseHandler exception");
-        when(responseHandler.handleException(any(Request.class), any(Exception.class))).thenReturn(handlerException);
+        when(responseHandler.handleException(any(Request.class), any(Exception.class))).thenThrow(handlerException);
 
         CheckedFuture future = balancingAsyncHttpClient.executeAsync(request, responseHandler);
         try {
@@ -540,7 +572,7 @@ public class TestBalancingAsyncHttpClient
 
         ResponseHandler responseHandler = mock(ResponseHandler.class);
         RuntimeException handlerException = new RuntimeException("test responseHandler exception");
-        when(responseHandler.handleException(any(Request.class), any(Exception.class))).thenReturn(handlerException);
+        when(responseHandler.handleException(any(Request.class), any(Exception.class))).thenThrow(handlerException);
 
         CheckedFuture future = balancingAsyncHttpClient.executeAsync(request, responseHandler);
         try {
@@ -655,7 +687,12 @@ public class TestBalancingAsyncHttpClient
             Object response = responses.remove(0);
             // TODO: defer availability of return values ?
             if (response instanceof Exception) {
-                return new ImmediateFailedAsyncHttpFuture<>(responseHandler.handleException(request, (Exception) response));
+                try {
+                    return new ImmediateAsyncHttpFuture<>(responseHandler.handleException(request, (Exception) response));
+                }
+                catch (Exception e) {
+                    return new ImmediateFailedAsyncHttpFuture<>((E) e);
+                }
             }
             try {
                 return new ImmediateAsyncHttpFuture<>(responseHandler.handle(request, (Response) response));

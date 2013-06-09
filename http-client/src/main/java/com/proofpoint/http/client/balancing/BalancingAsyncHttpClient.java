@@ -63,7 +63,12 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
             attempt = pool.createAttempt();
         }
         catch (RuntimeException e) {
-            return new ImmediateFailedAsyncHttpResponseFuture<>(responseHandler.handleException(request, e));
+            try {
+                return new ImmediateAsyncHttpResponseFuture<>(responseHandler.handleException(request, e));
+            }
+            catch (Exception e1) {
+                return new ImmediateFailedAsyncHttpResponseFuture<>((E) e1);
+            }
         }
 
         return attemptQuery(request, responseHandler, attempt, maxAttempts);
@@ -158,7 +163,12 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
                                 nextAttempt = attempt.next();
                             }
                             catch (RuntimeException e1) {
-                                setException(responseHandler.handleException(request, e1));
+                                try {
+                                    set(responseHandler.handleException(request, e1));
+                                }
+                                catch (Exception e2) {
+                                    setException(e2);
+                                }
                                 return;
                             }
                             try {
@@ -211,7 +221,7 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
                 return get();
             }
             catch (InterruptedException | CancellationException | ExecutionException e) {
-                throw mapException(e);
+                return mapException(e);
             }
         }
 
@@ -223,11 +233,12 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
                 return get(timeout, unit);
             }
             catch (InterruptedException | CancellationException | ExecutionException e) {
-                throw mapException(e);
+                return mapException(e);
             }
         }
 
-        private E mapException(Exception e)
+        private T mapException(Exception e)
+                throws E
         {
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
@@ -235,7 +246,7 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
 
             if (e instanceof ExecutionException) {
                 // noinspection unchecked
-                return (E) e.getCause();
+                throw (E) e.getCause();
             }
 
             return responseHandler.handleException(request, e);
@@ -250,6 +261,39 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
                 }
                 return format("Attempt %s to %s: %s", attempt, uri, subFuture.getState());
             }
+        }
+    }
+
+    private static class ImmediateAsyncHttpResponseFuture<T, E extends Exception>
+            extends AbstractFuture<T>
+            implements AsyncHttpResponseFuture<T, E>
+    {
+
+        private final T result;
+
+        public ImmediateAsyncHttpResponseFuture(T result)
+        {
+            this.result = result;
+        }
+
+        @Override
+        public String getState()
+        {
+            return "Succeeded with result " + result;
+        }
+
+        @Override
+        public T checkedGet()
+                throws E
+        {
+            return result;
+        }
+
+        @Override
+        public T checkedGet(long timeout, TimeUnit unit)
+                throws TimeoutException, E
+        {
+            return result;
         }
     }
 

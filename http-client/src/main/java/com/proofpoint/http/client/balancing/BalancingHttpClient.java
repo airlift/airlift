@@ -58,7 +58,7 @@ public final class BalancingHttpClient implements HttpClient
             attempt = pool.createAttempt();
         }
         catch (RuntimeException e) {
-            throw responseHandler.handleException(request, e);
+            return responseHandler.handleException(request, e);
         }
         int attemptsLeft = maxAttempts;
 
@@ -95,7 +95,7 @@ public final class BalancingHttpClient implements HttpClient
                         attempt = attempt.next();
                     }
                     catch (RuntimeException e) {
-                        throw responseHandler.handleException(request, e);
+                        return responseHandler.handleException(request, e);
                     }
                 }
             }

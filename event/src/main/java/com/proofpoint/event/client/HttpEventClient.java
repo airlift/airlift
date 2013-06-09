@@ -166,10 +166,10 @@ public class HttpEventClient
         }
 
         @Override
-        public EventSubmissionFailedException handleException(Request request, Exception exception)
+        public Void handleException(Request request, Exception exception)
         {
             log.debug("Posting event to %s failed", request.getUri());
-            return new EventSubmissionFailedException(type, pool, ImmutableMap.of(request.getUri(), exception));
+            throw new EventSubmissionFailedException(type, pool, ImmutableMap.of(request.getUri(), exception));
         }
 
         @Override
