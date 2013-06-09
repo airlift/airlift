@@ -16,7 +16,6 @@
 package io.airlift.http.client;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharStreams;
 import com.google.common.net.MediaType;
@@ -57,15 +56,15 @@ public class JsonResponseHandler<T> implements ResponseHandler<T, RuntimeExcepti
     }
 
     @Override
-    public RuntimeException handleException(Request request, Exception exception)
+    public T handleException(Request request, Exception exception)
     {
         if (exception instanceof ConnectException) {
-            return new RuntimeException("Server refused connection: " + request.getUri().toASCIIString(), exception);
+            throw new RuntimeException("Server refused connection: " + request.getUri().toASCIIString(), exception);
         }
         if (exception instanceof RuntimeException) {
-            return (RuntimeException) exception;
+            throw (RuntimeException) exception;
         }
-        return new RuntimeException(exception);
+        throw new RuntimeException(exception);
     }
 
     @Override

@@ -15,7 +15,6 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
@@ -37,15 +36,15 @@ public class StatusResponseHandler implements ResponseHandler<StatusResponse, Ru
     }
 
     @Override
-    public RuntimeException handleException(Request request, Exception exception)
+    public StatusResponse handleException(Request request, Exception exception)
     {
         if (exception instanceof ConnectException) {
-            return new RuntimeException("Server refused connection: " + request.getUri().toASCIIString(), exception);
+            throw new RuntimeException("Server refused connection: " + request.getUri().toASCIIString(), exception);
         }
         if (exception instanceof RuntimeException) {
-            return (RuntimeException) exception;
+            throw (RuntimeException) exception;
         }
-        return new RuntimeException(exception);
+        throw new RuntimeException(exception);
     }
 
     @Override

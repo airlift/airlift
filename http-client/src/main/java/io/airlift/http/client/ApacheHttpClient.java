@@ -166,9 +166,9 @@ public class ApacheHttpClient
                 // apache http client eats the socket timeout exception
                 SocketTimeoutException socketTimeoutException = new SocketTimeoutException(e.getMessage());
                 socketTimeoutException.setStackTrace(e.getStackTrace());
-                throw responseHandler.handleException(request, socketTimeoutException);
+                return responseHandler.handleException(request, socketTimeoutException);
             }
-            throw responseHandler.handleException(request, e);
+            return responseHandler.handleException(request, e);
         }
     }
 

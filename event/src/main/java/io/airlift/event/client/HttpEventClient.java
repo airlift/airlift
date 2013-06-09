@@ -119,7 +119,7 @@ public class HttpEventClient
                 .setUri(uris.get(0).resolve("/v2/event"))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
                 .setHeader("Content-Type", MEDIA_TYPE_JSON.toString())
-                .setBodyGenerator(new JsonEntityWriter<T>(eventWriter, eventGenerator))
+                .setBodyGenerator(new JsonEntityWriter<>(eventWriter, eventGenerator))
                 .build();
         return httpClient.executeAsync(request, new EventResponseHandler(serviceSelector.getType(), serviceSelector.getPool()));
     }
@@ -156,10 +156,10 @@ public class HttpEventClient
         }
 
         @Override
-        public EventSubmissionFailedException handleException(Request request, Exception exception)
+        public Void handleException(Request request, Exception exception)
         {
             log.debug("Posting event to %s failed", request.getUri());
-            return new EventSubmissionFailedException(type, pool, ImmutableMap.of(request.getUri(), exception));
+            throw new EventSubmissionFailedException(type, pool, ImmutableMap.of(request.getUri(), exception));
         }
 
         @Override
