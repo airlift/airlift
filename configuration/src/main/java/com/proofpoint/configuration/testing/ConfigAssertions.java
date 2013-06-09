@@ -57,6 +57,10 @@ public final class ConfigAssertions
     {
     }
 
+    /**
+     * @deprecated Replaced by {@link #assertRecordedDefaults(T)}
+     */
+    @Deprecated
     public static <T> void assertDefaults(Map<String, Object> expectedAttributeValues, Class<T> configClass)
     {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getValidConfigurationMetadata(configClass);
