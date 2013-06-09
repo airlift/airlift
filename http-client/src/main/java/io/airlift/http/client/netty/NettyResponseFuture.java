@@ -131,10 +131,10 @@ public class NettyResponseFuture<T, E extends Exception>
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw mapException(e);
+            return mapException(e);
         }
         catch (CancellationException | ExecutionException e) {
-            throw mapException(e);
+            return mapException(e);
         }
     }
 
@@ -147,14 +147,14 @@ public class NettyResponseFuture<T, E extends Exception>
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw mapException(e);
+            return mapException(e);
         }
         catch (CancellationException | ExecutionException e) {
-            throw mapException(e);
+            return mapException(e);
         }
     }
 
-    private E mapException(Exception e)
+    private T mapException(Exception e) throws E
     {
         if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();
@@ -165,7 +165,7 @@ public class NettyResponseFuture<T, E extends Exception>
             // Do not ask the handler to "handle" an exception it produced
             if (cause instanceof ExceptionFromResponseHandler) {
                 try {
-                    return (E) cause.getCause();
+                    throw (E) cause.getCause();
                 }
                 catch (ClassCastException classCastException) {
                     // this should never happen but generics suck so be safe

@@ -193,19 +193,19 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
         }
 
         @Override
-        public final DiscoveryException handleException(Request request, Exception exception)
+        public final T handleException(Request request, Exception exception)
         {
             if (exception instanceof InterruptedException) {
-                return new DiscoveryException(name + " was interrupted for " + uri);
+                throw new DiscoveryException(name + " was interrupted for " + uri);
             }
             if (exception instanceof CancellationException) {
-                return new DiscoveryException(name + " was canceled for " + uri);
+                throw new DiscoveryException(name + " was canceled for " + uri);
             }
             if (exception instanceof DiscoveryException) {
-                return (DiscoveryException) exception;
+                throw (DiscoveryException) exception;
             }
 
-            return new DiscoveryException(name + " failed for " + uri, exception);
+            throw new DiscoveryException(name + " failed for " + uri, exception);
         }
     }
 }
