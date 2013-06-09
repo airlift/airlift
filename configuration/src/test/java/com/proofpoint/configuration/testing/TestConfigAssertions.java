@@ -15,6 +15,7 @@
  */
 package com.proofpoint.configuration.testing;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.proofpoint.configuration.Config;
@@ -22,8 +23,6 @@ import com.proofpoint.configuration.Config1;
 import com.proofpoint.configuration.ConfigMap;
 import com.proofpoint.configuration.LegacyConfig;
 import com.proofpoint.configuration.testing.ConfigAssertions.$$RecordedConfigData;
-import com.proofpoint.testing.Assertions;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.net.MalformedURLException;
@@ -33,17 +32,26 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.proofpoint.configuration.testing.ConfigAssertions.assertDefaults;
+import static com.proofpoint.configuration.testing.ConfigAssertions.assertDeprecatedEquivalence;
+import static com.proofpoint.configuration.testing.ConfigAssertions.assertFullMapping;
+import static com.proofpoint.configuration.testing.ConfigAssertions.assertRecordedDefaults;
+import static com.proofpoint.testing.Assertions.assertContains;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotSame;
+import static org.testng.Assert.fail;
+
 public class TestConfigAssertions
 {
     @Test
     public void testDefaults()
     {
-        Map<String, Object> expectedAttributeValues = new HashMap<String, Object>();
+        Map<String, Object> expectedAttributeValues = new HashMap<>();
         expectedAttributeValues.put("Name", "Dain");
         expectedAttributeValues.put("Email", "dain@proofpoint.com");
         expectedAttributeValues.put("Phone", null);
         expectedAttributeValues.put("HomePage", URI.create("http://iq80.com"));
-        ConfigAssertions.assertDefaults(expectedAttributeValues, PersonConfig.class);
+        assertDefaults(expectedAttributeValues, PersonConfig.class);
     }
 
     @Test
@@ -51,21 +59,21 @@ public class TestConfigAssertions
     {
         boolean pass = true;
         try {
-            Map<String, Object> expectedAttributeValues = new HashMap<String, Object>();
+            Map<String, Object> expectedAttributeValues = new HashMap<>();
             expectedAttributeValues.put("Name", "Dain");
             expectedAttributeValues.put("Email", "dain@proofpoint.com");
             expectedAttributeValues.put("Phone", "42");
             expectedAttributeValues.put("HomePage", URI.create("http://iq80.com"));
-            ConfigAssertions.assertDefaults(expectedAttributeValues, PersonConfig.class);
+            assertDefaults(expectedAttributeValues, PersonConfig.class);
         }
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "Phone");
+            assertContains(e.getMessage(), "Phone");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -74,21 +82,21 @@ public class TestConfigAssertions
     {
         boolean pass = true;
         try {
-            Map<String, Object> expectedAttributeValues = new HashMap<String, Object>();
+            Map<String, Object> expectedAttributeValues = new HashMap<>();
             expectedAttributeValues.put("Name", "Dain");
             expectedAttributeValues.put("Email", "dain@proofpoint.com");
             expectedAttributeValues.put("Phone", null);
             expectedAttributeValues.put("HomePage", URI.create("http://example.com"));
-            ConfigAssertions.assertDefaults(expectedAttributeValues, PersonConfig.class);
+            assertDefaults(expectedAttributeValues, PersonConfig.class);
         }
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "HomePage");
+            assertContains(e.getMessage(), "HomePage");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -97,22 +105,22 @@ public class TestConfigAssertions
     {
         boolean pass = true;
         try {
-            Map<String, Object> expectedAttributeValues = new HashMap<String, Object>();
+            Map<String, Object> expectedAttributeValues = new HashMap<>();
             expectedAttributeValues.put("Name", "Dain");
             expectedAttributeValues.put("Email", "dain@proofpoint.com");
             expectedAttributeValues.put("Phone", null);
             expectedAttributeValues.put("HomePage", URI.create("http://iq80.com"));
             expectedAttributeValues.put("UnsupportedAttribute", "value");
-            ConfigAssertions.assertDefaults(expectedAttributeValues, PersonConfig.class);
+            assertDefaults(expectedAttributeValues, PersonConfig.class);
         }
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "UnsupportedAttribute");
+            assertContains(e.getMessage(), "UnsupportedAttribute");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -121,20 +129,20 @@ public class TestConfigAssertions
     {
         boolean pass = true;
         try {
-            Map<String, Object> expectedAttributeValues = new HashMap<String, Object>();
+            Map<String, Object> expectedAttributeValues = new HashMap<>();
             expectedAttributeValues.put("Name", "Dain");
             expectedAttributeValues.put("Email", "dain@proofpoint.com");
             expectedAttributeValues.put("Phone", null);
-            ConfigAssertions.assertDefaults(expectedAttributeValues, PersonConfig.class);
+            assertDefaults(expectedAttributeValues, PersonConfig.class);
         }
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "HomePage");
+            assertContains(e.getMessage(), "HomePage");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -143,21 +151,21 @@ public class TestConfigAssertions
     {
         boolean pass = true;
         try {
-            Map<String, Object> expectedAttributeValues = new HashMap<String, Object>();
+            Map<String, Object> expectedAttributeValues = new HashMap<>();
             expectedAttributeValues.put("Name", "Dain");
             expectedAttributeValues.put("Email", "dain@proofpoint.com");
             expectedAttributeValues.put("Phone", null);
             expectedAttributeValues.put("HomePageUrl", URI.create("http://iq80.com"));
-            ConfigAssertions.assertDefaults(expectedAttributeValues, PersonConfig.class);
+            assertDefaults(expectedAttributeValues, PersonConfig.class);
         }
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "HomePageUrl");
+            assertContains(e.getMessage(), "HomePageUrl");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -177,7 +185,7 @@ public class TestConfigAssertions
                 .setPhone("867-5309")
                 .setHomePage(URI.create("http://example.com"));
 
-        ConfigAssertions.assertFullMapping(properties, expected);
+        assertFullMapping(properties, expected);
     }
 
     @Test
@@ -199,16 +207,16 @@ public class TestConfigAssertions
 
         boolean pass = true;
         try {
-            ConfigAssertions.assertFullMapping(properties, expected);
+            assertFullMapping(properties, expected);
         }
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "unsupported-property");
+            assertContains(e.getMessage(), "unsupported-property");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -228,16 +236,16 @@ public class TestConfigAssertions
 
         boolean pass = true;
         try {
-            ConfigAssertions.assertFullMapping(properties, expected);
+            assertFullMapping(properties, expected);
         }
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "home-page");
+            assertContains(e.getMessage(), "home-page");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -259,16 +267,16 @@ public class TestConfigAssertions
 
         boolean pass = true;
         try {
-            ConfigAssertions.assertFullMapping(properties, expected);
+            assertFullMapping(properties, expected);
         }
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "Name");
+            assertContains(e.getMessage(), "Name");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -290,28 +298,23 @@ public class TestConfigAssertions
 
         boolean pass = true;
         try {
-            ConfigAssertions.assertFullMapping(properties, expected);
+            assertFullMapping(properties, expected);
         }
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "HomePage");
+            assertContains(e.getMessage(), "HomePage");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
     @Test
     public void testNoDeprecatedProperties()
     {
-        Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
-                .put("email", "alice@example.com")
-                .put("home-page", "http://example.com")
-                .build();
-
-        ConfigAssertions.assertDeprecatedEquivalence(NoDeprecatedConfig.class, currentProperties);
+        assertDeprecatedEquivalence(NoDeprecatedConfig.class, ImmutableMap.<String, String>of());
     }
 
     @Test
@@ -332,7 +335,7 @@ public class TestConfigAssertions
                 .put("home-page-url", "http://example.com")
                 .build();
 
-        ConfigAssertions.assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
+        assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
     }
 
     @Test
@@ -353,16 +356,16 @@ public class TestConfigAssertions
 
         boolean pass = true;
         try {
-            ConfigAssertions.assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
+            assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
         }
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "unsupported-property");
+            assertContains(e.getMessage(), "unsupported-property");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -379,16 +382,16 @@ public class TestConfigAssertions
 
         boolean pass = true;
         try {
-            ConfigAssertions.assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties);
+            assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties);
         }
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "notes-id");
+            assertContains(e.getMessage(), "notes-id");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -409,16 +412,16 @@ public class TestConfigAssertions
 
         boolean pass = true;
         try {
-            ConfigAssertions.assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
+            assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
         }
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "notes-id");
+            assertContains(e.getMessage(), "notes-id");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -435,30 +438,30 @@ public class TestConfigAssertions
         $$RecordedConfigData<PersonConfig> data = ConfigAssertions.getRecordedConfig(config);
 
         PersonConfig instance = data.getInstance();
-        Assert.assertNotSame(instance, config);
+        assertNotSame(instance, config);
 
-        Assert.assertEquals(data.getInvokedMethods(), ImmutableSet.of(
+        assertEquals(data.getInvokedMethods(), ImmutableSet.of(
                 PersonConfig.class.getDeclaredMethod("setName", String.class),
                 PersonConfig.class.getDeclaredMethod("setEmail", String.class),
                 PersonConfig.class.getDeclaredMethod("setPhone", String.class),
                 PersonConfig.class.getDeclaredMethod("setHomePage", URI.class)));
 
-        Assert.assertEquals(instance.getName(), "Alice Apple");
-        Assert.assertEquals(instance.getEmail(), "alice@example.com");
-        Assert.assertEquals(instance.getPhone(), "1-976-alice");
-        Assert.assertEquals(instance.getHomePage(), URI.create("http://alice.example.com"));
+        assertEquals(instance.getName(), "Alice Apple");
+        assertEquals(instance.getEmail(), "alice@example.com");
+        assertEquals(instance.getPhone(), "1-976-alice");
+        assertEquals(instance.getHomePage(), URI.create("http://alice.example.com"));
 
-        Assert.assertEquals(config.getName(), "Alice Apple");
-        Assert.assertEquals(config.getEmail(), "alice@example.com");
-        Assert.assertEquals(config.getPhone(), "1-976-alice");
-        Assert.assertEquals(config.getHomePage(), URI.create("http://alice.example.com"));
+        assertEquals(config.getName(), "Alice Apple");
+        assertEquals(config.getEmail(), "alice@example.com");
+        assertEquals(config.getPhone(), "1-976-alice");
+        assertEquals(config.getHomePage(), URI.create("http://alice.example.com"));
     }
 
     @Test
     public void testRecordedDefaults()
             throws Exception
     {
-        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(PersonConfig.class)
+        assertRecordedDefaults(ConfigAssertions.recordDefaults(PersonConfig.class)
                 .setName("Dain")
                 .setEmail("dain@proofpoint.com")
                 .setPhone(null)
@@ -469,7 +472,7 @@ public class TestConfigAssertions
     public void testRecordedDefaultsOneOfEverything()
             throws Exception
     {
-        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(Config1.class)
+        assertRecordedDefaults(ConfigAssertions.recordDefaults(Config1.class)
                 .setBooleanOption(false)
                 .setBoxedBooleanOption(null)
                 .setBoxedByteOption(null)
@@ -497,7 +500,7 @@ public class TestConfigAssertions
     {
         boolean pass = true;
         try {
-            ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(PersonConfig.class)
+            assertRecordedDefaults(ConfigAssertions.recordDefaults(PersonConfig.class)
                     .setName("Dain")
                     .setEmail("dain@proofpoint.com")
                     .setPhone(null)
@@ -506,11 +509,11 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "HomePageUrl");
+            assertContains(e.getMessage(), "HomePageUrl");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -528,16 +531,16 @@ public class TestConfigAssertions
             // extra non setter method invoked
             config.hashCode();
 
-            ConfigAssertions.assertRecordedDefaults(config);
+            assertRecordedDefaults(config);
         }
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "hashCode()");
+            assertContains(e.getMessage(), "hashCode()");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -555,7 +558,7 @@ public class TestConfigAssertions
                 .setSimpleMap(ImmutableMap.of("email", "jenny@compuserve.com"))
                 .setSubMap(ImmutableMap.of("a", new SubConfig().setPhone("867-5309")));
 
-        ConfigAssertions.assertFullMapping(properties, expected);
+        assertFullMapping(properties, expected);
     }
 
     @Test
@@ -570,17 +573,17 @@ public class TestConfigAssertions
 
         boolean pass = true;
         try {
-            ConfigAssertions.assertFullMapping(properties, expected);
+            assertFullMapping(properties, expected);
         }
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "simple");
-            Assertions.assertContains(e.getMessage(), "sub");
+            assertContains(e.getMessage(), "simple");
+            assertContains(e.getMessage(), "sub");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -602,7 +605,7 @@ public class TestConfigAssertions
                 .put("sub-legacy.a.phone", "867-5309")
                 .build();
 
-        ConfigAssertions.assertDeprecatedEquivalence(MapConfig.class, currentProperties, oldProperties, olderProperties);
+        assertDeprecatedEquivalence(MapConfig.class, currentProperties, oldProperties, olderProperties);
     }
 
     static class PersonConfig
@@ -747,28 +750,22 @@ public class TestConfigAssertions
         }
 
         @Override
-        public boolean equals(Object o)
+        public int hashCode()
         {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
-            SubConfig subConfig = (SubConfig) o;
-
-            if (phone != null ? !phone.equals(subConfig.phone) : subConfig.phone != null) {
-                return false;
-            }
-
-            return true;
+            return Objects.hashCode(phone);
         }
 
         @Override
-        public int hashCode()
+        public boolean equals(Object obj)
         {
-            return phone != null ? phone.hashCode() : 0;
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null || getClass() != obj.getClass()) {
+                return false;
+            }
+            final SubConfig other = (SubConfig) obj;
+            return Objects.equal(this.phone, other.phone);
         }
     }
 
