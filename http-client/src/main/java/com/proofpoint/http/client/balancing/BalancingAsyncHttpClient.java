@@ -15,7 +15,6 @@
  */
 package com.proofpoint.http.client.balancing;
 
-
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.proofpoint.http.client.AsyncHttpClient;
@@ -36,7 +35,6 @@ import static java.lang.String.format;
 
 public final class BalancingAsyncHttpClient implements AsyncHttpClient
 {
-
     private final HttpServiceBalancer pool;
     private final AsyncHttpClient httpClient;
     private final int maxRetries;
@@ -48,7 +46,6 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
         this.httpClient = checkNotNull(httpClient, "httpClient is null");
         maxRetries = checkNotNull(config, "config is null").getMaxRetries();
     }
-
 
     @Override
     public <T, E extends Exception> AsyncHttpResponseFuture<T, E> executeAsync(Request request, ResponseHandler<T, E> responseHandler)

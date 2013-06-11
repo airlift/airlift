@@ -15,13 +15,17 @@
  */
 package com.proofpoint.http.client.balancing;
 
+import com.google.common.collect.ImmutableSet;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
 
+import java.util.Set;
+
 final class RetryingResponseHandler<T, E extends Exception>
         implements ResponseHandler<T, RetryException>
 {
+    private static final Set<Integer> RETRYABLE_STATUS_CODES = ImmutableSet.of(408, 500, 502, 503, 504);
     private final Request originalRequest;
     private final ResponseHandler<T, E> innerHandler;
 
@@ -41,25 +45,20 @@ final class RetryingResponseHandler<T, E extends Exception>
     public T handle(Request request, Response response)
             throws RetryException
     {
-        switch (response.getStatusCode()) {
-            case 408:
-            case 500:
-            case 502:
-            case 503:
-            case 504:
-                String retryHeader = response.getHeader("X-Proofpoint-Retry");
-                if (!("no".equalsIgnoreCase(retryHeader))) {
-                    throw new RetryException();
-                }
+        if (RETRYABLE_STATUS_CODES.contains(response.getStatusCode())) {
+            String retryHeader = response.getHeader("X-Proofpoint-Retry");
+            if (!("no".equalsIgnoreCase(retryHeader))) {
+                throw new RetryException();
+            }
 
-                Object result;
-                try {
-                    result = innerHandler.handle(originalRequest, response);
-                }
-                catch (Exception e) {
-                    throw new InnerHandlerException(e);
-                }
-                throw new FailureStatusException(result);
+            Object result;
+            try {
+                result = innerHandler.handle(originalRequest, response);
+            }
+            catch (Exception e) {
+                throw new InnerHandlerException(e);
+            }
+            throw new FailureStatusException(result);
         }
 
         try {

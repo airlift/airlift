@@ -17,7 +17,6 @@ package com.proofpoint.http.client;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
@@ -27,6 +26,8 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import static com.google.common.base.Objects.equal;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 @Beta
 public class Request
@@ -38,13 +39,8 @@ public class Request
 
     public Request(URI uri, String method, ListMultimap<String, String> headers, BodyGenerator bodyGenerator)
     {
-        Preconditions.checkNotNull(uri, "uri is null");
-        Preconditions.checkNotNull(method, "method is null");
-        if (uri.getScheme() != null)
-        {
-            String scheme = uri.getScheme().toLowerCase();
-            Preconditions.checkArgument(!"http".equals(scheme) || !"https".equals(scheme), "uri scheme must be http or https: %s", uri);
-        }
+        checkNotNull(uri, "uri is null");
+        checkNotNull(method, "method is null");
 
         this.uri = validateUri(uri);
         this.method = method;
@@ -52,7 +48,8 @@ public class Request
         this.bodyGenerator = bodyGenerator;
     }
 
-    public static Request.Builder builder() {
+    public static Request.Builder builder()
+    {
         return new Builder();
     }
 
@@ -118,27 +115,33 @@ public class Request
     @Beta
     public static class Builder
     {
-        public static Builder prepareHead() {
+        public static Builder prepareHead()
+        {
             return new Builder().setMethod("HEAD");
         }
 
-        public static Builder prepareGet() {
+        public static Builder prepareGet()
+        {
             return new Builder().setMethod("GET");
         }
 
-        public static Builder preparePost() {
+        public static Builder preparePost()
+        {
             return new Builder().setMethod("POST");
         }
 
-        public static Builder preparePut() {
+        public static Builder preparePut()
+        {
             return new Builder().setMethod("PUT");
         }
 
-        public static Builder prepareDelete() {
+        public static Builder prepareDelete()
+        {
             return new Builder().setMethod("DELETE");
         }
 
-        public static Builder fromRequest(Request request) {
+        public static Builder fromRequest(Request request)
+        {
             Builder requestBuilder = new Builder();
             requestBuilder.setMethod(request.getMethod());
             requestBuilder.setBodyGenerator(request.getBodyGenerator());
@@ -186,14 +189,19 @@ public class Request
             return this;
         }
 
-        public Request build() {
+        public Request build()
+        {
             return new Request(uri, method, headers, bodyGenerator);
         }
     }
 
     private static URI validateUri(URI uri)
     {
-        Preconditions.checkArgument(uri.getPort() != 0, "Cannot make requests to HTTP port 0");
+        if (uri.getScheme() != null) {
+            String scheme = uri.getScheme().toLowerCase();
+            checkArgument(!"http".equals(scheme) || !"https".equals(scheme), "uri scheme must be http or https: %s", uri);
+        }
+        checkArgument(uri.getPort() != 0, "Cannot make requests to HTTP port 0");
         return uri;
     }
 }

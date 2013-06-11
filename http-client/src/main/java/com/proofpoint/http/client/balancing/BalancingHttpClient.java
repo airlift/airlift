@@ -28,7 +28,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class BalancingHttpClient implements HttpClient
 {
-
     private final HttpServiceBalancer pool;
     private final HttpClient httpClient;
     private final int maxRetries;

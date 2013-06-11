@@ -91,7 +91,7 @@ public class TestBalancingAsyncHttpClient
     }
 
     @Test
-    public void testHandlerException()
+    public void testDoesntRetryOnHandlerException()
             throws Exception
     {
         httpClient.expectCall("http://s1.example.com/v1/service", response);
