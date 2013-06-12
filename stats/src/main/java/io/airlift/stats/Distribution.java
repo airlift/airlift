@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 import org.weakref.jmx.Managed;
 
+import javax.annotation.concurrent.GuardedBy;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,6 +15,7 @@ public class Distribution
 {
     private final static double MAX_ERROR = 0.01;
 
+    @GuardedBy("this")
     private final QuantileDigest digest;
 
     public Distribution()
@@ -26,61 +28,61 @@ public class Distribution
         digest = new QuantileDigest(MAX_ERROR, alpha);
     }
 
-    public void add(long value)
+    public synchronized void add(long value)
     {
         digest.add(value);
     }
 
     @Managed
-    public double getMaxError()
+    public synchronized double getMaxError()
     {
         return digest.getConfidenceFactor();
     }
 
     @Managed
-    public double getCount()
+    public synchronized double getCount()
     {
         return digest.getCount();
     }
 
     @Managed
-    public long getP50()
+    public synchronized long getP50()
     {
         return digest.getQuantile(0.5);
     }
 
     @Managed
-    public long getP75()
+    public synchronized long getP75()
     {
         return digest.getQuantile(0.75);
     }
 
     @Managed
-    public long getP90()
+    public synchronized long getP90()
     {
         return digest.getQuantile(0.90);
     }
 
     @Managed
-    public long getP95()
+    public synchronized long getP95()
     {
         return digest.getQuantile(0.95);
     }
 
     @Managed
-    public long getP99()
+    public synchronized long getP99()
     {
         return digest.getQuantile(0.99);
     }
 
     @Managed
-    public long getMin()
+    public synchronized long getMin()
     {
         return digest.getMin();
     }
 
     @Managed
-    public long getMax()
+    public synchronized long getMax()
     {
         return digest.getMax();
     }
@@ -93,7 +95,10 @@ public class Distribution
             percentiles.add(i / 100.0);
         }
 
-        List<Long> values = digest.getQuantiles(percentiles);
+        List<Long> values;
+        synchronized (this) {
+            values = digest.getQuantiles(percentiles);
+        }
 
         Map<Double, Long> result = new LinkedHashMap<>(values.size());
         for (int i = 0; i < percentiles.size(); ++i) {

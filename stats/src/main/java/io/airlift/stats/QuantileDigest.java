@@ -13,8 +13,7 @@ import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.util.concurrent.AtomicDouble;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
+import javax.annotation.concurrent.NotThreadSafe;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -44,7 +43,7 @@ import static java.lang.String.format;
  * <p>This class also supports exponential decay. The implementation is based on the ideas laid out
  * in http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.159.3978</p>
  */
-@ThreadSafe
+@NotThreadSafe
 public class QuantileDigest
 {
     private static final int MAX_BITS = 64;
@@ -112,7 +111,7 @@ public class QuantileDigest
         landmarkInSeconds = TimeUnit.NANOSECONDS.toSeconds(ticker.read());
     }
 
-    public synchronized void add(long value)
+    public void add(long value)
     {
         add(value, 1);
     }
@@ -120,7 +119,7 @@ public class QuantileDigest
     /**
      * Adds a value to this digest. The value must be >= 0
      */
-    public synchronized void add(long value, long count)
+    public void add(long value, long count)
     {
         checkArgument(value >= 0, "value must be >= 0");
         checkArgument(count > 0, "count must be > 0");
@@ -147,7 +146,7 @@ public class QuantileDigest
         insert(value, weight);
     }
 
-    public synchronized void merge(QuantileDigest other)
+    public void merge(QuantileDigest other)
     {
         rescaleToCommonLandmark(this, other);
 
@@ -165,7 +164,7 @@ public class QuantileDigest
      * Gets the values at the specified quantiles +/- maxError. The list of quantiles must be sorted
      * in increasing order, and each value must be in the range [0, 1]
      */
-    public synchronized List<Long> getQuantiles(List<Double> quantiles)
+    public List<Long> getQuantiles(List<Double> quantiles)
     {
         checkArgument(Ordering.natural().isOrdered(quantiles), "quantiles must be sorted in increasing order");
         for (double quantile : quantiles) {
@@ -210,7 +209,7 @@ public class QuantileDigest
     /**
      * Gets the value at the specified quantile +/- maxError. The quantile must be in the range [0, 1]
      */
-    public synchronized long getQuantile(double quantile)
+    public long getQuantile(double quantile)
     {
         return getQuantiles(ImmutableList.of(quantile)).get(0);
     }
@@ -218,7 +217,7 @@ public class QuantileDigest
     /**
      * Number (decayed) of elements added to this quantile digest
      */
-    public synchronized double getCount()
+    public double getCount()
     {
         return weightedCount / weight(TimeUnit.NANOSECONDS.toSeconds(ticker.read()));
     }
@@ -231,7 +230,7 @@ public class QuantileDigest
     * The approximate count in each bucket is guaranteed to be within 2 * totalCount * maxError of
     * the real count.
     */
-    public synchronized List<Bucket> getHistogram(List<Long> bucketUpperBounds)
+    public List<Bucket> getHistogram(List<Long> bucketUpperBounds)
     {
         checkArgument(
                 Ordering.natural().isOrdered(bucketUpperBounds),
@@ -322,25 +321,25 @@ public class QuantileDigest
     }
 
     @VisibleForTesting
-    synchronized int getTotalNodeCount()
+    int getTotalNodeCount()
     {
         return totalNodeCount;
     }
 
     @VisibleForTesting
-    synchronized int getNonZeroNodeCount()
+    int getNonZeroNodeCount()
     {
         return nonZeroNodeCount;
     }
 
     @VisibleForTesting
-    synchronized int getCompressions()
+    int getCompressions()
     {
         return compressions;
     }
 
     @VisibleForTesting
-    synchronized void compress()
+    void compress()
     {
         ++compressions;
 
@@ -671,7 +670,7 @@ public class QuantileDigest
     /**
      * Computes the maximum error of the current digest
      */
-    public synchronized double getConfidenceFactor()
+    public double getConfidenceFactor()
     {
         return computeMaxPathWeight(root) * 1.0 / weightedCount;
     }
@@ -725,7 +724,7 @@ public class QuantileDigest
     }
 
     @VisibleForTesting
-    synchronized void validate()
+    void validate()
     {
         final AtomicDouble sumOfWeights = new AtomicDouble();
         final AtomicInteger actualNodeCount = new AtomicInteger();
