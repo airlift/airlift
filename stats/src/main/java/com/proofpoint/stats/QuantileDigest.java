@@ -63,8 +63,6 @@ public class QuantileDigest
     private int totalNodeCount = 0;
     private int nonZeroNodeCount = 0;
     private int compressions = 0;
-    private int maxTotalNodeCount = 0;
-    private int maxTotalNodesAfterCompress = 0;
 
     private enum TraversalOrder
     {
@@ -371,8 +369,6 @@ public class QuantileDigest
         if (root != null && root.weightedCount < ZERO_WEIGHT_THRESHOLD) {
             root = tryRemove(root);
         }
-
-        maxTotalNodesAfterCompress = Math.max(maxTotalNodesAfterCompress, totalNodeCount);
     }
 
     private double weight(long timestamp)
@@ -493,7 +489,6 @@ public class QuantileDigest
         }
 
         ++totalNodeCount;
-        maxTotalNodeCount = Math.max(maxTotalNodeCount, totalNodeCount);
 
         return parent;
     }
@@ -501,7 +496,6 @@ public class QuantileDigest
     private Node createLeaf(long value, double weight)
     {
         ++totalNodeCount;
-        maxTotalNodeCount = Math.max(maxTotalNodeCount, totalNodeCount);
         ++nonZeroNodeCount;
         return new Node(value, 0, weight);
     }
