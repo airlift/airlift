@@ -37,14 +37,14 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
 {
     private final HttpServiceBalancer pool;
     private final AsyncHttpClient httpClient;
-    private final int maxRetries;
+    private final int maxAttempts;
 
     @Inject
     public BalancingAsyncHttpClient(@ForBalancingHttpClient HttpServiceBalancer pool, @ForBalancingHttpClient AsyncHttpClient httpClient, BalancingHttpClientConfig config)
     {
         this.pool = checkNotNull(pool, "pool is null");
         this.httpClient = checkNotNull(httpClient, "httpClient is null");
-        maxRetries = checkNotNull(config, "config is null").getMaxRetries();
+        maxAttempts = checkNotNull(config, "config is null").getMaxAttempts();
     }
 
     @Override
@@ -63,10 +63,10 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
             return new ImmediateFailedAsyncHttpResponseFuture<>(responseHandler.handleException(request, e));
         }
 
-        return attemptQuery(request, responseHandler, attempt, maxRetries);
+        return attemptQuery(request, responseHandler, attempt, maxAttempts);
     }
 
-    private <T, E extends Exception> AsyncHttpResponseFuture<T, E> attemptQuery(Request request, ResponseHandler<T, E> responseHandler, HttpServiceAttempt attempt, int retriesLeft)
+    private <T, E extends Exception> AsyncHttpResponseFuture<T, E> attemptQuery(Request request, ResponseHandler<T, E> responseHandler, HttpServiceAttempt attempt, int attemptsLeft)
     {
         RetryingResponseHandler<T, E> retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler);
 
@@ -79,10 +79,10 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
                 .setUri(uri.resolve(request.getUri()))
                 .build();
 
-        if (retriesLeft > 0) {
-            --retriesLeft;
+        if (attemptsLeft > 1) {
+            --attemptsLeft;
             AsyncHttpResponseFuture<T, RetryException> future = httpClient.executeAsync(subRequest, retryingResponseHandler);
-            return new RetryFuture<>(future, request, responseHandler, attempt, uri, retriesLeft);
+            return new RetryFuture<>(future, request, responseHandler, attempt, uri, attemptsLeft);
         }
         else {
             return httpClient.executeAsync(subRequest, responseHandler);

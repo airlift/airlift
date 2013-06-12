@@ -30,14 +30,14 @@ public final class BalancingHttpClient implements HttpClient
 {
     private final HttpServiceBalancer pool;
     private final HttpClient httpClient;
-    private final int maxRetries;
+    private final int maxAttempts;
 
     @Inject
     public BalancingHttpClient(@ForBalancingHttpClient HttpServiceBalancer pool, @ForBalancingHttpClient HttpClient httpClient, BalancingHttpClientConfig config)
     {
         this.pool = checkNotNull(pool, "pool is null");
         this.httpClient = checkNotNull(httpClient, "httpClient is null");
-        maxRetries = checkNotNull(config, "config is null").getMaxRetries();
+        maxAttempts = checkNotNull(config, "config is null").getMaxAttempts();
     }
 
 
@@ -57,7 +57,7 @@ public final class BalancingHttpClient implements HttpClient
         catch (RuntimeException e) {
             throw responseHandler.handleException(request, e);
         }
-        int retriesLeft = maxRetries;
+        int attemptsLeft = maxAttempts;
 
         RetryingResponseHandler<T, E> retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler);
 
@@ -71,8 +71,8 @@ public final class BalancingHttpClient implements HttpClient
                     .setUri(uri.resolve(request.getUri()))
                     .build();
 
-            if (retriesLeft > 0) {
-                --retriesLeft;
+            if (attemptsLeft > 1) {
+                --attemptsLeft;
                 try {
                     T t = httpClient.execute(subRequest, retryingResponseHandler);
                     attempt.markGood();

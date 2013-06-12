@@ -57,7 +57,7 @@ public class TestBalancingHttpClient
         when(serviceAttempt3.tryNext()).thenThrow(new AssertionError("Unexpected call to serviceAttempt3.tryNext()"));
         httpClient = new TestingHttpClient("PUT");
         balancingHttpClient = new BalancingHttpClient(serviceBalancer, httpClient,
-                new BalancingHttpClientConfig().setMaxRetries(2));
+                new BalancingHttpClientConfig().setMaxAttempts(3));
         bodyGenerator = mock(BodyGenerator.class);
         request = preparePut().setUri(URI.create("v1/service")).setBodyGenerator(bodyGenerator).build();
         response = mock(Response.class);
@@ -430,7 +430,7 @@ public class TestBalancingHttpClient
         when(serviceBalancer.createAttempt()).thenThrow(balancerException);
 
         balancingHttpClient = new BalancingHttpClient(serviceBalancer, httpClient,
-                new BalancingHttpClientConfig().setMaxRetries(2));
+                new BalancingHttpClientConfig().setMaxAttempts(3));
 
         ResponseHandler responseHandler = mock(ResponseHandler.class);
         RuntimeException handlerException = new RuntimeException("test responseHandler exception");
@@ -464,7 +464,7 @@ public class TestBalancingHttpClient
         when(serviceAttempt1.tryNext()).thenThrow(balancerException);
 
         balancingHttpClient = new BalancingHttpClient(serviceBalancer, httpClient,
-                new BalancingHttpClientConfig().setMaxRetries(2));
+                new BalancingHttpClientConfig().setMaxAttempts(3));
 
         ResponseHandler responseHandler = mock(ResponseHandler.class);
         RuntimeException handlerException = new RuntimeException("test responseHandler exception");

@@ -17,19 +17,22 @@ package com.proofpoint.http.client.balancing;
 
 import com.proofpoint.configuration.Config;
 
+import javax.validation.constraints.Min;
+
 public class BalancingHttpClientConfig
 {
-    private int maxRetries = 2;
+    private int maxAttempts = 3;
 
-    public int getMaxRetries()
+    @Min(1)
+    public int getMaxAttempts()
     {
-        return maxRetries;
+        return maxAttempts;
     }
 
-    @Config("http-client.max-retries")
-    public BalancingHttpClientConfig setMaxRetries(int maxRetries)
+    @Config("http-client.max-attempts")
+    public BalancingHttpClientConfig setMaxAttempts(int maxAttempts)
     {
-        this.maxRetries = maxRetries;
+        this.maxAttempts = maxAttempts;
         return this;
     }
 }
