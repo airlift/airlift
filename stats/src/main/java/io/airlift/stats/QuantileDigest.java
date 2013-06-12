@@ -105,12 +105,18 @@ public class QuantileDigest
         landmarkInSeconds = TimeUnit.NANOSECONDS.toSeconds(ticker.read());
     }
 
+    public synchronized void add(long value)
+    {
+        add(value, 1);
+    }
+
     /**
      * Adds a value to this digest. The value must be >= 0
      */
-    public synchronized void add(long value)
+    public synchronized void add(long value, long count)
     {
         checkArgument(value >= 0, "value must be >= 0");
+        checkArgument(count > 0, "count must be > 0");
 
         long nowInSeconds = TimeUnit.NANOSECONDS.toSeconds(ticker.read());
 
@@ -127,12 +133,25 @@ public class QuantileDigest
             compress();
         }
 
-        double weight = weight(TimeUnit.NANOSECONDS.toSeconds(ticker.read()));
-        weightedCount += weight;
+        double weight = weight(TimeUnit.NANOSECONDS.toSeconds(ticker.read())) * count;
 
         max = Math.max(max, value);
         min = Math.min(min, value);
         insert(value, weight);
+    }
+
+    public synchronized void merge(QuantileDigest other)
+    {
+        rescaleToCommonLandmark(this, other);
+
+        // 2. merge other into this (don't modify other)
+        root = merge(root, other.root);
+
+        max = Math.max(max, other.max);
+        min = Math.min(min, other.min);
+
+        // 3. compress to remove unnecessary nodes
+        compress();
     }
 
     /**
@@ -440,6 +459,8 @@ public class QuantileDigest
                     ++nonZeroNodeCount;
                 }
 
+                weightedCount += weight;
+
                 return;
             }
 
@@ -475,7 +496,7 @@ public class QuantileDigest
     {
         int parentLevel = MAX_BITS - Long.numberOfLeadingZeros(node.value ^ sibling.value);
 
-        Node parent = new Node(node.value, parentLevel, 0);
+        Node parent = createNode(node.value, parentLevel, 0);
 
         // the branch is given by the bit at the level one below parent
         long branch = sibling.value & parent.getBranchMask();
@@ -488,16 +509,89 @@ public class QuantileDigest
             parent.right = sibling;
         }
 
-        ++totalNodeCount;
-
         return parent;
     }
 
     private Node createLeaf(long value, double weight)
     {
+        return createNode(value, 0, weight);
+    }
+
+    private Node createNode(long value, int level, double weight)
+    {
+        weightedCount += weight;
         ++totalNodeCount;
-        ++nonZeroNodeCount;
-        return new Node(value, 0, weight);
+        if (weight > ZERO_WEIGHT_THRESHOLD) {
+            nonZeroNodeCount++;
+        }
+        return new Node(value, level, weight);
+    }
+
+    private Node merge(Node node, Node other)
+    {
+        if (node == null) {
+            return copyRecursive(other);
+        }
+        else if (other == null) {
+            return node;
+        }
+        else if (node.level > other.level) {
+            long branch = other.value & node.getBranchMask();
+
+            if (branch == 0) {
+                node.left = merge(node.left, other);
+            }
+            else {
+                node.right = merge(node.right, other);
+            }
+            return node;
+        }
+        else if (node.level < other.level) {
+            Node result = createNode(other.value, other.level, other.weightedCount);
+
+            long branch = node.value & other.getBranchMask();
+            if (branch == 0) {
+                result.left = merge(node, other.left);
+                result.right = copyRecursive(other.right);
+            }
+            else {
+                result.left = copyRecursive(other.left);
+                result.right = merge(node, other.right);
+            }
+
+            return result;
+        }
+        else if ((node.value >>> node.level) != (other.value >>> other.level)) {
+            // if they are at the same level but on completely different paths...
+            return makeSiblings(node, copyRecursive(other));
+        }
+
+        // else, they must be at the same level and on the same path, so just bump the counts
+        double oldWeight = node.weightedCount;
+
+        weightedCount += other.weightedCount;
+        node.weightedCount = node.weightedCount + other.weightedCount;
+        node.left = merge(node.left, other.left);
+        node.right = merge(node.right, other.right);
+
+        if (oldWeight < ZERO_WEIGHT_THRESHOLD && node.weightedCount > ZERO_WEIGHT_THRESHOLD) {
+            nonZeroNodeCount++;
+        }
+
+        return node;
+    }
+
+    private Node copyRecursive(Node node)
+    {
+        Node result = null;
+
+        if (node != null) {
+            result = createNode(node.value, node.level, node.weightedCount);
+            result.left = copyRecursive(node.left);
+            result.right = copyRecursive(node.right);
+        }
+
+        return result;
     }
 
     /**
@@ -573,6 +667,38 @@ public class QuantileDigest
     public synchronized double getConfidenceFactor()
     {
         return computeMaxPathWeight(root) * 1.0 / weightedCount;
+    }
+
+    public boolean equivalent(QuantileDigest other)
+    {
+        rescaleToCommonLandmark(this, other);
+
+        return (totalNodeCount == other.totalNodeCount &&
+                nonZeroNodeCount == other.nonZeroNodeCount &&
+                min == other.min &&
+                max == other.max &&
+                weightedCount == other.weightedCount &&
+                Objects.equal(root, other.root));
+    }
+
+    private void rescaleToCommonLandmark(QuantileDigest one, QuantileDigest two)
+    {
+        long nowInSeconds = TimeUnit.NANOSECONDS.toSeconds(ticker.read());
+
+        // 1. rescale this and other to common landmark
+        long targetLandmark = Math.max(one.landmarkInSeconds, two.landmarkInSeconds);
+
+        if (nowInSeconds - targetLandmark >= RESCALE_THRESHOLD_SECONDS) {
+            targetLandmark = nowInSeconds;
+        }
+
+        if (targetLandmark != one.landmarkInSeconds) {
+            one.rescale(targetLandmark);
+        }
+
+        if (targetLandmark != two.landmarkInSeconds) {
+            two.rescale(targetLandmark);
+        }
     }
 
     /**
@@ -783,6 +909,29 @@ public class QuantileDigest
         {
             return format("%s (level = %d, count = %s, left = %s, right = %s)", value, level,
                     weightedCount, left != null, right != null);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hashCode(weightedCount, level, value, left, right);
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null || getClass() != obj.getClass()) {
+                return false;
+            }
+            final Node other = (Node) obj;
+            return Objects.equal(this.weightedCount, other.weightedCount) &&
+                    Objects.equal(this.level, other.level) &&
+                    Objects.equal(this.value, other.value) &&
+                    Objects.equal(this.left, other.left) &&
+                    Objects.equal(this.right, other.right);
         }
     }
 
