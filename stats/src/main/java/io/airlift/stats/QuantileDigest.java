@@ -1,17 +1,24 @@
 package io.airlift.stats;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.util.concurrent.AtomicDouble;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -785,6 +792,70 @@ public class QuantileDigest
         Preconditions.checkState(parent.weightedCount >= ZERO_WEIGHT_THRESHOLD ||
                 child.weightedCount >= ZERO_WEIGHT_THRESHOLD || otherChild != null,
                 "Found a linear chain of zero-weight nodes");
+    }
+
+    public String toGraphviz()
+    {
+        StringBuilder builder = new StringBuilder();
+
+        builder.append("digraph QuantileDigest {\n")
+                .append("\tgraph [ordering=\"out\"];");
+
+        final List<Node> nodes = new ArrayList<>();
+        postOrderTraversal(root, new Callback()
+        {
+            @Override
+            public boolean process(Node node)
+            {
+                nodes.add(node);
+                return true;
+            }
+        });
+
+        Multimap<Integer, Node> nodesByLevel = Multimaps.index(nodes, new Function<Node, Integer>()
+        {
+            @Override
+            public Integer apply(Node input)
+            {
+                return input.level;
+            }
+        });
+
+        for (Map.Entry<Integer, Collection<Node>> entry : nodesByLevel.asMap().entrySet()) {
+            builder.append("\tsubgraph level_" + entry.getKey() + " {\n")
+                    .append("\t\trank = same;\n");
+
+            for (Node node : entry.getValue()) {
+                builder.append(String.format("\t\t%s [label=\"[%s..%s]@%s\\n%s\", shape=rect, style=filled,color=%s];\n",
+                        idFor(node),
+                        node.getLowerBound(),
+                        node.getUpperBound(),
+                        node.level,
+                        node.weightedCount,
+                        node.weightedCount > 0 ? "salmon2" : "white")
+                );
+            }
+
+            builder.append("\t}\n");
+        }
+
+        for (Node node : nodes) {
+            if (node.left != null) {
+                builder.append(format("\t%s -> %s;\n", idFor(node), idFor(node.left)));
+            }
+            if (node.right != null) {
+                builder.append(format("\t%s -> %s;\n", idFor(node), idFor(node.right)));
+            }
+        }
+
+        builder.append("}\n");
+
+        return builder.toString();
+    }
+
+    private static String idFor(Node node)
+    {
+        return String.format("node_%s_%s", node.value, node.level);
     }
 
     public static class Bucket
