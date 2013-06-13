@@ -646,7 +646,7 @@ public class QuantileDigest
     {
         weightedCount += weight;
         ++totalNodeCount;
-        if (weight > ZERO_WEIGHT_THRESHOLD) {
+        if (weight >= ZERO_WEIGHT_THRESHOLD) {
             nonZeroNodeCount++;
         }
         return new Node(value, level, weight);
@@ -699,7 +699,7 @@ public class QuantileDigest
         node.left = merge(node.left, other.left);
         node.right = merge(node.right, other.right);
 
-        if (oldWeight < ZERO_WEIGHT_THRESHOLD && node.weightedCount > ZERO_WEIGHT_THRESHOLD) {
+        if (oldWeight < ZERO_WEIGHT_THRESHOLD && node.weightedCount >= ZERO_WEIGHT_THRESHOLD) {
             nonZeroNodeCount++;
         }
 
@@ -860,7 +860,7 @@ public class QuantileDigest
                     sumOfWeights.addAndGet(node.weightedCount);
                     actualNodeCount.incrementAndGet();
 
-                    if (node.weightedCount > ZERO_WEIGHT_THRESHOLD) {
+                    if (node.weightedCount >= ZERO_WEIGHT_THRESHOLD) {
                         actualNonZeroNodeCount.incrementAndGet();
                     }
 
