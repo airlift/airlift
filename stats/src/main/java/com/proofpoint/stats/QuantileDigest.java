@@ -238,10 +238,7 @@ public class QuantileDigest
     */
     public List<Bucket> getHistogram(List<Long> bucketUpperBounds)
     {
-        checkArgument(
-                Ordering.natural().isOrdered(bucketUpperBounds),
-                "buckets must be sorted in increasing order"
-        );
+        checkArgument(Ordering.natural().isOrdered(bucketUpperBounds), "buckets must be sorted in increasing order");
 
         final ImmutableList.Builder<Bucket> builder = ImmutableList.builder();
         final PeekingIterator<Long> iterator = Iterators.peekingIterator(bucketUpperBounds.iterator());
@@ -262,8 +259,7 @@ public class QuantileDigest
                 while (iterator.hasNext() && iterator.peek() <= node.getUpperBound()) {
                     double bucketCount = sum.get() - lastSum.get();
 
-                    Bucket bucket = new Bucket(
-                            bucketCount / normalizationFactor, bucketWeightedSum.get() / bucketCount);
+                    Bucket bucket = new Bucket(bucketCount / normalizationFactor, bucketWeightedSum.get() / bucketCount);
 
                     builder.add(bucket);
                     lastSum.set(sum.get());
@@ -279,8 +275,7 @@ public class QuantileDigest
 
         while (iterator.hasNext()) {
             double bucketCount = sum.get() - lastSum.get();
-            Bucket bucket = new Bucket(
-                    bucketCount / normalizationFactor, bucketWeightedSum.get() / bucketCount);
+            Bucket bucket = new Bucket(bucketCount / normalizationFactor, bucketWeightedSum.get() / bucketCount);
 
             builder.add(bucket);
 
@@ -910,13 +905,10 @@ public class QuantileDigest
 
     private void validateBranchStructure(Node parent, Node child, Node otherChild, boolean isLeft)
     {
-        checkState(child.level < parent.level,
-                "Child level (%s) should be smaller than parent level (%s)", child.level,
-                parent.level);
+        checkState(child.level < parent.level, "Child level (%s) should be smaller than parent level (%s)", child.level, parent.level);
 
         long branch = child.bits & (1L << (parent.level - 1));
-        checkState(branch == 0 && isLeft || branch != 0 && !isLeft,
-                "Value of child node is inconsistent with its branch");
+        checkState(branch == 0 && isLeft || branch != 0 && !isLeft, "Value of child node is inconsistent with its branch");
 
         Preconditions.checkState(parent.weightedCount >= ZERO_WEIGHT_THRESHOLD ||
                 child.weightedCount >= ZERO_WEIGHT_THRESHOLD || otherChild != null,
