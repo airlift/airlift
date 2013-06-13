@@ -1,21 +1,19 @@
 package io.airlift.stats;
 
+import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import org.testng.annotations.Test;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import io.airlift.log.Logger;
-
 import static java.util.Arrays.asList;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class TestQuantileDigest
 {
-    private static final Logger log = Logger.get(TestQuantileDigest.class);
-
     @Test
     public void testSingleAdd()
     {
@@ -386,6 +384,243 @@ public class TestQuantileDigest
         }
 
         assertEquals(digest.getTotalNodeCount(), 1);
+    }
+
+    @Test
+    public void testEquivalenceEmpty()
+            throws Exception
+    {
+        QuantileDigest a = new QuantileDigest(0.01);
+        QuantileDigest b = new QuantileDigest(0.01);
+
+        assertTrue(a.equivalent(b));
+    }
+
+    @Test
+    public void testEquivalenceSingle()
+            throws Exception
+    {
+        QuantileDigest a = new QuantileDigest(0.01);
+        QuantileDigest b = new QuantileDigest(0.01);
+
+        a.add(1);
+        b.add(1);
+
+        assertTrue(a.equivalent(b));
+    }
+
+    @Test
+    public void testEquivalenceSingleDifferent()
+            throws Exception
+    {
+        QuantileDigest a = new QuantileDigest(0.01);
+        QuantileDigest b = new QuantileDigest(0.01);
+
+        a.add(1);
+        b.add(2);
+
+        assertFalse(a.equivalent(b));
+    }
+
+    @Test
+    public void testEquivalenceComplex()
+            throws Exception
+    {
+        QuantileDigest a = new QuantileDigest(0.01);
+        QuantileDigest b = new QuantileDigest(0.01);
+
+        addAll(a, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
+        addAll(b, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
+
+        assertTrue(a.equivalent(b));
+    }
+
+    @Test
+    public void testEquivalenceComplexDifferent()
+            throws Exception
+    {
+        QuantileDigest a = new QuantileDigest(0.01);
+        QuantileDigest b = new QuantileDigest(0.01);
+
+        addAll(a, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
+        addAll(b, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7, 8));
+
+        assertFalse(a.equivalent(b));
+    }
+
+    @Test
+    public void testMergeEmpty()
+            throws Exception
+    {
+        QuantileDigest a = new QuantileDigest(0.01);
+        QuantileDigest b = new QuantileDigest(0.01);
+        QuantileDigest pristineB = new QuantileDigest(0.01);
+
+        a.merge(b);
+
+        a.validate();
+        b.validate();
+
+        assertTrue(b.equivalent(pristineB));
+
+        assertEquals(a.getCount(), 0.0);
+        assertEquals(a.getTotalNodeCount(), 0);
+
+        assertEquals(b.getCount(), 0.0);
+        assertEquals(b.getTotalNodeCount(), 0);
+    }
+
+    @Test
+    public void testMergeIntoEmpty()
+            throws Exception
+    {
+        QuantileDigest a = new QuantileDigest(0.01);
+        QuantileDigest b = new QuantileDigest(0.01);
+        QuantileDigest pristineB = new QuantileDigest(0.01);
+
+        b.add(1);
+        pristineB.add(1);
+
+        a.merge(b);
+
+        a.validate();
+        b.validate();
+
+        assertTrue(b.equivalent(pristineB));
+
+        assertEquals(a.getCount(), 1.0);
+        assertEquals(a.getTotalNodeCount(), 1);
+
+        assertEquals(b.getCount(), 1.0);
+        assertEquals(b.getTotalNodeCount(), 1);
+    }
+
+    @Test
+    public void testMergeWithEmpty()
+            throws Exception
+    {
+        QuantileDigest a = new QuantileDigest(0.01);
+        QuantileDigest b = new QuantileDigest(0.01);
+        QuantileDigest pristineB = new QuantileDigest(0.01);
+
+        a.add(1);
+        a.merge(b);
+
+        a.validate();
+        b.validate();
+
+        assertTrue(b.equivalent(pristineB));
+
+        assertEquals(a.getCount(), 1.0);
+        assertEquals(a.getTotalNodeCount(), 1);
+
+        assertEquals(b.getCount(), 0.0);
+        assertEquals(b.getTotalNodeCount(), 0);
+    }
+
+    @Test
+    public void testMergeSeparateBranches()
+            throws Exception
+    {
+        QuantileDigest a = new QuantileDigest(0.01);
+        QuantileDigest b = new QuantileDigest(0.01);
+        QuantileDigest pristineB = new QuantileDigest(0.01);
+
+        a.add(1);
+
+        b.add(2);
+        pristineB.add(2);
+
+        a.merge(b);
+
+        assertTrue(b.equivalent(pristineB));
+
+        assertEquals(a.getCount(), 2.0);
+        assertEquals(a.getTotalNodeCount(), 3);
+
+        assertEquals(b.getCount(), 1.0);
+        assertEquals(b.getTotalNodeCount(), 1);
+    }
+
+    @Test
+    public void testMergeWithLowerLevel()
+            throws Exception
+    {
+        QuantileDigest a = new QuantileDigest(1, 0, Ticker.systemTicker(), false);
+        QuantileDigest b = new QuantileDigest(1, 0, Ticker.systemTicker(), false);
+        QuantileDigest pristineB = new QuantileDigest(1, 0, Ticker.systemTicker(), false);
+
+        a.add(6);
+        a.compress();
+
+        List<Integer> values = asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5);
+
+        addAll(b, values);
+        b.compress();
+
+        addAll(pristineB, values);
+        pristineB.compress();
+
+        a.merge(b);
+
+        assertTrue(b.equivalent(pristineB));
+
+        assertEquals(a.getCount(), 14.0);
+        assertEquals(a.getTotalNodeCount(), 5);
+
+        assertEquals(b.getCount(), 13.0);
+        assertEquals(b.getTotalNodeCount(), 4);
+    }
+
+
+    @Test
+    public void testMergeWithHigherLevel()
+            throws Exception
+    {
+        QuantileDigest a = new QuantileDigest(1, 0, Ticker.systemTicker(), false);
+        QuantileDigest b = new QuantileDigest(1, 0, Ticker.systemTicker(), false);
+        QuantileDigest pristineB = new QuantileDigest(1, 0, Ticker.systemTicker(), false);
+
+        addAll(a, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5));
+
+        a.compress();
+
+        addAll(b, asList(6, 7));
+        addAll(pristineB, asList(6, 7));
+
+        a.merge(b);
+
+        assertTrue(b.equivalent(pristineB));
+
+        assertEquals(a.getCount(), 15.0);
+        assertEquals(a.getTotalNodeCount(), 5);
+
+        assertEquals(b.getCount(), 2.0);
+        assertEquals(b.getTotalNodeCount(), 3);
+    }
+
+
+    @Test
+    public void testMergeSameLevel()
+            throws Exception
+    {
+        QuantileDigest a = new QuantileDigest(1, 0, Ticker.systemTicker(), false);
+        QuantileDigest b = new QuantileDigest(1, 0, Ticker.systemTicker(), false);
+        QuantileDigest pristineB = new QuantileDigest(1, 0, Ticker.systemTicker(), false);
+
+        a.add(0);
+        b.add(0);
+        pristineB.add(0);
+
+        a.merge(b);
+
+        assertTrue(b.equivalent(pristineB));
+
+        assertEquals(a.getCount(), 2.0);
+        assertEquals(a.getTotalNodeCount(), 1);
+
+        assertEquals(b.getCount(), 1.0);
+        assertEquals(b.getTotalNodeCount(), 1);
     }
 
     private void addAll(QuantileDigest digest, List<Integer> values)
