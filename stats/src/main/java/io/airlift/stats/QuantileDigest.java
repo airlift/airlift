@@ -326,8 +326,12 @@ public class QuantileDigest
         return Math.min(max, chosen.get());
     }
 
+    public int estimatedInMemorySizeInBytes()
+    {
+        return UnsafeUtil.sizeOf(QuantileDigest.class) + totalNodeCount * UnsafeUtil.sizeOf(Node.class);
+    }
 
-    public int estimatedSizeInBytes()
+    public int estimatedSerializedSizeInBytes()
     {
         int estimatedNodeSize = SizeOf.BYTE + // flags
                 SizeOf.BYTE + // level
