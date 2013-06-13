@@ -574,10 +574,10 @@ public class TestQuantileDigest
         assertTrue(b.equivalent(pristineB));
 
         assertEquals(a.getCount(), 14.0);
-        assertEquals(a.getTotalNodeCount(), 5);
+        assertEquals(a.getTotalNodeCount(), 7);
 
         assertEquals(b.getCount(), 13.0);
-        assertEquals(b.getTotalNodeCount(), 4);
+        assertEquals(b.getTotalNodeCount(), 6);
     }
 
 
@@ -601,7 +601,7 @@ public class TestQuantileDigest
         assertTrue(b.equivalent(pristineB));
 
         assertEquals(a.getCount(), 15.0);
-        assertEquals(a.getTotalNodeCount(), 5);
+        assertEquals(a.getTotalNodeCount(), 7);
 
         assertEquals(b.getCount(), 2.0);
         assertEquals(b.getTotalNodeCount(), 3);
