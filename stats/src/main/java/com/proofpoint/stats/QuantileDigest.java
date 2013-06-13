@@ -484,8 +484,7 @@ public class QuantileDigest
                     rightWeight = node.right.weightedCount;
                 }
 
-                boolean shouldCompress = node.weightedCount + leftWeight + rightWeight <
-                        weightedCount / compressionFactor;
+                boolean shouldCompress = node.weightedCount + leftWeight + rightWeight < (int) (weightedCount / compressionFactor);
 
                 double oldNodeWeight = node.weightedCount;
                 if (shouldCompress || leftWeight < ZERO_WEIGHT_THRESHOLD) {
