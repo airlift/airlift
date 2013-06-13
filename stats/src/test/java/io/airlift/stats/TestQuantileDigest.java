@@ -39,6 +39,15 @@ public class TestQuantileDigest
     }
 
     @Test
+    public void testNegativeValues()
+    {
+        QuantileDigest digest = new QuantileDigest(1);
+        addAll(digest, asList(-1, -2, -3, -4, -5, 0, 1, 2, 3, 4, 5));
+
+        assertEquals(digest.getCount(), (double) 11);
+    }
+
+    @Test
     public void testRepeatedValue()
     {
         QuantileDigest digest = new QuantileDigest(1);
@@ -607,6 +616,29 @@ public class TestQuantileDigest
         assertEquals(b.getTotalNodeCount(), 3);
     }
 
+    // test merging two digests that have a node at the highest level to make sure
+    // we handle boundary conditions properly
+    @Test
+    public void testMergeMaxLevel()
+            throws Exception
+    {
+        QuantileDigest a = new QuantileDigest(0.01);
+        QuantileDigest b = new QuantileDigest(0.01);
+        QuantileDigest pristineB = new QuantileDigest(0.01);
+
+        addAll(a, asList(-1, 1));
+        addAll(b, asList(-2, 2));
+        addAll(pristineB, asList(-2, 2));
+        a.merge(b);
+
+        a.validate();
+        b.validate();
+
+        assertTrue(b.equivalent(pristineB));
+
+        assertEquals(a.getCount(), 4.0);
+        assertEquals(a.getTotalNodeCount(), 7);
+    }
 
     @Test
     public void testMergeSameLevel()
@@ -690,7 +722,7 @@ public class TestQuantileDigest
     private byte[] serialize(QuantileDigest digest)
             throws IOException
     {
-        ByteArrayOutputStream out = new ByteArrayOutputStream(digest.estimatedSizeInBytes());
+        ByteArrayOutputStream out = new ByteArrayOutputStream(digest.estimatedSerializedSizeInBytes());
         digest.serialize(new DataOutputStream(out));
         return out.toByteArray();
     }
