@@ -4,6 +4,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
@@ -14,8 +15,13 @@ import com.google.common.collect.PeekingIterator;
 import com.google.common.util.concurrent.AtomicDouble;
 
 import javax.annotation.concurrent.NotThreadSafe;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -318,6 +324,119 @@ public class QuantileDigest
         }, TraversalOrder.REVERSE);
 
         return Math.min(max, chosen.get());
+    }
+
+
+    public int estimatedSizeInBytes()
+    {
+        int estimatedNodeSize = SizeOf.BYTE + // flags
+                SizeOf.BYTE + // level
+                SizeOf.LONG + // value
+                SizeOf.DOUBLE; // weight
+
+        return SizeOf.DOUBLE + // maxError
+                SizeOf.DOUBLE + // alpha
+                SizeOf.LONG + // landmark
+                SizeOf.LONG + // min
+                SizeOf.LONG + // max
+                SizeOf.INTEGER + // node count
+                totalNodeCount * estimatedNodeSize;
+    }
+
+    public void serialize(final DataOutput output)
+            throws IOException
+    {
+        output.writeDouble(maxError);
+        output.writeDouble(alpha);
+        output.writeLong(landmarkInSeconds);
+        output.writeLong(min);
+        output.writeLong(max);
+        output.writeInt(totalNodeCount);
+
+        postOrderTraversal(root, new Callback()
+        {
+            @Override
+            public boolean process(Node node)
+            {
+                try {
+                    serializeNode(output, node);
+                }
+                catch (IOException e) {
+                    Throwables.propagate(e);
+                }
+                return true;
+            }
+        });
+    }
+
+    private void serializeNode(DataOutput output, Node node)
+            throws IOException
+    {
+        int flags = 0;
+        if (node.left != null) {
+            flags |= Flags.HAS_LEFT;
+        }
+        if (node.right != null) {
+            flags |= Flags.HAS_RIGHT;
+        }
+
+        output.writeByte(flags);
+        output.writeByte(node.level);
+        output.writeLong(node.value);
+        output.writeDouble(node.weightedCount);
+    }
+
+    public static QuantileDigest deserialize(DataInput input)
+            throws IOException
+    {
+        double maxError = input.readDouble();
+        double alpha = input.readDouble();
+
+        QuantileDigest result = new QuantileDigest(maxError, alpha);
+
+        result.landmarkInSeconds = input.readLong();
+        result.min = input.readLong();
+        result.max = input.readLong();
+        result.totalNodeCount = input.readInt();
+
+        Deque<Node> stack = new ArrayDeque<>();
+        for (int i = 0; i < result.totalNodeCount; i++) {
+            int flags = input.readByte();
+
+            Node node = deserializeNode(input);
+
+            if ((flags & Flags.HAS_RIGHT) != 0) {
+                node.right = stack.pop();
+            }
+
+            if ((flags & Flags.HAS_LEFT) != 0) {
+                node.left = stack.pop();
+            }
+
+            stack.push(node);
+            result.weightedCount += node.weightedCount;
+            if (node.weightedCount >= ZERO_WEIGHT_THRESHOLD) {
+                result.nonZeroNodeCount++;
+            }
+        }
+
+
+        if (!stack.isEmpty()) {
+            Preconditions.checkArgument(stack.size() == 1, "Tree is corrupted. Expected a single root node");
+            result.root = stack.pop();
+        }
+
+        return result;
+    }
+
+    private static Node deserializeNode(DataInput input)
+            throws IOException
+    {
+        int level = input.readUnsignedByte();
+        long value = input.readLong();
+        double weight = input.readDouble();
+
+        return new Node(value, level, weight);
     }
 
     @VisibleForTesting
@@ -1012,6 +1131,21 @@ public class QuantileDigest
          * @return true if processing should continue
          */
         boolean process(Node node);
+    }
+
+    private static class SizeOf
+    {
+        public static final int BYTE = 1;
+        public static final int INTEGER = 4;
+        public static final int LONG = 8;
+
+        public static final int DOUBLE = 8;
+    }
+
+    private static class Flags
+    {
+        public static final int HAS_LEFT = 1 << 0;
+        public static final int HAS_RIGHT = 1 << 1;
     }
 }
 

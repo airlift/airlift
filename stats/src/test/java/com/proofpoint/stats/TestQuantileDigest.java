@@ -4,9 +4,17 @@ import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import org.testng.annotations.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -621,6 +629,70 @@ public class TestQuantileDigest
 
         assertEquals(b.getCount(), 1.0);
         assertEquals(b.getTotalNodeCount(), 1);
+    }
+
+    @Test
+    public void testSerializationEmpty()
+            throws Exception
+    {
+        QuantileDigest digest = new QuantileDigest(0.01);
+        QuantileDigest deserialized = deserialize(serialize(digest));
+
+        assertTrue(digest.equivalent(deserialized));
+    }
+
+    @Test
+    public void testSerializationSingle()
+            throws Exception
+    {
+        QuantileDigest digest = new QuantileDigest(0.01);
+        digest.add(1);
+
+        assertTrue(digest.equivalent(deserialize(serialize(digest))));
+    }
+
+    @Test
+    public void testSerializationComplex()
+            throws Exception
+    {
+        QuantileDigest digest = new QuantileDigest(1);
+        addAll(digest, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
+
+        assertTrue(digest.equivalent(deserialize(serialize(digest))));
+
+        digest.compress();
+
+        assertTrue(digest.equivalent(deserialize(serialize(digest))));
+    }
+
+    @Test(invocationCount = 1000)
+    public void testSerializationRandom()
+            throws Exception
+    {
+        QuantileDigest digest = new QuantileDigest(1);
+
+        List<Integer> values = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+            values.add(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
+        }
+
+        addAll(digest, values);
+
+        assertTrue(digest.equivalent(deserialize(serialize(digest))), format("Serialization roundtrip failed for input: %s", values));
+    }
+
+    private QuantileDigest deserialize(byte[] result)
+            throws IOException
+    {
+        return QuantileDigest.deserialize(new DataInputStream(new ByteArrayInputStream(result)));
+    }
+
+    private byte[] serialize(QuantileDigest digest)
+            throws IOException
+    {
+        ByteArrayOutputStream out = new ByteArrayOutputStream(digest.estimatedSizeInBytes());
+        digest.serialize(new DataOutputStream(out));
+        return out.toByteArray();
     }
 
     private void addAll(QuantileDigest digest, List<Integer> values)
