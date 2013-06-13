@@ -344,29 +344,33 @@ public class QuantileDigest
     }
 
     public void serialize(final DataOutput output)
-            throws IOException
     {
-        output.writeDouble(maxError);
-        output.writeDouble(alpha);
-        output.writeLong(landmarkInSeconds);
-        output.writeLong(min);
-        output.writeLong(max);
-        output.writeInt(totalNodeCount);
+        try {
+            output.writeDouble(maxError);
+            output.writeDouble(alpha);
+            output.writeLong(landmarkInSeconds);
+            output.writeLong(min);
+            output.writeLong(max);
+            output.writeInt(totalNodeCount);
 
-        postOrderTraversal(root, new Callback()
-        {
-            @Override
-            public boolean process(Node node)
+            postOrderTraversal(root, new Callback()
             {
-                try {
-                    serializeNode(output, node);
+                @Override
+                public boolean process(Node node)
+                {
+                    try {
+                        serializeNode(output, node);
+                    }
+                    catch (IOException e) {
+                        Throwables.propagate(e);
+                    }
+                    return true;
                 }
-                catch (IOException e) {
-                    Throwables.propagate(e);
-                }
-                return true;
-            }
-        });
+            });
+        }
+        catch (IOException e) {
+            Throwables.propagate(e);
+        }
     }
 
     private void serializeNode(DataOutput output, Node node)
@@ -387,46 +391,50 @@ public class QuantileDigest
     }
 
     public static QuantileDigest deserialize(DataInput input)
-            throws IOException
     {
-        double maxError = input.readDouble();
-        double alpha = input.readDouble();
+        try {
+            double maxError = input.readDouble();
+            double alpha = input.readDouble();
 
-        QuantileDigest result = new QuantileDigest(maxError, alpha);
+            QuantileDigest result = new QuantileDigest(maxError, alpha);
 
-        result.landmarkInSeconds = input.readLong();
-        result.min = input.readLong();
-        result.max = input.readLong();
-        result.totalNodeCount = input.readInt();
+            result.landmarkInSeconds = input.readLong();
+            result.min = input.readLong();
+            result.max = input.readLong();
+            result.totalNodeCount = input.readInt();
 
-        Deque<Node> stack = new ArrayDeque<>();
-        for (int i = 0; i < result.totalNodeCount; i++) {
-            int flags = input.readByte();
+            Deque<Node> stack = new ArrayDeque<>();
+            for (int i = 0; i < result.totalNodeCount; i++) {
+                int flags = input.readByte();
 
-            Node node = deserializeNode(input);
+                Node node = deserializeNode(input);
 
-            if ((flags & Flags.HAS_RIGHT) != 0) {
-                node.right = stack.pop();
+                if ((flags & Flags.HAS_RIGHT) != 0) {
+                    node.right = stack.pop();
+                }
+
+                if ((flags & Flags.HAS_LEFT) != 0) {
+                    node.left = stack.pop();
+                }
+
+                stack.push(node);
+                result.weightedCount += node.weightedCount;
+                if (node.weightedCount >= ZERO_WEIGHT_THRESHOLD) {
+                    result.nonZeroNodeCount++;
+                }
             }
 
-            if ((flags & Flags.HAS_LEFT) != 0) {
-                node.left = stack.pop();
+
+            if (!stack.isEmpty()) {
+                Preconditions.checkArgument(stack.size() == 1, "Tree is corrupted. Expected a single root node");
+                result.root = stack.pop();
             }
 
-            stack.push(node);
-            result.weightedCount += node.weightedCount;
-            if (node.weightedCount >= ZERO_WEIGHT_THRESHOLD) {
-                result.nonZeroNodeCount++;
-            }
+            return result;
         }
-
-
-        if (!stack.isEmpty()) {
-            Preconditions.checkArgument(stack.size() == 1, "Tree is corrupted. Expected a single root node");
-            result.root = stack.pop();
+        catch (IOException e) {
+            throw Throwables.propagate(e);
         }
-
-        return result;
     }
 
     private static Node deserializeNode(DataInput input)
