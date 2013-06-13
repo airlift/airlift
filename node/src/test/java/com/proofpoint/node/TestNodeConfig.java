@@ -72,7 +72,7 @@ public class TestNodeConfig
     }
 
     @Test
-    public void testDeprecatedProperties()
+    public void testLegacyProperties()
     {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
                 .put("node.environment", "environment")
@@ -89,7 +89,7 @@ public class TestNodeConfig
                 .put("jetty.ip", "1.2.3.4")
                 .build();
 
-        ConfigAssertions.assertDeprecatedEquivalence(NodeConfig.class, currentProperties, httpProperties, jettyProperties);
+        ConfigAssertions.assertLegacyEquivalence(NodeConfig.class, currentProperties, httpProperties, jettyProperties);
     }
 
 }

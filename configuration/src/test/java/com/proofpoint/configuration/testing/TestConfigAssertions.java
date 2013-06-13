@@ -33,7 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.proofpoint.configuration.testing.ConfigAssertions.assertDefaults;
-import static com.proofpoint.configuration.testing.ConfigAssertions.assertDeprecatedEquivalence;
+import static com.proofpoint.configuration.testing.ConfigAssertions.assertLegacyEquivalence;
 import static com.proofpoint.configuration.testing.ConfigAssertions.assertFullMapping;
 import static com.proofpoint.configuration.testing.ConfigAssertions.assertRecordedDefaults;
 import static com.proofpoint.testing.Assertions.assertContains;
@@ -312,13 +312,13 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testNoDeprecatedProperties()
+    public void testNoLegacyProperties()
     {
-        assertDeprecatedEquivalence(NoDeprecatedConfig.class, ImmutableMap.<String, String>of());
+        assertLegacyEquivalence(NoLegacyConfig.class, ImmutableMap.<String, String>of());
     }
 
     @Test
-    public void testDeprecatedProperties()
+    public void testLegacyProperties()
     {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
                 .put("email", "alice@example.com")
@@ -335,11 +335,11 @@ public class TestConfigAssertions
                 .put("home-page-url", "http://example.com")
                 .build();
 
-        assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
+        assertLegacyEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
     }
 
     @Test
-    public void testDeprecatedPropertiesFailUnsupportedProperties()
+    public void testLegacyPropertiesFailUnsupportedProperties()
     {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
                 .put("email", "alice@example.com")
@@ -356,7 +356,7 @@ public class TestConfigAssertions
 
         boolean pass = true;
         try {
-            assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
+            assertLegacyEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
         }
         catch (AssertionError e) {
             // expected
@@ -370,7 +370,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testDeprecatedPropertiesFailUntestedProperties()
+    public void testLegacyPropertiesFailUntestedProperties()
     {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
                 .put("email", "alice@example.com")
@@ -382,7 +382,7 @@ public class TestConfigAssertions
 
         boolean pass = true;
         try {
-            assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties);
+            assertLegacyEquivalence(PersonConfig.class, currentProperties, oldProperties);
         }
         catch (AssertionError e) {
             // expected
@@ -396,7 +396,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testDeprecatedPropertiesFailDeprecatedCurrentProperties()
+    public void testLegacyPropertiesFailLegacyCurrentProperties()
     {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
                 .put("notes-id", "alice@example.com")
@@ -412,7 +412,7 @@ public class TestConfigAssertions
 
         boolean pass = true;
         try {
-            assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
+            assertLegacyEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
         }
         catch (AssertionError e) {
             // expected
@@ -588,7 +588,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testDeprecatedPropertiesWithMap()
+    public void testLegacyPropertiesWithMap()
     {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
                 .put("simple.email", "jenny@compuserve.com")
@@ -605,7 +605,7 @@ public class TestConfigAssertions
                 .put("sub-legacy.a.phone", "867-5309")
                 .build();
 
-        assertDeprecatedEquivalence(MapConfig.class, currentProperties, oldProperties, olderProperties);
+        assertLegacyEquivalence(MapConfig.class, currentProperties, oldProperties, olderProperties);
     }
 
     static class PersonConfig
@@ -677,7 +677,7 @@ public class TestConfigAssertions
         }
     }
 
-    static class NoDeprecatedConfig
+    static class NoLegacyConfig
     {
         private String name = "Dain";
         private String email = "dain@proofpoint.com";
@@ -690,7 +690,7 @@ public class TestConfigAssertions
         }
 
         @Config("name")
-        NoDeprecatedConfig setName(String name)
+        NoLegacyConfig setName(String name)
         {
             this.name = name;
             return this;
@@ -702,7 +702,7 @@ public class TestConfigAssertions
         }
 
         @Config("email")
-        NoDeprecatedConfig setEmail(String email)
+        NoLegacyConfig setEmail(String email)
         {
             this.email = email;
             return this;
@@ -714,7 +714,7 @@ public class TestConfigAssertions
         }
 
         @Config("phone")
-        NoDeprecatedConfig setPhone(String phone)
+        NoLegacyConfig setPhone(String phone)
         {
             this.phone = phone;
             return this;
@@ -726,7 +726,7 @@ public class TestConfigAssertions
         }
 
         @Config("home-page")
-        NoDeprecatedConfig setHomePage(URI homePage)
+        NoLegacyConfig setHomePage(URI homePage)
         {
             this.homePage = homePage;
             return this;

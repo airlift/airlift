@@ -44,7 +44,7 @@ public class TestLoggingConfiguration
     }
 
     @Test
-    public void testDeprecatedProperties()
+    public void testLegacyProperties()
     {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
                 .put("log.max-size", "300B")
@@ -54,7 +54,7 @@ public class TestLoggingConfiguration
                 .put("log.max-size-in-bytes", "300")
                 .build();
 
-        ConfigAssertions.assertDeprecatedEquivalence(LoggingConfiguration.class, currentProperties, oldProperties);
+        ConfigAssertions.assertLegacyEquivalence(LoggingConfiguration.class, currentProperties, oldProperties);
     }
 
 }

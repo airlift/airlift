@@ -106,7 +106,7 @@ public class TestHttpServerConfig
     }
 
     @Test
-    public void testDeprecatedProperties()
+    public void testLegacyProperties()
     {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
                 .put("http-server.http.enabled", "false")
@@ -156,6 +156,6 @@ public class TestHttpServerConfig
                 .put("jetty.auth.users-file", "/auth")
                 .build();
 
-        ConfigAssertions.assertDeprecatedEquivalence(HttpServerConfig.class, currentProperties, oldProperties, olderProperties);
+        ConfigAssertions.assertLegacyEquivalence(HttpServerConfig.class, currentProperties, oldProperties, olderProperties);
     }
 }

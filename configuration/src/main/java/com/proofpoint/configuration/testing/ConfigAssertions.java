@@ -169,8 +169,19 @@ public final class ConfigAssertions
         return false;
     }
 
+    /**
+     * @deprecated Renamed to {@link #assertLegacyEquivalence(Class, java.util.Map, java.util.Map[])}
+     */
     @SafeVarargs
+    @Deprecated
     public static <T> void assertDeprecatedEquivalence(Class<T> configClass, Map<String, String> currentProperties, Map<String, String>... oldPropertiesList)
+    {
+        assertLegacyEquivalence(configClass, currentProperties, oldPropertiesList);
+    }
+
+
+    @SafeVarargs
+    public static <T> void assertLegacyEquivalence(Class<T> configClass, Map<String, String> currentProperties, Map<String, String>... oldPropertiesList)
     {
         assertNotNull(configClass, "configClass");
         assertNotNull(currentProperties, "currentProperties");

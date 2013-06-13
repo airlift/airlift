@@ -16,7 +16,6 @@
 package com.proofpoint.platform.sample;
 
 import com.google.common.collect.ImmutableMap;
-import com.proofpoint.configuration.testing.ConfigAssertions;
 import com.proofpoint.units.Duration;
 import com.proofpoint.units.MinDuration;
 import org.testng.annotations.Test;
@@ -24,6 +23,10 @@ import org.testng.annotations.Test;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static com.proofpoint.configuration.testing.ConfigAssertions.assertFullMapping;
+import static com.proofpoint.configuration.testing.ConfigAssertions.assertLegacyEquivalence;
+import static com.proofpoint.configuration.testing.ConfigAssertions.assertRecordedDefaults;
+import static com.proofpoint.configuration.testing.ConfigAssertions.recordDefaults;
 import static com.proofpoint.testing.ValidationAssertions.assertFailsValidation;
 import static com.proofpoint.testing.ValidationAssertions.assertValidates;
 
@@ -32,7 +35,7 @@ public class TestStoreConfig
     @Test
     public void testDefaults()
     {
-        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(StoreConfig.class)
+        assertRecordedDefaults(recordDefaults(StoreConfig.class)
                 .setTtl(new Duration(1, TimeUnit.HOURS)));
     }
 
@@ -46,11 +49,11 @@ public class TestStoreConfig
         StoreConfig expected = new StoreConfig()
                 .setTtl(new Duration(2, TimeUnit.HOURS));
 
-        ConfigAssertions.assertFullMapping(properties, expected);
+        assertFullMapping(properties, expected);
     }
 
     @Test
-    public void testDeprecatedProperties()
+    public void testLegacyProperties()
     {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
                 .put("store.ttl", "1h")
@@ -60,7 +63,7 @@ public class TestStoreConfig
                 .put("store.ttl-in-ms", "3600000")
                 .build();
 
-        ConfigAssertions.assertDeprecatedEquivalence(StoreConfig.class, currentProperties, oldProperties);
+        assertLegacyEquivalence(StoreConfig.class, currentProperties, oldProperties);
     }
 
     @Test
