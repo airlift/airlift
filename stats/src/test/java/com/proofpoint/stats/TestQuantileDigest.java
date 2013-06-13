@@ -690,7 +690,7 @@ public class TestQuantileDigest
     private byte[] serialize(QuantileDigest digest)
             throws IOException
     {
-        ByteArrayOutputStream out = new ByteArrayOutputStream(digest.estimatedSizeInBytes());
+        ByteArrayOutputStream out = new ByteArrayOutputStream(digest.estimatedSerializedSizeInBytes());
         digest.serialize(new DataOutputStream(out));
         return out.toByteArray();
     }
