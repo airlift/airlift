@@ -323,7 +323,7 @@ public class QuantileDigest
 
     public int estimatedInMemorySizeInBytes()
     {
-        return UnsafeUtil.sizeOf(QuantileDigest.class) + totalNodeCount * UnsafeUtil.sizeOf(Node.class);
+        return SizeOf.QUANTILE_DIGEST + totalNodeCount * SizeOf.NODE;
     }
 
     public int estimatedSerializedSizeInBytes()
@@ -1165,6 +1165,9 @@ public class QuantileDigest
         public static final int LONG = 8;
 
         public static final int DOUBLE = 8;
+
+        public static final int QUANTILE_DIGEST = UnsafeUtil.sizeOf(QuantileDigest.class);
+        public static final int NODE = UnsafeUtil.sizeOf(Node.class);
     }
 
     private static class Flags
