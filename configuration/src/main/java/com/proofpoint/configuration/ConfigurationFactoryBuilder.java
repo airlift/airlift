@@ -19,9 +19,9 @@ import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.Problems.Monitor;
 
 import javax.annotation.Nullable;
-import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static java.lang.String.format;
 
 public final class ConfigurationFactoryBuilder
@@ -66,7 +67,8 @@ public final class ConfigurationFactoryBuilder
                 return old;
             }
         };
-        try (Reader reader = new FileReader(new File(path))) {
+
+        try (Reader reader = new InputStreamReader(new FileInputStream(path), UTF_8)) {
             properties.load(reader);
         }
 

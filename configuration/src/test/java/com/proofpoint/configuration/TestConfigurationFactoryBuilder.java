@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 
@@ -86,8 +87,8 @@ public class TestConfigurationFactoryBuilder
             throws IOException
     {
         final File file = File.createTempFile("config", ".properties", tempDir);
-        try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
-            out.print("test: foo");
+        try (PrintWriter out = new PrintWriter(file, "UTF-8")) {
+            out.print("test: f\u014do");
         }
 
         System.setProperty("config", file.getAbsolutePath());
@@ -98,7 +99,7 @@ public class TestConfigurationFactoryBuilder
                 .build()
                 .getProperties();
 
-        assertEquals(properties.get("test"), "foo");
+        assertEquals(properties.get("test"), "f\u014do");
         assertEquals(properties.get("config"), file.getAbsolutePath());
 
         System.getProperties().remove("config");
