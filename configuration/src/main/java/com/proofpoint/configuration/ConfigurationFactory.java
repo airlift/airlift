@@ -531,7 +531,7 @@ public final class ConfigurationFactory
                         valueDescription = "";
                     }
                     else {
-                        valueDescription = " '" + value + "'";
+                        valueDescription = " '" + properties.get(name + keyString) + "'";
                     }
                     problems.addError("Could not coerce value%s to %s (property '%s') in order to call [%s]",
                             valueDescription,
