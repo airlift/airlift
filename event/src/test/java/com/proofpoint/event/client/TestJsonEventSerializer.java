@@ -43,4 +43,17 @@ public class TestJsonEventSerializer
         String json = out.toString(Charsets.UTF_8.name());
         assertEquals(json, TestingUtils.getNormalizedJson("event.json"));
     }
+
+    @Test(expectedExceptions = InvalidEventException.class)
+    public void testUnregisteredEventClass()
+            throws Exception
+    {
+        JsonEventSerializer eventSerializer = new JsonEventSerializer(new NodeInfo("test"), DummyEventClass.class);
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        JsonGenerator jsonGenerator = new JsonFactory().createJsonGenerator(out, JsonEncoding.UTF8);
+
+        FixedDummyEventClass event = TestingUtils.getEvents().get(0);
+        eventSerializer.serialize(event, "sample-trace-token", jsonGenerator);
+    }
 }

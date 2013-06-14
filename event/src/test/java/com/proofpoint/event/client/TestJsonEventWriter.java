@@ -17,7 +17,6 @@ package com.proofpoint.event.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.NullOutputStream;
 import com.proofpoint.event.client.EventClient.EventGenerator;
 import com.proofpoint.event.client.NestedDummyEventClass.NestedPart;
 import com.proofpoint.node.NodeInfo;
@@ -30,6 +29,7 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.google.common.io.ByteStreams.nullOutputStream;
 import static com.proofpoint.event.client.ChainedCircularEventClass.ChainedPart;
 import static com.proofpoint.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 import static org.testng.Assert.assertEquals;
@@ -89,7 +89,7 @@ public class TestJsonEventWriter
     public void testCircularEvent()
             throws Exception
     {
-        eventWriter.writeEvents(createEventGenerator(ImmutableList.of(new CircularEventClass())), null, new NullOutputStream());
+        eventWriter.writeEvents(createEventGenerator(ImmutableList.of(new CircularEventClass())), null, nullOutputStream());
     }
 
     @Test(expectedExceptions = InvalidEventException.class, expectedExceptionsMessageRegExp = "Cycle detected in event data:.*")
@@ -105,7 +105,16 @@ public class TestJsonEventWriter
 
         ChainedCircularEventClass event = new ChainedCircularEventClass(a);
 
-        eventWriter.writeEvents(createEventGenerator(ImmutableList.of(event)), null, new NullOutputStream());
+        eventWriter.writeEvents(createEventGenerator(ImmutableList.of(event)), null, nullOutputStream());
+    }
+
+
+    @Test(expectedExceptions = InvalidEventException.class)
+    public void testUnregisteredEventClass()
+            throws Exception
+    {
+        DummyEventClass event = new DummyEventClass(1.1, 1, "foo", false);
+        eventWriter.writeEvents(createEventGenerator(ImmutableList.of(event)), null, nullOutputStream());
     }
 
     private void assertEventJson(EventGenerator<?> events, String token, String resource)

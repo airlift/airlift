@@ -70,7 +70,10 @@ public class JsonEventSerializer
     @SuppressWarnings("unchecked")
     private <T> JsonSerializer<T> getSerializer(T event, @Nullable String token)
     {
-        return new EventJsonSerializer<>(nodeinfo,
-                token, (EventTypeMetadata<T>) metadataMap.get(event.getClass()));
+        EventTypeMetadata<T> metadata = (EventTypeMetadata<T>) metadataMap.get(event.getClass());
+        if (metadata == null) {
+            return null;
+        }
+        return new EventJsonSerializer<>(nodeinfo, token, metadata);
     }
 }
