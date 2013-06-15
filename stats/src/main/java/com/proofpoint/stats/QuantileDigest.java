@@ -573,7 +573,7 @@ public class QuantileDigest
                 setChild(parent, lastBranch, createLeaf(bits, weight));
                 return;
             }
-            else if (current.level != MAX_BITS && (bits >>> current.level) != (current.bits >>> current.level)) {
+            else if (!inSameSubtree(bits, current.bits, current.level)) {
                 // if bits and node.bits are not in the same branch given node's level,
                 // insert a parent above them at the point at which branches diverge
                 setChild(parent, lastBranch, makeSiblings(current, createLeaf(bits, weight)));
@@ -666,6 +666,9 @@ public class QuantileDigest
         else if (other == null) {
             return node;
         }
+        else if (!inSameSubtree(node.bits, other.bits, Math.max(node.level, other.level))) {
+            return makeSiblings(node, copyRecursive(other));
+        }
         else if (node.level > other.level) {
             long branch = other.bits & node.getBranchMask();
 
@@ -692,10 +695,6 @@ public class QuantileDigest
 
             return result;
         }
-        else if (node.level < MAX_BITS && (node.bits >>> node.level) != (other.bits >>> other.level)) {
-            // if they are at the same level but on completely different paths...
-            return makeSiblings(node, copyRecursive(other));
-        }
 
         // else, they must be at the same level and on the same path, so just bump the counts
         double oldWeight = node.weightedCount;
@@ -710,6 +709,11 @@ public class QuantileDigest
         }
 
         return node;
+    }
+
+    private static boolean inSameSubtree(long bitsA, long bitsB, int level)
+    {
+        return level == MAX_BITS || (bitsA >>> level) == (bitsB >>> level);
     }
 
     private Node copyRecursive(Node node)
