@@ -536,6 +536,24 @@ public class TestQuantileDigest
     }
 
     @Test
+    public void testMergeSample()
+            throws Exception
+    {
+        QuantileDigest a = new QuantileDigest(0.01);
+        QuantileDigest b = new QuantileDigest(0.01);
+
+        a.add(1);
+        addAll(b, asList(2, 3));
+
+        a.merge(b);
+
+        a.validate();
+
+        assertEquals(a.getCount(), 3.0);
+        assertEquals(a.getTotalNodeCount(), 5);
+    }
+
+    @Test
     public void testMergeSeparateBranches()
             throws Exception
     {
