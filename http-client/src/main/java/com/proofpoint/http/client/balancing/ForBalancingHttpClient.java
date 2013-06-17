@@ -15,8 +15,7 @@
  */
 package com.proofpoint.http.client.balancing;
 
-import com.google.inject.BindingAnnotation;
-
+import javax.inject.Qualifier;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
@@ -25,7 +24,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 @Retention(RUNTIME)
 @Target(PARAMETER)
-@BindingAnnotation
+@Qualifier
 public @interface ForBalancingHttpClient
 {
 }

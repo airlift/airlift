@@ -15,8 +15,7 @@
  */
 package com.proofpoint.discovery.client;
 
-import com.google.inject.BindingAnnotation;
-
+import javax.inject.Qualifier;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
@@ -27,7 +26,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 @Retention(RUNTIME)
 @Target({FIELD, PARAMETER, METHOD})
-@BindingAnnotation
+@Qualifier
 public @interface ForDiscoveryClient
 {
 }

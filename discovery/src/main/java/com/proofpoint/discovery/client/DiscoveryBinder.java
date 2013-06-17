@@ -208,7 +208,7 @@ public class DiscoveryBinder
     }
 
     public static class BalancingHttpClientBindingBuilder
-        extends AbstractBalancingHttpClientBindingBuilder<HttpClient, BalancingHttpClientBindingBuilder, HttpClientBindingBuilder>
+            extends AbstractBalancingHttpClientBindingBuilder<HttpClient, BalancingHttpClientBindingBuilder, HttpClientBindingBuilder>
     {
         public BalancingHttpClientBindingBuilder(Binder binder, Class<? extends Annotation> annotation, HttpClientBindingBuilder delegateBindingBuilder)
         {
@@ -217,7 +217,7 @@ public class DiscoveryBinder
     }
 
     public static class BalancingHttpClientAsyncBindingBuilder
-    extends AbstractBalancingHttpClientBindingBuilder<AsyncHttpClient, BalancingHttpClientAsyncBindingBuilder, HttpClientAsyncBindingBuilder>
+            extends AbstractBalancingHttpClientBindingBuilder<AsyncHttpClient, BalancingHttpClientAsyncBindingBuilder, HttpClientAsyncBindingBuilder>
     {
         public BalancingHttpClientAsyncBindingBuilder(Binder binder, Class<? extends Annotation> annotation, HttpClientAsyncBindingBuilder delegateBindingBuilder)
         {
@@ -233,7 +233,6 @@ public class DiscoveryBinder
 
     protected abstract static class AbstractBalancingHttpClientBindingBuilder<T, B extends AbstractBalancingHttpClientBindingBuilder<T, B, D>, D extends AbstractHttpClientBindingBuilder<D>>
     {
-
         private final Binder binder;
         private final Class<T> aClass;
         private final Class<? extends Annotation> annotation;

@@ -123,9 +123,9 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
 
         public RetryFuture(final AsyncHttpResponseFuture<T, RetryException> future, final Request request, final ResponseHandler<T, E> responseHandler, final HttpServiceAttempt attempt, URI uri, final int retriesLeft)
         {
+            subFuture = future;
             this.request = request;
             this.responseHandler = responseHandler;
-            subFuture = future;
             this.attempt = attempt;
             this.uri = uri;
             future.addListener(new Runnable()
@@ -192,9 +192,7 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
             if (super.cancel(mayInterruptIfRunning)) {
                 // todo attempt.cancel() ?
                 synchronized (subFutureLock) {
-                    if (subFuture != null) {
-                        subFuture.cancel(mayInterruptIfRunning);
-                    }
+                    subFuture.cancel(mayInterruptIfRunning);
                 }
                 return true;
             }

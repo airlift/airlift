@@ -25,10 +25,8 @@ public class TestHttpServiceBalancerProvider
     @Test
     public void testEquivalence()
     {
-        HttpServiceBalancerProvider fooWithClient = new HttpServiceBalancerProvider("foo");
-
         equivalenceTester()
-                .addEquivalentGroup(new HttpServiceBalancerProvider("foo"), fooWithClient)
+                .addEquivalentGroup(new HttpServiceBalancerProvider("foo"), new HttpServiceBalancerProvider("foo"))
                 .addEquivalentGroup(new HttpServiceBalancerProvider("bar"), new HttpServiceBalancerProvider("bar"))
                 .check();
     }

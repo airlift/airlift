@@ -91,6 +91,28 @@ public class TestBalancingAsyncHttpClient
     }
 
     @Test
+    public void testSuccessfulQueryNullPath()
+            throws Exception
+    {
+        httpClient.expectCall("http://s1.example.com/", response);
+
+        ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
+        when(responseHandler.handle(any(Request.class), same(response))).thenReturn("test response");
+
+        request = preparePut().setUri(new URI(null, null, null, null)).setBodyGenerator(bodyGenerator).build();
+        String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
+        assertEquals(returnValue, "test response", "return value from .execute()");
+
+        httpClient.assertDone();
+
+        verify(serviceAttempt1).getUri();
+        verify(serviceAttempt1).markGood();
+        verify(response).getStatusCode();
+        verify(responseHandler).handle(any(Request.class), same(response));
+        verifyNoMoreInteractions(serviceAttempt1, bodyGenerator, response, responseHandler);
+    }
+
+    @Test
     public void testDoesntRetryOnHandlerException()
             throws Exception
     {
@@ -552,7 +574,7 @@ public class TestBalancingAsyncHttpClient
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = ".* is not a relative URI")
-    public void testURIWithScheme()
+    public void testUriWithScheme()
             throws Exception
     {
         request = preparePut().setUri(new URI("http", null, "/v1/service", null)).setBodyGenerator(bodyGenerator).build();
@@ -560,7 +582,7 @@ public class TestBalancingAsyncHttpClient
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = ".* has a host component")
-    public void testURIWithHost()
+    public void testUriWithHost()
             throws Exception
     {
         request = preparePut().setUri(new URI(null, "example.com", "v1/service", null)).setBodyGenerator(bodyGenerator).build();
@@ -568,7 +590,7 @@ public class TestBalancingAsyncHttpClient
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = ".* path starts with '/'")
-    public void testURIWithAbsolutePath()
+    public void testUriWithAbsolutePath()
             throws Exception
     {
         request = preparePut().setUri(new URI(null, null, "/v1/service", null)).setBodyGenerator(bodyGenerator).build();

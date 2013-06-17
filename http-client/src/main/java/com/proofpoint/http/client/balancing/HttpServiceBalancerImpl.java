@@ -58,7 +58,7 @@ public class HttpServiceBalancerImpl implements HttpServiceBalancer
     {
 
         private final List<URI> uris;
-        private int attempt;
+        private final int attempt;
 
         public HttpServiceAttemptImpl(List<URI> uris, int attempt)
         {
