@@ -48,15 +48,15 @@ public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<
     }
 
     @Override
-    public RuntimeException handleException(Request request, Exception exception)
+    public JsonResponse<T> handleException(Request request, Exception exception)
     {
         if (exception instanceof ConnectException) {
-            return new RuntimeException("Server refused connection: " + request.getUri().toASCIIString());
+            throw new RuntimeException("Server refused connection: " + request.getUri().toASCIIString());
         }
         if (exception instanceof RuntimeException) {
-            return (RuntimeException) exception;
+            throw (RuntimeException) exception;
         }
-        return new RuntimeException(exception);
+        throw new RuntimeException(exception);
     }
 
     @Override

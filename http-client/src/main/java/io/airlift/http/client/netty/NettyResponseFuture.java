@@ -85,16 +85,11 @@ public class NettyResponseFuture<T, E extends Exception>
 
         // give handler a chance to rewrite exception, and let them know there was a problem
         try {
-            E e = responseHandler.handleException(request, exception);
-            if (e != null) {
-                throwable = e;
-            }
+            return super.set(responseHandler.handleException(request, exception));
         }
         catch (Throwable t) {
-            throwable = t;
+            return super.setException(throwable);
         }
-
-        return super.setException(throwable);
     }
 
     @Override
@@ -149,7 +144,7 @@ public class NettyResponseFuture<T, E extends Exception>
             return get();
         }
         catch (InterruptedException | CancellationException | ExecutionException e) {
-            throw mapException(e);
+            return mapException(e);
         }
     }
 
@@ -161,11 +156,11 @@ public class NettyResponseFuture<T, E extends Exception>
             return get(timeout, unit);
         }
         catch (InterruptedException | CancellationException | ExecutionException e) {
-            throw mapException(e);
+            return mapException(e);
         }
     }
 
-    private E mapException(Exception e)
+    private T mapException(Exception e) throws E
     {
         if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();
@@ -176,7 +171,7 @@ public class NettyResponseFuture<T, E extends Exception>
             // Do not ask the handler to "handle" an exception it produced
             if (cause instanceof ExceptionFromResponseHandler) {
                 try {
-                    return (E) cause.getCause();
+                    throw (E) cause.getCause();
                 }
                 catch (ClassCastException classCastException) {
                     // this should never happen but generics suck so be safe
