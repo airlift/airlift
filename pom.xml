@@ -5,7 +5,7 @@
     <groupId>io.airlift</groupId>
     <artifactId>airlift</artifactId>
     <packaging>pom</packaging>
-    <version>0.77</version>
+    <version>0.78-SNAPSHOT</version>
     <name>airlift</name>
     <description>Airlift</description>
     <url>http://github.com/airlift/airlift</url>
@@ -23,7 +23,7 @@
         <air.check.fail-all>false</air.check.fail-all>
         <air.check.fail-basic>true</air.check.fail-basic>
 
-        <dep.airlift.version>0.77</dep.airlift.version>
+        <dep.airlift.version>0.78-SNAPSHOT</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
     </properties>
 
@@ -46,7 +46,7 @@
         <connection>scm:git:git://github.com/airlift/airlift.git</connection>
         <developerConnection>scm:git:git@github.com:airlift/airlift.git</developerConnection>
         <url>http://github.com/airlift/airlift/tree/master</url>
-      <tag>0.77</tag>
+      <tag>HEAD</tag>
   </scm>
 
     <modules>
