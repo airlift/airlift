@@ -2,10 +2,13 @@ package io.airlift.http.client;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableListMultimap;
+import io.airlift.http.client.testing.TestingResponse;
 import io.airlift.json.JsonCodec;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
@@ -27,7 +30,6 @@ public class TestFullJsonResponseHandler
 
     @BeforeMethod
     public void setUp()
-            throws Exception
     {
         codec = JsonCodec.jsonCodec(User.class);
         handler = createFullJsonResponseHandler(codec);
@@ -35,7 +37,6 @@ public class TestFullJsonResponseHandler
 
     @Test
     public void testValidJson()
-            throws Exception
     {
         User user = new User("Joe", 25);
         String json = codec.toJson(user);
@@ -82,6 +83,18 @@ public class TestFullJsonResponseHandler
         assertFalse(response.hasValue());
         assertNull(response.getException());
         assertNull(response.getJson());
+    }
+
+    @Test
+    public void testMissingContentType()
+    {
+        JsonResponse<User> response = handler.handle(null,
+                new TestingResponse(OK, ImmutableListMultimap.<String, String>of(), "hello".getBytes(UTF_8)));
+
+        assertFalse(response.hasValue());
+        assertNull(response.getException());
+        assertNull(response.getJson());
+        assertTrue(response.getHeaders().isEmpty());
     }
 
     @Test
