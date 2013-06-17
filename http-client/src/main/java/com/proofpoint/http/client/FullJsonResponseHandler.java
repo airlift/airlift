@@ -63,7 +63,7 @@ public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<
     public JsonResponse<T> handle(Request request, Response response)
     {
         String contentType = response.getHeader("Content-Type");
-        if (!MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
+        if ((contentType == null) || !MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
             return new JsonResponse<>(response.getStatusCode(), response.getStatusMessage(), response.getHeaders());
         }
         try {

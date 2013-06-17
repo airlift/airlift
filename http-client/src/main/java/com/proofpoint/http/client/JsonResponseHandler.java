@@ -16,7 +16,6 @@
 package com.proofpoint.http.client;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharStreams;
 import com.google.common.net.MediaType;
@@ -78,6 +77,9 @@ public class JsonResponseHandler<T> implements ResponseHandler<T, RuntimeExcepti
                     response);
         }
         String contentType = response.getHeader("Content-Type");
+        if (contentType == null) {
+            throw new UnexpectedResponseException("Content-Type is not set for response", request, response);
+        }
         if (!MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
             throw new UnexpectedResponseException("Expected application/json response from server but got " + contentType, request, response);
         }
