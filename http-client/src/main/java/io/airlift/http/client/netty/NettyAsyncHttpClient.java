@@ -148,7 +148,6 @@ public class NettyAsyncHttpClient
 
     @Override
     public <T, E extends Exception> NettyResponseFuture<T, E> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
-            throws E
     {
         // process the request through the filters
         for (HttpRequestFilter requestFilter : requestFilters) {

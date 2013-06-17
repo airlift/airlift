@@ -25,7 +25,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.net.SocketTimeoutException;
+import javax.net.ssl.SSLHandshakeException;
 import java.net.URI;
 
 import static com.google.common.io.Resources.getResource;
@@ -92,7 +92,7 @@ public class TestNettyHttpsClient
         super.testKeepAlive();
     }
 
-    @Test(expectedExceptions = SocketTimeoutException.class)
+    @Test(expectedExceptions = SSLHandshakeException.class)
     public void testCertHostnameMismatch()
             throws Exception
     {
