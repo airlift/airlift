@@ -1,3 +1,13 @@
+Airlift 0.77
+
+* QuantileDigest
+
+We made a number of improvements to QuantileDigest. QuantileDigests now support
+negative values, can be serialized/deserialized and merged with other QuantileDigests.
+
+Important: QuantileDigest is no longer thread-safe, so if you have code that relies
+on this guarantee, you'll need to update it to provide thread-safety at that layer.
+
 Airlift 0.76
 
 * Rack server support has been moved to a separate project: airlift-rack
