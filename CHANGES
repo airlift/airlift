@@ -1,3 +1,10 @@
+* 0.77
+
+- Implemented QuantileDigest merging
+- Added methods for serializing and deserializing QuantileDigest
+- Allow adding negative values to QuantileDigest
+- Fix handling of missing content type for JSON http responses
+
 * 0.76
 
 - Rack server support has been moved to a separate project: airlift-rack
