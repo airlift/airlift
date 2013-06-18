@@ -1,3 +1,22 @@
+Platform 0.75
+
+* We explicitly specified UTF-8 as the charset for configuration property
+  files.
+
+* We renamed ConfigAssertions.assertDeprecatedEquivalence() to
+  assertLegacyEquivalence().
+
+* We added a method to TimedStat to time a block using try-with-resources:
+
+    try (BlockTimer ignored = timedStat.time()) {
+        ...
+    }
+
+* We added an addDiscoveredService(String type, String pool, String uri)
+  method to InMemoryDiscoveryClient.
+
+* We deprecated ConfigAssertions.assertDefaults().
+
 Platform 0.74
 
 * The new launcher status command now reports a running instance of a server
