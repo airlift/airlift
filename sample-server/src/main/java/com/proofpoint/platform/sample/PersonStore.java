@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.inject.Inject;
 import com.proofpoint.event.client.EventClient;
+import com.proofpoint.stats.Gauge;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
@@ -54,6 +55,12 @@ public class PersonStore
     public PersonStoreStats getStats()
     {
         return stats;
+    }
+
+    @Gauge
+    private int getSize()
+    {
+        return persons.size();
     }
 
     public Person get(String id)
