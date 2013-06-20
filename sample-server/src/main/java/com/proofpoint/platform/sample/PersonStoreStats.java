@@ -16,16 +16,16 @@
 package com.proofpoint.platform.sample;
 
 import com.proofpoint.event.client.EventClient;
+import com.proofpoint.stats.CounterStat;
 import org.weakref.jmx.Managed;
-
-import java.util.concurrent.atomic.AtomicLong;
+import org.weakref.jmx.Nested;
 
 public class PersonStoreStats
 {
-    private final AtomicLong fetched = new AtomicLong();
-    private final AtomicLong added = new AtomicLong();
-    private final AtomicLong updated = new AtomicLong();
-    private final AtomicLong removed = new AtomicLong();
+    private final CounterStat fetched = new CounterStat();
+    private final CounterStat added = new CounterStat();
+    private final CounterStat updated = new CounterStat();
+    private final CounterStat removed = new CounterStat();
     private final EventClient eventClient;
 
     public PersonStoreStats(EventClient eventClient)
@@ -34,49 +34,53 @@ public class PersonStoreStats
     }
 
     @Managed
-    public long getFetched()
+    @Nested
+    public CounterStat getFetched()
     {
-        return fetched.get();
+        return fetched;
     }
 
     @Managed
-    public long getAdded()
+    @Nested
+    public CounterStat getAdded()
     {
-        return added.get();
+        return added;
     }
 
     @Managed
-    public long getUpdated()
+    @Nested
+    public CounterStat getUpdated()
     {
-        return updated.get();
+        return updated;
     }
 
     @Managed
-    public long getRemoved()
+    @Nested
+    public CounterStat getRemoved()
     {
-        return removed.get();
+        return removed;
     }
 
     public void personFetched()
     {
-        fetched.getAndIncrement();
+        fetched.update(1);
     }
 
     public void personAdded(String id, Person person)
     {
-        added.getAndIncrement();
+        added.update(1);
         eventClient.post(PersonEvent.personAdded(id, person));
     }
 
     public void personUpdated(String id, Person person)
     {
-        updated.getAndIncrement();
+        updated.update(1);
         eventClient.post(PersonEvent.personUpdated(id, person));
     }
 
     public void personRemoved(String id, Person person)
     {
-        removed.getAndIncrement();
+        removed.update(1);
         eventClient.post(PersonEvent.personRemoved(id, person));
     }
 }
