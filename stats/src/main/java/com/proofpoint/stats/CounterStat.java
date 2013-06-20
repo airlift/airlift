@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.Beta;
 import com.proofpoint.stats.DecayCounter.DecayCounterSnapshot;
+import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
@@ -31,12 +32,14 @@ public class CounterStat
     private final DecayCounter oneMinute = new DecayCounter(ExponentialDecay.oneMinute());
     private final DecayCounter fiveMinute = new DecayCounter(ExponentialDecay.fiveMinutes());
     private final DecayCounter fifteenMinute = new DecayCounter(ExponentialDecay.fifteenMinutes());
+    private final BucketedCounter bucket = new BucketedCounter();
 
     public void update(long count)
     {
         oneMinute.add(count);
         fiveMinute.add(count);
         fifteenMinute.add(count);
+        bucket.add(count);
         this.count.addAndGet(count);
     }
 
@@ -65,6 +68,13 @@ public class CounterStat
     public DecayCounter getFifteenMinute()
     {
         return fifteenMinute;
+    }
+
+    @Reported
+    @Flatten
+    public BucketedCounter getBucket()
+    {
+        return bucket;
     }
 
     public CounterStatSnapshot snapshot()
