@@ -78,7 +78,7 @@ public class DiscoveryModule implements Module
         jsonCodecBinder(binder).bindJsonCodec(Announcement.class);
 
         // bind the http client
-        discoveryBinder(binder).bindAsyncHttpClientWithBalancer(serviceType("discovery"), ForDiscoveryClient.class);
+        discoveryBinder(binder).bindDiscoveredAsyncHttpClientWithBalancer(serviceType("discovery"), ForDiscoveryClient.class);
 
         // bind announcer
         binder.bind(Announcer.class).in(Scopes.SINGLETON);

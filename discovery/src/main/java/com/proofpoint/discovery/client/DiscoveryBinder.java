@@ -130,12 +130,12 @@ public class DiscoveryBinder
         binder.bind(HttpServiceSelector.class).annotatedWith(serviceType).toProvider(new HttpServiceSelectorProvider(serviceType.value())).in(Scopes.SINGLETON);
     }
 
-    public BalancingHttpClientBindingBuilder bindHttpClient(String type, Class<? extends Annotation> annotation)
+    public BalancingHttpClientBindingBuilder bindDiscoveredHttpClient(String type, Class<? extends Annotation> annotation)
     {
-        return bindHttpClient(serviceType(checkNotNull(type, "type is null")), annotation);
+        return bindDiscoveredHttpClient(serviceType(checkNotNull(type, "type is null")), annotation);
     }
 
-    public BalancingHttpClientBindingBuilder bindHttpClient(ServiceType serviceType, Class<? extends Annotation> annotation)
+    public BalancingHttpClientBindingBuilder bindDiscoveredHttpClient(ServiceType serviceType, Class<? extends Annotation> annotation)
     {
         checkNotNull(serviceType, "serviceType is null");
         checkNotNull(annotation, "annotation is null");
@@ -151,18 +151,18 @@ public class DiscoveryBinder
         return new BalancingHttpClientBindingBuilder(binder, annotation, delegateBindingBuilder);
     }
 
-    public BalancingHttpClientAsyncBindingBuilder bindAsyncHttpClient(String type, Class<? extends Annotation> annotation)
+    public BalancingHttpClientAsyncBindingBuilder bindDiscoveredAsyncHttpClient(String type, Class<? extends Annotation> annotation)
     {
-        return bindAsyncHttpClient(serviceType(checkNotNull(type, "type is null")), annotation);
+        return bindDiscoveredAsyncHttpClient(serviceType(checkNotNull(type, "type is null")), annotation);
     }
 
-    public BalancingHttpClientAsyncBindingBuilder bindAsyncHttpClient(ServiceType serviceType, Class<? extends Annotation> annotation)
+    public BalancingHttpClientAsyncBindingBuilder bindDiscoveredAsyncHttpClient(ServiceType serviceType, Class<? extends Annotation> annotation)
     {
         bindHttpBalancer(serviceType);
-        return bindAsyncHttpClientWithBalancer(serviceType, annotation);
+        return bindDiscoveredAsyncHttpClientWithBalancer(serviceType, annotation);
     }
 
-    BalancingHttpClientAsyncBindingBuilder bindAsyncHttpClientWithBalancer(ServiceType serviceType, Class<? extends Annotation> annotation)
+    BalancingHttpClientAsyncBindingBuilder bindDiscoveredAsyncHttpClientWithBalancer(ServiceType serviceType, Class<? extends Annotation> annotation)
     {
         checkNotNull(serviceType, "serviceType is null");
         checkNotNull(annotation, "annotation is null");

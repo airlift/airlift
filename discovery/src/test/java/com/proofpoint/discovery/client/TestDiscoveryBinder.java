@@ -285,7 +285,7 @@ public class TestDiscoveryBinder
                     @Override
                     public void configure(Binder binder)
                     {
-                        discoveryBinder(binder).bindHttpClient("foo", FooClient.class);
+                        discoveryBinder(binder).bindDiscoveredHttpClient("foo", FooClient.class);
                     }
                 }
         );
@@ -303,7 +303,7 @@ public class TestDiscoveryBinder
                     @Override
                     public void configure(Binder binder)
                     {
-                        discoveryBinder(binder).bindHttpClient("foo", FooClient.class)
+                        discoveryBinder(binder).bindDiscoveredHttpClient("foo", FooClient.class)
                                 .withAlias(FooAlias1.class)
                                 .withAliases(ImmutableList.of(FooAlias2.class, FooAlias3.class));
                     }
@@ -327,7 +327,7 @@ public class TestDiscoveryBinder
                     @Override
                     public void configure(Binder binder)
                     {
-                        discoveryBinder(binder).bindAsyncHttpClient("foo", FooClient.class)
+                        discoveryBinder(binder).bindDiscoveredAsyncHttpClient("foo", FooClient.class)
                                 .withAlias(FooAlias1.class)
                                 .withAliases(ImmutableList.of(FooAlias2.class, FooAlias3.class));
                     }
@@ -353,12 +353,12 @@ public class TestDiscoveryBinder
                     @Override
                     public void configure(Binder binder)
                     {
-                        discoveryBinder(binder).bindHttpClient("foo", FooClient.class)
+                        discoveryBinder(binder).bindDiscoveredHttpClient("foo", FooClient.class)
                                 .withFilter(TestingRequestFilter.class)
                                 .withFilter(AnotherHttpRequestFilter.class)
                                 .withTracing();
 
-                        BalancingHttpClientBindingBuilder builder = discoveryBinder(binder).bindHttpClient("bar", BarClient.class);
+                        BalancingHttpClientBindingBuilder builder = discoveryBinder(binder).bindDiscoveredHttpClient("bar", BarClient.class);
                         builder.withFilter(TestingRequestFilter.class);
                         builder.addFilterBinding().to(AnotherHttpRequestFilter.class);
                     }
@@ -379,7 +379,7 @@ public class TestDiscoveryBinder
                     @Override
                     public void configure(Binder binder)
                     {
-                        discoveryBinder(binder).bindAsyncHttpClient("foo", FooClient.class)
+                        discoveryBinder(binder).bindDiscoveredAsyncHttpClient("foo", FooClient.class)
                                 .withPrivateIoThreadPool();
                     }
                 }
