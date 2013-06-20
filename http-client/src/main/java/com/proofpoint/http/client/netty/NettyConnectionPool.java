@@ -92,7 +92,7 @@ public class NettyConnectionPool
             }, executor);
         }
         else {
-            openConnecton(isSsl, remoteAddress, connectionCallback);
+            openConnection(isSsl, remoteAddress, connectionCallback);
         }
     }
 
@@ -133,7 +133,7 @@ public class NettyConnectionPool
         checkedOutConnections.incrementAndGet();
         if (channel == null) {
             // we have permission to own a connection, but no exiting connection was found
-            openConnecton(isSsl, remoteAddress, connectionCallback);
+            openConnection(isSsl, remoteAddress, connectionCallback);
         }
         else {
             try {
@@ -146,7 +146,7 @@ public class NettyConnectionPool
         }
     }
 
-    private void openConnecton(boolean isSsl, InetSocketAddress remoteAddress, ConnectionCallback connectionCallback)
+    private void openConnection(boolean isSsl, InetSocketAddress remoteAddress, ConnectionCallback connectionCallback)
     {
         ChannelFuture future = bootstrap.connect(remoteAddress);
         if (isSsl) {
