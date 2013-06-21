@@ -220,9 +220,9 @@ public class NodeInfo
     }
 
     /**
-     * The ip address the server should use when binding a server socket.  When the public ip address
-     * is explicitly set, this will be the publicIP, but when the public ip is discovered this will be
-     * the IPv4 any local address (e.g., 0.0.0.0).
+     * The IP address the server should use when binding a server socket.
+     *
+     * If this is not set, this will be the IPv4 any local address (e.g., 0.0.0.0).
      */
     @Managed
     public InetAddress getBindIp()
@@ -258,7 +258,7 @@ public class NodeInfo
         InetAddress localAddress = null;
         try {
             localAddress = InetAddress.getLocalHost();
-            if (isGoodV4Address(localAddress)) {
+            if (isV4Address(localAddress) && getGoodAddresses().contains(localAddress)) {
                 return localAddress;
             }
         }
@@ -274,24 +274,35 @@ public class NodeInfo
         }
 
         // check all up network interfaces for a good v4 address
-        for (NetworkInterface networkInterface : getGoodNetworkInterfaces()) {
-            for (InetAddress address : Collections.list(networkInterface.getInetAddresses())) {
-                if (isGoodV4Address(address)) {
-                    return address;
-                }
+        for (InetAddress address : getGoodAddresses()) {
+            if (isV4Address(address)) {
+                return address;
             }
         }
+
         // check all up network interfaces for a good v6 address
-        for (NetworkInterface networkInterface : getGoodNetworkInterfaces()) {
-            for (InetAddress address : Collections.list(networkInterface.getInetAddresses())) {
-                if (isGoodV6Address(address)) {
-                    return address;
-                }
+        for (InetAddress address : getGoodAddresses()) {
+            if (isV6Address(address)) {
+                return address;
             }
         }
+
         // just return the local host address
         // it is most likely that this is a disconnected developer machine
         return localAddress;
+    }
+
+    private static List<InetAddress> getGoodAddresses()
+    {
+        ImmutableList.Builder<InetAddress> list = ImmutableList.builder();
+        for (NetworkInterface networkInterface : getGoodNetworkInterfaces()) {
+            for (InetAddress address : Collections.list(networkInterface.getInetAddresses())) {
+                if (isGoodAddress(address)) {
+                    list.add(address);
+                }
+            }
+        }
+        return list.build();
     }
 
     private static List<NetworkInterface> getGoodNetworkInterfaces()
@@ -313,18 +324,19 @@ public class NodeInfo
         return builder.build();
     }
 
-    private static boolean isGoodV4Address(InetAddress address)
+    private static boolean isV4Address(InetAddress address)
     {
-        return address instanceof Inet4Address &&
-                !address.isAnyLocalAddress() &&
-                !address.isLoopbackAddress() &&
-                !address.isMulticastAddress();
+        return address instanceof Inet4Address;
     }
 
-    private static boolean isGoodV6Address(InetAddress address)
+    private static boolean isV6Address(InetAddress address)
     {
-        return address instanceof Inet6Address &&
-                !address.isAnyLocalAddress() &&
+        return address instanceof Inet6Address;
+    }
+
+    private static boolean isGoodAddress(InetAddress address)
+    {
+        return !address.isAnyLocalAddress() &&
                 !address.isLoopbackAddress() &&
                 !address.isMulticastAddress();
     }

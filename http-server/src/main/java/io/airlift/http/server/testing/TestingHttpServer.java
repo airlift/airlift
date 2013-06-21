@@ -31,17 +31,15 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * HTTP server that binds to localhost on a random port
- */
-public class TestingHttpServer extends HttpServer
+public class TestingHttpServer
+        extends HttpServer
 {
-
     private final HttpServerInfo httpServerInfo;
 
     public TestingHttpServer(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config, @TheServlet Servlet servlet, @TheServlet Map<String, String> initParameters)
