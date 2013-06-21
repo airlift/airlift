@@ -31,6 +31,7 @@ import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.proofpoint.http.client.HttpUriBuilder.uriBuilderFrom;
 import static java.lang.String.format;
 
 public final class BalancingAsyncHttpClient implements AsyncHttpClient
@@ -70,13 +71,12 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
     {
         RetryingResponseHandler<T, E> retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler);
 
-        URI uri = attempt.getUri();
-        if (uri.getPath() == null || uri.getPath().isEmpty()) {
-            uri = uri.resolve("/");
-        }
+        URI uri = uriBuilderFrom(attempt.getUri())
+                .appendPath(request.getUri().getPath())
+                .build();
 
         Request subRequest = Request.Builder.fromRequest(request)
-                .setUri(uri.resolve(request.getUri()))
+                .setUri(uri)
                 .build();
 
         if (attemptsLeft > 1) {

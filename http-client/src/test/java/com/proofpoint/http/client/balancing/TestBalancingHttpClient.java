@@ -108,6 +108,34 @@ public class TestBalancingHttpClient
     }
 
     @Test
+    public void testSuccessfulQueryAnnouncedPrefix()
+            throws Exception
+    {
+        serviceBalancer = mock(HttpServiceBalancer.class);
+        serviceAttempt1 = mock(HttpServiceAttempt.class);
+        when(serviceBalancer.createAttempt()).thenReturn(serviceAttempt1);
+        when(serviceAttempt1.getUri()).thenReturn(URI.create("http://s3.example.com/prefix"));
+        balancingHttpClient = new BalancingHttpClient(serviceBalancer, httpClient,
+                new BalancingHttpClientConfig().setMaxAttempts(3));
+
+        httpClient.expectCall("http://s3.example.com/prefix/v1/service", response);
+
+        ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
+        when(responseHandler.handle(any(Request.class), same(response))).thenReturn("test response");
+
+        String returnValue = balancingHttpClient.execute(request, responseHandler);
+        assertEquals(returnValue, "test response", "return value from .execute()");
+
+        httpClient.assertDone();
+
+        verify(serviceAttempt1).getUri();
+        verify(serviceAttempt1).markGood();
+        verify(response).getStatusCode();
+        verify(responseHandler).handle(any(Request.class), same(response));
+        verifyNoMoreInteractions(serviceAttempt1, bodyGenerator, response, responseHandler);
+    }
+
+    @Test
     public void testDoesntRetryOnHandlerException()
             throws Exception
     {
