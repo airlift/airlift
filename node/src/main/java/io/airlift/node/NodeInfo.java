@@ -220,9 +220,9 @@ public class NodeInfo
     }
 
     /**
-     * The ip address the server should use when binding a server socket.  When the public ip address
-     * is explicitly set, this will be the publicIP, but when the public ip is discovered this will be
-     * the IPv4 any local address (e.g., 0.0.0.0).
+     * The IP address the server should use when binding a server socket.
+     *
+     * If this is not set, this will be the IPv4 any local address (e.g., 0.0.0.0).
      */
     @Managed
     public InetAddress getBindIp()
