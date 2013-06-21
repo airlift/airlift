@@ -68,6 +68,15 @@ public class TestNodeInfo
         Assert.assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
     }
 
+    @Test
+    public void testAddressDiscovery()
+    {
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null);
+        Assert.assertNotNull(nodeInfo.getInternalIp());
+        Assert.assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
+        Assert.assertEquals(nodeInfo.getExternalAddress(), InetAddresses.toAddrString(nodeInfo.getInternalIp()));
+    }
+
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testInvalidEnvironment()
     {
