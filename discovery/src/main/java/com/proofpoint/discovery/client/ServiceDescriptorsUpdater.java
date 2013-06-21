@@ -33,7 +33,7 @@ public final class ServiceDescriptorsUpdater
 {
     private final static Logger log = Logger.get(ServiceDescriptorsUpdater.class);
 
-    private final ServiceDescriptorsUpdateable target;
+    private final ServiceDescriptorsListener target;
     private final String type;
     private final String pool;
     private final DiscoveryLookupClient discoveryClient;
@@ -43,7 +43,7 @@ public final class ServiceDescriptorsUpdater
     private final AtomicBoolean serverUp = new AtomicBoolean(true);
     private final AtomicBoolean started = new AtomicBoolean(false);
 
-    public ServiceDescriptorsUpdater(ServiceDescriptorsUpdateable target, String type, ServiceSelectorConfig selectorConfig, DiscoveryLookupClient discoveryClient, ScheduledExecutorService executor)
+    public ServiceDescriptorsUpdater(ServiceDescriptorsListener target, String type, ServiceSelectorConfig selectorConfig, DiscoveryLookupClient discoveryClient, ScheduledExecutorService executor)
     {
         checkNotNull(target, "target is null");
         checkNotNull(type, "type is null");

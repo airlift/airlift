@@ -18,13 +18,14 @@ package com.proofpoint.discovery.client.balancing;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSet.Builder;
 import com.proofpoint.discovery.client.ServiceDescriptor;
-import com.proofpoint.discovery.client.ServiceDescriptorsUpdateable;
+import com.proofpoint.discovery.client.ServiceDescriptorsListener;
 import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 
-public class HttpServiceUpdaterAdapter implements ServiceDescriptorsUpdateable
+public class HttpServiceUpdaterAdapter
+        implements ServiceDescriptorsListener
 {
 
     private final HttpServiceBalancerImpl balancer;

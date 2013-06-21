@@ -15,7 +15,7 @@
  */
 package com.proofpoint.discovery.client;
 
-public interface ServiceDescriptorsUpdateable
+public interface ServiceDescriptorsListener
 {
     void updateServiceDescriptors(Iterable<ServiceDescriptor> newDescriptors);
 }

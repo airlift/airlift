@@ -22,7 +22,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class CachingServiceSelector implements ServiceSelector, ServiceDescriptorsUpdateable
+public class CachingServiceSelector
+        implements ServiceSelector, ServiceDescriptorsListener
 {
     private final String type;
     private final String pool;

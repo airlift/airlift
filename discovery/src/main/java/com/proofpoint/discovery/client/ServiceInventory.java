@@ -57,7 +57,7 @@ public class ServiceInventory
     private final URI serviceInventoryUri;
     private final Duration updateInterval;
     private final JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec;
-    private final ServiceDescriptorsUpdateable discoveryUpdateable;
+    private final ServiceDescriptorsListener discoveryUpdateable;
 
     private final AtomicReference<List<ServiceDescriptor>> serviceDescriptors = new AtomicReference<List<ServiceDescriptor>>(ImmutableList.<ServiceDescriptor>of());
     private final ScheduledExecutorService executorService = newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("service-inventory-%s").setDaemon(true).build());
