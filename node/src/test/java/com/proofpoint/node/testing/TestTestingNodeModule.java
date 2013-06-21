@@ -51,6 +51,10 @@ public class TestTestingNodeModule
 
         assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
 
+        assertEquals(nodeInfo.getInternalIp().toString(), "localhost/127.0.0.1");
+        assertEquals(nodeInfo.getBindIp(), nodeInfo.getInternalIp());
+        assertEquals(nodeInfo.getExternalAddress(), "127.0.0.1");
+
         assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
 
         // make sure toString doesn't throw an exception

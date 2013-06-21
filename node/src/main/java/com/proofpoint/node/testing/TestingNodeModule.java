@@ -22,6 +22,8 @@ import com.google.inject.Scopes;
 import com.proofpoint.node.NodeConfig;
 import com.proofpoint.node.NodeInfo;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -71,7 +73,9 @@ public class TestingNodeModule
     {
         binder.bind(NodeInfo.class).in(Scopes.SINGLETON);
         NodeConfig nodeConfig = new NodeConfig()
-                .setEnvironment(environment);
+                .setEnvironment(environment)
+                .setNodeInternalIp(getV4Localhost())
+                .setNodeBindIp(getV4Localhost());
 
         if (pool.isPresent()) {
             nodeConfig.setPool(pool.get());
@@ -80,5 +84,16 @@ public class TestingNodeModule
         binder.bind(NodeConfig.class).toInstance(nodeConfig);
 
         newExporter(binder).export(NodeInfo.class).withGeneratedName();
+    }
+
+    @SuppressWarnings("ImplicitNumericConversion")
+    private static InetAddress getV4Localhost()
+    {
+        try {
+            return InetAddress.getByAddress("localhost", new byte[] {127, 0, 0, 1});
+        }
+        catch (UnknownHostException e) {
+            throw new AssertionError("Could not create localhost address");
+        }
     }
 }
