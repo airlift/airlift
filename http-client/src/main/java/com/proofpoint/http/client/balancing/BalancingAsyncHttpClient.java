@@ -151,7 +151,7 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
                         synchronized (subFutureLock) {
                             HttpServiceAttempt nextAttempt = null;
                             try {
-                                nextAttempt = attempt.tryNext();
+                                nextAttempt = attempt.next();
                             }
                             catch (RuntimeException e1) {
                                 setException(responseHandler.handleException(request, e1));

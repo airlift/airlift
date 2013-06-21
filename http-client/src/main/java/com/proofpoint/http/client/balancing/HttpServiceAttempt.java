@@ -25,5 +25,5 @@ public interface HttpServiceAttempt
     public URI getUri();
     public void markGood();
     public void markBad();
-    public HttpServiceAttempt tryNext();
+    public HttpServiceAttempt next();
 }

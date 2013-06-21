@@ -90,7 +90,7 @@ public final class BalancingHttpClient implements HttpClient
                 catch (RetryException ignored) {
                     attempt.markBad();
                     try {
-                        attempt = attempt.tryNext();
+                        attempt = attempt.next();
                     }
                     catch (RuntimeException e) {
                         throw responseHandler.handleException(request, e);

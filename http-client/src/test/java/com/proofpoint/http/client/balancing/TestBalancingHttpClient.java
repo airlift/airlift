@@ -50,11 +50,11 @@ public class TestBalancingHttpClient
         serviceAttempt3 = mock(HttpServiceAttempt.class);
         when(serviceBalancer.createAttempt()).thenReturn(serviceAttempt1);
         when(serviceAttempt1.getUri()).thenReturn(URI.create("http://s1.example.com"));
-        when(serviceAttempt1.tryNext()).thenReturn(serviceAttempt2);
+        when(serviceAttempt1.next()).thenReturn(serviceAttempt2);
         when(serviceAttempt2.getUri()).thenReturn(URI.create("http://s2.example.com/"));
-        when(serviceAttempt2.tryNext()).thenReturn(serviceAttempt3);
+        when(serviceAttempt2.next()).thenReturn(serviceAttempt3);
         when(serviceAttempt3.getUri()).thenReturn(URI.create("http://s1.example.com"));
-        when(serviceAttempt3.tryNext()).thenThrow(new AssertionError("Unexpected call to serviceAttempt3.tryNext()"));
+        when(serviceAttempt3.next()).thenThrow(new AssertionError("Unexpected call to serviceAttempt3.next()"));
         httpClient = new TestingHttpClient("PUT");
         balancingHttpClient = new BalancingHttpClient(serviceBalancer, httpClient,
                 new BalancingHttpClientConfig().setMaxAttempts(3));
@@ -179,7 +179,7 @@ public class TestBalancingHttpClient
 
         verify(serviceAttempt1).getUri();
         verify(serviceAttempt1).markBad();
-        verify(serviceAttempt1).tryNext();
+        verify(serviceAttempt1).next();
         verify(serviceAttempt2).getUri();
         verify(serviceAttempt2).markGood();
         verify(response).getStatusCode();
@@ -207,7 +207,7 @@ public class TestBalancingHttpClient
 
         verify(serviceAttempt1).getUri();
         verify(serviceAttempt1).markBad();
-        verify(serviceAttempt1).tryNext();
+        verify(serviceAttempt1).next();
         verify(serviceAttempt2).getUri();
         verify(serviceAttempt2).markGood();
         verify(response408).getStatusCode();
@@ -237,7 +237,7 @@ public class TestBalancingHttpClient
 
         verify(serviceAttempt1).getUri();
         verify(serviceAttempt1).markBad();
-        verify(serviceAttempt1).tryNext();
+        verify(serviceAttempt1).next();
         verify(serviceAttempt2).getUri();
         verify(serviceAttempt2).markGood();
         verify(response500).getStatusCode();
@@ -267,7 +267,7 @@ public class TestBalancingHttpClient
 
         verify(serviceAttempt1).getUri();
         verify(serviceAttempt1).markBad();
-        verify(serviceAttempt1).tryNext();
+        verify(serviceAttempt1).next();
         verify(serviceAttempt2).getUri();
         verify(serviceAttempt2).markGood();
         verify(response502).getStatusCode();
@@ -297,7 +297,7 @@ public class TestBalancingHttpClient
 
         verify(serviceAttempt1).getUri();
         verify(serviceAttempt1).markBad();
-        verify(serviceAttempt1).tryNext();
+        verify(serviceAttempt1).next();
         verify(serviceAttempt2).getUri();
         verify(serviceAttempt2).markGood();
         verify(response503).getStatusCode();
@@ -327,7 +327,7 @@ public class TestBalancingHttpClient
 
         verify(serviceAttempt1).getUri();
         verify(serviceAttempt1).markBad();
-        verify(serviceAttempt1).tryNext();
+        verify(serviceAttempt1).next();
         verify(serviceAttempt2).getUri();
         verify(serviceAttempt2).markGood();
         verify(response504).getStatusCode();
@@ -384,10 +384,10 @@ public class TestBalancingHttpClient
 
         verify(serviceAttempt1).getUri();
         verify(serviceAttempt1).markBad();
-        verify(serviceAttempt1).tryNext();
+        verify(serviceAttempt1).next();
         verify(serviceAttempt2).getUri();
         verify(serviceAttempt2).markBad();
-        verify(serviceAttempt2).tryNext();
+        verify(serviceAttempt2).next();
         verify(serviceAttempt3).getUri();
         verify(serviceAttempt3).markGood();
         verify(response503).getStatusCode();
@@ -424,10 +424,10 @@ public class TestBalancingHttpClient
 
         verify(serviceAttempt1).getUri();
         verify(serviceAttempt1).markBad();
-        verify(serviceAttempt1).tryNext();
+        verify(serviceAttempt1).next();
         verify(serviceAttempt2).getUri();
         verify(serviceAttempt2).markBad();
-        verify(serviceAttempt2).tryNext();
+        verify(serviceAttempt2).next();
         verify(serviceAttempt3).getUri();
         verify(serviceAttempt3).markBad();
         verify(response503).getStatusCode();
@@ -459,10 +459,10 @@ public class TestBalancingHttpClient
 
         verify(serviceAttempt1).getUri();
         verify(serviceAttempt1).markBad();
-        verify(serviceAttempt1).tryNext();
+        verify(serviceAttempt1).next();
         verify(serviceAttempt2).getUri();
         verify(serviceAttempt2).markBad();
-        verify(serviceAttempt2).tryNext();
+        verify(serviceAttempt2).next();
         verify(serviceAttempt3).getUri();
         // todo the mock responseHandler is swallowing the error -- verify(serviceAttempt3).markBad();
         verify(response503).getStatusCode();
@@ -511,7 +511,7 @@ public class TestBalancingHttpClient
         when(serviceBalancer.createAttempt()).thenReturn(serviceAttempt1);
         when(serviceAttempt1.getUri()).thenReturn(URI.create("http://s1.example.com"));
         RuntimeException balancerException = new RuntimeException("test balancer exception");
-        when(serviceAttempt1.tryNext()).thenThrow(balancerException);
+        when(serviceAttempt1.next()).thenThrow(balancerException);
 
         balancingHttpClient = new BalancingHttpClient(serviceBalancer, httpClient,
                 new BalancingHttpClientConfig().setMaxAttempts(3));

@@ -36,25 +36,25 @@ public final class ServiceDescriptorsUpdater
     private final ServiceDescriptorsUpdateable target;
     private final String type;
     private final String pool;
-    private final DiscoveryLookupClient lookupClient;
+    private final DiscoveryLookupClient discoveryClient;
     private final AtomicReference<ServiceDescriptors> serviceDescriptors = new AtomicReference<>();
     private final ScheduledExecutorService executor;
 
     private final AtomicBoolean serverUp = new AtomicBoolean(true);
     private final AtomicBoolean started = new AtomicBoolean(false);
 
-    public ServiceDescriptorsUpdater(ServiceDescriptorsUpdateable target, String type, ServiceSelectorConfig selectorConfig, DiscoveryLookupClient lookupClient, ScheduledExecutorService executor)
+    public ServiceDescriptorsUpdater(ServiceDescriptorsUpdateable target, String type, ServiceSelectorConfig selectorConfig, DiscoveryLookupClient discoveryClient, ScheduledExecutorService executor)
     {
         checkNotNull(target, "target is null");
         checkNotNull(type, "type is null");
         checkNotNull(selectorConfig, "selectorConfig is null");
-        checkNotNull(lookupClient, "client is null");
+        checkNotNull(discoveryClient, "discoveryClient is null");
         checkNotNull(executor, "executor is null");
 
         this.target = target;
         this.type = type;
         this.pool = selectorConfig.getPool();
-        this.lookupClient = lookupClient;
+        this.discoveryClient = discoveryClient;
         this.executor = executor;
     }
 
@@ -79,10 +79,10 @@ public final class ServiceDescriptorsUpdater
 
         final CheckedFuture<ServiceDescriptors, DiscoveryException> future;
         if (oldDescriptors == null) {
-            future = lookupClient.getServices(type, pool);
+            future = discoveryClient.getServices(type, pool);
         }
         else {
-            future = lookupClient.refreshServices(oldDescriptors);
+            future = discoveryClient.refreshServices(oldDescriptors);
         }
 
         future.addListener(new Runnable()

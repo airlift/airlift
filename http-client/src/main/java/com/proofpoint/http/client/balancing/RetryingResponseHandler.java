@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableSet;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
+import com.proofpoint.log.Logger;
 
 import java.util.Set;
 
@@ -26,6 +27,7 @@ final class RetryingResponseHandler<T, E extends Exception>
         implements ResponseHandler<T, RetryException>
 {
     private static final Set<Integer> RETRYABLE_STATUS_CODES = ImmutableSet.of(408, 500, 502, 503, 504);
+    private static final Logger log = Logger.get(RetryingResponseHandler.class);
     private final Request originalRequest;
     private final ResponseHandler<T, E> innerHandler;
 
@@ -38,6 +40,8 @@ final class RetryingResponseHandler<T, E extends Exception>
     @Override
     public RetryException handleException(Request request, Exception exception)
     {
+        log.warn(exception, "Exception querying %s",
+                request.getUri().resolve("/"));
         return new RetryException();
     }
 
@@ -48,6 +52,8 @@ final class RetryingResponseHandler<T, E extends Exception>
         if (RETRYABLE_STATUS_CODES.contains(response.getStatusCode())) {
             String retryHeader = response.getHeader("X-Proofpoint-Retry");
             if (!("no".equalsIgnoreCase(retryHeader))) {
+                log.warn("%d response querying %s",
+                        response.getStatusCode(), request.getUri().resolve("/"));
                 throw new RetryException();
             }
 

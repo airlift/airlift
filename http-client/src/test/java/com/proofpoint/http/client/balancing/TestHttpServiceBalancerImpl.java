@@ -62,10 +62,10 @@ public class TestHttpServiceBalancerImpl
         HttpServiceAttempt attempt = httpServiceBalancer.createAttempt();
         uris.add(attempt.getUri());
         attempt.markBad();
-        attempt = attempt.tryNext();
+        attempt = attempt.next();
         uris.add(attempt.getUri());
         attempt.markBad();
-        attempt = attempt.tryNext();
+        attempt = attempt.next();
         uris.add(attempt.getUri());
 
         Assert.assertEquals(uris, expected);

@@ -85,7 +85,7 @@ public class HttpServiceBalancerImpl implements HttpServiceBalancer
         }
 
         @Override
-        public HttpServiceAttempt tryNext()
+        public HttpServiceAttempt next()
         {
             return new HttpServiceAttemptImpl(uris, attempt + 1);
         }
