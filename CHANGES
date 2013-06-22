@@ -2,7 +2,7 @@ Platform 0.75
 
 * Experimental modules
 
-  The trailing "-experimental" has been removed from all artifact names.
+  We removed the trailing "-experimental" from all artifact names.
   Any APIs that are experimental should be annotated with @Beta instead.
 
 * We moved the /v1/jmx/mbean resource to /admin/jmx/mbean on the admin port.
@@ -18,6 +18,16 @@ Platform 0.75
 * We renamed ConfigAssertions.assertDeprecatedEquivalence() to
   assertLegacyEquivalence().
 
+* We added TestingHttpClient to simplify testing.
+
+* QuantileDigest
+
+  We made a number of improvements to QuantileDigest. QuantileDigests now support
+  negative values, can be serialized/deserialized and merged with other QuantileDigests.
+
+  Important: QuantileDigest is no longer thread-safe, so if you have code that relies
+  on this guarantee, you'll need to update it to provide thread-safety at that layer.
+
 * We added a method to TimedStat to time a block using try-with-resources:
 
     try (BlockTimer ignored = timedStat.time()) {
@@ -26,6 +36,8 @@ Platform 0.75
 
 * We added an addDiscoveredService(String type, String pool, String uri)
   method to InMemoryDiscoveryClient.
+
+* [Bug] Fixed handling of missing content type for JSON http responses.
 
 * We deprecated ConfigAssertions.assertDefaults().
 
