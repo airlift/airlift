@@ -105,9 +105,11 @@ public class ObjectMapperProvider
         objectMapper.disable(MapperFeature.AUTO_DETECT_GETTERS);
         objectMapper.disable(MapperFeature.AUTO_DETECT_IS_GETTERS);
         objectMapper.disable(MapperFeature.USE_GETTERS_AS_SETTERS);
+        objectMapper.disable(MapperFeature.INFER_PROPERTY_MUTATORS);
+        objectMapper.disable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS);
 
         if (jsonSerializers != null || jsonDeserializers != null || keySerializers != null || keyDeserializers != null) {
-            SimpleModule module = new SimpleModule(getClass().getName(), new Version(1, 0, 0, null));
+            SimpleModule module = new SimpleModule(getClass().getName(), new Version(1, 0, 0, null, null, null));
             if (jsonSerializers != null) {
                 for (Entry<Class<?>, JsonSerializer<?>> entry : jsonSerializers.entrySet()) {
                     addSerializer(module, entry.getKey(), entry.getValue());

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.proofpoint.json.JsonCodec.*;
+import static org.testng.Assert.assertNull;
 
 public class TestJsonCodec
 {
@@ -88,4 +89,75 @@ public class TestJsonCodec
         Person.validatePersonMapJsonCodec(jsonCodec);
     }
 
+    @Test
+    public void testImmutableJsonCodec()
+            throws Exception
+    {
+        JsonCodec<ImmutablePerson> jsonCodec = jsonCodec(ImmutablePerson.class);
+
+        ImmutablePerson.validatePersonJsonCodec(jsonCodec);
+    }
+
+    @Test
+    public void testAsymmetricJsonCodec()
+            throws Exception
+    {
+        JsonCodec<ImmutablePerson> jsonCodec = jsonCodec(ImmutablePerson.class);
+        ImmutablePerson immutablePerson = jsonCodec.fromJson("{ \"notWritable\": \"foo\" }");
+        assertNull(immutablePerson.getNotWritable());
+    }
+
+    @Test
+    public void testImmutableListJsonCodec()
+            throws Exception
+    {
+        JsonCodec<List<ImmutablePerson>> jsonCodec = listJsonCodec(ImmutablePerson.class);
+
+        ImmutablePerson.validatePersonListJsonCodec(jsonCodec);
+    }
+
+    @Test
+    public void testImmutableListJsonCodecFromJsonCodec()
+            throws Exception
+    {
+        JsonCodec<List<ImmutablePerson>> jsonCodec = listJsonCodec(jsonCodec(ImmutablePerson.class));
+
+        ImmutablePerson.validatePersonListJsonCodec(jsonCodec);
+    }
+
+    @Test
+    public void testImmutableTypeLiteralList()
+            throws Exception
+    {
+        JsonCodec<List<ImmutablePerson>> jsonCodec = jsonCodec(new TypeLiteral<List<ImmutablePerson>>() { });
+
+        ImmutablePerson.validatePersonListJsonCodec(jsonCodec);
+    }
+
+    @Test
+    public void testImmutableMapJsonCodec()
+            throws Exception
+    {
+        JsonCodec<Map<String, ImmutablePerson>> jsonCodec = mapJsonCodec(String.class, ImmutablePerson.class);
+
+        ImmutablePerson.validatePersonMapJsonCodec(jsonCodec);
+    }
+
+    @Test
+    public void testImmutableMapJsonCodecFromJsonCodec()
+            throws Exception
+    {
+        JsonCodec<Map<String, ImmutablePerson>> jsonCodec = mapJsonCodec(String.class, jsonCodec(ImmutablePerson.class));
+
+        ImmutablePerson.validatePersonMapJsonCodec(jsonCodec);
+    }
+
+    @Test
+    public void testImmutableTypeLiteralMap()
+            throws Exception
+    {
+        JsonCodec<Map<String, ImmutablePerson>> jsonCodec = jsonCodec(new TypeLiteral<Map<String, ImmutablePerson>>() {});
+
+        ImmutablePerson.validatePersonMapJsonCodec(jsonCodec);
+    }
 }

@@ -41,6 +41,8 @@ Platform 0.75
 
 * We deprecated ConfigAssertions.assertDefaults().
 
+* We upgraded Jackson to 2.2.2 and disabled property mutator inference.
+
 Platform 0.74
 
 * The new launcher status command now reports a running instance of a server
