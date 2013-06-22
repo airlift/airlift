@@ -16,10 +16,8 @@
 package com.proofpoint.jmx;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.Resources;
 import com.google.inject.Inject;
 
 import javax.management.JMException;
@@ -56,15 +54,6 @@ public class MBeanResource
         }
 
         return mbeans.build();
-    }
-
-    @GET
-    @Produces(MediaType.TEXT_HTML)
-    public String getMBeansUi()
-            throws Exception
-    {
-        String html = Resources.toString(Resources.getResource(getClass(), "mbeans.html"), Charsets.UTF_8);
-        return html;
     }
 
     @GET
