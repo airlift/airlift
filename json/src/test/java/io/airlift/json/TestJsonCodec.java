@@ -24,6 +24,7 @@ import java.util.Map;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.json.JsonCodec.listJsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
+import static org.testng.Assert.assertNull;
 
 public class TestJsonCodec
 {
@@ -99,13 +100,13 @@ public class TestJsonCodec
         ImmutablePerson.validatePersonJsonCodec(jsonCodec);
     }
 
-    // todo this should not throw an exception, but jackson will try to write to the private final field. remove this when jackson is fixed
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test
     public void testAsymmetricJsonCodec()
             throws Exception
     {
         JsonCodec<ImmutablePerson> jsonCodec = jsonCodec(ImmutablePerson.class);
-        jsonCodec.fromJson("{ \"notWritable\": \"foo\" }");
+        ImmutablePerson immutablePerson = jsonCodec.fromJson("{ \"notWritable\": \"foo\" }");
+        assertNull(immutablePerson.getNotWritable());
     }
 
     @Test
