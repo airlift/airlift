@@ -152,6 +152,15 @@
                                     <exclude>org.eclipse.jetty.orbit:javax.servlet</exclude>
                                     <!-- removed -->
                                     <exclude>com.proofpoint.platform:jmx-http-rpc-experimental</exclude>
+                                    <!-- renamed Platform modules -->
+                                    <exclude>com.proofpoint.platform:discovery-experimental</exclude>
+                                    <exclude>com.proofpoint.platform:event-experimental</exclude>
+                                    <exclude>com.proofpoint.platform:http-client-experimental</exclude>
+                                    <exclude>com.proofpoint.platform:jmx-http-experimental</exclude>
+                                    <exclude>com.proofpoint.platform:rack-experimental</exclude>
+                                    <exclude>com.proofpoint.platform:rack-launcher-experimental</exclude>
+                                    <exclude>com.proofpoint.platform:rack-packaging-experimental</exclude>
+                                    <exclude>com.proofpoint.platform:rack-server-base-experimental</exclude>
                                 </excludes>
                                 <includes>
                                     <!-- whitelist the well numbered guava releases -->
