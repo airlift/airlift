@@ -18,7 +18,7 @@ package io.airlift.http.client;
 import com.google.common.annotations.Beta;
 import io.airlift.stats.CounterStat;
 import io.airlift.stats.DistributionStat;
-import io.airlift.stats.TimedStat;
+import io.airlift.stats.TimeStat;
 import io.airlift.units.Duration;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
@@ -30,8 +30,8 @@ import javax.inject.Inject;
 public class RequestStats
 {
     private final CounterStat request;
-    private final TimedStat requestTime;
-    private final TimedStat responseTime;
+    private final TimeStat requestTime;
+    private final TimeStat responseTime;
     private final DistributionStat readBytes;
     private final DistributionStat writtenBytes;
 
@@ -39,8 +39,8 @@ public class RequestStats
     public RequestStats()
     {
         request = new CounterStat();
-        requestTime = new TimedStat();
-        responseTime = new TimedStat();
+        requestTime = new TimeStat();
+        responseTime = new TimeStat();
         readBytes = new DistributionStat();
         writtenBytes = new DistributionStat();
     }
@@ -54,10 +54,10 @@ public class RequestStats
     {
         request.update(1);
         if (requestProcessingTime != null) {
-            requestTime.addValue(requestProcessingTime);
+            requestTime.add(requestProcessingTime);
         }
         if (requestProcessingTime != null) {
-            responseTime.addValue(responseProcessingTime);
+            responseTime.add(responseProcessingTime);
         }
         readBytes.add(responseSizeInBytes);
         writtenBytes.add(requestSizeInBytes);
@@ -72,14 +72,14 @@ public class RequestStats
 
     @Managed
     @Nested
-    public TimedStat getRequestTime()
+    public TimeStat getRequestTime()
     {
         return requestTime;
     }
 
     @Managed
     @Nested
-    public TimedStat getResponseTime()
+    public TimeStat getResponseTime()
     {
         return responseTime;
     }
