@@ -3,6 +3,7 @@
 - Replace custom jmx agent with jdk's
 - Defunct jmx.rmiserver.hostname property
 - Add additional Logger methods for literal messages
+- Update RequestStats to use DistributionStat instead of MeterStat
 
 * 0.78
 
