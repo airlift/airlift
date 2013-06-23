@@ -1,6 +1,6 @@
 Airlift 0.79
 
-JMX agent
+* JMX agent
 
 We've replaced the custom JMX agent in airlift by the one built into the JVM.
 This change makes it possible to use the VisualGC plugin for VisualVM when jstatd 
@@ -8,6 +8,18 @@ is also running in the same machine as the airlift-based process.
 
 As a result of this change, we've also removed the 'jmx.rmiserver.hostname' configuration
 option in favor of Java's native configuration option 'java.rmi.server.hostname'.
+
+* TimeStat
+
+We've deprecated TimedStat in favor of TimeStat. The new implementation operates with nanosecond
+granularity instead of milliseconds, provides more accurate results for quantile queries
+and supports Java 7's try-with-resources syntax:
+
+    TimeStat stat = ...
+    try (BlockTimer ignored = stat.time()) {
+        // do something
+    }
+
 
 Airlift 0.78
 

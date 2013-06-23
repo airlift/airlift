@@ -17,7 +17,7 @@ package io.airlift.http.server;
 
 import io.airlift.stats.CounterStat;
 import io.airlift.stats.DistributionStat;
-import io.airlift.stats.TimedStat;
+import io.airlift.stats.TimeStat;
 import io.airlift.units.Duration;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
@@ -28,7 +28,7 @@ import javax.inject.Inject;
 public class RequestStats
 {
     private final CounterStat request;
-    private final TimedStat requestTime;
+    private final TimeStat requestTime;
     private final DistributionStat readBytes;
     private final DistributionStat writtenBytes;
 
@@ -36,7 +36,7 @@ public class RequestStats
     public RequestStats()
     {
         request = new CounterStat();
-        requestTime = new TimedStat();
+        requestTime = new TimeStat();
         readBytes = new DistributionStat();
         writtenBytes = new DistributionStat();
     }
@@ -44,7 +44,7 @@ public class RequestStats
     public void record(String method, int responseCode, long requestSizeInBytes, long responseSizeInBytes, Duration schedulingDelay, Duration requestProcessingTime)
     {
         request.update(1);
-        requestTime.addValue(requestProcessingTime);
+        requestTime.add(requestProcessingTime);
         readBytes.add(requestSizeInBytes);
         writtenBytes.add(responseSizeInBytes);
     }
@@ -58,7 +58,7 @@ public class RequestStats
 
     @Managed
     @Nested
-    public TimedStat getRequestTime()
+    public TimeStat getRequestTime()
     {
         return requestTime;
     }

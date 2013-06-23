@@ -4,6 +4,7 @@
 - Defunct jmx.rmiserver.hostname property
 - Add additional Logger methods for literal messages
 - Update RequestStats to use DistributionStat instead of MeterStat
+- Deprecate TimedStat and introduce TimeStat
 
 * 0.78
 

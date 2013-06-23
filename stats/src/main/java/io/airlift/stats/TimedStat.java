@@ -24,6 +24,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * @deprecated Replaced by {@link TimeStat}
+ */
+@Deprecated
 public class TimedStat
 {
     private final AtomicLong sum = new AtomicLong(0);
