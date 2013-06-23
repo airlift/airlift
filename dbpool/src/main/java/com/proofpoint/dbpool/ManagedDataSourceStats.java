@@ -15,7 +15,7 @@
  */
 package com.proofpoint.dbpool;
 
-import com.proofpoint.stats.TimedStat;
+import com.proofpoint.stats.TimerStat;
 import com.proofpoint.units.Duration;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
@@ -24,29 +24,29 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public final class ManagedDataSourceStats
 {
-    private final TimedStat checkout = new TimedStat();
-    private final TimedStat create = new TimedStat();
-    private final TimedStat held = new TimedStat();
+    private final TimerStat checkout = new TimerStat();
+    private final TimerStat create = new TimerStat();
+    private final TimerStat held = new TimerStat();
     private final AtomicLong connectionErrorCount = new AtomicLong();
     private final AtomicLong creationErrorCount = new AtomicLong();
 
     @Managed
     @Nested
-    public TimedStat getCheckout()
+    public TimerStat getCheckout()
     {
         return checkout;
     }
 
     @Managed
     @Nested
-    public TimedStat getCreate()
+    public TimerStat getCreate()
     {
         return create;
     }
 
     @Managed
     @Nested
-    public TimedStat getHeld()
+    public TimerStat getHeld()
     {
         return held;
     }
