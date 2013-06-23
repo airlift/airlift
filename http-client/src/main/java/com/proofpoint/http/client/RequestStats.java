@@ -16,19 +16,15 @@
 package com.proofpoint.http.client;
 
 import com.google.common.annotations.Beta;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.proofpoint.stats.CounterStat;
-import com.proofpoint.stats.MeterStat;
+import com.proofpoint.stats.DistributionStat;
 import com.proofpoint.stats.TimedStat;
 import com.proofpoint.units.Duration;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
-import javax.annotation.PreDestroy;
 import javax.inject.Inject;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 @Beta
 public class RequestStats
@@ -36,8 +32,8 @@ public class RequestStats
     private final CounterStat request;
     private final TimedStat requestTime;
     private final TimedStat responseTime;
-    private final MeterStat readBytes;
-    private final MeterStat writtenBytes;
+    private final DistributionStat readBytes;
+    private final DistributionStat writtenBytes;
 
     @Inject
     public RequestStats()
@@ -45,8 +41,8 @@ public class RequestStats
         request = new CounterStat();
         requestTime = new TimedStat();
         responseTime = new TimedStat();
-        readBytes = new MeterStat();
-        writtenBytes = new MeterStat();
+        readBytes = new DistributionStat();
+        writtenBytes = new DistributionStat();
     }
 
     public void record(String method,
@@ -63,8 +59,8 @@ public class RequestStats
         if (requestProcessingTime != null) {
             responseTime.addValue(responseProcessingTime);
         }
-        readBytes.update(responseSizeInBytes);
-        writtenBytes.update(requestSizeInBytes);
+        readBytes.add(responseSizeInBytes);
+        writtenBytes.add(requestSizeInBytes);
     }
 
     @Managed
@@ -90,14 +86,14 @@ public class RequestStats
 
     @Managed
     @Nested
-    public MeterStat getReadBytes()
+    public DistributionStat getReadBytes()
     {
         return readBytes;
     }
 
     @Managed
     @Nested
-    public MeterStat getWrittenBytes()
+    public DistributionStat getWrittenBytes()
     {
         return writtenBytes;
     }
