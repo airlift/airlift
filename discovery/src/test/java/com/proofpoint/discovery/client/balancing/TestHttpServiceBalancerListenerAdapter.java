@@ -66,6 +66,7 @@ public class TestHttpServiceBalancerListenerAdapter
         updater = new ServiceDescriptorsUpdater(new HttpServiceBalancerListenerAdapter(httpServiceBalancer),
                 "apple",
                 new ServiceSelectorConfig().setPool("pool"),
+                nodeInfo,
                 discoveryClient,
                 executor);
     }

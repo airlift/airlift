@@ -16,10 +16,12 @@
 package com.proofpoint.discovery.client;
 
 import com.google.common.collect.ImmutableList;
+import com.proofpoint.node.NodeInfo;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class CachingServiceSelector
@@ -29,13 +31,14 @@ public class CachingServiceSelector
     private final String pool;
     private final AtomicReference<List<ServiceDescriptor>> serviceDescriptors = new AtomicReference<>((List<ServiceDescriptor>) ImmutableList.<ServiceDescriptor>of());
 
-    public CachingServiceSelector(String type, ServiceSelectorConfig selectorConfig)
+    public CachingServiceSelector(String type, ServiceSelectorConfig selectorConfig, NodeInfo nodeInfo)
     {
         checkNotNull(type, "type is null");
         checkNotNull(selectorConfig, "selectorConfig is null");
+        checkNotNull(nodeInfo, "nodeInfo is null");
 
         this.type = type;
-        this.pool = selectorConfig.getPool();
+        this.pool = firstNonNull(selectorConfig.getPool(), nodeInfo.getPool());
     }
 
     @Override

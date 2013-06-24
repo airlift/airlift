@@ -27,7 +27,7 @@ public class TestServiceSelectorConfig
     public void testDefaults()
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(ServiceSelectorConfig.class)
-                .setPool(ServiceSelectorConfig.DEFAULT_POOL));
+                .setPool(null));
     }
 
     @Test
@@ -43,4 +43,9 @@ public class TestServiceSelectorConfig
         ConfigAssertions.assertFullMapping(properties, expected);
     }
 
+    @Test
+    public void testLegacyProperties()
+    {
+        ConfigAssertions.assertLegacyEquivalence(ServiceSelectorConfig.class, ImmutableMap.<String, String>of());
+    }
 }

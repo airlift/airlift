@@ -23,9 +23,11 @@ import com.proofpoint.discovery.client.ServiceDescriptorsUpdater;
 import com.proofpoint.discovery.client.ServiceSelectorConfig;
 import com.proofpoint.http.client.balancing.HttpServiceBalancer;
 import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
+import com.proofpoint.node.NodeInfo;
 
 import java.util.concurrent.ScheduledExecutorService;
 
+import static com.google.common.base.Objects.firstNonNull;
 import static java.lang.String.format;
 
 public final class HttpServiceBalancerFactory
@@ -42,13 +44,14 @@ public final class HttpServiceBalancerFactory
         this.executor = executor;
     }
 
-    public HttpServiceBalancer createHttpServiceBalancer(String type, ServiceSelectorConfig selectorConfig)
+    public HttpServiceBalancer createHttpServiceBalancer(String type, ServiceSelectorConfig selectorConfig, NodeInfo nodeInfo)
     {
         Preconditions.checkNotNull(type, "type is null");
         Preconditions.checkNotNull(selectorConfig, "selectorConfig is null");
 
-        HttpServiceBalancerImpl balancer = new HttpServiceBalancerImpl(format("type=[%s], pool=[%s]", type, selectorConfig.getPool()));
-        ServiceDescriptorsUpdater updater = new ServiceDescriptorsUpdater(new HttpServiceBalancerListenerAdapter(balancer), type, selectorConfig, lookupClient, executor);
+        String pool = firstNonNull(selectorConfig.getPool(), nodeInfo.getPool());
+        HttpServiceBalancerImpl balancer = new HttpServiceBalancerImpl(format("type=[%s], pool=[%s]", type, pool));
+        ServiceDescriptorsUpdater updater = new ServiceDescriptorsUpdater(new HttpServiceBalancerListenerAdapter(balancer), type, selectorConfig, nodeInfo, lookupClient, executor);
         updater.start();
 
         return balancer;

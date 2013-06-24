@@ -17,6 +17,7 @@ package com.proofpoint.discovery.client;
 
 import com.google.common.util.concurrent.CheckedFuture;
 import com.proofpoint.log.Logger;
+import com.proofpoint.node.NodeInfo;
 import com.proofpoint.units.Duration;
 
 import javax.annotation.PostConstruct;
@@ -25,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.proofpoint.discovery.client.announce.DiscoveryAnnouncementClient.DEFAULT_DELAY;
@@ -43,17 +45,18 @@ public final class ServiceDescriptorsUpdater
     private final AtomicBoolean serverUp = new AtomicBoolean(true);
     private final AtomicBoolean started = new AtomicBoolean(false);
 
-    public ServiceDescriptorsUpdater(ServiceDescriptorsListener target, String type, ServiceSelectorConfig selectorConfig, DiscoveryLookupClient discoveryClient, ScheduledExecutorService executor)
+    public ServiceDescriptorsUpdater(ServiceDescriptorsListener target, String type, ServiceSelectorConfig selectorConfig, NodeInfo nodeInfo, DiscoveryLookupClient discoveryClient, ScheduledExecutorService executor)
     {
         checkNotNull(target, "target is null");
         checkNotNull(type, "type is null");
         checkNotNull(selectorConfig, "selectorConfig is null");
+        checkNotNull(nodeInfo, "nodeInfo is null");
         checkNotNull(discoveryClient, "discoveryClient is null");
         checkNotNull(executor, "executor is null");
 
         this.target = target;
         this.type = type;
-        this.pool = selectorConfig.getPool();
+        this.pool = firstNonNull(selectorConfig.getPool(), nodeInfo.getPool());
         this.discoveryClient = discoveryClient;
         this.executor = executor;
     }

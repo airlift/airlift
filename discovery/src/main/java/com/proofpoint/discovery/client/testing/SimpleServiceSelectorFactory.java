@@ -15,30 +15,36 @@
  */
 package com.proofpoint.discovery.client.testing;
 
-import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.proofpoint.discovery.client.DiscoveryLookupClient;
 import com.proofpoint.discovery.client.ServiceSelector;
 import com.proofpoint.discovery.client.ServiceSelectorConfig;
 import com.proofpoint.discovery.client.ServiceSelectorFactory;
+import com.proofpoint.node.NodeInfo;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class SimpleServiceSelectorFactory implements ServiceSelectorFactory
 {
     private final DiscoveryLookupClient lookupClient;
+    private final NodeInfo nodeInfo;
 
     @Inject
-    public SimpleServiceSelectorFactory(DiscoveryLookupClient lookupClient)
+    public SimpleServiceSelectorFactory(DiscoveryLookupClient lookupClient, NodeInfo nodeInfo)
     {
-        Preconditions.checkNotNull(lookupClient, "client is null");
+        checkNotNull(lookupClient, "client is null");
+        checkNotNull(nodeInfo, "nodeInfo is null");
+
         this.lookupClient = lookupClient;
+        this.nodeInfo = nodeInfo;
     }
 
     @Override
     public ServiceSelector createServiceSelector(String type, ServiceSelectorConfig selectorConfig)
     {
-        Preconditions.checkNotNull(type, "type is null");
-        Preconditions.checkNotNull(selectorConfig, "selectorConfig is null");
+        checkNotNull(type, "type is null");
+        checkNotNull(selectorConfig, "selectorConfig is null");
 
-        return new SimpleServiceSelector(type, selectorConfig, lookupClient);
+        return new SimpleServiceSelector(type, selectorConfig, nodeInfo, lookupClient);
     }
 }

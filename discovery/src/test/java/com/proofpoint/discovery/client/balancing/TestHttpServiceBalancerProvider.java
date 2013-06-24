@@ -15,7 +15,6 @@
  */
 package com.proofpoint.discovery.client.balancing;
 
-import com.proofpoint.discovery.client.balancing.HttpServiceBalancerProvider;
 import org.testng.annotations.Test;
 
 import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;

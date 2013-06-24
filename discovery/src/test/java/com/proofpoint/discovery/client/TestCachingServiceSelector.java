@@ -19,9 +19,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.proofpoint.discovery.client.testing.InMemoryDiscoveryClient;
+import com.proofpoint.node.NodeConfig;
 import com.proofpoint.node.NodeInfo;
-import com.proofpoint.testing.Assertions;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -29,6 +28,9 @@ import org.testng.annotations.Test;
 import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+
+import static com.proofpoint.testing.Assertions.assertEqualsIgnoreOrder;
+import static org.testng.Assert.assertEquals;
 
 public class TestCachingServiceSelector
 {
@@ -52,10 +54,11 @@ public class TestCachingServiceSelector
         nodeInfo = new NodeInfo("environment");
         discoveryClient = new InMemoryDiscoveryClient(nodeInfo);
         serviceSelector = new CachingServiceSelector("apple",
-                new ServiceSelectorConfig().setPool("pool")
-        );
+                new ServiceSelectorConfig().setPool("pool"),
+                nodeInfo);
         updater = new ServiceDescriptorsUpdater(serviceSelector, "apple",
                 new ServiceSelectorConfig().setPool("pool"),
+                nodeInfo,
                 discoveryClient,
                 executor);
     }
@@ -70,14 +73,24 @@ public class TestCachingServiceSelector
     @Test
     public void testBasics()
     {
-        Assert.assertEquals(serviceSelector.getType(), "apple");
-        Assert.assertEquals(serviceSelector.getPool(), "pool");
+        assertEquals(serviceSelector.getType(), "apple");
+        assertEquals(serviceSelector.getPool(), "pool");
+    }
+
+    @Test
+    public void testDefaultToNodePool()
+    {
+        serviceSelector = new CachingServiceSelector("apple",
+                new ServiceSelectorConfig(),
+                new NodeInfo(new NodeConfig().setEnvironment("environment").setPool("nodepool")));
+        assertEquals(serviceSelector.getType(), "apple");
+        assertEquals(serviceSelector.getPool(), "nodepool");
     }
 
     @Test
     public void testNotStartedEmpty()
     {
-        Assert.assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
+        assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
     }
 
     @Test
@@ -86,7 +99,7 @@ public class TestCachingServiceSelector
     {
         updater.start();
 
-        Assert.assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
+        assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
     }
 
     @Test
@@ -97,7 +110,7 @@ public class TestCachingServiceSelector
         discoveryClient.addDiscoveredService(DIFFERENT_TYPE);
         discoveryClient.addDiscoveredService(DIFFERENT_POOL);
 
-        Assert.assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
+        assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
     }
 
     @Test
@@ -113,6 +126,27 @@ public class TestCachingServiceSelector
 
         Thread.sleep(100);
 
-        Assertions.assertEqualsIgnoreOrder(serviceSelector.selectAllServices(), ImmutableList.of(APPLE_1_SERVICE, APPLE_2_SERVICE));
+        assertEqualsIgnoreOrder(serviceSelector.selectAllServices(), ImmutableList.of(APPLE_1_SERVICE, APPLE_2_SERVICE));
+    }
+
+    @Test
+    public void testServiceUpdaterDefaultToNodePool()
+            throws Exception
+    {
+        discoveryClient.addDiscoveredService(APPLE_1_SERVICE);
+        discoveryClient.addDiscoveredService(APPLE_2_SERVICE);
+        discoveryClient.addDiscoveredService(DIFFERENT_TYPE);
+        discoveryClient.addDiscoveredService(DIFFERENT_POOL);
+
+        updater = new ServiceDescriptorsUpdater(serviceSelector, "apple",
+                new ServiceSelectorConfig(),
+                new NodeInfo(new NodeConfig().setEnvironment("environment").setPool("pool")),
+                discoveryClient,
+                executor);
+        updater.start();
+
+        Thread.sleep(100);
+
+        assertEqualsIgnoreOrder(serviceSelector.selectAllServices(), ImmutableList.of(APPLE_1_SERVICE, APPLE_2_SERVICE));
     }
 }
