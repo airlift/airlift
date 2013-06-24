@@ -18,17 +18,16 @@ package io.airlift.stats;
 import io.airlift.units.Duration;
 import org.weakref.jmx.Managed;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class TimedStat
 {
+    private static final double MAX_ERROR = 0.01;
     private final AtomicLong sum = new AtomicLong(0);
     private final AtomicLong count = new AtomicLong(0);
-    private final ExponentiallyDecayingSample sample = new ExponentiallyDecayingSample(1028, 0.015);
+    private final QuantileDigest digest = new QuantileDigest(MAX_ERROR, 0.015);
 
     @Managed
     public long getCount()
@@ -45,40 +44,23 @@ public class TimedStat
     @Managed
     public double getMin()
     {
-        List<Long> values = sample.values();
-        if (!values.isEmpty()) {
-            return Collections.min(values);
-        }
-
-        return Double.NaN;
+        return digest.getMin();
     }
 
     @Managed
     public double getMax()
     {
-        List<Long> values = sample.values();
-        if (!values.isEmpty()) {
-            return Collections.max(values);
-        }
-
-        return Double.NaN;
+        return digest.getMax();
     }
 
     @Managed
     public double getMean()
     {
-        List<Long> values = sample.values();
-
-        if (!values.isEmpty()) {
-            long sum = 0;
-            for (long value : values) {
-                sum += value;
-            }
-
-            return sum * 1.0 / values.size();
+        long count = this.count.get();
+        if (count == 0) {
+            return Double.NaN;
         }
-
-        return Double.NaN;
+        return ((double) sum.get()) / count;
     }
 
     @Managed
@@ -87,31 +69,31 @@ public class TimedStat
         if (percentile < 0 || percentile > 1) {
             throw new IllegalArgumentException("percentile must be between 0 and 1");
         }
-        return sample.percentiles(percentile)[0];
+        return digest.getQuantile(percentile);
     }
 
     @Managed(description = "50th Percentile Measurement")
     public double getTP50()
     {
-        return sample.percentiles(0.5)[0];
+        return digest.getQuantile(0.5);
     }
 
     @Managed(description = "90th Percentile Measurement")
     public double getTP90()
     {
-        return sample.percentiles(0.9)[0];
+        return digest.getQuantile(0.9);
     }
 
     @Managed(description = "99th Percentile Measurement")
     public double getTP99()
     {
-        return sample.percentiles(0.99)[0];
+        return digest.getQuantile(0.99);
     }
 
     @Managed(description = "99.9th Percentile Measurement")
     public double getTP999()
     {
-        return sample.percentiles(0.999)[0];
+        return digest.getQuantile(0.999);
     }
 
     public void addValue(double value, TimeUnit timeUnit)
@@ -121,7 +103,7 @@ public class TimedStat
 
     public void addValue(Duration duration)
     {
-        sample.update((long) duration.toMillis());
+        digest.add((long) duration.toMillis());
         sum.addAndGet((long) duration.toMillis());
         count.incrementAndGet();
     }
