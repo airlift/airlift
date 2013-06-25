@@ -24,13 +24,13 @@ import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-public class HttpServiceUpdaterAdapter
+public class HttpServiceBalancerListenerAdapter
         implements ServiceDescriptorsListener
 {
 
     private final HttpServiceBalancerImpl balancer;
 
-    public HttpServiceUpdaterAdapter(HttpServiceBalancerImpl balancer)
+    public HttpServiceBalancerListenerAdapter(HttpServiceBalancerImpl balancer)
     {
         this.balancer = balancer;
     }

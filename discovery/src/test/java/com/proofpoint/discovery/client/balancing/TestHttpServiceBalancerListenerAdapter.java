@@ -41,7 +41,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.testng.Assert.assertEquals;
 
-public class TestHttpServiceUpdaterAdapter
+public class TestHttpServiceBalancerListenerAdapter
 {
     private static final ServiceDescriptor APPLE_1_SERVICE = new ServiceDescriptor(UUID.randomUUID(), "node-A", "apple", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("http", "http://apple-a.example.com"));
     private static final ServiceDescriptor APPLE_2_SERVICE = new ServiceDescriptor(UUID.randomUUID(), "node-B", "apple", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("http", "http://apple-c.example.com", "https", "https://apple-b.example.com"));
@@ -63,7 +63,7 @@ public class TestHttpServiceUpdaterAdapter
         nodeInfo = new NodeInfo("environment");
         discoveryClient = new InMemoryDiscoveryClient(nodeInfo);
         httpServiceBalancer = mock(HttpServiceBalancerImpl.class);
-        updater = new ServiceDescriptorsUpdater(new HttpServiceUpdaterAdapter(httpServiceBalancer),
+        updater = new ServiceDescriptorsUpdater(new HttpServiceBalancerListenerAdapter(httpServiceBalancer),
                 "apple",
                 new ServiceSelectorConfig().setPool("pool"),
                 discoveryClient,

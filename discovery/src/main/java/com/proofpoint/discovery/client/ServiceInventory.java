@@ -24,8 +24,8 @@ import com.google.common.collect.Iterables;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
+import com.proofpoint.discovery.client.balancing.HttpServiceBalancerListenerAdapter;
 import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
-import com.proofpoint.discovery.client.balancing.HttpServiceUpdaterAdapter;
 import com.proofpoint.json.JsonCodec;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeInfo;
@@ -81,7 +81,7 @@ public class ServiceInventory
         this.serviceInventoryUri = serviceInventoryConfig.getServiceInventoryUri();
         updateInterval = serviceInventoryConfig.getUpdateInterval();
         this.serviceDescriptorsCodec = serviceDescriptorsCodec;
-        this.discoveryListener = new HttpServiceUpdaterAdapter(discoveryBalancer);
+        this.discoveryListener = new HttpServiceBalancerListenerAdapter(discoveryBalancer);
 
         if (serviceInventoryUri != null) {
             String scheme = serviceInventoryUri.getScheme().toLowerCase();

@@ -48,7 +48,7 @@ public final class HttpServiceBalancerFactory
         Preconditions.checkNotNull(selectorConfig, "selectorConfig is null");
 
         HttpServiceBalancerImpl balancer = new HttpServiceBalancerImpl(format("type=[%s], pool=[%s]", type, selectorConfig.getPool()));
-        ServiceDescriptorsUpdater updater = new ServiceDescriptorsUpdater(new HttpServiceUpdaterAdapter(balancer), type, selectorConfig, lookupClient, executor);
+        ServiceDescriptorsUpdater updater = new ServiceDescriptorsUpdater(new HttpServiceBalancerListenerAdapter(balancer), type, selectorConfig, lookupClient, executor);
         updater.start();
 
         return balancer;
