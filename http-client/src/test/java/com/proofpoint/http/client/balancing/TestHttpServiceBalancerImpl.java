@@ -16,13 +16,14 @@
 package com.proofpoint.http.client.balancing;
 
 import com.google.common.collect.ImmutableSet;
-import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
+
+import static org.testng.Assert.assertEquals;
 
 public class TestHttpServiceBalancerImpl
 {
@@ -68,6 +69,6 @@ public class TestHttpServiceBalancerImpl
         attempt = attempt.next();
         uris.add(attempt.getUri());
 
-        Assert.assertEquals(uris, expected);
+        assertEquals(uris, expected);
     }
 }

@@ -57,7 +57,7 @@ public class ServiceInventory
     private final URI serviceInventoryUri;
     private final Duration updateInterval;
     private final JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec;
-    private final ServiceDescriptorsListener discoveryUpdateable;
+    private final ServiceDescriptorsListener discoveryListener;
 
     private final AtomicReference<List<ServiceDescriptor>> serviceDescriptors = new AtomicReference<List<ServiceDescriptor>>(ImmutableList.<ServiceDescriptor>of());
     private final ScheduledExecutorService executorService = newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("service-inventory-%s").setDaemon(true).build());
@@ -73,6 +73,7 @@ public class ServiceInventory
     {
         checkNotNull(serviceInventoryConfig, "serviceInventoryConfig is null");
         checkNotNull(discoveryClientConfig, "discoveryClientConfig is null");
+        checkNotNull(nodeInfo, "nodeInfo is null");
         checkNotNull(serviceDescriptorsCodec, "serviceDescriptorsCodec is null");
         checkNotNull(discoveryBalancer, "discoveryBalancer is null");
 
@@ -80,7 +81,7 @@ public class ServiceInventory
         this.serviceInventoryUri = serviceInventoryConfig.getServiceInventoryUri();
         updateInterval = serviceInventoryConfig.getUpdateInterval();
         this.serviceDescriptorsCodec = serviceDescriptorsCodec;
-        this.discoveryUpdateable = new HttpServiceUpdaterAdapter(discoveryBalancer);
+        this.discoveryListener = new HttpServiceUpdaterAdapter(discoveryBalancer);
 
         if (serviceInventoryUri != null) {
             String scheme = serviceInventoryUri.getScheme().toLowerCase();
@@ -180,7 +181,7 @@ public class ServiceInventory
             List<ServiceDescriptor> descriptors = newArrayList(serviceDescriptorsRepresentation.getServiceDescriptors());
             Collections.shuffle(descriptors);
             serviceDescriptors.set(ImmutableList.copyOf(descriptors));
-            discoveryUpdateable.updateServiceDescriptors(Collections2.filter(descriptors, new Predicate<ServiceDescriptor>()
+            discoveryListener.updateServiceDescriptors(Collections2.filter(descriptors, new Predicate<ServiceDescriptor>()
             {
                 @Override
                 public boolean apply(ServiceDescriptor input)

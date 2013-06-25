@@ -22,11 +22,10 @@ import com.proofpoint.discovery.client.ServiceDescriptor;
 import com.proofpoint.discovery.client.ServiceDescriptorsUpdater;
 import com.proofpoint.discovery.client.ServiceSelectorConfig;
 import com.proofpoint.discovery.client.ServiceState;
-import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
 import com.proofpoint.discovery.client.testing.InMemoryDiscoveryClient;
+import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
 import com.proofpoint.node.NodeInfo;
 import org.mockito.ArgumentCaptor;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -40,11 +39,12 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.testng.Assert.assertEquals;
 
 public class TestHttpServiceUpdaterAdapter
 {
     private static final ServiceDescriptor APPLE_1_SERVICE = new ServiceDescriptor(UUID.randomUUID(), "node-A", "apple", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("http", "http://apple-a.example.com"));
-    private static final ServiceDescriptor APPLE_2_SERVICE = new ServiceDescriptor(UUID.randomUUID(), "node-B", "apple", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("https", "https://apple-a.example.com"));
+    private static final ServiceDescriptor APPLE_2_SERVICE = new ServiceDescriptor(UUID.randomUUID(), "node-B", "apple", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("http", "http://apple-c.example.com", "https", "https://apple-b.example.com"));
     private static final ServiceDescriptor DIFFERENT_TYPE = new ServiceDescriptor(UUID.randomUUID(), "node-A", "banana", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("https", "https://banana.example.com"));
     private static final ServiceDescriptor DIFFERENT_POOL = new ServiceDescriptor(UUID.randomUUID(), "node-B", "apple", "fool", "location", ServiceState.RUNNING, ImmutableMap.of("http", "http://apple-fool.example.com"));
 
@@ -119,6 +119,6 @@ public class TestHttpServiceUpdaterAdapter
         ArgumentCaptor<Set> captor = ArgumentCaptor.forClass(Set.class);
         verify(httpServiceBalancer).updateHttpUris(captor.capture());
 
-        Assert.assertEquals(captor.getValue(), ImmutableSet.of(URI.create("http://apple-a.example.com"), URI.create("https://apple-a.example.com")));
+        assertEquals(captor.getValue(), ImmutableSet.of(URI.create("http://apple-a.example.com"), URI.create("https://apple-b.example.com")));
     }
 }

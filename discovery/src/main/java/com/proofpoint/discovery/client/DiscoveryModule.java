@@ -42,28 +42,12 @@ import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class DiscoveryModule implements Module
 {
+    // Binding this .toInstance() results in inexplicable NullPointerException errors during injection
+    private final HttpServiceBalancerImpl discoveryBalancer = new HttpServiceBalancerImpl("discovery");
+
     @Override
     public void configure(Binder binder)
     {
-        // Binding these .toInstance() results in inexplicable NullPointerException errors during injection
-        final HttpServiceBalancerImpl discoveryBalancer = new HttpServiceBalancerImpl("discovery");
-        binder.bind(HttpServiceBalancer.class).annotatedWith(serviceType("discovery")).toProvider(new Provider<HttpServiceBalancer>()
-        {
-            @Override
-            public HttpServiceBalancer get()
-            {
-                return discoveryBalancer;
-            }
-        }).in(Scopes.SINGLETON);
-        binder.bind(HttpServiceBalancerImpl.class).annotatedWith(serviceType("discovery")).toProvider(new Provider<HttpServiceBalancerImpl>()
-        {
-            @Override
-            public HttpServiceBalancerImpl get()
-            {
-                return discoveryBalancer;
-            }
-        }).in(Scopes.SINGLETON);
-
         // bind service inventory
         binder.bind(ServiceInventory.class).in(Scopes.SINGLETON);
         bindConfig(binder).to(ServiceInventoryConfig.class);
@@ -97,5 +81,19 @@ public class DiscoveryModule implements Module
     public ScheduledExecutorService createDiscoveryExecutor()
     {
         return new ScheduledThreadPoolExecutor(5, new ThreadFactoryBuilder().setNameFormat("Discovery-%s").setDaemon(true).build());
+    }
+
+    @Provides
+    @ServiceType("discovery")
+    public HttpServiceBalancer getHttpServiceBalancer()
+    {
+        return discoveryBalancer;
+    }
+
+    @Provides
+    @ServiceType("discovery")
+    public HttpServiceBalancerImpl getHttpServiceBalancerImpl()
+    {
+        return discoveryBalancer;
     }
 }

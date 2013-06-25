@@ -77,11 +77,6 @@ public class TestServiceInventory
         assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 0);
     }
 
-    public TestServiceInventory()
-    {
-        super();
-    }
-
     @Test
     public void testFileServiceInventory()
             throws Exception
