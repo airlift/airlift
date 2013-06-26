@@ -10,6 +10,53 @@ Platform 0.75
 * We removed the jmx-http-rpc-experimental artifact and the JmxHttpRpcModule
   it defined.
 
+* We moved Announcer and ServiceAnnouncement into the
+  com.proofpoint.discovery.announce package.
+
+* Discovery aware balancing HttpClient
+
+  We added a BalancingHttpClient implementation which takes relative URLs,
+  implements discovery lookup, and retries requests.
+
+  To use, bind to a discovery service type:
+
+      DiscoveryBinder.bindDiscoveredHttpClient("storage", StorageClient.class)
+          .withFilter(SomeFilter.class)
+          .withTracing();
+
+  The resulting HttpClient can be injected in the normal way:
+
+      @Inject
+      StorageUser(@StorageClient HttpClient httpClient)
+
+  The resulting HttpClient differs from a classic HttpClient in that it that
+  the Request URI must be relative:
+
+      httpClient.execute(prepareGet()
+          .setUri(URI.create("v1/content/foo"))
+          .build(),
+          new StorageResponseHandler());
+
+  The BalancingHttpClient will send the request to some base URI obtained from
+  the discovery service for the ServiceType that the HttpClient was bound to
+  and for the pool obtained from configuration. If there are no available
+  instances, it will throw a ServiceUnavailableException.
+
+  The BalancingHttpClient will retry the request, up to a configurable number
+  of total attempts, if the underlying HttpClient reports either an exception
+  through ResponseHandler.handleException() or a response with a status code
+  of 408, 500, 502, 503, or 504.
+
+  The ResponseHandler given to the BalancingHttpClient will be called at most
+  once. The BalancingHttpClient won't retry if the caller's
+  ResponseHandler.handle() method throws an exception.
+
+  The Request and its BodyGenerator may be required to produce their contents
+  many times.
+
+  Alternately, use DiscoveryBinder.bindDiscoveredAsyncHttpClient() to bind an
+  AsyncHttpClient.
+
 * We removed support for JSONP.
 
 * We explicitly specified UTF-8 as the charset for configuration property
