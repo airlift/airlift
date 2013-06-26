@@ -45,7 +45,8 @@ Platform 0.75
   The BalancingHttpClient will retry the request, up to a configurable number
   of total attempts, if the underlying HttpClient reports either an exception
   through ResponseHandler.handleException() or a response with a status code
-  of 408, 500, 502, 503, or 504.
+  of 408, 500, 502, 503, or 504. The server can suppress retries by including
+  an "X-Proofpoint-Retry: no" header in its response.
 
   The ResponseHandler given to the BalancingHttpClient will be called at most
   once. The BalancingHttpClient won't retry if the caller's
@@ -57,7 +58,7 @@ Platform 0.75
   Alternately, use DiscoveryBinder.bindDiscoveredAsyncHttpClient() to bind an
   AsyncHttpClient.
 
-* We removed support for JSONP.
+* We removed support for JSONP and the HTML form of /v1/jmx/mbeans.
 
 * We explicitly specified UTF-8 as the charset for configuration property
   files.
@@ -83,6 +84,12 @@ Platform 0.75
 
 * We added an addDiscoveredService(String type, String pool, String uri)
   method to InMemoryDiscoveryClient.
+
+* We changed the discovery client to no longer prefer https instances over
+  http instances, but to only use https for any instance that supports both
+  schemes.
+
+* We removed support for loading the service inventory over http or https.
 
 * [Bug] Fixed handling of missing content type for JSON http responses.
 
