@@ -55,8 +55,8 @@ Platform 0.75
   The Request and its BodyGenerator may be required to produce their contents
   many times.
 
-  Alternately, use DiscoveryBinder.bindDiscoveredAsyncHttpClient() to bind an
-  AsyncHttpClient.
+  Alternatively, use DiscoveryBinder.bindDiscoveredAsyncHttpClient() to bind
+  an AsyncHttpClient.
 
 * We removed support for JSONP and the HTML form of /v1/jmx/mbeans.
 
