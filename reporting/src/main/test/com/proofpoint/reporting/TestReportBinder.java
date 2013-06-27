@@ -21,8 +21,11 @@ import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
+import com.proofpoint.stats.BucketIdProvider;
+import com.proofpoint.stats.Bucketed;
 import com.proofpoint.stats.Gauge;
 import com.proofpoint.stats.Reported;
 import org.testng.annotations.BeforeMethod;
@@ -34,6 +37,7 @@ import org.weakref.jmx.guice.MBeanModule;
 import org.weakref.jmx.testing.TestingMBeanServer;
 
 import javax.inject.Qualifier;
+import javax.inject.Singleton;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
@@ -46,6 +50,9 @@ import java.util.Set;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.proofpoint.reporting.ReportBinder.reportBinder;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -208,6 +215,70 @@ public class TestReportBinder
         assertJmxRegistration(ImmutableSet.of("Gauge", "Managed"), flattenClassName);
     }
 
+    @Test
+    public void testBucketed() {
+        Injector injector = Guice.createInjector(
+                new TestingModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        reportBinder(binder).export(BucketedClass.class).withGeneratedName();
+                    }
+                });
+        BucketedClass.assertProviderSupplied(injector.getInstance(BucketedClass.class));
+    }
+
+    @Test
+    public void testNestedBucketed() {
+        Injector injector = Guice.createInjector(
+                new TestingModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        reportBinder(binder).export(NestedBucketedClass.class).withGeneratedName();
+                    }
+                });
+        BucketedClass.assertProviderSupplied(injector.getInstance(NestedBucketedClass.class));
+        BucketedClass.assertProviderSupplied(injector.getInstance(NestedBucketedClass.class).getNested());
+    }
+
+    @Test
+    public void testFlattenBucketed() {
+        Injector injector = Guice.createInjector(
+                new TestingModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        reportBinder(binder).export(FlattenBucketedClass.class).withGeneratedName();
+                    }
+                });
+        BucketedClass.assertProviderSupplied(injector.getInstance(FlattenBucketedClass.class).getFlatten());
+    }
+
+    @Test
+    public void testDeepBucketed() {
+        Injector injector = Guice.createInjector(
+                new TestingModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        reportBinder(binder).export(DeepBucketedClass.class).withGeneratedName();
+                    }
+                });
+        BucketedClass.assertProviderSupplied(injector.getInstance(DeepBucketedClass.class));
+        BucketedClass.assertProviderSupplied(injector.getInstance(DeepBucketedClass.class).getNested());
+        BucketedClass.assertProviderSupplied(injector.getInstance(DeepBucketedClass.class).getFlatten());
+        BucketedClass.assertProviderSupplied(injector.getInstance(DeepBucketedClass.class).getFlatten().getNested());
+    }
+
     private void assertReportRegistration(Injector injector, Set<String> expectedAttribues, ObjectName objectName)
     {
         ReportedBeanRegistry beanServer = injector.getInstance(ReportedBeanRegistry.class);
@@ -328,8 +399,30 @@ public class TestReportBinder
             binder.bind(ManagedClass.class).in(Scopes.SINGLETON);
             binder.bind(NestedClass.class).in(Scopes.SINGLETON);
             binder.bind(FlattenClass.class).in(Scopes.SINGLETON);
+            binder.bind(FlattenBucketedClass.class).in(Scopes.SINGLETON);
             binder.install(new MBeanModule());
             binder.install(new ReportingModule());
+        }
+
+        @Provides
+        @Singleton
+        BucketedClass getBucketedClass()
+        {
+            return BucketedClass.createBucketedClass();
+        }
+
+        @Provides
+        @Singleton
+        NestedBucketedClass getNestedBucketedClass()
+        {
+            return NestedBucketedClass.createNestedBucketedClass();
+        }
+
+        @Provides
+        @Singleton
+        DeepBucketedClass getDeepBucketedClass()
+        {
+            return DeepBucketedClass.createDeepBucketedClass();
         }
     }
 
@@ -337,4 +430,81 @@ public class TestReportBinder
     @Qualifier
     private @interface TestingAnnotation
     {}
+
+    private static class BucketedClass
+        extends Bucketed
+    {
+        private BucketedClass()
+        {
+        }
+
+        static BucketedClass createBucketedClass()
+        {
+            return spy(new BucketedClass());
+        }
+
+        @Override
+        protected Object createBucket()
+        {
+            return new Object();
+        }
+
+        public static void assertProviderSupplied(BucketedClass mock)
+        {
+            verify(mock).setBucketIdProvider(any(BucketIdProvider.class));
+        }
+    }
+
+    private static class NestedBucketedClass
+        extends BucketedClass
+    {
+        private BucketedClass nested = createBucketedClass();
+
+        private NestedBucketedClass()
+        {
+        }
+
+        private static NestedBucketedClass createNestedBucketedClass()
+        {
+            return spy(new NestedBucketedClass());
+        }
+
+        @Nested
+        BucketedClass getNested()
+        {
+            return nested;
+        }
+    }
+
+    private static class FlattenBucketedClass
+    {
+        private BucketedClass flatten = BucketedClass.createBucketedClass();
+
+        @Flatten
+        private BucketedClass getFlatten()
+        {
+            return flatten;
+        }
+    }
+
+    private static class DeepBucketedClass
+        extends NestedBucketedClass
+    {
+        private NestedBucketedClass flatten = NestedBucketedClass.createNestedBucketedClass();
+
+        private DeepBucketedClass()
+        {
+        }
+
+        private static DeepBucketedClass createDeepBucketedClass()
+        {
+            return spy(new DeepBucketedClass());
+        }
+
+        @Flatten
+        private NestedBucketedClass getFlatten()
+        {
+            return flatten;
+        }
+    }
 }

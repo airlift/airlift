@@ -17,13 +17,22 @@ package com.proofpoint.reporting;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.proofpoint.stats.BucketIdProvider;
+import com.proofpoint.stats.Bucketed;
 
 import javax.management.InstanceAlreadyExistsException;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Throwables.propagate;
+import static com.proofpoint.reporting.AnnotationUtils.findReportedGetters;
+import static com.proofpoint.reporting.AnnotationUtils.isFlatten;
+import static com.proofpoint.reporting.AnnotationUtils.isNested;
 
 class ReportExporter
 {
@@ -31,18 +40,20 @@ class ReportExporter
 
     @Inject
     ReportExporter(Set<Mapping> mappings,
-            ReportedBeanRegistry registry, Injector injector)
+            ReportedBeanRegistry registry, BucketIdProvider bucketIdProvider, Injector injector)
             throws MalformedObjectNameException, InstanceAlreadyExistsException
     {
         this.registry = checkNotNull(registry, "registry is null");
-        export(mappings, injector);
+        export(mappings, bucketIdProvider, injector);
     }
 
-    private void export(Set<Mapping> mappings, Injector injector)
+    private void export(Set<Mapping> mappings, BucketIdProvider bucketIdProvider, Injector injector)
             throws MalformedObjectNameException, InstanceAlreadyExistsException
     {
         for (Mapping mapping : mappings) {
-            export(mapping.getName(), injector.getInstance(mapping.getKey()));
+            Object object = injector.getInstance(mapping.getKey());
+            export(mapping.getName(), object);
+            notifyBucketIdProvider(object, bucketIdProvider, null);
         }
     }
 
@@ -53,6 +64,25 @@ class ReportExporter
         ReportedBean reportedBean = ReportedBean.forTarget(object);
         if (!reportedBean.getAttributes().isEmpty()) {
             registry.register(reportedBean, objectName);
+        }
+    }
+
+    private static void notifyBucketIdProvider(Object object, BucketIdProvider bucketIdProvider, Method annotatedGetter)
+    {
+        if (object instanceof Bucketed) {
+            ((Bucketed) object).setBucketIdProvider(bucketIdProvider);
+        }
+        else if (annotatedGetter != null && !isNested(annotatedGetter) && !isFlatten(annotatedGetter)) {
+            return;
+        }
+
+        try {
+            for (Entry<Method, Method> entry : findReportedGetters(object.getClass()).entrySet()) {
+                notifyBucketIdProvider(entry.getKey().invoke(object), bucketIdProvider, entry.getValue());
+            }
+        }
+        catch (IllegalAccessException | InvocationTargetException e) {
+            throw propagate(e);
         }
     }
 }

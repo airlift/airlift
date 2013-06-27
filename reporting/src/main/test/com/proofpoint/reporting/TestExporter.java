@@ -112,6 +112,7 @@ public class TestExporter extends AbstractReportedBeanTest<NamedObject>
         new ReportExporter(
                 mappingBuilder.build(),
                 registry,
+                new MinuteBucketIdProvider(),
                 new TestingInjector(instanceBuilder.build()));
     }
 
