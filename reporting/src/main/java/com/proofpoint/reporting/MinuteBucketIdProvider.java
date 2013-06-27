@@ -15,19 +15,32 @@
  */
 package com.proofpoint.reporting;
 
-import com.google.inject.Binder;
-import com.google.inject.Module;
-import com.google.inject.Scopes;
+import com.google.common.base.Ticker;
+import com.google.inject.Inject;
 import com.proofpoint.stats.BucketIdProvider;
 
-public class ReportingModule
-    implements Module
+public class MinuteBucketIdProvider
+    implements BucketIdProvider
 {
-    @Override
-    public void configure(Binder binder)
+    private static final long ONE_MINUTE_IN_NANOS = 60_000_000_000L;
+    private final Ticker ticker;
+    private final long initialValue;
+
+    @Inject
+    public MinuteBucketIdProvider()
     {
-        binder.bind(ReportExporter.class).asEagerSingleton();
-        binder.bind(ReportedBeanRegistry.class).in(Scopes.SINGLETON);
-        binder.bind(BucketIdProvider.class).to(MinuteBucketIdProvider.class).in(Scopes.SINGLETON);
+        this(Ticker.systemTicker());
+    }
+
+    public MinuteBucketIdProvider(Ticker ticker)
+    {
+        this.ticker = ticker;
+        this.initialValue = ticker.read() - (2 * ONE_MINUTE_IN_NANOS);
+    }
+
+    @Override
+    public int get()
+    {
+        return (int) ((ticker.read() - initialValue) / ONE_MINUTE_IN_NANOS);
     }
 }
