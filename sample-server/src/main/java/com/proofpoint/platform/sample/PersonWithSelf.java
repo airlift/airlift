@@ -27,7 +27,7 @@ public class PersonWithSelf
     private final Person person;
     private final URI self;
 
-    public static PersonWithSelf from(Person person, URI self)
+    public static PersonWithSelf createPersonWithSelf(Person person, URI self)
     {
         return new PersonWithSelf(person, self);
     }

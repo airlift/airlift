@@ -21,6 +21,7 @@ import org.testng.annotations.Test;
 import java.net.URI;
 
 import static com.proofpoint.json.testing.JsonTester.assertJsonEncode;
+import static com.proofpoint.platform.sample.PersonWithSelf.createPersonWithSelf;
 import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
 
 public class TestPersonWithSelf
@@ -33,17 +34,17 @@ public class TestPersonWithSelf
         Person barPerson = new Person("bar@example.com", "Mr Bar");
         Person barPerson2 = new Person("bar@example.com", "Mr Bar");
         equivalenceTester()
-                .addEquivalentGroup(PersonWithSelf.from(fooPerson, URI.create("http://example.com")), PersonWithSelf.from(fooPerson2, URI.create("http://example.com")))
-                .addEquivalentGroup(PersonWithSelf.from(fooPerson, URI.create("https://example.com")), PersonWithSelf.from(fooPerson2, URI.create("https://example.com")))
-                .addEquivalentGroup(PersonWithSelf.from(barPerson, URI.create("http://example.com")), PersonWithSelf.from(barPerson2, URI.create("http://example.com")))
-                .addEquivalentGroup(PersonWithSelf.from(barPerson, URI.create("https://example.com")), PersonWithSelf.from(barPerson2, URI.create("https://example.com")))
+                .addEquivalentGroup(createPersonWithSelf(fooPerson, URI.create("http://example.com")), createPersonWithSelf(fooPerson2, URI.create("http://example.com")))
+                .addEquivalentGroup(createPersonWithSelf(fooPerson, URI.create("https://example.com")), createPersonWithSelf(fooPerson2, URI.create("https://example.com")))
+                .addEquivalentGroup(createPersonWithSelf(barPerson, URI.create("http://example.com")), createPersonWithSelf(barPerson2, URI.create("http://example.com")))
+                .addEquivalentGroup(createPersonWithSelf(barPerson, URI.create("https://example.com")), createPersonWithSelf(barPerson2, URI.create("https://example.com")))
                 .check();
     }
 
     @Test
     public void testJsonEncode()
     {
-        assertJsonEncode(PersonWithSelf.from(new Person("alice@example.com", "Alice"), URI.create("http://example.com/foo")),
+        assertJsonEncode(createPersonWithSelf(new Person("alice@example.com", "Alice"), URI.create("http://example.com/foo")),
                 ImmutableMap.of(
                         "self", "http://example.com/foo",
                         "name", "Alice",

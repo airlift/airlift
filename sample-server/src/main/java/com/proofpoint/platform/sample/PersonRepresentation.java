@@ -24,10 +24,10 @@ import javax.validation.constraints.Pattern;
 
 public class PersonRepresentation
 {
-
     @NotNull(message = "is missing")
     @Pattern(regexp = "[^@]+@[^@]+", message = "is malformed")
     private String email;
+
     @NotNull(message = "is missing")
     private String name;
 

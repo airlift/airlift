@@ -31,7 +31,7 @@ import javax.ws.rs.core.UriInfo;
 import java.net.URI;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.proofpoint.platform.sample.PersonWithSelf.from;
+import static com.proofpoint.platform.sample.PersonWithSelf.createPersonWithSelf;
 
 @Path("/v1/person")
 public class PersonsResource
@@ -53,7 +53,7 @@ public class PersonsResource
         Builder<PersonWithSelf> builder = ImmutableList.builder();
         for (StoreEntry entry : store.getAll()) {
             URI self = UriBuilder.fromUri(uriInfo.getRequestUri()).path(entry.getId()).build();
-            builder.add(from(entry.getPerson(), self));
+            builder.add(createPersonWithSelf(entry.getPerson(), self));
         }
         return Response.ok(builder.build()).build();
     }

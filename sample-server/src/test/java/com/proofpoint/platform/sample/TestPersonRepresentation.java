@@ -34,11 +34,11 @@ import static org.testng.Assert.assertEquals;
 public class TestPersonRepresentation
 {
     private final JsonCodec<PersonRepresentation> codec = jsonCodec(PersonRepresentation.class);
-    private Map<String,String> map;
+    private Map<String,String> jsonStructure;
 
     @BeforeMethod
     public void setup() {
-        map = Maps.newHashMap(ImmutableMap.of(
+        jsonStructure = Maps.newHashMap(ImmutableMap.of(
                 "name", "Mr Foo",
                 "email", "foo@example.com"));
     }
@@ -46,28 +46,28 @@ public class TestPersonRepresentation
     @Test
     public void testJsonDecode()
     {
-        PersonRepresentation personRepresentation = assertValidates(decodeJson(codec, map));
+        PersonRepresentation personRepresentation = assertValidates(decodeJson(codec, jsonStructure));
         assertEquals(personRepresentation.toPerson(), new Person("foo@example.com", "Mr Foo"));
     }
 
     @Test
     public void testNoEmail()
     {
-        map.remove("email");
-        assertFailsValidation(decodeJson(codec, map), "email", "is missing", NotNull.class);
+        jsonStructure.remove("email");
+        assertFailsValidation(decodeJson(codec, jsonStructure), "email", "is missing", NotNull.class);
     }
 
     @Test
     public void testInvalidEmail()
     {
-        map.put("email", "invalid");
-        assertFailsValidation(decodeJson(codec, map), "email", "is malformed", Pattern.class);
+        jsonStructure.put("email", "invalid");
+        assertFailsValidation(decodeJson(codec, jsonStructure), "email", "is malformed", Pattern.class);
     }
 
     @Test
     public void testNoName()
     {
-        map.remove("name");
-        assertFailsValidation(decodeJson(codec, map), "name", "is missing", NotNull.class);
+        jsonStructure.remove("name");
+        assertFailsValidation(decodeJson(codec, jsonStructure), "name", "is missing", NotNull.class);
     }
 }
