@@ -17,8 +17,6 @@ package com.proofpoint.reporting;
 
 import com.proofpoint.stats.Bucketed;
 
-import javax.management.Attribute;
-import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanException;
@@ -121,27 +119,26 @@ class ReportedBean
 
         Map<String, ReportedBeanAttributeBuilder> attributeBuilders = new TreeMap<>();
 
-        for (Map.Entry<Method, Method> entry : AnnotationUtils.findReportedGetters(target.getClass()).entrySet()) {
+        for (Map.Entry<Method, Method> entry : AnnotationUtils.findReportedMethods(target.getClass()).entrySet()) {
             Method concreteMethod = entry.getKey();
             Method annotatedMethod = entry.getValue();
 
-            if (isGetter(concreteMethod)) {
-                String attributeName = getAttributeName(concreteMethod);
-
-                ReportedBeanAttributeBuilder attributeBuilder = attributeBuilders.get(attributeName);
-                if (attributeBuilder == null) {
-                    attributeBuilder = new ReportedBeanAttributeBuilder().named(attributeName).onInstance(target);
-                }
-
-                attributeBuilder = attributeBuilder
-                        .withConcreteGetter(concreteMethod)
-                        .withAnnotatedGetter(annotatedMethod);
-
-                attributeBuilders.put(attributeName, attributeBuilder);
+            if (!isGetter(concreteMethod)) {
+                throw new RuntimeException("report annotation on non-getter " + annotatedMethod.toGenericString());
             }
-            else {
-                throw new RuntimeException("report annotation on non-getter " + annotatedMethod.getName()); // todo - more useful exception
+
+            String attributeName = getAttributeName(concreteMethod);
+
+            ReportedBeanAttributeBuilder attributeBuilder = attributeBuilders.get(attributeName);
+            if (attributeBuilder == null) {
+                attributeBuilder = new ReportedBeanAttributeBuilder().named(attributeName).onInstance(target);
             }
+
+            attributeBuilder = attributeBuilder
+                    .withConcreteGetter(concreteMethod)
+                    .withAnnotatedGetter(annotatedMethod);
+
+            attributeBuilders.put(attributeName, attributeBuilder);
         }
 
         String className = target.getClass().getName();

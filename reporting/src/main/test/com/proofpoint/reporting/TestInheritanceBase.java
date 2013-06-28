@@ -54,7 +54,7 @@ public abstract class TestInheritanceBase
     @Test
     public void testResolver() throws NoSuchMethodException
     {
-        Map<Method, Method> map = AnnotationUtils.findReportedGetters(getTargetClass());
+        Map<Method, Method> map = AnnotationUtils.findReportedMethods(getTargetClass());
         Method annotatedMethod = map.get(getTargetMethod());
         Assert.assertEquals(annotatedMethod, expected());
     }

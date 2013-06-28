@@ -167,22 +167,22 @@ final class AnnotationUtils
     }
 
     /**
-     * Find getters that are tagged as reported somewhere in the hierarchy
+     * Find methods that are tagged as reported somewhere in the hierarchy
      *
      * @param clazz the class to analyze
-     * @return a map that associates a concrete method to the actual getter tagged as reported
+     * @return a map that associates a concrete method to the actual method tagged as reported
      *         (which may belong to a different class in clazz's hierarchy)
      */
-    public static Map<Method, Method> findReportedGetters(Class<?> clazz)
+    public static Map<Method, Method> findReportedMethods(Class<?> clazz)
     {
         Map<Method, Method> result = new HashMap<>();
-        Set<String> foundMethods = new HashSet<>();
-        findReportedGetters(clazz, result, foundMethods);
+        Set<Signature> foundMethods = new HashSet<>();
+        findReportedMethods(clazz, result, foundMethods);
 
         return result;
     }
 
-    private static void findReportedGetters(Class<?> clazz, Map<Method, Method> result, Set<String> foundMethods)
+    private static void findReportedMethods(Class<?> clazz, Map<Method, Method> result, Set<Signature> foundMethods)
     {
         // gather all available methods
         // this returns everything, even if it's declared in a parent
@@ -192,19 +192,14 @@ final class AnnotationUtils
                 continue;
             }
 
-            // skip if not a getter
-            if (!isGetter(method)) {
+            Signature methodSignature = new Signature(method);
+            if (foundMethods.contains(methodSignature)) {
                 continue;
             }
-
-            String methodName = method.getName();
-            if (foundMethods.contains(methodName)) {
-                continue;
-            }
-            foundMethods.add(methodName);
+            foundMethods.add(methodSignature);
 
             // look for annotations recursively in superclasses or interfaces
-            Method reportedGetter = findReportedGetter(clazz, method.getName());
+            Method reportedGetter = findReportedMethod(clazz, method.getName(), method.getParameterTypes());
             if (reportedGetter != null) {
                 method.setAccessible(true);
                 reportedGetter.setAccessible(true);
@@ -214,32 +209,32 @@ final class AnnotationUtils
 
         Class<?> superclass = clazz.getSuperclass();
         if (superclass != null) {
-            findReportedGetters(superclass, result, foundMethods);
+            findReportedMethods(superclass, result, foundMethods);
         }
 
         for (Class<?> iface : clazz.getInterfaces()) {
-            findReportedGetters(iface, result, foundMethods);
+            findReportedMethods(iface, result, foundMethods);
         }
     }
 
-    public static Method findReportedGetter(Class<?> clazz, String methodName)
+    public static Method findReportedMethod(Class<?> clazz, String methodName, Class<?>[] parameterTypes)
     {
         try {
-            Method method = clazz.getDeclaredMethod(methodName);
-            if (isReportedGetter(method)) return method;
+            Method method = clazz.getDeclaredMethod(methodName, parameterTypes);
+            if (isReportedMethod(method)) return method;
         }
         catch (NoSuchMethodException ignored) {
         }
 
         if (clazz.getSuperclass() != null) {
-            Method reportedGetter = findReportedGetter(clazz.getSuperclass(), methodName);
+            Method reportedGetter = findReportedMethod(clazz.getSuperclass(), methodName, parameterTypes);
             if (reportedGetter != null) {
                 return reportedGetter;
             }
         }
 
         for (Class<?> iface : clazz.getInterfaces()) {
-            Method reportedGetter = findReportedGetter(iface, methodName);
+            Method reportedGetter = findReportedMethod(iface, methodName, parameterTypes);
             if (reportedGetter != null) {
                 return reportedGetter;
             }
@@ -248,7 +243,7 @@ final class AnnotationUtils
         return null;
     }
 
-    public static boolean isReportedGetter(Method method)
+    public static boolean isReportedMethod(Method method)
     {
         return isAnnotationPresent(REPORTED_ANNOTATIONS, new HashSet<Class<? extends Annotation>>(), method.getAnnotations());
     }

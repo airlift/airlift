@@ -127,7 +127,6 @@ public class CustomAnnotationObject
         return integerBoxedValue;
     }
 
-    @Reported1
     public void setIntegerBoxedValue(Integer integerBoxedValue)
     {
         this.integerBoxedValue = integerBoxedValue;

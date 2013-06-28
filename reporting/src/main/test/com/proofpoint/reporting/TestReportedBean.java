@@ -1,5 +1,8 @@
 package com.proofpoint.reporting;
 
+import com.proofpoint.stats.Reported;
+import org.testng.annotations.Test;
+
 import javax.management.AttributeNotFoundException;
 import javax.management.MBeanException;
 import javax.management.MBeanInfo;
@@ -35,5 +38,42 @@ public class TestReportedBean extends AbstractReportedBeanTest<Object>
             throws AttributeNotFoundException, MBeanException, ReflectionException
     {
         return ReportedBean.forTarget(object).getAttribute(attributeName);
+    }
+
+    @Test(expectedExceptions = RuntimeException.class,
+            expectedExceptionsMessageRegExp = "report annotation on non-getter .*operation\\(\\)")
+    public void testNonAttribute()
+    {
+        ReportedBean.forTarget(new Object() {
+            @Reported
+            public int operation()
+            {
+                return 3;
+            }
+        });
+    }
+
+    @Test(expectedExceptions = RuntimeException.class,
+            expectedExceptionsMessageRegExp = "report annotation on non-getter .*operation\\(int\\)")
+    public void testSetter()
+    {
+        ReportedBean.forTarget(new Object() {
+            @Reported
+            public void operation(int param)
+            {
+            }
+        });
+    }
+
+    @Test(expectedExceptions = RuntimeException.class,
+            expectedExceptionsMessageRegExp = "report annotation on non-getter .*getVoid\\(\\)")
+    public void testInvalidGetter()
+    {
+        ReportedBean.forTarget(new Object() {
+            @Reported
+            public void getVoid()
+            {
+            }
+        });
     }
 }

@@ -200,7 +200,6 @@ public class SimpleObject
         return stringValue;
     }
 
-    @Reported
     public void setStringValue(String stringValue)
     {
         this.stringValue = stringValue;
