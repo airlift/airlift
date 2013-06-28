@@ -32,6 +32,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
@@ -40,9 +41,12 @@ import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.Request.Builder.preparePut;
+import static io.airlift.testing.Assertions.assertInstanceOf;
 import static io.airlift.units.Duration.nanosSince;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.fail;
 
 public abstract class AbstractHttpClientTest
 {
@@ -142,7 +146,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test(expectedExceptions = SocketTimeoutException.class)
+    @Test
     public void testConnectTimeout()
             throws Exception
     {
@@ -157,14 +161,18 @@ public abstract class AbstractHttpClientTest
                 .build();
 
         try (Socket clientSocket = new Socket(host, serverSocket.getLocalPort())) {
-            executeRequest(config, request, new ResponseToStringHandler());
+            executeRequest(config, request, new CaptureExceptionResponseHandler());
+            fail("expected exception");
+        }
+        catch (CapturedException e) {
+            assertInstanceOf(e.getCause(), SocketTimeoutException.class);
         }
         finally {
             serverSocket.close();
         }
     }
 
-    @Test(expectedExceptions = Exception.class) // TODO: consider making this a ConnectException
+    @Test
     public void testConnectionRefused()
             throws Exception
     {
@@ -179,7 +187,55 @@ public abstract class AbstractHttpClientTest
                 .setUri(new URI(scheme, null, host, port, "/", null, null))
                 .build();
 
-        executeRequest(config, request, new ResponseToStringHandler());
+        try {
+            executeRequest(config, request, new CaptureExceptionResponseHandler());
+            fail("expected exception");
+        }
+        catch (CapturedException e) {
+            // TODO: Assertions.assertInstanceOf(e.getCause(), ConnectException.class);
+            assertFalse(e.getCause() instanceof CapturedException, "<" + e.getCause() + "> instance of CapturedException");
+        }
+    }
+
+    @Test
+    public void testUnresolvableHost()
+            throws Exception
+    {
+        HttpClientConfig config = new HttpClientConfig();
+        config.setConnectTimeout(new Duration(5, MILLISECONDS));
+
+        Request request = prepareGet()
+                .setUri(URI.create("http://nonexistent.example.com"))
+                .build();
+
+        try {
+            executeRequest(config, request, new CaptureExceptionResponseHandler());
+            fail("Expected exception");
+        }
+        catch (CapturedException e) {
+            assertInstanceOf(e.getCause(), UnknownHostException.class, e.getCause().toString());
+        }
+    }
+
+
+    @Test
+    public void testBadPort()
+            throws Exception
+    {
+        HttpClientConfig config = new HttpClientConfig();
+        config.setConnectTimeout(new Duration(5, MILLISECONDS));
+
+        Request request = prepareGet()
+                .setUri(new URI(scheme, null, host, 70_000, "/", null, null))
+                .build();
+
+        try {
+            executeRequest(config, request, new CaptureExceptionResponseHandler());
+            fail("expected exception");
+        }
+        catch (CapturedException e) {
+            assertInstanceOf(e.getCause(), IllegalArgumentException.class);
+        }
     }
 
     @Test
@@ -721,6 +777,31 @@ public abstract class AbstractHttpClientTest
                 throws Exception
         {
             return response.getHeaders();
+        }
+    }
+
+    public static class CaptureExceptionResponseHandler implements ResponseHandler<String, CapturedException>
+    {
+        @Override
+        public CapturedException handleException(Request request, Exception exception)
+        {
+            return new CapturedException(exception);
+        }
+
+        @Override
+        public String handle(Request request, Response response)
+                throws CapturedException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+    }
+
+    protected static class CapturedException extends Exception
+    {
+        public CapturedException(Exception exception)
+        {
+            super(exception);
         }
     }
 }
