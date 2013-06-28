@@ -349,37 +349,37 @@ public class TestReportBinder
 
     public static class GaugeClass {
         @Gauge
-        public String getGauge()
+        public int getGauge()
         {
-            return "gauge";
+            return 1;
         }
 
         @Reported
-        public String getReported()
+        public int getReported()
         {
-            return "reported";
+            return 2;
         }
 
         @Managed
-        public String getManaged()
+        public int getManaged()
         {
-            return "managed";
+            return 3;
         }
     }
 
     private static class ReportedClass {
         @Reported
-        public String getReported()
+        public int getReported()
         {
-            return "reported";
+            return 2;
         }
     }
 
     private static class ManagedClass {
         @Managed
-        public String getManaged()
+        public int getManaged()
         {
-            return "managed";
+            return 3;
         }
     }
 

@@ -58,15 +58,7 @@ public interface SimpleInterface
 
     void setDoubleBoxedValue(Double doubleBoxedValue);
 
-    String getStringValue();
-
-    void setStringValue(String stringValue);
-
     void setNotReported(int value);
 
     int getNotReported();
-
-    Object getObjectValue();
-
-    void setObjectValue(Object objectValue);
 }

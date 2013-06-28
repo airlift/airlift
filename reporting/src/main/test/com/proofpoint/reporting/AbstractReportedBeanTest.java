@@ -147,10 +147,6 @@ public abstract class AbstractReportedBeanTest<T>
                                new Object[] { -Double.MIN_VALUE, -Double.MAX_VALUE, Double.MAX_VALUE, Double.MIN_VALUE,
                                               0.0, Double.NaN }, Double.class },
 
-                new Object[] { "StringValue", false, new Object[] { null, "hello there" }, String.class },
-
-                new Object[] { "ObjectValue", false, new Object[] { "random object", 1, true }, Object.class },
-
                 new Object[] { "PrivateValue", false, new Object[] { Integer.MAX_VALUE, Integer.MIN_VALUE, 0 },
                         Integer.TYPE },
 

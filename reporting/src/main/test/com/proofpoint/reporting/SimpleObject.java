@@ -34,8 +34,6 @@ public class SimpleObject
     private Float floatBoxedValue;
     private double doubleValue;
     private Double doubleBoxedValue;
-    private String stringValue;
-    private Object objectValue;
     private int privateValue;
 
     private int notReported;
@@ -194,17 +192,6 @@ public class SimpleObject
         this.doubleBoxedValue = doubleBoxedValue;
     }
 
-    @Reported
-    public String getStringValue()
-    {
-        return stringValue;
-    }
-
-    public void setStringValue(String stringValue)
-    {
-        this.stringValue = stringValue;
-    }
-
     public void setNotReported(int value)
     {
         this.notReported = value;
@@ -213,17 +200,6 @@ public class SimpleObject
     public int getNotReported()
     {
         return notReported;
-    }
-
-    @Reported
-    public Object getObjectValue()
-    {
-        return objectValue;
-    }
-
-    public void setObjectValue(Object objectValue)
-    {
-        this.objectValue = objectValue;
     }
 
     @Reported

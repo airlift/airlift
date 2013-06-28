@@ -16,13 +16,14 @@
 package com.proofpoint.reporting;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import javax.management.Descriptor;
 import javax.management.MBeanAttributeInfo;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.regex.Matcher;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -32,6 +33,7 @@ import static com.proofpoint.reporting.ReflectionUtils.isValidGetter;
 class ReportedBeanAttributeBuilder
 {
     private final static Pattern getterOrSetterPattern = Pattern.compile("(get|set|is)(.+)");
+    private static final Set<Class<?>> PRIMITIVE_NUMBERS = ImmutableSet.<Class<?>>of(byte.class, short.class, int.class, long.class, float.class, double.class);
     private Object target;
     private String name;
     private Method concreteGetter;
@@ -129,8 +131,15 @@ class ReportedBeanAttributeBuilder
                     concreteGetter.getName().startsWith("is"),
                     descriptor);
 
+            if (Boolean.class.isAssignableFrom(attributeType) || attributeType == boolean.class) {
+                return ImmutableList.of(new ReflectionReportedBeanAttribute(mbeanAttributeInfo, target, concreteGetter));
+            }
 
-            return Collections.singleton(new ReflectionReportedBeanAttribute(mbeanAttributeInfo, target, concreteGetter));
+            if (!Number.class.isAssignableFrom(attributeType) && !PRIMITIVE_NUMBERS.contains(attributeType)) {
+                throw new RuntimeException("report annotation on non-numeric, non-boolean getter " + concreteGetter.toGenericString());
+            }
+
+            return ImmutableList.of(new ReflectionReportedBeanAttribute(mbeanAttributeInfo, target, concreteGetter));
         }
     }
 }
