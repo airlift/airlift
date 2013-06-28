@@ -19,6 +19,10 @@ import com.google.common.base.Ticker;
 import com.google.inject.Inject;
 import com.proofpoint.stats.BucketIdProvider;
 
+import java.util.concurrent.TimeUnit;
+
+import static java.lang.System.currentTimeMillis;
+
 public class MinuteBucketIdProvider
     implements BucketIdProvider
 {
@@ -35,12 +39,18 @@ public class MinuteBucketIdProvider
     public MinuteBucketIdProvider(Ticker ticker)
     {
         this.ticker = ticker;
-        this.initialValue = ticker.read() - (2 * ONE_MINUTE_IN_NANOS);
+        this.initialValue = ticker.read();
     }
 
     @Override
     public int get()
     {
         return (int) ((ticker.read() - initialValue) / ONE_MINUTE_IN_NANOS);
+    }
+
+    public long getLastSystemTimeMillis()
+    {
+        long nanosSinceBoundary = (ticker.read() - initialValue) % ONE_MINUTE_IN_NANOS;
+        return currentTimeMillis() - TimeUnit.NANOSECONDS.toMillis(nanosSinceBoundary);
     }
 }

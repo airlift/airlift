@@ -20,14 +20,20 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.proofpoint.stats.BucketIdProvider;
 
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
+
 public class ReportingModule
     implements Module
 {
     @Override
     public void configure(Binder binder)
     {
+        newSetBinder(binder, Mapping.class);
         binder.bind(ReportExporter.class).asEagerSingleton();
         binder.bind(ReportedBeanRegistry.class).in(Scopes.SINGLETON);
+        binder.bind(MinuteBucketIdProvider.class).in(Scopes.SINGLETON);
         binder.bind(BucketIdProvider.class).to(MinuteBucketIdProvider.class).in(Scopes.SINGLETON);
+        binder.bind(ReportCollector.class).in(Scopes.SINGLETON);
+        binder.bind(ReportClient.class).in(Scopes.SINGLETON);
     }
 }
