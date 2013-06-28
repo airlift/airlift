@@ -15,6 +15,8 @@
  */
 package com.proofpoint.reporting;
 
+import com.proofpoint.stats.Bucketed;
+
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
@@ -38,8 +40,21 @@ import static com.proofpoint.reporting.ReflectionUtils.isGetter;
 
 class ReportedBean
 {
+    static Method GET_PREVIOUS_BUCKET;
+
     private final MBeanInfo mbeanInfo;
     private final Map<String, ReportedBeanAttribute> attributes;
+
+    static {
+        try {
+            Method getPreviousBucket = Bucketed.class.getDeclaredMethod("getPreviousBucket");
+            getPreviousBucket.setAccessible(true);
+            GET_PREVIOUS_BUCKET = getPreviousBucket;
+        }
+        catch (NoSuchMethodException ignored) {
+            GET_PREVIOUS_BUCKET = null;
+        }
+    }
 
     public ReportedBean(String className, Collection<ReportedBeanAttribute> attributes)
     {
@@ -85,6 +100,25 @@ class ReportedBean
     {
         checkNotNull(target, "target is null");
 
+        List<ReportedBeanAttribute> attributes = new ArrayList<>();
+
+        if (target instanceof Bucketed) {
+
+            Object value = null;
+            try {
+                value = GET_PREVIOUS_BUCKET.invoke(target);
+            }
+            catch (Exception ignored) {
+                // todo log me
+            }
+            if (value != null) {
+                ReportedBean reportedBean = ReportedBean.forTarget(value);
+                for (ReportedBeanAttribute attribute : reportedBean.getAttributes()) {
+                    attributes.add(new BucketedReportedBeanAttribute(target, attribute));
+                }
+            }
+        }
+
         Map<String, ReportedBeanAttributeBuilder> attributeBuilders = new TreeMap<>();
 
         for (Map.Entry<Method, Method> entry : AnnotationUtils.findReportedGetters(target.getClass()).entrySet()) {
@@ -111,7 +145,7 @@ class ReportedBean
         }
 
         String className = target.getClass().getName();
-        List<ReportedBeanAttribute> attributes = new ArrayList<>();
+
         for (ReportedBeanAttributeBuilder attributeBuilder : attributeBuilders.values()) {
             attributes.addAll(attributeBuilder.build());
         }

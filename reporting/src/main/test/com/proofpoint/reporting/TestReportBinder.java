@@ -67,6 +67,10 @@ public class TestReportBinder
     private final ObjectName managedClassName;
     private final ObjectName nestedClassName;
     private final ObjectName flattenClassName;
+    private final ObjectName bucketedClassName;
+    private final ObjectName nestedBucketedClassName;
+    private final ObjectName flattenBucketedClassName;
+    private final ObjectName deepBucketedClassName;
     private MBeanServer jmxMbeanServer;
 
     public TestReportBinder()
@@ -78,6 +82,10 @@ public class TestReportBinder
         managedClassName = ObjectName.getInstance(PACKAGE_NAME, "name", "ManagedClass");
         nestedClassName = ObjectName.getInstance(PACKAGE_NAME, "name", "NestedClass");
         flattenClassName = ObjectName.getInstance(PACKAGE_NAME, "name", "FlattenClass");
+        bucketedClassName = ObjectName.getInstance(PACKAGE_NAME, "name", "BucketedClass");
+        nestedBucketedClassName = ObjectName.getInstance(PACKAGE_NAME, "name", "NestedBucketedClass");
+        flattenBucketedClassName = ObjectName.getInstance(PACKAGE_NAME, "name", "FlattenBucketedClass");
+        deepBucketedClassName = ObjectName.getInstance(PACKAGE_NAME, "name", "DeepBucketedClass");
     }
 
     @BeforeMethod
@@ -228,6 +236,8 @@ public class TestReportBinder
                     }
                 });
         BucketedClass.assertProviderSupplied(injector.getInstance(BucketedClass.class));
+        assertReportRegistration(injector, ImmutableSet.of("Gauge", "Reported"), bucketedClassName);
+        assertJmxRegistration(ImmutableSet.<String>of(), bucketedClassName);
     }
 
     @Test
@@ -244,6 +254,11 @@ public class TestReportBinder
                 });
         BucketedClass.assertProviderSupplied(injector.getInstance(NestedBucketedClass.class));
         BucketedClass.assertProviderSupplied(injector.getInstance(NestedBucketedClass.class).getNested());
+        assertReportRegistration(injector, ImmutableSet.of(
+                "Gauge", "Reported",
+                "Nested.Gauge", "Nested.Reported"
+        ), nestedBucketedClassName);
+        assertJmxRegistration(ImmutableSet.<String>of(), nestedBucketedClassName);
     }
 
     @Test
@@ -259,6 +274,8 @@ public class TestReportBinder
                     }
                 });
         BucketedClass.assertProviderSupplied(injector.getInstance(FlattenBucketedClass.class).getFlatten());
+        assertReportRegistration(injector, ImmutableSet.of("Gauge", "Reported"), flattenBucketedClassName);
+        assertJmxRegistration(ImmutableSet.<String>of(), flattenBucketedClassName);
     }
 
     @Test
@@ -273,10 +290,14 @@ public class TestReportBinder
                         reportBinder(binder).export(DeepBucketedClass.class).withGeneratedName();
                     }
                 });
-        BucketedClass.assertProviderSupplied(injector.getInstance(DeepBucketedClass.class));
         BucketedClass.assertProviderSupplied(injector.getInstance(DeepBucketedClass.class).getNested());
         BucketedClass.assertProviderSupplied(injector.getInstance(DeepBucketedClass.class).getFlatten());
         BucketedClass.assertProviderSupplied(injector.getInstance(DeepBucketedClass.class).getFlatten().getNested());
+        assertReportRegistration(injector, ImmutableSet.of(
+                "Gauge", "Reported",
+                "Nested.Gauge", "Nested.Reported"
+        ), deepBucketedClassName);
+        assertJmxRegistration(ImmutableSet.<String>of(), deepBucketedClassName);
     }
 
     private void assertReportRegistration(Injector injector, Set<String> expectedAttribues, ObjectName objectName)
@@ -444,9 +465,9 @@ public class TestReportBinder
         }
 
         @Override
-        protected Object createBucket()
+        protected GaugeClass createBucket()
         {
-            return new Object();
+            return new GaugeClass();
         }
 
         public static void assertProviderSupplied(BucketedClass mock)
@@ -488,9 +509,9 @@ public class TestReportBinder
     }
 
     private static class DeepBucketedClass
-        extends NestedBucketedClass
     {
         private NestedBucketedClass flatten = NestedBucketedClass.createNestedBucketedClass();
+        private BucketedClass nested = BucketedClass.createBucketedClass();
 
         private DeepBucketedClass()
         {
@@ -505,6 +526,12 @@ public class TestReportBinder
         private NestedBucketedClass getFlatten()
         {
             return flatten;
+        }
+
+        @Nested
+        BucketedClass getNested()
+        {
+            return nested;
         }
     }
 }
