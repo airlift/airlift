@@ -26,6 +26,6 @@ interface ReportedBeanAttribute
 
     String getName();
 
-    Object getValue()
+    Number getValue()
             throws AttributeNotFoundException, MBeanException, ReflectionException;
 }

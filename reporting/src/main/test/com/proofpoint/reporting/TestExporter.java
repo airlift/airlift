@@ -81,7 +81,7 @@ public class TestExporter extends AbstractReportedBeanTest<NamedObject>
     }
 
     @Override
-    protected Object getAttribute(NamedObject namedObject, String attributeName)
+    protected Number getAttribute(NamedObject namedObject, String attributeName)
             throws MBeanException, AttributeNotFoundException, InstanceNotFoundException, ReflectionException
     {
         return registry.getReportedBeans().get(namedObject.objectName).getAttribute(attributeName);

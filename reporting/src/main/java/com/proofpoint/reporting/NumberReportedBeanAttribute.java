@@ -19,24 +19,24 @@ import javax.management.AttributeNotFoundException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
+import java.lang.reflect.Method;
 
-class NestedReportedBeanAttribute implements ReportedBeanAttribute
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.proofpoint.reporting.ReflectionUtils.invoke;
+
+class NumberReportedBeanAttribute implements ReportedBeanAttribute
 {
-    private final ReportedBeanAttribute delegate;
     private final MBeanAttributeInfo info;
+    private final Object target;
+    private final String name;
+    private final Method getter;
 
-    public NestedReportedBeanAttribute(String prefix, ReportedBeanAttribute delegate)
+    public NumberReportedBeanAttribute(MBeanAttributeInfo info, Object target, Method getter)
     {
-        this.delegate = delegate;
-
-        MBeanAttributeInfo delegateInfo = delegate.getInfo();
-        this.info = new MBeanAttributeInfo(prefix + "." + delegateInfo.getName(),
-                delegateInfo.getType(),
-                delegateInfo.getDescription(),
-                delegateInfo.isReadable(),
-                delegateInfo.isWritable(),
-                delegateInfo.isIs(),
-                delegateInfo.getDescriptor());
+        this.info = checkNotNull(info, "info is null");
+        this.target = checkNotNull(target, "target is null");
+        this.name = info.getName();
+        this.getter = checkNotNull(getter, "getter is null");
     }
 
     public MBeanAttributeInfo getInfo()
@@ -46,12 +46,12 @@ class NestedReportedBeanAttribute implements ReportedBeanAttribute
 
     public String getName()
     {
-        return info.getName();
+        return name;
     }
 
     public Number getValue()
             throws AttributeNotFoundException, MBeanException, ReflectionException
     {
-        return delegate.getValue();
+        return (Number) invoke(target, getter);
     }
 }

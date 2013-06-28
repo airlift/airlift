@@ -82,7 +82,7 @@ class ReportedBean
         return attributes.values();
     }
 
-    public Object getAttribute(String name)
+    public Number getAttribute(String name)
             throws AttributeNotFoundException, MBeanException, ReflectionException
     {
         checkNotNull(name, "name is null");
@@ -90,8 +90,7 @@ class ReportedBean
         if (mbeanAttribute == null) {
             throw new AttributeNotFoundException(name);
         }
-        Object value = mbeanAttribute.getValue();
-        return value;
+        return mbeanAttribute.getValue();
     }
 
     public static ReportedBean forTarget(Object target)

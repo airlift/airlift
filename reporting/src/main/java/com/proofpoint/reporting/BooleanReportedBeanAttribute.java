@@ -24,14 +24,14 @@ import java.lang.reflect.Method;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.reporting.ReflectionUtils.invoke;
 
-class ReflectionReportedBeanAttribute implements ReportedBeanAttribute
+class BooleanReportedBeanAttribute implements ReportedBeanAttribute
 {
     private final MBeanAttributeInfo info;
     private final Object target;
     private final String name;
     private final Method getter;
 
-    public ReflectionReportedBeanAttribute(MBeanAttributeInfo info, Object target, Method getter)
+    public BooleanReportedBeanAttribute(MBeanAttributeInfo info, Object target, Method getter)
     {
         this.info = checkNotNull(info, "info is null");
         this.target = checkNotNull(target, "target is null");
@@ -49,9 +49,16 @@ class ReflectionReportedBeanAttribute implements ReportedBeanAttribute
         return name;
     }
 
-    public Object getValue()
+    public Number getValue()
             throws AttributeNotFoundException, MBeanException, ReflectionException
     {
-        return invoke(target, getter);
+        Boolean value = (Boolean) invoke(target, getter);
+        if (value == null) {
+            return null;
+        }
+        if (value) {
+            return 1;
+        }
+        return 0;
     }
 }

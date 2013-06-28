@@ -71,7 +71,7 @@ class ReportCollector
     private void collectData()
     {
         final long lastSystemTimeMillis = bucketIdProvider.getLastSystemTimeMillis();
-        ImmutableTable.Builder<ObjectName, String, Object> builder = ImmutableTable.builder();
+        ImmutableTable.Builder<ObjectName, String, Number> builder = ImmutableTable.builder();
         for (Entry<ObjectName, ReportedBean> reportedBeanEntry : reportedBeanRegistry.getReportedBeans().entrySet()) {
             for (ReportedBeanAttribute attribute : reportedBeanEntry.getValue().getAttributes()) {
                 try {
@@ -81,7 +81,7 @@ class ReportCollector
                 }
             }
         }
-        final Table<ObjectName, String, Object> collectedData = builder.build();
+        final Table<ObjectName, String, Number> collectedData = builder.build();
         clientExecutorService.submit(new Runnable()
         {
             @Override

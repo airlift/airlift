@@ -21,7 +21,7 @@ import javax.management.ObjectName;
 
 class ReportClient
 {
-    public void report(long systemTimeMillis, Table<ObjectName, String, Object> collectedData)
+    public void report(long systemTimeMillis, Table<ObjectName, String, Number> collectedData)
     {
 
     }

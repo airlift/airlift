@@ -26,7 +26,7 @@ public abstract class AbstractReportedBeanTest<T>
     protected abstract MBeanInfo getMBeanInfo(T t)
             throws Exception;
 
-    protected abstract Object getAttribute(T t, String attributeName)
+    protected abstract Number getAttribute(T t, String attributeName)
             throws Exception;
 
     @Test(dataProvider = "fixtures")
@@ -85,6 +85,15 @@ public abstract class AbstractReportedBeanTest<T>
 
             for (Object value : values) {
                 setter.invoke(simpleInterface, value);
+
+                if (isIs && value != null) {
+                    if ((Boolean) value) {
+                        value = 1;
+                    }
+                    else {
+                        value = 0;
+                    }
+                }
 
                 assertEquals(getAttribute(t, attributeName), value);
             }

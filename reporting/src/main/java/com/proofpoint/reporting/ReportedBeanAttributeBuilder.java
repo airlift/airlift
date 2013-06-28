@@ -132,14 +132,14 @@ class ReportedBeanAttributeBuilder
                     descriptor);
 
             if (Boolean.class.isAssignableFrom(attributeType) || attributeType == boolean.class) {
-                return ImmutableList.of(new ReflectionReportedBeanAttribute(mbeanAttributeInfo, target, concreteGetter));
+                return ImmutableList.of(new BooleanReportedBeanAttribute(mbeanAttributeInfo, target, concreteGetter));
             }
 
             if (!Number.class.isAssignableFrom(attributeType) && !PRIMITIVE_NUMBERS.contains(attributeType)) {
                 throw new RuntimeException("report annotation on non-numeric, non-boolean getter " + concreteGetter.toGenericString());
             }
 
-            return ImmutableList.of(new ReflectionReportedBeanAttribute(mbeanAttributeInfo, target, concreteGetter));
+            return ImmutableList.of(new NumberReportedBeanAttribute(mbeanAttributeInfo, target, concreteGetter));
         }
     }
 }

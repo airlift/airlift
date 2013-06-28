@@ -34,7 +34,7 @@ public class TestReportedBean extends AbstractReportedBeanTest<Object>
     }
 
     @Override
-    protected Object getAttribute(Object object, String attributeName)
+    protected Number getAttribute(Object object, String attributeName)
             throws AttributeNotFoundException, MBeanException, ReflectionException
     {
         return ReportedBean.forTarget(object).getAttribute(attributeName);
