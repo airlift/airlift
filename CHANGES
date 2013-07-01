@@ -1,3 +1,7 @@
+Platform 0.76
+
+* [bug] Fixed the Netty http client's handling of exceptions
+
 Platform 0.75
 
 * Experimental modules
@@ -11,7 +15,7 @@ Platform 0.75
   it defined.
 
 * We moved Announcer and ServiceAnnouncement into the
-  com.proofpoint.discovery.announce package.
+  com.proofpoint.discovery.client.announce package.
 
 * Discovery aware balancing HttpClient
 
