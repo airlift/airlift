@@ -78,8 +78,8 @@ public class AsyncHttpClientModule
         bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(NettyAsyncHttpClientConfig.class);
 
         // Shared thread pool
-        bindConfig(binder).to(NettyIoPoolConfig.class);
-        binder.bind(NettyIoPool.class).toProvider(SharedNettyIoPoolProvider.class).in(Scopes.SINGLETON);
+        bindConfig(rootBinder).to(NettyIoPoolConfig.class);
+        rootBinder.bind(NettyIoPool.class).toProvider(SharedNettyIoPoolProvider.class).in(Scopes.SINGLETON);
 
         // bind the async client
         binder.bind(AsyncHttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(name, annotation)).in(Scopes.SINGLETON);

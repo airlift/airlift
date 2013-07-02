@@ -313,6 +313,30 @@ public class TestHttpClientBinder
         assertNotNull(injector.getInstance(ExposeHttpClient.class).httpClient);
     }
 
+    @Test
+    public void testNormalAndPrivateBindAsyncClients()
+    {
+        Injector injector = Guice.createInjector(
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        newExporter(binder).export(ManagedClass.class);
+                        PrivateBinder privateBinder = binder.newPrivateBinder();
+                        HttpClientBinder.httpClientPrivateBinder(privateBinder, binder).bindAsyncHttpClient("foo", FooClient.class);
+                        privateBinder.bind(ExposeHttpClient.class);
+                        privateBinder.expose(ExposeHttpClient.class);
+                        HttpClientBinder.httpClientBinder(binder).bindAsyncHttpClient("bar", BarClient.class);
+                    }
+                },
+                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
+
+        assertNotNull(injector.getInstance(ExposeHttpClient.class).httpClient);
+        assertNotNull(injector.getInstance(Key.get(AsyncHttpClient.class, BarClient.class)));
+    }
+
+
     private static void assertFilterCount(HttpClient httpClient, int filterCount)
     {
         assertNotNull(httpClient);
