@@ -1,6 +1,8 @@
 Platform 0.76
 
-* [bug] Fixed the Netty http client's handling of exceptions
+* [Bug] Fixed Guice error when binding AsyncHttpClients both normally and privately.
+
+* [Bug] Fixed the Netty http client's handling of exceptions
 
 Platform 0.75
 
