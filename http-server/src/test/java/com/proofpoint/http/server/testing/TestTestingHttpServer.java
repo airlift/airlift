@@ -35,6 +35,7 @@ import com.proofpoint.http.server.QueryStringFilter;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.node.testing.TestingNodeModule;
+import com.proofpoint.tracetoken.TraceTokenManager;
 import com.proofpoint.units.Duration;
 import org.testng.annotations.Test;
 
@@ -88,7 +89,7 @@ public class TestTestingHttpServer
     {
         DummyServlet servlet = new DummyServlet();
         TestingHttpServer server = null;
-        HttpClient client = null;
+        HttpClient client;
 
         try {
             server = createTestingHttpServer(servlet, Collections.<String, String>emptyMap());
@@ -116,7 +117,7 @@ public class TestTestingHttpServer
         DummyServlet servlet = new DummyServlet();
         DummyFilter filter = new DummyFilter();
         TestingHttpServer server = null;
-        HttpClient client = null;
+        HttpClient client;
 
         try {
             server = createTestingHttpServerWithFilter(servlet, Collections.<String, String>emptyMap(), filter);
@@ -143,7 +144,7 @@ public class TestTestingHttpServer
             throws Exception
     {
         TestingHttpServer server = null;
-        HttpClient client = null;
+        HttpClient client;
         final DummyServlet servlet = new DummyServlet();
 
         try {
@@ -183,7 +184,7 @@ public class TestTestingHttpServer
             throws Exception
     {
         TestingHttpServer server = null;
-        HttpClient client = null;
+        HttpClient client;
         final DummyServlet servlet = new DummyServlet();
         final DummyFilter filter = new DummyFilter();
 
@@ -244,7 +245,7 @@ public class TestTestingHttpServer
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params, ImmutableSet.<Filter>of(filter), new QueryStringFilter());
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params, ImmutableSet.<Filter>of(filter), new QueryStringFilter(), new TraceTokenManager());
     }
 
     private void closeQuietly(TestingHttpServer server)

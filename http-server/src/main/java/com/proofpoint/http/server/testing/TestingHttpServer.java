@@ -49,11 +49,13 @@ public class TestingHttpServer extends HttpServer
     public TestingHttpServer(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config, Servlet servlet, Map<String, String> initParameters)
             throws IOException
     {
-        this(httpServerInfo, nodeInfo, config, servlet, initParameters, ImmutableSet.<Filter>of(), new QueryStringFilter());
+        this(httpServerInfo, nodeInfo, config, servlet, initParameters, ImmutableSet.<Filter>of(), new QueryStringFilter(), new TraceTokenManager());
     }
 
     @Inject
-    public TestingHttpServer(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config, @TheServlet Servlet servlet, @TheServlet Map<String, String> initParameters, @TheServlet Set<Filter> filters, QueryStringFilter queryStringFilter)
+    public TestingHttpServer(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config,
+            @TheServlet Servlet servlet, @TheServlet Map<String, String> initParameters, @TheServlet Set<Filter> filters,
+            QueryStringFilter queryStringFilter, TraceTokenManager traceTokenManager)
             throws IOException
     {
         super(httpServerInfo,
@@ -68,7 +70,7 @@ public class TestingHttpServer extends HttpServer
                 null,
                 null,
                 queryStringFilter,
-                new TraceTokenManager(),
+                traceTokenManager,
                 new RequestStats(),
                 new NullEventClient());
         this.httpServerInfo = httpServerInfo;
