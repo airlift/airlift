@@ -12,6 +12,7 @@ import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.units.Duration;
 
+import javax.validation.constraints.NotNull;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -23,7 +24,7 @@ import static com.google.common.base.Preconditions.checkState;
 public class TestingHttpClient
         implements AsyncHttpClient
 {
-    private final Function<Request, Response> processor;
+    private final Processor processor;
     private final ListeningExecutorService executor;
 
     private final RequestStats stats = new RequestStats();
@@ -34,7 +35,24 @@ public class TestingHttpClient
         this(processor, MoreExecutors.sameThreadExecutor());
     }
 
-    public TestingHttpClient(Function<Request, Response> processor, ExecutorService executor)
+    public TestingHttpClient(Processor processor)
+    {
+        this(processor, MoreExecutors.sameThreadExecutor());
+    }
+
+    public TestingHttpClient(final Function<Request, Response> processor, ExecutorService executor)
+    {
+        this(new Processor()
+        {
+            @Override
+            public Response handle(Request request)
+            {
+                return processor.apply(request);
+            }
+        }, executor);
+    }
+
+    public TestingHttpClient(Processor processor, ExecutorService executor)
     {
         this.processor = processor;
         this.executor = MoreExecutors.listeningDecorator(executor);
@@ -79,7 +97,7 @@ public class TestingHttpClient
         Duration requestProcessingTime = null;
         try {
             long requestStart = System.nanoTime();
-            response = processor.apply(request);
+            response = processor.handle(request);
             requestProcessingTime = Duration.nanosSince(requestStart);
         }
         catch (Throwable e) {
@@ -94,7 +112,7 @@ public class TestingHttpClient
                 return responseHandler.handleException(request, (Exception) e);
             }
             else {
-                throw e;
+                throw (Error) e;
             }
         }
         checkState(response != null, "response is null");
@@ -127,6 +145,13 @@ public class TestingHttpClient
     public void close()
     {
         closed.set(true);
+    }
+
+    public interface Processor
+    {
+        @NotNull
+        Response handle(Request request)
+                throws Exception;
     }
 
     private class TestingAsyncHttpResponseFuture<T>
