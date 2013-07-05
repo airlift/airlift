@@ -1,6 +1,7 @@
 * 0.123
 
 - Upgrade Jetty to 9.3.7.RC0
+- Add ability for TestingHttpClient to send checked exceptions
 
 * 0.122
 

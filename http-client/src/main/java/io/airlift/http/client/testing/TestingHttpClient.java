@@ -1,10 +1,8 @@
 package io.airlift.http.client.testing;
 
-import com.google.common.base.Function;
 import com.google.common.util.concurrent.ForwardingListenableFuture;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
@@ -19,25 +17,28 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.util.concurrent.MoreExecutors.listeningDecorator;
+import static com.google.common.util.concurrent.MoreExecutors.newDirectExecutorService;
+import static java.util.Objects.requireNonNull;
 
 public class TestingHttpClient
         implements HttpClient
 {
-    private final Function<Request, Response> processor;
+    private final Processor processor;
     private final ListeningExecutorService executor;
 
     private final RequestStats stats = new RequestStats();
     private final AtomicBoolean closed = new AtomicBoolean();
 
-    public TestingHttpClient(Function<Request, Response> processor)
+    public TestingHttpClient(Processor processor)
     {
-        this(processor, MoreExecutors.newDirectExecutorService());
+        this(processor, newDirectExecutorService());
     }
 
-    public TestingHttpClient(Function<Request, Response> processor, ExecutorService executor)
+    public TestingHttpClient(Processor processor, ExecutorService executor)
     {
-        this.processor = processor;
-        this.executor = MoreExecutors.listeningDecorator(executor);
+        this.processor = requireNonNull(processor, "processor is null");
+        this.executor = listeningDecorator(requireNonNull(executor, "executor is null"));
     }
 
     @Override
@@ -71,10 +72,10 @@ public class TestingHttpClient
         Duration requestProcessingTime;
         long requestStart = System.nanoTime();
         try {
-            response = processor.apply(request);
+            response = processor.handle(request);
             requestProcessingTime = Duration.nanosSince(requestStart);
         }
-        catch (Throwable e) {
+        catch (Exception | Error e) {
             state.set("FAILED");
             stats.record(request.getMethod(),
                     0,
@@ -85,9 +86,7 @@ public class TestingHttpClient
             if (e instanceof Exception) {
                 return responseHandler.handleException(request, (Exception) e);
             }
-            else {
-                throw e;
-            }
+            throw (Error) e;
         }
         checkState(response != null, "response is null");
 
@@ -125,6 +124,12 @@ public class TestingHttpClient
     public void close()
     {
         closed.set(true);
+    }
+
+    public interface Processor
+    {
+        Response handle(Request request)
+                throws Exception;
     }
 
     private class TestingHttpResponseFuture<T>
