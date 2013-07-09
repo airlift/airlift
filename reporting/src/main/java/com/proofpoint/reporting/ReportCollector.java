@@ -75,7 +75,7 @@ class ReportCollector
         for (Entry<ObjectName, ReportedBean> reportedBeanEntry : reportedBeanRegistry.getReportedBeans().entrySet()) {
             for (ReportedBeanAttribute attribute : reportedBeanEntry.getValue().getAttributes()) {
                 try {
-                    builder.put(reportedBeanEntry.getKey(), attribute.getName(), attribute.getValue());
+                    builder.put(reportedBeanEntry.getKey(), attribute.getName(), attribute.getValue(null));
                 }
                 catch (AttributeNotFoundException | MBeanException | ReflectionException ignored) {
                 }

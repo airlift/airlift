@@ -90,7 +90,7 @@ class ReportedBean
         if (mbeanAttribute == null) {
             throw new AttributeNotFoundException(name);
         }
-        return mbeanAttribute.getValue();
+        return mbeanAttribute.getValue(null);
     }
 
     public static ReportedBean forTarget(Object target)

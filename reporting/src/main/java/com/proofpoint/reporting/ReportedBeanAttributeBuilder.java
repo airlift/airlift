@@ -88,7 +88,11 @@ class ReportedBeanAttributeBuilder
             }
 
             ReportedBean reportedBean = ReportedBean.forTarget(value);
-            return ImmutableList.copyOf(reportedBean.getAttributes());
+            ImmutableList.Builder<ReportedBeanAttribute> builder = ImmutableList.builder();
+            for (ReportedBeanAttribute attribute : reportedBean.getAttributes()) {
+                builder.add(new FlattenReportedBeanAttribute(name, concreteGetter, attribute));
+            }
+            return builder.build();
         }
         else if (AnnotationUtils.isNested(annotatedGetter)) {
             checkArgument(concreteGetter != null, "Nested JmxAttribute must have a concrete getter");
@@ -107,7 +111,7 @@ class ReportedBeanAttributeBuilder
             ReportedBean reportedBean = ReportedBean.forTarget(value);
             ImmutableList.Builder<ReportedBeanAttribute> builder = ImmutableList.builder();
             for (ReportedBeanAttribute attribute : reportedBean.getAttributes()) {
-                builder.add(new NestedReportedBeanAttribute(name, attribute));
+                builder.add(new NestedReportedBeanAttribute(name, concreteGetter, attribute));
             }
             return builder.build();
         }

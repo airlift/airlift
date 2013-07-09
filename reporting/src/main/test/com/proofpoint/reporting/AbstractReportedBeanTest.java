@@ -1,5 +1,6 @@
 package com.proofpoint.reporting;
 
+import com.proofpoint.stats.BucketIdProvider;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -20,6 +21,7 @@ import static org.testng.Assert.fail;
 public abstract class AbstractReportedBeanTest<T>
 {
     protected List<T> objects;
+    protected final TestingBucketIdProvider bucketIdProvider = new TestingBucketIdProvider();
 
     protected abstract Object getObject(T t);
 
@@ -33,7 +35,7 @@ public abstract class AbstractReportedBeanTest<T>
     public void testGetterAttributeInfo(String attribute, boolean isIs, Object[] values, Class<?> clazz)
             throws Exception
     {
-        String methodName = "set" + attribute;
+        String methodName = "set" + attribute.replace(".", "");
         for (T t : objects) {
             String attributeName = toFeatureName(attribute, t);
             SimpleInterface simpleInterface = toSimpleInterface(t);
@@ -77,7 +79,7 @@ public abstract class AbstractReportedBeanTest<T>
     public void testGet(String attribute, boolean isIs, Object[] values, Class<?> clazz)
             throws Exception
     {
-        String methodName = "set" + attribute;
+        String methodName = "set" + attribute.replace(".", "");
         for (T t : objects) {
             String attributeName = toFeatureName(attribute, t);
             SimpleInterface simpleInterface = toSimpleInterface(t);
@@ -85,6 +87,7 @@ public abstract class AbstractReportedBeanTest<T>
 
             for (Object value : values) {
                 setter.invoke(simpleInterface, value);
+                bucketIdProvider.advance();
 
                 if (isIs && value != null) {
                     if ((Boolean) value) {
@@ -159,6 +162,13 @@ public abstract class AbstractReportedBeanTest<T>
                 new Object[] { "PrivateValue", false, new Object[] { Integer.MAX_VALUE, Integer.MIN_VALUE, 0 },
                         Integer.TYPE },
 
+                new Object[] { "BucketedBooleanValue", true, new Object[] { true, false }, Boolean.TYPE },
+                new Object[] { "BucketedIntegerValue", false, new Object[] { Integer.MAX_VALUE, Integer.MIN_VALUE, 0 },
+                               Integer.TYPE },
+                new Object[] { "NestedBucket.BucketedBooleanBoxedValue", true, new Object[] { true, false, null }, Boolean.class },
+                new Object[] { "NestedBucket.BucketedLongValue", false, new Object[] { Long.MAX_VALUE, Long.MIN_VALUE, 0L }, Long.TYPE },
+                new Object[] { "BucketedBooleanBoxedValue", true, new Object[] { true, false, null }, Boolean.class },
+                new Object[] { "BucketedLongValue", false, new Object[] { Long.MAX_VALUE, Long.MIN_VALUE, 0L }, Long.TYPE },
         };
     }
 
@@ -190,5 +200,22 @@ public abstract class AbstractReportedBeanTest<T>
             throw new IllegalArgumentException("Expected objects implementing SimpleInterface or FlattenObject but got " + getObject(t).getClass().getName());
         }
         return simpleInterface;
+    }
+
+    private static class TestingBucketIdProvider
+            implements BucketIdProvider
+    {
+        private int bucketId = 0;
+
+        @Override
+        public int get()
+        {
+            return bucketId;
+        }
+
+        public void advance()
+        {
+            ++bucketId;
+        }
     }
 }

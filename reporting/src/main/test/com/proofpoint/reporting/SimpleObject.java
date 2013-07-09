@@ -18,6 +18,7 @@ package com.proofpoint.reporting;
 import com.proofpoint.stats.Reported;
 
 public class SimpleObject
+        extends SimpleBucketed
         implements SimpleInterface
 {
     private boolean booleanValue;

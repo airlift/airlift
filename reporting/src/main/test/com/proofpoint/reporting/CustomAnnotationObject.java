@@ -1,5 +1,6 @@
 package com.proofpoint.reporting;
 
+import com.proofpoint.stats.Bucketed;
 import com.proofpoint.stats.ReportedAnnotation;
 
 import java.lang.annotation.ElementType;
@@ -8,6 +9,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 public class CustomAnnotationObject
+        extends SimpleBucketed
         implements SimpleInterface
 {
     private boolean booleanValue;

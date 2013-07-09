@@ -20,6 +20,7 @@ import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
 
+import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.reporting.ReflectionUtils.invoke;
 import static com.proofpoint.reporting.ReportedBean.GET_PREVIOUS_BUCKET;
@@ -55,11 +56,9 @@ class BucketedReportedBeanAttribute implements ReportedBeanAttribute
         return info.getName();
     }
 
-    public Number getValue()
+    public Number getValue(Object target)
             throws AttributeNotFoundException, MBeanException, ReflectionException
     {
-        Object target = invoke(holder, GET_PREVIOUS_BUCKET);
-        // todo - need to get value from target, not delegate
-        return delegate.getValue();
+        return delegate.getValue(invoke(firstNonNull(target, holder), GET_PREVIOUS_BUCKET));
     }
 }

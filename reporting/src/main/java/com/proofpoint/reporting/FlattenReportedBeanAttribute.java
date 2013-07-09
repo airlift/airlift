@@ -15,30 +15,25 @@
  */
 package com.proofpoint.reporting;
 
-import javax.annotation.Nullable;
 import javax.management.AttributeNotFoundException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
 import java.lang.reflect.Method;
 
-import static com.google.common.base.Objects.firstNonNull;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.reporting.ReflectionUtils.invoke;
 
-class NumberReportedBeanAttribute implements ReportedBeanAttribute
+class FlattenReportedBeanAttribute implements ReportedBeanAttribute
 {
+    private final Method flattenGetter;
+    private final ReportedBeanAttribute delegate;
     private final MBeanAttributeInfo info;
-    private final Object target;
-    private final String name;
-    private final Method getter;
 
-    public NumberReportedBeanAttribute(MBeanAttributeInfo info, Object target, Method getter)
+    public FlattenReportedBeanAttribute(String prefix, Method flattenGetter, ReportedBeanAttribute delegate)
     {
-        this.info = checkNotNull(info, "info is null");
-        this.target = checkNotNull(target, "target is null");
-        this.name = info.getName();
-        this.getter = checkNotNull(getter, "getter is null");
+        this.flattenGetter = flattenGetter;
+        this.delegate = delegate;
+        this.info = delegate.getInfo();
     }
 
     public MBeanAttributeInfo getInfo()
@@ -48,12 +43,15 @@ class NumberReportedBeanAttribute implements ReportedBeanAttribute
 
     public String getName()
     {
-        return name;
+        return info.getName();
     }
 
-    public Number getValue(@Nullable Object target)
+    public Number getValue(Object target)
             throws AttributeNotFoundException, MBeanException, ReflectionException
     {
-        return (Number) invoke(firstNonNull(target, this.target), getter);
+        if (target != null) {
+            target = invoke(target, flattenGetter);
+        }
+        return delegate.getValue(target);
     }
 }

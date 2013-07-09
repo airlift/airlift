@@ -15,12 +15,14 @@
  */
 package com.proofpoint.reporting;
 
+import javax.annotation.Nullable;
 import javax.management.AttributeNotFoundException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
 import java.lang.reflect.Method;
 
+import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.reporting.ReflectionUtils.invoke;
 
@@ -49,10 +51,10 @@ class BooleanReportedBeanAttribute implements ReportedBeanAttribute
         return name;
     }
 
-    public Number getValue()
+    public Number getValue(@Nullable Object target)
             throws AttributeNotFoundException, MBeanException, ReflectionException
     {
-        Boolean value = (Boolean) invoke(target, getter);
+        Boolean value = (Boolean) invoke(firstNonNull(target, this.target), getter);
         if (value == null) {
             return null;
         }

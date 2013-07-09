@@ -15,6 +15,7 @@
  */
 package com.proofpoint.reporting;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.proofpoint.stats.BucketIdProvider;
@@ -67,7 +68,8 @@ class ReportExporter
         }
     }
 
-    private static void notifyBucketIdProvider(Object object, BucketIdProvider bucketIdProvider, Method annotatedGetter)
+    @VisibleForTesting
+    static void notifyBucketIdProvider(Object object, BucketIdProvider bucketIdProvider, Method annotatedGetter)
     {
         if (object instanceof Bucketed) {
             ((Bucketed) object).setBucketIdProvider(bucketIdProvider);

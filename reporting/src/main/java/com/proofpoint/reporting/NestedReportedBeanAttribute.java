@@ -19,14 +19,19 @@ import javax.management.AttributeNotFoundException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
+import java.lang.reflect.Method;
+
+import static com.proofpoint.reporting.ReflectionUtils.invoke;
 
 class NestedReportedBeanAttribute implements ReportedBeanAttribute
 {
+    private final Method nestedGetter;
     private final ReportedBeanAttribute delegate;
     private final MBeanAttributeInfo info;
 
-    public NestedReportedBeanAttribute(String prefix, ReportedBeanAttribute delegate)
+    public NestedReportedBeanAttribute(String prefix, Method nestedGetter, ReportedBeanAttribute delegate)
     {
+        this.nestedGetter = nestedGetter;
         this.delegate = delegate;
 
         MBeanAttributeInfo delegateInfo = delegate.getInfo();
@@ -49,9 +54,12 @@ class NestedReportedBeanAttribute implements ReportedBeanAttribute
         return info.getName();
     }
 
-    public Number getValue()
+    public Number getValue(Object target)
             throws AttributeNotFoundException, MBeanException, ReflectionException
     {
-        return delegate.getValue();
+        if (target != null) {
+            target = invoke(target, nestedGetter);
+        }
+        return delegate.getValue(target);
     }
 }

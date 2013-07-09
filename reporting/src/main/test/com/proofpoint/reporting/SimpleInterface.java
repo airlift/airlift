@@ -61,4 +61,16 @@ public interface SimpleInterface
     void setNotReported(int value);
 
     int getNotReported();
+
+    void setBucketedBooleanValue(boolean bucketedBooleanValue);
+
+    void setBucketedIntegerValue(int bucketedIntegerValue);
+
+    void setNestedBucketBucketedBooleanBoxedValue(Boolean nestedBucketBucketedBooleanBoxedValue);
+
+    void setNestedBucketBucketedLongValue(long nestedBucketBucketedLongValue);
+
+    void setBucketedBooleanBoxedValue(Boolean bucketedBooleanBoxedValue);
+
+    void setBucketedLongValue(long bucketedLongValue);
 }

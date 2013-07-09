@@ -8,9 +8,15 @@ import javax.management.MBeanException;
 import javax.management.MBeanInfo;
 import javax.management.ReflectionException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.proofpoint.reporting.ReportExporter.notifyBucketIdProvider;
 
 public class TestReportedBean extends AbstractReportedBeanTest<Object>
 {
+    private final Map<Object, ReportedBean> reportedBeans = new HashMap<>();
+
     public TestReportedBean()
     {
         objects = new ArrayList<>();
@@ -20,6 +26,11 @@ public class TestReportedBean extends AbstractReportedBeanTest<Object>
         objects.add(new CustomFlattenAnnotationObject());
         objects.add(new NestedObject());
         objects.add(new CustomNestedAnnotationObject());
+
+        for (Object object : objects) {
+            notifyBucketIdProvider(object, bucketIdProvider, null);
+            reportedBeans.put(object, ReportedBean.forTarget(object));
+        }
     }
 
     @Override
@@ -30,14 +41,14 @@ public class TestReportedBean extends AbstractReportedBeanTest<Object>
     @Override
     protected MBeanInfo getMBeanInfo(Object object)
     {
-        return ReportedBean.forTarget(object).getMBeanInfo();
+        return reportedBeans.get(object).getMBeanInfo();
     }
 
     @Override
     protected Number getAttribute(Object object, String attributeName)
             throws AttributeNotFoundException, MBeanException, ReflectionException
     {
-        return ReportedBean.forTarget(object).getAttribute(attributeName);
+        return reportedBeans.get(object).getAttribute(attributeName);
     }
 
     @Test(expectedExceptions = RuntimeException.class,
