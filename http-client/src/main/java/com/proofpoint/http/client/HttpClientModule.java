@@ -65,7 +65,9 @@ class HttpClientModule
         newSetBinder(binder, HttpRequestFilter.class, filterQualifier(annotation));
 
         // export stats
-        newExporter(rootBinder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
+        if (binder == rootBinder) {
+            newExporter(binder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
+        }
     }
 
     @Override

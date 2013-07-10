@@ -19,6 +19,8 @@ import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.ResponseHandler;
+import org.weakref.jmx.Flatten;
+import org.weakref.jmx.Managed;
 
 import javax.inject.Inject;
 import java.net.URI;
@@ -126,5 +128,12 @@ public final class BalancingHttpClient implements HttpClient
     public void close()
     {
         httpClient.close();
+    }
+
+    @Managed
+    @Flatten
+    public Object getHttpClientOnlyForUseByJmxutils()
+    {
+        return httpClient;
     }
 }

@@ -47,6 +47,7 @@ import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
 import static com.proofpoint.discovery.client.announce.ServiceAnnouncement.serviceAnnouncement;
 import static com.proofpoint.http.client.HttpClientBinder.httpClientPrivateBinder;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class DiscoveryBinder
 {
@@ -147,6 +148,7 @@ public class DiscoveryBinder
         bindConfig(binder).prefixedWith(serviceType.value()).to(BalancingHttpClientConfig.class);
         privateBinder.bind(HttpClient.class).annotatedWith(annotation).to(BalancingHttpClient.class).in(Scopes.SINGLETON);
         privateBinder.expose(HttpClient.class).annotatedWith(annotation);
+        newExporter(binder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
 
         return new BalancingHttpClientBindingBuilder(binder, annotation, delegateBindingBuilder);
     }
@@ -173,6 +175,7 @@ public class DiscoveryBinder
         bindConfig(binder).prefixedWith(serviceType.value()).to(BalancingHttpClientConfig.class);
         privateBinder.bind(AsyncHttpClient.class).annotatedWith(annotation).to(BalancingAsyncHttpClient.class).in(Scopes.SINGLETON);
         privateBinder.expose(AsyncHttpClient.class).annotatedWith(annotation);
+        newExporter(binder).export(AsyncHttpClient.class).annotatedWith(annotation).withGeneratedName();
 
         return new BalancingHttpClientAsyncBindingBuilder(binder, annotation, delegateBindingBuilder);
     }

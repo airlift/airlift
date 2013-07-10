@@ -24,10 +24,10 @@ import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.proofpoint.http.client.netty.NettyAsyncHttpClient;
+import com.proofpoint.http.client.netty.NettyAsyncHttpClientConfig;
 import com.proofpoint.http.client.netty.NettyIoPool;
 import com.proofpoint.http.client.netty.NettyIoPoolConfig;
 import com.proofpoint.log.Logger;
-import com.proofpoint.http.client.netty.NettyAsyncHttpClientConfig;
 
 import javax.annotation.PreDestroy;
 import java.lang.annotation.Annotation;
@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
@@ -91,7 +90,9 @@ public class AsyncHttpClientModule
         newSetBinder(binder, HttpRequestFilter.class, filterQualifier(annotation));
 
         // export stats
-        newExporter(firstNonNull(rootBinder, binder)).export(AsyncHttpClient.class).annotatedWith(annotation).withGeneratedName();
+        if (rootBinder == binder) {
+            newExporter(binder).export(AsyncHttpClient.class).annotatedWith(annotation).withGeneratedName();
+        }
     }
 
     @Override
