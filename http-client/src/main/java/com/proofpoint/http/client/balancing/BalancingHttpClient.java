@@ -118,6 +118,8 @@ public final class BalancingHttpClient implements HttpClient
         }
     }
 
+    @Managed
+    @Flatten
     @Override
     public RequestStats getStats()
     {
@@ -128,12 +130,5 @@ public final class BalancingHttpClient implements HttpClient
     public void close()
     {
         httpClient.close();
-    }
-
-    @Managed
-    @Flatten
-    public Object getHttpClientOnlyForUseByJmxutils()
-    {
-        return httpClient;
     }
 }

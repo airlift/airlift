@@ -98,6 +98,8 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
         return executeAsync(request, responseHandler).checkedGet();
     }
 
+    @Managed
+    @Flatten
     @Override
     public RequestStats getStats()
     {
@@ -108,13 +110,6 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
     public void close()
     {
         httpClient.close();
-    }
-
-    @Managed
-    @Flatten
-    public Object getHttpClientOnlyForUseByJmxutils()
-    {
-        return httpClient;
     }
 
     private class RetryFuture<T, E extends Exception>
