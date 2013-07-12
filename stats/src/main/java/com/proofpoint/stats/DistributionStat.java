@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 import com.proofpoint.stats.Distribution.DistributionSnapshot;
+import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
@@ -13,6 +14,7 @@ public class DistributionStat
     private final Distribution fiveMinutes;
     private final Distribution fifteenMinutes;
     private final Distribution allTime;
+    private final BucketedDistribution bucket = new BucketedDistribution();
 
     public DistributionStat()
     {
@@ -28,6 +30,7 @@ public class DistributionStat
         fiveMinutes.add(value);
         fifteenMinutes.add(value);
         allTime.add(value);
+        bucket.add(value);
     }
 
     @Managed
@@ -56,6 +59,13 @@ public class DistributionStat
     public Distribution getAllTime()
     {
         return allTime;
+    }
+
+    @Reported
+    @Flatten
+    public BucketedDistribution getBucket()
+    {
+        return bucket;
     }
 
     public DistributionStatSnapshot snapshot()
