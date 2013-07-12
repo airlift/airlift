@@ -22,7 +22,7 @@ import com.google.inject.Scopes;
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
 import static com.proofpoint.event.client.EventBinder.eventBinder;
-import static org.weakref.jmx.guice.ExportBinder.newExporter;
+import static com.proofpoint.reporting.ReportBinder.reportBinder;
 
 public class MainModule
         implements Module
@@ -33,7 +33,7 @@ public class MainModule
         binder.disableCircularProxies();
 
         binder.bind(PersonStore.class).in(Scopes.SINGLETON);
-        newExporter(binder).export(PersonStore.class).withGeneratedName();
+        reportBinder(binder).export(PersonStore.class).withGeneratedName();
 
         binder.bind(PersonsResource.class).in(Scopes.SINGLETON);
         binder.bind(PersonResource.class).in(Scopes.SINGLETON);

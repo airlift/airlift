@@ -28,6 +28,7 @@ import com.proofpoint.jmx.JmxModule;
 import com.proofpoint.log.LogJmxModule;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeModule;
+import com.proofpoint.reporting.ReportingModule;
 import com.proofpoint.tracetoken.TraceTokenModule;
 import org.weakref.jmx.guice.MBeanModule;
 
@@ -49,6 +50,7 @@ public class Main
                 new JmxHttpModule(),
                 new LogJmxModule(),
                 new HttpEventModule(),
+                new ReportingModule(),
                 new TraceTokenModule(),
                 new MainModule());
 
