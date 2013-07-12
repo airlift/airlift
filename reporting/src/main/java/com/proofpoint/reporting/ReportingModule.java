@@ -21,6 +21,8 @@ import com.google.inject.Scopes;
 import com.proofpoint.stats.BucketIdProvider;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
+import static com.proofpoint.http.client.HttpClientBinder.httpClientBinder;
 
 public class ReportingModule
     implements Module
@@ -35,5 +37,8 @@ public class ReportingModule
         binder.bind(BucketIdProvider.class).to(MinuteBucketIdProvider.class).in(Scopes.SINGLETON);
         binder.bind(ReportCollector.class).in(Scopes.SINGLETON);
         binder.bind(ReportClient.class).in(Scopes.SINGLETON);
+
+        httpClientBinder(binder).bindHttpClient("report", ForReportClient.class);
+        bindConfig(binder).to(ReportClientConfig.class);
     }
 }

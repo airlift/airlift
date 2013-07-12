@@ -15,21 +15,12 @@
  */
 package com.proofpoint.reporting;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.inject.Guice;
-import com.proofpoint.configuration.ConfigurationFactory;
-import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.node.testing.TestingNodeModule;
-import org.testng.annotations.Test;
+import javax.inject.Qualifier;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
-public class TestReportCollector
+@Retention(RetentionPolicy.RUNTIME)
+@Qualifier
+public @interface ForReportClient
 {
-    @Test
-    public void testReportingModule()
-    {
-        Guice.createInjector(
-                new TestingNodeModule(),
-                new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
-                new ReportingModule());
-    }
 }

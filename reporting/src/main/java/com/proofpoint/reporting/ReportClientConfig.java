@@ -15,21 +15,23 @@
  */
 package com.proofpoint.reporting;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.inject.Guice;
-import com.proofpoint.configuration.ConfigurationFactory;
-import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.node.testing.TestingNodeModule;
-import org.testng.annotations.Test;
+import com.proofpoint.configuration.Config;
 
-public class TestReportCollector
+import java.net.URI;
+
+public class ReportClientConfig
 {
-    @Test
-    public void testReportingModule()
+    private URI uri = null;
+
+    public URI getUri()
     {
-        Guice.createInjector(
-                new TestingNodeModule(),
-                new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
-                new ReportingModule());
+        return uri;
+    }
+
+    @Config("report.uri")
+    public ReportClientConfig setUri(URI uri)
+    {
+        this.uri = uri;
+        return this;
     }
 }

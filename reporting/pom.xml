@@ -15,6 +15,16 @@
     <dependencies>
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
+            <artifactId>http-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>node</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
             <artifactId>stats</artifactId>
         </dependency>
 

@@ -15,6 +15,7 @@
  */
 package com.proofpoint.reporting;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSet.Builder;
 import com.google.inject.Binder;
@@ -24,6 +25,9 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
+import com.proofpoint.configuration.ConfigurationFactory;
+import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.stats.BucketIdProvider;
 import com.proofpoint.stats.Bucketed;
 import com.proofpoint.stats.Gauge;
@@ -71,6 +75,7 @@ public class TestReportBinder
     private final ObjectName nestedBucketedClassName;
     private final ObjectName flattenBucketedClassName;
     private final ObjectName deepBucketedClassName;
+    private final int baseMbeanCount;
     private MBeanServer jmxMbeanServer;
 
     public TestReportBinder()
@@ -86,6 +91,11 @@ public class TestReportBinder
         nestedBucketedClassName = ObjectName.getInstance(PACKAGE_NAME, "name", "NestedBucketedClass");
         flattenBucketedClassName = ObjectName.getInstance(PACKAGE_NAME, "name", "FlattenBucketedClass");
         deepBucketedClassName = ObjectName.getInstance(PACKAGE_NAME, "name", "DeepBucketedClass");
+
+        jmxMbeanServer = new TestingMBeanServer();
+        Guice.createInjector(new TestingModule());
+        baseMbeanCount = jmxMbeanServer.getMBeanCount();
+        jmxMbeanServer = null;
     }
 
     @BeforeMethod
@@ -331,7 +341,7 @@ public class TestReportBinder
             fail("unexpected exception", e);
         }
 
-        assertEquals((int)jmxMbeanServer.getMBeanCount(), 1);
+        assertEquals((int)jmxMbeanServer.getMBeanCount(), baseMbeanCount + 1);
         assertAttributes(mBeanInfo, expectedAttribues);
     }
 
@@ -423,6 +433,8 @@ public class TestReportBinder
             binder.bind(FlattenBucketedClass.class).in(Scopes.SINGLETON);
             binder.install(new MBeanModule());
             binder.install(new ReportingModule());
+            binder.install(new TestingNodeModule());
+            binder.install(new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())));
         }
 
         @Provides
