@@ -15,13 +15,17 @@
  */
 package com.proofpoint.reporting;
 
+import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.Config;
+import com.proofpoint.configuration.ConfigMap;
 
 import java.net.URI;
+import java.util.Map;
 
 public class ReportClientConfig
 {
     private URI uri = null;
+    private Map<String, String> tags = ImmutableMap.of();
 
     public URI getUri()
     {
@@ -32,6 +36,19 @@ public class ReportClientConfig
     public ReportClientConfig setUri(URI uri)
     {
         this.uri = uri;
+        return this;
+    }
+
+    public Map<String, String> getTags()
+    {
+        return tags;
+    }
+
+    @Config("report.tag")
+    @ConfigMap
+    public ReportClientConfig setTags(Map<String, String> tags)
+    {
+        this.tags = tags;
         return this;
     }
 }

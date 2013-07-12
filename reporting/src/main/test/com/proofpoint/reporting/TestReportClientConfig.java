@@ -32,7 +32,8 @@ public class TestReportClientConfig
     public void testDefaults()
     {
         assertRecordedDefaults(recordDefaults(ReportClientConfig.class)
-                .setUri(null));
+                .setUri(null)
+                .setTags(ImmutableMap.<String, String>of()));
     }
 
     @Test
@@ -40,10 +41,12 @@ public class TestReportClientConfig
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("report.uri", "http://example.com/foo")
+                .put("report.tag.foo", "bar")
                 .build();
 
         ReportClientConfig expected = new ReportClientConfig()
-                .setUri(URI.create("http://example.com/foo"));
+                .setUri(URI.create("http://example.com/foo"))
+                .setTags(ImmutableMap.of("foo", "bar"));
 
         assertFullMapping(properties, expected);
     }

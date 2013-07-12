@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Table;
@@ -113,6 +114,29 @@ public class TestReportClient
         assertEquals(tags.keySet(), ImmutableSet.of("host", "environment", "pool", "type", "name"));
         assertEquals(tags.get("type"), "Foo");
         assertEquals(tags.get("name"), "Bar");
+    }
+
+    @Test
+    public void testConfiguredTags()
+    {
+
+        ReportClient client = new ReportClient(nodeInfo, httpClient,
+                new ReportClientConfig()
+                        .setUri(URI.create(TEST_URI))
+                        .setTags(ImmutableMap.of("foo", "bar", "baz", "quux")));
+        client.report(TEST_TIME, collectedData);
+        assertEquals(sentJson.size(), 2);
+
+        for (Map<String, Object> map : sentJson) {
+            assertEquals(map.keySet(), ImmutableSet.of("name", "timestamp", "value", "tags"));
+            Map<String, String> tags = (Map<String, String>) map.get("tags");
+            assertEquals(tags.get("foo"), "bar");
+            assertEquals(tags.get("baz"), "quux");
+        }
+        Map<String, String> tags = (Map<String, String>) sentJson.get(0).get("tags");
+        assertEquals(tags.keySet(), ImmutableSet.of("host", "environment", "pool", "foo", "baz", "name"));
+        tags = (Map<String, String>) sentJson.get(1).get("tags");
+        assertEquals(tags.keySet(), ImmutableSet.of("host", "environment", "pool", "foo", "baz", "type", "name"));
     }
 
     private class TestingResponseFunction

@@ -52,13 +52,14 @@ class ReportClient
     @Inject
     ReportClient(NodeInfo nodeInfo, @ForReportClient HttpClient httpClient, ReportClientConfig reportClientConfig)
     {
-
         checkNotNull(nodeInfo, "nodeInfo is null");
+        checkNotNull(reportClientConfig, "reportClientConfig is null");
 
         Builder<String, String> builder = ImmutableMap.builder();
         builder.put("host", nodeInfo.getInternalHostname());
         builder.put("environment", nodeInfo.getEnvironment());
         builder.put("pool", nodeInfo.getPool());
+        builder.putAll(reportClientConfig.getTags());
         this.instanceTags = builder.build();
 
         this.httpClient = checkNotNull(httpClient, "httpClient is null");
