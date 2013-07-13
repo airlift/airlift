@@ -74,10 +74,16 @@ class ReportCollector
         ImmutableTable.Builder<ObjectName, String, Number> builder = ImmutableTable.builder();
         for (Entry<ObjectName, ReportedBean> reportedBeanEntry : reportedBeanRegistry.getReportedBeans().entrySet()) {
             for (ReportedBeanAttribute attribute : reportedBeanEntry.getValue().getAttributes()) {
+                Number value = null;
+
                 try {
-                    builder.put(reportedBeanEntry.getKey(), attribute.getName(), attribute.getValue(null));
+                    value = attribute.getValue(null);
                 }
                 catch (AttributeNotFoundException | MBeanException | ReflectionException ignored) {
+                }
+
+                if (isReportable(value)) {
+                    builder.put(reportedBeanEntry.getKey(), attribute.getName(), value);
                 }
             }
         }
@@ -90,5 +96,28 @@ class ReportCollector
                 reportClient.report(lastSystemTimeMillis, collectedData);
             }
         });
+    }
+
+    private static boolean isReportable(Number value)
+    {
+        if (value == null) {
+            return false;
+        }
+        if (value instanceof Double) {
+            return !(((Double) value).isNaN() || ((Double) value).isInfinite());
+        }
+        if (value instanceof Float) {
+            return !(((Float) value).isNaN() || ((Float) value).isInfinite());
+        }
+        if (value instanceof Long) {
+            return !(value.equals(Long.MAX_VALUE) || value.equals(Long.MIN_VALUE));
+        }
+        if (value instanceof Integer) {
+            return !(value.equals(Integer.MAX_VALUE) || value.equals(Integer.MIN_VALUE));
+        }
+        if (value instanceof Short) {
+            return !(value.equals(Short.MAX_VALUE) || value.equals(Short.MIN_VALUE));
+        }
+        return true;
     }
 }
