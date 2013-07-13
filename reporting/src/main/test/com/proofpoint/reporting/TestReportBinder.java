@@ -15,7 +15,6 @@
  */
 package com.proofpoint.reporting;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSet.Builder;
 import com.google.inject.Binder;
@@ -25,9 +24,6 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
-import com.proofpoint.configuration.ConfigurationFactory;
-import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.stats.BucketIdProvider;
 import com.proofpoint.stats.Bucketed;
 import com.proofpoint.stats.Gauge;
@@ -53,6 +49,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.proofpoint.reporting.ReportBinder.reportBinder;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.spy;
@@ -432,9 +429,10 @@ public class TestReportBinder
             binder.bind(FlattenClass.class).in(Scopes.SINGLETON);
             binder.bind(FlattenBucketedClass.class).in(Scopes.SINGLETON);
             binder.install(new MBeanModule());
-            binder.install(new ReportingModule());
-            binder.install(new TestingNodeModule());
-            binder.install(new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())));
+
+            binder.bind(ReportExporter.class).asEagerSingleton();
+            newSetBinder(binder, Mapping.class);
+            binder.bind(ReportedBeanRegistry.class).in(Scopes.SINGLETON);
         }
 
         @Provides
@@ -456,6 +454,20 @@ public class TestReportBinder
         DeepBucketedClass getDeepBucketedClass()
         {
             return DeepBucketedClass.createDeepBucketedClass();
+        }
+
+        @Provides
+        @Singleton
+        BucketIdProvider getBucketIdProvider()
+        {
+            return new BucketIdProvider()
+            {
+                @Override
+                public int get()
+                {
+                    return 0;
+                }
+            };
         }
     }
 

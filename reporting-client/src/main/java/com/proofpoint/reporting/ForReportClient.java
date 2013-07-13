@@ -21,6 +21,6 @@ import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Qualifier
-public @interface ForReportClient
+@interface ForReportClient
 {
 }

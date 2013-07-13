@@ -235,6 +235,7 @@
         <module>skeleton-server-archetype-builder</module>
         <module>trace-token</module>
         <module>reporting</module>
+        <module>reporting-client</module>
     </modules>
 </project>
 
