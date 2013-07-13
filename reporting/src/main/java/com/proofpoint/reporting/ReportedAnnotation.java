@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.stats;
+package com.proofpoint.reporting;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -21,8 +21,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-@ReportedAnnotation
-public @interface Reported
+@Target(ElementType.ANNOTATION_TYPE)
+public @interface ReportedAnnotation
 {
 }

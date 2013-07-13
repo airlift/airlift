@@ -15,7 +15,6 @@
  */
 package com.proofpoint.reporting;
 
-import com.proofpoint.stats.Reported;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Nested;
 

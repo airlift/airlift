@@ -1,6 +1,5 @@
 package com.proofpoint.reporting;
 
-import com.proofpoint.stats.Reported;
 import org.testng.annotations.Test;
 
 import javax.management.AttributeNotFoundException;

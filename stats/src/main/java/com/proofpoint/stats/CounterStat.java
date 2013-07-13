@@ -18,6 +18,7 @@ package com.proofpoint.stats;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.Beta;
+import com.proofpoint.reporting.Reported;
 import com.proofpoint.stats.DecayCounter.DecayCounterSnapshot;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;

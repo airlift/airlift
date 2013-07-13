@@ -1,5 +1,7 @@
 package com.proofpoint.stats;
 
+import com.proofpoint.reporting.BucketIdProvider;
+import com.proofpoint.reporting.Bucketed;
 import com.proofpoint.stats.BucketedCounter.Counter;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;

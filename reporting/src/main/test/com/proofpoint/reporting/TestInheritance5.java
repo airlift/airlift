@@ -15,8 +15,6 @@
  */
 package com.proofpoint.reporting;
 
-import com.proofpoint.stats.Reported;
-
 // Implemented method, overridden annotation from interface => B
 public class TestInheritance5
     extends TestInheritanceBase

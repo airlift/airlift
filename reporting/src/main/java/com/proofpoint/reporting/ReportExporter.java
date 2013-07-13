@@ -18,8 +18,6 @@ package com.proofpoint.reporting;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.proofpoint.stats.BucketIdProvider;
-import com.proofpoint.stats.Bucketed;
 
 import javax.management.InstanceAlreadyExistsException;
 import javax.management.MalformedObjectNameException;

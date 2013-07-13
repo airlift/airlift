@@ -1,8 +1,5 @@
 package com.proofpoint.reporting;
 
-import com.proofpoint.stats.Bucketed;
-import com.proofpoint.stats.ReportedAnnotation;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

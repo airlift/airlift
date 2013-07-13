@@ -1,8 +1,7 @@
 package com.proofpoint.stats;
 
-import com.proofpoint.stats.BucketedDistribution.*;
-import com.proofpoint.stats.BucketedDistribution.*;
-import com.proofpoint.stats.BucketedDistribution.*;
+import com.proofpoint.reporting.BucketIdProvider;
+import com.proofpoint.reporting.Bucketed;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 

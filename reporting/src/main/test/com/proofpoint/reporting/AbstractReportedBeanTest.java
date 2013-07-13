@@ -1,6 +1,5 @@
 package com.proofpoint.reporting;
 
-import com.proofpoint.stats.BucketIdProvider;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 

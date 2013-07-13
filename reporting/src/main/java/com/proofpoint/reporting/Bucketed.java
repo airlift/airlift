@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.stats;
+package com.proofpoint.reporting;
 
 import com.google.common.base.Function;
+import com.proofpoint.reporting.BucketIdProvider;
 
 public abstract class Bucketed<T>
 {

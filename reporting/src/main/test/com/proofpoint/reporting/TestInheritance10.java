@@ -15,8 +15,6 @@
  */
 package com.proofpoint.reporting;
 
-import com.proofpoint.stats.Reported;
-
 // Annotation inherited from parent, covariant return type in child => A
 public class TestInheritance10
         extends TestInheritanceBase

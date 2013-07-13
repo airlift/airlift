@@ -18,7 +18,6 @@ package com.proofpoint.reporting;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.proofpoint.stats.BucketIdProvider;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;

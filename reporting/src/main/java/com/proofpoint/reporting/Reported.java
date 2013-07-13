@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.proofpoint.stats;
-
-import org.weakref.jmx.ManagedAnnotation;
+package com.proofpoint.reporting;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -24,9 +22,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-@ManagedAnnotation
 @ReportedAnnotation
-public @interface Gauge
+public @interface Reported
 {
-    String description() default "";
 }

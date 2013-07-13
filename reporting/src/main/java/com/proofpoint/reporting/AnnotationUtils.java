@@ -16,7 +16,6 @@
 package com.proofpoint.reporting;
 
 import com.google.common.collect.ImmutableSet;
-import com.proofpoint.stats.ReportedAnnotation;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Nested;
 
@@ -35,7 +34,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import static com.proofpoint.reporting.ReflectionUtils.isGetter;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 

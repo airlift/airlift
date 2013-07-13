@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.inject.Inject;
 import com.proofpoint.event.client.EventClient;
-import com.proofpoint.stats.Gauge;
+import com.proofpoint.reporting.Gauge;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 

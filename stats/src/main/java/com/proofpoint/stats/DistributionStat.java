@@ -3,6 +3,7 @@ package com.proofpoint.stats;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
+import com.proofpoint.reporting.Reported;
 import com.proofpoint.stats.Distribution.DistributionSnapshot;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;

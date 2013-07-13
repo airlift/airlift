@@ -16,9 +16,12 @@
 package com.proofpoint.stats;
 
 import com.google.common.base.Function;
+import com.proofpoint.reporting.Bucketed;
+import com.proofpoint.reporting.Reported;
+import com.proofpoint.stats.BucketedCounter.Counter;
 
 public final class BucketedCounter
-    extends Bucketed<BucketedCounter.Counter>
+    extends Bucketed<Counter>
 {
     public void add(long count)
     {

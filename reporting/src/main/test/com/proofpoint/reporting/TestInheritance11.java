@@ -15,10 +15,8 @@
  */
 package com.proofpoint.reporting;
 
-import com.proofpoint.stats.Reported;
-
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 // Annotation inherited from parent, covariant generic return type in child => A
 public class TestInheritance11

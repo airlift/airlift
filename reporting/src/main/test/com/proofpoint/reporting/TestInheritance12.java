@@ -15,8 +15,6 @@
  */
 package com.proofpoint.reporting;
 
-import com.proofpoint.stats.Reported;
-
 import java.util.List;
 
 // Annotation inherited from parent, covariant generic parameter in return type in child => A

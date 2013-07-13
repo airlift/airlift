@@ -16,7 +16,6 @@
 package com.proofpoint.reporting;
 
 import com.google.common.base.Function;
-import com.proofpoint.stats.Bucketed;
 
 public class SimpleBucketed
     extends Bucketed<SimpleBucket>

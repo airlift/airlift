@@ -15,8 +15,6 @@
  */
 package com.proofpoint.reporting;
 
-import com.proofpoint.stats.Reported;
-
 // Overriden method, inherit annotation from public parent => A
 public class TestInheritance1
     extends TestInheritanceBase

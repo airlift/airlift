@@ -15,8 +15,6 @@
  */
 package com.proofpoint.reporting;
 
-import com.proofpoint.stats.Reported;
-
 // Method & annotation only in parent => A
 public class TestInheritance13
     extends TestInheritanceBase

@@ -15,8 +15,6 @@
  */
 package com.proofpoint.reporting;
 
-import com.proofpoint.stats.Reported;
-
 // Annotation inherited from parent of interface and direct interface => E
 public class TestInheritance9
         extends TestInheritanceBase

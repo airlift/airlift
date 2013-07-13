@@ -17,7 +17,6 @@ package com.proofpoint.reporting;
 
 import com.google.common.base.Ticker;
 import com.google.inject.Inject;
-import com.proofpoint.stats.BucketIdProvider;
 
 import java.util.concurrent.TimeUnit;
 

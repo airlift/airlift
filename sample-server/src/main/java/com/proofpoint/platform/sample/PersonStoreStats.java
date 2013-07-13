@@ -17,7 +17,7 @@ package com.proofpoint.platform.sample;
 
 import com.proofpoint.event.client.EventClient;
 import com.proofpoint.stats.CounterStat;
-import com.proofpoint.stats.Gauge;
+import com.proofpoint.reporting.Gauge;
 import org.weakref.jmx.Nested;
 
 public class PersonStoreStats
