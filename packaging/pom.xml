@@ -7,6 +7,6 @@
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.76</version>
+        <version>0.77-SNAPSHOT</version>
     </parent>
 </project>
