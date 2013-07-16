@@ -25,7 +25,6 @@ This artifact can be used in combination with the assembly-descriptor project to
 
 <plugin>
    <artifactId>maven-assembly-plugin</artifactId>
-   <version>2.2-beta-5</version>
    <configuration>
       <descriptorRefs>
          <descriptorRef>distribution</descriptorRef>

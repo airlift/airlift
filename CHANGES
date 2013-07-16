@@ -1,3 +1,9 @@
+Platform 0.77
+
+* Maven plugin upgrades
+  - build-helper-maven-plugin 1.8
+  - maven-assembly-plugin 2.4
+
 Platform 0.76
 
 * [Bug] Fixed Guice error when binding AsyncHttpClients both normally and privately.
