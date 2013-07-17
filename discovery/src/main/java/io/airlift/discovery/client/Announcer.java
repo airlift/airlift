@@ -19,12 +19,15 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
 import com.google.common.util.concurrent.CheckedFuture;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
 import io.airlift.units.Duration;
 
 import javax.annotation.PreDestroy;
+
 import java.net.ConnectException;
 import java.util.Set;
 import java.util.UUID;
@@ -32,27 +35,33 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Announcer
 {
-    private final static Logger log = Logger.get(Announcer.class);
+    private static final Logger log = Logger.get(Announcer.class);
     private final ConcurrentMap<UUID, ServiceAnnouncement> announcements = new MapMaker().makeMap();
 
     private final DiscoveryAnnouncementClient announcementClient;
     private final ScheduledExecutorService executor;
-    private final AtomicBoolean serverUp = new AtomicBoolean(true);
     private final AtomicBoolean started = new AtomicBoolean(false);
 
+    private final ExponentialBackOff errorBackOff = new ExponentialBackOff(
+            new Duration(1, MILLISECONDS),
+            new Duration(1, SECONDS),
+            "Discovery server connect succeeded for announce",
+            "Cannot connect to discovery server for announce",
+            log);
 
     @Inject
     public Announcer(DiscoveryAnnouncementClient announcementClient, Set<ServiceAnnouncement> serviceAnnouncements)
     {
-        Preconditions.checkNotNull(announcementClient, "client is null");
-        Preconditions.checkNotNull(serviceAnnouncements, "serviceAnnouncements is null");
+        checkNotNull(announcementClient, "client is null");
+        checkNotNull(serviceAnnouncements, "serviceAnnouncements is null");
 
         this.announcementClient = announcementClient;
         for (ServiceAnnouncement serviceAnnouncement : serviceAnnouncements) {
@@ -101,7 +110,7 @@ public class Announcer
 
     public void addServiceAnnouncement(ServiceAnnouncement serviceAnnouncement)
     {
-        Preconditions.checkNotNull(serviceAnnouncement, "serviceAnnouncement is null");
+        checkNotNull(serviceAnnouncement, "serviceAnnouncement is null");
         announcements.put(serviceAnnouncement.getId(), serviceAnnouncement);
     }
 
@@ -114,27 +123,23 @@ public class Announcer
     {
         final CheckedFuture<Duration, DiscoveryException> future = announcementClient.announce(ImmutableSet.copyOf(announcements.values()));
 
-        future.addListener(new Runnable()
+        Futures.addCallback(future, new FutureCallback<Duration>()
         {
             @Override
-            public void run()
+            public void onSuccess(Duration duration)
             {
-                Duration duration = DEFAULT_DELAY;
-                try {
-                    duration = future.checkedGet();
-                    if (serverUp.compareAndSet(false, true)) {
-                        log.info("Discovery server connect succeeded for announce");
-                    }
-                }
-                catch (DiscoveryException e) {
-                    if (serverUp.compareAndSet(true, false)) {
-                        log.error("Cannot connect to discovery server for announce: %s", e.getMessage());
-                    }
-                    log.debug(e, "Cannot connect to discovery server for announce");
-                }
-                finally {
-                    scheduleNextAnnouncement(duration);
-                }
+                errorBackOff.success();
+
+                // wait 80% of the suggested delay
+                duration = new Duration(duration.toMillis() * 0.8, MILLISECONDS);
+                scheduleNextAnnouncement(duration);
+            }
+
+            @Override
+            public void onFailure(Throwable t)
+            {
+                Duration duration = errorBackOff.failed(t);
+                scheduleNextAnnouncement(duration);
             }
         }, executor);
 
@@ -147,12 +152,14 @@ public class Announcer
         if (executor.isShutdown()) {
             return;
         }
-        executor.schedule(new Runnable() {
+        executor.schedule(new Runnable()
+        {
             @Override
             public void run()
             {
                 announce();
             }
-        }, (long) (delay.toMillis() * 0.8), TimeUnit.MILLISECONDS);
+        }, (long) delay.toMillis(), MILLISECONDS);
     }
+
 }

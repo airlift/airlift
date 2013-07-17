@@ -18,20 +18,25 @@ package io.airlift.discovery.client;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.CheckedFuture;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import io.airlift.log.Logger;
 import io.airlift.units.Duration;
 
 import javax.annotation.PostConstruct;
+
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class CachingServiceSelector implements ServiceSelector
+public class CachingServiceSelector
+        implements ServiceSelector
 {
     private final static Logger log = Logger.get(CachingServiceSelector.class);
 
@@ -40,7 +45,8 @@ public class CachingServiceSelector implements ServiceSelector
     private final DiscoveryLookupClient lookupClient;
     private final AtomicReference<ServiceDescriptors> serviceDescriptors = new AtomicReference<ServiceDescriptors>();
     private final ScheduledExecutorService executor;
-    private final AtomicBoolean serverUp = new AtomicBoolean(true);
+
+    private final ExponentialBackOff errorBackOff;
 
     private final AtomicBoolean started = new AtomicBoolean(false);
 
@@ -55,6 +61,12 @@ public class CachingServiceSelector implements ServiceSelector
         this.pool = selectorConfig.getPool();
         this.lookupClient = lookupClient;
         this.executor = executor;
+        this.errorBackOff = new ExponentialBackOff(
+                new Duration(1, MILLISECONDS),
+                new Duration(1, SECONDS),
+                String.format("Discovery server connect succeeded for refresh (%s/%s)", type, pool),
+                String.format("Cannot connect to discovery server for refresh (%s/%s)", type, pool),
+                log);
     }
 
     @PostConstruct
@@ -106,29 +118,26 @@ public class CachingServiceSelector implements ServiceSelector
             future = lookupClient.refreshServices(oldDescriptors);
         }
 
-        future.addListener(new Runnable()
+        Futures.addCallback(future, new FutureCallback<ServiceDescriptors>()
         {
             @Override
-            public void run()
+            public void onSuccess(ServiceDescriptors newDescriptors)
             {
-                Duration delay = DEFAULT_DELAY;
-                try {
-                    ServiceDescriptors newDescriptors = future.checkedGet();
-                    delay = newDescriptors.getMaxAge();
-                    serviceDescriptors.set(newDescriptors);
-                    if (serverUp.compareAndSet(false, true)) {
-                        log.info("Discovery server connect succeeded for refresh (%s/%s)", type, pool);
-                    }
+                serviceDescriptors.set(newDescriptors);
+                errorBackOff.success();
+
+                Duration delay = newDescriptors.getMaxAge();
+                if (delay == null) {
+                    delay = DEFAULT_DELAY;
                 }
-                catch (DiscoveryException e) {
-                    if (serverUp.compareAndSet(true, false)) {
-                        log.error("Cannot connect to discovery server for refresh (%s/%s): %s", type, pool, e.getMessage());
-                    }
-                    log.debug(e, "Cannot connect to discovery server for refresh (%s/%s)", type, pool);
-                }
-                finally {
-                    scheduleRefresh(delay);
-                }
+                scheduleRefresh(delay);
+            }
+
+            @Override
+            public void onFailure(Throwable t)
+            {
+                Duration duration = errorBackOff.failed(t);
+                scheduleRefresh(duration);
             }
         }, executor);
 
@@ -142,7 +151,8 @@ public class CachingServiceSelector implements ServiceSelector
         if (executor.isShutdown()) {
             return;
         }
-        executor.schedule(new Runnable() {
+        executor.schedule(new Runnable()
+        {
             @Override
             public void run()
             {
