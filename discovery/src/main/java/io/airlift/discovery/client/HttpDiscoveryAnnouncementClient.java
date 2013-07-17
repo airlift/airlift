@@ -87,7 +87,7 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
                 .setHeader("Content-Type", MEDIA_TYPE_JSON.toString())
                 .setBodyGenerator(jsonBodyGenerator(announcementCodec, announcement))
                 .build();
-        return httpClient.executeAsync(request, new DiscoveryResponseHandler<Duration>("Announcement")
+        return httpClient.executeAsync(request, new DiscoveryResponseHandler<Duration>("Announcement", uri)
         {
             @Override
             public Duration handle(Request request, Response response)
@@ -124,14 +124,14 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
     {
         URI uri = discoveryServiceURI.get();
         if (uri == null) {
-            return Futures.immediateFailedCheckedFuture(new DiscoveryException("No discovery servers are available"));
+            return Futures.immediateCheckedFuture(null);
         }
 
         Request request = prepareDelete()
                 .setUri(URI.create(uri + "/v1/announcement/" + nodeInfo.getNodeId()))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
                 .build();
-        return httpClient.executeAsync(request, new DiscoveryResponseHandler<Void>("Unannouncement"));
+        return httpClient.executeAsync(request, new DiscoveryResponseHandler<Void>("Unannouncement", uri));
     }
 
     private Duration extractMaxAge(Response response)
@@ -149,10 +149,12 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
     private class DiscoveryResponseHandler<T> implements ResponseHandler<T, DiscoveryException>
     {
         private final String name;
+        private final URI uri;
 
-        protected DiscoveryResponseHandler(String name)
+        protected DiscoveryResponseHandler(String name, URI uri)
         {
             this.name = name;
+            this.uri = uri;
         }
 
         @Override
@@ -165,16 +167,16 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
         public final DiscoveryException handleException(Request request, Exception exception)
         {
             if (exception instanceof InterruptedException) {
-                return new DiscoveryException(name + " was interrupted");
+                return new DiscoveryException(name + " was interrupted for " + uri);
             }
             if (exception instanceof CancellationException) {
-                return new DiscoveryException(name + " was canceled");
+                return new DiscoveryException(name + " was canceled for " + uri);
             }
             if (exception instanceof DiscoveryException) {
                 return (DiscoveryException) exception;
             }
 
-            return new DiscoveryException(name + " failed", exception);
+            return new DiscoveryException(name + " failed for " + uri, exception);
         }
     }
 }
