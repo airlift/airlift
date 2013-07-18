@@ -88,8 +88,9 @@ public class TestHttpServiceSelectorBinder
         assertEquals(getOnlyElement(selector.selectHttpService()), URI.create("fake://server-http"));
 
         ServiceSelectorManager manager = injector.getInstance(ServiceSelectorManager.class);
-        manager.refresh();
         assertEquals(manager.getServiceSelectors().size(), 1);
+        manager.attemptRefresh();
+        manager.forceRefresh();
     }
 
     @Test
