@@ -40,7 +40,6 @@ import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -48,6 +47,7 @@ import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -73,7 +73,7 @@ class JsonMapper
      * probably not a very good way to do it, but let's start by
      * blacklisting things we are not to handle.
      */
-    private final static ImmutableSet<Class<?>> IO_CLASSES = ImmutableSet.<Class<?>>builder()
+    private static final Set<Class<?>> IO_CLASSES = ImmutableSet.<Class<?>>builder()
             .add(InputStream.class)
             .add(java.io.Reader.class)
             .add(OutputStream.class)
@@ -139,29 +139,23 @@ class JsonMapper
             object = objectMapper.readValue(jsonParser, objectMapper.getTypeFactory().constructType(genericType));
         }
         catch (Exception e) {
-            // we want to return a 400 for bad JSON but not for a real IO exception
+            // We want to handle parsing exceptions differently than regular IOExceptions so just rethrow IOExceptions
             if (e instanceof IOException && !(e instanceof JsonProcessingException) && !(e instanceof EOFException)) {
-                throw (IOException) e;
+                throw e;
             }
 
             // log the exception at debug so it can be viewed during development
             // Note: we are not logging at a higher level because this could cause a denial of service
             log.debug(e, "Invalid json for Java type %s", type);
 
-            // invalid json request
-            throw new WebApplicationException(
-                    Response.status(Response.Status.BAD_REQUEST)
-                            .entity("Invalid json for Java type " + type)
-                            .build());
+            // Invalid json request. Throwing exception so the response code can be overridden using a mapper.
+            throw new JsonMapperParsingException(type, e);
         }
 
         // validate object using the bean validation framework
         Set<ConstraintViolation<Object>> violations = VALIDATOR.validate(object);
         if (!violations.isEmpty()) {
-            throw new WebApplicationException(
-                    Response.status(Response.Status.BAD_REQUEST)
-                            .entity(messagesFor(violations))
-                            .build());
+            throw new BeanValidationException(violations);
         }
 
         return object;
