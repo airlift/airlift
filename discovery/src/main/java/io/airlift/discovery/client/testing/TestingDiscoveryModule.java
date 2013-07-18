@@ -27,7 +27,9 @@ import io.airlift.discovery.client.DiscoveryAnnouncementClient;
 import io.airlift.discovery.client.DiscoveryLookupClient;
 import io.airlift.discovery.client.ForDiscoveryClient;
 import io.airlift.discovery.client.ServiceAnnouncement;
+import io.airlift.discovery.client.ServiceSelector;
 import io.airlift.discovery.client.ServiceSelectorFactory;
+import io.airlift.discovery.client.ServiceSelectorManager;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -49,6 +51,10 @@ public class TestingDiscoveryModule implements Module
         Multibinder.newSetBinder(binder, ServiceAnnouncement.class);
 
         binder.bind(ServiceSelectorFactory.class).to(SimpleServiceSelectorFactory.class).in(Scopes.SINGLETON);
+
+        // bind selector manager with initial empty multibinder
+        Multibinder.newSetBinder(binder, ServiceSelector.class);
+        binder.bind(ServiceSelectorManager.class).in(Scopes.SINGLETON);
     }
 
     @Provides

@@ -86,6 +86,10 @@ public class TestHttpServiceSelectorBinder
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
         assertEquals(getOnlyElement(selector.selectHttpService()), URI.create("fake://server-http"));
+
+        ServiceSelectorManager manager = injector.getInstance(ServiceSelectorManager.class);
+        manager.refresh();
+        assertEquals(manager.getServiceSelectors().size(), 1);
     }
 
     @Test

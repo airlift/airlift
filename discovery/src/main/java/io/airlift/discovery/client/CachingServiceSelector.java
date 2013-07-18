@@ -110,7 +110,7 @@ public class CachingServiceSelector
         return serviceDescriptors.getServiceDescriptors();
     }
 
-    private CheckedFuture<ServiceDescriptors, DiscoveryException> refresh()
+    CheckedFuture<ServiceDescriptors, DiscoveryException> refresh()
     {
         final ServiceDescriptors oldDescriptors = this.serviceDescriptors.get();
 
