@@ -15,6 +15,7 @@
  */
 package io.airlift.node.testing;
 
+import com.google.common.base.Optional;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
@@ -24,17 +25,42 @@ import org.weakref.jmx.guice.MBeanModule;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Strings.isNullOrEmpty;
 
 public class TestingNodeModule
         implements Module
 {
+    // avoid having an accidental dependency on the environment name
+    private static final AtomicLong nextId = new AtomicLong(ThreadLocalRandom.current().nextInt(1000000));
+
+    private final String environment;
+
+    public TestingNodeModule()
+    {
+        this(Optional.<String>absent());
+    }
+
+    public TestingNodeModule(Optional<String> environment)
+    {
+        this(environment.or("test" + nextId.getAndIncrement()));
+    }
+
+    public TestingNodeModule(String environment)
+    {
+        checkArgument(!isNullOrEmpty(environment), "environment is null or empty");
+        this.environment = environment;
+    }
+
     @Override
     public void configure(Binder binder)
     {
         binder.bind(NodeInfo.class).in(Scopes.SINGLETON);
         binder.bind(NodeConfig.class).toInstance(new NodeConfig()
-                .setEnvironment("test" + new Random().nextInt(1000000))
+                .setEnvironment(environment)
                 .setNodeInternalIp(getV4Localhost())
                 .setNodeBindIp(getV4Localhost()));
 
