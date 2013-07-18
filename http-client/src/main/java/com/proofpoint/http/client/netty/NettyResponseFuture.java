@@ -9,8 +9,10 @@ import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.log.Logger;
 import com.proofpoint.units.Duration;
+import org.jboss.netty.channel.ConnectTimeoutException;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 
+import java.net.SocketTimeoutException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -68,6 +70,9 @@ public class NettyResponseFuture<T, E extends Exception>
         if (throwable instanceof CancellationException) {
             state.set(NettyAsyncHttpState.CANCELED);
         } else {
+            if (throwable instanceof ConnectTimeoutException) {
+                throwable = new SocketTimeoutException(throwable.getMessage());
+            }
             state.set(NettyAsyncHttpState.FAILED);
         }
         if (throwable == null) {
