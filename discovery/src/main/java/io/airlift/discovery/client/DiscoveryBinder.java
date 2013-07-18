@@ -18,6 +18,7 @@ package io.airlift.discovery.client;
 import com.google.common.base.Preconditions;
 import com.google.inject.Binder;
 import com.google.inject.Inject;
+import com.google.inject.Key;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
@@ -35,6 +36,7 @@ public class DiscoveryBinder
         return new DiscoveryBinder(binder);
     }
 
+    private final Multibinder<ServiceSelector> serviceSelectorBinder;
     private final Multibinder<ServiceAnnouncement> serviceAnnouncementBinder;
     private final Binder binder;
 
@@ -42,6 +44,7 @@ public class DiscoveryBinder
     {
         Preconditions.checkNotNull(binder, "binder is null");
         this.binder = binder;
+        this.serviceSelectorBinder = Multibinder.newSetBinder(binder, ServiceSelector.class);
         this.serviceAnnouncementBinder = Multibinder.newSetBinder(binder, ServiceAnnouncement.class);
     }
 
@@ -54,8 +57,12 @@ public class DiscoveryBinder
     public void bindSelector(ServiceType serviceType)
     {
         Preconditions.checkNotNull(serviceType, "serviceType is null");
+
         bindConfig(binder).annotatedWith(serviceType).prefixedWith("discovery." + serviceType.value()).to(ServiceSelectorConfig.class);
-        binder.bind(ServiceSelector.class).annotatedWith(serviceType).toProvider(new ServiceSelectorProvider(serviceType.value())).in(Scopes.SINGLETON);
+
+        Key<ServiceSelector> key = Key.get(ServiceSelector.class, serviceType);
+        binder.bind(key).toProvider(new ServiceSelectorProvider(serviceType.value())).in(Scopes.SINGLETON);
+        serviceSelectorBinder.addBinding().to(key).in(Scopes.SINGLETON);
     }
 
     public void bindServiceAnnouncement(ServiceAnnouncement announcement)

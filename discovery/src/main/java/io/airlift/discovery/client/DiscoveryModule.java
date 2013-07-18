@@ -60,6 +60,10 @@ public class DiscoveryModule implements Module
 
         binder.bind(ServiceSelectorFactory.class).to(CachingServiceSelectorFactory.class).in(Scopes.SINGLETON);
 
+        // bind selector manager with initial empty multibinder
+        Multibinder.newSetBinder(binder, ServiceSelector.class);
+        binder.bind(ServiceSelectorManager.class).in(Scopes.SINGLETON);
+
         MBeanModule.newExporter(binder).export(ServiceInventory.class).withGeneratedName();
     }
 

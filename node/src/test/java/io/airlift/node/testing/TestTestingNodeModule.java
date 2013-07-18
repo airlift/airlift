@@ -1,5 +1,6 @@
 package io.airlift.node.testing;
 
+import com.google.common.base.Optional;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.airlift.node.NodeInfo;
@@ -41,5 +42,35 @@ public class TestTestingNodeModule
 
         // make sure toString doesn't throw an exception
         assertNotNull(nodeInfo.toString());
+    }
+
+    @Test
+    public void testTestingNodeExplicitEnvironment()
+    {
+        Injector injector = Guice.createInjector(new TestingNodeModule("foo"));
+        NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
+
+        assertNotNull(nodeInfo);
+        assertEquals(nodeInfo.getEnvironment(), "foo");
+    }
+
+    @Test
+    public void testTestingNodePresentEnvironment()
+    {
+        Injector injector = Guice.createInjector(new TestingNodeModule(Optional.of("foo")));
+        NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
+
+        assertNotNull(nodeInfo);
+        assertEquals(nodeInfo.getEnvironment(), "foo");
+    }
+
+    @Test
+    public void testTestingNodeAbsentEnvironment()
+    {
+        Injector injector = Guice.createInjector(new TestingNodeModule(Optional.<String>absent()));
+        NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
+
+        assertNotNull(nodeInfo);
+        assertTrue(nodeInfo.getEnvironment().matches("test\\d+"));
     }
 }

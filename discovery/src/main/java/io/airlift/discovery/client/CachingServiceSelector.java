@@ -15,17 +15,21 @@
  */
 package io.airlift.discovery.client;
 
+import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.SettableFuture;
 import io.airlift.log.Logger;
 import io.airlift.units.Duration;
 
 import javax.annotation.PostConstruct;
 
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -106,7 +110,7 @@ public class CachingServiceSelector
         return serviceDescriptors.getServiceDescriptors();
     }
 
-    private CheckedFuture<ServiceDescriptors, DiscoveryException> refresh()
+    CheckedFuture<ServiceDescriptors, DiscoveryException> refresh()
     {
         final ServiceDescriptors oldDescriptors = this.serviceDescriptors.get();
 
@@ -118,7 +122,7 @@ public class CachingServiceSelector
             future = lookupClient.refreshServices(oldDescriptors);
         }
 
-        Futures.addCallback(future, new FutureCallback<ServiceDescriptors>()
+        return chainedCallback(future, new FutureCallback<ServiceDescriptors>()
         {
             @Override
             public void onSuccess(ServiceDescriptors newDescriptors)
@@ -140,10 +144,7 @@ public class CachingServiceSelector
                 scheduleRefresh(duration);
             }
         }, executor);
-
-        return future;
     }
-
 
     private void scheduleRefresh(Duration delay)
     {
@@ -159,5 +160,44 @@ public class CachingServiceSelector
                 refresh();
             }
         }, (long) delay.toMillis(), TimeUnit.MILLISECONDS);
+    }
+
+    private static <V, X extends Exception> CheckedFuture<V, X> chainedCallback(
+            CheckedFuture<V, X> future,
+            final FutureCallback<? super V> callback,
+            Executor executor)
+    {
+        final SettableFuture<V> done = SettableFuture.create();
+        Futures.addCallback(future, new FutureCallback<V>()
+        {
+            @Override
+            public void onSuccess(V result)
+            {
+                try {
+                    callback.onSuccess(result);
+                }
+                finally {
+                    done.set(result);
+                }
+            }
+
+            @Override
+            public void onFailure(Throwable t)
+            {
+                try {
+                    callback.onFailure(t);
+                }
+                finally {
+                    done.setException(t);
+                }
+            }
+        }, executor);
+        return Futures.makeChecked(done, CachingServiceSelector.<X>exceptionMapper());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <X extends Exception> Function<Exception, X> exceptionMapper()
+    {
+        return (Function<Exception, X>) Functions.<Exception>identity();
     }
 }

@@ -43,6 +43,8 @@ public class TestDiscoveryModule
         Assert.assertNotNull(injector.getInstance(DiscoveryLookupClient.class));
         // should produce an Announcer
         Assert.assertNotNull(injector.getInstance(Announcer.class));
+        // should produce a ServiceSelectorManager
+        Assert.assertNotNull(injector.getInstance(ServiceSelectorManager.class));
     }
 
 }
