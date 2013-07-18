@@ -48,6 +48,7 @@ import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,6 +58,8 @@ import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+
+import static com.google.common.base.Throwables.getStackTraceAsString;
 
 // This code is based on JacksonJsonProvider
 @Provider
@@ -151,7 +154,7 @@ class JsonMapper
             // invalid json request
             throw new WebApplicationException(
                     Response.status(Response.Status.BAD_REQUEST)
-                            .entity("Invalid json for Java type " + type)
+                            .entity("Invalid json for Java type " + type + ": " + getStackTraceAsString(e))
                             .build());
         }
 
