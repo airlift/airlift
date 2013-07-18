@@ -123,7 +123,7 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
         if (serviceDescriptors != null && serviceDescriptors.getETag() != null) {
             requestBuilder.setHeader(HttpHeaders.ETAG, serviceDescriptors.getETag());
         }
-        return httpClient.executeAsync(requestBuilder.build(), new DiscoveryResponseHandler<ServiceDescriptors>(format("Lookup of %s", type))
+        return httpClient.executeAsync(requestBuilder.build(), new DiscoveryResponseHandler<ServiceDescriptors>(format("Lookup of %s", type), uri)
         {
             @Override
             public ServiceDescriptors handle(Request request, Response response)
@@ -178,10 +178,12 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
     private class DiscoveryResponseHandler<T> implements ResponseHandler<T, DiscoveryException>
     {
         private final String name;
+        private final URI uri;
 
-        protected DiscoveryResponseHandler(String name)
+        protected DiscoveryResponseHandler(String name, URI uri)
         {
             this.name = name;
+            this.uri = uri;
         }
 
         @Override
@@ -194,16 +196,16 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
         public final DiscoveryException handleException(Request request, Exception exception)
         {
             if (exception instanceof InterruptedException) {
-                return new DiscoveryException(name + " was interrupted");
+                return new DiscoveryException(name + " was interrupted for " + uri);
             }
             if (exception instanceof CancellationException) {
-                return new DiscoveryException(name + " was canceled");
+                return new DiscoveryException(name + " was canceled for " + uri);
             }
             if (exception instanceof DiscoveryException) {
                 return (DiscoveryException) exception;
             }
 
-            return new DiscoveryException(name + " failed", exception);
+            return new DiscoveryException(name + " failed for " + uri, exception);
         }
     }
 }
