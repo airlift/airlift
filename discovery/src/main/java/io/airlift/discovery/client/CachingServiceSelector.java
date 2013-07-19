@@ -15,13 +15,11 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.base.Function;
-import com.google.common.base.Functions;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import io.airlift.log.Logger;
 import io.airlift.units.Duration;
@@ -42,12 +40,12 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class CachingServiceSelector
         implements ServiceSelector
 {
-    private final static Logger log = Logger.get(CachingServiceSelector.class);
+    private static final Logger log = Logger.get(CachingServiceSelector.class);
 
     private final String type;
     private final String pool;
     private final DiscoveryLookupClient lookupClient;
-    private final AtomicReference<ServiceDescriptors> serviceDescriptors = new AtomicReference<ServiceDescriptors>();
+    private final AtomicReference<ServiceDescriptors> serviceDescriptors = new AtomicReference<>();
     private final ScheduledExecutorService executor;
 
     private final ExponentialBackOff errorBackOff;
@@ -81,7 +79,7 @@ public class CachingServiceSelector
 
             // if discovery is available, get the initial set of servers before starting
             try {
-                refresh().checkedGet(30, TimeUnit.SECONDS);
+                refresh().get(30, TimeUnit.SECONDS);
             }
             catch (Exception ignored) {
             }
@@ -110,11 +108,11 @@ public class CachingServiceSelector
         return serviceDescriptors.getServiceDescriptors();
     }
 
-    CheckedFuture<ServiceDescriptors, DiscoveryException> refresh()
+    ListenableFuture<ServiceDescriptors> refresh()
     {
         final ServiceDescriptors oldDescriptors = this.serviceDescriptors.get();
 
-        final CheckedFuture<ServiceDescriptors, DiscoveryException> future;
+        final ListenableFuture<ServiceDescriptors> future;
         if (oldDescriptors == null) {
             future = lookupClient.getServices(type, pool);
         }
@@ -162,8 +160,8 @@ public class CachingServiceSelector
         }, (long) delay.toMillis(), TimeUnit.MILLISECONDS);
     }
 
-    private static <V, X extends Exception> CheckedFuture<V, X> chainedCallback(
-            CheckedFuture<V, X> future,
+    private static <V> ListenableFuture<V> chainedCallback(
+            ListenableFuture<V> future,
             final FutureCallback<? super V> callback,
             Executor executor)
     {
@@ -192,12 +190,6 @@ public class CachingServiceSelector
                 }
             }
         }, executor);
-        return Futures.makeChecked(done, CachingServiceSelector.<X>exceptionMapper());
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <X extends Exception> Function<Exception, X> exceptionMapper()
-    {
-        return (Function<Exception, X>) Functions.<Exception>identity();
+        return done;
     }
 }

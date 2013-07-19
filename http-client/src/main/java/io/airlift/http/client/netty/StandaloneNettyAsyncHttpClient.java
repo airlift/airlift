@@ -63,7 +63,7 @@ public class StandaloneNettyAsyncHttpClient
     }
 
     @Override
-    public <T, E extends Exception> AsyncHttpResponseFuture<T, E> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> AsyncHttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
     {
         return httpClient.executeAsync(request, responseHandler);
     }

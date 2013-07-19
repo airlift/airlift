@@ -15,7 +15,7 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.util.concurrent.CheckedFuture;
+import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.units.Duration;
 
 import java.util.Set;
@@ -25,7 +25,7 @@ public interface DiscoveryAnnouncementClient
 {
     Duration DEFAULT_DELAY = new Duration(10, TimeUnit.SECONDS);
 
-    CheckedFuture<Duration, DiscoveryException> announce(Set<ServiceAnnouncement> services);
+    ListenableFuture<Duration> announce(Set<ServiceAnnouncement> services);
 
-    CheckedFuture<Void, DiscoveryException> unannounce();
+    ListenableFuture<Void> unannounce();
 }

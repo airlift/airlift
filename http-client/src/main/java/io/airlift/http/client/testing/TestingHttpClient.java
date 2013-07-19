@@ -1,7 +1,7 @@
 package io.airlift.http.client.testing;
 
 import com.google.common.base.Function;
-import com.google.common.util.concurrent.AbstractFuture;
+import com.google.common.util.concurrent.ForwardingListenableFuture;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -13,11 +13,7 @@ import io.airlift.http.client.ResponseHandler;
 import io.airlift.units.Duration;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -45,7 +41,7 @@ public class TestingHttpClient
     }
 
     @Override
-    public <T, E extends Exception> AsyncHttpResponseFuture<T, E> executeAsync(final Request request, final ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> AsyncHttpResponseFuture<T> executeAsync(final Request request, final ResponseHandler<T, E> responseHandler)
     {
         checkNotNull(request, "request is null");
         checkNotNull(responseHandler, "responseHandler is null");
@@ -62,7 +58,7 @@ public class TestingHttpClient
             }
         });
 
-        return new TestingAsyncHttpResponseFuture<>(future, state, request, responseHandler);
+        return new TestingAsyncHttpResponseFuture<>(future, state);
     }
 
     @Override
@@ -96,7 +92,8 @@ public class TestingHttpClient
                     null);
             if (e instanceof Exception) {
                 return responseHandler.handleException(request, (Exception) e);
-            } else {
+            }
+            else {
                 throw e;
             }
         }
@@ -132,57 +129,29 @@ public class TestingHttpClient
         closed.set(true);
     }
 
-    private class TestingAsyncHttpResponseFuture<T, E extends Exception>
-            extends AbstractFuture<T>
-            implements AsyncHttpResponseFuture<T, E>
+    private class TestingAsyncHttpResponseFuture<T>
+            extends ForwardingListenableFuture<T>
+            implements AsyncHttpResponseFuture<T>
     {
         private final AtomicReference<String> state;
         private final ListenableFuture<T> future;
-        private final Request request;
-        private final ResponseHandler<T,E> responseHandler;
 
-        private TestingAsyncHttpResponseFuture(ListenableFuture<T> future, AtomicReference<String> state, Request request, ResponseHandler<T, E> responseHandler)
+        private TestingAsyncHttpResponseFuture(ListenableFuture<T> future, AtomicReference<String> state)
         {
             this.future = future;
             this.state = state;
-            this.request = request;
-            this.responseHandler = responseHandler;
+        }
+
+        @Override
+        protected ListenableFuture<T> delegate()
+        {
+            return future;
         }
 
         @Override
         public String getState()
         {
             return state.get();
-        }
-
-        @Override
-        public T checkedGet()
-                throws E
-        {
-            try {
-                return future.get();
-            }
-            catch (CancellationException | InterruptedException e) {
-                return responseHandler.handleException(request, e);
-            }
-            catch (ExecutionException e) {
-                throw (E) e.getCause();
-            }
-        }
-
-        @Override
-        public T checkedGet(long timeout, TimeUnit unit)
-                throws TimeoutException, E
-        {
-            try {
-                return future.get(timeout, unit);
-            }
-            catch (CancellationException | InterruptedException e) {
-                return responseHandler.handleException(request, e);
-            }
-            catch (ExecutionException e) {
-                throw (E) e.getCause();
-            }
         }
     }
 }

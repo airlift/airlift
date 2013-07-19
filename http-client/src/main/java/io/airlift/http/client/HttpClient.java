@@ -24,7 +24,7 @@ public interface HttpClient
         extends Closeable
 {
     <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
-    throws E;
+            throws E;
 
     RequestStats getStats();
 

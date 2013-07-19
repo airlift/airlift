@@ -19,8 +19,8 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.io.CharStreams;
 import com.google.common.net.HttpHeaders;
-import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
 import io.airlift.http.client.AsyncHttpClient;
 import io.airlift.http.client.CacheControl;
@@ -36,6 +36,7 @@ import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
 import javax.inject.Provider;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -82,14 +83,14 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
     }
 
     @Override
-    public CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(String type)
+    public ListenableFuture<ServiceDescriptors> getServices(String type)
     {
         Preconditions.checkNotNull(type, "type is null");
         return lookup(type, null, null);
     }
 
     @Override
-    public CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(String type, String pool)
+    public ListenableFuture<ServiceDescriptors> getServices(String type, String pool)
     {
         Preconditions.checkNotNull(type, "type is null");
         Preconditions.checkNotNull(pool, "pool is null");
@@ -97,13 +98,13 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
     }
 
     @Override
-    public CheckedFuture<ServiceDescriptors, DiscoveryException> refreshServices(ServiceDescriptors serviceDescriptors)
+    public ListenableFuture<ServiceDescriptors> refreshServices(ServiceDescriptors serviceDescriptors)
     {
         Preconditions.checkNotNull(serviceDescriptors, "serviceDescriptors is null");
         return lookup(serviceDescriptors.getType(), serviceDescriptors.getPool(), serviceDescriptors);
     }
 
-    private CheckedFuture<ServiceDescriptors, DiscoveryException> lookup(final String type, final String pool, final ServiceDescriptors serviceDescriptors)
+    private ListenableFuture<ServiceDescriptors> lookup(final String type, final String pool, final ServiceDescriptors serviceDescriptors)
     {
         Preconditions.checkNotNull(type, "type is null");
 

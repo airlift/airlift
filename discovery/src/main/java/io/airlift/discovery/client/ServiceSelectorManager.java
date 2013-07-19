@@ -3,8 +3,8 @@ package io.airlift.discovery.client;
 import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import javax.inject.Inject;
 
@@ -33,8 +33,8 @@ public class ServiceSelectorManager
 
     public void forceRefresh()
     {
-        for (CheckedFuture<ServiceDescriptors, DiscoveryException> future : initiateRefresh()) {
-            future.checkedGet();
+        for (ListenableFuture<ServiceDescriptors> future : initiateRefresh()) {
+            Futures.getUnchecked(future);
         }
     }
 
@@ -50,9 +50,9 @@ public class ServiceSelectorManager
         }
     }
 
-    private List<CheckedFuture<ServiceDescriptors, DiscoveryException>> initiateRefresh()
+    private List<ListenableFuture<ServiceDescriptors>> initiateRefresh()
     {
-        ImmutableList.Builder<CheckedFuture<ServiceDescriptors, DiscoveryException>> futures = ImmutableList.builder();
+        ImmutableList.Builder<ListenableFuture<ServiceDescriptors>> futures = ImmutableList.builder();
         for (ServiceSelector selector : serviceSelectors) {
             if (selector instanceof CachingServiceSelector) {
                 futures.add(((CachingServiceSelector) selector).refresh());

@@ -16,11 +16,12 @@
 package io.airlift.discovery.client;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
-import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
@@ -32,6 +33,8 @@ import java.net.ConnectException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -76,7 +79,7 @@ public class Announcer
         if (started.compareAndSet(false, true)) {
             // announce immediately, if discovery is running
             try {
-                announce().checkedGet(30, TimeUnit.SECONDS);
+                announce().get(30, TimeUnit.SECONDS);
             }
             catch (Exception ignored) {
             }
@@ -96,7 +99,7 @@ public class Announcer
 
         // unannounce
         try {
-            announcementClient.unannounce().checkedGet();
+            getFutureResult(announcementClient.unannounce(), DiscoveryException.class);
         }
         catch (DiscoveryException e) {
             if (e.getCause() instanceof ConnectException) {
@@ -119,9 +122,9 @@ public class Announcer
         announcements.remove(serviceId);
     }
 
-    private CheckedFuture<Duration, DiscoveryException> announce()
+    private ListenableFuture<Duration> announce()
     {
-        final CheckedFuture<Duration, DiscoveryException> future = announcementClient.announce(ImmutableSet.copyOf(announcements.values()));
+        final ListenableFuture<Duration> future = announcementClient.announce(ImmutableSet.copyOf(announcements.values()));
 
         Futures.addCallback(future, new FutureCallback<Duration>()
         {
@@ -162,4 +165,20 @@ public class Announcer
         }, (long) delay.toMillis(), MILLISECONDS);
     }
 
+    // TODO: move this to a utility package
+    private static <T, X extends Throwable> T getFutureResult(Future<T> future, Class<X> type)
+            throws X
+    {
+        try {
+            return future.get();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw Throwables.propagate(e);
+        }
+        catch (ExecutionException e) {
+            Throwables.propagateIfPossible(e.getCause(), type);
+            throw Throwables.propagate(e.getCause());
+        }
+    }
 }
