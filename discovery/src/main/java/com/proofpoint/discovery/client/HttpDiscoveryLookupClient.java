@@ -16,7 +16,6 @@
 package com.proofpoint.discovery.client;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Preconditions;
 import com.google.common.io.CharStreams;
 import com.google.common.net.HttpHeaders;
 import com.google.common.util.concurrent.CheckedFuture;
@@ -40,6 +39,7 @@ import java.net.URI;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.discovery.client.announce.DiscoveryAnnouncementClient.DEFAULT_DELAY;
 import static com.proofpoint.http.client.HttpStatus.NOT_MODIFIED;
 import static com.proofpoint.http.client.HttpStatus.OK;
@@ -56,11 +56,14 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
     @Inject
     public HttpDiscoveryLookupClient(NodeInfo nodeInfo,
             JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec,
-            @ForDiscoveryClient AsyncHttpClient httpClient)
+            @ForDiscoveryClient AsyncHttpClient httpClient,
+            ServiceInventory serviceInventory)
     {
-        Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
-        Preconditions.checkNotNull(serviceDescriptorsCodec, "serviceDescriptorsCodec is null");
-        Preconditions.checkNotNull(httpClient, "httpClient is null");
+        checkNotNull(nodeInfo, "nodeInfo is null");
+        checkNotNull(serviceDescriptorsCodec, "serviceDescriptorsCodec is null");
+        checkNotNull(httpClient, "httpClient is null");
+        // serviceInventory injected only to ensure it is constructed first and feeds
+        // the list of discovery servers into httpClient before we use httpClient
 
         this.nodeInfo = nodeInfo;
         this.environment = nodeInfo.getEnvironment();
@@ -78,28 +81,28 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
     @Override
     public CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(String type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        checkNotNull(type, "type is null");
         return lookup(type, null, null);
     }
 
     @Override
     public CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(String type, String pool)
     {
-        Preconditions.checkNotNull(type, "type is null");
-        Preconditions.checkNotNull(pool, "pool is null");
+        checkNotNull(type, "type is null");
+        checkNotNull(pool, "pool is null");
         return lookup(type, pool, null);
     }
 
     @Override
     public CheckedFuture<ServiceDescriptors, DiscoveryException> refreshServices(ServiceDescriptors serviceDescriptors)
     {
-        Preconditions.checkNotNull(serviceDescriptors, "serviceDescriptors is null");
+        checkNotNull(serviceDescriptors, "serviceDescriptors is null");
         return lookup(serviceDescriptors.getType(), serviceDescriptors.getPool(), serviceDescriptors);
     }
 
     private CheckedFuture<ServiceDescriptors, DiscoveryException> lookup(final String type, final String pool, final ServiceDescriptors serviceDescriptors)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        checkNotNull(type, "type is null");
 
         URI uri = URI.create("v1/service/" + type + "/");
         if (pool != null) {
@@ -168,7 +171,7 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
     {
         private final String name;
 
-        protected DiscoveryResponseHandler(String name)
+        DiscoveryResponseHandler(String name)
         {
             this.name = name;
         }
