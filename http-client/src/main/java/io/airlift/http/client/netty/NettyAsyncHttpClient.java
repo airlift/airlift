@@ -3,6 +3,7 @@ package io.airlift.http.client.netty;
 import com.google.common.annotations.Beta;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Closeables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -42,6 +43,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
@@ -115,7 +117,7 @@ public class NettyAsyncHttpClient
     public void close()
     {
         try {
-           executor.shutdownNow();
+            executor.shutdownNow();
         }
         catch (Exception e) {
             // ignored
@@ -126,7 +128,7 @@ public class NettyAsyncHttpClient
         try {
             timer.stop();
         }
-        catch(Exception e) {
+        catch (Exception e) {
             // ignored
         }
     }
@@ -135,7 +137,17 @@ public class NettyAsyncHttpClient
     public <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
             throws E
     {
-        return executeAsync(request, responseHandler).checkedGet();
+        try {
+            return executeAsync(request, responseHandler).get();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw Throwables.propagate(e);
+        }
+        catch (ExecutionException e) {
+            // the HTTP client and ResponseHandler interface enforces this
+            throw (E) e.getCause();
+        }
     }
 
     @Managed
@@ -147,7 +159,7 @@ public class NettyAsyncHttpClient
     }
 
     @Override
-    public <T, E extends Exception> NettyResponseFuture<T, E> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> AsyncHttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
     {
         // process the request through the filters
         for (HttpRequestFilter requestFilter : requestFilters) {
@@ -253,14 +265,14 @@ public class NettyAsyncHttpClient
                         nettyResponseFuture.setState(NettyAsyncHttpState.WAITING_FOR_RESPONSE);
                     }
                     else if (future.isCancelled()) {
-                        nettyResponseFuture.setException(new CanceledRequestException());
+                        nettyResponseFuture.failed(new CanceledRequestException());
                     }
                     else {
                         Throwable cause = future.getCause();
                         if (cause == null) {
                             cause = new UnknownRequestException();
                         }
-                        nettyResponseFuture.setException(cause);
+                        nettyResponseFuture.failed(cause);
                     }
                 }
             });
@@ -269,7 +281,7 @@ public class NettyAsyncHttpClient
         @Override
         public void onError(Throwable throwable)
         {
-            nettyResponseFuture.setException(throwable);
+            nettyResponseFuture.failed(throwable);
         }
     }
 }

@@ -15,13 +15,13 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.util.concurrent.CheckedFuture;
+import com.google.common.util.concurrent.ListenableFuture;
 
 public interface DiscoveryLookupClient
 {
-    CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(String type);
+    ListenableFuture<ServiceDescriptors> getServices(String type);
 
-    CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(String type, String pool);
+    ListenableFuture<ServiceDescriptors> getServices(String type, String pool);
 
-    CheckedFuture<ServiceDescriptors, DiscoveryException> refreshServices(ServiceDescriptors serviceDescriptors);
+    ListenableFuture<ServiceDescriptors> refreshServices(ServiceDescriptors serviceDescriptors);
 }

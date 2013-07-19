@@ -20,8 +20,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.io.CharStreams;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
-import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
 import io.airlift.http.client.AsyncHttpClient;
 import io.airlift.http.client.CacheControl;
@@ -33,6 +33,7 @@ import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
 
 import javax.inject.Provider;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -71,7 +72,7 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
     }
 
     @Override
-    public CheckedFuture<Duration, DiscoveryException> announce(Set<ServiceAnnouncement> services)
+    public ListenableFuture<Duration> announce(Set<ServiceAnnouncement> services)
     {
         Preconditions.checkNotNull(services, "services is null");
 
@@ -120,7 +121,7 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
     }
 
     @Override
-    public CheckedFuture<Void, DiscoveryException> unannounce()
+    public ListenableFuture<Void> unannounce()
     {
         URI uri = discoveryServiceURI.get();
         if (uri == null) {
