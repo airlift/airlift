@@ -49,8 +49,7 @@ public class DataSize
     public long toBytes()
     {
         double bytes = getValue(Unit.BYTE);
-        Preconditions.checkArgument(bytes <= Long.MAX_VALUE,
-                "size is too large to be represented in requested unit as a long");
+        Preconditions.checkState(bytes <= Long.MAX_VALUE, "size is too large to be represented in bytes as a long");
         return (long) bytes;
     }
 
@@ -87,7 +86,7 @@ public class DataSize
     {
         Unit unitToUse = Unit.BYTE;
         for (Unit unitToTest : Unit.values()) {
-            if (getValue(unitToTest) > 0.99) {
+            if (getValue(unitToTest) >= 1.0) {
                 unitToUse = unitToTest;
             }
             else {

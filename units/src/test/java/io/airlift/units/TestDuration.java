@@ -60,11 +60,10 @@ public class TestDuration
     @Test(dataProvider = "conversions")
     public void testConversions(TimeUnit unit, TimeUnit toTimeUnit, double factor)
     {
-        Duration size = new Duration(1, unit).convertTo(toTimeUnit);
-        assertEquals(size.getUnit(), toTimeUnit);
-        assertEquals(size.getValue(), factor, factor * 0.001);
-
-        assertEquals(size.getValue(toTimeUnit), factor, factor * 0.001);
+        Duration duration = new Duration(1, unit).convertTo(toTimeUnit);
+        assertEquals(duration.getUnit(), toTimeUnit);
+        assertEquals(duration.getValue(), factor, factor * 0.001);
+        assertEquals(duration.getValue(toTimeUnit), factor, factor * 0.001);
     }
 
     @Test(dataProvider = "conversions")
@@ -74,10 +73,11 @@ public class TestDuration
         Duration actual = duration.convertToMostSuccinctTimeUnit();
         assertEquals(actual.getValue(toTimeUnit), factor, factor * 0.001);
         assertEquals(actual.getValue(unit), 1.0,  0.001);
-        assertEquals(actual.getUnit(), unit);
+        if (actual.getUnit() != unit) {
+            assertEquals(actual.getUnit(), unit);
+        }
     }
 
-    
     @Test
     public void testEquivalence()
     {
@@ -114,10 +114,10 @@ public class TestDuration
     @Test(dataProvider = "parseableValues")
     public void testValueOf(String string, double expectedValue, TimeUnit expectedUnit)
     {
-        Duration size = Duration.valueOf(string);
+        Duration duration = Duration.valueOf(string);
 
-        assertEquals(size.getUnit(), expectedUnit);
-        assertEquals(size.getValue(), expectedValue);
+        assertEquals(duration.getUnit(), expectedUnit);
+        assertEquals(duration.getValue(), expectedValue);
     }
 
     @Test(expectedExceptions = NullPointerException.class, expectedExceptionsMessageRegExp = "duration is null")
@@ -145,19 +145,19 @@ public class TestDuration
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "value is negative")
-    public void testConstructorRejectsNegativeSize()
+    public void testConstructorRejectsNegativeValue()
     {
         new Duration(-1, SECONDS);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "value is infinite")
-    public void testConstructorRejectsInfiniteSize()
+    public void testConstructorRejectsInfiniteValue()
     {
         new Duration(Double.POSITIVE_INFINITY, SECONDS);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "value is infinite")
-    public void testConstructorRejectsInfiniteSize2()
+    public void testConstructorRejectsInfiniteValue2()
     {
         new Duration(Double.NEGATIVE_INFINITY, SECONDS);
     }
@@ -244,11 +244,11 @@ public class TestDuration
     private void assertJsonRoundTrip(Duration duration)
             throws IOException
     {
-        JsonCodec<Duration> dataSizeCodec = JsonCodec.jsonCodec(Duration.class);
-        String json = dataSizeCodec.toJson(duration);
-        Duration durationCopy = dataSizeCodec.fromJson(json);
-        double delta = duration.toMillis() * 0.01;
-        Assert.assertEquals(duration.toMillis(), durationCopy.toMillis(), delta);
+        JsonCodec<Duration> durationCodec = JsonCodec.jsonCodec(Duration.class);
+        String json = durationCodec.toJson(duration);
+        Duration durationCopy = durationCodec.fromJson(json);
+        double delta = duration.getValue(MILLISECONDS) * 0.01;
+        Assert.assertEquals(duration.getValue(MILLISECONDS), durationCopy.getValue(MILLISECONDS), delta);
     }
 
     private void failDurationConstruction(double value, TimeUnit timeUnit)

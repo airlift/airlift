@@ -94,7 +94,7 @@ public class NettyAsyncHttpClient
         else {
             bootstrap = new Socks4ClientBootstrap(channelFactory, config.getSocksProxy());
         }
-        bootstrap.setOption("connectTimeoutMillis", (long) config.getConnectTimeout().toMillis());
+        bootstrap.setOption("connectTimeoutMillis", config.getConnectTimeout().toMillis());
         bootstrap.setOption("soLinger", 0);
 
         nettyConnectionPool = new NettyConnectionPool(bootstrap,

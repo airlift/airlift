@@ -41,7 +41,7 @@ public class HttpClientPipelineFactory
 
         this.nettyConnectionPool = nettyConnectionPool;
         this.executor = executor;
-        this.timeoutHandler = new ReadTimeoutHandler(this.timer, (long) readTimeout.toMillis(), TimeUnit.MILLISECONDS);
+        this.timeoutHandler = new ReadTimeoutHandler(this.timer, readTimeout.toMillis(), TimeUnit.MILLISECONDS);
         this.maxContentLength = Ints.checkedCast(maxContentLength.toBytes());
     }
 

@@ -163,13 +163,13 @@ public class TestDataSize
         assertEquals(new DataSize(Long.MAX_VALUE / 1024.0, KILOBYTE).toBytes(), Long.MAX_VALUE);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "size is too large .*")
+    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "size is too large .*")
     public void testToBytesTooLarge()
     {
         new DataSize(Long.MAX_VALUE + 1024.0001, BYTE).toBytes(); // smallest value that overflows
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "size is too large .*")
+    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "size is too large .*")
     public void testToBytesTooLarge2()
     {
         new DataSize(9000, PETABYTE).toBytes();

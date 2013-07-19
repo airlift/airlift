@@ -25,8 +25,8 @@ class ExponentialBackOff
 
     public ExponentialBackOff(Duration initialWait, Duration maxWait, String serverUpMessage, String serverDownMessage, Logger log)
     {
-        this.initialWait = (long) checkNotNull(initialWait, "initialWait is null").toMillis();
-        this.maxWait = (long) checkNotNull(maxWait, "maxWait is null").toMillis();
+        this.initialWait = checkNotNull(initialWait, "initialWait is null").toMillis();
+        this.maxWait = checkNotNull(maxWait, "maxWait is null").toMillis();
         checkArgument(this.initialWait <= this.maxWait, "initialWait %s is less than maxWait %s", initialWait, maxWait);
 
         this.serverUpMessage = checkNotNull(serverUpMessage, "serverUpMessage is null");

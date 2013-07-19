@@ -24,6 +24,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public final class Duration implements Comparable<Duration>
 {
     private static final Pattern PATTERN = Pattern.compile("^\\s*(\\d+(?:\\.\\d+)?)\\s*([a-zA-Z]+)\\s*$");
@@ -31,7 +39,10 @@ public final class Duration implements Comparable<Duration>
     public static Duration nanosSince(long start)
     {
         long end = System.nanoTime();
-        return new Duration(end - start, TimeUnit.NANOSECONDS);
+
+        long value = end - start;
+        double millis = value * millisPerTimeUnit(NANOSECONDS);
+        return new Duration(millis, MILLISECONDS);
     }
 
     private final double value;
@@ -50,7 +61,7 @@ public final class Duration implements Comparable<Duration>
 
     public long toMillis()
     {
-        return roundTo(TimeUnit.MILLISECONDS);
+        return roundTo(MILLISECONDS);
     }
 
     public double getValue()
@@ -86,9 +97,10 @@ public final class Duration implements Comparable<Duration>
 
     public Duration convertToMostSuccinctTimeUnit()
     {
-        TimeUnit unitToUse = TimeUnit.NANOSECONDS;
+        TimeUnit unitToUse = NANOSECONDS;
         for (TimeUnit unitToTest : TimeUnit.values()) {
-            if (getValue(unitToTest) > 0.99) {
+            // since time units are powers of ten, we can get rounding errors here, so fuzzy match
+            if (getValue(unitToTest) > 0.9999) {
                 unitToUse = unitToTest;
             }
             else {
@@ -137,7 +149,7 @@ public final class Duration implements Comparable<Duration>
     @Override
     public int compareTo(Duration o)
     {
-        return Double.compare(getValue(TimeUnit.MILLISECONDS), o.getValue(TimeUnit.MILLISECONDS));
+        return Double.compare(getValue(MILLISECONDS), o.getValue(MILLISECONDS));
     }
 
     @Override
@@ -158,7 +170,7 @@ public final class Duration implements Comparable<Duration>
     @Override
     public int hashCode()
     {
-        double value = getValue(TimeUnit.MILLISECONDS);
+        double value = getValue(MILLISECONDS);
         return Doubles.hashCode(value);
     }
 
@@ -166,33 +178,24 @@ public final class Duration implements Comparable<Duration>
     public static TimeUnit valueOfTimeUnit(String timeUnitString)
     {
         Preconditions.checkNotNull(timeUnitString, "timeUnitString is null");
-        TimeUnit timeUnit;
         switch (timeUnitString) {
             case "ns":
-                timeUnit = TimeUnit.NANOSECONDS;
-                break;
+                return NANOSECONDS;
             case "us":
-                timeUnit = TimeUnit.MICROSECONDS;
-                break;
+                return MICROSECONDS;
             case "ms":
-                timeUnit = TimeUnit.MILLISECONDS;
-                break;
+                return MILLISECONDS;
             case "s":
-                timeUnit = TimeUnit.SECONDS;
-                break;
+                return SECONDS;
             case "m":
-                timeUnit = TimeUnit.MINUTES;
-                break;
+                return MINUTES;
             case "h":
-                timeUnit = TimeUnit.HOURS;
-                break;
+                return HOURS;
             case "d":
-                timeUnit = TimeUnit.DAYS;
-                break;
+                return DAYS;
             default:
                 throw new IllegalArgumentException("Unknown time unit: " + timeUnitString);
         }
-        return timeUnit;
     }
 
     public static String timeUnitToString(TimeUnit timeUnit)

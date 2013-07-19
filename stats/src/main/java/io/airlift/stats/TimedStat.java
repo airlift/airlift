@@ -121,8 +121,8 @@ public class TimedStat
 
     public void addValue(Duration duration)
     {
-        sample.update((long) duration.toMillis());
-        sum.addAndGet((long) duration.toMillis());
+        sample.update(duration.toMillis());
+        sum.addAndGet(duration.toMillis());
         count.incrementAndGet();
     }
 
