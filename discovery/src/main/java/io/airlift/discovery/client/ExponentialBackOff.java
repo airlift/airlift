@@ -37,6 +37,7 @@ class ExponentialBackOff
     public synchronized void success()
     {
         if (!serverUp) {
+            serverUp = true;
             log.info(serverUpMessage);
         }
         currentWaitInMillis = -1;
@@ -45,6 +46,7 @@ class ExponentialBackOff
     public synchronized Duration failed(Throwable t)
     {
         if (serverUp) {
+            serverUp = false;
             log.error("%s: %s", serverDownMessage, t.getMessage());
         }
         log.debug(t, serverDownMessage);
