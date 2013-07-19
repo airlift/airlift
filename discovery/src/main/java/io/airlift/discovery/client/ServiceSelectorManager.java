@@ -1,14 +1,16 @@
 package io.airlift.discovery.client;
 
 import com.google.common.annotations.Beta;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.CheckedFuture;
+import com.google.common.util.concurrent.Futures;
 
 import javax.inject.Inject;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -29,18 +31,33 @@ public class ServiceSelectorManager
         return serviceSelectors;
     }
 
-    public void refresh()
+    public void forceRefresh()
     {
-        List<CheckedFuture<ServiceDescriptors, DiscoveryException>> futures = new ArrayList<>();
+        for (CheckedFuture<ServiceDescriptors, DiscoveryException> future : initiateRefresh()) {
+            future.checkedGet();
+        }
+    }
 
+    public void attemptRefresh()
+    {
+        try {
+            Futures.successfulAsList(initiateRefresh()).get();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        catch (ExecutionException ignored) {
+        }
+    }
+
+    private List<CheckedFuture<ServiceDescriptors, DiscoveryException>> initiateRefresh()
+    {
+        ImmutableList.Builder<CheckedFuture<ServiceDescriptors, DiscoveryException>> futures = ImmutableList.builder();
         for (ServiceSelector selector : serviceSelectors) {
             if (selector instanceof CachingServiceSelector) {
                 futures.add(((CachingServiceSelector) selector).refresh());
             }
         }
-
-        for (CheckedFuture<ServiceDescriptors, DiscoveryException> future : futures) {
-            future.checkedGet();
-        }
+        return futures.build();
     }
 }
