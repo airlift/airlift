@@ -15,6 +15,7 @@
  */
 package io.airlift.dbpool;
 
+import com.google.common.primitives.Ints;
 import io.airlift.units.Duration;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
@@ -50,7 +51,7 @@ public abstract class ManagedDataSource implements DataSource
             throw new NullPointerException("maxConnectionWait is null");
         }
         semaphore = new ManagedSemaphore(maxConnections);
-        maxConnectionWaitMillis.set((int) ceil(maxConnectionWait.toMillis()));
+        maxConnectionWaitMillis.set(Ints.checkedCast(maxConnectionWait.toMillis()));
     }
 
     @Override
@@ -140,7 +141,7 @@ public abstract class ManagedDataSource implements DataSource
             throw new NullPointerException("maxConnectionWait is null");
         }
 
-        int millis = (int) ceil(maxConnectionWait.toMillis());
+        int millis = Ints.checkedCast(maxConnectionWait.toMillis());
         if (millis < 1) {
             throw new IllegalArgumentException("maxConnectionWait must be greater than 1 millisecond");
         }

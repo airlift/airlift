@@ -15,7 +15,7 @@ class FixedIntervalKeepAliveStrategy
         if (keepAliveInterval == null) {
             keepAliveInMs = -1;
         } else {
-            keepAliveInMs = (long) keepAliveInterval.toMillis();
+            keepAliveInMs = keepAliveInterval.toMillis();
         }
     }
 

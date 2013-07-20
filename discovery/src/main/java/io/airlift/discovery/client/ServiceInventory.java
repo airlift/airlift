@@ -112,7 +112,7 @@ public class ServiceInventory
                     log.error(e, "Unexpected exception from service inventory update");
                 }
             }
-        }, (long) updateInterval.toMillis(), (long) updateInterval.toMillis(), TimeUnit.MILLISECONDS);
+        }, updateInterval.toMillis(), updateInterval.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     @PreDestroy
