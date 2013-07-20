@@ -34,16 +34,9 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class TestBalancingAsyncHttpClient
+    extends AbstractTestBalancingHttpClient<AsyncHttpClient>
 {
-    private HttpServiceBalancer serviceBalancer;
-    private HttpServiceAttempt serviceAttempt1;
-    private HttpServiceAttempt serviceAttempt2;
-    private HttpServiceAttempt serviceAttempt3;
-    private BalancingAsyncHttpClient balancingAsyncHttpClient;
-    private BodyGenerator bodyGenerator;
-    private Request request;
-    private TestingAsyncHttpClient httpClient;
-    private Response response;
+    private TestingAsyncHttpClient asyncHttpClient;
 
     @BeforeMethod
     protected void setUp()
@@ -60,302 +53,20 @@ public class TestBalancingAsyncHttpClient
         when(serviceAttempt2.next()).thenReturn(serviceAttempt3);
         when(serviceAttempt3.getUri()).thenReturn(URI.create("http://s1.example.com"));
         when(serviceAttempt3.next()).thenThrow(new AssertionError("Unexpected call to serviceAttempt3.next()"));
-        httpClient = new TestingAsyncHttpClient("PUT");
-        balancingAsyncHttpClient = new BalancingAsyncHttpClient(serviceBalancer, httpClient,
-                new BalancingHttpClientConfig().setMaxAttempts(3));
+        asyncHttpClient = new TestingAsyncHttpClient("PUT");
+        httpClient = asyncHttpClient;
+        balancingHttpClient = createBalancingHttpClient();
         bodyGenerator = mock(BodyGenerator.class);
         request = preparePut().setUri(URI.create("v1/service")).setBodyGenerator(bodyGenerator).build();
         response = mock(Response.class);
         when(response.getStatusCode()).thenReturn(204);
     }
 
-    @Test
-    public void testSuccessfulQuery()
-            throws Exception
+    @Override
+    protected BalancingAsyncHttpClient createBalancingHttpClient()
     {
-        httpClient.expectCall("http://s1.example.com/v1/service", response);
-
-        ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
-        when(responseHandler.handle(any(Request.class), same(response))).thenReturn("test response");
-
-        String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
-        assertEquals(returnValue, "test response", "return value from .execute()");
-
-        httpClient.assertDone();
-
-        verify(serviceAttempt1).getUri();
-        verify(serviceAttempt1).markGood();
-        verify(response).getStatusCode();
-        verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, bodyGenerator, response, responseHandler);
-    }
-
-    @Test
-    public void testSuccessfulQueryNullPath()
-            throws Exception
-    {
-        httpClient.expectCall("http://s1.example.com/", response);
-
-        ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
-        when(responseHandler.handle(any(Request.class), same(response))).thenReturn("test response");
-
-        request = preparePut().setUri(new URI(null, null, null, null)).setBodyGenerator(bodyGenerator).build();
-        String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
-        assertEquals(returnValue, "test response", "return value from .execute()");
-
-        httpClient.assertDone();
-
-        verify(serviceAttempt1).getUri();
-        verify(serviceAttempt1).markGood();
-        verify(response).getStatusCode();
-        verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, bodyGenerator, response, responseHandler);
-    }
-
-    @Test
-    public void testSuccessfulQueryAnnouncedPrefix()
-            throws Exception
-    {
-        serviceBalancer = mock(HttpServiceBalancer.class);
-        serviceAttempt1 = mock(HttpServiceAttempt.class);
-        when(serviceBalancer.createAttempt()).thenReturn(serviceAttempt1);
-        when(serviceAttempt1.getUri()).thenReturn(URI.create("http://s3.example.com/prefix"));
-        balancingAsyncHttpClient = new BalancingAsyncHttpClient(serviceBalancer, httpClient,
+        return new BalancingAsyncHttpClient(serviceBalancer, asyncHttpClient,
                 new BalancingHttpClientConfig().setMaxAttempts(3));
-
-        httpClient.expectCall("http://s3.example.com/prefix/v1/service", response);
-
-        ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
-        when(responseHandler.handle(any(Request.class), same(response))).thenReturn("test response");
-
-        String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
-        assertEquals(returnValue, "test response", "return value from .execute()");
-
-        httpClient.assertDone();
-
-        verify(serviceAttempt1).getUri();
-        verify(serviceAttempt1).markGood();
-        verify(response).getStatusCode();
-        verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, bodyGenerator, response, responseHandler);
-    }
-
-    @Test
-    public void testDoesntRetryOnHandlerException()
-            throws Exception
-    {
-        httpClient.expectCall("http://s1.example.com/v1/service", response);
-
-        ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
-        Exception testException = new Exception("test exception");
-        when(responseHandler.handle(any(Request.class), same(response))).thenThrow(testException);
-
-        try {
-            String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
-            fail("expected exception, got " + returnValue);
-        }
-        catch (Exception e) {
-            assertSame(e, testException);
-        }
-
-        httpClient.assertDone();
-
-        verify(serviceAttempt1).getUri();
-        verify(serviceAttempt1).markBad();
-        verify(response).getStatusCode();
-        verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, bodyGenerator, response, responseHandler);
-    }
-
-    @Test
-    public void testRetryOnHttpClientException()
-            throws Exception
-    {
-        httpClient.expectCall("http://s1.example.com/v1/service", new ConnectException());
-        httpClient.expectCall("http://s2.example.com/v1/service", response);
-
-        ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
-        when(responseHandler.handle(any(Request.class), same(response))).thenReturn("test response");
-
-        String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
-        assertEquals(returnValue, "test response", "return value from .execute()");
-
-        httpClient.assertDone();
-
-        verify(serviceAttempt1).getUri();
-        verify(serviceAttempt1).markBad();
-        verify(serviceAttempt1).next();
-        verify(serviceAttempt2).getUri();
-        verify(serviceAttempt2).markGood();
-        verify(response).getStatusCode();
-        verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler);
-    }
-
-    @Test
-    public void testRetryOn408Status()
-            throws Exception
-    {
-        Response response408 = mock(Response.class);
-        when(response408.getStatusCode()).thenReturn(408);
-
-        httpClient.expectCall("http://s1.example.com/v1/service", response408);
-        httpClient.expectCall("http://s2.example.com/v1/service", response);
-
-        ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
-        when(responseHandler.handle(any(Request.class), same(response))).thenReturn("test response");
-
-        String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
-        assertEquals(returnValue, "test response", "return value from .execute()");
-
-        httpClient.assertDone();
-
-        verify(serviceAttempt1).getUri();
-        verify(serviceAttempt1).markBad();
-        verify(serviceAttempt1).next();
-        verify(serviceAttempt2).getUri();
-        verify(serviceAttempt2).markGood();
-        verify(response).getStatusCode();
-        verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler);
-    }
-
-    @Test
-    public void testRetryOn500Status()
-            throws Exception
-    {
-        Response response500 = mock(Response.class);
-        when(response500.getStatusCode()).thenReturn(500);
-
-        httpClient.expectCall("http://s1.example.com/v1/service", response500);
-        httpClient.expectCall("http://s2.example.com/v1/service", response);
-
-        ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
-        when(responseHandler.handle(any(Request.class), same(response))).thenReturn("test response");
-
-        String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
-        assertEquals(returnValue, "test response", "return value from .execute()");
-
-        httpClient.assertDone();
-
-        verify(serviceAttempt1).getUri();
-        verify(serviceAttempt1).markBad();
-        verify(serviceAttempt1).next();
-        verify(serviceAttempt2).getUri();
-        verify(serviceAttempt2).markGood();
-        verify(response).getStatusCode();
-        verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler);
-    }
-
-    @Test
-    public void testRetryOn502Status()
-            throws Exception
-    {
-        Response response502 = mock(Response.class);
-        when(response502.getStatusCode()).thenReturn(502);
-
-        httpClient.expectCall("http://s1.example.com/v1/service", response502);
-        httpClient.expectCall("http://s2.example.com/v1/service", response);
-
-        ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
-        when(responseHandler.handle(any(Request.class), same(response))).thenReturn("test response");
-
-        String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
-        assertEquals(returnValue, "test response", "return value from .execute()");
-
-        httpClient.assertDone();
-
-        verify(serviceAttempt1).getUri();
-        verify(serviceAttempt1).markBad();
-        verify(serviceAttempt1).next();
-        verify(serviceAttempt2).getUri();
-        verify(serviceAttempt2).markGood();
-        verify(response).getStatusCode();
-        verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler);
-    }
-
-    @Test
-    public void testRetryOn503Status()
-            throws Exception
-    {
-        Response response503 = mock(Response.class);
-        when(response503.getStatusCode()).thenReturn(503);
-
-        httpClient.expectCall("http://s1.example.com/v1/service", response503);
-        httpClient.expectCall("http://s2.example.com/v1/service", response);
-
-        ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
-        when(responseHandler.handle(any(Request.class), same(response))).thenReturn("test response");
-
-        String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
-        assertEquals(returnValue, "test response", "return value from .execute()");
-
-        httpClient.assertDone();
-
-        verify(serviceAttempt1).getUri();
-        verify(serviceAttempt1).markBad();
-        verify(serviceAttempt1).next();
-        verify(serviceAttempt2).getUri();
-        verify(serviceAttempt2).markGood();
-        verify(response).getStatusCode();
-        verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler);
-    }
-
-    @Test
-    public void testRetryOn504Status()
-            throws Exception
-    {
-        Response response504 = mock(Response.class);
-        when(response504.getStatusCode()).thenReturn(504);
-
-        httpClient.expectCall("http://s1.example.com/v1/service", response504);
-        httpClient.expectCall("http://s2.example.com/v1/service", response);
-
-        ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
-        when(responseHandler.handle(any(Request.class), same(response))).thenReturn("test response");
-
-        String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
-        assertEquals(returnValue, "test response", "return value from .execute()");
-
-        httpClient.assertDone();
-
-        verify(serviceAttempt1).getUri();
-        verify(serviceAttempt1).markBad();
-        verify(serviceAttempt1).next();
-        verify(serviceAttempt2).getUri();
-        verify(serviceAttempt2).markGood();
-        verify(response).getStatusCode();
-        verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler);
-    }
-
-    @Test
-    public void testWithANoRetryHeader()
-            throws Exception
-    {
-        Response response500 = mock(Response.class);
-        when(response500.getStatusCode()).thenReturn(500);
-        when(response500.getHeader("X-Proofpoint-Retry")).thenReturn("no");
-
-        httpClient.expectCall("http://s1.example.com/v1/service", response500);
-
-        ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
-        when(responseHandler.handle(any(Request.class), same(response500))).thenReturn("test response");
-
-        String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
-        assertEquals(returnValue, "test response", "return value from .execute()");
-
-        httpClient.assertDone();
-
-        verify(serviceAttempt1).getUri();
-        verify(serviceAttempt1).markBad();
-        verify(response500).getStatusCode();
-        verify(response500).getHeader("X-Proofpoint-Retry");
-        verify(responseHandler).handle(any(Request.class), same(response500));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler, response500);
     }
 
     @Test
@@ -372,7 +83,7 @@ public class TestBalancingAsyncHttpClient
         ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
         when(responseHandler.handle(any(Request.class), same(response))).thenReturn("test response");
 
-        String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
+        String returnValue = balancingHttpClient.execute(request, responseHandler);
         assertEquals(returnValue, "test response", "return value from .execute()");
 
         httpClient.assertDone();
@@ -389,7 +100,6 @@ public class TestBalancingAsyncHttpClient
         verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, response, responseHandler);
     }
 
-
     @Test
     public void testSuccessOnLastTryException()
             throws Exception
@@ -404,7 +114,7 @@ public class TestBalancingAsyncHttpClient
         ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
         when(responseHandler.handle(any(Request.class), same(response))).thenReturn("test response");
 
-        String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
+        String returnValue = balancingHttpClient.execute(request, responseHandler);
         assertEquals(returnValue, "test response", "return value from .execute()");
 
         httpClient.assertDone();
@@ -438,7 +148,7 @@ public class TestBalancingAsyncHttpClient
         when(responseHandler.handleException(any(Request.class), same(connectException))).thenThrow(testException);
 
         try {
-            String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
+            String returnValue = balancingHttpClient.execute(request, responseHandler);
             fail("expected exception, got " + returnValue);
         }
         catch (Exception e) {
@@ -474,7 +184,7 @@ public class TestBalancingAsyncHttpClient
         ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
         when(responseHandler.handleException(any(Request.class), same(connectException))).thenReturn("test response");
 
-        String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
+        String returnValue = balancingHttpClient.execute(request, responseHandler);
         assertEquals(returnValue, "test response");
 
         httpClient.assertDone();
@@ -507,7 +217,7 @@ public class TestBalancingAsyncHttpClient
         ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
         when(responseHandler.handle(any(Request.class), same(response408))).thenReturn("test response");
 
-        String returnValue = balancingAsyncHttpClient.execute(request, responseHandler);
+        String returnValue = balancingHttpClient.execute(request, responseHandler);
         assertEquals(returnValue, "test response", "return value from .execute()");
 
         httpClient.assertDone();
@@ -532,14 +242,13 @@ public class TestBalancingAsyncHttpClient
         RuntimeException balancerException = new RuntimeException("test balancer exception");
         when(serviceBalancer.createAttempt()).thenThrow(balancerException);
 
-        balancingAsyncHttpClient = new BalancingAsyncHttpClient(serviceBalancer, httpClient,
-                new BalancingHttpClientConfig().setMaxAttempts(3));
+        balancingHttpClient = createBalancingHttpClient();
 
         ResponseHandler responseHandler = mock(ResponseHandler.class);
         RuntimeException handlerException = new RuntimeException("test responseHandler exception");
         when(responseHandler.handleException(any(Request.class), any(Exception.class))).thenThrow(handlerException);
 
-        CheckedFuture future = balancingAsyncHttpClient.executeAsync(request, responseHandler);
+        CheckedFuture future = balancingHttpClient.executeAsync(request, responseHandler);
         try {
             future.checkedGet();
             fail("Exception not thrown");
@@ -567,14 +276,13 @@ public class TestBalancingAsyncHttpClient
         RuntimeException balancerException = new RuntimeException("test balancer exception");
         when(serviceAttempt1.next()).thenThrow(balancerException);
 
-        balancingAsyncHttpClient = new BalancingAsyncHttpClient(serviceBalancer, httpClient,
-                new BalancingHttpClientConfig().setMaxAttempts(3));
+        balancingHttpClient = createBalancingHttpClient();
 
         ResponseHandler responseHandler = mock(ResponseHandler.class);
         RuntimeException handlerException = new RuntimeException("test responseHandler exception");
         when(responseHandler.handleException(any(Request.class), any(Exception.class))).thenThrow(handlerException);
 
-        CheckedFuture future = balancingAsyncHttpClient.executeAsync(request, responseHandler);
+        CheckedFuture future = balancingHttpClient.executeAsync(request, responseHandler);
         try {
             future.checkedGet();
             fail("Exception not thrown");
@@ -596,8 +304,8 @@ public class TestBalancingAsyncHttpClient
         AsyncHttpClient mockClient = mock(AsyncHttpClient.class);
         when(mockClient.getStats()).thenReturn(requestStats);
 
-        balancingAsyncHttpClient = new BalancingAsyncHttpClient(serviceBalancer, mockClient, new BalancingHttpClientConfig());
-        assertSame(balancingAsyncHttpClient.getStats(), requestStats);
+        balancingHttpClient = new BalancingAsyncHttpClient(serviceBalancer, mockClient, new BalancingHttpClientConfig());
+        assertSame(balancingHttpClient.getStats(), requestStats);
 
         verify(mockClient).getStats();
         verifyNoMoreInteractions(mockClient, serviceBalancer);
@@ -608,8 +316,8 @@ public class TestBalancingAsyncHttpClient
     {
         AsyncHttpClient mockClient = mock(AsyncHttpClient.class);
 
-        balancingAsyncHttpClient = new BalancingAsyncHttpClient(serviceBalancer, mockClient, new BalancingHttpClientConfig());
-        balancingAsyncHttpClient.close();
+        balancingHttpClient = new BalancingAsyncHttpClient(serviceBalancer, mockClient, new BalancingHttpClientConfig());
+        balancingHttpClient.close();
 
         verify(mockClient).close();
         verifyNoMoreInteractions(mockClient, serviceBalancer);
@@ -620,7 +328,7 @@ public class TestBalancingAsyncHttpClient
             throws Exception
     {
         request = preparePut().setUri(new URI("http", null, "/v1/service", null)).setBodyGenerator(bodyGenerator).build();
-        balancingAsyncHttpClient.executeAsync(request, mock(ResponseHandler.class));
+        balancingHttpClient.executeAsync(request, mock(ResponseHandler.class));
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = ".* has a host component")
@@ -628,7 +336,7 @@ public class TestBalancingAsyncHttpClient
             throws Exception
     {
         request = preparePut().setUri(new URI(null, "example.com", "v1/service", null)).setBodyGenerator(bodyGenerator).build();
-        balancingAsyncHttpClient.executeAsync(request, mock(ResponseHandler.class));
+        balancingHttpClient.executeAsync(request, mock(ResponseHandler.class));
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = ".* path starts with '/'")
@@ -636,12 +344,13 @@ public class TestBalancingAsyncHttpClient
             throws Exception
     {
         request = preparePut().setUri(new URI(null, null, "/v1/service", null)).setBodyGenerator(bodyGenerator).build();
-        balancingAsyncHttpClient.executeAsync(request, mock(ResponseHandler.class));
+        balancingHttpClient.executeAsync(request, mock(ResponseHandler.class));
     }
 
     // TODO tests for interruption and cancellation
 
-    class TestingAsyncHttpClient implements AsyncHttpClient
+    class TestingAsyncHttpClient
+            implements AsyncHttpClient, TestingClient
     {
 
         private String method;
@@ -654,12 +363,12 @@ public class TestBalancingAsyncHttpClient
             checkArgument(uris.size() == responses.size(), "uris same size as responses");
         }
 
-        TestingAsyncHttpClient expectCall(String uri, Response response)
+        public TestingAsyncHttpClient expectCall(String uri, Response response)
         {
             return expectCall(URI.create(uri), response);
         }
 
-        TestingAsyncHttpClient expectCall(String uri, Exception exception)
+        public TestingAsyncHttpClient expectCall(String uri, Exception exception)
         {
             return expectCall(URI.create(uri), exception);
         }
@@ -671,7 +380,7 @@ public class TestBalancingAsyncHttpClient
             return this;
         }
 
-        void assertDone()
+        public void assertDone()
         {
             assertEquals(uris.size(), 0, "all expected calls made");
         }
