@@ -89,7 +89,7 @@ public class TestBalancingHttpClient
         verify(serviceAttempt3).getUri();
         verify(serviceAttempt3).markGood();
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, response, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, responseHandler);
     }
 
     @Test
@@ -120,7 +120,7 @@ public class TestBalancingHttpClient
         verify(serviceAttempt3).getUri();
         verify(serviceAttempt3).markGood();
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, response, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, responseHandler);
     }
 
     @Test
@@ -158,7 +158,7 @@ public class TestBalancingHttpClient
         verify(serviceAttempt3).getUri();
         verify(serviceAttempt3).markBad();
         verify(responseHandler).handleException(any(Request.class), same(connectException));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, response, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, responseHandler);
     }
 
     @Test
@@ -188,9 +188,9 @@ public class TestBalancingHttpClient
         verify(serviceAttempt2).markBad();
         verify(serviceAttempt2).next();
         verify(serviceAttempt3).getUri();
-        verify(serviceAttempt3).markGood(); // todo incorrectly recording result of final try -- verify(serviceAttempt3).markBad();
+        verify(serviceAttempt3).markBad();
         verify(responseHandler).handleException(any(Request.class), same(connectException));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, response, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, responseHandler);
     }
 
     @Test
@@ -221,9 +221,9 @@ public class TestBalancingHttpClient
         verify(serviceAttempt2).markBad();
         verify(serviceAttempt2).next();
         verify(serviceAttempt3).getUri();
-        // todo the mock responseHandler is swallowing the error -- verify(serviceAttempt3).markBad();
+        verify(serviceAttempt3).markBad();
         verify(responseHandler).handle(any(Request.class), same(response408));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, /* todo serviceAttempt3,*/ bodyGenerator, response, responseHandler, response408);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, responseHandler);
     }
 
     @Test

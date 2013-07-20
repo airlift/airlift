@@ -62,7 +62,7 @@ public final class BalancingHttpClient implements HttpClient
         }
         int attemptsLeft = maxAttempts;
 
-        RetryingResponseHandler<T, E> retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler);
+        RetryingResponseHandler<T, E> retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler, false);
 
         for (;;) {
             URI uri = uriBuilderFrom(attempt.getUri())
@@ -73,46 +73,32 @@ public final class BalancingHttpClient implements HttpClient
                     .setUri(uri)
                     .build();
 
-            if (attemptsLeft > 1) {
-                --attemptsLeft;
-                try {
-                    T t = httpClient.execute(subRequest, retryingResponseHandler);
-                    attempt.markGood();
-                    return t;
-                }
-                catch (InnerHandlerException e) {
-                    attempt.markBad();
-                    //noinspection unchecked
-                    throw (E) e.getCause();
-                }
-                catch (FailureStatusException e) {
-                    attempt.markBad();
-                    return (T) e.result;
-                }
-                catch (RetryException ignored) {
-                    attempt.markBad();
-                    try {
-                        attempt = attempt.next();
-                    }
-                    catch (RuntimeException e) {
-                        return responseHandler.handleException(request, e);
-                    }
-                }
+            if (attemptsLeft <= 1) {
+                retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler, true);
             }
-            else {
+
+            --attemptsLeft;
+            try {
+                T t = httpClient.execute(subRequest, retryingResponseHandler);
+                attempt.markGood();
+                return t;
+            }
+            catch (InnerHandlerException e) {
+                attempt.markBad();
+                //noinspection unchecked
+                throw (E) e.getCause();
+            }
+            catch (FailureStatusException e) {
+                attempt.markBad();
+                return (T) e.result;
+            }
+            catch (RetryException ignored) {
+                attempt.markBad();
                 try {
-                    T t = httpClient.execute(subRequest, responseHandler);
-                    attempt.markGood();
-                    return t;
+                    attempt = attempt.next();
                 }
                 catch (RuntimeException e) {
-                    attempt.markBad();
-                    throw e;
-                }
-                catch (Exception e) {
-                    attempt.markBad();
-                    // noinspection unchecked
-                    throw (E) e;
+                    return responseHandler.handleException(request, e);
                 }
             }
         }

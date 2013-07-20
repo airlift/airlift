@@ -76,7 +76,7 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
 
     private <T, E extends Exception> AsyncHttpResponseFuture<T, E> attemptQuery(Request request, ResponseHandler<T, E> responseHandler, HttpServiceAttempt attempt, int attemptsLeft)
     {
-        RetryingResponseHandler<T, E> retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler);
+        RetryingResponseHandler<T, E> retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler, attemptsLeft <= 1);
 
         URI uri = uriBuilderFrom(attempt.getUri())
                 .appendPath(request.getUri().getPath())
@@ -86,14 +86,9 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
                 .setUri(uri)
                 .build();
 
-        if (attemptsLeft > 1) {
-            --attemptsLeft;
-            AsyncHttpResponseFuture<T, RetryException> future = httpClient.executeAsync(subRequest, retryingResponseHandler);
-            return new RetryFuture<>(future, request, responseHandler, attempt, uri, attemptsLeft);
-        }
-        else {
-            return httpClient.executeAsync(subRequest, responseHandler);
-        }
+        --attemptsLeft;
+        AsyncHttpResponseFuture<T, RetryException> future = httpClient.executeAsync(subRequest, retryingResponseHandler);
+        return new RetryFuture<>(future, request, responseHandler, attempt, uri, attemptsLeft);
     }
 
     @Override

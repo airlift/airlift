@@ -243,9 +243,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
 
         verify(serviceAttempt1).getUri();
         verify(serviceAttempt1).markBad();
-        verify(response500).getStatusCode();
-        verify(response500).getHeader("X-Proofpoint-Retry");
         verify(responseHandler).handle(any(Request.class), same(response500));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler, response500);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, response, responseHandler);
     }
 }

@@ -30,11 +30,13 @@ final class RetryingResponseHandler<T, E extends Exception>
     private static final Logger log = Logger.get(RetryingResponseHandler.class);
     private final Request originalRequest;
     private final ResponseHandler<T, E> innerHandler;
+    private final boolean finalAttempt;
 
-    public RetryingResponseHandler(Request originalRequest, ResponseHandler<T, E> innerHandler)
+    public RetryingResponseHandler(Request originalRequest, ResponseHandler<T, E> innerHandler, boolean finalAttempt)
     {
         this.originalRequest = originalRequest;
         this.innerHandler = innerHandler;
+        this.finalAttempt = finalAttempt;
     }
 
     @Override
@@ -43,6 +45,18 @@ final class RetryingResponseHandler<T, E extends Exception>
     {
         log.warn(exception, "Exception querying %s",
                 request.getUri().resolve("/"));
+
+        if (finalAttempt) {
+            Object result;
+            try {
+                result = innerHandler.handleException(originalRequest, exception);
+            }
+            catch (Exception e) {
+                throw new InnerHandlerException(e);
+            }
+            throw new FailureStatusException(result);
+        }
+
         throw new RetryException();
     }
 
@@ -52,9 +66,9 @@ final class RetryingResponseHandler<T, E extends Exception>
     {
         if (RETRYABLE_STATUS_CODES.contains(response.getStatusCode())) {
             String retryHeader = response.getHeader("X-Proofpoint-Retry");
-            if (!("no".equalsIgnoreCase(retryHeader))) {
-                log.warn("%d response querying %s",
-                        response.getStatusCode(), request.getUri().resolve("/"));
+            log.warn("%d response querying %s",
+                    response.getStatusCode(), request.getUri().resolve("/"));
+            if (!finalAttempt && !("no".equalsIgnoreCase(retryHeader))) {
                 throw new RetryException();
             }
 
