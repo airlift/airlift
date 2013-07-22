@@ -18,7 +18,7 @@ package com.proofpoint.http.client;
 import com.google.common.annotations.Beta;
 import com.proofpoint.stats.CounterStat;
 import com.proofpoint.stats.DistributionStat;
-import com.proofpoint.stats.TimerStat;
+import com.proofpoint.stats.TimedStat;
 import com.proofpoint.units.Duration;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
@@ -30,8 +30,8 @@ import javax.inject.Inject;
 public class RequestStats
 {
     private final CounterStat request;
-    private final TimerStat requestTime;
-    private final TimerStat responseTime;
+    private final TimedStat requestTime;
+    private final TimedStat responseTime;
     private final DistributionStat readBytes;
     private final DistributionStat writtenBytes;
 
@@ -39,8 +39,8 @@ public class RequestStats
     public RequestStats()
     {
         request = new CounterStat();
-        requestTime = new TimerStat();
-        responseTime = new TimerStat();
+        requestTime = new TimedStat();
+        responseTime = new TimedStat();
         readBytes = new DistributionStat();
         writtenBytes = new DistributionStat();
     }
@@ -72,14 +72,14 @@ public class RequestStats
 
     @Managed
     @Nested
-    public TimerStat getRequestTime()
+    public TimedStat getRequestTime()
     {
         return requestTime;
     }
 
     @Managed
     @Nested
-    public TimerStat getResponseTime()
+    public TimedStat getResponseTime()
     {
         return responseTime;
     }

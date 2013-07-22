@@ -16,6 +16,8 @@
 package com.proofpoint.stats;
 
 import com.proofpoint.units.Duration;
+import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
+import org.apache.commons.math.stat.descriptive.SynchronizedDescriptiveStatistics;
 import org.weakref.jmx.Managed;
 
 import java.util.Collections;
@@ -24,10 +26,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @deprecated Replaced by {@link TimerStat}
- */
-@Deprecated
 public class TimedStat
 {
     private final AtomicLong sum = new AtomicLong(0);

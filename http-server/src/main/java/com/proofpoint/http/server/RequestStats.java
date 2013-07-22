@@ -17,7 +17,7 @@ package com.proofpoint.http.server;
 
 import com.proofpoint.stats.CounterStat;
 import com.proofpoint.stats.DistributionStat;
-import com.proofpoint.stats.TimerStat;
+import com.proofpoint.stats.TimedStat;
 import com.proofpoint.units.Duration;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
@@ -28,7 +28,7 @@ import javax.inject.Inject;
 public class RequestStats
 {
     private final CounterStat request;
-    private final TimerStat requestTime;
+    private final TimedStat requestTime;
     private final DistributionStat readBytes;
     private final DistributionStat writtenBytes;
 
@@ -36,7 +36,7 @@ public class RequestStats
     public RequestStats()
     {
         request = new CounterStat();
-        requestTime = new TimerStat();
+        requestTime = new TimedStat();
         readBytes = new DistributionStat();
         writtenBytes = new DistributionStat();
     }
@@ -58,7 +58,7 @@ public class RequestStats
 
     @Managed
     @Nested
-    public TimerStat getRequestTime()
+    public TimedStat getRequestTime()
     {
         return requestTime;
     }
