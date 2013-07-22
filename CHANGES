@@ -42,6 +42,8 @@ Platform 0.77
   - build-helper-maven-plugin 1.8
   - maven-assembly-plugin 2.4
 
+* [Bug] Fixed discovery client's inability to refresh services
+
 * [Bug] Fixed missing module in Rack server.
 
 Platform 0.76
