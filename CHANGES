@@ -1,14 +1,54 @@
 Platform 0.77
 
+* HttpClient
+
+  - The signature of ResponseHandler.handleException() has changed to:
+
+    T handleException(Request request, Exception exception)
+        throws E;
+
+    This permits the method to return a default value.
+
+  - We added a new DefaultingJsonResponseHandler which returns a default
+    response upon any error.
+
+* Discovery client service pool default
+
+  Service pools now default to the configured value of 'node.pool'.
+
+* SerialScheduledExecutorService
+
+  We added SerialScheduledExecutorService to the testing module. It is a
+  test utility implementation of ScheduledExecutorService. See
+  https://github.com/markkent/serial-executor-service for more information.
+
+* Stats
+
+ - MeterStat has been deprecated. DistributionStat should be used insead.
+
+ - TimerStat has been deprecated. The newly created TimeStat should be used
+   instead.
+
+ - The Http client and sever RequestStats have been changed to use
+   DistributionStat and TimeStat.
+
+* TestingHttpServer now injects a TraceTokenManager, so trace tokens are
+  available to other injected modules.
+
+* Library upgrades
+  - Netty to 3.6.6.Final
+
 * Maven plugin upgrades
   - build-helper-maven-plugin 1.8
   - maven-assembly-plugin 2.4
+
+* [Bug] Fixed missing module in Rack server.
 
 Platform 0.76
 
 * [Bug] Fixed Guice error when binding AsyncHttpClients both normally and privately.
 
-* [Bug] Fixed the Netty http client's handling of exceptions
+* [Bug] Fixed the Netty http client's handling of exceptions.
 
 Platform 0.75
 
