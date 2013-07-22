@@ -24,6 +24,7 @@ import com.proofpoint.http.client.ResponseHandler;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
+import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
 import java.net.URI;
 import java.util.concurrent.CancellationException;
@@ -70,11 +71,12 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
                 return new ImmediateFailedAsyncHttpResponseFuture<>((E) e1);
             }
         }
-
-        return attemptQuery(request, responseHandler, attempt, maxAttempts);
+        RetryFuture<T, E> retryFuture = new RetryFuture<>(request, responseHandler);
+        attemptQuery(retryFuture, request, responseHandler, attempt, maxAttempts);
+        return retryFuture;
     }
 
-    private <T, E extends Exception> AsyncHttpResponseFuture<T, E> attemptQuery(Request request, ResponseHandler<T, E> responseHandler, HttpServiceAttempt attempt, int attemptsLeft)
+    private <T, E extends Exception> void attemptQuery(RetryFuture<T, E> retryFuture, Request request, ResponseHandler<T, E> responseHandler, HttpServiceAttempt attempt, int attemptsLeft)
     {
         RetryingResponseHandler<T, E> retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler, attemptsLeft <= 1);
 
@@ -88,7 +90,7 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
 
         --attemptsLeft;
         AsyncHttpResponseFuture<T, RetryException> future = httpClient.executeAsync(subRequest, retryingResponseHandler);
-        return new RetryFuture<>(future, request, responseHandler, attempt, uri, attemptsLeft);
+        retryFuture.newAttempt(future, attempt, uri, attemptsLeft);
     }
 
     @Override
@@ -119,19 +121,30 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
 
         private final Request request;
         private final ResponseHandler<T,E> responseHandler;
-        private final HttpServiceAttempt attempt;
-        private final URI uri;
-        private AsyncHttpResponseFuture<T, ?> subFuture;
         private final Object subFutureLock = new Object();
-        boolean retried = false;
+        @GuardedBy("subFutureLock")
+        private HttpServiceAttempt attempt = null;
+        @GuardedBy("subFutureLock")
+        private URI uri = null;
+        @GuardedBy("subFutureLock")
+        private AsyncHttpResponseFuture<T, RetryException> subFuture = null;
 
-        public RetryFuture(final AsyncHttpResponseFuture<T, RetryException> future, final Request request, final ResponseHandler<T, E> responseHandler, final HttpServiceAttempt attempt, URI uri, final int retriesLeft)
+        public RetryFuture(Request request, ResponseHandler<T, E> responseHandler)
         {
-            subFuture = future;
             this.request = request;
             this.responseHandler = responseHandler;
-            this.attempt = attempt;
-            this.uri = uri;
+        }
+
+        void newAttempt(final AsyncHttpResponseFuture<T, RetryException> future, final HttpServiceAttempt attempt, URI uri, final int attemptsLeft)
+        {
+            synchronized (subFutureLock) {
+                this.attempt = attempt;
+                this.subFuture = future;
+                this.uri = uri;
+            }
+            final RetryFuture<T, E> retryFuture = this;
+            final Request request = this.request;
+            final ResponseHandler<T, E> responseHandler = this.responseHandler;
             future.addListener(new Runnable()
             {
                 @Override
@@ -151,7 +164,6 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
                     }
                     catch (RetryException e) {
                         attempt.markBad();
-                        final AsyncHttpResponseFuture<T, ?> attemptFuture;
                         synchronized (subFutureLock) {
                             HttpServiceAttempt nextAttempt;
                             try {
@@ -167,28 +179,12 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
                                 return;
                             }
                             try {
-                                attemptFuture = attemptQuery(request, responseHandler, nextAttempt, retriesLeft);
+                                attemptQuery(retryFuture, request, responseHandler, nextAttempt, attemptsLeft);
                             }
                             catch (RuntimeException e1) {
-                                setException(e1); // todo send to responsehandler here?
-                                return;
+                                setException(e1);
                             }
-                            retried = true;
-                            subFuture = attemptFuture;
                         }
-                        attemptFuture.addListener(new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                try {
-                                    set(attemptFuture.checkedGet());
-                                }
-                                catch (Exception e1) {
-                                    setException(e1);
-                                }
-                            }
-                        }, MoreExecutors.sameThreadExecutor());
                     }
                 }
             }, MoreExecutors.sameThreadExecutor());
@@ -251,9 +247,6 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
         public String getState()
         {
             synchronized (subFutureLock) {
-                if (retried) {
-                    return subFuture.getState();
-                }
                 return format("Attempt %s to %s: %s", attempt, uri, subFuture.getState());
             }
         }
