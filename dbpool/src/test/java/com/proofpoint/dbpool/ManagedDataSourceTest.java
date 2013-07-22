@@ -55,25 +55,25 @@ public class ManagedDataSourceTest
     {
         ManagedDataSource dataSource = new MockManagedDataSource(1, new Duration(10, MILLISECONDS));
         assertEquals(dataSource.getConnectionsActive(), 0);
-        assertEquals(dataSource.getStats().getCheckout().getCount(), 0);
-        assertEquals(dataSource.getStats().getCreate().getCount(), 0);
-        assertEquals(dataSource.getStats().getHeld().getCount(), 0);
+        assertEquals(dataSource.getStats().getCheckout().getAllTime().getCount(), 0.0);
+        assertEquals(dataSource.getStats().getCreate().getAllTime().getCount(), 0.0);
+        assertEquals(dataSource.getStats().getHeld().getAllTime().getCount(), 0.0);
         assertEquals(dataSource.getStats().getConnectionErrorCount(), 0);
 
         Connection connection = dataSource.getConnection();
         assertNotNull(connection);
         assertTrue(connection instanceof MockConnection);
         assertEquals(dataSource.getConnectionsActive(), 1);
-        assertEquals(dataSource.getStats().getCheckout().getCount(), 1);
-        assertEquals(dataSource.getStats().getCreate().getCount(), 1);
-        assertEquals(dataSource.getStats().getHeld().getCount(), 0);
+        assertEquals(dataSource.getStats().getCheckout().getAllTime().getCount(), 1.0);
+        assertEquals(dataSource.getStats().getCreate().getAllTime().getCount(), 1.0);
+        assertEquals(dataSource.getStats().getHeld().getAllTime().getCount(), 0.0);
         assertEquals(dataSource.getStats().getConnectionErrorCount(), 0);
 
         connection.close();
         assertEquals(dataSource.getConnectionsActive(), 0);
-        assertEquals(dataSource.getStats().getCheckout().getCount(), 1);
-        assertEquals(dataSource.getStats().getCreate().getCount(), 1);
-        assertEquals(dataSource.getStats().getHeld().getCount(), 1);
+        assertEquals(dataSource.getStats().getCheckout().getAllTime().getCount(), 1.0);
+        assertEquals(dataSource.getStats().getCreate().getAllTime().getCount(), 1.0);
+        assertEquals(dataSource.getStats().getHeld().getAllTime().getCount(), 1.0);
         assertEquals(dataSource.getStats().getConnectionErrorCount(), 0);
     }
 
