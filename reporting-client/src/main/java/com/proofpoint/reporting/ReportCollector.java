@@ -50,7 +50,7 @@ class ReportCollector
         this.bucketIdProvider = checkNotNull(bucketIdProvider, "bucketIdProvider is null");
         this.reportedBeanRegistry = checkNotNull(reportedBeanRegistry, "reportedBeanRegistry is null");
         this.reportClient = checkNotNull(reportClient, "reportClient is null");
-        clientExecutorService = new ThreadPoolExecutor(1, 1, 0, TimeUnit.NANOSECONDS, new LinkedBlockingQueue<Runnable>(),
+        clientExecutorService = new ThreadPoolExecutor(1, 1, 0, TimeUnit.NANOSECONDS, new LinkedBlockingQueue<Runnable>(5),
                 new ThreadFactoryBuilder().setNameFormat("reporting-client-%s").setDaemon(true).build(),
                 new DiscardOldestPolicy());
     }
