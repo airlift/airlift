@@ -12,8 +12,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 require 'java'
 require 'rubygems'
+
+# Initialize the applications gem bundle
+bundle_path = File.join(Dir.pwd, 'rack', 'bundle')
+bundle_setup_path = File.join(bundle_path, 'bundler', 'setup')
+
+if File.directory?(bundle_path)
+    $LOAD_PATH.unshift bundle_path
+    require bundle_setup_path
+else
+    puts 'DEBUG Could not find %s' % [bundle_path]
+end
+
 require 'rack'
 require 'rack/rewindable_input'
 
@@ -52,19 +65,19 @@ module Proofpoint
 
       def call(servlet_request, servlet_response)
         rack_env = {
-                'rack.version' => Rack::VERSION,
-                'rack.multithread' => true,
-                'rack.multiprocess' => false,
-                'rack.input' => Rack::RewindableInput.new(servlet_request.input_stream.to_io),
-                'rack.errors' => @errors,
-                'rack.logger' => @logger,
-                'rack.url_scheme' => servlet_request.scheme,
-                'REQUEST_METHOD' => servlet_request.method,
-                'SCRIPT_NAME' => '',
-                'PATH_INFO' => servlet_request.request_uri,
-                'QUERY_STRING' => (servlet_request.query_string || ""),
-                'SERVER_NAME' => servlet_request.server_name,
-                'SERVER_PORT' => servlet_request.server_port.to_s
+          'rack.version' => Rack::VERSION,
+          'rack.multithread' => true,
+          'rack.multiprocess' => false,
+          'rack.input' => Rack::RewindableInput.new(servlet_request.input_stream.to_io),
+          'rack.errors' => @errors,
+          'rack.logger' => @logger,
+          'rack.url_scheme' => servlet_request.scheme,
+          'REQUEST_METHOD' => servlet_request.method,
+          'SCRIPT_NAME' => '',
+          'PATH_INFO' => servlet_request.request_uri,
+          'QUERY_STRING' => (servlet_request.query_string || ""),
+          'SERVER_NAME' => servlet_request.server_name,
+          'SERVER_PORT' => servlet_request.server_port.to_s
         }
 
         rack_env['CONTENT_TYPE'] = servlet_request.content_type unless servlet_request.content_type.nil?
@@ -76,13 +89,15 @@ module Proofpoint
 
         response_status, response_headers, response_body = @app.call(rack_env)
 
-        servlet_response.status = response_status
+        servlet_response.status = response_status.to_i
         response_headers.each do |header_name, header_value|
           case header_name
             when /^Content-Type$/i
               servlet_response.content_type = header_value.to_s
             when /^Content-Length$/i
               servlet_response.content_length = header_value.to_i
+            when /^Set-Cookie$/i
+              header_value.to_s.split("\n").each{|value| servlet_response.add_header(header_name.to_s, value)}
             else
               servlet_response.add_header(header_name.to_s, header_value.to_s)
           end
@@ -143,9 +158,3 @@ module Proofpoint
   end
 end
 
-# Fix bug in JRuby's handling of gems in jars (JRUBY-3986)
-class File
-  def self.mtime(path)
-    stat(path).mtime
-  end
-end

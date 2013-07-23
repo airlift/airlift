@@ -18,6 +18,7 @@ package com.proofpoint.rack;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
+import com.proofpoint.log.Logger;
 import org.jruby.CompatVersion;
 import org.jruby.Ruby;
 import org.jruby.RubyHash;
@@ -39,6 +40,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.jruby.javasupport.JavaEmbedUtils.javaToRuby;
 
@@ -58,17 +63,21 @@ public class RackServlet
     {
         Preconditions.checkNotNull(config);
 
+        Logger logger = Logger.get(Main.class);
         File rackScriptFile = new File(config.getRackConfigPath());
+        java.nio.file.Path rackDir = rackScriptFile.toPath().getParent();
 
         Preconditions.checkArgument(rackScriptFile.canRead(), "Could not find rack script specified by [" + config.getRackConfigPath()
                 + "] and resolved to [" + rackScriptFile.getAbsolutePath() + "]");
 
-        runtime = JavaEmbedUtils.initialize(ImmutableList.of(rackScriptFile.getParentFile().getCanonicalPath()), createRuntimeConfig());
+        RubyInstanceConfig runtimeConfig = createRuntimeConfig();
 
-        // don't inherit system settings for gems
-        RubyHash env = runtime.evalScriptlet("ENV").convertToHash();
+        Map env = new HashMap(runtimeConfig.getEnvironment());
         env.remove("GEM_HOME");
         env.remove("GEM_PATH");
+        runtimeConfig.setEnvironment(env);
+
+        runtime = JavaEmbedUtils.initialize(ImmutableList.of(rackDir.toString()), runtimeConfig);
 
         InputStream stream = Resources.getResource("proofpoint/rack.rb").openStream();
         try {

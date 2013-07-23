@@ -26,36 +26,30 @@
         <fileSet>
             <directory>${basedir}</directory>
             <outputDirectory>rack/</outputDirectory>
+            <includes>
+                <include>config.ru</include>
+                <include>Rakefile</include>
+                <include>README.*</include>
+                <include>Gemfile</include>
+                <include>Gemfile.lock</include>
+                <include>app/**</include>
+                <include>config/**</include>
+                <include>db/**</include>
+                <include>public/**</include>
+                <include>bundle/**</include>
+                <include>lib/**</include>
+                <include>script/**</include>
+                <include>bin/**</include>
+                <include>log</include>
+            </includes>
             <excludes>
-                <exclude>.bundle/**</exclude>
-                <exclude>target/**</exclude>
-                <exclude>*.iml</exclude>
-                <exclude>*.ipr</exclude>
-                <exclude>*.iws</exclude>
-                <exclude>var/**</exclude>
-                <exclude>pom.xml.versionsBackup</exclude>
-                <exclude>test-output/**</exclude>
-                <exclude>atlassian-ide-plugin.xml</exclude>
-                <exclude>.idea</exclude>
-                <exclude>.*.swp</exclude>
-                <exclude>.*.swo</exclude>
-                <exclude>log/**</exclude>
-                <exclude>tmp/**</exclude>
-                <exclude>.rvmrc</exclude>
+                <exclude>**/*.log</exclude>
+                <exclude>**/generators/**</exclude>
+                <exclude>**/spec/**</exclude>
+                <exclude>config/database.yml</exclude>
             </excludes>
         </fileSet>
     </fileSets>
-    <files>
-        <file>
-            <source>target/${artifactId}-${version}-gemrepo.jar</source>
-            <destName>gemrepo.jar</destName>
-            <outputDirectory>lib/</outputDirectory>
-        </file>
-        <file>
-            <source>README.txt</source>
-            <outputDirectory>/</outputDirectory>
-        </file>
-    </files>
     <dependencySets>
         <dependencySet>
             <scope>runtime</scope>

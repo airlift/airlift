@@ -125,6 +125,7 @@
                     <plugin>
                          <groupId>org.apache.maven.plugins</groupId>
                          <artifactId>maven-enforcer-plugin</artifactId>
+                         <version>1.2</version>
                          <configuration>
                              <rules combine.children="append">
                                  <requireProperty>
@@ -138,25 +139,53 @@
                     </plugin>
 
                     <plugin>
-                        <groupId>com.proofpoint.platform</groupId>
-                        <artifactId>bundler-packaging-plugin</artifactId>
-                        <version>1.1</version>
-                        <executions>
-                            <execution>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>bundler-package</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
                         <version>1.7</version>
 
                         <executions>
+                            <execution>
+                                <id>bundle-gems</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target name="Bundle gems">
+                                        <!--<fail message="Gem sources must use the https protocol">-->
+                                            <!--<condition>-->
+                                                <!--<resourcecontains-->
+                                                        <!--resource="${project.basedir}/Gemfile"-->
+                                                        <!--substring="http://"-->
+                                                        <!--casesensitive="no"-->
+                                                        <!--/>-->
+                                            <!--</condition>-->
+                                        <!--</fail>-->
+                                        <concat destfile="${project.basedir}/Gemfile.build" fixlastline="yes">
+                                            <path path="${project.basedir}/Gemfile"/>
+                                            <filterchain>
+                                                <linecontainsregexp negate="true">
+                                                    <regexp pattern="^\s*gem\s+['&quot;]rake['&quot;]"/>
+                                                </linecontainsregexp>
+                                            </filterchain>
+                                            <footer trim="yes" filtering="no">
+                                                gem "rake", "10.0.4"
+                                            </footer>
+                                        </concat>
+                                        <copy
+                                                file="${project.basedir}/Gemfile.lock"
+                                                tofile="${project.basedir}/Gemfile.build.lock"
+                                                />
+                                        <exec dir="${project.basedir}" executable="bundle" failonerror="true">
+                                            <arg value="install" />
+                                            <arg value="--standalone" />
+                                            <arg value="--binstubs"/>
+                                            <arg value="--gemfile=${project.basedir}/Gemfile.build" />
+                                        </exec>
+                                    </target>
+                                </configuration>
+                            </execution>
+
                             <!-- TODO: devise a better approach to handling assets -->
                             <execution>
                                 <id>precompile-assets</id>
@@ -167,8 +196,10 @@
                                 <configuration>
                                     <target name="Precompile assets">
                                         <exec executable="sh" dir="${project.basedir}" failonerror="true">
+                                            <env key="RAILS_ENV" value="production"/>
+                                            <env key="RAILS_GROUPS" value="production,assets"/>
                                             <arg value="-c" />
-                                            <arg value="if [ -d app/assets ]; then bundle exec rake assets:precompile; else echo 'Consider upgrading to Rails 3.1+ and take advantage of the asset pipeline'; fi" />
+                                            <arg value="if [ -d app/assets ]; then bundle exec rake assets:precompile; fi" />
                                         </exec>
                                     </target>
                                 </configuration>
@@ -210,6 +241,7 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>1.8</version>
                         <executions>
                             <execution>
                                 <id>attach-distribution-tar.gz</id>
