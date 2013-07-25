@@ -63,7 +63,7 @@ public class RackServlet
     {
         Preconditions.checkNotNull(config);
 
-        Logger logger = Logger.get(Main.class);
+        Logger logger = Logger.get(RackServlet.class);
         File rackScriptFile = new File(config.getRackConfigPath());
         java.nio.file.Path rackDir = rackScriptFile.toPath().getParent();
 
