@@ -56,7 +56,9 @@ public class TestFullJsonResponseHandler
 
         assertFalse(response.hasValue());
         assertEquals(response.getException().getMessage(),
-                "Invalid [simple type, class io.airlift.http.client.TestFullJsonResponseHandler$User] json string");
+                "Unable to create " + User.class + " from JSON response:\n" + json);
+        assertTrue(response.getException().getCause() instanceof IllegalArgumentException);
+        assertEquals(response.getException().getCause().getMessage(), "Invalid [simple type, class io.airlift.http.client.TestFullJsonResponseHandler$User] json string");
     }
 
     @Test
