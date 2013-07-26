@@ -1,3 +1,76 @@
+Airlift 0.78
+
+* Units
+
+We've made a backwards incompatible change to the Duration API to align with
+the DataSize API.  The new Duration code has many new features:
+
+- Duration remembers the original unit, so parse and print round trips
+- toMillis() returns a long so it is easier to use with normal Java APIs
+- roundTo(TimeUnit) return a long in the specified unit
+- convertToMostSuccinctTimeUnit() will select the TimeUnit to produce
+  the easiest to read value
+- timeUnitToString(TimeUnit) to get a clean short name for TimeUnits
+
+To update to the new api, you will need to:
+
+  convertTo(TimeUnit) now returns a Duration instead of a double
+    - use getValue(TimeUnit) for the old behavior
+
+  toMillis() now returns a long instead of a double
+    - use getValue(MILLISECONDS) for the old behavior
+
+  toString() returns a string in the original units instead of millis
+    - use toString(MILLISECONDS) for the old behavior
+
+This API remains in BETA, and is subject to additional backwards incompatible
+changes.
+
+
+* HttpClient exception handling
+
+We have redesigned exception handling in the HttpClient.  In the new design,
+the handle or handleException method of the Response handler should be called
+once per execution.  To make this change we had to make some backwards
+incompatible changes.
+
+The new signature for handleException in the ResponseHandler is:
+
+    T handleException(Request request, Exception exception)
+            throws E;
+
+This allows the handler to return a "default" value when an exception occurs,
+and makes it much clearer to the user how to implement the method.
+
+
+The AsyncHttpClient.executeAsync method now returns a ListenableFuture instead
+of a CheckedFuture.  Any caller that was using the checkedGet() method of
+CheckedFuture will need to change to get() and handle the exceptions or use
+one of the helper methods in Guava Futures.
+
+This API remains in BETA, and is subject to additional backwards incompatible
+changes.
+
+
+* NodeInfo
+
+The IP address detection code now verifies that the address discovered from
+the machine's hostname is actually available for use (i.e it is assigned to
+the machine and the interface is up). This eliminates the problem of a
+machine having a hostname that actually resolves to a different machine.
+
+The TestingNodeModule produces a NodeInfo that is always set to localhost.
+This causes unit tests to always bind to localhost rather than the public IP
+of the machine, which is safer and reduces potential problems.
+
+
+* Discovery ServiceSelectorManager
+
+We added a ServiceSelectorManager to the discovery client that allows fetching
+or refreshing all service selectors. This is useful for tests or for forcing a
+refresh of selectors at startup after the initial announcements have been made.
+
+
 Airlift 0.77
 
 * QuantileDigest
