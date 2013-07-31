@@ -1,3 +1,27 @@
+Platform 0.78
+
+* Rack Packaging
+
+ - Removed generation of gemfile.jar in favour of using Bundler’s standalone. 
+ - Changed tar generation to include specific files instead of by exclusion to prevent pulling in unnecessary 
+   project files.
+ - Incorporated asset precompilation fix 
+ - Deprecated use of the bundler maven plugin as it didn’t work correctly or log useful information when it 
+   failed. May want to wrap the above changes in a plugin in the future (currently using command lines via Ant 
+   plugin).
+ 
+* Rack
+
+ - Added intiialization code to ensure Rails application correctly loads gems from the standalone gem bundle.
+ - Fixed an issue in ServletAdapter that assumed status code was always an integer and caused exceptions when 
+   it was actually a string
+ - Fixed issue that prevented Rails apps from setting more than one cookie at a time. 
+ - Re-implemented hack to override logging as a Railtie so it could be correctly scheduled in the application 
+   initialization sequence. All Rails apps will now correctly log everything (including startup logging) to 
+   launcher.log.
+ - Updated/added gems to the test resources to ensure unit tests run correctly (which accounts for most of the 
+   file changes)
+
 Platform 0.77
 
 * HttpClient
