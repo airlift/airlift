@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>rack-server-base</artifactId>
-    <version>0.78-SNAPSHOT</version>
+    <version>0.78</version>
     <packaging>pom</packaging>
     <name>rack-server-base</name>
     <description>Proofpoint Platform Rack Server base POM</description>
@@ -77,13 +77,13 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>rack</artifactId>
-            <version>0.78-SNAPSHOT</version>
+            <version>0.78</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>rack-launcher</artifactId>
-            <version>0.78-SNAPSHOT</version>
+            <version>0.78</version>
             <classifier>bin</classifier>
             <type>tar.gz</type>
         </dependency>
@@ -158,28 +158,25 @@
                                                         <!--resource="${project.basedir}/Gemfile"-->
                                                         <!--substring="http://"-->
                                                         <!--casesensitive="no"-->
-                                                        <!--/>-->
+                                                        <!-- />-->
                                             <!--</condition>-->
                                         <!--</fail>-->
                                         <concat destfile="${project.basedir}/Gemfile.build" fixlastline="yes">
-                                            <path path="${project.basedir}/Gemfile"/>
+                                            <path path="${project.basedir}/Gemfile" />
                                             <filterchain>
                                                 <linecontainsregexp negate="true">
-                                                    <regexp pattern="^\s*gem\s+['&quot;]rake['&quot;]"/>
+                                                    <regexp pattern="^\s*gem\s+['&quot;]rake['&quot;]" />
                                                 </linecontainsregexp>
                                             </filterchain>
                                             <footer trim="yes" filtering="no">
                                                 gem "rake", "10.0.4"
                                             </footer>
                                         </concat>
-                                        <copy
-                                                file="${project.basedir}/Gemfile.lock"
-                                                tofile="${project.basedir}/Gemfile.build.lock"
-                                                />
+                                        <copy file="${project.basedir}/Gemfile.lock" tofile="${project.basedir}/Gemfile.build.lock" />
                                         <exec dir="${project.basedir}" executable="bundle" failonerror="true">
                                             <arg value="install" />
                                             <arg value="--standalone" />
-                                            <arg value="--binstubs"/>
+                                            <arg value="--binstubs" />
                                             <arg value="--gemfile=${project.basedir}/Gemfile.build" />
                                         </exec>
                                     </target>
@@ -196,8 +193,8 @@
                                 <configuration>
                                     <target name="Precompile assets">
                                         <exec executable="sh" dir="${project.basedir}" failonerror="true">
-                                            <env key="RAILS_ENV" value="production"/>
-                                            <env key="RAILS_GROUPS" value="production,assets"/>
+                                            <env key="RAILS_ENV" value="production" />
+                                            <env key="RAILS_GROUPS" value="production,assets" />
                                             <arg value="-c" />
                                             <arg value="if [ -d app/assets ]; then bundle exec rake assets:precompile; fi" />
                                         </exec>
@@ -223,7 +220,7 @@
                             <dependency>
                                 <groupId>com.proofpoint.platform</groupId>
                                 <artifactId>rack-packaging</artifactId>
-                                <version>0.78-SNAPSHOT</version>
+                                <version>0.78</version>
                             </dependency>
                         </dependencies>
 
