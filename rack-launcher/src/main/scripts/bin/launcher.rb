@@ -61,12 +61,6 @@ class Launcher < Launch::AbstractLauncher
     raise Launch::CommandError.new(:config_missing, "Config file is missing: #{config_path}") unless File.exists?(config_path)
   end
 
-  def run_custom_setup
-    src = File.join(@install_path, 'etc', '.')
-    dest = File.join(@install_path, 'rack', 'config')
-    FileUtils.cp_r(src, dest) if Dir.exist?(src)
-  end
-
   def build_command_line(daemon)
     command = ['java']
     command += @options[:jvm_arguments]
