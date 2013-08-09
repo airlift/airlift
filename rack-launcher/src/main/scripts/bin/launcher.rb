@@ -24,7 +24,6 @@ class Launcher < Launch::AbstractLauncher
 
     @options[:jvm_arguments] = {}
     @options[:system_properties] = {}
-    @options[:rack_environment] = 'production'
   end
 
   def add_custom_options(opts)
@@ -40,10 +39,6 @@ class Launcher < Launch::AbstractLauncher
       @options[:jvm_config_path] = Pathname.new(v).expand_path
     end
 
-    opts.on('--rack-environment ENVIRONMENT', 'Defaults to production') do |v|
-      @options[:rack_environment] = v
-    end
-
     opts.on('-D<name>=<value>', 'Sets a Java System property') do |v|
       key, value = v.split('=', 2).map(&:strip)
       raise 'Config can not be passed in a -D argument.  Use --config instead' if key == 'config'
@@ -52,9 +47,6 @@ class Launcher < Launch::AbstractLauncher
   end
 
   def finalize_options
-    @options[:environment]['RACK_ENV'] = @options[:rack_environment]
-    @options[:environment]['RAILS_ENV'] = @options[:rack_environment]
-
     @options[:config_path] = File.join(@install_path, 'etc', 'config.properties')
     @options[:jvm_config_path] = File.join(@install_path, 'etc', 'jvm.config')
     @options[:log_levels_path] = File.join(@install_path, 'etc', 'log.config')

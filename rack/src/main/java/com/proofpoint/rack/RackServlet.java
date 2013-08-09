@@ -15,14 +15,10 @@
  */
 package com.proofpoint.rack;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.UnmodifiableIterator;
 import com.google.common.io.Resources;
-import com.proofpoint.log.Logger;
 import org.jruby.CompatVersion;
 import org.jruby.Ruby;
-import org.jruby.RubyHash;
 import org.jruby.RubyInstanceConfig;
 import org.jruby.RubyObjectAdapter;
 import org.jruby.javasupport.JavaEmbedUtils;
@@ -42,10 +38,11 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jruby.javasupport.JavaEmbedUtils.javaToRuby;
 
 public class RackServlet
@@ -62,13 +59,12 @@ public class RackServlet
     public RackServlet(RackServletConfig config)
             throws IOException
     {
-        Preconditions.checkNotNull(config);
+        checkNotNull(config, "config is null");
 
-        Logger logger = Logger.get(RackServlet.class);
         File rackScriptFile = new File(config.getRackConfigPath());
         Path rackDir = rackScriptFile.toPath().getParent();
 
-        Preconditions.checkArgument(rackScriptFile.canRead(), "Could not find rack script specified by [" + config.getRackConfigPath()
+        checkArgument(rackScriptFile.canRead(), "Could not find rack script specified by [" + config.getRackConfigPath()
                 + "] and resolved to [" + rackScriptFile.getAbsolutePath() + "]");
 
         runtime = createRubyRuntime(rackDir.toString());
@@ -80,9 +76,11 @@ public class RackServlet
     {
         RubyInstanceConfig runtimeConfig = createRuntimeConfig();
 
-        Map env = new HashMap(runtimeConfig.getEnvironment());
+        Map<String, String> env = new HashMap<String, String>(runtimeConfig.getEnvironment());
         env.remove("GEM_HOME");
         env.remove("GEM_PATH");
+        env.put("RACK_ENV", "production");
+        env.put("RAILS_ENV", "production");
         runtimeConfig.setEnvironment(env);
 
         return JavaEmbedUtils.initialize(ImmutableList.of(baseDir), runtimeConfig);
@@ -91,12 +89,8 @@ public class RackServlet
     private void loadRubyScript(String scriptName)
             throws IOException
     {
-        InputStream stream = Resources.getResource("proofpoint/" + scriptName).openStream();
-        try {
+        try (InputStream stream = Resources.getResource("proofpoint/" + scriptName).openStream()) {
             runtime.loadFile(scriptName, stream, false);
-        }
-        finally {
-            stream.close();
         }
     }
 
@@ -156,11 +150,11 @@ public class RackServlet
     public void service(ServletRequest request, ServletResponse response)
             throws ServletException, IOException
     {
-        Preconditions.checkNotNull(request);
-        Preconditions.checkNotNull(response);
+        checkNotNull(request);
+        checkNotNull(response);
 
-        Preconditions.checkArgument((request instanceof HttpServletRequest), "Expected a servlet request that implements HttpServletRequest, this servlet only supports Http(s)");
-        Preconditions.checkArgument((response instanceof HttpServletResponse), "Expected a servlet response that implements HttpServletResponse, this servlet only supports Http(s)");
+        checkArgument((request instanceof HttpServletRequest), "Expected a servlet request that implements HttpServletRequest, this servlet only supports Http(s)");
+        checkArgument((response instanceof HttpServletResponse), "Expected a servlet response that implements HttpServletResponse, this servlet only supports Http(s)");
 
         adapter.callMethod(rackApplication, "call",
                 new IRubyObject[] {
