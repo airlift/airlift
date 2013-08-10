@@ -50,8 +50,6 @@ class Launcher < Launch::AbstractLauncher
     @options[:config_path] = File.join(@install_path, 'etc', 'config.properties')
     @options[:jvm_config_path] = File.join(@install_path, 'etc', 'jvm.config')
     @options[:log_levels_path] = File.join(@install_path, 'etc', 'log.config')
-    @options[:rack_config] = File.join(@install_path, 'rack', 'config.ru')
-    @options[:static_content] = File.join(@install_path, 'rack', 'public')
 
     @options[:jvm_arguments] = Launch::Properties.try_load_lines(@options[:jvm_config_path])
 
@@ -68,8 +66,6 @@ class Launcher < Launch::AbstractLauncher
     command <<= "-Dconfig=#{@options[:config_path]}"
     command <<= "-Dlog.output-file=#{@options[:log_path]}" if daemon
     command <<= "-Dlog.levels-file=#{@options[:log_levels_path]}" if File.exists?(@options[:log_levels_path])
-    command <<= "-Drackserver.rack-config-path=#{@options[:rack_config]}" if File.exists?(@options[:rack_config])
-    command <<= "-Drackserver.static-content-path=#{@options[:static_content]}" if Dir.exists?(@options[:static_content])
     command += ['-cp', File.join(@install_path, 'lib', '*')]
     command << 'com.proofpoint.rack.Main'
   end

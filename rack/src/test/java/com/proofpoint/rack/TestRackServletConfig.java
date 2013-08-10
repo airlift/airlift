@@ -15,30 +15,24 @@
  */
 package com.proofpoint.rack;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.testing.ConfigAssertions;
-import com.proofpoint.testing.Assertions;
-import org.apache.bval.jsr303.ApacheValidationProvider;
+import com.proofpoint.testing.ValidationAssertions;
 import org.testng.annotations.Test;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import java.util.Collections;
-import java.util.List;
+import javax.validation.constraints.NotNull;
 import java.util.Map;
-import java.util.Set;
+
+import static com.proofpoint.configuration.testing.ConfigAssertions.assertLegacyEquivalence;
 
 public class TestRackServletConfig
 {
-    private static final Validator validator = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
 
     @Test
     public void testDefaults()
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(RackServletConfig.class)
-                .setRackConfigPath("config.ru")
+                .setRackConfigPath("rack/config.ru")
                 .setServiceAnnouncement(null)
         );
     }
@@ -59,25 +53,16 @@ public class TestRackServletConfig
     }
 
     @Test
+    public void testLegacyProperties()
+    {
+        assertLegacyEquivalence(RackServletConfig.class, ImmutableMap.<String, String>of());
+    }
+
+    @Test
     public void testValidConfig()
     {
         RackServletConfig config = new RackServletConfig().setRackConfigPath(null);
-        Assertions.assertEqualsIgnoreOrder(getBeanValidationErrors(config), ImmutableList.of("rackConfigPath may not be null"));
+        ValidationAssertions.assertFailsValidation(config, "rackConfigPath", "may not be null", NotNull.class);
 
-    }
-
-    private static List<String> getBeanValidationErrors(RackServletConfig config)
-    {
-        Set<ConstraintViolation<RackServletConfig>> violations = validator.validate(config);
-        if (violations.isEmpty()) {
-            return Collections.emptyList();
-        } else {
-            ImmutableList.Builder<String> messages = new ImmutableList.Builder<String>();
-            for (ConstraintViolation<?> violation : violations) {
-                messages.add(violation.getPropertyPath().toString() + " " + violation.getMessage());
-            }
-
-            return messages.build();
-        }
     }
 }
