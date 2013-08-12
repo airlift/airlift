@@ -17,6 +17,7 @@ package com.proofpoint.json.testing;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
+import org.joda.time.DateTime;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -41,7 +42,6 @@ public class TestJsonTester
         simpleExpected.put("s", "fred");
         simpleExpected.put("i", 3);
         simpleExpected.put("b", true);
-        simpleExpected.put("nul", null);
 
         complexExpected = new HashMap<>();
         complexExpected.put("list", ImmutableList.of("a", "b", "a"));
@@ -54,6 +54,12 @@ public class TestJsonTester
         assertJsonEncode(simpleEncoder, simpleExpected);
     }
 
+    @Test
+    public void testEncodeDateTime()
+    {
+        assertJsonEncode(new DateTime(1376344694123L), "2013-08-12T21:58:14.123Z");
+    }
+
     @Test(expectedExceptions = AssertionError.class)
     public void testMissingField()
     {
@@ -64,7 +70,7 @@ public class TestJsonTester
     @Test(expectedExceptions = AssertionError.class)
     public void testExtraField()
     {
-       simpleExpected.remove("nul");
+       simpleExpected.remove("b");
        assertJsonEncode(simpleEncoder, simpleExpected);
     }
 
@@ -123,7 +129,7 @@ public class TestJsonTester
         assertJsonEncode(complexEncoder, complexExpected);
     }
 
-    private class SimpleEncoder
+    private static class SimpleEncoder
     {
         @JsonProperty
         private final String s = "fred";
@@ -135,7 +141,7 @@ public class TestJsonTester
         private final Integer nul = null;
     }
 
-    private class ComplexEncoder
+    private static class ComplexEncoder
     {
         @JsonProperty
         private final List<String> list = ImmutableList.of("a", "b", "a");

@@ -17,6 +17,7 @@ package com.proofpoint.json.testing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.proofpoint.json.JsonCodec;
+import com.proofpoint.json.ObjectMapperProvider;
 
 import java.io.IOException;
 
@@ -39,7 +40,7 @@ public class JsonTester
     public static <T> void assertJsonEncode(T pojo, Object expected, String message)
     {
         try {
-            String json = new ObjectMapper().enable(INDENT_OUTPUT).writeValueAsString(pojo);
+            String json = new ObjectMapperProvider().get().enable(INDENT_OUTPUT).writeValueAsString(pojo);
             StringBuilder builder = new StringBuilder();
             if (message != null) {
                 builder.append(message).append(' ');
@@ -61,7 +62,7 @@ public class JsonTester
     {
         final String json;
         try {
-            json = new ObjectMapper().writeValueAsString(value);
+            json = new ObjectMapperProvider().get().writeValueAsString(value);
         }
         catch (IOException e) {
             throw propagate(e);
