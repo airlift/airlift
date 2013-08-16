@@ -490,13 +490,13 @@
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>reporting</artifactId>
-                <version>0.76-SNAPSHOT</version>
+                <version>0.79-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>reporting-client</artifactId>
-                <version>0.76-SNAPSHOT</version>
+                <version>0.79-SNAPSHOT</version>
             </dependency>
 
             <dependency>
