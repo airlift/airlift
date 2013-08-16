@@ -15,6 +15,7 @@
  */
 package com.proofpoint.reporting;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.proofpoint.reporting.BucketIdProvider;
 
@@ -48,15 +49,13 @@ public abstract class Bucketed<T>
         return previousBucket;
     }
 
+    @VisibleForTesting
     public synchronized void setBucketIdProvider(BucketIdProvider bucketIdProvider)
     {
         this.bucketIdProvider = bucketIdProvider;
-        int bucketId = bucketIdProvider.get();
-        if (bucketId != currentBucketId) {
-            currentBucketId = bucketId;
-            currentBucket = createBucket();
-            previousBucket = createBucket();
-        }
+        currentBucketId = bucketIdProvider.get();
+        currentBucket = createBucket();
+        previousBucket = createBucket();
     }
 
     private void rotateBucketIfNeeded()
