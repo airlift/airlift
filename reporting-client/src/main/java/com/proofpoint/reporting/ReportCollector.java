@@ -23,6 +23,7 @@ import com.google.inject.Inject;
 import javax.annotation.PostConstruct;
 import javax.management.AttributeNotFoundException;
 import javax.management.MBeanException;
+import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import java.util.Map.Entry;
@@ -43,6 +44,16 @@ class ReportCollector
     private ReportedBeanRegistry reportedBeanRegistry;
     private ExecutorService clientExecutorService;
     private ReportClient reportClient;
+    private static ObjectName REPORT_COLLECTOR_OBJECT_NAME;
+
+    static {
+        try {
+            REPORT_COLLECTOR_OBJECT_NAME = ObjectName.getInstance("com.proofpoint.reporting", "name", "ReportCollector");
+        }
+        catch (MalformedObjectNameException e) {
+            REPORT_COLLECTOR_OBJECT_NAME = null;
+        }
+    }
 
     @Inject
     ReportCollector(MinuteBucketIdProvider bucketIdProvider, ReportedBeanRegistry reportedBeanRegistry, ReportClient reportClient)
@@ -72,6 +83,7 @@ class ReportCollector
     {
         final long lastSystemTimeMillis = bucketIdProvider.getLastSystemTimeMillis();
         ImmutableTable.Builder<ObjectName, String, Number> builder = ImmutableTable.builder();
+        int numAtributes = 0;
         for (Entry<ObjectName, ReportedBean> reportedBeanEntry : reportedBeanRegistry.getReportedBeans().entrySet()) {
             for (ReportedBeanAttribute attribute : reportedBeanEntry.getValue().getAttributes()) {
                 Number value = null;
@@ -83,10 +95,12 @@ class ReportCollector
                 }
 
                 if (isReportable(value)) {
+                    ++numAtributes;
                     builder.put(reportedBeanEntry.getKey(), attribute.getName(), value);
                 }
             }
         }
+        builder.put(REPORT_COLLECTOR_OBJECT_NAME, "numMetrics", numAtributes);
         final Table<ObjectName, String, Number> collectedData = builder.build();
         clientExecutorService.submit(new Runnable()
         {
