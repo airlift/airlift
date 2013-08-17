@@ -108,7 +108,7 @@ public class TimeDistribution
         return result;
     }
 
-    private double convertToSeconds(long msecs)
+    private static double convertToSeconds(long msecs)
     {
         if (msecs == Long.MAX_VALUE || msecs == Long.MIN_VALUE) {
             return Double.NaN;

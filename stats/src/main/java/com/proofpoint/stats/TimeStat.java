@@ -19,8 +19,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
+import com.proofpoint.reporting.Reported;
 import com.proofpoint.stats.TimeDistribution.TimeDistributionSnapshot;
 import com.proofpoint.units.Duration;
+import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
@@ -33,6 +35,7 @@ public class TimeStat
     private final TimeDistribution fiveMinutes;
     private final TimeDistribution fifteenMinutes;
     private final TimeDistribution allTime;
+    private final BucketedTimeDistribution bucket = new BucketedTimeDistribution();
     private Ticker ticker;
 
     public TimeStat()
@@ -65,6 +68,7 @@ public class TimeStat
         fiveMinutes.add(value);
         fifteenMinutes.add(value);
         allTime.add(value);
+        bucket.add(value);
     }
 
     public <T> T time(Callable<T> callable)
@@ -117,6 +121,13 @@ public class TimeStat
     public TimeDistribution getAllTime()
     {
         return allTime;
+    }
+
+    @Reported
+    @Flatten
+    public BucketedTimeDistribution getBucket()
+    {
+        return bucket;
     }
 
     public TimeDistributionStatSnapshot snapshot()
