@@ -1,3 +1,14 @@
+Airlift 0.79
+
+JMX agent
+
+We've replaced the custom JMX agent in airlift by the one built into the JVM.
+This change makes it possible to use the VisualGC plugin for VisualVM when jstatd 
+is also running in the same machine as the airlift-based process.
+
+As a result of this change, we've also removed the 'jmx.rmiserver.hostname' configuration
+option in favor of Java's native configuration option 'java.rmi.server.hostname'.
+
 Airlift 0.78
 
 * Units

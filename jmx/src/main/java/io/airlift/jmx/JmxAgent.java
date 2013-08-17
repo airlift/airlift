@@ -15,45 +15,28 @@
  */
 package io.airlift.jmx;
 
-import com.google.common.net.InetAddresses;
-
+import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
-import io.airlift.node.NodeInfo;
+import sun.management.Agent;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.management.MBeanServer;
-import javax.management.remote.JMXConnectorServer;
-import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
-
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.rmi.registry.LocateRegistry;
-import java.util.Collections;
 
 public class JmxAgent
 {
-    private final String host;
     private final int registryPort;
     private final int serverPort;
-    private final JMXConnectorServer connectorServer;
 
     private static final Logger log = Logger.get(JmxAgent.class);
     private final JMXServiceURL url;
 
     @Inject
-    public JmxAgent(MBeanServer server, JmxConfig config, NodeInfo nodeInfo)
+    public JmxAgent(JmxConfig config)
             throws IOException
     {
-        if (config.getHostname() == null) {
-            host = InetAddresses.toUriString(nodeInfo.getInternalIp());
-        }
-        else {
-            host = config.getHostname();
-        }
-
         if (config.getRmiRegistryPort() == null) {
             registryPort = NetUtils.findUnusedPort();
         }
@@ -69,15 +52,13 @@ public class JmxAgent
         }
 
         try {
-            url = new JMXServiceURL(String.format("service:jmx:rmi://%s:%d/jndi/rmi://%s:%d/jmxrmi",
-                    host, serverPort, host, registryPort));
+            // This is how the jdk jmx agent constructs its url
+            url = new JMXServiceURL("rmi", null, registryPort);
         }
         catch (MalformedURLException e) {
             // should not happen...
             throw new AssertionError(e);
         }
-
-        connectorServer = JMXConnectorServerFactory.newJMXConnectorServer(url, Collections.<String, Object>emptyMap(), server);
     }
 
     public JMXServiceURL getURL()
@@ -89,20 +70,21 @@ public class JmxAgent
     public void start()
             throws IOException
     {
-        System.setProperty("java.rmi.server.randomIDs", "true");
-        System.setProperty("java.rmi.server.hostname", host);
+        // This is somewhat of a hack, but the jmx agent in Oracle/OpenJDK doesn't
+        // have a programmatic API for starting it and controlling its parameters
+        System.setProperty("com.sun.management.jmxremote", "true");
+        System.setProperty("com.sun.management.jmxremote.port", Integer.toString(registryPort));
+        System.setProperty("com.sun.management.jmxremote.rmi.port", Integer.toString(serverPort));
+        System.setProperty("com.sun.management.jmxremote.authenticate", "false");
+        System.setProperty("com.sun.management.jmxremote.ssl", "false");
 
-        LocateRegistry.createRegistry(registryPort);
+        try {
+            Agent.startAgent();
+        }
+        catch (Exception e) {
+            throw Throwables.propagate(e);
+        }
 
-        connectorServer.start();
-
-        log.info("JMX Agent listening on %s:%s", host, registryPort);
-    }
-
-    @PreDestroy
-    public void stop()
-            throws IOException
-    {
-        connectorServer.stop();
+        log.info("JMX Agent listening on %s:%s", url.getHost(), url.getPort());
     }
 }
