@@ -15,7 +15,6 @@
  */
 package io.airlift.jmx;
 
-import com.beust.jcommander.internal.Maps;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
