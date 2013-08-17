@@ -1,3 +1,8 @@
+* 0.79
+
+- Replace custom jmx agent with jdk's
+- Defunct jmx.rmiserver.hostname property
+
 * 0.78
 
 - Redesign HttpClient exception handling
