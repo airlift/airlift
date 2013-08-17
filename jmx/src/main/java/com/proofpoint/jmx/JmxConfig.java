@@ -16,12 +16,13 @@
 package com.proofpoint.jmx;
 
 import com.proofpoint.configuration.Config;
+import com.proofpoint.configuration.DefunctConfig;
 
-public final class JmxConfig
+@DefunctConfig("jmx.rmiserver.hostname")
+public class JmxConfig
 {
     private Integer rmiRegistryPort;
     private Integer rmiServerPort;
-    private String hostname;
 
     public Integer getRmiRegistryPort()
     {
@@ -44,18 +45,6 @@ public final class JmxConfig
     public JmxConfig setRmiServerPort(Integer rmiServerPort)
     {
         this.rmiServerPort = rmiServerPort;
-        return this;
-    }
-
-    public String getHostname()
-    {
-        return hostname;
-    }
-
-    @Config("jmx.rmiserver.hostname")
-    public JmxConfig setHostname(String hostname)
-    {
-        this.hostname = hostname;
         return this;
     }
 }
