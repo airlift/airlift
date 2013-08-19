@@ -34,7 +34,7 @@ public class TimeStat
     private final TimeDistribution fifteenMinutes;
     private final TimeDistribution allTime;
     private final BucketedTimeDistribution bucket = new BucketedTimeDistribution();
-    private Ticker ticker;
+    private final Ticker ticker;
 
     public TimeStat()
     {
@@ -57,7 +57,7 @@ public class TimeStat
 
     public void add(Duration duration)
     {
-        add((long) duration.toMillis());
+        add((long) duration.convertTo(TimeUnit.NANOSECONDS));
     }
 
     private void add(long value)
@@ -74,7 +74,7 @@ public class TimeStat
     {
         long start = ticker.read();
         T result = callable.call();
-        add(TimeUnit.NANOSECONDS.toMillis(ticker.read() - start));
+        add(ticker.read() - start);
         return result;
     }
 
@@ -89,7 +89,7 @@ public class TimeStat
         @Override
         public void close()
         {
-            add(TimeUnit.NANOSECONDS.toMillis(ticker.read() - start));
+            add(ticker.read() - start);
         }
     }
 

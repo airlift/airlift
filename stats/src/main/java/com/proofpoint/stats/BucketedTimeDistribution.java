@@ -111,12 +111,12 @@ public final class BucketedTimeDistribution
             return convertToSeconds(digest.getMax());
         }
 
-        private static double convertToSeconds(long msecs)
+        private static double convertToSeconds(long nanos)
         {
-            if (msecs == Long.MAX_VALUE || msecs == Long.MIN_VALUE) {
+            if (nanos == Long.MAX_VALUE || nanos == Long.MIN_VALUE) {
                 return Double.NaN;
             }
-            return msecs * 0.001;
+            return nanos * 0.000_000_001;
         }
     }
 }

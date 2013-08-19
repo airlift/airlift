@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class TimeDistribution
 {
-    private final static double MAX_ERROR = 0.01;
+    private static final double MAX_ERROR = 0.01;
 
     @GuardedBy("this")
     private final QuantileDigest digest;
@@ -108,12 +108,12 @@ public class TimeDistribution
         return result;
     }
 
-    private static double convertToSeconds(long msecs)
+    private static double convertToSeconds(long nanos)
     {
-        if (msecs == Long.MAX_VALUE || msecs == Long.MIN_VALUE) {
+        if (nanos == Long.MAX_VALUE || nanos == Long.MIN_VALUE) {
             return Double.NaN;
         }
-        return msecs * 0.001;
+        return nanos * 0.000_000_001;
     }
 
     public TimeDistributionSnapshot snapshot()

@@ -34,11 +34,11 @@ public class TestBucketedTimeDistribution
     {
         BucketedTimeDistribution distribution = new BucketedTimeDistribution();
         distribution.setBucketIdProvider(bucketIdProvider);
-        distribution.add(1);
+        distribution.add(1_000_000);
         assertPreviousDistributionEmpty(distribution);
         ++bucketIdProvider.id;
-        distribution.add(2);
-        distribution.add(3);
+        distribution.add(2_000_000);
+        distribution.add(3_000_000);
         assertPreviousDistribution(distribution, 1, .001, .001);
         ++bucketIdProvider.id;
         assertPreviousDistribution(distribution, 2, .002, .003);
@@ -49,21 +49,21 @@ public class TestBucketedTimeDistribution
             throws Exception
     {
         BucketedTimeDistribution distribution = new BucketedTimeDistribution();
-        distribution.add(100);
+        distribution.add(100_000_000);
         distribution.setBucketIdProvider(bucketIdProvider);
-        distribution.add(1);
+        distribution.add(1_000_000);
         assertPreviousDistributionEmpty(distribution);
         ++bucketIdProvider.id;
-        distribution.add(2);
-        distribution.add(3);
+        distribution.add(2_000_000);
+        distribution.add(3_000_000);
         assertPreviousDistribution(distribution, 1, .001, .001);
         ++bucketIdProvider.id;
         ++bucketIdProvider.id;
-        distribution.add(100);
+        distribution.add(100_000_000);
         assertPreviousDistributionEmpty(distribution);
         ++bucketIdProvider.id;
         assertPreviousDistribution(distribution, 1, .1, .1);
-        distribution.add(200);
+        distribution.add(200_000_000);
         ++bucketIdProvider.id;
         ++bucketIdProvider.id;
         assertPreviousDistributionEmpty(distribution);
