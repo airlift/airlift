@@ -60,6 +60,27 @@ public class Logger
 
     /**
      * Logs a message at DEBUG level.
+     *
+     * @param exception an exception associated with the debug message being logged
+     * @param message a literal message to log
+     */
+    public void debug(Throwable exception, String message)
+    {
+        logger.log(FINE, message, exception);
+    }
+
+    /**
+     * Logs a message at DEBUG level.
+     *
+     * @param message a literal message to log
+     */
+    public void debug(String message)
+    {
+        logger.fine(message);
+    }
+
+    /**
+     * Logs a message at DEBUG level.
      * <br/>
      * Usage example:
      * <pre>
@@ -117,6 +138,16 @@ public class Logger
 
     /**
      * Logs a message at INFO level.
+     *
+     * @param message a literal message to log
+     */
+    public void info(String message)
+    {
+        logger.info(message);
+    }
+
+    /**
+     * Logs a message at INFO level.
      * <br/>
      * Usage example:
      * <pre>
@@ -141,6 +172,27 @@ public class Logger
             }
             logger.info(message);
         }
+    }
+
+    /**
+     * Logs a message at WARN level.
+     *
+     * @param exception an exception associated with the warning being logged
+     * @param message a literal message to log
+     */
+    public void warn(Throwable exception, String message)
+    {
+        logger.log(WARNING, message, exception);
+    }
+
+    /**
+     * Logs a message at WARN level.
+     *
+     * @param message a literal message to log
+     */
+    public void warn(String message)
+    {
+        logger.warning(message);
     }
 
     /**
@@ -188,6 +240,27 @@ public class Logger
     public void warn(String format, Object... args)
     {
         warn(null, format, args);
+    }
+
+    /**
+     * Logs a message at ERROR level.
+     *
+     * @param exception an exception associated with the error being logged
+     * @param message a literal message to log
+     */
+    public void error(Throwable exception, String message)
+    {
+        logger.log(SEVERE, message, exception);
+    }
+
+    /**
+     * Logs a message at ERROR level.
+     *
+     * @param message a literal message to log
+     */
+    public void error(String message)
+    {
+        logger.severe(message);
     }
 
     /**
