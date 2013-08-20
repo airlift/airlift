@@ -33,9 +33,10 @@ import static com.proofpoint.reporting.AnnotationUtils.findReportedMethods;
 import static com.proofpoint.reporting.AnnotationUtils.isFlatten;
 import static com.proofpoint.reporting.AnnotationUtils.isNested;
 
-class ReportExporter
+public class ReportExporter
 {
     private final ReportedBeanRegistry registry;
+    private final BucketIdProvider bucketIdProvider;
 
     @Inject
     ReportExporter(Set<Mapping> mappings,
@@ -43,27 +44,33 @@ class ReportExporter
             throws MalformedObjectNameException, InstanceAlreadyExistsException
     {
         this.registry = checkNotNull(registry, "registry is null");
-        export(mappings, bucketIdProvider, injector);
+        this.bucketIdProvider = checkNotNull(bucketIdProvider, "bucketIdProvider is null");
+        export(mappings, injector);
     }
 
-    private void export(Set<Mapping> mappings, BucketIdProvider bucketIdProvider, Injector injector)
+    private void export(Set<Mapping> mappings, Injector injector)
             throws MalformedObjectNameException, InstanceAlreadyExistsException
     {
         for (Mapping mapping : mappings) {
             Object object = injector.getInstance(mapping.getKey());
-            export(mapping.getName(), object);
-            notifyBucketIdProvider(object, bucketIdProvider, null);
+            export(new ObjectName(mapping.getName()), object);
+
         }
     }
 
-    private void export(String name, Object object)
-            throws MalformedObjectNameException, InstanceAlreadyExistsException
+    public void export(ObjectName objectName, Object object)
+            throws InstanceAlreadyExistsException
     {
-        ObjectName objectName = new ObjectName(name);
         ReportedBean reportedBean = ReportedBean.forTarget(object);
+        notifyBucketIdProvider(object, bucketIdProvider, null);
         if (!reportedBean.getAttributes().isEmpty()) {
             registry.register(reportedBean, objectName);
         }
+    }
+
+    public void unexport(ObjectName objectName)
+    {
+        registry.unregister(objectName);
     }
 
     @VisibleForTesting

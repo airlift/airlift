@@ -43,4 +43,9 @@ class ReportedBeanRegistry
             throw new InstanceAlreadyExistsException(name + " is already registered");
         }
     }
+
+    public void unregister(ObjectName name)
+    {
+        reportedBeans.remove(name);
+    }
 }
