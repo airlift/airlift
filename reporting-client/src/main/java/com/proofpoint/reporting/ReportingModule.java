@@ -36,6 +36,7 @@ public class ReportingModule
         binder.bind(BucketIdProvider.class).to(MinuteBucketIdProvider.class).in(Scopes.SINGLETON);
         binder.bind(ReportCollector.class).in(Scopes.SINGLETON);
         binder.bind(ReportClient.class).in(Scopes.SINGLETON);
+        binder.bind(ReportCollectionFactory.class).in(Scopes.SINGLETON);
 
         httpClientBinder(binder).bindHttpClient("report", ForReportClient.class);
         bindConfig(binder).to(ReportClientConfig.class);

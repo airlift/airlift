@@ -23,6 +23,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -39,6 +40,7 @@ import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
+import javax.validation.constraints.NotNull;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Map;
@@ -303,6 +305,45 @@ public class TestReportBinder
         assertJmxRegistration(ImmutableSet.<String>of(), deepBucketedClassName);
     }
 
+    @Test
+    public void testReportCollection()
+    {
+        Injector injector = Guice.createInjector(
+                new MBeanModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        binder.requireExplicitBindings();
+                        binder.disableCircularProxies();
+                        binder.bind(MBeanServer.class).toInstance(jmxMbeanServer);
+                        binder.bind(ReportCollectionFactory.class).in(Scopes.SINGLETON);
+                        binder.bind(ReportExporter.class).asEagerSingleton();
+                        newSetBinder(binder, Mapping.class);
+                        binder.bind(ReportedBeanRegistry.class).in(Scopes.SINGLETON);
+
+                        reportBinder(binder).bindReportCollection(KeyedDistribution.class);
+                    }
+
+                    @Provides
+                    @Singleton
+                    BucketIdProvider getBucketIdProvider()
+                    {
+                        return new BucketIdProvider()
+                        {
+                            @Override
+                            public int get()
+                            {
+                                return 0;
+                            }
+                        };
+                    }
+                });
+        KeyedDistribution keyedDistribution = injector.getInstance(KeyedDistribution.class);
+        keyedDistribution.add("value", false);
+    }
+
     private void assertReportRegistration(Injector injector, Set<String> expectedAttribues, ObjectName objectName)
     {
         ReportedBeanRegistry beanServer = injector.getInstance(ReportedBeanRegistry.class);
@@ -553,5 +594,14 @@ public class TestReportBinder
         {
             return nested;
         }
+    }
+
+    private interface KeyedDistribution
+    {
+        SomeObject add(@Key("foo") String key, @NotNull @Key("bar") boolean bool);
+    }
+
+    public static class SomeObject
+    {
     }
 }

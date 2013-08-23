@@ -17,6 +17,7 @@ package com.proofpoint.reporting;
 
 import com.google.inject.Binder;
 import com.google.inject.Key;
+import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import org.weakref.jmx.guice.ExportBinder;
 
@@ -26,12 +27,14 @@ import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class ReportBinder
 {
-    private final Multibinder<Mapping> binder;
+    private final Binder binder;
+    private final Multibinder<Mapping> multibinder;
     private final ExportBinder exportBinder;
 
     private ReportBinder(Binder binder)
     {
-        this.binder = newSetBinder(checkNotNull(binder, "binder is null"), Mapping.class);
+        this.binder = checkNotNull(binder, "binder is null");
+        this.multibinder = newSetBinder(binder, Mapping.class);
         exportBinder = newExporter(binder);
     }
 
@@ -41,13 +44,17 @@ public class ReportBinder
 
     public AnnotatedReportBinder export(Class<?> clazz)
     {
-        return new AnnotatedReportBinder(binder, exportBinder, Key.get(clazz));
+        return new AnnotatedReportBinder(multibinder, exportBinder, Key.get(clazz));
     }
 
     public NamedReportBinder export(Key<?> key)
     {
-        return new NamedReportBinder(binder, exportBinder, key);
+        return new NamedReportBinder(multibinder, exportBinder, key);
     }
 
     // todo: map and set
+
+    public <T> void bindReportCollection(Class<T> iface) {
+        binder.bind(iface).toProvider(new ReportCollectionProvider<>(iface)).in(Scopes.SINGLETON);
+    }
 }
