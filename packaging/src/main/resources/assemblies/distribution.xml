@@ -15,39 +15,57 @@
     limitations under the License.
 
 -->
-<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0"
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
+          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
     <id>distribution</id>
     <formats>
         <format>tar.gz</format>
     </formats>
+
     <files>
-        <file>
-            <source>target/${artifactId}-${version}.jar</source>
-            <destName>main.jar</destName>
-            <outputDirectory>lib/</outputDirectory>
-        </file>
         <file>
             <source>README.txt</source>
             <outputDirectory>/</outputDirectory>
         </file>
     </files>
+
+    <fileSets>
+        <fileSet>
+            <directory>${project.build.directory}/plugin</directory>
+            <outputDirectory>/plugin</outputDirectory>
+        </fileSet>
+    </fileSets>
+
     <dependencySets>
         <dependencySet>
             <scope>runtime</scope>
-            <useProjectArtifact>false</useProjectArtifact>
-            <outputDirectory>lib/</outputDirectory>
+            <useProjectArtifact>true</useProjectArtifact>
+            <outputDirectory>/lib</outputDirectory>
             <outputFileNameMapping>${artifact.artifactId}-${artifact.baseVersion}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
             <includes>
                 <include>*:jar:*</include>
             </includes>
         </dependencySet>
+
         <dependencySet>
             <unpack>true</unpack>
             <outputDirectory>/</outputDirectory>
+            <useStrictFiltering>true</useStrictFiltering>
             <includes>
-                <include>io.airlift:launcher</include>
+                <include>io.airlift:launcher:tar.gz:bin:*</include>
+            </includes>
+        </dependencySet>
+
+        <dependencySet>
+            <unpack>true</unpack>
+            <outputFileNameMapping>/</outputFileNameMapping>
+            <useStrictFiltering>true</useStrictFiltering>
+            <unpackOptions>
+                <filtered>true</filtered>
+            </unpackOptions>
+            <includes>
+                <include>io.airlift:launcher:tar.gz:properties:*</include>
             </includes>
         </dependencySet>
     </dependencySets>

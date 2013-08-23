@@ -21,7 +21,7 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>package-tgz</id>
+                        <id>bin-tgz</id>
                         <phase>package</phase>
                         <goals>
                             <goal>single</goal>
@@ -29,7 +29,21 @@
                         <configuration>
                             <attach>true</attach>
                             <descriptors>
-                                <descriptor>src/main/assemblies/packaging.xml</descriptor>
+                                <descriptor>src/main/assemblies/bin.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>properties-tgz</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <attach>true</attach>
+                            <descriptors>
+                                <descriptor>src/main/assemblies/properties.xml</descriptor>
                             </descriptors>
                         </configuration>
                     </execution>
@@ -37,6 +51,4 @@
             </plugin>
         </plugins>
     </build>
-    
 </project>
-

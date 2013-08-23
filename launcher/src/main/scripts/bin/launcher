@@ -1,36 +1,39 @@
-#!/bin/bash
+#!/bin/sh -eu
 #
-# Copyright 2010 Proofpoint, Inc.
+# Launcher for Airlift applications
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+# Java must be in PATH.
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# This launcher script, launcher.py and launcher.properties must be
+# located in 'bin'. The properties file must contain a 'main-class'
+# entry that specifies the Java class to execute.
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# The classpath will contain everything in the 'lib' directory.
+#
+# Config files must be located in 'etc':
+#
+#   jvm.config          -- required: Java command line options, one per line
+#   config.properties   -- required: application configuration properties
+#   node.properties     -- optional: application environment properties
+#   log.properties      -- optional: log levels
+#
+# The 'etc' and 'plugin' directories will be symlinked into the data
+# directory before the process is started, allowing the application to
+# easily reference these at runtime.
+#
+# When run as a daemon, the application will log to the server log and
+# stdout and stderr are redirected to the launcher log.
+#
+# The following commands are supported:
+#
+#   run     -- run the application in the foreground (for debugging)
+#   start   -- run the application as a daemon
+#   stop    -- request the application to terminate (SIGTERM)
+#   kill    -- forcibly terminate the application (SIGKILL)
+#   restart -- run the stop command, then run the start command
+#   status  -- check if the application is running (0=true, 3=false)
+#
+# Run with --help to see options.
 #
 
-# Expects config under "etc":
-#   jvm.config
-#   config.properties
-#
-# Options:
-# --config to override config file
-# --jvm-config to override jvm config file
-# --pid-file to override PID file
-# --log-file to override log file
-# --log-levels-file to override logging configuration
-#
-# Logs to var/log/launcher.log when run as daemon
-# Logs to console when run in foreground, unless log file provided
-#
-# Libs must be installed under "lib"
-#
-# Requires Java to be in PATH
-
-$(dirname $0)/launcher.rb $*
+exec "$(dirname "$0")/launcher.py" "$@"
