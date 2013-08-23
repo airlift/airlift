@@ -33,6 +33,9 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.http.client.HttpUriBuilder.uriBuilderFrom;
@@ -97,6 +100,8 @@ class ReportClient
 
     private static class DataPoint
     {
+        private static final Pattern QUOTED_PATTERN = Pattern.compile("\"(.*)\"");
+        private static final Pattern BACKQUOTE_PATTERN = Pattern.compile("\\\\(.)");
         @JsonProperty
         private final String name;
         @JsonProperty
@@ -111,10 +116,19 @@ class ReportClient
             name = cell.getColumnKey();
             timestamp = systemTimeMillis;
             value = cell.getValue();
-            tags = ImmutableMap.<String, String>builder()
-                    .putAll(instanceTags)
-                    .putAll(cell.getRowKey().getKeyPropertyList())
-                    .build();
+            Builder<String, String> builder = ImmutableMap.<String, String>builder()
+                    .putAll(instanceTags);
+            for (Entry<String, String> entry : cell.getRowKey().getKeyPropertyList().entrySet()) {
+                Matcher matcher = QUOTED_PATTERN.matcher(entry.getValue());
+                if (matcher.matches()) {
+                    String dequoted = BACKQUOTE_PATTERN.matcher(matcher.group(1)).replaceAll("$1");
+                    builder.put(entry.getKey(), dequoted);
+                }
+                else {
+                    builder.put(entry.getKey(), entry.getValue());
+                }
+            }
+            tags = builder.build();
         }
     }
 }

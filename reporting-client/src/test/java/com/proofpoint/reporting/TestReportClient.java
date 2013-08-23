@@ -67,7 +67,7 @@ public class TestReportClient
 
         collectedData = HashBasedTable.create();
         collectedData.put(ObjectName.getInstance("com.example:name=Foo"), "Size", 1.1);
-        collectedData.put(ObjectName.getInstance("com.example:type=Foo,name=Bar"), "Size", 1.2);
+        collectedData.put(ObjectName.getInstance("com.example:type=Foo,name=\"B\\\\a\\\"r\""), "Size", 1.2);
 
         httpClient = new TestingHttpClient(new TestingResponseFunction());
         sentJson = null;
@@ -105,15 +105,15 @@ public class TestReportClient
             assertEquals(tags.get("environment"), "test_environment");
             assertEquals(tags.get("pool"), "test_pool");
         }
-        assertEquals(sentJson.get(0).get("value"), 1.1);
-        assertEquals(sentJson.get(1).get("value"), 1.2);
+        assertEquals(sentJson.get(0).get("value"), 1.2);
+        assertEquals(sentJson.get(1).get("value"), 1.1);
         Map<String, String> tags = (Map<String, String>) sentJson.get(0).get("tags");
-        assertEquals(tags.get("name"), "Foo");
-        assertEquals(tags.keySet(), ImmutableSet.of("host", "environment", "pool", "name"));
-        tags = (Map<String, String>) sentJson.get(1).get("tags");
         assertEquals(tags.keySet(), ImmutableSet.of("host", "environment", "pool", "type", "name"));
         assertEquals(tags.get("type"), "Foo");
-        assertEquals(tags.get("name"), "Bar");
+        assertEquals(tags.get("name"), "B\\a\"r");
+        tags = (Map<String, String>) sentJson.get(1).get("tags");
+        assertEquals(tags.get("name"), "Foo");
+        assertEquals(tags.keySet(), ImmutableSet.of("host", "environment", "pool", "name"));
     }
 
     @Test
@@ -134,9 +134,9 @@ public class TestReportClient
             assertEquals(tags.get("baz"), "quux");
         }
         Map<String, String> tags = (Map<String, String>) sentJson.get(0).get("tags");
-        assertEquals(tags.keySet(), ImmutableSet.of("host", "environment", "pool", "foo", "baz", "name"));
-        tags = (Map<String, String>) sentJson.get(1).get("tags");
         assertEquals(tags.keySet(), ImmutableSet.of("host", "environment", "pool", "foo", "baz", "type", "name"));
+        tags = (Map<String, String>) sentJson.get(1).get("tags");
+        assertEquals(tags.keySet(), ImmutableSet.of("host", "environment", "pool", "foo", "baz", "name"));
     }
 
     private class TestingResponseFunction
