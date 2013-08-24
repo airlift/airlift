@@ -28,5 +28,9 @@
             <directory>src/main/scripts</directory>
             <outputDirectory>/</outputDirectory>
         </fileSet>
+        <fileSet>
+            <directory>src/main/resources/procname</directory>
+            <outputDirectory>/bin/procname</outputDirectory>
+        </fileSet>
     </fileSets>
 </assembly>

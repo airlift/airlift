@@ -2,6 +2,7 @@
 
 import errno
 import os
+import platform
 import sys
 import traceback
 
@@ -176,7 +177,7 @@ def create_app_symlinks(options):
             pathjoin(options.data_dir, 'plugin'))
 
 
-def build_java_args(options, daemon):
+def build_java_execution(options, daemon):
     if not exists(options.config_path):
         raise Exception('Config file is missing: %s' % options.config_path)
     if not exists(options.jvm_config):
@@ -216,7 +217,18 @@ def build_java_args(options, daemon):
         print command
         print
 
-    return command
+    env = os.environ.copy()
+
+    # set process name: https://github.com/electrum/procname
+    process_name = launcher_properties.get('process-name', '')
+    if len(process_name) > 0:
+        system = platform.system() + '-' + platform.machine()
+        if system == 'Linux-x86_64':
+            shim = pathjoin(options.install_path, 'bin', 'procname', system, 'libprocname.so')
+            env['LD_PRELOAD'] = (env.get('LD_PRELOAD', '') + ' ' + shim).strip()
+            env['PROCNAME'] = process_name
+
+    return command, env
 
 
 def run(process, options):
@@ -225,13 +237,13 @@ def run(process, options):
         return
 
     create_app_symlinks(options)
-    args = build_java_args(options, False)
+    args, env = build_java_execution(options, False)
 
     process.write_pid(os.getpid())
 
     redirect_stdin_to_devnull()
 
-    os.execlp(args[0], *args)
+    os.execvpe(args[0], args, env)
 
 
 def start(process, options):
@@ -240,7 +252,7 @@ def start(process, options):
         return
 
     create_app_symlinks(options)
-    args = build_java_args(options, True)
+    args, env = build_java_execution(options, True)
 
     create_parent_dirs(options.launcher_log)
     log = open_append(options.launcher_log)
@@ -257,7 +269,7 @@ def start(process, options):
     redirect_output(log)
     os.close(log)
 
-    os.execlp(args[0], *args)
+    os.execvpe(args[0], args, env)
 
 
 def terminate(process, signal, message):
