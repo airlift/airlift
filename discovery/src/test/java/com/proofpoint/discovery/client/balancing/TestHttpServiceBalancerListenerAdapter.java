@@ -90,7 +90,12 @@ public class TestHttpServiceBalancerListenerAdapter
     {
         updater.start();
 
-        verifyNoMoreInteractions(httpServiceBalancer);
+        Thread.sleep(100);
+
+        ArgumentCaptor<Set> captor = ArgumentCaptor.forClass(Set.class);
+        verify(httpServiceBalancer).updateHttpUris(captor.capture());
+
+        assertEquals(captor.getValue(), ImmutableSet.of());
     }
 
     @Test

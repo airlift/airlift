@@ -15,14 +15,18 @@
  */
 package com.proofpoint.discovery.client;
 
+import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.SettableFuture;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.units.Duration;
 
 import javax.annotation.PostConstruct;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -98,7 +102,7 @@ public final class ServiceDescriptorsUpdater
             future = discoveryClient.refreshServices(oldDescriptors);
         }
 
-        Futures.addCallback(future, new FutureCallback<ServiceDescriptors>()
+        return chainedCallback(future, new FutureCallback<ServiceDescriptors>()
         {
             @Override
             public void onSuccess(ServiceDescriptors newDescriptors)
@@ -121,8 +125,6 @@ public final class ServiceDescriptorsUpdater
                 scheduleRefresh(duration);
             }
         }, executor);
-
-        return future;
     }
 
     private void scheduleRefresh(Duration delay)
@@ -139,5 +141,44 @@ public final class ServiceDescriptorsUpdater
                 refresh();
             }
         }, (long) delay.toMillis(), TimeUnit.MILLISECONDS);
+    }
+
+    private static <V, X extends Exception> CheckedFuture<V, X> chainedCallback(
+            CheckedFuture<V, X> future,
+            final FutureCallback<? super V> callback,
+            Executor executor)
+    {
+        final SettableFuture<V> done = SettableFuture.create();
+        Futures.addCallback(future, new FutureCallback<V>()
+        {
+            @Override
+            public void onSuccess(V result)
+            {
+                try {
+                    callback.onSuccess(result);
+                }
+                finally {
+                    done.set(result);
+                }
+            }
+
+            @Override
+            public void onFailure(Throwable t)
+            {
+                try {
+                    callback.onFailure(t);
+                }
+                finally {
+                    done.setException(t);
+                }
+            }
+        }, executor);
+        return Futures.makeChecked(done, ServiceDescriptorsUpdater.<X>exceptionMapper());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <X extends Exception> Function<Exception, X> exceptionMapper()
+    {
+        return (Function<Exception, X>) Functions.<Exception>identity();
     }
 }
