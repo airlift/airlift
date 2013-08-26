@@ -16,6 +16,8 @@
 package com.proofpoint.discovery.client;
 
 import com.google.common.util.concurrent.CheckedFuture;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.units.Duration;
@@ -30,6 +32,8 @@ import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.proofpoint.discovery.client.announce.DiscoveryAnnouncementClient.DEFAULT_DELAY;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public final class ServiceDescriptorsUpdater
 {
@@ -42,8 +46,8 @@ public final class ServiceDescriptorsUpdater
     private final AtomicReference<ServiceDescriptors> serviceDescriptors = new AtomicReference<>();
     private final ScheduledExecutorService executor;
 
-    private final AtomicBoolean serverUp = new AtomicBoolean(true);
     private final AtomicBoolean started = new AtomicBoolean(false);
+    private final ExponentialBackOff errorBackOff;
 
     public ServiceDescriptorsUpdater(ServiceDescriptorsListener target, String type, ServiceSelectorConfig selectorConfig, NodeInfo nodeInfo, DiscoveryLookupClient discoveryClient, ScheduledExecutorService executor)
     {
@@ -59,6 +63,12 @@ public final class ServiceDescriptorsUpdater
         this.pool = firstNonNull(selectorConfig.getPool(), nodeInfo.getPool());
         this.discoveryClient = discoveryClient;
         this.executor = executor;
+        this.errorBackOff = new ExponentialBackOff(
+                new Duration(1, MILLISECONDS),
+                new Duration(1, SECONDS),
+                String.format("Discovery server connect succeeded for refresh (%s/%s)", type, pool),
+                String.format("Cannot connect to discovery server for refresh (%s/%s)", type, pool),
+                log);
     }
 
     @PostConstruct
@@ -88,30 +98,27 @@ public final class ServiceDescriptorsUpdater
             future = discoveryClient.refreshServices(oldDescriptors);
         }
 
-        future.addListener(new Runnable()
+        Futures.addCallback(future, new FutureCallback<ServiceDescriptors>()
         {
             @Override
-            public void run()
+            public void onSuccess(ServiceDescriptors newDescriptors)
             {
-                Duration delay = DEFAULT_DELAY;
-                try {
-                    ServiceDescriptors newDescriptors = future.checkedGet();
-                    delay = newDescriptors.getMaxAge();
-                    serviceDescriptors.set(newDescriptors);
-                    target.updateServiceDescriptors(newDescriptors.getServiceDescriptors());
-                    if (serverUp.compareAndSet(false, true)) {
-                        log.info("Discovery server connect succeeded for refresh (%s/%s)", type, pool);
-                    }
+                serviceDescriptors.set(newDescriptors);
+                target.updateServiceDescriptors(newDescriptors.getServiceDescriptors());
+                errorBackOff.success();
+
+                Duration delay = newDescriptors.getMaxAge();
+                if (delay == null) {
+                    delay = DEFAULT_DELAY;
                 }
-                catch (DiscoveryException e) {
-                    if (serverUp.compareAndSet(true, false)) {
-                        log.error("Cannot connect to discovery server for refresh (%s/%s): %s", type, pool, e.getMessage());
-                    }
-                    log.debug(e, "Cannot connect to discovery server for refresh (%s/%s)", type, pool);
-                }
-                finally {
-                    scheduleRefresh(delay);
-                }
+                scheduleRefresh(delay);
+            }
+
+            @Override
+            public void onFailure(Throwable t)
+            {
+                Duration duration = errorBackOff.failed(t);
+                scheduleRefresh(duration);
             }
         }, executor);
 
@@ -124,7 +131,8 @@ public final class ServiceDescriptorsUpdater
         if (executor.isShutdown()) {
             return;
         }
-        executor.schedule(new Runnable() {
+        executor.schedule(new Runnable()
+        {
             @Override
             public void run()
             {
