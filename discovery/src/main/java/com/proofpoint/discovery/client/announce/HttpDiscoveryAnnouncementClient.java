@@ -20,7 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.io.CharStreams;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
-import com.google.common.util.concurrent.CheckedFuture;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
 import com.proofpoint.discovery.client.DiscoveryException;
 import com.proofpoint.discovery.client.ForDiscoveryClient;
@@ -67,7 +67,7 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
     }
 
     @Override
-    public CheckedFuture<Duration, DiscoveryException> announce(Set<ServiceAnnouncement> services)
+    public ListenableFuture<Duration> announce(Set<ServiceAnnouncement> services)
     {
         Preconditions.checkNotNull(services, "services is null");
 
@@ -110,7 +110,7 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
     }
 
     @Override
-    public CheckedFuture<Void, DiscoveryException> unannounce()
+    public ListenableFuture<Void> unannounce()
     {
         Request request = prepareDelete()
                 .setUri(URI.create("v1/announcement/" + nodeInfo.getNodeId()))

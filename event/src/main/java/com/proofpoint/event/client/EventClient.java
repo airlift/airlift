@@ -16,21 +16,20 @@
 package com.proofpoint.event.client;
 
 import com.google.common.annotations.Beta;
-import com.google.common.util.concurrent.CheckedFuture;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.IOException;
-import java.util.concurrent.Future;
 
 @Beta
 public interface EventClient
 {
-    <T> CheckedFuture<Void, RuntimeException> post(T... event)
+    <T> ListenableFuture<Void> post(T... event)
             throws IllegalArgumentException;
 
-    <T> CheckedFuture<Void, RuntimeException> post(Iterable<T> events)
+    <T> ListenableFuture<Void> post(Iterable<T> events)
             throws IllegalArgumentException;
 
-    <T> CheckedFuture<Void, RuntimeException> post(EventGenerator<T> eventGenerator)
+    <T> ListenableFuture<Void> post(EventGenerator<T> eventGenerator)
             throws IllegalArgumentException;
 
     public interface EventGenerator<T>

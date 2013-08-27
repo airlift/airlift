@@ -1,8 +1,8 @@
 package com.proofpoint.http.client.balancing;
 
 import com.google.common.util.concurrent.AbstractFuture;
-import com.google.common.util.concurrent.CheckedFuture;
 import com.proofpoint.http.client.AsyncHttpClient;
+import com.proofpoint.http.client.AsyncHttpClient.AsyncHttpResponseFuture;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.Response;
@@ -13,8 +13,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.mockito.Mockito.mock;
@@ -49,13 +47,13 @@ public class TestBalancingAsyncHttpClient
     protected void assertHandlerExceptionThrown(ResponseHandler responseHandler, RuntimeException handlerException)
             throws Exception
     {
-        CheckedFuture future = balancingHttpClient.executeAsync(request, responseHandler);
+        AsyncHttpResponseFuture future = balancingHttpClient.executeAsync(request, responseHandler);
         try {
-            future.checkedGet();
+            future.get();
             fail("Exception not thrown");
         }
-        catch (RuntimeException e) {
-            assertSame(e, handlerException, "Exception thrown by BalancingAsyncHttpClient");
+        catch (ExecutionException e) {
+            assertSame(e.getCause(), handlerException, "Exception thrown by BalancingAsyncHttpClient");
         }
     }
 
@@ -131,7 +129,7 @@ public class TestBalancingAsyncHttpClient
         }
 
         @Override
-        public <T, E extends Exception> AsyncHttpResponseFuture<T, E> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
+        public <T, E extends Exception> AsyncHttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
         {
             assertTrue(uris.size() > 0, "call was expected");
             assertEquals(request.getMethod(), method, "request method");
@@ -177,7 +175,7 @@ public class TestBalancingAsyncHttpClient
 
         private class ImmediateAsyncHttpFuture<T, E extends Exception>
                 extends AbstractFuture<T>
-                implements AsyncHttpResponseFuture<T, E>
+                implements AsyncHttpResponseFuture<T>
         {
             public ImmediateAsyncHttpFuture(T value)
             {
@@ -189,30 +187,11 @@ public class TestBalancingAsyncHttpClient
             {
                 throw new UnsupportedOperationException();
             }
-
-            @Override
-            public T checkedGet()
-                    throws E
-            {
-                try {
-                    return get();
-                }
-                catch (InterruptedException | ExecutionException ignored) {
-                    throw new UnsupportedOperationException();
-                }
-            }
-
-            @Override
-            public T checkedGet(long timeout, TimeUnit unit)
-                    throws TimeoutException, E
-            {
-                return checkedGet();
-            }
         }
 
         private class ImmediateFailedAsyncHttpFuture<T, E extends Exception>
                 extends AbstractFuture<T>
-                implements AsyncHttpResponseFuture<T, E>
+                implements AsyncHttpResponseFuture<T>
         {
 
             private final E exception;
@@ -229,19 +208,6 @@ public class TestBalancingAsyncHttpClient
                 throw new UnsupportedOperationException();
             }
 
-            @Override
-            public T checkedGet()
-                    throws E
-            {
-                throw exception;
-            }
-
-            @Override
-            public T checkedGet(long timeout, TimeUnit unit)
-                    throws TimeoutException, E
-            {
-                throw exception;
-            }
         }
     }
 }

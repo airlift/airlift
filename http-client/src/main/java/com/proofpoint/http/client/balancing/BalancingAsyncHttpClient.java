@@ -15,8 +15,10 @@
  */
 package com.proofpoint.http.client.balancing;
 
+import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.AbstractFuture;
-import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
@@ -27,10 +29,7 @@ import org.weakref.jmx.Managed;
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
 import java.net.URI;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -52,7 +51,7 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
     }
 
     @Override
-    public <T, E extends Exception> AsyncHttpResponseFuture<T, E> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> AsyncHttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
     {
         checkArgument(!request.getUri().isAbsolute(), request.getUri() + " is not a relative URI");
         checkArgument(request.getUri().getHost() == null, request.getUri() + " has a host component");
@@ -89,7 +88,7 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
                 .build();
 
         --attemptsLeft;
-        AsyncHttpResponseFuture<T, RetryException> future = httpClient.executeAsync(subRequest, retryingResponseHandler);
+        AsyncHttpResponseFuture<T> future = httpClient.executeAsync(subRequest, retryingResponseHandler);
         retryFuture.newAttempt(future, attempt, uri, attemptsLeft);
     }
 
@@ -97,7 +96,17 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
     public <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
             throws E
     {
-        return executeAsync(request, responseHandler).checkedGet();
+        try {
+            return executeAsync(request, responseHandler).get();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw Throwables.propagate(e);
+        }
+        catch (ExecutionException e) {
+            // the HTTP client and ResponseHandler interface enforces this
+            throw (E) e.getCause();
+        }
     }
 
     @Managed
@@ -116,7 +125,7 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
 
     private class RetryFuture<T, E extends Exception>
             extends AbstractFuture<T>
-            implements AsyncHttpResponseFuture<T, E>
+            implements AsyncHttpResponseFuture<T>
     {
 
         private final Request request;
@@ -127,7 +136,7 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
         @GuardedBy("subFutureLock")
         private URI uri = null;
         @GuardedBy("subFutureLock")
-        private AsyncHttpResponseFuture<T, RetryException> subFuture = null;
+        private AsyncHttpResponseFuture<T> subFuture = null;
 
         public RetryFuture(Request request, ResponseHandler<T, E> responseHandler)
         {
@@ -135,7 +144,7 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
             this.responseHandler = responseHandler;
         }
 
-        void newAttempt(final AsyncHttpResponseFuture<T, RetryException> future, final HttpServiceAttempt attempt, URI uri, final int attemptsLeft)
+        void newAttempt(final AsyncHttpResponseFuture<T> future, final HttpServiceAttempt attempt, URI uri, final int attemptsLeft)
         {
             synchronized (subFutureLock) {
                 this.attempt = attempt;
@@ -145,24 +154,27 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
             final RetryFuture<T, E> retryFuture = this;
             final Request request = this.request;
             final ResponseHandler<T, E> responseHandler = this.responseHandler;
-            future.addListener(new Runnable()
+            Futures.addCallback(future, new FutureCallback<T>()
             {
                 @Override
-                public void run()
+                public void onSuccess(T result)
                 {
-                    try {
-                        set(future.checkedGet());
-                        attempt.markGood();
-                    }
-                    catch (InnerHandlerException e) {
-                        setException(e.getCause());
+                    attempt.markGood();
+                    set(result);
+                }
+
+                @Override
+                public void onFailure(Throwable t)
+                {
+                    if (t instanceof InnerHandlerException) {
                         attempt.markBad();
+                        setException(t.getCause());
                     }
-                    catch (FailureStatusException e) {
-                        set((T) e.result);
+                    else if (t instanceof FailureStatusException) {
                         attempt.markBad();
+                        set((T) ((FailureStatusException)t).result);
                     }
-                    catch (RetryException e) {
+                    else if (t instanceof RetryException) {
                         attempt.markBad();
                         synchronized (subFutureLock) {
                             HttpServiceAttempt nextAttempt;
@@ -187,7 +199,7 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
                         }
                     }
                 }
-            }, MoreExecutors.sameThreadExecutor());
+            });
         }
 
         @Override
@@ -205,45 +217,6 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
         }
 
         @Override
-        public T checkedGet()
-                throws E
-        {
-            try {
-                return get();
-            }
-            catch (InterruptedException | CancellationException | ExecutionException e) {
-                return mapException(e);
-            }
-        }
-
-        @Override
-        public T checkedGet(long timeout, TimeUnit unit)
-                throws TimeoutException, E
-        {
-            try {
-                return get(timeout, unit);
-            }
-            catch (InterruptedException | CancellationException | ExecutionException e) {
-                return mapException(e);
-            }
-        }
-
-        private T mapException(Exception e)
-                throws E
-        {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
-
-            if (e instanceof ExecutionException) {
-                // noinspection unchecked
-                throw (E) e.getCause();
-            }
-
-            return responseHandler.handleException(request, e);
-        }
-
-        @Override
         public String getState()
         {
             synchronized (subFutureLock) {
@@ -254,7 +227,7 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
 
     private static class ImmediateAsyncHttpResponseFuture<T, E extends Exception>
             extends AbstractFuture<T>
-            implements AsyncHttpResponseFuture<T, E>
+            implements AsyncHttpResponseFuture<T>
     {
 
         private final T result;
@@ -262,6 +235,7 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
         public ImmediateAsyncHttpResponseFuture(T result)
         {
             this.result = result;
+            set(result);
         }
 
         @Override
@@ -269,25 +243,11 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
         {
             return "Succeeded with result " + result;
         }
-
-        @Override
-        public T checkedGet()
-                throws E
-        {
-            return result;
-        }
-
-        @Override
-        public T checkedGet(long timeout, TimeUnit unit)
-                throws TimeoutException, E
-        {
-            return result;
-        }
     }
 
     private static class ImmediateFailedAsyncHttpResponseFuture<T, E extends Exception>
             extends AbstractFuture<T>
-            implements AsyncHttpResponseFuture<T, E>
+            implements AsyncHttpResponseFuture<T>
     {
 
         private final E exception;
@@ -302,20 +262,6 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
         public String getState()
         {
             return "Failed with exception " + exception;
-        }
-
-        @Override
-        public T checkedGet()
-                throws E
-        {
-            throw exception;
-        }
-
-        @Override
-        public T checkedGet(long timeout, TimeUnit unit)
-                throws TimeoutException, E
-        {
-            throw exception;
         }
     }
 }

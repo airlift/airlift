@@ -18,18 +18,18 @@ package com.proofpoint.event.client;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.google.common.net.MediaType;
-import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.ServiceType;
-import com.proofpoint.http.client.balancing.ServiceUnavailableException;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.BodyGenerator;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
+import com.proofpoint.http.client.balancing.ServiceUnavailableException;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.tracetoken.TraceTokenManager;
@@ -84,7 +84,7 @@ public class HttpEventClient
 
     @SafeVarargs
     @Override
-    public final <T> CheckedFuture<Void, RuntimeException> post(T... event)
+    public final <T> ListenableFuture<Void> post(T... event)
             throws IllegalArgumentException
     {
         checkNotNull(event, "event is null");
@@ -92,7 +92,7 @@ public class HttpEventClient
     }
 
     @Override
-    public <T> CheckedFuture<Void, RuntimeException> post(final Iterable<T> events)
+    public <T> ListenableFuture<Void> post(final Iterable<T> events)
             throws IllegalArgumentException
     {
         checkNotNull(events, "eventsSupplier is null");
@@ -110,7 +110,7 @@ public class HttpEventClient
     }
 
     @Override
-    public <T> CheckedFuture<Void, RuntimeException> post(EventGenerator<T> eventGenerator)
+    public <T> ListenableFuture<Void> post(EventGenerator<T> eventGenerator)
     {
         checkNotNull(eventGenerator, "eventGenerator is null");
         String token = traceTokenManager.getCurrentRequestToken();

@@ -15,11 +15,9 @@
  */
 package com.proofpoint.discovery.client;
 
-import com.google.common.base.Function;
-import com.google.common.base.Functions;
-import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeInfo;
@@ -41,7 +39,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public final class ServiceDescriptorsUpdater
 {
-    private final static Logger log = Logger.get(ServiceDescriptorsUpdater.class);
+    private static final Logger log = Logger.get(ServiceDescriptorsUpdater.class);
 
     private final ServiceDescriptorsListener target;
     private final String type;
@@ -83,18 +81,18 @@ public final class ServiceDescriptorsUpdater
 
             // if discovery is available, get the initial set of servers before starting
             try {
-                refresh().checkedGet(30, TimeUnit.SECONDS);
+                refresh().get(30, TimeUnit.SECONDS);
             }
             catch (Exception ignored) {
             }
         }
     }
 
-    private CheckedFuture<ServiceDescriptors, DiscoveryException> refresh()
+    private ListenableFuture<ServiceDescriptors> refresh()
     {
         final ServiceDescriptors oldDescriptors = this.serviceDescriptors.get();
 
-        final CheckedFuture<ServiceDescriptors, DiscoveryException> future;
+        final ListenableFuture<ServiceDescriptors> future;
         if (oldDescriptors == null) {
             future = discoveryClient.getServices(type, pool);
         }
@@ -143,8 +141,8 @@ public final class ServiceDescriptorsUpdater
         }, (long) delay.toMillis(), TimeUnit.MILLISECONDS);
     }
 
-    private static <V, X extends Exception> CheckedFuture<V, X> chainedCallback(
-            CheckedFuture<V, X> future,
+    private static <V> ListenableFuture<V> chainedCallback(
+            ListenableFuture<V> future,
             final FutureCallback<? super V> callback,
             Executor executor)
     {
@@ -173,12 +171,6 @@ public final class ServiceDescriptorsUpdater
                 }
             }
         }, executor);
-        return Futures.makeChecked(done, ServiceDescriptorsUpdater.<X>exceptionMapper());
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <X extends Exception> Function<Exception, X> exceptionMapper()
-    {
-        return (Function<Exception, X>) Functions.<Exception>identity();
+        return done;
     }
 }

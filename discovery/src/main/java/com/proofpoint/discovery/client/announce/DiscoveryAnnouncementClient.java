@@ -15,8 +15,7 @@
  */
 package com.proofpoint.discovery.client.announce;
 
-import com.google.common.util.concurrent.CheckedFuture;
-import com.proofpoint.discovery.client.DiscoveryException;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.proofpoint.units.Duration;
 
 import java.util.Set;
@@ -26,7 +25,7 @@ public interface DiscoveryAnnouncementClient
 {
     Duration DEFAULT_DELAY = new Duration(10, TimeUnit.SECONDS);
 
-    CheckedFuture<Duration, DiscoveryException> announce(Set<ServiceAnnouncement> services);
+    ListenableFuture<Duration> announce(Set<ServiceAnnouncement> services);
 
-    CheckedFuture<Void, DiscoveryException> unannounce();
+    ListenableFuture<Void> unannounce();
 }

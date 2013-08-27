@@ -8,8 +8,10 @@ import com.proofpoint.http.client.ResponseHandler;
 import org.testng.annotations.Test;
 
 import java.net.URI;
+import java.util.concurrent.ExecutionException;
 
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
+import static com.proofpoint.testing.Assertions.assertInstanceOf;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
@@ -26,7 +28,7 @@ public class TestTestingHttpClient
 
         final RuntimeException expectedException = new RuntimeException("test exception");
 
-        AsyncHttpResponseFuture<String,CapturedException> future = new TestingHttpClient(
+        AsyncHttpResponseFuture<String> future = new TestingHttpClient(
                 new Function<Request, Response>()
                 {
                     @Override
@@ -37,11 +39,13 @@ public class TestTestingHttpClient
                 }).executeAsync(request, new CaptureExceptionResponseHandler());
 
         try {
-            future.checkedGet();
+            future.get();
             fail("expected exception");
         }
-        catch (CapturedException e) {
-            assertSame(e.getCause(), expectedException);
+        catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            assertInstanceOf(cause, CapturedException.class);
+            assertSame(cause.getCause(), expectedException);
         }
     }
 
@@ -56,7 +60,7 @@ public class TestTestingHttpClient
         final RuntimeException testingException = new RuntimeException("test exception");
         final Object expectedResponse = new Object();
 
-        AsyncHttpResponseFuture<Object,RuntimeException> future = new TestingHttpClient(
+        AsyncHttpResponseFuture<Object> future = new TestingHttpClient(
                 new Function<Request, Response>()
                 {
                     @Override
@@ -66,7 +70,7 @@ public class TestTestingHttpClient
                     }
                 }).executeAsync(request, new DefaultExceptionResponseHandler(testingException, expectedResponse));
 
-        assertSame(future.checkedGet(), expectedResponse);
+        assertSame(future.get(), expectedResponse);
     }
 
     public static class CaptureExceptionResponseHandler implements ResponseHandler<String, CapturedException>

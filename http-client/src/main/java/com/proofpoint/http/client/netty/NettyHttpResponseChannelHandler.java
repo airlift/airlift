@@ -93,7 +93,7 @@ public class NettyHttpResponseChannelHandler
                 if (cause == null) {
                     cause = new UnknownRequestException();
                 }
-                nettyResponseFuture.setException(cause);
+                nettyResponseFuture.failed(cause);
             }
         }
         finally {

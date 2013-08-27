@@ -15,7 +15,9 @@
  */
 package com.proofpoint.discovery.client.testing;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.proofpoint.discovery.client.DiscoveryException;
 import com.proofpoint.discovery.client.DiscoveryLookupClient;
 import com.proofpoint.discovery.client.ServiceDescriptor;
@@ -26,13 +28,15 @@ import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeInfo;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class SimpleServiceSelector implements ServiceSelector
 {
-    private final static Logger log = Logger.get(SimpleServiceSelector.class);
+    private static final Logger log = Logger.get(SimpleServiceSelector.class);
 
     private final String type;
     private final String pool;
@@ -65,12 +69,30 @@ public class SimpleServiceSelector implements ServiceSelector
     public List<ServiceDescriptor> selectAllServices()
     {
         try {
-            ServiceDescriptors serviceDescriptors = lookupClient.getServices(type, pool).checkedGet();
+            ListenableFuture<ServiceDescriptors> future = lookupClient.getServices(type, pool);
+            ServiceDescriptors serviceDescriptors = getFutureResult(future, DiscoveryException.class);
             return serviceDescriptors.getServiceDescriptors();
         }
         catch (DiscoveryException e) {
             log.error(e);
             return ImmutableList.of();
+        }
+    }
+
+    // TODO: move this to a utility package
+    private static <T, X extends Throwable> T getFutureResult(Future<T> future, Class<X> type)
+            throws X
+    {
+        try {
+            return future.get();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw Throwables.propagate(e);
+        }
+        catch (ExecutionException e) {
+            Throwables.propagateIfPossible(e.getCause(), type);
+            throw Throwables.propagate(e.getCause());
         }
     }
 }

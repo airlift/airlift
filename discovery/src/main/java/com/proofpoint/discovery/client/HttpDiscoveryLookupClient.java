@@ -18,7 +18,7 @@ package com.proofpoint.discovery.client;
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
 import com.google.common.net.HttpHeaders;
-import com.google.common.util.concurrent.CheckedFuture;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.CacheControl;
@@ -79,14 +79,14 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
     }
 
     @Override
-    public CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(String type)
+    public ListenableFuture<ServiceDescriptors> getServices(String type)
     {
         checkNotNull(type, "type is null");
         return lookup(type, null, null);
     }
 
     @Override
-    public CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(String type, String pool)
+    public ListenableFuture<ServiceDescriptors> getServices(String type, String pool)
     {
         checkNotNull(type, "type is null");
         checkNotNull(pool, "pool is null");
@@ -94,13 +94,13 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
     }
 
     @Override
-    public CheckedFuture<ServiceDescriptors, DiscoveryException> refreshServices(ServiceDescriptors serviceDescriptors)
+    public ListenableFuture<ServiceDescriptors> refreshServices(ServiceDescriptors serviceDescriptors)
     {
         checkNotNull(serviceDescriptors, "serviceDescriptors is null");
         return lookup(serviceDescriptors.getType(), serviceDescriptors.getPool(), serviceDescriptors);
     }
 
-    private CheckedFuture<ServiceDescriptors, DiscoveryException> lookup(final String type, final String pool, final ServiceDescriptors serviceDescriptors)
+    private ListenableFuture<ServiceDescriptors> lookup(final String type, final String pool, final ServiceDescriptors serviceDescriptors)
     {
         checkNotNull(type, "type is null");
 
