@@ -18,9 +18,8 @@ package com.proofpoint.configuration;
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.google.inject.Key;
-import com.google.inject.Provider;
 
-public class ConfigurationProvider<T> implements Provider<T>
+public class ConfigurationProvider<T> implements ConfigurationAwareProvider<T>
 {
     private final Key<T> key;
     private final Class<T> configClass;
