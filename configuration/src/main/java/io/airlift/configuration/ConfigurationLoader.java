@@ -15,7 +15,8 @@
  */
 package io.airlift.configuration;
 
-import com.google.common.collect.ImmutableMap;
+import static com.google.common.collect.Maps.fromProperties;
+
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Maps;
 
@@ -60,21 +61,11 @@ public class ConfigurationLoader
             reader.close();
         }
 
-        return toMap(properties);
+        return fromProperties(properties);
     }
 
     public Map<String, String> getSystemProperties()
     {
-        return toMap(System.getProperties());
-    }
-
-    private static ImmutableMap<String, String> toMap(Properties properties)
-    {
-        ImmutableMap.Builder<String, String> result = ImmutableMap.builder();
-        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-            result.put(entry.getKey().toString(), entry.getValue().toString());
-        }
-
-        return result.build();
+        return fromProperties(System.getProperties());
     }
 }
