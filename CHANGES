@@ -5,6 +5,8 @@
 - Add additional Logger methods for literal messages
 - Update RequestStats to use DistributionStat instead of MeterStat
 - Deprecate TimedStat and introduce TimeStat
+- Add ConfigurationAwareProvider interface to implement custom
+  configuration providers
 
 * 0.78
 
