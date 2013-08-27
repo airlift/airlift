@@ -22,7 +22,6 @@ import com.google.inject.Scopes;
 import com.proofpoint.node.NodeConfig;
 import com.proofpoint.node.NodeInfo;
 
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -71,8 +70,15 @@ public class TestingNodeModule
     public void configure(Binder binder)
     {
         binder.bind(NodeInfo.class).in(Scopes.SINGLETON);
-        binder.bind(NodeConfig.class).toInstance(new NodeConfig()
-                .setEnvironment(environment));
+        NodeConfig nodeConfig = new NodeConfig()
+                .setEnvironment(environment);
+
+        if (pool.isPresent()) {
+            nodeConfig.setPool(pool.get());
+        }
+
+        binder.bind(NodeConfig.class).toInstance(nodeConfig);
+
         newExporter(binder).export(NodeInfo.class).withGeneratedName();
     }
 }
