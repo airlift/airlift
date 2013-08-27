@@ -5,7 +5,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
-import com.google.common.io.Closeables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.airlift.testing.Assertions;
 import io.airlift.units.Duration;
@@ -43,6 +42,7 @@ import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.Request.Builder.preparePut;
 import static io.airlift.testing.Assertions.assertInstanceOf;
+import static io.airlift.testing.Closeables.closeQuietly;
 import static io.airlift.units.Duration.nanosSince;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -723,7 +723,7 @@ public abstract class AbstractHttpClientTest
             }
             finally {
                 if (closeConnectionImmediately) {
-                    Closeables.closeQuietly(connectionSocket.get());
+                    closeQuietly(connectionSocket.get());
                 }
             }
         }
@@ -732,7 +732,7 @@ public abstract class AbstractHttpClientTest
         public void close()
                 throws IOException
         {
-            Closeables.closeQuietly(connectionSocket.get());
+            closeQuietly(connectionSocket.get());
             serverSocket.close();
         }
     }
