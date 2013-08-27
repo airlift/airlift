@@ -5,7 +5,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
-import com.google.common.io.Closeables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.proofpoint.testing.Assertions;
 import com.proofpoint.units.Duration;
@@ -44,6 +43,7 @@ import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static com.proofpoint.http.client.Request.Builder.preparePost;
 import static com.proofpoint.http.client.Request.Builder.preparePut;
 import static com.proofpoint.testing.Assertions.assertInstanceOf;
+import static com.proofpoint.testing.Closeables.closeQuietly;
 import static com.proofpoint.units.Duration.nanosSince;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -726,7 +726,7 @@ public abstract class AbstractHttpClientTest
             }
             finally {
                 if (closeConnectionImmediately) {
-                    Closeables.closeQuietly(connectionSocket.get());
+                    closeQuietly(connectionSocket.get());
                 }
             }
         }
@@ -735,7 +735,7 @@ public abstract class AbstractHttpClientTest
         public void close()
                 throws IOException
         {
-            Closeables.closeQuietly(connectionSocket.get());
+            closeQuietly(connectionSocket.get());
             serverSocket.close();
         }
     }
