@@ -104,8 +104,15 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
             throw Throwables.propagate(e);
         }
         catch (ExecutionException e) {
-            // the HTTP client and ResponseHandler interface enforces this
-            throw (E) e.getCause();
+            Throwables.propagateIfPossible(e.getCause());
+
+            if (e.getCause() instanceof Exception) {
+                // the HTTP client and ResponseHandler interface enforces this
+                throw (E) e.getCause();
+            }
+
+            // e.getCause() is some direct subclass of throwable
+            throw Throwables.propagate(e.getCause());
         }
     }
 

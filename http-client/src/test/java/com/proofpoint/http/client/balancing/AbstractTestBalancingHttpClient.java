@@ -512,4 +512,34 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
         request = preparePut().setUri(new URI(null, null, "/v1/service", null)).setBodyGenerator(bodyGenerator).build();
         issueRequest();
     }
+
+
+    @Test(expectedExceptions = CustomError.class)
+    public void testHandlesUndeclaredThrowable()
+            throws Exception
+    {
+        httpClient.expectCall("http://s1.example.com/v1/service", response);
+
+        balancingHttpClient.execute(request, new ThrowErrorResponseHandler());
+    }
+
+    public static class ThrowErrorResponseHandler implements ResponseHandler<String, Exception>
+    {
+        @Override
+        public String handleException(Request request, Exception exception)
+        {
+            throw new UnsupportedOperationException("not yet implemented");
+        }
+
+        @Override
+        public String handle(Request request, Response response)
+        {
+            throw new CustomError();
+        }
+    }
+
+    private static class CustomError
+            extends Error
+    {
+    }
 }

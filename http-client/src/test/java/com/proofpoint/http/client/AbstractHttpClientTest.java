@@ -634,6 +634,17 @@ public abstract class AbstractHttpClientTest
         }
     }
 
+    @Test(expectedExceptions = CustomError.class)
+    public void testHandlesUndeclaredThrowable()
+            throws Exception
+    {
+        Request request = prepareGet()
+                .setUri(baseURI)
+                .build();
+
+        executeRequest(request, new ThrowErrorResponseHandler());
+    }
+
     private void executeRequest(FakeServer fakeServer, HttpClientConfig config)
             throws Exception
     {
@@ -826,6 +837,26 @@ public abstract class AbstractHttpClientTest
             throw new UnsupportedOperationException();
         }
 
+    }
+
+    public static class ThrowErrorResponseHandler implements ResponseHandler<String, Exception>
+    {
+        @Override
+        public String handleException(Request request, Exception exception)
+        {
+            throw new UnsupportedOperationException("not yet implemented");
+        }
+
+        @Override
+        public String handle(Request request, Response response)
+        {
+            throw new CustomError();
+        }
+    }
+
+    private static class CustomError
+            extends Error
+    {
     }
 
     protected static class CapturedException extends Exception
