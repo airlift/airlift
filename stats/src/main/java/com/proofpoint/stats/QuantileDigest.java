@@ -117,6 +117,22 @@ public class QuantileDigest
         landmarkInSeconds = TimeUnit.NANOSECONDS.toSeconds(ticker.read());
     }
 
+    public QuantileDigest(QuantileDigest quantileDigest)
+    {
+        this(quantileDigest.getMaxError(), quantileDigest.getAlpha());
+        merge(quantileDigest);
+    }
+
+    public double getMaxError()
+    {
+        return maxError;
+    }
+
+    public double getAlpha()
+    {
+        return alpha;
+    }
+
     public void add(long value)
     {
         add(value, 1);
