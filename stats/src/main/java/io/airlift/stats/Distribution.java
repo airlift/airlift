@@ -28,6 +28,11 @@ public class Distribution
         digest = new QuantileDigest(MAX_ERROR, alpha);
     }
 
+    public Distribution(Distribution distribution)
+    {
+        digest = new QuantileDigest(distribution.digest);
+    }
+
     public synchronized void add(long value)
     {
         digest.add(value);
