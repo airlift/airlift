@@ -122,7 +122,7 @@ public class Bootstrap
 
     public Bootstrap withApplicationDefaults(Map<String, String> applicationDefaults)
     {
-        checkState(applicationDefaults == null, "applicationDefaults already specified");
+        checkState(this.applicationDefaults == null, "applicationDefaults already specified");
         this.applicationDefaults = checkNotNull(applicationDefaults, "applicationDefaults is null");
         return this;
     }
