@@ -74,6 +74,8 @@ Platform 0.79
 * Library upgrades
   - jmxutils to 1.14
 
+* [Bug] Futures returned from TestingHttpClient.executeAsync() didn't invoke callbacks.
+
 Platform 0.78
 
 * Rack Packaging
