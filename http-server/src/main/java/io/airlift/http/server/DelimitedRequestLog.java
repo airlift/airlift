@@ -15,35 +15,36 @@
  */
 package io.airlift.http.server;
 
+import ch.qos.logback.core.ContextBase;
+import ch.qos.logback.core.rolling.RollingFileAppender;
+import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
+import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import io.airlift.event.client.EventClient;
+import io.airlift.log.Logger;
 import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.RolloverFileOutputStream;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.DateTimeFormatterBuilder;
-import org.joda.time.format.ISODateTimeFormat;
 
+import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 
 import static io.airlift.http.server.HttpRequestEvent.createHttpRequestEvent;
 
 class DelimitedRequestLog
         implements RequestLog
 {
+    private static final Logger log = Logger.get(DelimitedRequestLog.class);
+    private static final String TEMP_FILE_EXTENSION = ".tmp";
+    private static final String LOG_FILE_EXTENSION = ".log";
+
     // Tab-separated
     // Time, ip, method, url, user, agent, response code, request length, response length, response time
-
-    private final RolloverFileOutputStream out;
-    private final Writer writer;
-
-    private final DateTimeFormatter isoFormatter;
     private final TraceTokenManager traceTokenManager;
     private final EventClient eventClient;
     private final CurrentTimeMillisProvider currentTimeMillisProvider;
+    private RollingFileAppender<HttpRequestEvent> fileAppender;
 
     public DelimitedRequestLog(String filename, int retainDays, TraceTokenManager traceTokenManager, EventClient eventClient)
             throws IOException
@@ -61,13 +62,34 @@ class DelimitedRequestLog
         this.traceTokenManager = traceTokenManager;
         this.eventClient = eventClient;
         this.currentTimeMillisProvider = currentTimeMillisProvider;
-        out = new RolloverFileOutputStream(filename, true, retainDays);
-        writer = new OutputStreamWriter(out);
 
-        isoFormatter = new DateTimeFormatterBuilder()
-                .append(ISODateTimeFormat.dateHourMinuteSecondFraction())
-                .appendTimeZoneOffset("Z", true, 2, 2)
-                .toFormatter();
+        ContextBase context = new ContextBase();
+        HttpLogLayout httpLogLayout = new HttpLogLayout();
+
+        recoverTempFiles(filename);
+
+        fileAppender = new RollingFileAppender<>();
+        SizeAndTimeBasedFNATP<HttpRequestEvent> triggeringPolicy = new SizeAndTimeBasedFNATP<>();
+        TimeBasedRollingPolicy<HttpRequestEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
+
+        rollingPolicy.setContext(context);
+        rollingPolicy.setFileNamePattern(filename + "-%d{yyyy-MM-dd}.%i.log.gz");
+        rollingPolicy.setMaxHistory(retainDays);
+        rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(triggeringPolicy);
+        rollingPolicy.setParent(fileAppender);
+        rollingPolicy.start();
+
+        triggeringPolicy.setContext(context);
+        triggeringPolicy.setTimeBasedRollingPolicy(rollingPolicy);
+        triggeringPolicy.setMaxFileSize(String.valueOf(Long.MAX_VALUE));
+        triggeringPolicy.start();
+
+        fileAppender.setContext(context);
+        fileAppender.setFile(filename);
+        fileAppender.setAppend(true);
+        fileAppender.setLayout(httpLogLayout);
+        fileAppender.setRollingPolicy(rollingPolicy);
+        fileAppender.start();
     }
 
     public void log(Request request, Response response)
@@ -75,40 +97,7 @@ class DelimitedRequestLog
         long currentTime = currentTimeMillisProvider.getCurrentTimeMillis();
         HttpRequestEvent event = createHttpRequestEvent(request, response, traceTokenManager, currentTime);
 
-        StringBuilder builder = new StringBuilder();
-        builder.append(isoFormatter.print(event.getTimeStamp()))
-                .append('\t')
-                .append(event.getClientAddress())
-                .append('\t')
-                .append(event.getMethod())
-                .append('\t')
-                .append(request.getUri()) // TODO: escape
-                .append('\t')
-                .append(event.getUser())
-                .append('\t')
-                .append(event.getAgent()) // TODO: escape
-                .append('\t')
-                .append(event.getResponseCode())
-                .append('\t')
-                .append(event.getRequestSize())
-                .append('\t')
-                .append(event.getResponseSize())
-                .append('\t')
-                .append(event.getTimeToLastByte())
-                .append('\t')
-                .append(event.getTraceToken())
-                .append('\n');
-
-        String line = builder.toString();
-        synchronized (writer) {
-            try {
-                writer.write(line);
-                writer.flush();
-            }
-            catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        fileAppender.doAppend(event);
 
         eventClient.post(event);
     }
@@ -121,7 +110,7 @@ class DelimitedRequestLog
     public void stop()
             throws Exception
     {
-        out.close();
+        fileAppender.stop();
     }
 
     public boolean isRunning()
@@ -160,5 +149,35 @@ class DelimitedRequestLog
 
     public void removeLifeCycleListener(Listener listener)
     {
+    }
+
+    private static void recoverTempFiles(String logPath)
+    {
+        // logback has a tendency to leave around temp files if it is interrupted
+        // these .tmp files are log files that are about to be compressed.
+        // This method recovers them so that they aren't orphaned
+
+        File logPathFile = new File(logPath).getParentFile();
+        File[] tempFiles = logPathFile.listFiles(new FilenameFilter()
+        {
+            @Override
+            public boolean accept(File dir, String name)
+            {
+                return name.endsWith(TEMP_FILE_EXTENSION);
+            }
+        });
+
+        if (tempFiles != null) {
+            for (File tempFile : tempFiles) {
+                String newName = tempFile.getName().substring(0, tempFile.getName().length() - TEMP_FILE_EXTENSION.length());
+                File newFile = new File(tempFile.getParent(), newName + LOG_FILE_EXTENSION);
+                if (tempFile.renameTo(newFile)) {
+                    log.info("Recovered temp file: %s", tempFile);
+                }
+                else {
+                    log.warn("Could not rename temp file [%s] to [%s]", tempFile, newFile);
+                }
+            }
+        }
     }
 }
