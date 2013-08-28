@@ -1,5 +1,76 @@
 Platform 0.79
 
+* HttpClient exception handling
+
+  We have redesigned exception handling in the HttpClient.  In the new design,
+  the handle or handleException method of the Response handler should be called
+  once per execution.  To make this change we had to make some backwards
+  incompatible changes.
+
+  The AsyncHttpClient.executeAsync method now returns a ListenableFuture instead
+  of a CheckedFuture.  Any caller that was using the checkedGet() method of
+  CheckedFuture will need to change to get() and handle the exceptions or use
+  one of the helper methods in Guava Futures.
+
+* Reporting (experimental)
+
+  We added an experimental API for reporting metrics into a KairosDB
+  time-series database. The API and its configuration options are subject
+  to change.
+
+  - Collecting data
+
+    The @Gauge annotation may be placed on a getter in order to cause the
+    attribute to be both reported into the database and exported to JMX. If
+    the attribute is not to be exported to JMX, the @Reported annotation may
+    be used instead. The getter must return a number or boolean.
+
+    @Nested and @Flatten also work for reporting.
+
+    CounterStat, DistributionStat, and TimeStat have been extended to support
+    reporting.
+
+    The newly created Bucketed abstract class may be extended in order to
+    implement custom stats objects that support reporting in time buckets.
+
+  - Exporting report objects
+
+    The ReportBinder.export() methods behave like ExportBinder.export() except
+    they cause the bound objects to be exported to both reporting and JMX.
+
+    The ReportExporter may be used to dynamically export and unexport objects
+    to just reporting.
+
+  - Report collections
+
+    The ReportBinder.bindReportCollection() method may be used to break down
+    metrics by one or more keys. For example:
+
+    public interface StoreStat
+    {
+        CounterStat added(@Key("size") int size,
+                          @Key("successful") boolean isSuccessful);
+    };
+
+    reportBinder.bindReportCollection(StoreStat.class);
+
+    will bind an implementation of StoreStat. A call to added(10, false) will
+    return a CounterStat bound to both reporting and JMX with the name
+    "type=StoreStat,name=added,size=10,successful=false".
+
+  - Reporting client
+
+    ReportingModule enables reporting of collected data to the
+    time-series database. Configuration parameters are:
+
+    report.uri - The URI of the KairosDB database
+
+    report.tag - A table of additional tag/value pairs to include in all
+                 reported data. For example, report.tag.foo=bar will include
+                 the additional tag foo=bar
+
+  The sample server has been updated to support reporting.
+
 * Library upgrades
   - jmxutils to 1.14
 
