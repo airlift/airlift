@@ -35,7 +35,7 @@ public class HttpServerConfig
     private String keystorePassword;
 
     private String logPath = "var/log/http-request.log";
-    private Duration logRetentionTime = new Duration(90, TimeUnit.DAYS);
+    private Duration logRetentionTime = new Duration(15, TimeUnit.DAYS);
 
     private int minThreads = 2;
     private int maxThreads = 200;

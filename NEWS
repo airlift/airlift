@@ -20,6 +20,14 @@ and supports Java 7's try-with-resources syntax:
         // do something
     }
 
+* Roll http request log
+
+The http-request.log created by the http server module is now rolled and compressed
+on a daily basis.  This change makes the http request log work the same way as the
+server.log file.  The default retention for log files is:
+
+    http-server.log.retention-time = 15d
+
 
 Airlift 0.78
 

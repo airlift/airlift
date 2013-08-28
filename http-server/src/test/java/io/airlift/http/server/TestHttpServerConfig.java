@@ -37,7 +37,7 @@ public class TestHttpServerConfig
                 .setKeystorePath(null)
                 .setKeystorePassword(null)
                 .setLogPath("var/log/http-request.log")
-                .setLogRetentionTime((new Duration(90, TimeUnit.DAYS)))
+                .setLogRetentionTime((new Duration(15, TimeUnit.DAYS)))
                 .setMinThreads(2)
                 .setMaxThreads(200)
                 .setThreadMaxIdleTime(new Duration(1, TimeUnit.MINUTES))
