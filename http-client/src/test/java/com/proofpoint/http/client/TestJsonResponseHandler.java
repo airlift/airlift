@@ -15,6 +15,7 @@ import static com.proofpoint.http.client.JsonResponseHandler.createJsonResponseH
 import static com.proofpoint.http.client.TestFullJsonResponseHandler.User;
 import static com.proofpoint.http.client.testing.TestingResponse.mockResponse;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class TestJsonResponseHandler
 {
@@ -38,11 +39,18 @@ public class TestJsonResponseHandler
         assertEquals(response.getAge(), user.getAge());
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "\\QInvalid [simple type, class com.proofpoint.http.client.TestFullJsonResponseHandler$User] json string\\E")
+    @Test
     public void testInvalidJson()
     {
         String json = "{\"age\": \"foo\"}";
-        handler.handle(null, mockResponse(OK, JSON_UTF_8, json));
+        try {
+            handler.handle(null, mockResponse(OK, JSON_UTF_8, json));
+        }
+        catch (IllegalArgumentException e) {
+            assertEquals(e.getMessage(), "Unable to create " + User.class + " from JSON response:\n" + json);
+            assertTrue(e.getCause() instanceof IllegalArgumentException);
+            assertEquals(e.getCause().getMessage(), "Invalid [simple type, class com.proofpoint.http.client.TestFullJsonResponseHandler$User] json string");
+        }
     }
 
     @Test(expectedExceptions = UnexpectedResponseException.class, expectedExceptionsMessageRegExp = "Expected application/json response from server but got text/plain; charset=utf-8")

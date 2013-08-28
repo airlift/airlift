@@ -83,13 +83,19 @@ public class JsonResponseHandler<T> implements ResponseHandler<T, RuntimeExcepti
         if (!MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
             throw new UnexpectedResponseException("Expected application/json response from server but got " + contentType, request, response);
         }
+        String json;
         try {
-            String json = CharStreams.toString(new InputStreamReader(response.getInputStream(), Charsets.UTF_8));
-            T value = jsonCodec.fromJson(json);
-            return value;
+            json = CharStreams.toString(new InputStreamReader(response.getInputStream(), Charsets.UTF_8));
         }
         catch (IOException e) {
             throw new RuntimeException("Error reading response from server");
+        }
+        try {
+            T value = jsonCodec.fromJson(json);
+            return value;
+        }
+        catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Unable to create " + jsonCodec.getType() + " from JSON response:\n" + json, e);
         }
     }
 }

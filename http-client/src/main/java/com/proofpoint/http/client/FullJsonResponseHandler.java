@@ -112,7 +112,7 @@ public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<
                 value = jsonCodec.fromJson(json);
             }
             catch (IllegalArgumentException e) {
-                exception = e;
+                exception = new IllegalArgumentException("Unable to create " + jsonCodec.getType() + " from JSON response:\n" + json, e);
             }
             this.hasValue = (exception == null);
             this.value = value;
