@@ -92,6 +92,7 @@ public class Logging
         redirectJULToSLF4j();
     }
 
+    @SuppressWarnings("IOResourceOpenedButNotSafelyClosed")
     private void rewireStdStreams()
     {
         redirectSlf4jTo(new NonCloseableOutputStream(System.err));
@@ -100,6 +101,7 @@ public class Logging
         redirectStdStreamsToSlf4j();
     }
 
+    @SuppressWarnings("IOResourceOpenedButNotSafelyClosed")
     private void redirectStdStreamsToSlf4j()
     {
         System.setOut(new PrintStream(new LoggingOutputStream(LoggerFactory.getLogger("stdout")), true));
