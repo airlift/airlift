@@ -24,7 +24,6 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.status.Status;
-import ch.qos.logback.core.status.StatusChecker;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
@@ -258,14 +257,15 @@ public class Logging
         // off console logging, as file logging may be broken due to invalid paths or missing config.
         // If any errors have occurred, log them (to the console, which is guaranteed to be properly set up)
         // and bail out with an exception
+        boolean error = false;
         for (Status status : root.getLoggerContext().getStatusManager().getCopyOfStatusList()) {
             if (status.getLevel() == Status.ERROR) {
                 log.error(status.getMessage());
+                error = true;
             }
         }
 
-        StatusChecker checker = new StatusChecker(root.getLoggerContext());
-        if (checker.getHighestLevel(0) == Status.ERROR) {
+        if (error) {
             throw new RuntimeException("Error initializing logger, aborting");
         }
 
