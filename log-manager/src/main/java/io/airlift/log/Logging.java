@@ -98,6 +98,7 @@ public class Logging
         rewireStdStreams();
     }
 
+    @SuppressWarnings("IOResourceOpenedButNotSafelyClosed")
     private void rewireStdStreams()
     {
         redirectSlf4jTo(new NonCloseableOutputStream(System.err));
@@ -106,6 +107,7 @@ public class Logging
         redirectStdStreams();
     }
 
+    @SuppressWarnings("IOResourceOpenedButNotSafelyClosed")
     private void redirectStdStreams()
     {
         System.setOut(new PrintStream(new LoggingOutputStream(Logger.get("stdout")), true));
@@ -119,7 +121,7 @@ public class Logging
         encoder.setContext(context);
         encoder.start();
 
-        consoleAppender = new OutputStreamAppender<ILoggingEvent>();
+        consoleAppender = new OutputStreamAppender<>();
         consoleAppender.setContext(context);
         consoleAppender.setEncoder(encoder);
         consoleAppender.setOutputStream(stream); // needs to happen after setEncoder()
@@ -145,9 +147,9 @@ public class Logging
         encoder.setContext(context);
         encoder.start();
 
-        RollingFileAppender<ILoggingEvent> fileAppender = new RollingFileAppender<ILoggingEvent>();
-        TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<ILoggingEvent>();
-        SizeAndTimeBasedFNATP<ILoggingEvent> triggeringPolicy = new SizeAndTimeBasedFNATP<ILoggingEvent>();
+        RollingFileAppender<ILoggingEvent> fileAppender = new RollingFileAppender<>();
+        TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
+        SizeAndTimeBasedFNATP<ILoggingEvent> triggeringPolicy = new SizeAndTimeBasedFNATP<>();
 
         rollingPolicy.setContext(context);
         rollingPolicy.setFileNamePattern(logPath + "-%d{yyyy-MM-dd}.%i.log.gz");
@@ -183,12 +185,8 @@ public class Logging
             throws IOException
     {
         Properties properties = new Properties();
-        Reader reader = new FileReader(file);
-        try {
+        try (Reader reader = new FileReader(file)) {
             properties.load(reader);
-        }
-        finally {
-            reader.close();
         }
 
         processLevels(properties);
