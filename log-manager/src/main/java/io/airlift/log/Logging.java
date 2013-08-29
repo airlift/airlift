@@ -24,7 +24,6 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.status.Status;
-import ch.qos.logback.core.status.StatusChecker;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
@@ -99,6 +98,7 @@ public class Logging
         rewireStdStreams();
     }
 
+    @SuppressWarnings("IOResourceOpenedButNotSafelyClosed")
     private void rewireStdStreams()
     {
         redirectSlf4jTo(new NonCloseableOutputStream(System.err));
@@ -107,6 +107,7 @@ public class Logging
         redirectStdStreams();
     }
 
+    @SuppressWarnings("IOResourceOpenedButNotSafelyClosed")
     private void redirectStdStreams()
     {
         System.setOut(new PrintStream(new LoggingOutputStream(Logger.get("stdout")), true));
@@ -120,7 +121,7 @@ public class Logging
         encoder.setContext(context);
         encoder.start();
 
-        consoleAppender = new OutputStreamAppender<ILoggingEvent>();
+        consoleAppender = new OutputStreamAppender<>();
         consoleAppender.setContext(context);
         consoleAppender.setEncoder(encoder);
         consoleAppender.setOutputStream(stream); // needs to happen after setEncoder()
@@ -146,9 +147,9 @@ public class Logging
         encoder.setContext(context);
         encoder.start();
 
-        RollingFileAppender<ILoggingEvent> fileAppender = new RollingFileAppender<ILoggingEvent>();
-        TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<ILoggingEvent>();
-        SizeAndTimeBasedFNATP<ILoggingEvent> triggeringPolicy = new SizeAndTimeBasedFNATP<ILoggingEvent>();
+        RollingFileAppender<ILoggingEvent> fileAppender = new RollingFileAppender<>();
+        TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
+        SizeAndTimeBasedFNATP<ILoggingEvent> triggeringPolicy = new SizeAndTimeBasedFNATP<>();
 
         rollingPolicy.setContext(context);
         rollingPolicy.setFileNamePattern(logPath + "-%d{yyyy-MM-dd}.%i.log.gz");
@@ -184,12 +185,8 @@ public class Logging
             throws IOException
     {
         Properties properties = new Properties();
-        Reader reader = new FileReader(file);
-        try {
+        try (Reader reader = new FileReader(file)) {
             properties.load(reader);
-        }
-        finally {
-            reader.close();
         }
 
         processLevels(properties);
@@ -258,14 +255,15 @@ public class Logging
         // off console logging, as file logging may be broken due to invalid paths or missing config.
         // If any errors have occurred, log them (to the console, which is guaranteed to be properly set up)
         // and bail out with an exception
+        boolean error = false;
         for (Status status : root.getLoggerContext().getStatusManager().getCopyOfStatusList()) {
             if (status.getLevel() == Status.ERROR) {
                 log.error(status.getMessage());
+                error = true;
             }
         }
 
-        StatusChecker checker = new StatusChecker(root.getLoggerContext());
-        if (checker.getHighestLevel(0) == Status.ERROR) {
+        if (error) {
             throw new RuntimeException("Error initializing logger, aborting");
         }
 
