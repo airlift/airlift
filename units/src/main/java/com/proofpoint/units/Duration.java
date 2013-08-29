@@ -89,10 +89,13 @@ public final class Duration implements Comparable<Duration>
         return (long) rounded;
     }
 
-    public Duration convertTo(TimeUnit timeUnit)
+    /**
+     * @deprecated Use {@link #getValue(TimeUnit)} or {@link #roundTo(TimeUnit)} instead
+     */
+    @Deprecated
+    public double convertTo(TimeUnit timeUnit)
     {
-        Preconditions.checkNotNull(timeUnit, "timeUnit is null");
-        return new Duration(getValue(timeUnit), timeUnit);
+        return getValue(timeUnit);
     }
 
     public Duration convertToMostSuccinctTimeUnit()
@@ -107,7 +110,7 @@ public final class Duration implements Comparable<Duration>
                 break;
             }
         }
-        return convertTo(unitToUse);
+        return new Duration(getValue(unitToUse), unitToUse);
     }
 
 
