@@ -53,6 +53,7 @@
         <!-- components -->
         <module>bootstrap</module>
         <module>configuration</module>
+        <module>concurrent</module>
         <module>dbpool</module>
         <module>discovery</module>
         <module>event</module>
@@ -87,6 +88,12 @@
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>bootstrap</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>concurrent</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
 
