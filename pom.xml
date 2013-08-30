@@ -224,6 +224,7 @@
         <module>jmx-http</module>
         <module>bootstrap</module>
         <module>configuration</module>
+        <module>concurrent</module>
         <module>discovery</module>
         <module>stats</module>
         <module>units</module>
