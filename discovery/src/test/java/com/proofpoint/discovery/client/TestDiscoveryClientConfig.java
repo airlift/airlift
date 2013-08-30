@@ -35,7 +35,7 @@ public class TestDiscoveryClientConfig
     public void testExplicitPropertyMappings()
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("discovery.uri", "fake://server")
+                .put("testing.discovery.uri", "fake://server")
                 .build();
 
         DiscoveryClientConfig expected = new DiscoveryClientConfig()

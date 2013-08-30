@@ -34,7 +34,7 @@ public class TestDiscoveryModule
             throws Exception
     {
         Injector injector = Guice.createInjector(
-                new ConfigurationModule(new ConfigurationFactory(ImmutableMap.of("discovery.uri", "fake://server"))),
+                new ConfigurationModule(new ConfigurationFactory(ImmutableMap.of("testing.discovery.uri", "fake://server"))),
                 new JsonModule(),
                 new TestingNodeModule(),
                 new DiscoveryModule()

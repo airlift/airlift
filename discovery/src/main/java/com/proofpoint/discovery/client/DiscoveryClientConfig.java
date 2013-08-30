@@ -17,9 +17,11 @@ package com.proofpoint.discovery.client;
 
 import com.proofpoint.configuration.Config;
 import com.proofpoint.configuration.ConfigDescription;
+import com.proofpoint.configuration.DefunctConfig;
 
 import java.net.URI;
 
+@DefunctConfig("discovery.uri")
 public class DiscoveryClientConfig
 {
     private URI discoveryServiceURI;
@@ -30,8 +32,8 @@ public class DiscoveryClientConfig
         return discoveryServiceURI;
     }
 
-    @Config("discovery.uri")
-    @ConfigDescription("Discovery service base URI")
+    @Config("testing.discovery.uri")
+    @ConfigDescription("Discovery service base URI (testing only)")
     @Deprecated
     public DiscoveryClientConfig setDiscoveryServiceURI(URI uri)
     {
