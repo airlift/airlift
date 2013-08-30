@@ -18,7 +18,6 @@ package com.proofpoint.discovery.client;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Binder;
 import com.google.inject.Module;
-import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
@@ -27,8 +26,8 @@ import com.proofpoint.discovery.client.announce.Announcer;
 import com.proofpoint.discovery.client.announce.DiscoveryAnnouncementClient;
 import com.proofpoint.discovery.client.announce.HttpDiscoveryAnnouncementClient;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
-import com.proofpoint.http.client.balancing.HttpServiceBalancer;
 import com.proofpoint.discovery.client.balancing.HttpServiceBalancerFactory;
+import com.proofpoint.http.client.balancing.HttpServiceBalancer;
 import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -40,7 +39,8 @@ import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
 import static com.proofpoint.json.JsonCodecBinder.jsonCodecBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
-public class DiscoveryModule implements Module
+public class DiscoveryModule
+        implements Module
 {
     // Binding this .toInstance() results in inexplicable NullPointerException errors during injection
     private final HttpServiceBalancerImpl discoveryBalancer = new HttpServiceBalancerImpl("discovery");

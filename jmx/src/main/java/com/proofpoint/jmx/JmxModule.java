@@ -22,7 +22,6 @@ import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
-import org.weakref.jmx.guice.ExportBinder;
 
 import javax.management.MBeanServer;
 import java.lang.management.ManagementFactory;
@@ -44,14 +43,14 @@ public class JmxModule
         binder.bind(JmxAgent.class).in(Scopes.SINGLETON);
         ConfigurationModule.bindConfig(binder).to(JmxConfig.class);
 
-        ExportBinder builder = newExporter(binder);
-        builder.export(StackTraceMBean.class).withGeneratedName();
+        newExporter(binder).export(StackTraceMBean.class).withGeneratedName();
         binder.bind(StackTraceMBean.class).in(Scopes.SINGLETON);
 
         discoveryBinder(binder).bindServiceAnnouncement(JmxAnnouncementProvider.class);
     }
 
-    static class JmxAnnouncementProvider implements Provider<ServiceAnnouncement>
+    static class JmxAnnouncementProvider
+            implements Provider<ServiceAnnouncement>
     {
         private JmxAgent jmxAgent;
 
@@ -69,6 +68,4 @@ public class JmxModule
                     .build();
         }
     }
-
 }
-
