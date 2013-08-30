@@ -15,26 +15,21 @@
  */
 package io.airlift.discovery.client.testing;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Module;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.airlift.discovery.client.Announcer;
 import io.airlift.discovery.client.DiscoveryAnnouncementClient;
 import io.airlift.discovery.client.DiscoveryLookupClient;
-import io.airlift.discovery.client.ForDiscoveryClient;
 import io.airlift.discovery.client.ServiceAnnouncement;
 import io.airlift.discovery.client.ServiceSelector;
 import io.airlift.discovery.client.ServiceSelectorFactory;
 import io.airlift.discovery.client.ServiceSelectorManager;
 
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-
-public class TestingDiscoveryModule implements Module
+public class TestingDiscoveryModule
+        implements Module
 {
     @Override
     public void configure(Binder binder)
@@ -55,12 +50,5 @@ public class TestingDiscoveryModule implements Module
         // bind selector manager with initial empty multibinder
         Multibinder.newSetBinder(binder, ServiceSelector.class);
         binder.bind(ServiceSelectorManager.class).in(Scopes.SINGLETON);
-    }
-
-    @Provides
-    @ForDiscoveryClient
-    public ScheduledExecutorService createDiscoveryExecutor()
-    {
-        return new ScheduledThreadPoolExecutor(10, new ThreadFactoryBuilder().setNameFormat("Discovery-%s").setDaemon(true).build());
     }
 }
