@@ -71,7 +71,6 @@ public class JmxHttpModule implements Module
         // jackson has a bug in the serializer selection code so it does not know that subclasses of LazyCompositeData are also CompositeData
         jsonBinder(binder).addSerializerBinding(LazyCompositeData.class).to(CompositeDataSerializer.class);
 
-        // todo move this to the jmx announcement when this module is promoted from experimental
         DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("jmx-http");
     }
 
