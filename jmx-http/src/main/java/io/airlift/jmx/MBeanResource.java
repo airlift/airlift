@@ -33,7 +33,9 @@ import javax.ws.rs.core.MediaType;
 
 import java.util.List;
 
-@Path("/v1/jmx/mbean")
+import static com.google.common.io.Resources.getResource;
+
+@Path("/v1/jmx")
 public class MBeanResource
 {
     private final MBeanServer mbeanServer;
@@ -47,12 +49,21 @@ public class MBeanResource
     }
 
     @GET
+    @Produces(MediaType.TEXT_HTML)
+    public String getMBeansUi()
+            throws Exception
+    {
+        return Resources.toString(getResource(getClass(), "mbeans.html"), Charsets.UTF_8);
+    }
+
+    @GET
+    @Path("mbean")
     @Produces(MediaType.APPLICATION_JSON)
     public List<MBeanRepresentation> getMBeans()
             throws JMException
     {
         ImmutableList.Builder<MBeanRepresentation> mbeans = ImmutableList.builder();
-        for (ObjectName objectName : mbeanServer.queryNames(new ObjectName("*:*"), null)) {
+        for (ObjectName objectName : mbeanServer.queryNames(ObjectName.WILDCARD, null)) {
             mbeans.add(new MBeanRepresentation(mbeanServer, objectName, objectMapper));
         }
 
@@ -60,16 +71,7 @@ public class MBeanResource
     }
 
     @GET
-    @Produces(MediaType.TEXT_HTML)
-    public String getMBeansUi()
-            throws Exception
-    {
-        String html = Resources.toString(Resources.getResource(getClass(), "mbeans.html"), Charsets.UTF_8);
-        return html;
-    }
-
-    @GET
-    @Path("{objectName}")
+    @Path("mbean/{objectName}")
     @Produces(MediaType.APPLICATION_JSON)
     public MBeanRepresentation getMBean(@PathParam("objectName") ObjectName objectName)
             throws JMException
