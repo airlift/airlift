@@ -8,6 +8,7 @@
 - Add ConfigurationAwareProvider interface to implement custom
   configuration providers
 - Roll and compress the http request log daily
+- [Experimental] Add management wrapper for thread pool executor
 
 * 0.78
 

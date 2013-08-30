@@ -7,6 +7,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Closeables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.airlift.concurrent.ThreadPoolExecutorMBean;
 import io.airlift.http.client.AsyncHttpClient;
 import io.airlift.http.client.BodyGenerator;
 import io.airlift.http.client.HttpClientConfig;
@@ -34,6 +35,7 @@ import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import org.jboss.netty.util.HashedWheelTimer;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
+import org.weakref.jmx.Nested;
 
 import javax.annotation.PreDestroy;
 
@@ -55,6 +57,7 @@ public class NettyAsyncHttpClient
     private final List<HttpRequestFilter> requestFilters;
 
     private final OrderedMemoryAwareThreadPoolExecutor executor;
+    private final ThreadPoolExecutorMBean executorMBean;
     private final NettyConnectionPool nettyConnectionPool;
     private final HashedWheelTimer timer;
 
@@ -86,6 +89,7 @@ public class NettyAsyncHttpClient
 
         ThreadFactory workerThreadFactory = new ThreadFactoryBuilder().setNameFormat(namePrefix + "-worker-%s").setDaemon(true).build();
         this.executor = new OrderedMemoryAwareThreadPoolExecutor(asyncConfig.getWorkerThreads(), 0, 0, 30, TimeUnit.SECONDS, workerThreadFactory);
+        this.executorMBean = new ThreadPoolExecutorMBean(executor);
 
         ClientBootstrap bootstrap;
         if (config.getSocksProxy() == null) {
@@ -163,6 +167,13 @@ public class NettyAsyncHttpClient
     public RequestStats getStats()
     {
         return stats;
+    }
+
+    @Managed
+    @Nested
+    public ThreadPoolExecutorMBean getExecutor()
+    {
+        return executorMBean;
     }
 
     @Override
