@@ -9,6 +9,7 @@
   configuration providers
 - Roll and compress the http request log daily
 - [Experimental] Add management wrapper for thread pool executor
+- New python-based launcher
 
 * 0.78
 

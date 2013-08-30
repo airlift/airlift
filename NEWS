@@ -29,6 +29,28 @@ server.log file.  The default retention for log files is:
     http-server.log.retention-time = 15d
 
 
+* Launcher
+
+We've reimplemented the launcher in Python. It is compatible with Python 2.4, which is
+generally available in most Unix distributions. This means there's no longer a dependency
+on Ruby 1.9.
+
+As part of the rewrite, we've fixed some long-standing issues and added a couple of features:
+- Application logs are now written to var/log/server.log instead of launcher.log.
+- stdout/stderr from the JVM is now redirected to var/log/launcher.log. This is necessary
+  for capturing thread dumps and other VM diagnostics output.
+- If the package contains a 'plugin' directory, it will be symlinked into the data directory.
+  This makes it possible for the server to locate and load plugins dynamically when the
+  data directory does not match the installation directory.
+- All jar files in the lib directory are now used to build the classpath for the process. This
+  makes it easier to re-package servers and add new dependencies (e.g., database drivers),
+  without having to rebuild the server jar file and the manifest classspath.
+- In 64-bit Linux, tools like ps, top, etc will now show a custom name for the Java process
+  (instead of just 'java'). The name can be overridden by setting the "process-name" property
+  in the server pom file. The default value is determined by the artifactId of the pom.
+- pid file handling is now more robust and no longer suffers from issues due to stale pid files
+
+
 Airlift 0.78
 
 * Units
