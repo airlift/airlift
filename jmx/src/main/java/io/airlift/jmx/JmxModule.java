@@ -22,14 +22,14 @@ import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import io.airlift.configuration.ConfigurationModule;
 import io.airlift.discovery.client.ServiceAnnouncement;
-import org.weakref.jmx.guice.ExportBuilder;
-import org.weakref.jmx.guice.MBeanModule;
 
 import javax.management.MBeanServer;
+
 import java.lang.management.ManagementFactory;
 
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class JmxModule
         implements Module
@@ -44,14 +44,14 @@ public class JmxModule
         binder.bind(JmxAgent.class).in(Scopes.SINGLETON);
         ConfigurationModule.bindConfig(binder).to(JmxConfig.class);
 
-        ExportBuilder builder = MBeanModule.newExporter(binder);
-        builder.export(StackTraceMBean.class).withGeneratedName();
+        newExporter(binder).export(StackTraceMBean.class).withGeneratedName();
         binder.bind(StackTraceMBean.class).in(Scopes.SINGLETON);
 
         discoveryBinder(binder).bindServiceAnnouncement(JmxAnnouncementProvider.class);
     }
 
-    static class JmxAnnouncementProvider implements Provider<ServiceAnnouncement>
+    static class JmxAnnouncementProvider
+            implements Provider<ServiceAnnouncement>
     {
         private JmxAgent jmxAgent;
 
@@ -69,6 +69,4 @@ public class JmxModule
                     .build();
         }
     }
-
 }
-

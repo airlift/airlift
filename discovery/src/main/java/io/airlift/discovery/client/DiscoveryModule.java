@@ -21,7 +21,6 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import org.weakref.jmx.guice.MBeanModule;
 
 import java.net.URI;
 import java.util.concurrent.ScheduledExecutorService;
@@ -30,8 +29,10 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import static io.airlift.configuration.ConfigurationModule.bindConfig;
 import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
 import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
-public class DiscoveryModule implements Module
+public class DiscoveryModule
+        implements Module
 {
     @Override
     public void configure(Binder binder)
@@ -64,7 +65,7 @@ public class DiscoveryModule implements Module
         Multibinder.newSetBinder(binder, ServiceSelector.class);
         binder.bind(ServiceSelectorManager.class).in(Scopes.SINGLETON);
 
-        MBeanModule.newExporter(binder).export(ServiceInventory.class).withGeneratedName();
+        newExporter(binder).export(ServiceInventory.class).withGeneratedName();
     }
 
     @Provides
@@ -86,11 +87,13 @@ public class DiscoveryModule implements Module
 
             try {
                 return new URI(descriptor.getProperties().get("https"));
-            } catch (Exception ignored) {
+            }
+            catch (Exception ignored) {
             }
             try {
                 return new URI(descriptor.getProperties().get("http"));
-            } catch (Exception ignored) {
+            }
+            catch (Exception ignored) {
             }
         }
         if (config != null) {

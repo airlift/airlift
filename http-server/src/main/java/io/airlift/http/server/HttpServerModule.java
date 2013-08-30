@@ -27,6 +27,7 @@ import org.weakref.jmx.guice.MBeanModule;
 import javax.servlet.Filter;
 
 import static io.airlift.event.client.EventBinder.eventBinder;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 /**
  * Provides a fully configured instance of an http server,
@@ -65,7 +66,7 @@ public class HttpServerModule
         Multibinder.newSetBinder(binder, Filter.class, TheAdminServlet.class);
         Multibinder.newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
 
-        MBeanModule.newExporter(binder).export(RequestStats.class).withGeneratedName();
+        newExporter(binder).export(RequestStats.class).withGeneratedName();
 
         ConfigurationModule.bindConfig(binder).to(HttpServerConfig.class);
 
