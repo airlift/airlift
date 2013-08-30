@@ -216,17 +216,18 @@ class JsonMapper
             }
         }
 
+        String jsonpFunctionName = getJsonpFunctionName();
+        if (jsonpFunctionName != null) {
+            value = new JSONPObject(jsonpFunctionName, value, rootType);
+            rootType = null;
+        }
+
         ObjectWriter writer;
         if (rootType != null) {
             writer = objectMapper.writerWithType(rootType);
         }
         else {
             writer = objectMapper.writer();
-        }
-
-        String jsonpFunctionName = getJsonpFunctionName();
-        if (jsonpFunctionName != null) {
-            value = new JSONPObject(jsonpFunctionName, value, rootType);
         }
 
         writer.writeValue(jsonGenerator, value);
