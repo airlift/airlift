@@ -46,6 +46,7 @@ public class TestReportCollector
                     }
                 },
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
-                new ReportingModule());
+                new ReportingModule(),
+                new ReportingClientModule());
     }
 }

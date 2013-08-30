@@ -55,7 +55,7 @@ public class TestMinuteBucketIdProvider
         assertEquals(idProvider.get(), 1, "on minute boundary");
     }
 
-    private class TestingTicker
+    private static class TestingTicker
         extends Ticker
     {
         long nanos;
