@@ -119,7 +119,7 @@ public class ConfigurationMetadata<T>
             }
         }
 
-        if (problems.getErrors().isEmpty() && this.attributes.isEmpty()) {
+        if (problems.getErrors().isEmpty() && this.attributes.isEmpty() && defunctConfig.isEmpty()) {
             problems.addError("Configuration class [%s] does not have any @Config annotations", configClass.getName());
         }
     }

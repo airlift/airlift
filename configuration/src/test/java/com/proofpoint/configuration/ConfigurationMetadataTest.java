@@ -226,6 +226,19 @@ public class ConfigurationMetadataTest
     }
 
     @Test
+    public void testDefunctOnlyClass()
+            throws Exception
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DefunctOnlyClass.class, monitor);
+        Map<String, Set<String>> expectedAttributes = Maps.newHashMap();
+
+        verifyMetaData(metadata, DefunctOnlyClass.class, null, false, expectedAttributes);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
+    }
+
+    @Test
     public void testGetterAndSetterAnnotatedClass()
             throws Exception
     {
@@ -1092,6 +1105,11 @@ public class ConfigurationMetadataTest
     }
 
     public static class NoConfigMethodsClass
+    {
+    }
+
+    @DefunctConfig("value")
+    public static class DefunctOnlyClass
     {
     }
 
