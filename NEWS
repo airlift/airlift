@@ -50,6 +50,8 @@ As part of the rewrite, we've fixed some long-standing issues and added a couple
   in the server pom file. The default value is determined by the artifactId of the pom.
 - pid file handling is now more robust and no longer suffers from issues due to stale pid files
 
+Important: projects that depend on Airbase need to upgrade to version 8 or higher.
+
 
 Airlift 0.78
 
