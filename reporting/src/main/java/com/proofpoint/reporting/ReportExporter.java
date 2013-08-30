@@ -17,7 +17,6 @@ package com.proofpoint.reporting;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
-import com.google.inject.Injector;
 
 import javax.management.InstanceAlreadyExistsException;
 import javax.management.MalformedObjectNameException;
@@ -25,7 +24,6 @@ import javax.management.ObjectName;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
@@ -39,23 +37,11 @@ public class ReportExporter
     private final BucketIdProvider bucketIdProvider;
 
     @Inject
-    ReportExporter(Set<Mapping> mappings,
-            ReportedBeanRegistry registry, BucketIdProvider bucketIdProvider, Injector injector)
+    ReportExporter(ReportedBeanRegistry registry, BucketIdProvider bucketIdProvider)
             throws MalformedObjectNameException, InstanceAlreadyExistsException
     {
         this.registry = checkNotNull(registry, "registry is null");
         this.bucketIdProvider = checkNotNull(bucketIdProvider, "bucketIdProvider is null");
-        export(mappings, injector);
-    }
-
-    private void export(Set<Mapping> mappings, Injector injector)
-            throws MalformedObjectNameException, InstanceAlreadyExistsException
-    {
-        for (Mapping mapping : mappings) {
-            Object object = injector.getInstance(mapping.getKey());
-            export(new ObjectName(mapping.getName()), object);
-
-        }
     }
 
     public void export(ObjectName objectName, Object object)

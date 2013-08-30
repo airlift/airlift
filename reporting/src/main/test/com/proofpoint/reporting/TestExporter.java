@@ -109,10 +109,9 @@ public class TestExporter extends AbstractReportedBeanTest<NamedObject>
             instanceBuilder.put(key, namedObject.object);
         }
 
-        new ReportExporter(
+        new GuiceReportExporter(
                 mappingBuilder.build(),
-                registry,
-                bucketIdProvider,
+                new ReportExporter(registry, bucketIdProvider),
                 new TestingInjector(instanceBuilder.build()));
     }
 

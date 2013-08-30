@@ -23,7 +23,6 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -468,6 +467,7 @@ public class TestReportBinder
             binder.install(new MBeanModule());
 
             binder.bind(ReportExporter.class).asEagerSingleton();
+            binder.bind(GuiceReportExporter.class).asEagerSingleton();
             newSetBinder(binder, Mapping.class);
             binder.bind(ReportedBeanRegistry.class).in(Scopes.SINGLETON);
         }
