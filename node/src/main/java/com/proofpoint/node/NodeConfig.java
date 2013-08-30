@@ -17,12 +17,14 @@ package com.proofpoint.node;
 
 import com.google.common.net.InetAddresses;
 import com.proofpoint.configuration.Config;
+import com.proofpoint.configuration.DefunctConfig;
 import com.proofpoint.configuration.LegacyConfig;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import java.net.InetAddress;
 
+@DefunctConfig({"http-server.ip", "jetty.ip"})
 public class NodeConfig
 {
     public static final String ENV_REGEXP = "[a-z0-9][_a-z0-9]*";
@@ -104,7 +106,6 @@ public class NodeConfig
     }
 
     @Config("node.ip")
-    @LegacyConfig({"http-server.ip", "jetty.ip"})
     public NodeConfig setNodeInternalIp(String nodeInternalIp)
     {
         if (nodeInternalIp != null) {

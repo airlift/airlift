@@ -22,12 +22,16 @@ import org.testng.annotations.Test;
 
 import java.util.Map;
 
+import static com.proofpoint.configuration.testing.ConfigAssertions.assertFullMapping;
+import static com.proofpoint.configuration.testing.ConfigAssertions.assertLegacyEquivalence;
+import static com.proofpoint.configuration.testing.ConfigAssertions.assertRecordedDefaults;
+
 public class TestNodeConfig
 {
     @Test
     public void testDefaults()
     {
-        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(NodeConfig.class)
+        assertRecordedDefaults(ConfigAssertions.recordDefaults(NodeConfig.class)
                 .setEnvironment(null)
                 .setPool("general")
                 .setNodeId(null)
@@ -68,28 +72,17 @@ public class TestNodeConfig
                 .setBinarySpec("binary")
                 .setConfigSpec("config");
 
-        ConfigAssertions.assertFullMapping(properties, expected);
+        assertFullMapping(properties, expected);
     }
 
     @Test
     public void testLegacyProperties()
     {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
-                .put("node.environment", "environment")
-                .put("node.ip", "1.2.3.4")
-                .build();
+                 .put("node.environment", "environment")
+                 .build();
 
-        Map<String, String> httpProperties = new ImmutableMap.Builder<String, String>()
-                .put("node.environment", "environment")
-                .put("http-server.ip", "1.2.3.4")
-                .build();
-
-        Map<String, String> jettyProperties = new ImmutableMap.Builder<String, String>()
-                .put("node.environment", "environment")
-                .put("jetty.ip", "1.2.3.4")
-                .build();
-
-        ConfigAssertions.assertLegacyEquivalence(NodeConfig.class, currentProperties, httpProperties, jettyProperties);
+        assertLegacyEquivalence(NodeConfig.class, currentProperties);
     }
 
 }
