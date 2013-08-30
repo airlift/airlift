@@ -144,7 +144,7 @@ def symlink_exists(p):
     """Check if symlink exists and raise if another type of file exists"""
     try:
         st = os.lstat(p)
-        if not S_ISLNK(st):
+        if not S_ISLNK(st.st_mode):
             raise Exception('Path exists and is not a symlink: %s' % p)
         return True
     except OSError, e:

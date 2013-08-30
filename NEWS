@@ -1,3 +1,12 @@
+Airlift 0.80
+
+* Launcher
+
+This release fixes an important issue in the new Python-based launcher introduced in 0.79 
+that prevents servers from starting properly. If you're relying on packaging/launcher, you 
+should upgrade to this version.
+
+
 Airlift 0.79
 
 * JMX agent
