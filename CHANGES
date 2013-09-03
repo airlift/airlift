@@ -3,6 +3,7 @@
 - [Bug] Fix issue in launcher when inspecting etc and plugin symlinks
 - [Bug] Fix JSONP support in jaxrs for generic types (like collections)
 - Move the HTML user interface for JMX to /v1/jmx
+- Don't try to start JMX agent if already running
 
 * 0.79
 

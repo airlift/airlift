@@ -65,7 +65,7 @@ public class JmxModule
         public ServiceAnnouncement get()
         {
             return serviceAnnouncement("jmx")
-                    .addProperty("jmx", jmxAgent.getURL().toString())
+                    .addProperty("jmx", jmxAgent.getAddress().toString())
                     .build();
         }
     }
