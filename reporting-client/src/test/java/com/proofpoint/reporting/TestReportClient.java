@@ -108,12 +108,14 @@ public class TestReportClient
         assertEquals(sentJson.get(0).get("value"), 1.2);
         assertEquals(sentJson.get(1).get("value"), 1.1);
         Map<String, String> tags = (Map<String, String>) sentJson.get(0).get("tags");
-        assertEquals(tags.keySet(), ImmutableSet.of("host", "environment", "pool", "type", "name"));
+        assertEquals(tags.keySet(), ImmutableSet.of("host", "environment", "pool", "package", "type", "name"));
+        assertEquals(tags.get("package"), "com.example");
         assertEquals(tags.get("type"), "Foo");
         assertEquals(tags.get("name"), "B\\a\"r");
         tags = (Map<String, String>) sentJson.get(1).get("tags");
+        assertEquals(tags.get("package"), "com.example");
         assertEquals(tags.get("name"), "Foo");
-        assertEquals(tags.keySet(), ImmutableSet.of("host", "environment", "pool", "name"));
+        assertEquals(tags.keySet(), ImmutableSet.of("host", "environment", "pool", "package", "name"));
     }
 
     @Test
@@ -130,13 +132,14 @@ public class TestReportClient
         for (Map<String, Object> map : sentJson) {
             assertEquals(map.keySet(), ImmutableSet.of("name", "timestamp", "value", "tags"));
             Map<String, String> tags = (Map<String, String>) map.get("tags");
+            assertEquals(tags.get("package"), "com.example");
             assertEquals(tags.get("foo"), "bar");
             assertEquals(tags.get("baz"), "quux");
         }
         Map<String, String> tags = (Map<String, String>) sentJson.get(0).get("tags");
-        assertEquals(tags.keySet(), ImmutableSet.of("host", "environment", "pool", "foo", "baz", "type", "name"));
+        assertEquals(tags.keySet(), ImmutableSet.of("host", "environment", "pool", "foo", "baz", "package", "type", "name"));
         tags = (Map<String, String>) sentJson.get(1).get("tags");
-        assertEquals(tags.keySet(), ImmutableSet.of("host", "environment", "pool", "foo", "baz", "name"));
+        assertEquals(tags.keySet(), ImmutableSet.of("host", "environment", "pool", "foo", "baz", "package", "name"));
     }
 
     private class TestingResponseFunction

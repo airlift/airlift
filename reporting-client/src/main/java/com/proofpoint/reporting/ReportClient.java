@@ -117,7 +117,8 @@ class ReportClient
             timestamp = systemTimeMillis;
             value = cell.getValue();
             Builder<String, String> builder = ImmutableMap.<String, String>builder()
-                    .putAll(instanceTags);
+                    .putAll(instanceTags)
+                    .put("package", cell.getRowKey().getDomain());
             for (Entry<String, String> entry : cell.getRowKey().getKeyPropertyList().entrySet()) {
                 Matcher matcher = QUOTED_PATTERN.matcher(entry.getValue());
                 if (matcher.matches()) {
