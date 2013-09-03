@@ -61,9 +61,9 @@ public class TestReportCollectionFactory
         ArgumentCaptor<SomeObject> reportCaptor = ArgumentCaptor.forClass(SomeObject.class);
 
         verify(mBeanExporter).export(stringCaptor.capture(), mbeanCaptor.capture());
-        assertEquals(stringCaptor.getValue(), "com.proofpoint.reporting:type=KeyedDistribution,name=add,foo=value,bar=false");
+        assertEquals(stringCaptor.getValue(), "com.proofpoint.reporting:type=KeyedDistribution,name=Add,foo=value,bar=false");
         verify(reportExporter).export(objectNameCaptor.capture(), reportCaptor.capture());
-        assertEquals(objectNameCaptor.getValue().getCanonicalName(), "com.proofpoint.reporting:bar=false,foo=value,name=add,type=KeyedDistribution");
+        assertEquals(objectNameCaptor.getValue().getCanonicalName(), "com.proofpoint.reporting:bar=false,foo=value,name=Add,type=KeyedDistribution");
         assertSame(mbeanCaptor.getValue(), reportCaptor.getValue());
     }
 
@@ -80,9 +80,9 @@ public class TestReportCollectionFactory
         ArgumentCaptor<SomeObject> reportCaptor = ArgumentCaptor.forClass(SomeObject.class);
 
         verify(mBeanExporter).export(stringCaptor.capture(), mbeanCaptor.capture());
-        assertEquals(stringCaptor.getValue(), "com.proofpoint.reporting:type=KeyedDistribution,name=add,bar=false");
+        assertEquals(stringCaptor.getValue(), "com.proofpoint.reporting:type=KeyedDistribution,name=Add,bar=false");
         verify(reportExporter).export(objectNameCaptor.capture(), reportCaptor.capture());
-        assertEquals(objectNameCaptor.getValue().getCanonicalName(), "com.proofpoint.reporting:bar=false,name=add,type=KeyedDistribution");
+        assertEquals(objectNameCaptor.getValue().getCanonicalName(), "com.proofpoint.reporting:bar=false,name=Add,type=KeyedDistribution");
         assertSame(mbeanCaptor.getValue(), reportCaptor.getValue());
     }
 
@@ -108,9 +108,9 @@ public class TestReportCollectionFactory
         ArgumentCaptor<ObjectName> objectNameCaptor = ArgumentCaptor.forClass(ObjectName.class);
 
         verify(mBeanExporter).unexport(stringCaptor.capture());
-        assertEquals(stringCaptor.getValue(), "com.proofpoint.reporting:type=KeyedDistribution,name=add,foo=value,bar=false");
+        assertEquals(stringCaptor.getValue(), "com.proofpoint.reporting:type=KeyedDistribution,name=Add,foo=value,bar=false");
         verify(reportExporter).unexport(objectNameCaptor.capture());
-        assertEquals(objectNameCaptor.getValue().getCanonicalName(), "com.proofpoint.reporting:bar=false,foo=value,name=add,type=KeyedDistribution");
+        assertEquals(objectNameCaptor.getValue().getCanonicalName(), "com.proofpoint.reporting:bar=false,foo=value,name=Add,type=KeyedDistribution");
     }
 
     private interface KeyedDistribution

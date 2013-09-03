@@ -41,6 +41,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.CaseFormat.LOWER_CAMEL;
+import static com.google.common.base.CaseFormat.UPPER_CAMEL;
 import static java.lang.reflect.Proxy.newProxyInstance;
 
 class ReportCollectionFactory
@@ -108,7 +110,7 @@ class ReportCollectionFactory
                 }
                 final String packageName = aClass.getPackage().getName();
                 final String className = aClass.getSimpleName();
-                final String methodName = method.getName();
+                final String upperMethodName = LOWER_CAMEL.to(UPPER_CAMEL, method.getName());
                 final List<String> keyNames = keyNameBuilder.build();
 
                 cacheBuilder.put(method, CacheBuilder.newBuilder()
@@ -125,7 +127,7 @@ class ReportCollectionFactory
 
                                 ObjectNameBuilder objectNameBuilder = new ObjectNameBuilder(packageName)
                                         .withProperty("type", className)
-                                        .withProperty("name", methodName);
+                                        .withProperty("name", upperMethodName);
                                 for (int i = 0; i < keyNames.size(); ++i) {
                                     if (key.get(i).isPresent()) {
                                         objectNameBuilder = objectNameBuilder.withProperty(keyNames.get(i), key.get(i).get());
