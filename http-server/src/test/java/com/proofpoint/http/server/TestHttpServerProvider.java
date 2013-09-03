@@ -25,6 +25,7 @@ import com.proofpoint.http.client.HttpClientConfig;
 import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.client.StringResponseHandler.StringResponse;
 import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
+import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.testing.FileUtils;
 import com.proofpoint.tracetoken.TraceTokenManager;
@@ -204,6 +205,7 @@ public class TestHttpServerProvider
                 ImmutableSet.<HttpResourceBinding>of(),
                 ImmutableSet.<Filter>of(),
                 new RequestStats(),
+                new TestingHttpServer.DetailedRequestStats(),
                 new QueryStringFilter(),
                 new NullEventClient());
         serverProvider.setLoginService(loginServiceProvider.get());

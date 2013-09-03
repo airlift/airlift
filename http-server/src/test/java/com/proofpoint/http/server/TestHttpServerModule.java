@@ -44,13 +44,16 @@ import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.client.StringResponseHandler.StringResponse;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.node.NodeModule;
+import com.proofpoint.reporting.ReportingModule;
 import com.proofpoint.testing.FileUtils;
 import com.proofpoint.tracetoken.TraceTokenModule;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.weakref.jmx.guice.MBeanModule;
 
+import javax.management.MBeanServer;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
@@ -76,6 +79,7 @@ import static com.proofpoint.http.client.StatusResponseHandler.createStatusRespo
 import static com.proofpoint.http.client.StringResponseHandler.createStringResponseHandler;
 import static com.proofpoint.http.server.HttpServerBinder.httpServerBinder;
 import static java.util.Collections.nCopies;
+import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -114,12 +118,15 @@ public class TestHttpServerModule
                 new NodeModule(),
                 new ConfigurationModule(configFactory),
                 new NullEventModule(),
+                new MBeanModule(),
+                new ReportingModule(),
                 new Module()
                 {
                     @Override
                     public void configure(Binder binder)
                     {
                         binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
+                        binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
                     }
                 });
 
@@ -142,12 +149,15 @@ public class TestHttpServerModule
                 new NodeModule(),
                 new ConfigurationModule(configFactory),
                 new NullEventModule(),
+                new MBeanModule(),
+                new ReportingModule(),
                 new Module()
                 {
                     @Override
                     public void configure(Binder binder)
                     {
                         binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
+                        binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
                     }
                 });
 
@@ -183,12 +193,15 @@ public class TestHttpServerModule
                 new NodeModule(),
                 new ConfigurationModule(configFactory),
                 new NullEventModule(),
+                new MBeanModule(),
+                new ReportingModule(),
                 new Module()
                 {
                     @Override
                     public void configure(Binder binder)
                     {
                         binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
+                        binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
                         Multibinder.newSetBinder(binder, Filter.class, TheServlet.class).addBinding().to(DummyFilter.class).in(Scopes.SINGLETON);
                         httpServerBinder(binder).bindResource("/", "webapp/user").withWelcomeFile("user-welcome.txt");
                         httpServerBinder(binder).bindResource("/", "webapp/user2");
@@ -258,6 +271,8 @@ public class TestHttpServerModule
                 new NodeModule(),
                 new ConfigurationModule(configFactory),
                 new InMemoryEventModule(),
+                new MBeanModule(),
+                new ReportingModule(),
                 new TraceTokenModule(),
                 new Module()
                 {
@@ -265,6 +280,7 @@ public class TestHttpServerModule
                     public void configure(Binder binder)
                     {
                         binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(EchoServlet.class).in(Scopes.SINGLETON);
+                        binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
                     }
                 });
 

@@ -26,7 +26,7 @@ import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 import javax.servlet.Filter;
 
 import static com.proofpoint.event.client.EventBinder.eventBinder;
-import static org.weakref.jmx.guice.ExportBinder.newExporter;
+import static com.proofpoint.reporting.ReportBinder.reportBinder;
 
 /**
  * Provides a fully configured instance of an http server,
@@ -66,7 +66,8 @@ public class HttpServerModule
         Multibinder.newSetBinder(binder, Filter.class, TheAdminServlet.class);
         Multibinder.newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
 
-        newExporter(binder).export(RequestStats.class).withGeneratedName();
+        reportBinder(binder).export(RequestStats.class).withGeneratedName();
+        reportBinder(binder).bindReportCollection(DetailedRequestStats.class);
 
         ConfigurationModule.bindConfig(binder).to(HttpServerConfig.class);
 

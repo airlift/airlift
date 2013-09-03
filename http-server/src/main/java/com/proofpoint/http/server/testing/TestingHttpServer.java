@@ -28,6 +28,7 @@ import com.proofpoint.http.server.QueryStringFilter;
 import com.proofpoint.http.server.RequestStats;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.node.NodeInfo;
+import com.proofpoint.stats.TimeStat;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 
@@ -72,6 +73,7 @@ public class TestingHttpServer extends HttpServer
                 queryStringFilter,
                 traceTokenManager,
                 new RequestStats(),
+                new DetailedRequestStats(),
                 new NullEventClient());
         this.httpServerInfo = httpServerInfo;
     }
@@ -91,5 +93,14 @@ public class TestingHttpServer extends HttpServer
     public int getPort()
     {
         return httpServerInfo.getHttpUri().getPort();
+    }
+
+    public static class DetailedRequestStats implements com.proofpoint.http.server.DetailedRequestStats
+    {
+        @Override
+        public TimeStat requestTime(int responseCode)
+        {
+            return new TimeStat();
+        }
     }
 }

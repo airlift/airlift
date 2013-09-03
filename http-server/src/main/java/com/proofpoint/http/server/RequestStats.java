@@ -15,19 +15,15 @@
  */
 package com.proofpoint.http.server;
 
-import com.proofpoint.stats.CounterStat;
 import com.proofpoint.stats.DistributionStat;
 import com.proofpoint.stats.TimeStat;
 import com.proofpoint.units.Duration;
-import org.weakref.jmx.Flatten;
-import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
 import javax.inject.Inject;
 
 public class RequestStats
 {
-    private final CounterStat request;
     private final TimeStat requestTime;
     private final DistributionStat readBytes;
     private final DistributionStat writtenBytes;
@@ -35,7 +31,6 @@ public class RequestStats
     @Inject
     public RequestStats()
     {
-        request = new CounterStat();
         requestTime = new TimeStat();
         readBytes = new DistributionStat();
         writtenBytes = new DistributionStat();
@@ -43,34 +38,23 @@ public class RequestStats
 
     public void record(String method, int responseCode, long requestSizeInBytes, long responseSizeInBytes, Duration schedulingDelay, Duration requestProcessingTime)
     {
-        request.update(1);
         requestTime.add(requestProcessingTime);
         readBytes.add(requestSizeInBytes);
         writtenBytes.add(responseSizeInBytes);
     }
 
-    @Managed
-    @Flatten
-    public CounterStat getRequest()
-    {
-        return request;
-    }
-
-    @Managed
     @Nested
     public TimeStat getRequestTime()
     {
         return requestTime;
     }
 
-    @Managed
     @Nested
     public DistributionStat getReadBytes()
     {
         return readBytes;
     }
 
-    @Managed
     @Nested
     public DistributionStat getWrittenBytes()
     {

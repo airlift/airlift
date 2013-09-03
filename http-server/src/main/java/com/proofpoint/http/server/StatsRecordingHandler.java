@@ -22,16 +22,19 @@ import org.eclipse.jetty.server.Response;
 
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Math.max;
 
 public class StatsRecordingHandler
         implements RequestLog
 {
     private final RequestStats stats;
+    private final DetailedRequestStats detailedRequestStats;
 
-    public StatsRecordingHandler(RequestStats stats)
+    public StatsRecordingHandler(RequestStats stats, DetailedRequestStats detailedRequestStats)
     {
-        this.stats = stats;
+        this.stats = checkNotNull(stats, "stats is null");
+        this.detailedRequestStats = checkNotNull(detailedRequestStats, "detailedRequestStats is null");
     }
 
     @Override
@@ -47,6 +50,7 @@ public class StatsRecordingHandler
         Duration schedulingDelay = new Duration(max(0, dispatchTime - request.getTimeStamp()), TimeUnit.MILLISECONDS);
 
         stats.record(request.getMethod(), response.getStatus(), request.getContentRead(), response.getContentCount(), schedulingDelay, requestTime);
+        detailedRequestStats.requestTime(response.getStatus()).add(requestTime);
     }
 
     @Override

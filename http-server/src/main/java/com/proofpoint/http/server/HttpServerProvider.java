@@ -52,6 +52,7 @@ public class HttpServerProvider
     private MBeanServer mbeanServer;
     private LoginService loginService;
     private final RequestStats stats;
+    private final DetailedRequestStats detailedRequestStats;
     private final Set<Filter> filters;
     private final Set<Filter> adminFilters;
     private QueryStringFilter queryStringFilter;
@@ -67,6 +68,7 @@ public class HttpServerProvider
             @TheServlet Set<HttpResourceBinding> resources,
             @TheAdminServlet Set<Filter> adminFilters,
             RequestStats stats,
+            DetailedRequestStats detailedRequestStats,
             QueryStringFilter queryStringFilter,
             EventClient eventClient)
     {
@@ -78,6 +80,7 @@ public class HttpServerProvider
         checkNotNull(resources, "resources is null");
         checkNotNull(adminFilters, "adminFilters is null");
         checkNotNull(stats, "stats is null");
+        checkNotNull(detailedRequestStats, "detailedRequestStats is null");
         checkNotNull(queryStringFilter, "queryStringFilter is null");
         checkNotNull(eventClient, "eventClient is null");
 
@@ -89,6 +92,7 @@ public class HttpServerProvider
         this.resources = ImmutableSet.copyOf(resources);
         this.adminFilters = ImmutableSet.copyOf(adminFilters);
         this.stats = stats;
+        this.detailedRequestStats = detailedRequestStats;
         this.queryStringFilter = queryStringFilter;
         this.eventClient = eventClient;
     }
@@ -140,6 +144,7 @@ public class HttpServerProvider
                     queryStringFilter,
                     traceTokenManager,
                     stats,
+                    detailedRequestStats,
                     eventClient);
             httpServer.start();
             return httpServer;
