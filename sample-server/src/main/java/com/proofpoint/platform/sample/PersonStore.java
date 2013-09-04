@@ -23,7 +23,6 @@ import com.google.inject.Inject;
 import com.proofpoint.event.client.EventClient;
 import com.proofpoint.reporting.Gauge;
 import org.weakref.jmx.Flatten;
-import org.weakref.jmx.Managed;
 
 import java.util.Collection;
 import java.util.Map.Entry;
@@ -50,7 +49,6 @@ public class PersonStore
         stats = new PersonStoreStats(eventClient);
     }
 
-    @Managed
     @Flatten
     public PersonStoreStats getStats()
     {

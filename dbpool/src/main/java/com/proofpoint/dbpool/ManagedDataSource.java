@@ -169,7 +169,6 @@ public abstract class ManagedDataSource implements DataSource
         semaphore.setPermits(maxConnections);
     }
 
-    @Managed
     @Flatten
     public ManagedDataSourceStats getStats()
     {

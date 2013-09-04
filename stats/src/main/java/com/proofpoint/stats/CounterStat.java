@@ -18,7 +18,6 @@ package com.proofpoint.stats;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.Beta;
-import com.proofpoint.reporting.Reported;
 import com.proofpoint.stats.DecayCounter.DecayCounterSnapshot;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
@@ -50,28 +49,24 @@ public class CounterStat
         return count.get();
     }
 
-    @Managed
     @Nested
     public DecayCounter getOneMinute()
     {
         return oneMinute;
     }
 
-    @Managed
     @Nested
     public DecayCounter getFiveMinute()
     {
         return fiveMinute;
     }
 
-    @Managed
     @Nested
     public DecayCounter getFifteenMinute()
     {
         return fifteenMinute;
     }
 
-    @Reported
     @Flatten
     public BucketedCounter getBucket()
     {

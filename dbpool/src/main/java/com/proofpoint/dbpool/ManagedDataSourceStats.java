@@ -30,21 +30,18 @@ public final class ManagedDataSourceStats
     private final AtomicLong connectionErrorCount = new AtomicLong();
     private final AtomicLong creationErrorCount = new AtomicLong();
 
-    @Managed
     @Nested
     public TimeStat getCheckout()
     {
         return checkout;
     }
 
-    @Managed
     @Nested
     public TimeStat getCreate()
     {
         return create;
     }
 
-    @Managed
     @Nested
     public TimeStat getHeld()
     {

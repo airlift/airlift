@@ -3,10 +3,8 @@ package com.proofpoint.stats;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
-import com.proofpoint.reporting.Reported;
 import com.proofpoint.stats.Distribution.DistributionSnapshot;
 import org.weakref.jmx.Flatten;
-import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
 public class DistributionStat
@@ -34,35 +32,30 @@ public class DistributionStat
         bucket.add(value);
     }
 
-    @Managed
     @Nested
     public Distribution getOneMinute()
     {
         return oneMinute;
     }
 
-    @Managed
     @Nested
     public Distribution getFiveMinutes()
     {
         return fiveMinutes;
     }
 
-    @Managed
     @Nested
     public Distribution getFifteenMinutes()
     {
         return fifteenMinutes;
     }
 
-    @Managed
     @Nested
     public Distribution getAllTime()
     {
         return allTime;
     }
 
-    @Reported
     @Flatten
     public BucketedDistribution getBucket()
     {

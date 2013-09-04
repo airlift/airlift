@@ -21,7 +21,6 @@ import com.proofpoint.stats.DistributionStat;
 import com.proofpoint.stats.TimeStat;
 import com.proofpoint.units.Duration;
 import org.weakref.jmx.Flatten;
-import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
 import javax.inject.Inject;
@@ -63,35 +62,30 @@ public class RequestStats
         writtenBytes.add(requestSizeInBytes);
     }
 
-    @Managed
     @Flatten
     public CounterStat getRequest()
     {
         return request;
     }
 
-    @Managed
     @Nested
     public TimeStat getRequestTime()
     {
         return requestTime;
     }
 
-    @Managed
     @Nested
     public TimeStat getResponseTime()
     {
         return responseTime;
     }
 
-    @Managed
     @Nested
     public DistributionStat getReadBytes()
     {
         return readBytes;
     }
 
-    @Managed
     @Nested
     public DistributionStat getWrittenBytes()
     {

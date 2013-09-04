@@ -34,7 +34,6 @@ import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import org.weakref.jmx.Flatten;
-import org.weakref.jmx.Managed;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -76,7 +75,6 @@ public class HttpEventClient
     }
 
     @Flatten
-    @Managed
     public RequestStats getStats()
     {
         return httpClient.getStats();

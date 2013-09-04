@@ -474,7 +474,6 @@ public class TestReportBinder
     public static class NestedClass {
         private final GaugeClass nested = new GaugeClass();
 
-        @Managed
         @Nested
         public GaugeClass getNested()
         {
@@ -485,7 +484,6 @@ public class TestReportBinder
     public static class FlattenClass {
         private final GaugeClass flatten = new GaugeClass();
 
-        @Managed
         @Flatten
         public GaugeClass getFlatten()
         {

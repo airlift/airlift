@@ -33,7 +33,6 @@ import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import org.jboss.netty.util.HashedWheelTimer;
 import org.weakref.jmx.Flatten;
-import org.weakref.jmx.Managed;
 
 import javax.annotation.PreDestroy;
 import java.net.URI;
@@ -156,7 +155,6 @@ public class NettyAsyncHttpClient
         }
     }
 
-    @Managed
     @Flatten
     @Override
     public RequestStats getStats()

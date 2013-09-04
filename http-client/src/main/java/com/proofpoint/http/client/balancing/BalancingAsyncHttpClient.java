@@ -24,7 +24,6 @@ import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.ResponseHandler;
 import org.weakref.jmx.Flatten;
-import org.weakref.jmx.Managed;
 
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
@@ -116,7 +115,6 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
         }
     }
 
-    @Managed
     @Flatten
     @Override
     public RequestStats getStats()

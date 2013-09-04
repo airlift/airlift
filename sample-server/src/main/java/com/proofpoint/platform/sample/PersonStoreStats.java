@@ -17,7 +17,6 @@ package com.proofpoint.platform.sample;
 
 import com.proofpoint.event.client.EventClient;
 import com.proofpoint.stats.CounterStat;
-import com.proofpoint.reporting.Gauge;
 import org.weakref.jmx.Nested;
 
 public class PersonStoreStats
@@ -33,28 +32,24 @@ public class PersonStoreStats
         this.eventClient = eventClient;
     }
 
-    @Gauge
     @Nested
     public CounterStat getFetched()
     {
         return fetched;
     }
 
-    @Gauge
     @Nested
     public CounterStat getAdded()
     {
         return added;
     }
 
-    @Gauge
     @Nested
     public CounterStat getUpdated()
     {
         return updated;
     }
 
-    @Gauge
     @Nested
     public CounterStat getRemoved()
     {

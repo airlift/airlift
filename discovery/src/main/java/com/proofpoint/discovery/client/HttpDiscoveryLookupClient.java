@@ -31,7 +31,6 @@ import com.proofpoint.json.JsonCodec;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.units.Duration;
 import org.weakref.jmx.Flatten;
-import org.weakref.jmx.Managed;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -72,7 +71,6 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
     }
 
     @Flatten
-    @Managed
     public RequestStats getStats()
     {
         return httpClient.getStats();
