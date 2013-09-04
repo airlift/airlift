@@ -15,6 +15,7 @@
  */
 package io.airlift.jmx;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 import com.google.common.net.HostAndPort;
 import com.google.inject.Inject;
@@ -38,7 +39,7 @@ public class JmxAgent
 {
     private static final Logger log = Logger.get(JmxAgent.class);
 
-    private final HostAndPort address;
+    private final JMXServiceURL url;
 
     @Inject
     public JmxAgent(JmxConfig config)
@@ -92,10 +93,16 @@ public class JmxAgent
             log.info("JMX agent started and listening on %s", address);
         }
 
-        this.address = address;
+        this.url = new JMXServiceURL(String.format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi", address.getHostText(), address.getPort()));
     }
 
-    private static HostAndPort getRunningAgentAddress(Integer registryPort, Integer serverPort)
+    public JMXServiceURL getUrl()
+    {
+        return url;
+    }
+
+    @VisibleForTesting
+    static HostAndPort getRunningAgentAddress(Integer registryPort, Integer serverPort)
     {
         try {
             JMXConnectorServer jmxServer = getField(Agent.class, JMXConnectorServer.class, "jmxServer");
@@ -131,11 +138,6 @@ public class JmxAgent
         }
 
         return null;
-    }
-
-    public HostAndPort getAddress()
-    {
-        return address;
     }
 
     private static <T> T getField(Class<?> clazz, Class<T> returnType, String name)
