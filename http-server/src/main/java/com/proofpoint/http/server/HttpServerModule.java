@@ -67,7 +67,7 @@ public class HttpServerModule
         Multibinder.newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
 
         reportBinder(binder).export(RequestStats.class).withGeneratedName();
-        reportBinder(binder).bindReportCollection(DetailedRequestStats.class);
+        reportBinder(binder).bindReportCollection(DetailedRequestStats.class).withGeneratedName();
 
         ConfigurationModule.bindConfig(binder).to(HttpServerConfig.class);
 

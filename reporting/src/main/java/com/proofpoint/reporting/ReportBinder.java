@@ -54,7 +54,7 @@ public class ReportBinder
 
     // todo: map and set
 
-    public <T> void bindReportCollection(Class<T> iface) {
-        binder.bind(iface).toProvider(new ReportCollectionProvider<>(iface)).in(Scopes.SINGLETON);
+    public <T> ReportCollectionBinder<T> bindReportCollection(Class<T> iface) {
+        return new ReportCollectionBinder<>(binder, iface);
     }
 }

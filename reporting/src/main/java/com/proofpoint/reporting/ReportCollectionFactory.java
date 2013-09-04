@@ -29,20 +29,24 @@ import com.google.inject.Inject;
 import org.weakref.jmx.MBeanExporter;
 import org.weakref.jmx.ObjectNameBuilder;
 
+import javax.annotation.Nullable;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
+import static com.google.common.base.Throwables.propagate;
 import static java.lang.reflect.Proxy.newProxyInstance;
 
 class ReportCollectionFactory
@@ -64,12 +68,17 @@ class ReportCollectionFactory
         this.ticker = ticker;
     }
 
-    @SuppressWarnings("unchecked")
     public <T> T createReportCollection(Class<T> aClass)
+    {
+        return createReportCollection(aClass, null);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> T createReportCollection(Class<T> aClass, @Nullable String name)
     {
         return (T) newProxyInstance(aClass.getClassLoader(),
                 new Class[]{aClass},
-                new StatInvocationHandler(aClass));
+                new StatInvocationHandler(aClass, name));
     }
 
     private class StatInvocationHandler implements InvocationHandler
@@ -77,7 +86,7 @@ class ReportCollectionFactory
         private final Map<Method,LoadingCache<List<Optional<String>>,Object>> cacheMap;
         private final ConcurrentMap<Object, String> objectNameMap = new ConcurrentHashMap<>();
 
-        public <T> StatInvocationHandler(Class<T> aClass)
+        public <T> StatInvocationHandler(Class<T> aClass, @Nullable String name)
         {
             Builder<Method, LoadingCache<List<Optional<String>>, Object>> cacheBuilder = ImmutableMap.builder();
 
@@ -108,8 +117,54 @@ class ReportCollectionFactory
                                 + " has no @com.proofpoint.reporting.Key annotation");
                     }
                 }
-                final String packageName = aClass.getPackage().getName();
-                final String className = aClass.getSimpleName();
+                final String packageName;
+                final Map<String, String> properties = new LinkedHashMap<>();
+                if (name == null) {
+                    packageName = aClass.getPackage().getName();
+                    properties.put("type", aClass.getSimpleName());
+                }
+                else {
+                    ObjectName objectName;
+                    try {
+                        objectName = ObjectName.getInstance(name);
+                    }
+                    catch (MalformedObjectNameException e) {
+                        throw propagate(e);
+                    }
+                    packageName = objectName.getDomain();
+                    int index = packageName.length();
+                    if (name.charAt(index++) != ':') {
+                        throw new RuntimeException("Unable to parse ObjectName " + name);
+                    }
+                    while (index < name.length()) {
+                        int separatorIndex = name.indexOf('=', index);
+                        String key = name.substring(index, separatorIndex);
+                        String value;
+                        if (name.charAt(++separatorIndex) == '\"') {
+                            StringBuilder sb = new StringBuilder();
+                            char c;
+                            while ((c = name.charAt(++separatorIndex)) != '\"') {
+                                if (c == '\\') {
+                                    c = name.charAt(++separatorIndex);
+                                }
+                                sb.append(c);
+                            }
+                            if (name.charAt(++separatorIndex) != ',') {
+                                throw new RuntimeException("Unable to parse ObjectName " + name);
+                            }
+                            value = sb.toString();
+                            index = separatorIndex + 1;
+                        }
+                        else {
+                            index = name.indexOf(',', separatorIndex);
+                            if (index == -1) {
+                                index = name.length();
+                            }
+                            value = name.substring(separatorIndex, index);
+                        }
+                        properties.put(key, value);
+                    }
+                }
                 final String upperMethodName = LOWER_CAMEL.to(UPPER_CAMEL, method.getName());
                 final List<String> keyNames = keyNameBuilder.build();
 
@@ -125,9 +180,11 @@ class ReportCollectionFactory
                             {
                                 Object stat = constructor.newInstance();
 
-                                ObjectNameBuilder objectNameBuilder = new ObjectNameBuilder(packageName)
-                                        .withProperty("type", className)
-                                        .withProperty("name", upperMethodName);
+                                ObjectNameBuilder objectNameBuilder = new ObjectNameBuilder(packageName);
+                                for (Entry<String, String> entry : properties.entrySet()) {
+                                    objectNameBuilder = objectNameBuilder.withProperty(entry.getKey(), entry.getValue());
+                                }
+                                objectNameBuilder = objectNameBuilder.withProperty("name", upperMethodName);
                                 for (int i = 0; i < keyNames.size(); ++i) {
                                     if (key.get(i).isPresent()) {
                                         objectNameBuilder = objectNameBuilder.withProperty(keyNames.get(i), key.get(i).get());

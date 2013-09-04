@@ -18,14 +18,34 @@ package com.proofpoint.reporting;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Throwables.propagate;
+
 class ReportCollectionProvider<T> implements Provider<T>
 {
     private final Class<T> iface;
+    private final String name;
     private ReportCollectionFactory reportCollectionFactory;
 
     public ReportCollectionProvider(Class<T> iface)
     {
         this.iface = iface;
+        name = null;
+    }
+
+    public ReportCollectionProvider(Class<T> iface, String name)
+    {
+        this.iface = checkNotNull(iface, "iface is null");
+        this.name = checkNotNull(name, "name is null");
+        try {
+            ObjectName.getInstance(name);
+        }
+        catch (MalformedObjectNameException e) {
+            throw propagate(e);
+        }
     }
 
     @Inject
@@ -37,6 +57,6 @@ class ReportCollectionProvider<T> implements Provider<T>
     @Override
     public T get()
     {
-        return reportCollectionFactory.createReportCollection(iface);
+        return reportCollectionFactory.createReportCollection(iface, name);
     }
 }

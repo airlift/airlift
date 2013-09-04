@@ -305,7 +305,8 @@ public class TestReportBinder
     }
 
     @Test
-    public void testReportCollection()
+    public void testReportCollectionGeneratedName()
+            throws MalformedObjectNameException
     {
         Injector injector = Guice.createInjector(
                 new MBeanModule(),
@@ -322,7 +323,7 @@ public class TestReportBinder
                         newSetBinder(binder, Mapping.class);
                         binder.bind(ReportedBeanRegistry.class).in(Scopes.SINGLETON);
 
-                        reportBinder(binder).bindReportCollection(KeyedDistribution.class);
+                        reportBinder(binder).bindReportCollection(KeyedDistribution.class).withGeneratedName();
                     }
 
                     @Provides
@@ -341,6 +342,50 @@ public class TestReportBinder
                 });
         KeyedDistribution keyedDistribution = injector.getInstance(KeyedDistribution.class);
         keyedDistribution.add("value", false);
+        ReportedBeanRegistry reportedBeanRegistry = injector.getInstance(ReportedBeanRegistry.class);
+        assertEquals(reportedBeanRegistry.getReportedBeans().keySet(), ImmutableSet.of(ObjectName.getInstance("com.proofpoint.reporting:type=KeyedDistribution,name=Add,foo=value,bar=false")));
+    }
+
+    @Test
+    public void testReportCollectionSpecifiedName()
+            throws MalformedObjectNameException
+    {
+        Injector injector = Guice.createInjector(
+                new MBeanModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        binder.requireExplicitBindings();
+                        binder.disableCircularProxies();
+                        binder.bind(MBeanServer.class).toInstance(jmxMbeanServer);
+                        binder.bind(ReportCollectionFactory.class).in(Scopes.SINGLETON);
+                        binder.bind(ReportExporter.class).asEagerSingleton();
+                        newSetBinder(binder, Mapping.class);
+                        binder.bind(ReportedBeanRegistry.class).in(Scopes.SINGLETON);
+
+                        reportBinder(binder).bindReportCollection(KeyedDistribution.class).as("com.example:type=\"Foo\\\",Bar\",a=b");
+                    }
+
+                    @Provides
+                    @Singleton
+                    BucketIdProvider getBucketIdProvider()
+                    {
+                        return new BucketIdProvider()
+                        {
+                            @Override
+                            public int get()
+                            {
+                                return 0;
+                            }
+                        };
+                    }
+                });
+        KeyedDistribution keyedDistribution = injector.getInstance(KeyedDistribution.class);
+        keyedDistribution.add("value", false);
+        ReportedBeanRegistry reportedBeanRegistry = injector.getInstance(ReportedBeanRegistry.class);
+        assertEquals(reportedBeanRegistry.getReportedBeans().keySet(), ImmutableSet.of(ObjectName.getInstance("com.example:type=\"Foo\\\",Bar\",a=b,name=Add,foo=value,bar=false")));
     }
 
     private void assertReportRegistration(Injector injector, Set<String> expectedAttribues, ObjectName objectName)
@@ -603,5 +648,10 @@ public class TestReportBinder
 
     public static class SomeObject
     {
+        @Reported
+        private int getValue()
+        {
+            return 0;
+        }
     }
 }
