@@ -1,5 +1,13 @@
 Platform 0.80
 
+* HttpServer reporting
+
+  We instrumented HttpServer to use the reporting module. HttpServerModule()
+  now depends on ReportingModule().
+
+  We added stats broken down by response code and removed a redundant
+  CounterStat.
+
 * Units
 
   We've made a backwards incompatible change to the Duration API to align with
@@ -32,16 +40,15 @@ Platform 0.80
 
   We made refinements to the experimental reporting module.
 
+  - We split ReportingModule in two: ReportingModule is needed in order to
+    instrument code and ReportingClientModule is needed to send the data to
+    the time series database.
+
   - reportBinder.bindReportCollection() now requires an additional method call
     to specify the base ObjectName to use in exporting. Either
     .withGeneratedName() or as(String) can be used.
 
     reportBinder.bindReportCollection(StoreStat.class).withGeneratedName();
-
-* HttpServer reporting
-
-  We instrumented HttpServer to use the reporting module. We added stats
-  broken down by response code and removed a redundant CounterStat.
 
 * [Bug] Fixed typo breaking Bootstrap.withApplicationDefaults().
 
