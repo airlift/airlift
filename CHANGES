@@ -1,3 +1,52 @@
+Platform 0.80
+
+* Units
+
+  We've made a backwards incompatible change to the Duration API to align with
+  the DataSize API.  The new Duration code has many new features:
+
+  - Duration remembers the original unit, so parses and prints round trips.
+  - toMillis() returns a long so it is easier to use with normal Java APIs.
+  - roundTo(TimeUnit) return a long in the specified unit.
+  - convertToMostSuccinctTimeUnit() will select the TimeUnit to produce
+    the easiest to read value.
+  - timeUnitToString(TimeUnit) to get a clean short name for TimeUnits.
+
+  To update to the new api, you will need to:
+
+    toMillis() now returns a long instead of a double
+      - Use getValue(MILLISECONDS) for the old behavior.
+
+    toString() returns a string in the original units instead of millis
+      - Use toString(MILLISECONDS) for the old behavior.
+
+    convertTo(TimeUnit) has been deprecated and will have an incompatible
+    return value in the future.
+      - Use getValue(TimeUnit) for the old behavior.
+      - Use roundTo(TimeUnit) to get a long in the specified unit.
+
+* We added constructors to TestingHttpClient allowing instances to send
+  checked exceptions.
+
+* Reporting (experimental)
+
+  We made refinements to the experimental reporting module.
+
+  - reportBinder.bindReportCollection() now requires an additional method call
+    to specify the base ObjectName to use in exporting. Either
+    .withGeneratedName() or as(String) can be used.
+
+    reportBinder.bindReportCollection(StoreStat.class).withGeneratedName();
+
+* HttpServer reporting
+
+  We instrumented HttpServer to use the reporting module. We added stats
+  broken down by response code and removed a redundant CounterStat.
+
+* [Bug] Fixed typo breaking Bootstrap.withApplicationDefaults().
+
+* [Bug] JsonTester now uses correctly configured codecs.
+
 Platform 0.79
 
 * HttpClient exception handling
