@@ -15,7 +15,6 @@
  */
 package com.proofpoint.reporting;
 
-import com.proofpoint.reporting.ReportedAnnotation;
 import org.weakref.jmx.ManagedAnnotation;
 
 import java.lang.annotation.ElementType;
