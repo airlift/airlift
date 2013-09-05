@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.ImmutableSortedSet.Builder;
+import com.google.common.collect.Ordering;
 import com.google.inject.Key;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
 
@@ -237,6 +238,7 @@ public class ConfigurationInspector
             return ComparisonChain.start()
                     .compare(String.valueOf(this.key.getTypeLiteral().getType()), String.valueOf(that.key.getTypeLiteral().getType()))
                     .compare(String.valueOf(this.key.getAnnotationType()), String.valueOf(that.key.getAnnotationType()))
+                    .compare(this.key, that.key, Ordering.arbitrary())
                     .result();
         }
     }
