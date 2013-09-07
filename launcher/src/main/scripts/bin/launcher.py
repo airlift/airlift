@@ -428,6 +428,8 @@ def main():
 
     try:
         handle_command(command, o)
+    except SystemExit:
+        raise
     except Exception, e:
         if o.verbose:
             traceback.print_exc()
