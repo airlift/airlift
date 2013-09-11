@@ -24,7 +24,6 @@ import com.google.common.collect.Maps;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Stage;
 import com.google.inject.spi.Message;
@@ -39,7 +38,6 @@ import io.airlift.configuration.ConfigurationModule;
 import io.airlift.configuration.ConfigurationValidator;
 import io.airlift.configuration.ValidationErrorModule;
 import io.airlift.configuration.WarningsMonitor;
-import io.airlift.jmx.JmxInspector;
 import io.airlift.log.Logger;
 import io.airlift.log.Logging;
 import io.airlift.log.LoggingConfiguration;
@@ -74,7 +72,6 @@ public class Bootstrap
     private Map<String, String> optionalConfigurationProperties;
     private boolean initializeLogging = true;
     private boolean strictConfig = false;
-    private boolean logJmxInfo = false;
 
     private boolean initialized = false;
 
@@ -132,13 +129,6 @@ public class Bootstrap
     public Bootstrap doNotInitializeLogging()
     {
         this.initializeLogging = false;
-        return this;
-    }
-
-    @Beta
-    public Bootstrap logJmxInfo()
-    {
-        this.logJmxInfo = false;
         return this;
     }
 
@@ -280,11 +270,6 @@ public class Bootstrap
         // Create the life-cycle manager
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
 
-        // Log managed objects
-        if (logJmxInfo) {
-            logJMX(injector);
-        }
-
         // Start services
         if (lifeCycleManager.size() > 0) {
             lifeCycleManager.start();
@@ -293,24 +278,18 @@ public class Bootstrap
         return injector;
     }
 
-    private static final String COMPONENT_COLUMN = "COMPONENT";
-    private static final String ATTRIBUTE_NAME_COLUMN = "ATTRIBUTE";
     private static final String PROPERTY_NAME_COLUMN = "PROPERTY";
     private static final String DEFAULT_VALUE_COLUMN = "DEFAULT";
     private static final String CURRENT_VALUE_COLUMN = "RUNTIME";
     private static final String DESCRIPTION_COLUMN = "DESCRIPTION";
 
-    private static final String CLASS_NAME_COLUMN = "NAME";
-    private static final String OBJECT_NAME_COLUMN = "METHOD/ATTRIBUTE";
-    private static final String TYPE_COLUMN = "TYPE";
-
     private void logConfiguration(ConfigurationFactory configurationFactory, Map<String, String> unusedProperties)
     {
         ColumnPrinter columnPrinter = makePrinterForConfiguration(configurationFactory);
 
-        PrintWriter out = new PrintWriter(new LoggingWriter(log, Type.INFO));
-        columnPrinter.print(out);
-        out.flush();
+        try (PrintWriter out = new PrintWriter(new LoggingWriter(log, Type.INFO))) {
+            columnPrinter.print(out);
+        }
 
         // Warn about unused properties
         if (!unusedProperties.isEmpty()) {
@@ -322,54 +301,19 @@ public class Bootstrap
         }
     }
 
-    private void logJMX(Injector injector)
-            throws Exception
-    {
-        ColumnPrinter columnPrinter = makePrinterForJMX(injector);
-
-        PrintWriter out = new PrintWriter(new LoggingWriter(log, Type.INFO));
-        columnPrinter.print(out);
-        out.flush();
-    }
-
-    private ColumnPrinter makePrinterForJMX(Injector injector)
-            throws Exception
-    {
-        JmxInspector inspector = new JmxInspector(injector);
-
-        ColumnPrinter columnPrinter = new ColumnPrinter();
-        columnPrinter.addColumn(CLASS_NAME_COLUMN);
-        columnPrinter.addColumn(OBJECT_NAME_COLUMN);
-        columnPrinter.addColumn(TYPE_COLUMN);
-        columnPrinter.addColumn(DESCRIPTION_COLUMN);
-
-        for (JmxInspector.InspectorRecord record : inspector) {
-            columnPrinter.addValue(CLASS_NAME_COLUMN, record.className);
-            columnPrinter.addValue(OBJECT_NAME_COLUMN, record.objectName);
-            columnPrinter.addValue(TYPE_COLUMN, record.type.name().toLowerCase());
-            columnPrinter.addValue(DESCRIPTION_COLUMN, record.description);
-        }
-        return columnPrinter;
-    }
-
     private ColumnPrinter makePrinterForConfiguration(ConfigurationFactory configurationFactory)
     {
         ConfigurationInspector configurationInspector = new ConfigurationInspector();
 
         ColumnPrinter columnPrinter = new ColumnPrinter();
 
-//        columnPrinter.addColumn(COMPONENT_COLUMN);
-//        columnPrinter.addColumn(ATTRIBUTE_NAME_COLUMN);
         columnPrinter.addColumn(PROPERTY_NAME_COLUMN);
         columnPrinter.addColumn(DEFAULT_VALUE_COLUMN);
         columnPrinter.addColumn(CURRENT_VALUE_COLUMN);
         columnPrinter.addColumn(DESCRIPTION_COLUMN);
 
         for (ConfigRecord<?> record : configurationInspector.inspect(configurationFactory)) {
-            String componentName = getComponentName(record);
             for (ConfigAttribute attribute : record.getAttributes()) {
-//                columnPrinter.addValue(COMPONENT_COLUMN, componentName);
-//                columnPrinter.addValue(ATTRIBUTE_NAME_COLUMN, attribute.getAttributeName());
                 columnPrinter.addValue(PROPERTY_NAME_COLUMN, attribute.getPropertyName());
                 columnPrinter.addValue(DEFAULT_VALUE_COLUMN, attribute.getDefaultValue());
                 columnPrinter.addValue(CURRENT_VALUE_COLUMN, attribute.getCurrentValue());
@@ -377,16 +321,5 @@ public class Bootstrap
             }
         }
         return columnPrinter;
-    }
-
-    private String getComponentName(ConfigRecord<?> record)
-    {
-        Key<?> key = record.getKey();
-        String componentName = "";
-        if (key.getAnnotationType() != null) {
-            componentName = "@" + key.getAnnotationType().getSimpleName() + " ";
-        }
-        componentName += key.getTypeLiteral();
-        return componentName;
     }
 }
