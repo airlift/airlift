@@ -23,16 +23,15 @@ import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 
-import javax.annotation.PreDestroy;
-
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+
+import static io.airlift.bootstrap.LifecycledBindingBuilder.lifecycleBinding;
 import static io.airlift.configuration.ConfigurationModule.bindConfig;
 import static io.airlift.http.client.CompositeQualifierImpl.compositeQualifier;
+
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 @Beta
@@ -57,7 +56,7 @@ class HttpClientModule
         bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(HttpClientConfig.class);
 
         // bind the client
-        binder.bind(HttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(annotation)).in(Scopes.SINGLETON);
+        lifecycleBinding(binder, Key.get(HttpClient.class, annotation)).toProvider(new HttpClientProvider(annotation)).in(Scopes.SINGLETON);
 
         // kick off the binding for the filter set
         newSetBinder(binder, HttpRequestFilter.class, filterQualifier(annotation));
@@ -74,7 +73,6 @@ class HttpClientModule
 
     private static class HttpClientProvider implements Provider<HttpClient>
     {
-        private final List<ApacheHttpClient> clients = new ArrayList<>();
         private final Class<? extends Annotation> annotation;
         private Injector injector;
 
@@ -90,21 +88,12 @@ class HttpClientModule
             this.injector = injector;
         }
 
-        @PreDestroy
-        public void destroy()
-        {
-            for (ApacheHttpClient client : clients) {
-                client.close();
-            }
-        }
-
         @Override
         public HttpClient get()
         {
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
             Set<HttpRequestFilter> filters = injector.getInstance(filterKey(annotation));
             ApacheHttpClient client = new ApacheHttpClient(config, filters);
-            clients.add(client);
             return client;
         }
     }

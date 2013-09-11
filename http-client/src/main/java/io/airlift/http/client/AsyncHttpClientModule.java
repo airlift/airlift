@@ -22,6 +22,8 @@ import com.google.inject.Key;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
+
+import io.airlift.bootstrap.LifecycledBindingBuilder;
 import io.airlift.http.client.netty.NettyAsyncHttpClient;
 import io.airlift.http.client.netty.NettyAsyncHttpClientConfig;
 import io.airlift.http.client.netty.NettyIoPool;
@@ -36,8 +38,11 @@ import java.util.List;
 import java.util.Set;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+
+import static io.airlift.bootstrap.LifecycledBindingBuilder.lifecycleBinding;
 import static io.airlift.configuration.ConfigurationModule.bindConfig;
 import static io.airlift.http.client.CompositeQualifierImpl.compositeQualifier;
+
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 @Beta
@@ -75,7 +80,7 @@ public class AsyncHttpClientModule
         binder.bind(NettyIoPool.class).toProvider(SharedNettyIoPoolProvider.class).in(Scopes.SINGLETON);
 
         // bind the async client
-        binder.bind(AsyncHttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(name, annotation)).in(Scopes.SINGLETON);
+        lifecycleBinding(binder,  Key.get(AsyncHttpClient.class, annotation)).toProvider(new HttpClientProvider(name, annotation)).in(Scopes.SINGLETON);
 
         // bind the a sync client also
         binder.bind(HttpClient.class).annotatedWith(annotation).to(Key.get(AsyncHttpClient.class, annotation));
@@ -97,7 +102,6 @@ public class AsyncHttpClientModule
     private static class HttpClientProvider
             implements Provider<AsyncHttpClient>
     {
-        private final List<NettyAsyncHttpClient> clients = new ArrayList<>();
         private final String name;
         private final Class<? extends Annotation> annotation;
         private Injector injector;
@@ -112,14 +116,6 @@ public class AsyncHttpClientModule
         public void setInjector(Injector injector)
         {
             this.injector = injector;
-        }
-
-        @PreDestroy
-        public void destroy()
-        {
-            for (NettyAsyncHttpClient client : clients) {
-                client.close();
-            }
         }
 
         @Override
@@ -140,7 +136,6 @@ public class AsyncHttpClientModule
             }
 
             NettyAsyncHttpClient client = new NettyAsyncHttpClient(name, ioPool, config, asyncConfig, filters);
-            clients.add(client);
             return client;
         }
     }
