@@ -15,13 +15,11 @@
  */
 package com.proofpoint.discovery.client;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.io.Files;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.proofpoint.discovery.client.balancing.HttpServiceBalancerListenerAdapter;
@@ -47,6 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Lists.newArrayList;
+import static java.nio.file.Files.readAllBytes;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 public class ServiceInventory
@@ -171,8 +170,7 @@ public class ServiceInventory
         try {
             ServiceDescriptorsRepresentation serviceDescriptorsRepresentation;
             File file = new File(serviceInventoryUri);
-            String json = Files.toString(file, Charsets.UTF_8);
-            serviceDescriptorsRepresentation = serviceDescriptorsCodec.fromJson(json);
+            serviceDescriptorsRepresentation = serviceDescriptorsCodec.fromJson(readAllBytes(file.toPath()));
 
             if (!environment.equals(serviceDescriptorsRepresentation.getEnvironment())) {
                 logServerError("Expected environment to be %s, but was %s", environment, serviceDescriptorsRepresentation.getEnvironment());

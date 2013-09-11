@@ -16,7 +16,6 @@
 package com.proofpoint.http.client;
 
 import com.google.common.annotations.Beta;
-import com.google.common.base.Charsets;
 import com.proofpoint.json.JsonCodec;
 
 import java.io.OutputStream;
@@ -33,7 +32,7 @@ public class JsonBodyGenerator<T> implements BodyGenerator
 
     private JsonBodyGenerator(JsonCodec<T> jsonCodec, T instance)
     {
-        json = jsonCodec.toJson(instance).getBytes(Charsets.UTF_8);
+        json = jsonCodec.toJsonBytes(instance);
     }
 
     @Override

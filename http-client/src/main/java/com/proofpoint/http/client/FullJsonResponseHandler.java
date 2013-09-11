@@ -15,21 +15,19 @@
  */
 package com.proofpoint.http.client;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
-import com.google.common.io.CharStreams;
+import com.google.common.io.ByteStreams;
 import com.google.common.net.MediaType;
 import com.proofpoint.http.client.FullJsonResponseHandler.JsonResponse;
 import com.proofpoint.json.JsonCodec;
 
-import javax.annotation.concurrent.NotThreadSafe;
-
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.ConnectException;
 import java.util.List;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<T>, RuntimeException>
 {
@@ -67,22 +65,21 @@ public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<
             return new JsonResponse<>(response.getStatusCode(), response.getStatusMessage(), response.getHeaders());
         }
         try {
-            String json = CharStreams.toString(new InputStreamReader(response.getInputStream(), Charsets.UTF_8));
-            return new JsonResponse<>(response.getStatusCode(), response.getStatusMessage(), response.getHeaders(), jsonCodec, json);
+            byte[] bytes = ByteStreams.toByteArray(response.getInputStream());
+            return new JsonResponse<>(response.getStatusCode(), response.getStatusMessage(), response.getHeaders(), jsonCodec, bytes);
         }
         catch (IOException e) {
             throw new RuntimeException("Error reading JSON response from server", e);
         }
     }
 
-    @NotThreadSafe
     public static class JsonResponse<T>
     {
         private final int statusCode;
         private final String statusMessage;
         private final ListMultimap<String, String> headers;
         private final boolean hasValue;
-        private final String json;
+        private final byte[] jsonBytes;
         private final T value;
         private final IllegalArgumentException exception;
 
@@ -93,26 +90,27 @@ public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<
             this.headers = ImmutableListMultimap.copyOf(headers);
 
             this.hasValue = false;
-            this.json = null;
+            this.jsonBytes = null;
             this.value = null;
             this.exception = null;
         }
 
-        public JsonResponse(int statusCode, String statusMessage, ListMultimap<String, String> headers, JsonCodec<T> jsonCodec, String json)
+        @SuppressWarnings("ThrowableInstanceNeverThrown")
+        public JsonResponse(int statusCode, String statusMessage, ListMultimap<String, String> headers, JsonCodec<T> jsonCodec, byte[] jsonBytes)
         {
             this.statusCode = statusCode;
             this.statusMessage = statusMessage;
             this.headers = ImmutableListMultimap.copyOf(headers);
 
-            this.json = json;
+            this.jsonBytes = jsonBytes;
 
             T value = null;
             IllegalArgumentException exception = null;
             try {
-                value = jsonCodec.fromJson(json);
+                value = jsonCodec.fromJson(jsonBytes);
             }
             catch (IllegalArgumentException e) {
-                exception = new IllegalArgumentException("Unable to create " + jsonCodec.getType() + " from JSON response:\n" + json, e);
+                exception = new IllegalArgumentException("Unable to create " + jsonCodec.getType() + " from JSON response:\n" + getJson(), e);
             }
             this.hasValue = (exception == null);
             this.value = value;
@@ -156,9 +154,14 @@ public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<
             return value;
         }
 
+        public byte[] getJsonBytes()
+        {
+            return (jsonBytes == null) ? null : jsonBytes.clone();
+        }
+
         public String getJson()
         {
-            return json;
+            return (jsonBytes == null) ? null : new String(jsonBytes, UTF_8);
         }
 
         public IllegalArgumentException getException()
