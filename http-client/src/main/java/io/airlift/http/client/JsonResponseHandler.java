@@ -15,17 +15,17 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.io.CharStreams;
+import com.google.common.io.ByteStreams;
 import com.google.common.net.MediaType;
 import com.google.common.primitives.Ints;
 import io.airlift.json.JsonCodec;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.ConnectException;
 import java.util.Set;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class JsonResponseHandler<T> implements ResponseHandler<T, RuntimeException>
 {
@@ -33,12 +33,12 @@ public class JsonResponseHandler<T> implements ResponseHandler<T, RuntimeExcepti
 
     public static <T> JsonResponseHandler<T> createJsonResponseHandler(JsonCodec<T> jsonCodec)
     {
-        return new JsonResponseHandler<T>(jsonCodec);
+        return new JsonResponseHandler<>(jsonCodec);
     }
 
     public static <T> JsonResponseHandler<T> createJsonResponseHandler(JsonCodec<T> jsonCodec, int firstSuccessfulResponseCode, int... otherSuccessfulResponseCodes)
     {
-        return new JsonResponseHandler<T>(jsonCodec, firstSuccessfulResponseCode, otherSuccessfulResponseCodes);
+        return new JsonResponseHandler<>(jsonCodec, firstSuccessfulResponseCode, otherSuccessfulResponseCodes);
     }
 
     private final JsonCodec<T> jsonCodec;
@@ -83,18 +83,18 @@ public class JsonResponseHandler<T> implements ResponseHandler<T, RuntimeExcepti
         if (!MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
             throw new UnexpectedResponseException("Expected application/json response from server but got " + contentType, request, response);
         }
-        String json;
+        byte[] bytes;
         try {
-            json = CharStreams.toString(new InputStreamReader(response.getInputStream(), Charsets.UTF_8));
+            bytes = ByteStreams.toByteArray(response.getInputStream());
         }
         catch (IOException e) {
             throw new RuntimeException("Error reading response from server");
         }
         try {
-            T value = jsonCodec.fromJson(json);
-            return value;
+            return jsonCodec.fromJson(bytes);
         }
         catch (IllegalArgumentException e) {
+            String json = new String(bytes, UTF_8);
             throw new IllegalArgumentException("Unable to create " + jsonCodec.getType() + " from JSON response:\n" + json, e);
         }
     }

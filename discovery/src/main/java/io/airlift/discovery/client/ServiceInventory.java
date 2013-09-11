@@ -15,12 +15,10 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.io.Files;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import io.airlift.http.client.HttpClient;
@@ -33,6 +31,7 @@ import org.weakref.jmx.Managed;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+
 import java.io.File;
 import java.net.URI;
 import java.util.Collections;
@@ -46,6 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.google.common.collect.Lists.newArrayList;
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.Request.Builder.prepareGet;
+import static java.nio.file.Files.readAllBytes;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 public class ServiceInventory
@@ -171,8 +171,7 @@ public class ServiceInventory
             }
             else {
                 File file = new File(serviceInventoryUri);
-                String json = Files.toString(file, Charsets.UTF_8);
-                serviceDescriptorsRepresentation = serviceDescriptorsCodec.fromJson(json);
+                serviceDescriptorsRepresentation = serviceDescriptorsCodec.fromJson(readAllBytes(file.toPath()));
             }
 
             if (!environment.equals(serviceDescriptorsRepresentation.getEnvironment())) {

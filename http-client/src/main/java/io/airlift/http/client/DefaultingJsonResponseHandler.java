@@ -15,14 +15,12 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.io.CharStreams;
+import com.google.common.io.ByteStreams;
 import com.google.common.net.MediaType;
 import com.google.common.primitives.Ints;
 import io.airlift.json.JsonCodec;
 
-import java.io.InputStreamReader;
 import java.util.Set;
 
 public class DefaultingJsonResponseHandler<T> implements ResponseHandler<T, RuntimeException>
@@ -72,8 +70,7 @@ public class DefaultingJsonResponseHandler<T> implements ResponseHandler<T, Runt
             return defaultValue;
         }
         try {
-            String json = CharStreams.toString(new InputStreamReader(response.getInputStream(), Charsets.UTF_8));
-            return jsonCodec.fromJson(json);
+            return jsonCodec.fromJson(ByteStreams.toByteArray(response.getInputStream()));
         }
         catch (Exception e) {
             return defaultValue;
