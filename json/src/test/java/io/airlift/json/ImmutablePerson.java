@@ -20,10 +20,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.testng.Assert;
 
 import java.util.List;
 import java.util.Map;
+
+import static org.testng.Assert.assertEquals;
 
 public class ImmutablePerson
 {
@@ -34,9 +35,12 @@ public class ImmutablePerson
     public static void validatePersonJsonCodec(JsonCodec<ImmutablePerson> jsonCodec)
     {
         ImmutablePerson expected = new ImmutablePerson("dain", true);
+
         String json = jsonCodec.toJson(expected);
-        ImmutablePerson actual = jsonCodec.fromJson(json);
-        Assert.assertEquals(actual, expected);
+        assertEquals(jsonCodec.fromJson(json), expected);
+
+        byte[] bytes = jsonCodec.toJsonBytes(expected);
+        assertEquals(jsonCodec.fromJson(bytes), expected);
     }
 
     public static void validatePersonListJsonCodec(JsonCodec<List<ImmutablePerson>> jsonCodec)
@@ -44,11 +48,13 @@ public class ImmutablePerson
         ImmutableList<ImmutablePerson> expected = ImmutableList.of(
                 new ImmutablePerson("dain", true),
                 new ImmutablePerson("martin", true),
-                new ImmutablePerson("mark",true));
+                new ImmutablePerson("mark", true));
 
         String json = jsonCodec.toJson(expected);
-        List<ImmutablePerson> actual = jsonCodec.fromJson(json);
-        Assert.assertEquals(actual, expected);
+        assertEquals(jsonCodec.fromJson(json), expected);
+
+        byte[] bytes = jsonCodec.toJsonBytes(expected);
+        assertEquals(jsonCodec.fromJson(bytes), expected);
     }
 
     public static void validatePersonMapJsonCodec(JsonCodec<Map<String, ImmutablePerson>> jsonCodec)
@@ -60,8 +66,10 @@ public class ImmutablePerson
                 .build();
 
         String json = jsonCodec.toJson(expected);
-        Map<String, ImmutablePerson> actual = jsonCodec.fromJson(json);
-        Assert.assertEquals(actual, expected);
+        assertEquals(jsonCodec.fromJson(json), expected);
+
+        byte[] bytes = jsonCodec.toJsonBytes(expected);
+        assertEquals(jsonCodec.fromJson(bytes), expected);
     }
 
     @JsonCreator
@@ -92,33 +100,24 @@ public class ImmutablePerson
     }
 
     @Override
-    public boolean equals(Object o)
+    public boolean equals(Object obj)
     {
-        if (this == o) {
+        if (this == obj) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if ((obj == null) || (getClass() != obj.getClass())) {
             return false;
         }
-
-        ImmutablePerson person = (ImmutablePerson) o;
-
-        if (rocks != person.rocks) {
-            return false;
-        }
-        if (name != null ? !name.equals(person.name) : person.name != null) {
-            return false;
-        }
-
-        return true;
+        ImmutablePerson o = (ImmutablePerson) obj;
+        return Objects.equal(this.name, o.name) &&
+                Objects.equal(this.rocks, o.rocks) &&
+                Objects.equal(this.notWritable, o.notWritable);
     }
 
     @Override
     public int hashCode()
     {
-        int result = name != null ? name.hashCode() : 0;
-        result = 31 * result + (rocks ? 1 : 0);
-        return result;
+        return Objects.hashCode(name, rocks, notWritable);
     }
 
     @Override

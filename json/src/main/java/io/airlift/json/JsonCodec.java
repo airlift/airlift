@@ -108,17 +108,17 @@ public class JsonCodec<T>
     }
 
     /**
-     * Coverts the specified json string into an instance of type T.
+     * Converts the specified json string into an instance of type T.
      *
-     * @return Parsed response; never null
+     * @param json the json string to parse
+     * @return parsed response; never null
      * @throws IllegalArgumentException if the json string can not be converted to the type T
      */
-    @SuppressWarnings("unchecked")
     public T fromJson(String json)
             throws IllegalArgumentException
     {
         try {
-            return (T) mapper.readValue(json, javaType);
+            return mapper.readValue(json, javaType);
         }
         catch (IOException e) {
             throw new IllegalArgumentException(String.format("Invalid %s json string", javaType), e);
@@ -129,7 +129,7 @@ public class JsonCodec<T>
      * Converts the specified instance to json.
      *
      * @param instance the instance to convert to json
-     * @return Parsed response; never null
+     * @return json string
      * @throws IllegalArgumentException if the specified instance can not be converted to json
      */
     public String toJson(T instance)
@@ -137,6 +137,42 @@ public class JsonCodec<T>
     {
         try {
             return mapper.writeValueAsString(instance);
+        }
+        catch (IOException e) {
+            throw new IllegalArgumentException(String.format("%s could not be converted to json", instance.getClass().getName()), e);
+        }
+    }
+
+    /**
+     * Coverts the specified json bytes (UTF-8) into an instance of type T.
+     *
+     * @param json the json bytes (UTF-8) to parse
+     * @return parsed response; never null
+     * @throws IllegalArgumentException if the json bytes can not be converted to the type T
+     */
+    public T fromJson(byte[] json)
+            throws IllegalArgumentException
+    {
+        try {
+            return mapper.readValue(json, javaType);
+        }
+        catch (IOException e) {
+            throw new IllegalArgumentException(String.format("Invalid %s json bytes", javaType), e);
+        }
+    }
+
+    /**
+     * Converts the specified instance to json.
+     *
+     * @param instance the instance to convert to json
+     * @return json bytes (UTF-8)
+     * @throws IllegalArgumentException if the specified instance can not be converted to json
+     */
+    public byte[] toJsonBytes(T instance)
+            throws IllegalArgumentException
+    {
+        try {
+            return mapper.writeValueAsBytes(instance);
         }
         catch (IOException e) {
             throw new IllegalArgumentException(String.format("%s could not be converted to json", instance.getClass().getName()), e);
