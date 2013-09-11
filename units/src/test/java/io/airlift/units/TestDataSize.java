@@ -271,12 +271,12 @@ public class TestDataSize
                 new Object[] { "1234GB", 1234, GIGABYTE },
                 new Object[] { "1234TB", 1234, TERABYTE },
                 new Object[] { "1234PB", 1234, PETABYTE },
-                new Object[] { "1234.567B", 1234.567, BYTE },
-                new Object[] { "1234.567kB", 1234.567, KILOBYTE },
-                new Object[] { "1234.567MB", 1234.567, MEGABYTE },
-                new Object[] { "1234.567GB", 1234.567, GIGABYTE },
-                new Object[] { "1234.567TB", 1234.567, TERABYTE },
-                new Object[] { "1234.567PB", 1234.567, PETABYTE }
+                new Object[] { "1234.57B", 1234.567, BYTE },
+                new Object[] { "1234.57kB", 1234.567, KILOBYTE },
+                new Object[] { "1234.57MB", 1234.567, MEGABYTE },
+                new Object[] { "1234.57GB", 1234.567, GIGABYTE },
+                new Object[] { "1234.57TB", 1234.567, TERABYTE },
+                new Object[] { "1234.57PB", 1234.567, PETABYTE }
         };
     }
 
