@@ -104,7 +104,7 @@ public class DataSize
             return (long) (floor(value)) + unit.getUnitString();
         }
 
-        return value + unit.getUnitString();
+        return String.format("%.2f%s", value, unit.getUnitString());
     }
 
     @JsonCreator
