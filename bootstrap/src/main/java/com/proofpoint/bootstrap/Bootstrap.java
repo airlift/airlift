@@ -36,7 +36,6 @@ import com.proofpoint.configuration.ConfigurationValidator;
 import com.proofpoint.configuration.ValidationErrorModule;
 import com.proofpoint.configuration.WarningsMonitor;
 import com.proofpoint.event.client.EventClient;
-import com.proofpoint.jmx.JmxInspector;
 import com.proofpoint.log.Logger;
 import com.proofpoint.log.Logging;
 import com.proofpoint.log.LoggingConfiguration;
@@ -71,7 +70,6 @@ public class Bootstrap
 
     private Map<String, String> requiredConfigurationProperties = null;
     private boolean initializeLogging = true;
-    private boolean logJmxInfo = false;
     private Map<String, String> applicationDefaults = null;
 
     private boolean initialized = false;
@@ -110,13 +108,6 @@ public class Bootstrap
     public Bootstrap doNotInitializeLogging()
     {
         this.initializeLogging = false;
-        return this;
-    }
-
-    @Beta
-    public Bootstrap logJmxInfo()
-    {
-        this.logJmxInfo = false;
         return this;
     }
 
@@ -237,11 +228,6 @@ public class Bootstrap
         // Create the life-cycle manager
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
 
-        // Log managed objects
-        if (logJmxInfo) {
-            logJMX(injector);
-        }
-
         // Start services
         if (lifeCycleManager.size() > 0) {
             lifeCycleManager.start();
@@ -265,54 +251,18 @@ public class Bootstrap
         return injector;
     }
 
-    private static final String COMPONENT_COLUMN = "COMPONENT";
-    private static final String ATTRIBUTE_NAME_COLUMN = "ATTRIBUTE";
     private static final String PROPERTY_NAME_COLUMN = "PROPERTY";
     private static final String DEFAULT_VALUE_COLUMN = "DEFAULT";
     private static final String CURRENT_VALUE_COLUMN = "RUNTIME";
     private static final String DESCRIPTION_COLUMN = "DESCRIPTION";
 
-    private static final String CLASS_NAME_COLUMN = "NAME";
-    private static final String OBJECT_NAME_COLUMN = "METHOD/ATTRIBUTE";
-    private static final String TYPE_COLUMN = "TYPE";
-
     private void logConfiguration(ConfigurationFactory configurationFactory)
     {
         ColumnPrinter columnPrinter = makePrinterForConfiguration(configurationFactory);
 
-        PrintWriter out = new PrintWriter(new LoggingWriter(log, Type.INFO));
-        columnPrinter.print(out);
-        out.flush();
-    }
-
-    private void logJMX(Injector injector)
-            throws Exception
-    {
-        ColumnPrinter columnPrinter = makePrinterForJMX(injector);
-
-        PrintWriter out = new PrintWriter(new LoggingWriter(log, Type.INFO));
-        columnPrinter.print(out);
-        out.flush();
-    }
-
-    private static ColumnPrinter makePrinterForJMX(Injector injector)
-            throws Exception
-    {
-        JmxInspector inspector = new JmxInspector(injector);
-
-        ColumnPrinter columnPrinter = new ColumnPrinter();
-        columnPrinter.addColumn(CLASS_NAME_COLUMN);
-        columnPrinter.addColumn(OBJECT_NAME_COLUMN);
-        columnPrinter.addColumn(TYPE_COLUMN);
-        columnPrinter.addColumn(DESCRIPTION_COLUMN);
-
-        for (JmxInspector.InspectorRecord record : inspector) {
-            columnPrinter.addValue(CLASS_NAME_COLUMN, record.className);
-            columnPrinter.addValue(OBJECT_NAME_COLUMN, record.objectName);
-            columnPrinter.addValue(TYPE_COLUMN, record.type.name().toLowerCase());
-            columnPrinter.addValue(DESCRIPTION_COLUMN, record.description);
+        try (PrintWriter out = new PrintWriter(new LoggingWriter(log, Type.INFO))) {
+            columnPrinter.print(out);
         }
-        return columnPrinter;
     }
 
     private static ColumnPrinter makePrinterForConfiguration(ConfigurationFactory configurationFactory)
@@ -321,18 +271,13 @@ public class Bootstrap
 
         ColumnPrinter columnPrinter = new ColumnPrinter();
 
-//        columnPrinter.addColumn(COMPONENT_COLUMN);
-//        columnPrinter.addColumn(ATTRIBUTE_NAME_COLUMN);
         columnPrinter.addColumn(PROPERTY_NAME_COLUMN);
         columnPrinter.addColumn(DEFAULT_VALUE_COLUMN);
         columnPrinter.addColumn(CURRENT_VALUE_COLUMN);
         columnPrinter.addColumn(DESCRIPTION_COLUMN);
 
         for (ConfigRecord<?> record : configurationInspector.inspect(configurationFactory)) {
-            String componentName = record.getComponentName();
             for (ConfigAttribute attribute : record.getAttributes()) {
-//                columnPrinter.addValue(COMPONENT_COLUMN, componentName);
-//                columnPrinter.addValue(ATTRIBUTE_NAME_COLUMN, attribute.getAttributeName());
                 columnPrinter.addValue(PROPERTY_NAME_COLUMN, attribute.getPropertyName());
                 columnPrinter.addValue(DEFAULT_VALUE_COLUMN, attribute.getDefaultValue());
                 columnPrinter.addValue(CURRENT_VALUE_COLUMN, attribute.getCurrentValue());
