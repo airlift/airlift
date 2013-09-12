@@ -1,3 +1,32 @@
+Platform 0.81
+
+* We made JAX-RS resource methods Bean-validate arguments of List and Map.
+
+* JMX agent
+
+  We've replaced the custom JMX agent in Platform by the one built into the
+  JVM. This change makes it possible to use the VisualGC plugin for VisualVM
+  when jstatd is also running in the same machine as the Platform-based
+  process.
+
+  As a result of this change, we've also removed the 'jmx.rmiserver.hostname'
+  configuration option in favor of Java's native configuration option
+  'java.rmi.server.hostname'.
+
+* We demoted several legacy configuration properties to defunct. We renamed
+  'discovery.uri' to 'testing.discovery.uri' to make it obvious that it should
+  never be used in production.
+
+* We added an experimental management wrapper for a thread pool executor.
+
+* We added the ConfigurationAwareProvider interface to implementing custom
+  configuration providers.
+
+* We added byte array methods for JsonCodec.
+
+* We added 1,5,10, and 25 percentiles to Distribution and added manual
+  percentile specification to Distribution getPercentiles
+
 Platform 0.80
 
 * HttpServer reporting
