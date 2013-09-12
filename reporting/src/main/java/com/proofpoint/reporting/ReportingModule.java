@@ -29,6 +29,7 @@ public class ReportingModule
     {
         newSetBinder(binder, Mapping.class);
         binder.bind(ReportExporter.class).asEagerSingleton();
+        binder.bind(GuiceReportExporter.class).asEagerSingleton();
         binder.bind(ReportedBeanRegistry.class).in(Scopes.SINGLETON);
         binder.bind(MinuteBucketIdProvider.class).in(Scopes.SINGLETON);
         binder.bind(BucketIdProvider.class).to(MinuteBucketIdProvider.class).in(Scopes.SINGLETON);
