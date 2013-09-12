@@ -57,7 +57,7 @@ public class TimeStat
 
     public void add(Duration duration)
     {
-        add((long) duration.convertTo(TimeUnit.NANOSECONDS));
+        add(duration.roundTo(TimeUnit.NANOSECONDS));
     }
 
     private void add(long value)
