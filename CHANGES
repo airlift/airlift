@@ -2,8 +2,13 @@
 
 - [Bug] Fix issue in launcher when inspecting etc and plugin symlinks
 - [Bug] Fix JSONP support in jaxrs for generic types (like collections)
+- [Bug] Fix logging of configs with multiple independent bindings
 - Move the HTML user interface for JMX to /v1/jmx
 - Don't try to start JMX agent if already running
+- Add 1,5,10, and 25 percentiles to Distribution
+- Add manual percentile specification to Distribution getPercentiles
+- Add byte array methods for JsonCodec
+- Change DataSize toString to round to two decimal places
 
 * 0.79
 
