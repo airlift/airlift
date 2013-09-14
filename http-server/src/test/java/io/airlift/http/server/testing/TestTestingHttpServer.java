@@ -25,13 +25,13 @@ import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
-import io.airlift.http.client.ApacheHttpClient;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpStatus;
 import io.airlift.http.client.HttpUriBuilder;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler;
+import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.server.HttpServerConfig;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.TheServlet;
@@ -100,7 +100,7 @@ public class TestTestingHttpServer
         try {
             server.start();
 
-            try (HttpClient client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+            try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
                 StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
                 assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
@@ -123,7 +123,7 @@ public class TestTestingHttpServer
         try {
             server.start();
 
-            try (HttpClient client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+            try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
                 StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
                 assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
@@ -163,7 +163,7 @@ public class TestTestingHttpServer
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         TestingHttpServer server = injector.getInstance(TestingHttpServer.class);
 
-        try (HttpClient client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+        try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
             StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
@@ -202,7 +202,7 @@ public class TestTestingHttpServer
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         TestingHttpServer server = injector.getInstance(TestingHttpServer.class);
 
-        try (HttpClient client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+        try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
             StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
@@ -246,7 +246,7 @@ public class TestTestingHttpServer
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         TestingHttpServer server = injector.getInstance(TestingHttpServer.class);
 
-        try (HttpClient client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+        try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
             // test http resources
             URI uri = server.getBaseUrl();
             assertResource(uri, client, "", "welcome user!");

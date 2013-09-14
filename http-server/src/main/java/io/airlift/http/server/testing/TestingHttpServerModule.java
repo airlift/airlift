@@ -40,7 +40,7 @@ public class TestingHttpServerModule
         binder.disableCircularProxies();
 
         // Jetty scales required threads based on processor count, so pick a safe number
-        int threads = Math.max(10, Runtime.getRuntime().availableProcessors());
+        int threads = Math.max(20, Runtime.getRuntime().availableProcessors());
         HttpServerConfig config = new HttpServerConfig().setMinThreads(1).setMaxThreads(threads).setHttpPort(0);
 
         binder.bind(HttpServerConfig.class).toInstance(config);

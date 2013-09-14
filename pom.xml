@@ -25,6 +25,8 @@
 
         <dep.airlift.version>0.86-SNAPSHOT</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
+        <dep.jetty.version>9.1.1.v20140108</dep.jetty.version>
+        <dep.javax-servlet.version>3.1.0</dep.javax-servlet.version>
     </properties>
 
     <organization>
@@ -242,6 +244,18 @@
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpcore</artifactId>
                 <version>4.2.3</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-client</artifactId>
+                <version>${dep.jetty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-io</artifactId>
+                <version>${dep.jetty.version}</version>
             </dependency>
 
             <dependency>

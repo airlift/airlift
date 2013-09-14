@@ -21,12 +21,14 @@ import io.airlift.discovery.client.HttpServiceSelector;
 import io.airlift.discovery.client.testing.StaticHttpServiceSelector;
 import io.airlift.http.client.AsyncHttpClient;
 import io.airlift.http.client.HttpClientConfig;
-import io.airlift.http.client.netty.StandaloneNettyAsyncHttpClient;
+import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.joda.time.DateTime;
@@ -128,8 +130,7 @@ public class TestHttpEventClient
     public void setup()
             throws Exception
     {
-        httpClient = new StandaloneNettyAsyncHttpClient("test",
-                new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS)));
+        httpClient = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS)));
 
         servlet = new DummyServlet();
         server = createServer(servlet);
@@ -171,13 +172,15 @@ public class TestHttpEventClient
         }
         baseUri = new URI("http", null, "127.0.0.1", port, null, null, null);
 
-        Server server = new Server();
-        server.setSendServerVersion(false);
+        HttpConfiguration httpConfiguration = new HttpConfiguration();
+        httpConfiguration.setSendServerVersion(false);
+        httpConfiguration.setSendXPoweredBy(false);
 
-        SelectChannelConnector httpConnector;
-        httpConnector = new SelectChannelConnector();
-        httpConnector.setName("http");
+        server = new Server();
+
+        ServerConnector httpConnector = new ServerConnector(server, new HttpConnectionFactory(httpConfiguration));
         httpConnector.setPort(port);
+        httpConnector.setName("http");
         server.addConnector(httpConnector);
 
         ServletHolder servletHolder = new ServletHolder(servlet);

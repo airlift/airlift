@@ -28,12 +28,17 @@ import java.util.concurrent.TimeUnit;
 @Beta
 public class HttpClientConfig
 {
+    public static final String JAVAX_NET_SSL_KEY_STORE = "javax.net.ssl.keyStore";
+    public static final String JAVAX_NET_SSL_KEY_STORE_PASSWORD = "javax.net.ssl.keyStorePassword";
+
     private Duration connectTimeout = new Duration(1, TimeUnit.SECONDS);
     private Duration readTimeout = new Duration(1, TimeUnit.MINUTES);
     private Duration keepAliveInterval = null;
     private int maxConnections = 200;
     private int maxConnectionsPerServer = 20;
     private HostAndPort socksProxy;
+    private String keyStorePath = System.getProperty(JAVAX_NET_SSL_KEY_STORE);
+    private String keyStorePassword = System.getProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD);
 
     @NotNull
     @MinDuration("0ms")
@@ -110,6 +115,30 @@ public class HttpClientConfig
     public HttpClientConfig setSocksProxy(HostAndPort socksProxy)
     {
         this.socksProxy = socksProxy;
+        return this;
+    }
+
+    public String getKeyStorePath()
+    {
+        return keyStorePath;
+    }
+
+    @Config("http-client.key-store-path")
+    public HttpClientConfig setKeyStorePath(String keyStorePath)
+    {
+        this.keyStorePath = keyStorePath;
+        return this;
+    }
+
+    public String getKeyStorePassword()
+    {
+        return keyStorePassword;
+    }
+
+    @Config("http-client.key-store-password")
+    public HttpClientConfig setKeyStorePassword(String keyStorePassword)
+    {
+        this.keyStorePassword = keyStorePassword;
         return this;
     }
 }

@@ -18,14 +18,15 @@ package io.airlift.jaxrs;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Module;
-import io.airlift.http.client.ApacheHttpClient;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
+import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.json.JsonModule;
 import io.airlift.node.testing.TestingNodeModule;
+import io.airlift.testing.Closeables;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -36,6 +37,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response.Status;
+
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
@@ -63,7 +65,7 @@ public class TestOverrideMethodFilterInHttpServer
         resource = new TestResource();
         server = createServer(resource);
 
-        client = new ApacheHttpClient();
+        client = new JettyHttpClient();
 
         server.start();
     }
@@ -77,9 +79,9 @@ public class TestOverrideMethodFilterInHttpServer
                 server.stop();
             }
         }
-        catch (Throwable e) {
-            // ignore
+        catch (Throwable ignored) {
         }
+        Closeables.closeQuietly(client);
     }
 
     @Test

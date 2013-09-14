@@ -24,10 +24,10 @@ import com.google.common.net.MediaType;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 
 import java.io.IOException;
-import java.net.ConnectException;
 import java.util.List;
 
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 
 public class StringResponseHandler implements ResponseHandler<StringResponse, RuntimeException>
 {
@@ -45,13 +45,7 @@ public class StringResponseHandler implements ResponseHandler<StringResponse, Ru
     @Override
     public StringResponse handleException(Request request, Exception exception)
     {
-        if (exception instanceof ConnectException) {
-            throw new RuntimeException("Server refused connection: " + request.getUri().toASCIIString(), exception);
-        }
-        if (exception instanceof RuntimeException) {
-            throw (RuntimeException) exception;
-        }
-        throw new RuntimeException(exception);
+        throw propagate(request, exception);
     }
 
     @Override
