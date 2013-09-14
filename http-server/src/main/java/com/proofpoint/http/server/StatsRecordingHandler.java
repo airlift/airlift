@@ -42,10 +42,7 @@ public class StatsRecordingHandler
     {
         Duration requestTime = new Duration(max(0, System.currentTimeMillis() - request.getTimeStamp()), TimeUnit.MILLISECONDS);
 
-        long dispatchTime = request.getDispatchTime();
-        if (dispatchTime == 0) {
-            dispatchTime = request.getTimeStamp();
-        }
+        long dispatchTime = request.getTimeStamp();
 
         Duration schedulingDelay = new Duration(max(0, dispatchTime - request.getTimeStamp()), TimeUnit.MILLISECONDS);
 

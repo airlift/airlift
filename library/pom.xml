@@ -77,9 +77,10 @@
         <platform.check.fail-enforcer>${platform.check.fail-basic}</platform.check.fail-enforcer>
         <platform.check.fail-duplicate-finder>${platform.check.fail-basic}</platform.check.fail-duplicate-finder>
 
-        <dep.jetty.version>8.1.10.v20130312</dep.jetty.version>
+        <dep.jetty.version>9.1.1.v20140108</dep.jetty.version>
         <dep.slf4j.version>1.7.5</dep.slf4j.version>
         <dep.logback.version>1.1.1</dep.logback.version>
+        <dep.javax-servlet.version>3.1.0</dep.javax-servlet.version>
     </properties>
 
     <scm>
@@ -545,7 +546,7 @@
             <dependency>
                 <groupId>javax.servlet</groupId>
                 <artifactId>javax.servlet-api</artifactId>
-                <version>3.0.1</version>
+                <version>${dep.javax-servlet.version}</version>
             </dependency>
             <dependency>
                 <groupId>javax.validation</groupId>
@@ -754,6 +755,18 @@
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-http</artifactId>
+                <version>${dep.jetty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-client</artifactId>
+                <version>${dep.jetty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-io</artifactId>
                 <version>${dep.jetty.version}</version>
             </dependency>
 

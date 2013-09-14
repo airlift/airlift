@@ -47,10 +47,7 @@ public class HttpRequestEvent
             token = traceTokenManager.getCurrentRequestToken();
         }
 
-        long dispatchTime = request.getDispatchTime();
-        if (dispatchTime == 0) {
-            dispatchTime = request.getTimeStamp();
-        }
+        long dispatchTime = request.getTimeStamp();
         long timeToDispatch = max(dispatchTime - request.getTimeStamp(), 0);
 
         Long timeToFirstByte = null;

@@ -7,10 +7,10 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.proofpoint.http.client.ApacheHttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.StaticBodyGenerator;
 import com.proofpoint.http.client.StringResponseHandler.StringResponse;
+import com.proofpoint.http.client.jetty.JettyHttpClient;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.json.JsonModule;
@@ -77,7 +77,7 @@ public class TestJaxrsBinder
         filterFactories.add(filterFactory);
 
         TestingHttpServer server = createServerWithFilter(resource, filterFactories);
-        ApacheHttpClient client = new ApacheHttpClient();
+        JettyHttpClient client = new JettyHttpClient();
         server.start();
 
         Request request = prepareGet()
@@ -101,7 +101,7 @@ public class TestJaxrsBinder
         filterFactories.add(headerChangeFilterFactory);
 
         TestingHttpServer server = createServerWithFilter(resource, filterFactories);
-        ApacheHttpClient client = new ApacheHttpClient();
+        JettyHttpClient client = new JettyHttpClient();
         server.start();
 
         Request request = prepareGet()

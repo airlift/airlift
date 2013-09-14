@@ -15,15 +15,12 @@
  */
 package com.proofpoint.http.server;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.WriterOutputStream;
-import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
@@ -101,8 +98,8 @@ public class ClassPathResourceHandler
 
         String method = request.getMethod();
         boolean skipContent = false;
-        if (!HttpMethods.GET.equals(method)) {
-            if (HttpMethods.HEAD.equals(method)) {
+        if (!HttpMethod.GET.is(method)) {
+            if (HttpMethod.HEAD.is(method)) {
                 skipContent = true;
             }
             else {
@@ -112,12 +109,8 @@ public class ClassPathResourceHandler
         }
 
         try (InputStream resourceStream = resource.openStream()) {
-            Buffer contentTypeBytes = MIME_TYPES.getMimeByExtension(resource.toString());
-            if (contentTypeBytes != null) {
-                // convert the content type bytes to a string using the specified character set
-                String contentTypeHeaderValue = contentTypeBytes.toString(Charsets.US_ASCII);
-                response.setContentType(contentTypeHeaderValue);
-            }
+            String contentType = MIME_TYPES.getMimeByExtension(resource.toString());
+            response.setContentType(contentType);
 
             if (skipContent) {
                 return;
@@ -132,12 +125,7 @@ public class ClassPathResourceHandler
                 out = new WriterOutputStream(response.getWriter());
             }
 
-            if (out instanceof AbstractHttpConnection.Output) {
-                ((AbstractHttpConnection.Output) out).sendContent(resourceStream);
-            }
-            else {
-                ByteStreams.copy(resourceStream, out);
-            }
+            ByteStreams.copy(resourceStream, out);
         }
     }
 

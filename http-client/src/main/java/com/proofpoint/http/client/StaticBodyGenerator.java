@@ -32,9 +32,14 @@ public class StaticBodyGenerator implements BodyGenerator
 
     private final byte[] body;
 
-    private StaticBodyGenerator(byte[] body)
+    protected StaticBodyGenerator(byte[] body)
     {
         this.body = body;
+    }
+
+    public byte[] getBody()
+    {
+        return body;
     }
 
     @Override

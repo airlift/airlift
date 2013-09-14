@@ -27,20 +27,25 @@ import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.RequestLog;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.GzipFilter;
 import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPool;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -52,6 +57,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executor;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -60,9 +66,9 @@ import static java.lang.String.format;
 public class HttpServer
 {
     private final Server server;
-    private final Connector httpConnector;
-    private final Connector httpsConnector;
-    private final Connector adminConnector;
+    private final ServerConnector httpConnector;
+    private final ServerConnector httpsConnector;
+    private final ServerConnector adminConnector;
 
     @SuppressWarnings({"deprecation"})
     public HttpServer(HttpServerInfo httpServerInfo,
@@ -88,93 +94,102 @@ public class HttpServer
         checkNotNull(queryStringFilter, "queryStringFilter is null");
         checkNotNull(theServlet, "theServlet is null");
 
-        Server server = new Server();
-        server.setSendServerVersion(false);
+        QueuedThreadPool threadPool = new QueuedThreadPool(config.getMaxThreads());
+        threadPool.setMinThreads(config.getMinThreads());
+        threadPool.setIdleTimeout(Ints.checkedCast(config.getThreadMaxIdleTime().toMillis()));
+        threadPool.setName("http-worker");
+        server = new Server(threadPool);
 
         if (mbeanServer != null) {
             // export jmx mbeans if a server was provided
-            MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer)
-            {
-                @Override
-                public void doStart()
-                {
-                    // jetty registers a shutdown hook that can cause a deadlock
-                }
-            };
-            server.getContainer().addEventListener(mbeanContainer);
+            MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);
+            server.addBean(mbeanContainer);
         }
 
-        // set up NIO-based HTTP connector
-        SelectChannelConnector httpConnector = null;
+        // set up HTTP connector
         if (config.isHttpEnabled()) {
-            httpConnector = new SelectChannelConnector();
+            HttpConfiguration httpConfiguration = new HttpConfiguration();
+            httpConfiguration.setSendServerVersion(false);
+            httpConfiguration.setSendXPoweredBy(false);
+            if (config.getMaxRequestHeaderSize() != null) {
+                httpConfiguration.setRequestHeaderSize(Ints.checkedCast(config.getMaxRequestHeaderSize().toBytes()));
+            }
+
+            // if https is enabled, set the CONFIDENTIAL and INTEGRAL redirection information
+            if (config.isHttpsEnabled()) {
+                httpConfiguration.setSecureScheme("https");
+                httpConfiguration.setSecurePort(httpServerInfo.getHttpsUri().getPort());
+            }
+
+            httpConnector = new ServerConnector(server, new HttpConnectionFactory(httpConfiguration));
             httpConnector.setName("http");
             httpConnector.setPort(httpServerInfo.getHttpUri().getPort());
-            httpConnector.setMaxIdleTime(Ints.checkedCast(config.getNetworkMaxIdleTime().toMillis()));
-            httpConnector.setStatsOn(true);
+            httpConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());
             httpConnector.setHost(nodeInfo.getBindIp().getHostAddress());
-            if (config.getMaxRequestHeaderSize() != null) {
-                httpConnector.setRequestHeaderSize(Ints.checkedCast(config.getMaxRequestHeaderSize().toBytes()));
-            }
             server.addConnector(httpConnector);
+        } else {
+            httpConnector = null;
         }
 
         // set up NIO-based HTTPS connector
-        SslSelectChannelConnector httpsConnector = null;
         if (config.isHttpsEnabled()) {
-            httpsConnector = new SslSelectChannelConnector();
+            HttpConfiguration httpsConfiguration = new HttpConfiguration();
+            httpsConfiguration.setSendServerVersion(false);
+            httpsConfiguration.setSendXPoweredBy(false);
+            if (config.getMaxRequestHeaderSize() != null) {
+                httpsConfiguration.setRequestHeaderSize(Ints.checkedCast(config.getMaxRequestHeaderSize().toBytes()));
+            }
+            httpsConfiguration.addCustomizer(new SecureRequestCustomizer());
+
+            SslContextFactory sslContextFactory = new SslContextFactory(config.getKeystorePath());
+            sslContextFactory.setKeyStorePassword(config.getKeystorePassword());
+            SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
+
+            httpsConnector = new ServerConnector(server, sslConnectionFactory, new HttpConnectionFactory(httpsConfiguration));
             httpsConnector.setName("https");
             httpsConnector.setPort(httpServerInfo.getHttpsUri().getPort());
-            httpsConnector.setStatsOn(true);
-            httpsConnector.setKeystore(config.getKeystorePath());
-            httpsConnector.setPassword(config.getKeystorePassword());
-            httpsConnector.setMaxIdleTime(Ints.checkedCast(config.getNetworkMaxIdleTime().toMillis()));
+            httpsConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());
             httpsConnector.setHost(nodeInfo.getBindIp().getHostAddress());
-            if (config.getMaxRequestHeaderSize() != null) {
-                httpsConnector.setRequestHeaderSize(Ints.checkedCast(config.getMaxRequestHeaderSize().toBytes()));
-            }
-            httpsConnector.setAllowRenegotiate(true);
 
             server.addConnector(httpsConnector);
+        } else {
+            httpsConnector = null;
         }
 
         // set up NIO-based Admin connector
-        SelectChannelConnector adminConnector = null;
         if (config.isAdminEnabled()) {
-            if (config.isHttpsEnabled()) {
-                SslSelectChannelConnector connector = new SslSelectChannelConnector();
-                connector.setKeystore(config.getKeystorePath());
-                connector.setPassword(config.getKeystorePassword());
-                connector.setAllowRenegotiate(true);
-                adminConnector = connector;
-            }
-            else {
-                adminConnector = new SelectChannelConnector();
-            }
-            adminConnector.setName("admin");
-            adminConnector.setPort(httpServerInfo.getAdminUri().getPort());
-            adminConnector.setMaxIdleTime(Ints.checkedCast(config.getNetworkMaxIdleTime().toMillis()));
-            adminConnector.setStatsOn(true);
-            adminConnector.setHost(nodeInfo.getBindIp().getHostAddress());
+            HttpConfiguration adminConfiguration = new HttpConfiguration();
+            adminConfiguration.setSendServerVersion(false);
+            adminConfiguration.setSendXPoweredBy(false);
             if (config.getMaxRequestHeaderSize() != null) {
-                adminConnector.setRequestHeaderSize(Ints.checkedCast(config.getMaxRequestHeaderSize().toBytes()));
+                adminConfiguration.setRequestHeaderSize(Ints.checkedCast(config.getMaxRequestHeaderSize().toBytes()));
             }
 
             QueuedThreadPool adminThreadPool = new QueuedThreadPool(config.getAdminMaxThreads());
             adminThreadPool.setName("http-admin-worker");
             adminThreadPool.setMinThreads(config.getAdminMinThreads());
-            adminThreadPool.setMaxIdleTimeMs(Ints.checkedCast(config.getThreadMaxIdleTime().toMillis()));
-            adminConnector.setThreadPool(adminThreadPool);
+            adminThreadPool.setIdleTimeout(Ints.checkedCast(config.getThreadMaxIdleTime().toMillis()));
 
-            server.addBean(adminThreadPool); // workaround until jetty bug 373272 is fixed
+            if (config.isHttpsEnabled()) {
+                adminConfiguration.addCustomizer(new SecureRequestCustomizer());
+
+                SslContextFactory sslContextFactory = new SslContextFactory(config.getKeystorePath());
+                sslContextFactory.setKeyStorePassword(config.getKeystorePassword());
+                SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
+                adminConnector = new ServerConnector(server, adminThreadPool, null, null, 0, -1, sslConnectionFactory, new HttpConnectionFactory(adminConfiguration));
+            } else {
+                adminConnector = new ServerConnector(server, adminThreadPool, null, null, 0, -1, new HttpConnectionFactory(adminConfiguration));
+            }
+
+            adminConnector.setName("admin");
+            adminConnector.setPort(httpServerInfo.getAdminUri().getPort());
+            adminConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());
+            adminConnector.setHost(nodeInfo.getBindIp().getHostAddress());
+
             server.addConnector(adminConnector);
+        } else {
+            adminConnector = null;
         }
-
-        QueuedThreadPool threadPool = new QueuedThreadPool(config.getMaxThreads());
-        threadPool.setMinThreads(config.getMinThreads());
-        threadPool.setMaxIdleTimeMs(Ints.checkedCast(config.getThreadMaxIdleTime().toMillis()));
-        threadPool.setName("http-worker");
-        server.setThreadPool(threadPool);
 
         /**
          * structure is:
@@ -230,11 +245,6 @@ public class HttpServer
         }
         rootHandlers.addHandler(statsHandler);
         server.setHandler(rootHandlers);
-
-        this.server = server;
-        this.httpConnector = httpConnector;
-        this.httpsConnector = httpsConnector;
-        this.adminConnector = adminConnector;
     }
 
     private static ServletContextHandler createServletContext(Servlet theServlet,
@@ -257,8 +267,6 @@ public class HttpServer
 
         // -- gzip response filter
         context.addFilter(GzipFilter.class, "/*", null);
-        // -- gzip request filter
-        context.addFilter(GZipRequestFilter.class, "/*", null);
         // -- security handler
         if (loginService != null) {
             SecurityHandler securityHandler = createSecurityHandler(loginService);
@@ -272,7 +280,14 @@ public class HttpServer
         ServletHolder servletHolder = new ServletHolder(theServlet);
         servletHolder.setInitParameters(ImmutableMap.copyOf(parameters));
         context.addServlet(servletHolder, "/*");
-        context.setConnectorNames(connectorNames);
+
+        // Starting with Jetty 9 there is no way to specify connectors directly, but
+        // there is this wonky @ConnectorName virtual hosts automatically added
+        String[] virtualHosts = new String[connectorNames.length];
+        for (int i = 0; i < connectorNames.length; i++) {
+            virtualHosts[i] = "@" + connectorNames[i];
+        }
+        context.setVirtualHosts(virtualHosts);
         return context;
     }
 
@@ -321,7 +336,7 @@ public class HttpServer
             throws Exception
     {
         server.start();
-        checkState(server.isRunning(), "server is not running");
+        checkState(server.isStarted(), "server is not started");
 
         // The combination of an NIO connector and an insufficient number of threads results
         // in a server that hangs after accepting connections. Jetty scales the number of
@@ -331,6 +346,7 @@ public class HttpServer
         checkSufficientThreads(httpConnector, "HTTP");
         checkSufficientThreads(httpsConnector, "HTTPS");
         checkSufficientThreads(adminConnector, "admin");
+        checkState(!server.getThreadPool().isLowOnThreads(), "insufficient threads configured for server connector");
     }
 
     @PreDestroy
@@ -342,6 +358,14 @@ public class HttpServer
 
     private static void checkSufficientThreads(Connector connector, String name)
     {
-        checkState((connector == null) || !connector.isLowResources(), "insufficient threads configured for %s connector", name);
+        if (connector == null) {
+            return;
+        }
+        Executor executor = connector.getExecutor();
+        if (executor instanceof ThreadPool) {
+            ThreadPool queuedThreadPool = (ThreadPool) executor;
+            checkState(!queuedThreadPool.isLowOnThreads(), "insufficient threads configured for %s connector", name);
+        }
+
     }
 }

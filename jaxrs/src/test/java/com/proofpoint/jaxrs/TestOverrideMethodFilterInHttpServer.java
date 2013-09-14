@@ -18,16 +18,17 @@ package com.proofpoint.jaxrs;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Module;
-import com.proofpoint.http.client.ApacheHttpClient;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
+import com.proofpoint.http.client.jetty.JettyHttpClient;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.reporting.ReportingModule;
+import com.proofpoint.testing.Closeables;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -62,7 +63,7 @@ public class TestOverrideMethodFilterInHttpServer
         resource = new TestResource();
         server = createServer(resource);
 
-        client = new ApacheHttpClient();
+        client = new JettyHttpClient();
 
         server.start();
     }
@@ -76,9 +77,9 @@ public class TestOverrideMethodFilterInHttpServer
                 server.stop();
             }
         }
-        catch (Throwable e) {
-            // ignore
+        catch (Throwable ignored) {
         }
+        Closeables.closeQuietly(client);
     }
 
     @Test

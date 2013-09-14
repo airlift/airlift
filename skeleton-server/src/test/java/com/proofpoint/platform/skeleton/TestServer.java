@@ -3,9 +3,9 @@ package com.proofpoint.platform.skeleton;
 import com.google.inject.Injector;
 import com.proofpoint.bootstrap.Bootstrap;
 import com.proofpoint.bootstrap.LifeCycleManager;
-import com.proofpoint.http.client.ApacheHttpClient;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
+import com.proofpoint.http.client.jetty.JettyHttpClient;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.jaxrs.JaxrsModule;
@@ -14,6 +14,7 @@ import com.proofpoint.jmx.testing.TestingJmxModule;
 import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.reporting.ReportingModule;
+import com.proofpoint.testing.Closeables;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -56,15 +57,20 @@ public class TestServer
 
         lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         server = injector.getInstance(TestingHttpServer.class);
-        client = new ApacheHttpClient();
+        client = new JettyHttpClient();
     }
 
     @AfterMethod
     public void teardown()
             throws Exception
     {
-        if (lifeCycleManager != null) {
-            lifeCycleManager.stop();
+        try {
+            if (lifeCycleManager != null) {
+                lifeCycleManager.stop();
+            }
+        }
+        finally {
+            Closeables.closeQuietly(client);
         }
     }
 

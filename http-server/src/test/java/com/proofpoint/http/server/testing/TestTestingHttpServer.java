@@ -25,13 +25,13 @@ import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.proofpoint.bootstrap.Bootstrap;
 import com.proofpoint.bootstrap.LifeCycleManager;
-import com.proofpoint.http.client.ApacheHttpClient;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
 import com.proofpoint.http.client.HttpStatus;
 import com.proofpoint.http.client.HttpUriBuilder;
 import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.client.StringResponseHandler;
+import com.proofpoint.http.client.jetty.JettyHttpClient;
 import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 import com.proofpoint.http.server.HttpServerConfig;
 import com.proofpoint.http.server.HttpServerInfo;
@@ -102,7 +102,7 @@ public class TestTestingHttpServer
         try {
             server.start();
 
-            try (HttpClient client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+            try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
                 StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
                 assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
@@ -125,7 +125,7 @@ public class TestTestingHttpServer
         try {
             server.start();
 
-            try (HttpClient client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+            try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
                 StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
                 assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
@@ -166,7 +166,7 @@ public class TestTestingHttpServer
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         TestingHttpServer server = injector.getInstance(TestingHttpServer.class);
 
-        try (HttpClient client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+        try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
             StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
@@ -206,7 +206,7 @@ public class TestTestingHttpServer
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         TestingHttpServer server = injector.getInstance(TestingHttpServer.class);
 
-        try (HttpClient client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+        try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
             StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
@@ -251,7 +251,7 @@ public class TestTestingHttpServer
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         TestingHttpServer server = injector.getInstance(TestingHttpServer.class);
 
-        try (HttpClient client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+        try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
             // test http resources
             URI uri = server.getBaseUrl();
             assertResource(uri, client, "", "welcome user!");

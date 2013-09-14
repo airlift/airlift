@@ -22,10 +22,10 @@ import com.google.inject.Injector;
 import com.proofpoint.bootstrap.Bootstrap;
 import com.proofpoint.bootstrap.LifeCycleManager;
 import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
-import com.proofpoint.http.client.ApacheHttpClient;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.client.StringResponseHandler.StringResponse;
+import com.proofpoint.http.client.jetty.JettyHttpClient;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.jmx.testing.TestingJmxModule;
@@ -77,7 +77,7 @@ public class TestRackModuleSinatra
 
         lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         server = injector.getInstance(TestingHttpServer.class);
-        client = new ApacheHttpClient();
+        client = new JettyHttpClient();
     }
 
     @AfterMethod

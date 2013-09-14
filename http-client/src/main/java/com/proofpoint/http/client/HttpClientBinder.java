@@ -52,7 +52,14 @@ public class HttpClientBinder
     {
         checkNotNull(name, "name is null");
         checkNotNull(annotation, "annotation is null");
-        return createBindingBuilder(new HttpClientModule(name, annotation, rootBinder));
+        return createBindingBuilder(new AsyncHttpClientModule(name, annotation, rootBinder));
+    }
+
+    private HttpClientBindingBuilder createBindingBuilder(AsyncHttpClientModule module)
+    {
+        binder.install(module);
+        return new HttpClientBindingBuilder(module,
+                newSetBinder(binder, HttpRequestFilter.class, module.getFilterQualifier()));
     }
 
     public HttpClientAsyncBindingBuilder bindAsyncHttpClient(String name, Class<? extends Annotation> annotation)
@@ -60,13 +67,6 @@ public class HttpClientBinder
         checkNotNull(name, "name is null");
         checkNotNull(annotation, "annotation is null");
         return createAsyncBindingBuilder(new AsyncHttpClientModule(name, annotation, rootBinder));
-    }
-
-    private HttpClientBindingBuilder createBindingBuilder(AbstractHttpClientModule module)
-    {
-        binder.install(module);
-        return new HttpClientBindingBuilder(module,
-                newSetBinder(binder, HttpRequestFilter.class, module.getFilterQualifier()));
     }
 
     private HttpClientAsyncBindingBuilder createAsyncBindingBuilder(AsyncHttpClientModule module)
@@ -77,16 +77,16 @@ public class HttpClientBinder
     }
 
     public static class HttpClientBindingBuilder
-        extends AbstractHttpClientBindingBuilder<HttpClientBindingBuilder>
+        extends HttpClientAsyncBindingBuilder
     {
-        private HttpClientBindingBuilder(AbstractHttpClientModule module, Multibinder<HttpRequestFilter> multibinder)
+        public HttpClientBindingBuilder(AsyncHttpClientModule module, Multibinder<HttpRequestFilter> multibinder)
         {
             super(module, multibinder);
         }
     }
 
     public static class HttpClientAsyncBindingBuilder
-    extends AbstractHttpClientBindingBuilder<HttpClientAsyncBindingBuilder>
+            extends AbstractHttpClientBindingBuilder<HttpClientAsyncBindingBuilder>
     {
         private final AsyncHttpClientModule module;
 

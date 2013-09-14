@@ -19,6 +19,7 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ListMultimap;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
@@ -31,12 +32,12 @@ import com.google.inject.multibindings.Multibinder;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.event.client.NullEventModule;
-import com.proofpoint.http.client.ApacheHttpClient;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.HttpStatus;
 import com.proofpoint.http.client.HttpUriBuilder;
 import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.client.StringResponseHandler.StringResponse;
+import com.proofpoint.http.client.jetty.JettyHttpClient;
 import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.node.testing.TestingNodeModule;
@@ -202,8 +203,7 @@ public class TestHttpServerModule
         HttpServer server = injector.getInstance(HttpServer.class);
         server.start();
 
-        try {
-            HttpClient client = new ApacheHttpClient();
+        try (HttpClient client = new JettyHttpClient()) {
 
             // test servlet bound correctly
             URI httpUri = httpServerInfo.getHttpUri();
@@ -254,6 +254,8 @@ public class TestHttpServerModule
         protected void service(HttpServletRequest request, HttpServletResponse response)
                 throws ServletException, IOException
         {
+            ByteStreams.copy(request.getInputStream(), ByteStreams.nullOutputStream());
+
             remoteAddress = request.getRemoteAddr();
             for (Entry<String, String> entry : responseHeaders.entries()) {
                 response.addHeader(entry.getKey(), entry.getValue());

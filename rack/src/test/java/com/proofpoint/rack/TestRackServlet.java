@@ -27,12 +27,14 @@ import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.servlet.ReadListener;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
@@ -157,6 +159,24 @@ public class TestRackServlet
             {
                 index = 0;
             }
+
+            @Override
+            public boolean isFinished()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean isReady()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void setReadListener(ReadListener readListener)
+            {
+                throw new UnsupportedOperationException();
+            }
         });
 
         when(request.getScheme()).thenReturn("http");
@@ -175,6 +195,18 @@ public class TestRackServlet
                     throws IOException
             {
                 outputBuilder.append(new String(new int[] {i}, 0, 1));
+            }
+
+            @Override
+            public boolean isReady()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void setWriteListener(WriteListener writeListener)
+            {
+                throw new UnsupportedOperationException();
             }
         };
 

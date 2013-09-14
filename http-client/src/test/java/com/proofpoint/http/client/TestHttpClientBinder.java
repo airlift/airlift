@@ -23,77 +23,100 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.PrivateBinder;
+import com.proofpoint.bootstrap.Bootstrap;
+import com.proofpoint.bootstrap.LifeCycleManager;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.http.client.netty.NettyAsyncHttpClient;
-import com.proofpoint.http.client.netty.NettyIoPool;
+import com.proofpoint.http.client.AsyncHttpClientModule.JettyIoPoolManager;
 import com.proofpoint.tracetoken.TraceTokenModule;
-import org.testng.Assert;
+import com.proofpoint.http.client.jetty.JettyHttpClient;
 import org.testng.annotations.Test;
 import org.weakref.jmx.Managed;
 
 import javax.inject.Qualifier;
+
+import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Set;
 
+import static com.proofpoint.bootstrap.Bootstrap.bootstrapApplication;
 import static com.proofpoint.http.client.HttpClientBinder.HttpClientBindingBuilder;
 import static com.proofpoint.http.client.HttpClientBinder.httpClientBinder;
+import static com.proofpoint.testing.Assertions.assertInstanceOf;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
-import static org.testng.Assert.fail;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
+import static org.testng.Assert.assertTrue;
 
 public class TestHttpClientBinder
 {
     @Test
     public void testBindingMultipleFiltersAndClients()
+            throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
-                                .withFilter(TestingRequestFilter.class)
-                                .withFilter(AnotherHttpRequestFilter.class)
-                                .withTracing();
+        Injector injector = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
+                .withModules(
+                        new Module()
+                        {
+                            @Override
+                            public void configure(Binder binder)
+                            {
+                                httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+                                        .withFilter(TestingRequestFilter.class)
+                                        .withFilter(AnotherHttpRequestFilter.class)
+                                        .withTracing();
 
-                        HttpClientBindingBuilder builder = httpClientBinder(binder).bindHttpClient("bar", BarClient.class);
-                        builder.withFilter(TestingRequestFilter.class);
-                        builder.addFilterBinding().to(AnotherHttpRequestFilter.class);
-                    }
-                },
-                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())),
-                new TraceTokenModule());
+                                HttpClientBindingBuilder builder = httpClientBinder(binder).bindHttpClient("bar", BarClient.class);
+                                builder.withFilter(TestingRequestFilter.class);
+                                builder.addFilterBinding().to(AnotherHttpRequestFilter.class);
+                            }
+                        },
+                        new TraceTokenModule())
+                .quiet()
+                .initialize();
 
         assertFilterCount(injector.getInstance(Key.get(HttpClient.class, FooClient.class)), 3);
         assertFilterCount(injector.getInstance(Key.get(HttpClient.class, BarClient.class)), 2);
+
+        // a pool should not be registered for this Foo
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, BarClient.class)));
+
+        assertPoolsDestroyProperly(injector);
     }
 
     @Test
     public void testBindAsyncClientWithFilter()
+            throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class)
-                                .withFilter(TestingRequestFilter.class)
-                                .withFilter(AnotherHttpRequestFilter.class)
-                                .withTracing();
-                    }
-                },
-                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())),
-                new TraceTokenModule());
+        Injector injector = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
+                .withModules(
+                        new Module()
+                        {
+                            @Override
+                            public void configure(Binder binder)
+                            {
+                                httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class)
+                                        .withFilter(TestingRequestFilter.class)
+                                        .withFilter(AnotherHttpRequestFilter.class)
+                                        .withTracing();
+                            }
+                        },
+                        new TraceTokenModule())
+                .quiet()
+                .initialize();
+
 
         HttpClient httpClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
         AsyncHttpClient asyncHttpClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
@@ -101,63 +124,92 @@ public class TestHttpClientBinder
         assertFilterCount(httpClient, 3);
         assertFilterCount(asyncHttpClient, 3);
 
-        injector.getInstance(NettyIoPool.class).close();
+        // a pool should not be registered for this Foo
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, BarClient.class)));
+
+        assertPoolsDestroyProperly(injector);
     }
 
     @Test
     public void testWithoutFilters()
+            throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
-                    }
-                },
-                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
+        Injector injector = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
+                .withModules(
+                        new Module()
+                        {
+                            @Override
+                            public void configure(Binder binder)
+                            {
+                                httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
+                            }
+                        })
+                .quiet()
+                .initialize();
 
         assertNotNull(injector.getInstance(Key.get(HttpClient.class, FooClient.class)));
+
+        // a pool should not be registered for this Foo
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
+
+        assertPoolsDestroyProperly(injector);
     }
 
     @Test
     public void testAliases()
+            throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
-                                .withAlias(FooAlias1.class)
-                                .withAliases(ImmutableList.of(FooAlias2.class, FooAlias3.class));
-                    }
-                },
-                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
+        Injector injector = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
+                .withModules(
+                        new Module()
+                        {
+                            @Override
+                            public void configure(Binder binder)
+                            {
+                                httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+                                        .withAlias(FooAlias1.class)
+                                        .withAliases(ImmutableList.of(FooAlias2.class, FooAlias3.class));
+                            }
+                        })
+                .quiet()
+                .initialize();
 
         HttpClient client = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
         assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias1.class)), client);
         assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias2.class)), client);
         assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias3.class)), client);
+
+        // a private pool should not be registered for these clients
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooAlias1.class)));
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooAlias2.class)));
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooAlias3.class)));
+
+        assertPoolsDestroyProperly(injector);
     }
 
     @Test
     public void testBindAsyncClientWithAliases()
+            throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class)
-                                .withAlias(FooAlias1.class)
-                                .withAlias(FooAlias2.class);
-                    }
-                },
-                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
+        Injector injector = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
+                .withModules(
+                        new Module()
+                        {
+                            @Override
+                            public void configure(Binder binder)
+                            {
+                                httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class)
+                                        .withAlias(FooAlias1.class)
+                                        .withAlias(FooAlias2.class);
+                            }
+                        })
+                .quiet()
+                .initialize();
 
         AsyncHttpClient client = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
         assertSame(injector.getInstance(Key.get(AsyncHttpClient.class, FooAlias1.class)), client);
@@ -167,186 +219,265 @@ public class TestHttpClientBinder
         assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias1.class)), client);
         assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias2.class)), client);
 
-        injector.getInstance(NettyIoPool.class).close();
+        // a private pool should not be registered for these clients
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooAlias1.class)));
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooAlias2.class)));
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooAlias3.class)));
+
+        assertPoolsDestroyProperly(injector);
     }
 
     @Test
     public void testMultipleAsyncClients()
+            throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class);
-                        httpClientBinder(binder).bindAsyncHttpClient("bar", BarClient.class);
-                    }
-                },
-                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
-
-        AsyncHttpClient fooClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
-        AsyncHttpClient barClient = injector.getInstance(Key.get(AsyncHttpClient.class, BarClient.class));
-        Assert.assertNotSame(fooClient, barClient);
-
-        assertNull(injector.getExistingBinding(Key.get(NettyIoPool.class, FooClient.class)));
-        assertNull(injector.getExistingBinding(Key.get(NettyIoPool.class, BarClient.class)));
-
-        injector.getInstance(NettyIoPool.class).close();
-    }
-
-    @Test
-    public void testPrivateThreadPool()
-    {
-        Injector injector = Guice.createInjector(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class).withPrivateIoThreadPool();
-                    }
-                },
-                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
-
-        AsyncHttpClient fooClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
-        assertNotNull(fooClient);
-
-        assertNotNull(injector.getExistingBinding(Key.get(NettyIoPool.class, FooClient.class)));
-
-        injector.getInstance(NettyIoPool.class).close();
-        injector.getInstance(Key.get(NettyIoPool.class, FooClient.class)).close();
-    }
-
-    @Test
-    public void testMultiplePrivateThreadPools()
-    {
-        Injector injector = Guice.createInjector(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class).withPrivateIoThreadPool();
-                        httpClientBinder(binder).bindAsyncHttpClient("bar", BarClient.class).withPrivateIoThreadPool();
-                    }
-                },
-                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
-
-        AsyncHttpClient fooClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
-        AsyncHttpClient barClient = injector.getInstance(Key.get(AsyncHttpClient.class, BarClient.class));
-        Assert.assertNotSame(fooClient, barClient);
-
-        assertNotNull(injector.getExistingBinding(Key.get(NettyIoPool.class, FooClient.class)));
-        assertNotNull(injector.getExistingBinding(Key.get(NettyIoPool.class, BarClient.class)));
-
-        injector.getInstance(NettyIoPool.class).close();
-        injector.getInstance(Key.get(NettyIoPool.class, FooClient.class)).close();
-        injector.getInstance(Key.get(NettyIoPool.class, BarClient.class)).close();
-    }
-
-    @Test
-    public void testMultiplePrivateAndSharedThreadPools()
-    {
-        Injector injector = Guice.createInjector(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class);
-                        httpClientBinder(binder).bindAsyncHttpClient("bar", BarClient.class).withPrivateIoThreadPool();
-                    }
-                },
-                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
+        Injector injector = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
+                .withModules(
+                        new Module()
+                        {
+                            @Override
+                            public void configure(Binder binder)
+                            {
+                                httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class);
+                                httpClientBinder(binder).bindAsyncHttpClient("bar", BarClient.class);
+                            }
+                        })
+                .quiet()
+                .initialize();
 
         AsyncHttpClient fooClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
         AsyncHttpClient barClient = injector.getInstance(Key.get(AsyncHttpClient.class, BarClient.class));
         assertNotSame(fooClient, barClient);
 
-        assertNull(injector.getExistingBinding(Key.get(NettyIoPool.class, FooClient.class)));
-        assertNotNull(injector.getExistingBinding(Key.get(NettyIoPool.class, BarClient.class)));
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, BarClient.class)));
 
-        injector.getInstance(NettyIoPool.class).close();
-        injector.getInstance(Key.get(NettyIoPool.class, BarClient.class)).close();
+
+        // a private pool should not be registered for these clients
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, BarClient.class)));
+
+        assertPoolsDestroyProperly(injector);
+    }
+
+    @Test
+    public void testPrivateThreadPool()
+            throws Exception
+    {
+        Injector injector = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
+                .withModules(
+                        new Module()
+                        {
+                            @Override
+                            public void configure(Binder binder)
+                            {
+                                binder.requireExplicitBindings();
+                                binder.disableCircularProxies();
+                                httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class).withPrivateIoThreadPool();
+                            }
+                        })
+                .quiet()
+                .initialize();
+
+        AsyncHttpClient fooClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
+        assertNotNull(fooClient);
+
+        assertPrivatePools(injector, FooClient.class);
+
+        assertPoolsDestroyProperly(injector, FooClient.class);
+    }
+
+    @Test
+    public void testMultiplePrivateThreadPools()
+            throws Exception
+    {
+        Injector injector = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
+                .withModules(
+                        new Module()
+                        {
+                            @Override
+                            public void configure(Binder binder)
+                            {
+                                httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class).withPrivateIoThreadPool();
+                                httpClientBinder(binder).bindAsyncHttpClient("bar", BarClient.class).withPrivateIoThreadPool();
+                            }
+                        })
+                .quiet()
+                .initialize();
+
+        AsyncHttpClient fooClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
+        AsyncHttpClient barClient = injector.getInstance(Key.get(AsyncHttpClient.class, BarClient.class));
+        assertNotSame(fooClient, barClient);
+
+        assertPrivatePools(injector, FooClient.class, BarClient.class);
+
+        assertPoolsDestroyProperly(injector, FooClient.class, BarClient.class);
+    }
+
+    @Test
+    public void testMultiplePrivateAndSharedThreadPools()
+            throws Exception
+    {
+        Injector injector = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
+                .withModules(
+                        new Module()
+                        {
+                            @Override
+                            public void configure(Binder binder)
+                            {
+                                httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class);
+                                httpClientBinder(binder).bindAsyncHttpClient("bar", BarClient.class).withPrivateIoThreadPool();
+                            }
+                        })
+                .quiet()
+                .initialize();
+
+        AsyncHttpClient fooClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
+        AsyncHttpClient barClient = injector.getInstance(Key.get(AsyncHttpClient.class, BarClient.class));
+        assertNotSame(fooClient, barClient);
+
+        // a pool should not be registered for this Foo
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
+
+        assertPrivatePools(injector, BarClient.class);
+
+        assertPoolsDestroyProperly(injector, BarClient.class);
+    }
+
+    @SafeVarargs
+    private final void assertPrivatePools(Injector injector, Class<? extends Annotation>... privateClientAnnotations)
+            throws Exception
+    {
+        JettyIoPoolManager sharedPool = injector.getInstance(Key.get(JettyIoPoolManager.class));
+        // pool should not be destroyed yet
+        assertFalse(sharedPool.isDestroyed());
+
+        Set<JettyIoPoolManager> privatePools = Collections.newSetFromMap(new IdentityHashMap<JettyIoPoolManager, Boolean>());
+        for (Class<? extends Annotation> privateClientAnnotation : privateClientAnnotations) {
+            assertNotNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, privateClientAnnotation)));
+            JettyIoPoolManager privatePool = injector.getInstance(Key.get(JettyIoPoolManager.class, privateClientAnnotation));
+
+            // pool should not be the same as any other pool
+            assertNotSame(privatePool, sharedPool);
+            assertFalse(privatePools.contains(privatePool));
+            privatePools.add(privatePool);
+        }
     }
 
     @Test
     public void testPrivateBindClient()
+            throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        newExporter(binder).export(ManagedClass.class);
-                        PrivateBinder privateBinder = binder.newPrivateBinder();
-                        HttpClientBinder.httpClientPrivateBinder(privateBinder, binder).bindHttpClient("foo", FooClient.class);
-                        privateBinder.bind(ExposeHttpClient.class);
-                        privateBinder.expose(ExposeHttpClient.class);
-                    }
-                },
-                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
+        Injector injector = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
+                .withModules(
+                        new Module()
+                        {
+                            @Override
+                            public void configure(Binder binder)
+                            {
+                                newExporter(binder).export(ManagedClass.class);
+                                PrivateBinder privateBinder = binder.newPrivateBinder();
+                                HttpClientBinder.httpClientPrivateBinder(privateBinder, binder).bindHttpClient("foo", FooClient.class);
+                                privateBinder.bind(ExposeHttpClient.class);
+                                privateBinder.expose(ExposeHttpClient.class);
+                            }
+                        })
+                .quiet()
+                .initialize();
 
         assertNotNull(injector.getInstance(ExposeHttpClient.class).httpClient);
+
+        assertPoolsDestroyProperly(injector);
     }
 
     @Test
     public void testPrivateBindAsyncClient()
+            throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        newExporter(binder).export(ManagedClass.class);
-                        PrivateBinder privateBinder = binder.newPrivateBinder();
-                        HttpClientBinder.httpClientPrivateBinder(privateBinder, binder).bindAsyncHttpClient("foo", FooClient.class);
-                        privateBinder.bind(ExposeHttpClient.class);
-                        privateBinder.expose(ExposeHttpClient.class);
-                    }
-                },
-                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
+        Injector injector = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
+                .withModules(
+                        new Module()
+                        {
+                            @Override
+                            public void configure(Binder binder)
+                            {
+                                newExporter(binder).export(ManagedClass.class);
+                                PrivateBinder privateBinder = binder.newPrivateBinder();
+                                HttpClientBinder.httpClientPrivateBinder(privateBinder, binder).bindAsyncHttpClient("foo", FooClient.class);
+                                privateBinder.bind(ExposeHttpClient.class);
+                                privateBinder.expose(ExposeHttpClient.class);
+                            }
+                        })
+                .quiet()
+                .initialize();
 
         assertNotNull(injector.getInstance(ExposeHttpClient.class).httpClient);
+
+        assertPoolsDestroyProperly(injector);
     }
 
     @Test
     public void testNormalAndPrivateBindAsyncClients()
+            throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        newExporter(binder).export(ManagedClass.class);
-                        PrivateBinder privateBinder = binder.newPrivateBinder();
-                        HttpClientBinder.httpClientPrivateBinder(privateBinder, binder).bindAsyncHttpClient("foo", FooClient.class);
-                        privateBinder.bind(ExposeHttpClient.class);
-                        privateBinder.expose(ExposeHttpClient.class);
-                        HttpClientBinder.httpClientBinder(binder).bindAsyncHttpClient("bar", BarClient.class);
-                    }
-                },
-                new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())));
+        Injector injector = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
+                .withModules(
+                        new Module()
+                        {
+                            @Override
+                            public void configure(Binder binder)
+                            {
+                                newExporter(binder).export(ManagedClass.class);
+                                PrivateBinder privateBinder = binder.newPrivateBinder();
+                                HttpClientBinder.httpClientPrivateBinder(privateBinder, binder).bindAsyncHttpClient("foo", FooClient.class);
+                                privateBinder.bind(ExposeHttpClient.class);
+                                privateBinder.expose(ExposeHttpClient.class);
+                                HttpClientBinder.httpClientBinder(binder).bindAsyncHttpClient("bar", BarClient.class);
+                            }
+                        })
+                .quiet()
+                .initialize();
 
         assertNotNull(injector.getInstance(ExposeHttpClient.class).httpClient);
         assertNotNull(injector.getInstance(Key.get(AsyncHttpClient.class, BarClient.class)));
+
+        assertPoolsDestroyProperly(injector);
     }
 
+    @SafeVarargs
+    private final void assertPoolsDestroyProperly(Injector injector, Class<? extends Annotation>... privateClientAnnotations)
+            throws Exception
+    {
+        JettyIoPoolManager sharedPool = injector.getInstance(Key.get(JettyIoPoolManager.class));
+        assertFalse(sharedPool.isDestroyed());
+
+        Set<JettyIoPoolManager> privatePools = Collections.newSetFromMap(new IdentityHashMap<JettyIoPoolManager, Boolean>());
+        for (Class<? extends Annotation> privateClientAnnotation : privateClientAnnotations) {
+            JettyIoPoolManager privatePool = injector.getInstance(Key.get(JettyIoPoolManager.class, privateClientAnnotation));
+            assertFalse(privatePool.isDestroyed());
+        }
+
+        injector.getInstance(LifeCycleManager.class).stop();
+
+        assertTrue(sharedPool.isDestroyed());
+        for (JettyIoPoolManager privatePool : privatePools) {
+            assertTrue(privatePool.isDestroyed());
+        }
+    }
 
     private static void assertFilterCount(HttpClient httpClient, int filterCount)
     {
         assertNotNull(httpClient);
-        if (httpClient instanceof ApacheHttpClient) {
-            assertEquals(((ApacheHttpClient) httpClient).getRequestFilters().size(), filterCount);
-        } else if (httpClient instanceof HttpClient) {
-            assertEquals(((NettyAsyncHttpClient) httpClient).getRequestFilters().size(), filterCount);
-        } else {
-            fail("Unexpected HttpClient implementation " + httpClient.getClass().getName());
-        }
+        assertInstanceOf(httpClient, JettyHttpClient.class);
+        assertEquals(((JettyHttpClient) httpClient).getRequestFilters().size(), filterCount);
     }
 
     @Retention(RUNTIME)

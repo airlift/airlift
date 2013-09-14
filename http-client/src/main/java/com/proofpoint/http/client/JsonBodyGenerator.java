@@ -18,27 +18,16 @@ package com.proofpoint.http.client;
 import com.google.common.annotations.Beta;
 import com.proofpoint.json.JsonCodec;
 
-import java.io.OutputStream;
-
 @Beta
-public class JsonBodyGenerator<T> implements BodyGenerator
+public class JsonBodyGenerator<T> extends StaticBodyGenerator
 {
     public static <T> JsonBodyGenerator<T> jsonBodyGenerator(JsonCodec<T> jsonCodec, T instance)
     {
-        return new JsonBodyGenerator<T>(jsonCodec, instance);
+        return new JsonBodyGenerator<>(jsonCodec, instance);
     }
-
-    private final byte[] json;
 
     private JsonBodyGenerator(JsonCodec<T> jsonCodec, T instance)
     {
-        json = jsonCodec.toJsonBytes(instance);
-    }
-
-    @Override
-    public void write(OutputStream out)
-            throws Exception
-    {
-        out.write(json);
+        super(jsonCodec.toJsonBytes(instance));
     }
 }

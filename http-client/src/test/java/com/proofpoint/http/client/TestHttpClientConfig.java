@@ -16,15 +16,17 @@
 package com.proofpoint.http.client;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.net.HostAndPort;
 import com.proofpoint.configuration.testing.ConfigAssertions;
 import com.proofpoint.units.Duration;
-import com.google.common.net.HostAndPort;
 import org.testng.annotations.Test;
 
 import javax.validation.constraints.NotNull;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static com.proofpoint.http.client.HttpClientConfig.JAVAX_NET_SSL_KEY_STORE;
+import static com.proofpoint.http.client.HttpClientConfig.JAVAX_NET_SSL_KEY_STORE_PASSWORD;
 import static com.proofpoint.testing.ValidationAssertions.assertFailsValidation;
 
 public class TestHttpClientConfig
@@ -38,7 +40,9 @@ public class TestHttpClientConfig
                 .setKeepAliveInterval(null)
                 .setMaxConnections(200)
                 .setMaxConnectionsPerServer(20)
-                .setSocksProxy(null));
+                .setSocksProxy(null)
+                .setKeyStorePath(System.getProperty(JAVAX_NET_SSL_KEY_STORE))
+                .setKeyStorePassword(System.getProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD)));
     }
 
     @Test
@@ -51,6 +55,8 @@ public class TestHttpClientConfig
                 .put("http-client.max-connections", "12")
                 .put("http-client.max-connections-per-server", "3")
                 .put("http-client.socks-proxy", "localhost:1080")
+                .put("http-client.key-store-path", "key-store")
+                .put("http-client.key-store-password", "key-store-password")
                 .build();
 
         HttpClientConfig expected = new HttpClientConfig()
@@ -59,7 +65,9 @@ public class TestHttpClientConfig
                 .setKeepAliveInterval(new Duration(6, TimeUnit.SECONDS))
                 .setMaxConnections(12)
                 .setMaxConnectionsPerServer(3)
-                .setSocksProxy(HostAndPort.fromParts("localhost", 1080));
+                .setSocksProxy(HostAndPort.fromParts("localhost", 1080))
+                .setKeyStorePath("key-store")
+                .setKeyStorePassword("key-store-password");
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

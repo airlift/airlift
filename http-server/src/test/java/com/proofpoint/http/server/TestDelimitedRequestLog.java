@@ -72,7 +72,6 @@ public class TestDelimitedRequestLog
         final Response response = mock(Response.class);
         final Principal principal = mock(Principal.class);
 
-        final long dispatchTime = 123;
         final long timeToFirstByte = 456;
         final long timeToLastByte = 3453;
         final long now = System.currentTimeMillis();
@@ -97,7 +96,6 @@ public class TestDelimitedRequestLog
 
         when(principal.getName()).thenReturn(user);
         when(request.getTimeStamp()).thenReturn(timestamp);
-        when(request.getDispatchTime()).thenReturn(timestamp + dispatchTime);
         when(request.getHeader("User-Agent")).thenReturn(agent);
         when(request.getHeader("Referer")).thenReturn(referrer);
         when(request.getRemoteAddr()).thenReturn("9.9.9.9");

@@ -18,17 +18,19 @@ package com.proofpoint.event.client;
 import com.google.common.base.Throwables;
 import com.google.common.io.CharStreams;
 import com.proofpoint.discovery.client.HttpServiceSelector;
-import com.proofpoint.http.client.balancing.ServiceUnavailableException;
 import com.proofpoint.discovery.client.testing.StaticHttpServiceSelector;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
+import com.proofpoint.http.client.balancing.ServiceUnavailableException;
+import com.proofpoint.http.client.jetty.JettyHttpClient;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import com.proofpoint.units.Duration;
-import com.proofpoint.http.client.netty.StandaloneNettyAsyncHttpClient;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.joda.time.DateTime;
@@ -129,8 +131,7 @@ public class TestHttpEventClient
     public void setup()
             throws Exception
     {
-        httpClient = new StandaloneNettyAsyncHttpClient("test",
-                new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS)));
+        httpClient = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS)));
 
         servlet = new DummyServlet();
         server = createServer(servlet);
@@ -176,13 +177,15 @@ public class TestHttpEventClient
         }
         baseUri = new URI("http", null, "127.0.0.1", port, null, null, null);
 
-        Server server = new Server();
-        server.setSendServerVersion(false);
+        HttpConfiguration httpConfiguration = new HttpConfiguration();
+        httpConfiguration.setSendServerVersion(false);
+        httpConfiguration.setSendXPoweredBy(false);
 
-        SelectChannelConnector httpConnector;
-        httpConnector = new SelectChannelConnector();
-        httpConnector.setName("http");
+        server = new Server();
+
+        ServerConnector httpConnector = new ServerConnector(server, new HttpConnectionFactory(httpConfiguration));
         httpConnector.setPort(port);
+        httpConnector.setName("http");
         server.addConnector(httpConnector);
 
         ServletHolder servletHolder = new ServletHolder(servlet);

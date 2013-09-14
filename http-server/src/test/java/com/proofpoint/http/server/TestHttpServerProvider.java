@@ -19,11 +19,11 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import com.google.common.net.InetAddresses;
-import com.proofpoint.http.client.ApacheHttpClient;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
 import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.client.StringResponseHandler.StringResponse;
+import com.proofpoint.http.client.jetty.JettyHttpClient;
 import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.node.NodeConfig;
@@ -109,10 +109,11 @@ public class TestHttpServerProvider
         createServer();
         server.start();
 
-        HttpClient client = new ApacheHttpClient();
-        StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
+        try (JettyHttpClient httpClient = new JettyHttpClient()) {
+            StatusResponse response = httpClient.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
 
-        assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+        }
     }
 
     @Test
@@ -129,7 +130,7 @@ public class TestHttpServerProvider
         createServer();
         server.start();
 
-        HttpClient client = new ApacheHttpClient();
+        HttpClient client = new JettyHttpClient();
         StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpsUri()).build(), createStatusResponseHandler());
 
         assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
@@ -142,11 +143,12 @@ public class TestHttpServerProvider
         createServer();
         server.start();
 
-        HttpClient client = new ApacheHttpClient();
-        StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri().resolve("/filter")).build(), createStatusResponseHandler());
+        try (JettyHttpClient client = new JettyHttpClient()) {
+            StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri().resolve("/filter")).build(), createStatusResponseHandler());
 
-        assertEquals(response.getStatusCode(), HttpServletResponse.SC_PAYMENT_REQUIRED);
-        assertEquals(response.getStatusMessage(), "filtered");
+            assertEquals(response.getStatusCode(), HttpServletResponse.SC_PAYMENT_REQUIRED);
+            assertEquals(response.getStatusMessage(), "filtered");
+        }
     }
 
     @Test
@@ -158,8 +160,7 @@ public class TestHttpServerProvider
         createServer();
         server.start();
 
-        HttpClient client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(2.0, TimeUnit.SECONDS)));
-        try {
+        try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(2.0, TimeUnit.SECONDS)))) {
             StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri().resolve("/")).build(), createStatusResponseHandler());
 
             if (response != null) { // TODO: this is a workaround for a bug in AHC (some race condition)
@@ -183,19 +184,20 @@ public class TestHttpServerProvider
         createServer();
         server.start();
 
-        HttpClient client = new ApacheHttpClient();
-        StringResponse response = client.execute(
-                prepareGet()
-                        .setUri(httpServerInfo.getHttpUri())
-                        .addHeader("Authorization", "Basic " + Base64.encodeBase64String("user:password".getBytes()).trim())
-                        .build(),
-                createStringResponseHandler());
+        try (HttpClient client = new JettyHttpClient()) {
+            StringResponse response = client.execute(
+                    prepareGet()
+                            .setUri(httpServerInfo.getHttpUri())
+                            .addHeader("Authorization", "Basic " + Base64.encodeBase64String("user:password".getBytes()).trim())
+                            .build(),
+                    createStringResponseHandler());
 
-        assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
-        assertEquals(response.getBody(), "user");
+            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+            assertEquals(response.getBody(), "user");
+        }
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "insufficient threads configured for HTTP connector")
+    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "Insufficient max threads in ThreadPool: .*")
     public void testInsufficientThreadsHttp()
             throws Exception
     {
@@ -203,7 +205,7 @@ public class TestHttpServerProvider
         createAndStartServer();
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "insufficient threads configured for HTTPS connector")
+    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "Insufficient max threads in ThreadPool: .*")
     public void testInsufficientThreadsHttps()
             throws Exception
     {
