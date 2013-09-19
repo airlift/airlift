@@ -25,7 +25,6 @@ import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 
 import javax.servlet.Filter;
 
-import static com.proofpoint.event.client.EventBinder.eventBinder;
 import static com.proofpoint.reporting.ReportBinder.reportBinder;
 
 /**
@@ -70,8 +69,6 @@ public class HttpServerModule
         reportBinder(binder).bindReportCollection(DetailedRequestStats.class).withGeneratedName();
 
         ConfigurationModule.bindConfig(binder).to(HttpServerConfig.class);
-
-        eventBinder(binder).bindEventClient(HttpRequestEvent.class);
 
         binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class).in(Scopes.SINGLETON);
     }

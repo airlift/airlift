@@ -18,8 +18,6 @@ package com.proofpoint.http.server.testing;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import com.proofpoint.event.client.EventClient;
-import com.proofpoint.event.client.NullEventClient;
 import com.proofpoint.http.server.HttpServer;
 import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 import com.proofpoint.http.server.HttpServerConfig;
@@ -73,13 +71,13 @@ public class TestingHttpServer extends HttpServer
                 queryStringFilter,
                 traceTokenManager,
                 new RequestStats(),
-                new DetailedRequestStats(),
-                new NullEventClient());
+                new DetailedRequestStats()
+        );
         this.httpServerInfo = httpServerInfo;
     }
 
     @Override
-    public RequestLogHandler createLogHandler(HttpServerConfig config, TraceTokenManager tokenManager, EventClient eventClient)
+    public RequestLogHandler createLogHandler(HttpServerConfig config, TraceTokenManager tokenManager)
             throws IOException
     {
         return null;

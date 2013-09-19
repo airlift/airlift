@@ -18,7 +18,6 @@ package com.proofpoint.http.server;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.encoder.EncoderBase;
-import com.proofpoint.event.client.EventClient;
 import com.proofpoint.log.Logging;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
@@ -39,24 +38,21 @@ class DelimitedRequestLog
     // Time, ip, method, url, user, agent, response code, request length, response length, response time
 
     private final TraceTokenManager traceTokenManager;
-    private final EventClient eventClient;
     private final CurrentTimeMillisProvider currentTimeMillisProvider;
     private final Appender<HttpRequestEvent> appender;
 
-    public DelimitedRequestLog(String filename, int maxHistory, long maxSizeInBytes, TraceTokenManager traceTokenManager, EventClient eventClient)
+    public DelimitedRequestLog(String filename, int maxHistory, long maxSizeInBytes, TraceTokenManager traceTokenManager)
             throws IOException
     {
-        this(filename, maxHistory, maxSizeInBytes, traceTokenManager, eventClient, new SystemCurrentTimeMillisProvider());
+        this(filename, maxHistory, maxSizeInBytes, traceTokenManager, new SystemCurrentTimeMillisProvider());
     }
 
     public DelimitedRequestLog(String filename,
             int maxHistory, long maxSizeInBytes, TraceTokenManager traceTokenManager,
-            EventClient eventClient,
             CurrentTimeMillisProvider currentTimeMillisProvider)
             throws IOException
     {
         this.traceTokenManager = traceTokenManager;
-        this.eventClient = eventClient;
         this.currentTimeMillisProvider = currentTimeMillisProvider;
 
         appender = Logging.createFileAppender(filename, maxHistory, maxSizeInBytes, new EventEncoder(), new LoggerContext());
@@ -70,8 +66,6 @@ class DelimitedRequestLog
         synchronized (appender) {
             appender.doAppend(event);
         }
-
-        eventClient.post(event);
     }
 
     public void start()

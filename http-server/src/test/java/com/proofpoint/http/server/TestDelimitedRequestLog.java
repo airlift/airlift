@@ -18,10 +18,7 @@ package com.proofpoint.http.server;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
-import com.proofpoint.event.client.InMemoryEventClient;
 import com.proofpoint.tracetoken.TraceTokenManager;
-import com.proofpoint.units.DataSize;
-import com.proofpoint.units.DataSize.Unit;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -37,7 +34,6 @@ import java.io.File;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Collections;
-import java.util.List;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -96,9 +92,8 @@ public class TestDelimitedRequestLog
 
 
         final TraceTokenManager tokenManager = new TraceTokenManager();
-        InMemoryEventClient eventClient = new InMemoryEventClient();
         MockCurrentTimeMillisProvider currentTimeMillisProvider = new MockCurrentTimeMillisProvider(timestamp + timeToLastByte);
-        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 1_000_000_000, tokenManager, eventClient, currentTimeMillisProvider);
+        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 1_000_000_000, tokenManager, currentTimeMillisProvider);
 
         when(principal.getName()).thenReturn(user);
         when(request.getTimeStamp()).thenReturn(timestamp);
@@ -120,31 +115,9 @@ public class TestDelimitedRequestLog
         when(response.getHeader("Content-Type")).thenReturn(responseContentType);
 
         tokenManager.createAndRegisterNewRequestToken();
+        long currentTime = currentTimeMillisProvider.getCurrentTimeMillis();
         logger.log(request, response);
         logger.stop();
-
-        List<Object> events = eventClient.getEvents();
-        Assert.assertEquals(events.size(), 1);
-        HttpRequestEvent event = (HttpRequestEvent) events.get(0);
-
-
-        Assert.assertEquals(event.getTimeStamp().getMillis(), timestamp);
-        Assert.assertEquals(event.getClientAddress(), ip);
-        Assert.assertEquals(event.getProtocol(), protocol);
-        Assert.assertEquals(event.getMethod(), method);
-        Assert.assertEquals(event.getRequestUri(), uri.toString());
-        Assert.assertEquals(event.getUser(), user);
-        Assert.assertEquals(event.getAgent(), agent);
-        Assert.assertEquals(event.getReferrer(), referrer);
-        Assert.assertEquals(event.getRequestSize(), requestSize);
-        Assert.assertEquals(event.getRequestContentType(), requestContentType);
-        Assert.assertEquals(event.getResponseSize(), responseSize);
-        Assert.assertEquals(event.getResponseCode(), responseCode);
-        Assert.assertEquals(event.getResponseContentType(), responseContentType);
-        Assert.assertEquals(event.getTimeToDispatch(), dispatchTime);
-        Assert.assertEquals(event.getTimeToFirstByte(), (Long)timeToFirstByte);
-        Assert.assertEquals(event.getTimeToLastByte(), timeToLastByte);
-        Assert.assertEquals(event.getTraceToken(), tokenManager.getCurrentRequestToken());
 
         String actual = Files.toString(file, Charsets.UTF_8);
         String expected = String.format("%s\t%s\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%d\t%s\n",
@@ -157,94 +130,8 @@ public class TestDelimitedRequestLog
                 responseCode,
                 requestSize,
                 responseSize,
-                event.getTimeToLastByte(),
+                currentTime - request.getTimeStamp(),
                 tokenManager.getCurrentRequestToken());
         Assert.assertEquals(actual, expected);
-    }
-
-    @Test
-    public void testNoXForwardedProto()
-            throws Exception
-    {
-        final Request request = mock(Request.class);
-        final Response response = mock(Response.class);
-        final String protocol = "protocol";
-
-        when(request.getScheme()).thenReturn("protocol");
-
-        InMemoryEventClient eventClient = new InMemoryEventClient();
-        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 1_000_000_000, null, eventClient);
-        logger.log(request, response);
-        logger.stop();
-
-        List<Object> events = eventClient.getEvents();
-        Assert.assertEquals(events.size(), 1);
-        HttpRequestEvent event = (HttpRequestEvent) events.get(0);
-
-        Assert.assertEquals(event.getProtocol(), protocol);
-    }
-
-    @Test
-    public void testNoTimeToFirstByte()
-            throws Exception
-    {
-        final Request request = mock(Request.class);
-        final Response response = mock(Response.class);
-
-        InMemoryEventClient eventClient = new InMemoryEventClient();
-        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 1_000_000_000, null, eventClient);
-        logger.log(request, response);
-        logger.stop();
-
-        List<Object> events = eventClient.getEvents();
-        Assert.assertEquals(events.size(), 1);
-        HttpRequestEvent event = (HttpRequestEvent) events.get(0);
-
-        Assert.assertNull(event.getTimeToFirstByte());
-    }
-
-    @Test
-    public void testNoXForwardedFor()
-            throws Exception
-    {
-        final Request request = mock(Request.class);
-        final Response response = mock(Response.class);
-        final String clientIp = "1.1.1.1";
-
-        when(request.getRemoteAddr()).thenReturn(clientIp);
-
-        InMemoryEventClient eventClient = new InMemoryEventClient();
-        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 1_000_000_000, null, eventClient);
-        logger.log(request, response);
-        logger.stop();
-
-        List<Object> events = eventClient.getEvents();
-        Assert.assertEquals(events.size(), 1);
-        HttpRequestEvent event = (HttpRequestEvent) events.get(0);
-
-        Assert.assertEquals(event.getClientAddress(), clientIp);
-    }
-
-    @Test
-    public void testXForwardedForSkipPrivateAddresses()
-            throws Exception
-    {
-        final Request request = mock(Request.class);
-        final Response response = mock(Response.class);
-        final String clientIp = "1.1.1.1";
-
-        when(request.getRemoteAddr()).thenReturn("9.9.9.9");
-        when(request.getHeaders("X-FORWARDED-FOR")).thenReturn(Collections.enumeration(ImmutableList.of(clientIp, "192.168.1.2, 172.16.0.1", "169.254.1.2, 127.1.2.3", "10.1.2.3")));
-
-        InMemoryEventClient eventClient = new InMemoryEventClient();
-        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 1_000_000_000, null, eventClient);
-        logger.log(request, response);
-        logger.stop();
-
-        List<Object> events = eventClient.getEvents();
-        Assert.assertEquals(events.size(), 1);
-        HttpRequestEvent event = (HttpRequestEvent) events.get(0);
-
-        Assert.assertEquals(event.getClientAddress(), clientIp);
     }
 }

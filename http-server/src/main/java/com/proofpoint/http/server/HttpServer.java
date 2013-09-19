@@ -17,7 +17,6 @@ package com.proofpoint.http.server;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
-import com.proofpoint.event.client.EventClient;
 import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.tracetoken.TraceTokenManager;
@@ -80,8 +79,7 @@ public class HttpServer
             QueryStringFilter queryStringFilter,
             TraceTokenManager tokenManager,
             RequestStats stats,
-            DetailedRequestStats detailedRequestStats,
-            EventClient eventClient)
+            DetailedRequestStats detailedRequestStats)
             throws IOException
     {
         checkNotNull(httpServerInfo, "httpServerInfo is null");
@@ -213,7 +211,7 @@ public class HttpServer
         }
 
         handlers.addHandler(createServletContext(theServlet, parameters, false, filters, queryStringFilter, tokenManager, loginService, "http", "https"));
-        RequestLogHandler logHandler = createLogHandler(config, tokenManager, eventClient);
+        RequestLogHandler logHandler = createLogHandler(config, tokenManager);
         if (logHandler != null) {
             handlers.addHandler(logHandler);
         }
@@ -296,7 +294,7 @@ public class HttpServer
         return securityHandler;
     }
 
-    protected RequestLogHandler createLogHandler(HttpServerConfig config, TraceTokenManager tokenManager, EventClient eventClient)
+    protected RequestLogHandler createLogHandler(HttpServerConfig config, TraceTokenManager tokenManager)
             throws IOException
     {
         // TODO: use custom (more easily-parseable) format
@@ -312,7 +310,7 @@ public class HttpServer
             throw new IOException(format("Cannot create %s and path does not already exist", logPath.getAbsolutePath()));
         }
 
-        RequestLog requestLog = new DelimitedRequestLog(config.getLogPath(), config.getLogMaxHistory(), config.getLogMaxSegmentSize().toBytes(), tokenManager, eventClient);
+        RequestLog requestLog = new DelimitedRequestLog(config.getLogPath(), config.getLogMaxHistory(), config.getLogMaxSegmentSize().toBytes(), tokenManager);
         logHandler.setRequestLog(requestLog);
 
         return logHandler;

@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.proofpoint.event.client.EventClient;
 import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.tracetoken.TraceTokenManager;
@@ -57,7 +56,6 @@ public class HttpServerProvider
     private final Set<Filter> adminFilters;
     private QueryStringFilter queryStringFilter;
     private TraceTokenManager traceTokenManager;
-    private final EventClient eventClient;
 
     @Inject
     public HttpServerProvider(HttpServerInfo httpServerInfo,
@@ -69,8 +67,7 @@ public class HttpServerProvider
             @TheAdminServlet Set<Filter> adminFilters,
             RequestStats stats,
             DetailedRequestStats detailedRequestStats,
-            QueryStringFilter queryStringFilter,
-            EventClient eventClient)
+            QueryStringFilter queryStringFilter)
     {
         checkNotNull(httpServerInfo, "httpServerInfo is null");
         checkNotNull(nodeInfo, "nodeInfo is null");
@@ -82,7 +79,6 @@ public class HttpServerProvider
         checkNotNull(stats, "stats is null");
         checkNotNull(detailedRequestStats, "detailedRequestStats is null");
         checkNotNull(queryStringFilter, "queryStringFilter is null");
-        checkNotNull(eventClient, "eventClient is null");
 
         this.httpServerInfo = httpServerInfo;
         this.nodeInfo = nodeInfo;
@@ -94,7 +90,6 @@ public class HttpServerProvider
         this.stats = stats;
         this.detailedRequestStats = detailedRequestStats;
         this.queryStringFilter = queryStringFilter;
-        this.eventClient = eventClient;
     }
 
     @Inject(optional = true)
@@ -144,8 +139,8 @@ public class HttpServerProvider
                     queryStringFilter,
                     traceTokenManager,
                     stats,
-                    detailedRequestStats,
-                    eventClient);
+                    detailedRequestStats
+            );
             httpServer.start();
             return httpServer;
         }

@@ -18,7 +18,6 @@ package com.proofpoint.http.server;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
-import com.proofpoint.event.client.NullEventClient;
 import com.proofpoint.http.client.ApacheHttpClient;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
@@ -206,8 +205,8 @@ public class TestHttpServerProvider
                 ImmutableSet.<Filter>of(),
                 new RequestStats(),
                 new TestingHttpServer.DetailedRequestStats(),
-                new QueryStringFilter(),
-                new NullEventClient());
+                new QueryStringFilter()
+        );
         serverProvider.setLoginService(loginServiceProvider.get());
         serverProvider.setTokenManager(new TraceTokenManager());
         server = serverProvider.get();
