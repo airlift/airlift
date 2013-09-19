@@ -25,6 +25,7 @@ import org.testng.annotations.Test;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -46,7 +47,6 @@ import static io.airlift.testing.Closeables.closeQuietly;
 import static io.airlift.units.Duration.nanosSince;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.fail;
 
 public abstract class AbstractHttpClientTest
@@ -177,9 +177,7 @@ public abstract class AbstractHttpClientTest
     public void testConnectionRefused()
             throws Exception
     {
-        ServerSocket serverSocket = new ServerSocket(0, 1);
-        int port = serverSocket.getLocalPort();
-        serverSocket.close();
+        int port = findUnusedPort();
 
         HttpClientConfig config = new HttpClientConfig();
         config.setConnectTimeout(new Duration(5, MILLISECONDS));
@@ -193,8 +191,7 @@ public abstract class AbstractHttpClientTest
             fail("expected exception");
         }
         catch (CapturedException e) {
-            // TODO: Assertions.assertInstanceOf(e.getCause(), ConnectException.class);
-            assertFalse(e.getCause() instanceof CapturedException, "<" + e.getCause() + "> instance of CapturedException");
+            assertInstanceOf(e.getCause(), ConnectException.class);
         }
     }
 
@@ -202,9 +199,7 @@ public abstract class AbstractHttpClientTest
     public void testConnectionRefusedWithDefaultingResponseExceptionHandler()
             throws Exception
     {
-        ServerSocket serverSocket = new ServerSocket(0, 1);
-        int port = serverSocket.getLocalPort();
-        serverSocket.close();
+        int port = findUnusedPort();
 
         HttpClientConfig config = new HttpClientConfig();
         config.setConnectTimeout(new Duration(5, MILLISECONDS));
@@ -884,6 +879,14 @@ public abstract class AbstractHttpClientTest
                 throws RuntimeException
         {
             throw new UnsupportedOperationException();
+        }
+    }
+
+    private static int findUnusedPort()
+            throws IOException
+    {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
         }
     }
 }
