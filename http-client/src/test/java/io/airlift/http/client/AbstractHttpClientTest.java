@@ -37,6 +37,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.google.common.base.Throwables.getStackTraceAsString;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
@@ -166,7 +167,7 @@ public abstract class AbstractHttpClientTest
             fail("expected exception");
         }
         catch (CapturedException e) {
-            assertInstanceOf(e.getCause(), SocketTimeoutException.class);
+            assertInstanceOf(e.getCause(), SocketTimeoutException.class, "exception:\n" + getStackTraceAsString(e.getCause()) + "\n");
         }
         finally {
             serverSocket.close();
