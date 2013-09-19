@@ -1,3 +1,7 @@
+* 0.81
+
+- [Bug] Ignore IOException in Closeables.closeQuietly()
+
 * 0.80
 
 - [Bug] Fix issue in launcher when inspecting etc and plugin symlinks
