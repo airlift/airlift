@@ -1,7 +1,6 @@
 package com.proofpoint.http.client;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
@@ -29,23 +28,28 @@ import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.UnresolvedAddressException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.google.common.base.Throwables.propagate;
 import static com.proofpoint.http.client.Request.Builder.prepareDelete;
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static com.proofpoint.http.client.Request.Builder.preparePost;
 import static com.proofpoint.http.client.Request.Builder.preparePut;
 import static com.proofpoint.testing.Assertions.assertInstanceOf;
+import static com.proofpoint.testing.Assertions.assertLessThan;
 import static com.proofpoint.testing.Closeables.closeQuietly;
 import static com.proofpoint.units.Duration.nanosSince;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertFalse;
@@ -149,32 +153,32 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test
+    @Test(timeOut = 1000)
     public void testConnectTimeout()
             throws Exception
     {
-        ServerSocket serverSocket = new ServerSocket(0, 1);
-        // create one connection. The OS will auto-accept it because backlog for server socket == 1
+        try (BackloggedServer server = new BackloggedServer()) {
+            HttpClientConfig config = new HttpClientConfig();
+            config.setConnectTimeout(new Duration(5, MILLISECONDS));
+            config.setReadTimeout(new Duration(2, SECONDS));
 
-        HttpClientConfig config = new HttpClientConfig();
-        config.setConnectTimeout(new Duration(5, MILLISECONDS));
+            Request request = prepareGet()
+                    .setUri(new URI(scheme, null, host, server.getPort(), "/", null, null))
+                    .build();
 
-        Request request = prepareGet()
-                .setUri(new URI(scheme, null, host, serverSocket.getLocalPort(), "/", null, null))
-                .build();
-
-        try (Socket clientSocket = new Socket(host, serverSocket.getLocalPort())) {
-            executeRequest(config, request, new CaptureExceptionResponseHandler());
-            fail("expected exception");
-        }
-        catch (CapturedException e) {
-            // todo Linux is throwing ClosedChannelException for SSL. Netty bug?
-            if (!(e.getCause() instanceof ClosedChannelException)) {
-                assertInstanceOf(e.getCause(), SocketTimeoutException.class);
+            long start = System.nanoTime();
+            try {
+                executeRequest(config, request, new CaptureExceptionResponseHandler());
+                fail("expected exception");
             }
-        }
-        finally {
-            serverSocket.close();
+            catch (CapturedException e) {
+                Throwable t = e.getCause();
+                if (!isConnectTimeout(t)) {
+                    fail("unexpected exception: " + t);
+                }
+                // this must be greater than 100ms due to the Netty HashedWheelTimer default
+                assertLessThan(nanosSince(start), new Duration(150, MILLISECONDS));
+            }
         }
     }
 
@@ -657,7 +661,7 @@ public abstract class AbstractHttpClientTest
             executeRequest(config, request, new ResponseToStringHandler());
         }
         finally {
-            Assertions.assertLessThan(nanosSince(start), new Duration(1, SECONDS), "Expected request to finish quickly");
+            assertLessThan(nanosSince(start), new Duration(1, SECONDS), "Expected request to finish quickly");
         }
     }
 
@@ -719,7 +723,7 @@ public abstract class AbstractHttpClientTest
                 // todo sleep here maybe
             }
             catch (IOException e) {
-                throw Throwables.propagate(e);
+                throw propagate(e);
             }
             finally {
                 if (closeConnectionImmediately) {
@@ -895,5 +899,66 @@ public abstract class AbstractHttpClientTest
         try (ServerSocket socket = new ServerSocket(0)) {
             return socket.getLocalPort();
         }
+    }
+
+    @SuppressWarnings("SocketOpenedButNotSafelyClosed")
+    private static class BackloggedServer
+            implements Closeable
+    {
+        private final List<Socket> clientSockets = new ArrayList<>();
+        private final ServerSocket serverSocket;
+
+        private BackloggedServer()
+                throws IOException
+        {
+            this.serverSocket = new ServerSocket(0, 1);
+
+            // some systems like Linux have a large minimum backlog
+            int i = 0;
+            while (i <= 40) {
+                if (!connect()) {
+                    return;
+                }
+                i++;
+            }
+            fail(format("socket backlog is too large (%s connections accepted)", i));
+        }
+
+        @Override
+        public void close()
+        {
+            for (Socket socket : clientSockets) {
+                closeQuietly(socket);
+            }
+            closeQuietly(serverSocket);
+        }
+
+        private int getPort()
+        {
+            return serverSocket.getLocalPort();
+        }
+
+        private boolean connect()
+        {
+            Socket socket = new Socket();
+            clientSockets.add(socket);
+
+            try {
+                socket.connect(serverSocket.getLocalSocketAddress(), 5);
+                return true;
+            }
+            catch (IOException e) {
+                if (isConnectTimeout(e)) {
+                    return false;
+                }
+                throw propagate(e);
+            }
+        }
+    }
+
+    private static boolean isConnectTimeout(Throwable t)
+    {
+        // Linux refuses connections immediately rather than queuing them
+        return (t instanceof SocketTimeoutException) || (t instanceof SocketException);
     }
 }
