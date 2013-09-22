@@ -1,7 +1,5 @@
 package io.airlift.testing;
 
-import com.google.common.base.Throwables;
-
 import javax.annotation.Nullable;
 
 import java.io.Closeable;
@@ -16,8 +14,7 @@ public class Closeables
                 closeable.close();
             }
         }
-        catch (IOException e) {
-            throw Throwables.propagate(e);
+        catch (IOException ignored) {
         }
     }
 }
