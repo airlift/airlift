@@ -68,7 +68,7 @@ public class Announcer
 
         this.announcementClient = announcementClient;
         for (ServiceAnnouncement serviceAnnouncement : serviceAnnouncements) {
-            announcements.put(serviceAnnouncement.getId(), serviceAnnouncement);
+            addServiceAnnouncement(serviceAnnouncement);
         }
         executor = new ScheduledThreadPoolExecutor(5, new ThreadFactoryBuilder().setNameFormat("Announcer-%s").setDaemon(true).build());
     }
@@ -122,9 +122,14 @@ public class Announcer
         announcements.remove(serviceId);
     }
 
+    public Set<ServiceAnnouncement> getServiceAnnouncements()
+    {
+        return ImmutableSet.copyOf(announcements.values());
+    }
+
     private ListenableFuture<Duration> announce()
     {
-        final ListenableFuture<Duration> future = announcementClient.announce(ImmutableSet.copyOf(announcements.values()));
+        ListenableFuture<Duration> future = announcementClient.announce(getServiceAnnouncements());
 
         Futures.addCallback(future, new FutureCallback<Duration>()
         {

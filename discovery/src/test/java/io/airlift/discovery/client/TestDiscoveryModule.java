@@ -16,14 +16,26 @@
 package io.airlift.discovery.client;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
+import com.google.inject.Module;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationModule;
 import io.airlift.json.JsonModule;
 import io.airlift.node.testing.TestingNodeModule;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import java.net.URI;
+import java.util.Map;
+
+import static com.google.common.collect.Iterables.getOnlyElement;
+import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
+import static io.airlift.discovery.client.ServiceTypes.serviceType;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class TestDiscoveryModule
 {
@@ -47,4 +59,53 @@ public class TestDiscoveryModule
         Assert.assertNotNull(injector.getInstance(ServiceSelectorManager.class));
     }
 
+    @Test
+    public void testMerging()
+            throws Exception
+    {
+        final StaticAnnouncementHttpServerInfoImpl httpServerInfo = new StaticAnnouncementHttpServerInfoImpl(
+                URI.create("http://127.0.0.1:4444"),
+                URI.create("http://example.com:4444"),
+                null,
+                null);
+
+        Map<String, String> config = ImmutableMap.<String, String>builder()
+                .put("discovery.uri", "fake://server")
+                .put("discovery.carrot.pool", "test")
+                .build();
+
+        Injector injector = Guice.createInjector(
+                new ConfigurationModule(new ConfigurationFactory(config)),
+                new JsonModule(),
+                new TestingNodeModule(),
+                new DiscoveryModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        binder.bind(AnnouncementHttpServerInfo.class).toInstance(httpServerInfo);
+                        discoveryBinder(binder).bindHttpAnnouncement("apple");
+                        discoveryBinder(binder).bindHttpAnnouncement("banana");
+                        discoveryBinder(binder).bindHttpAnnouncement("carrot");
+                        discoveryBinder(binder).bindHttpSelector("apple");
+                        discoveryBinder(binder).bindHttpSelector("banana");
+                        discoveryBinder(binder).bindHttpSelector("carrot");
+                        discoveryBinder(binder).bindHttpSelector("grape");
+                    }
+                }
+        );
+
+        HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
+        assertEquals(getOnlyElement(selector.selectHttpService()), URI.create("http://127.0.0.1:4444"));
+
+        selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("banana")));
+        assertEquals(getOnlyElement(selector.selectHttpService()), URI.create("http://127.0.0.1:4444"));
+
+        selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("carrot")));
+        assertTrue(selector.selectHttpService().isEmpty());
+
+        selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("grape")));
+        assertTrue(selector.selectHttpService().isEmpty());
+    }
 }

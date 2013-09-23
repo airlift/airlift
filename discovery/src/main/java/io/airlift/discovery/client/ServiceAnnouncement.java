@@ -19,9 +19,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import io.airlift.node.NodeInfo;
 
 import java.util.Map;
 import java.util.UUID;
+
+import static io.airlift.discovery.client.ServiceDescriptor.serviceDescriptor;
 
 public class ServiceAnnouncement
 {
@@ -89,6 +92,17 @@ public class ServiceAnnouncement
                 .add("type", type)
                 .add("properties", properties)
                 .toString();
+    }
+
+    public ServiceDescriptor toServiceDescriptor(NodeInfo nodeInfo)
+    {
+        return serviceDescriptor(type)
+                .setId(id)
+                .setNodeInfo(nodeInfo)
+                .setLocation(nodeInfo.getLocation())
+                .setState(ServiceState.RUNNING)
+                .addProperties(properties)
+                .build();
     }
 
     public static ServiceAnnouncementBuilder serviceAnnouncement(String type)

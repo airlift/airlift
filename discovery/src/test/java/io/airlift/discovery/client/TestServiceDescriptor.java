@@ -19,10 +19,15 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 import io.airlift.json.JsonCodec;
+import io.airlift.node.NodeConfig;
+import io.airlift.node.NodeInfo;
 import org.testng.annotations.Test;
 
+import java.util.Map;
 import java.util.UUID;
 
+import static io.airlift.discovery.client.ServiceDescriptor.ServiceDescriptorBuilder;
+import static io.airlift.discovery.client.ServiceDescriptor.serviceDescriptor;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 import static org.testng.Assert.assertEquals;
@@ -46,13 +51,7 @@ public class TestServiceDescriptor
         String json = Resources.toString(Resources.getResource("service-descriptor.json"), Charsets.UTF_8);
         ServiceDescriptor actual = serviceDescriptorCodec.fromJson(json);
 
-        assertEquals(actual, expected);
-        assertEquals(actual.getId(), expected.getId());
-        assertEquals(actual.getNodeId(), expected.getNodeId());
-        assertEquals(actual.getType(), expected.getType());
-        assertEquals(actual.getPool(), expected.getPool());
-        assertEquals(actual.getLocation(), expected.getLocation());
-        assertEquals(actual.getProperties(), expected.getProperties());
+        assertDescriptorEquals(expected, actual);
     }
 
     @Test
@@ -93,4 +92,65 @@ public class TestServiceDescriptor
                 .check();
     }
 
+    @Test
+    public void testBuilderNodeId()
+    {
+        ServiceDescriptor expected = new ServiceDescriptor(
+                UUID.fromString("12345678-1234-1234-1234-123456789012"),
+                "node",
+                "type",
+                "pool",
+                "location",
+                ServiceState.RUNNING,
+                ImmutableMap.of("a", "apple", "b", "banana"));
+
+        ServiceDescriptorBuilder builder = serviceDescriptor(expected.getType())
+                .setId(expected.getId())
+                .setLocation(expected.getLocation())
+                .setNodeId(expected.getNodeId())
+                .setPool(expected.getPool())
+                .setState(expected.getState());
+
+        for (Map.Entry<String, String> entry : expected.getProperties().entrySet()) {
+            builder.addProperty(entry.getKey(), entry.getValue());
+        }
+
+        assertDescriptorEquals(expected, builder.build());
+    }
+
+    @Test
+    public void testBuilderNodeInfo()
+    {
+        NodeInfo nodeInfo = new NodeInfo(new NodeConfig().setEnvironment("test").setPool("pool"));
+
+        ServiceDescriptor expected = new ServiceDescriptor(
+                UUID.fromString("12345678-1234-1234-1234-123456789012"),
+                nodeInfo.getNodeId(),
+                "type",
+                nodeInfo.getPool(),
+                "location",
+                ServiceState.STOPPED,
+                ImmutableMap.of("a", "apple", "b", "banana"));
+
+        ServiceDescriptor actual = serviceDescriptor(expected.getType())
+                .setId(expected.getId())
+                .setLocation(expected.getLocation())
+                .setNodeInfo(nodeInfo)
+                .setState(expected.getState())
+                .addProperties(expected.getProperties())
+                .build();
+
+        assertDescriptorEquals(expected, actual);
+    }
+
+    private static void assertDescriptorEquals(ServiceDescriptor expected, ServiceDescriptor actual)
+    {
+        assertEquals(actual, expected);
+        assertEquals(actual.getId(), expected.getId());
+        assertEquals(actual.getNodeId(), expected.getNodeId());
+        assertEquals(actual.getType(), expected.getType());
+        assertEquals(actual.getPool(), expected.getPool());
+        assertEquals(actual.getLocation(), expected.getLocation());
+        assertEquals(actual.getProperties(), expected.getProperties());
+    }
 }

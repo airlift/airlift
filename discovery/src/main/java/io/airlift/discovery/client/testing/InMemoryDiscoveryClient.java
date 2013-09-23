@@ -28,7 +28,6 @@ import io.airlift.discovery.client.DiscoveryLookupClient;
 import io.airlift.discovery.client.ServiceAnnouncement;
 import io.airlift.discovery.client.ServiceDescriptor;
 import io.airlift.discovery.client.ServiceDescriptors;
-import io.airlift.discovery.client.ServiceState;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
 
@@ -82,7 +81,7 @@ public class InMemoryDiscoveryClient implements DiscoveryAnnouncementClient, Dis
 
         ImmutableSet.Builder<ServiceDescriptor> builder = ImmutableSet.builder();
         for (ServiceAnnouncement service : services) {
-            builder.add(new ServiceDescriptor(service.getId(), nodeInfo.getNodeId(), service.getType(), nodeInfo.getPool(), null, ServiceState.RUNNING, service.getProperties()));
+            builder.add(service.toServiceDescriptor(nodeInfo));
         }
         announcements.set(builder.build());
         return Futures.immediateCheckedFuture(maxAge);
