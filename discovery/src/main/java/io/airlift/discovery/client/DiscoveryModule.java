@@ -21,6 +21,9 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
+import io.airlift.node.NodeInfo;
+
+import javax.inject.Singleton;
 
 import java.net.URI;
 import java.util.concurrent.ScheduledExecutorService;
@@ -59,7 +62,8 @@ public class DiscoveryModule
         // service announcements are bound, which is legal for processes that don't have public services
         Multibinder.newSetBinder(binder, ServiceAnnouncement.class);
 
-        binder.bind(ServiceSelectorFactory.class).to(CachingServiceSelectorFactory.class).in(Scopes.SINGLETON);
+        binder.bind(CachingServiceSelectorFactory.class).in(Scopes.SINGLETON);
+        binder.bind(ServiceSelectorFactory.class).to(MergingServiceSelectorFactory.class).in(Scopes.SINGLETON);
 
         // bind selector manager with initial empty multibinder
         Multibinder.newSetBinder(binder, ServiceSelector.class);
@@ -75,6 +79,7 @@ public class DiscoveryModule
         return new ScheduledThreadPoolExecutor(5, new ThreadFactoryBuilder().setNameFormat("Discovery-%s").setDaemon(true).build());
     }
 
+    @SuppressWarnings("deprecation")
     @Provides
     @ForDiscoveryClient
     public URI getDiscoveryUri(ServiceInventory serviceInventory, DiscoveryClientConfig config)
@@ -100,5 +105,15 @@ public class DiscoveryModule
             return config.getDiscoveryServiceURI();
         }
         return null;
+    }
+
+    @Provides
+    @Singleton
+    public MergingServiceSelectorFactory createMergingServiceSelectorFactory(
+            CachingServiceSelectorFactory factory,
+            Announcer announcer,
+            NodeInfo nodeInfo)
+    {
+        return new MergingServiceSelectorFactory(factory, announcer, nodeInfo);
     }
 }

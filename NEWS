@@ -1,3 +1,13 @@
+Airlift 0.81
+
+* Return local announcements from service selectors
+
+Local announcements will always be included in the list of services
+returned from a service selector. For services that need to see their
+own announcements, this improves reliability by removing a race condition
+and allows them to run without a discovery server for testing purposes.
+
+
 Airlift 0.80
 
 * Launcher
