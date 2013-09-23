@@ -28,23 +28,25 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import io.airlift.json.uuid.CustomUuidDeserializer;
+import io.airlift.json.uuid.CustomUuidSerializer;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.UUID;
 
 public class ObjectMapperProvider
         implements Provider<ObjectMapper>
 {
-    private Map<Class<?>, JsonSerializer<?>> keySerializers;
-    private Map<Class<?>, KeyDeserializer> keyDeserializers;
-    private Map<Class<?>, JsonSerializer<?>> jsonSerializers;
-    private Map<Class<?>, JsonDeserializer<?>> jsonDeserializers;
-
+    private final Map<Class<?>, JsonSerializer<?>> jsonSerializers = new HashMap<>();
+    private final Map<Class<?>, JsonDeserializer<?>> jsonDeserializers = new HashMap<>();
+    private final Map<Class<?>, JsonSerializer<?>> keySerializers = new HashMap<>();
+    private final Map<Class<?>, KeyDeserializer> keyDeserializers = new HashMap<>();
     private final Set<Module> modules = new HashSet<>();
 
     public ObjectMapperProvider()
@@ -52,30 +54,34 @@ public class ObjectMapperProvider
         // add modules for Guava and Joda
         modules.add(new GuavaModule());
         modules.add(new JodaModule());
+
+        // fix performance for UUID
+        jsonSerializers.put(UUID.class, new CustomUuidSerializer());
+        jsonDeserializers.put(UUID.class, new CustomUuidDeserializer());
     }
 
     @Inject(optional = true)
     public void setJsonSerializers(Map<Class<?>, JsonSerializer<?>> jsonSerializers)
     {
-        this.jsonSerializers = ImmutableMap.copyOf(jsonSerializers);
+        this.jsonSerializers.putAll(jsonSerializers);
     }
 
     @Inject(optional = true)
     public void setJsonDeserializers(Map<Class<?>, JsonDeserializer<?>> jsonDeserializers)
     {
-        this.jsonDeserializers = ImmutableMap.copyOf(jsonDeserializers);
+        this.jsonDeserializers.putAll(jsonDeserializers);
     }
 
     @Inject(optional = true)
     public void setKeySerializers(@JsonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers)
     {
-        this.keySerializers = keySerializers;
+        this.keySerializers.putAll(keySerializers);
     }
 
     @Inject(optional = true)
     public void setKeyDeserializers(@JsonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
     {
-        this.keyDeserializers = keyDeserializers;
+        this.keyDeserializers.putAll(keyDeserializers);
     }
 
     @Inject(optional = true)
@@ -107,33 +113,23 @@ public class ObjectMapperProvider
         objectMapper.disable(MapperFeature.USE_GETTERS_AS_SETTERS);
         objectMapper.disable(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS);
 
-        if (jsonSerializers != null || jsonDeserializers != null || keySerializers != null || keyDeserializers != null) {
-            SimpleModule module = new SimpleModule(getClass().getName(), new Version(1, 0, 0, null));
-            if (jsonSerializers != null) {
-                for (Entry<Class<?>, JsonSerializer<?>> entry : jsonSerializers.entrySet()) {
-                    addSerializer(module, entry.getKey(), entry.getValue());
-                }
-            }
-            if (jsonDeserializers != null) {
-                for (Entry<Class<?>, JsonDeserializer<?>> entry : jsonDeserializers.entrySet()) {
-                    addDeserializer(module, entry.getKey(), entry.getValue());
-                }
-            }
-            if (keySerializers != null) {
-                for (Entry<Class<?>, JsonSerializer<?>> entry : keySerializers.entrySet()) {
-                    addKeySerializer(module, entry.getKey(), entry.getValue());
-                }
-            }
-            if (keyDeserializers != null) {
-                for (Entry<Class<?>, KeyDeserializer> entry : keyDeserializers.entrySet()) {
-                    module.addKeyDeserializer(entry.getKey(), entry.getValue());
-                }
-            }
-            modules.add(module);
+        SimpleModule module = new SimpleModule(getClass().getName(), new Version(1, 0, 0, null));
+        for (Entry<Class<?>, JsonSerializer<?>> entry : jsonSerializers.entrySet()) {
+            addSerializer(module, entry.getKey(), entry.getValue());
         }
+        for (Entry<Class<?>, JsonDeserializer<?>> entry : jsonDeserializers.entrySet()) {
+            addDeserializer(module, entry.getKey(), entry.getValue());
+        }
+        for (Entry<Class<?>, JsonSerializer<?>> entry : keySerializers.entrySet()) {
+            addKeySerializer(module, entry.getKey(), entry.getValue());
+        }
+        for (Entry<Class<?>, KeyDeserializer> entry : keyDeserializers.entrySet()) {
+            module.addKeyDeserializer(entry.getKey(), entry.getValue());
+        }
+        modules.add(module);
 
-        for (Module module : modules) {
-            objectMapper.registerModule(module);
+        for (Module m : modules) {
+            objectMapper.registerModule(m);
         }
 
         return objectMapper;

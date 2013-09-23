@@ -41,6 +41,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static io.airlift.json.JsonBinder.jsonBinder;
 import static org.joda.time.DateTimeZone.UTC;
@@ -115,6 +116,15 @@ public class TestJsonModule
         Map<String, Object> actual = objectMapper.readValue(objectMapper.writeValueAsString(CAR), Map.class);
 
         assertEquals(actual.get("purchased"), ISODateTimeFormat.dateTime().print(CAR.getPurchased()));
+    }
+
+    @Test
+    public void testUuidRoundTrip()
+            throws Exception
+    {
+        UUID expected = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
+        UUID actual = objectMapper.readValue(objectMapper.writeValueAsString(expected), UUID.class);
+        assertEquals(actual, expected);
     }
 
     @Test
