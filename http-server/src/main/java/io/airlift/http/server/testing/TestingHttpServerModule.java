@@ -35,7 +35,6 @@ public class TestingHttpServerModule
     @Override
     public void configure(Binder binder)
     {
-        binder.requireExplicitBindings();
         binder.disableCircularProxies();
 
         // Jetty scales required threads based on processor count, so pick a safe number

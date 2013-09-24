@@ -57,7 +57,6 @@ public class JmxHttpModule implements Module
     @Override
     public void configure(Binder binder)
     {
-        binder.requireExplicitBindings();
         binder.disableCircularProxies();
 
         binder.bind(MBeanResource.class).in(Scopes.SINGLETON);

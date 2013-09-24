@@ -34,7 +34,6 @@ public class ConfigurationModule
     @Override
     public void configure(Binder binder)
     {
-        binder.requireExplicitBindings();
         binder.disableCircularProxies();
 
         binder.bind(ConfigurationFactory.class).toInstance(configurationFactory);

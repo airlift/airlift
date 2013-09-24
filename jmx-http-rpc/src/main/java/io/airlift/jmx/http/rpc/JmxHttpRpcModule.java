@@ -58,7 +58,6 @@ public class JmxHttpRpcModule implements Module
     @Override
     public void configure(Binder binder)
     {
-        binder.requireExplicitBindings();
         binder.disableCircularProxies();
 
         binder.bind(Servlet.class).annotatedWith(bindingAnnotation).to(MBeanServerServlet.class).in(Scopes.SINGLETON);

@@ -29,7 +29,6 @@ public class MainModule
 {
     public void configure(Binder binder)
     {
-        binder.requireExplicitBindings();
         binder.disableCircularProxies();
 
         binder.bind(PersonStore.class).in(Scopes.SINGLETON);

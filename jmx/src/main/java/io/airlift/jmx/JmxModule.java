@@ -37,7 +37,6 @@ public class JmxModule
     @Override
     public void configure(Binder binder)
     {
-        binder.requireExplicitBindings();
         binder.disableCircularProxies();
 
         binder.bind(MBeanServer.class).toInstance(ManagementFactory.getPlatformMBeanServer());
