@@ -9,6 +9,7 @@ import org.weakref.jmx.Managed;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /*
  * A counter that decays exponentially. Values are weighted according to the formula
@@ -52,11 +53,50 @@ public final class DecayCounter
         long nowInSeconds = getTickInSeconds();
 
         if (nowInSeconds - landmarkInSeconds >= RESCALE_THRESHOLD_SECONDS) {
-            // rescale the count based on a new landmark to avoid numerical overflow issues
-            count = count / weight(nowInSeconds, landmarkInSeconds);
-            landmarkInSeconds = nowInSeconds;
+            rescaleToNewLandmark(nowInSeconds);
         }
         count += value * weight(nowInSeconds, landmarkInSeconds);
+    }
+
+    public void merge(DecayCounter decayCounter)
+    {
+        checkNotNull(decayCounter, "decayCounter is null");
+        checkArgument(decayCounter.alpha == alpha, "Expected decayCounter to have alpha %s, but was %s", alpha, decayCounter.alpha);
+
+        // if the landmark this counter is behind the other counter
+        if (landmarkInSeconds < decayCounter.landmarkInSeconds) {
+            // rescale this counter to the other counter, and add
+            rescaleToNewLandmark(decayCounter.landmarkInSeconds);
+            count += decayCounter.count;
+        } else {
+            // rescale the other counter and add
+            double otherRescaledCount = decayCounter.count / weight(landmarkInSeconds, decayCounter.landmarkInSeconds);
+            count += otherRescaledCount;
+        }
+    }
+
+    private void rescaleToNewLandmark(long newLandMarkInSeconds)
+    {
+        // rescale the count based on a new landmark to avoid numerical overflow issues
+        count = count / weight(newLandMarkInSeconds, landmarkInSeconds);
+        landmarkInSeconds = newLandMarkInSeconds;
+    }
+
+    @Managed
+    public synchronized void reset()
+    {
+        landmarkInSeconds = getTickInSeconds();
+        count = 0;
+    }
+
+    /**
+     * This is a hack to work around limitations in Jmxutils.
+     */
+    @Deprecated
+    public synchronized void resetTo(DecayCounter counter)
+    {
+        landmarkInSeconds = counter.landmarkInSeconds;
+        count = counter.count;
     }
 
     @Managed
@@ -88,6 +128,15 @@ public final class DecayCounter
     public DecayCounterSnapshot snapshot()
     {
         return new DecayCounterSnapshot(getCount(), getRate());
+    }
+
+    @Override
+    public String toString()
+    {
+        return Objects.toStringHelper(this)
+                .add("count", getCount())
+                .add("rate", getRate())
+                .toString();
     }
 
     public static class DecayCounterSnapshot
