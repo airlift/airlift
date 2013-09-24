@@ -18,15 +18,20 @@ package io.airlift.discovery.client.testing;
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.airlift.discovery.client.Announcer;
 import io.airlift.discovery.client.DiscoveryAnnouncementClient;
 import io.airlift.discovery.client.DiscoveryLookupClient;
+import io.airlift.discovery.client.MergingServiceSelectorFactory;
 import io.airlift.discovery.client.ServiceAnnouncement;
 import io.airlift.discovery.client.ServiceSelector;
 import io.airlift.discovery.client.ServiceSelectorFactory;
 import io.airlift.discovery.client.ServiceSelectorManager;
+import io.airlift.node.NodeInfo;
+
+import javax.inject.Singleton;
 
 public class TestingDiscoveryModule
         implements Module
@@ -45,10 +50,21 @@ public class TestingDiscoveryModule
         // service announcements are bound, which is legal for processes that don't have public services
         Multibinder.newSetBinder(binder, ServiceAnnouncement.class);
 
-        binder.bind(ServiceSelectorFactory.class).to(SimpleServiceSelectorFactory.class).in(Scopes.SINGLETON);
+        binder.bind(SimpleServiceSelectorFactory.class).in(Scopes.SINGLETON);
+        binder.bind(ServiceSelectorFactory.class).to(MergingServiceSelectorFactory.class).in(Scopes.SINGLETON);
 
         // bind selector manager with initial empty multibinder
         Multibinder.newSetBinder(binder, ServiceSelector.class);
         binder.bind(ServiceSelectorManager.class).in(Scopes.SINGLETON);
+    }
+
+    @Provides
+    @Singleton
+    public MergingServiceSelectorFactory createMergingServiceSelectorFactory(
+            SimpleServiceSelectorFactory factory,
+            Announcer announcer,
+            NodeInfo nodeInfo)
+    {
+        return new MergingServiceSelectorFactory(factory, announcer, nodeInfo);
     }
 }
