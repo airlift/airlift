@@ -9,3 +9,10 @@ test-output/
 .idea
 .*.swp
 .*.swo
+target/        
+# Eclipse                                                                                                                                 
+.project                                                                                                                                        
+.classpath                                                                                                                                      
+.settings/
+.pmdruleset.xml
+.pmd
