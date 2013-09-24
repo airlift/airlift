@@ -24,6 +24,8 @@ import org.weakref.jmx.Nested;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 @Beta
 public class CounterStat
 {
@@ -38,6 +40,36 @@ public class CounterStat
         fiveMinute.add(count);
         fifteenMinute.add(count);
         this.count.addAndGet(count);
+    }
+
+    public void merge(CounterStat counterStat)
+    {
+        checkNotNull(counterStat, "counterStat is null");
+        oneMinute.merge(counterStat.getOneMinute());
+        fiveMinute.merge(counterStat.getFiveMinute());
+        fifteenMinute.merge(counterStat.getFifteenMinute());
+        count.addAndGet(counterStat.getTotalCount());
+    }
+
+    @Managed
+    public void reset()
+    {
+        oneMinute.reset();
+        fiveMinute.reset();
+        fifteenMinute.reset();
+        count.set(0);
+    }
+
+    /**
+     * This is a hack to work around limitations in Jmxutils.
+     */
+    @Deprecated
+    public void resetTo(CounterStat counterStat)
+    {
+        oneMinute.resetTo(counterStat.getOneMinute());
+        fiveMinute.resetTo(counterStat.getFiveMinute());
+        fifteenMinute.resetTo(counterStat.getFifteenMinute());
+        count.set(counterStat.getTotalCount());
     }
 
     @Managed
