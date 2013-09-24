@@ -72,6 +72,7 @@ public class Bootstrap
     private Map<String, String> requiredConfigurationProperties = null;
     private boolean initializeLogging = true;
     private Map<String, String> applicationDefaults = null;
+    private boolean requireExplicitBindings = true;
 
     private boolean initialized = false;
     private final String applicationName;
@@ -142,6 +143,12 @@ public class Bootstrap
     @Deprecated
     public Bootstrap strictConfig()
     {
+        return this;
+    }
+
+    public Bootstrap requireExplicitBindings(boolean requireExplicitBindings)
+    {
+        this.requireExplicitBindings = requireExplicitBindings;
         return this;
     }
 
@@ -239,7 +246,9 @@ public class Bootstrap
             public void configure(Binder binder)
             {
                 binder.disableCircularProxies();
-                binder.requireExplicitBindings();
+                if(requireExplicitBindings) {
+                    binder.requireExplicitBindings();
+                }
             }
         });
         moduleList.addAll(modules);

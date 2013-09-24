@@ -29,7 +29,6 @@ public class LogJmxModule
     @Override
     public void configure(Binder binder)
     {
-        binder.requireExplicitBindings();
         binder.disableCircularProxies();
 
         binder.bind(LoggingMBean.class).in(Scopes.SINGLETON);

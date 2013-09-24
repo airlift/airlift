@@ -28,7 +28,6 @@ public class NodeModule
     @Override
     public void configure(Binder binder)
     {
-        binder.requireExplicitBindings();
         binder.disableCircularProxies();
 
         binder.bind(NodeInfo.class).in(Scopes.SINGLETON);

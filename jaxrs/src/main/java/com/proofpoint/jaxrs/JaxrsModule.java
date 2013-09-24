@@ -31,7 +31,6 @@ public class JaxrsModule implements Module
     @Override
     public void configure(Binder binder)
     {
-        binder.requireExplicitBindings();
         binder.disableCircularProxies();
 
         binder.bind(GuiceContainer.class).in(Scopes.SINGLETON);

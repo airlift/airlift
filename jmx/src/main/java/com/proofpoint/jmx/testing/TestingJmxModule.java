@@ -12,7 +12,6 @@ public class TestingJmxModule
     @Override
     public void configure(Binder binder)
     {
-        binder.requireExplicitBindings();
         binder.disableCircularProxies();
 
         binder.bind(MBeanServer.class).toInstance(new TestingMBeanServer());
