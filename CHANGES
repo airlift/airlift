@@ -2,6 +2,7 @@
 
 - [Bug] Ignore IOException in Closeables.closeQuietly()
 - Always return local announcements from service selectors
+- Add merge support to CounterStat and DecayCounter
 
 * 0.80
 
