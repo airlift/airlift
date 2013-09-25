@@ -1,3 +1,10 @@
+Platform 0.82
+
+* We added JaxrsBinder.bindResourceFilterFactory for adding custom
+  ResourceFilterFactory instances to the HTTP server.
+
+* The HTTP server no longer sends HttpRequest events.
+
 Platform 0.81
 
 * We made JAX-RS resource methods Bean-validate arguments of List and Map.
