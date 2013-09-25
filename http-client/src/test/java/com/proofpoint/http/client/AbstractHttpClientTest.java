@@ -424,7 +424,7 @@ public abstract class AbstractHttpClientTest
             throws Exception
     {
         HttpClientConfig config = new HttpClientConfig()
-                .setReadTimeout(new Duration(99, MILLISECONDS));
+                .setReadTimeout(new Duration(500, MILLISECONDS));
 
         URI uri = URI.create(baseURI.toASCIIString() + "/?sleep=1000");
         Request request = prepareGet()
