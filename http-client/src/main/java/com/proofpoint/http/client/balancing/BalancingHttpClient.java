@@ -83,21 +83,22 @@ public final class BalancingHttpClient implements HttpClient
                 return t;
             }
             catch (InnerHandlerException e) {
-                attempt.markBad();
+                attempt.markBad(e.getFailureCategory());
                 //noinspection unchecked
                 throw (E) e.getCause();
             }
             catch (FailureStatusException e) {
-                attempt.markBad();
+                attempt.markBad(e.getFailureCategory());
+                //noinspection unchecked
                 return (T) e.result;
             }
-            catch (RetryException ignored) {
-                attempt.markBad();
+            catch (RetryException e) {
+                attempt.markBad(e.getFailureCategory());
                 try {
                     attempt = attempt.next();
                 }
-                catch (RuntimeException e) {
-                    return responseHandler.handleException(request, e);
+                catch (RuntimeException e1) {
+                    return responseHandler.handleException(request, e1);
                 }
             }
         }

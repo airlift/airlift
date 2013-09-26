@@ -17,8 +17,13 @@ package com.proofpoint.http.client.balancing;
 
 class InnerHandlerException extends RetryException
 {
-    public InnerHandlerException(Exception cause)
+    InnerHandlerException(Exception cause, String failureCategory)
     {
-        super(cause);
+        super(cause, failureCategory);
+    }
+
+    InnerHandlerException(Exception cause, Exception failureException)
+    {
+        super(cause, failureException);
     }
 }

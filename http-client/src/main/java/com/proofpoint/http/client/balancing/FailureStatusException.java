@@ -19,8 +19,15 @@ class FailureStatusException extends RetryException
 {
     final Object result;
 
-    public FailureStatusException(Object result)
+    FailureStatusException(Object result, String failureCategory)
     {
+        super(failureCategory);
+        this.result = result;
+    }
+
+    FailureStatusException(Object result, Exception failureException)
+    {
+        super(failureException);
         this.result = result;
     }
 }

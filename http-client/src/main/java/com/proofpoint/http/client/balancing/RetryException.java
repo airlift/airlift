@@ -17,12 +17,33 @@ package com.proofpoint.http.client.balancing;
 
 class RetryException extends Exception
 {
-    public RetryException()
+    private final String failureCategory;
+
+    RetryException(String failureCategory)
     {
+        this.failureCategory = failureCategory;
     }
 
     RetryException(Exception cause)
     {
         super(cause);
+        failureCategory = cause.getClass().getSimpleName();
+    }
+
+    RetryException(Exception cause, String failureCategory)
+    {
+        super(cause);
+        this.failureCategory = failureCategory;
+    }
+
+    RetryException(Exception cause, Exception failureException)
+    {
+        super(cause);
+        failureCategory = failureException.getClass().getSimpleName();
+    }
+
+    String getFailureCategory()
+    {
+        return failureCategory;
     }
 }

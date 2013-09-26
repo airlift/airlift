@@ -62,10 +62,10 @@ public class TestHttpServiceBalancerImpl
         Set<URI> uris = new HashSet<>();
         HttpServiceAttempt attempt = httpServiceBalancer.createAttempt();
         uris.add(attempt.getUri());
-        attempt.markBad();
+        attempt.markBad("testing failure");
         attempt = attempt.next();
         uris.add(attempt.getUri());
-        attempt.markBad();
+        attempt.markBad("testing failure");
         attempt = attempt.next();
         uris.add(attempt.getUri());
 

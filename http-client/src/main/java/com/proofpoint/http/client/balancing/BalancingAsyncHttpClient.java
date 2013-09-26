@@ -172,15 +172,16 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
                 public void onFailure(Throwable t)
                 {
                     if (t instanceof InnerHandlerException) {
-                        attempt.markBad();
+                        attempt.markBad(((InnerHandlerException) t).getFailureCategory());
                         setException(t.getCause());
                     }
                     else if (t instanceof FailureStatusException) {
-                        attempt.markBad();
+                        attempt.markBad(((FailureStatusException) t).getFailureCategory());
+                        //noinspection unchecked
                         set((T) ((FailureStatusException)t).result);
                     }
                     else if (t instanceof RetryException) {
-                        attempt.markBad();
+                        attempt.markBad(((RetryException) t).getFailureCategory());
                         synchronized (subFutureLock) {
                             HttpServiceAttempt nextAttempt;
                             try {

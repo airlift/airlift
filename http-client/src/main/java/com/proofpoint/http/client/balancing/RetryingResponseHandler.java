@@ -52,24 +52,25 @@ final class RetryingResponseHandler<T, E extends Exception>
                 result = innerHandler.handleException(originalRequest, exception);
             }
             catch (Exception e) {
-                throw new InnerHandlerException(e);
+                throw new InnerHandlerException(e, exception);
             }
-            throw new FailureStatusException(result);
+            throw new FailureStatusException(result, exception);
         }
 
-        throw new RetryException();
+        throw new RetryException(exception);
     }
 
     @Override
     public T handle(Request request, Response response)
             throws RetryException
     {
+        String failureCategory = response.getStatusCode() + " status code";
         if (RETRYABLE_STATUS_CODES.contains(response.getStatusCode())) {
             String retryHeader = response.getHeader("X-Proofpoint-Retry");
             log.warn("%d response querying %s",
                     response.getStatusCode(), request.getUri().resolve("/"));
             if (!finalAttempt && !("no".equalsIgnoreCase(retryHeader))) {
-                throw new RetryException();
+                throw new RetryException(failureCategory);
             }
 
             Object result;
@@ -77,16 +78,16 @@ final class RetryingResponseHandler<T, E extends Exception>
                 result = innerHandler.handle(originalRequest, response);
             }
             catch (Exception e) {
-                throw new InnerHandlerException(e);
+                throw new InnerHandlerException(e, failureCategory);
             }
-            throw new FailureStatusException(result);
+            throw new FailureStatusException(result, failureCategory);
         }
 
         try {
             return innerHandler.handle(originalRequest, response);
         }
         catch (Exception e) {
-            throw new InnerHandlerException(e);
+            throw new InnerHandlerException(e, failureCategory);
         }
     }
 }

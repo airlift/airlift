@@ -79,7 +79,7 @@ public class HttpServiceBalancerImpl implements HttpServiceBalancer
         }
 
         @Override
-        public void markBad()
+        public void markBad(String failureCategory)
         {
             //todo
         }

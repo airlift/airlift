@@ -24,6 +24,6 @@ public interface HttpServiceAttempt
 {
     public URI getUri();
     public void markGood();
-    public void markBad();
+    public void markBad(String failureCategory);
     public HttpServiceAttempt next();
 }
