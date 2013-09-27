@@ -16,13 +16,16 @@
 package com.proofpoint.http.client.balancing;
 
 import com.google.common.annotations.Beta;
+import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableSet;
+import com.proofpoint.http.client.balancing.HttpServiceBalancerStats.Status;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -32,11 +35,18 @@ public class HttpServiceBalancerImpl implements HttpServiceBalancer
     private final AtomicReference<Set<URI>> httpUris = new AtomicReference<>((Set<URI>) ImmutableSet.<URI>of());
     private final String description;
     private final HttpServiceBalancerStats httpServiceBalancerStats;
+    private final Ticker ticker;
 
     public HttpServiceBalancerImpl(String description, HttpServiceBalancerStats httpServiceBalancerStats)
     {
+        this(description, httpServiceBalancerStats, Ticker.systemTicker());
+    }
+
+    HttpServiceBalancerImpl(String description, HttpServiceBalancerStats httpServiceBalancerStats, Ticker ticker)
+    {
         this.description = checkNotNull(description, "description is null");
         this.httpServiceBalancerStats = checkNotNull(httpServiceBalancerStats, "httpServiceBalancerStats is null");
+        this.ticker = checkNotNull(ticker, "ticker is null");
     }
 
     @Override
@@ -58,16 +68,17 @@ public class HttpServiceBalancerImpl implements HttpServiceBalancer
 
     private class HttpServiceAttemptImpl implements HttpServiceAttempt
     {
-
         private final List<URI> uris;
         private final int attempt;
         private final URI uri;
+        private final long startTick;
 
         public HttpServiceAttemptImpl(List<URI> uris, int attempt)
         {
             this.uris = uris;
             this.attempt = attempt;
             uri = uris.get(attempt % uris.size());
+            startTick = ticker.read();
         }
 
         @Override
@@ -79,12 +90,13 @@ public class HttpServiceBalancerImpl implements HttpServiceBalancer
         @Override
         public void markGood()
         {
-            //todo
+            httpServiceBalancerStats.responseTime(uri, Status.SUCCESS).add(ticker.read() - startTick, TimeUnit.NANOSECONDS);
         }
 
         @Override
         public void markBad(String failureCategory)
         {
+            httpServiceBalancerStats.responseTime(uri, Status.FAILURE).add(ticker.read() - startTick, TimeUnit.NANOSECONDS);
             httpServiceBalancerStats.failure(uri, failureCategory).update(1);
         }
 

@@ -17,10 +17,22 @@ package com.proofpoint.http.client.balancing;
 
 import com.proofpoint.reporting.Key;
 import com.proofpoint.stats.CounterStat;
+import com.proofpoint.stats.TimeStat;
 
 import java.net.URI;
 
 public interface HttpServiceBalancerStats
 {
     CounterStat failure(@Key("targetUri") URI uri, @Key("failure") String failureCategory);
+
+    TimeStat responseTime(@Key("targetUri") URI uri, @Key("status") Status status);
+
+    public enum Status {
+        SUCCESS, FAILURE;
+
+        @Override
+        public String toString() {
+            return name().toLowerCase();
+        }
+    }
 }
