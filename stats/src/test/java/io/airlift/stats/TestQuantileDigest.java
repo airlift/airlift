@@ -2,6 +2,7 @@ package io.airlift.stats;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
+import io.airlift.testing.TestingTicker;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;

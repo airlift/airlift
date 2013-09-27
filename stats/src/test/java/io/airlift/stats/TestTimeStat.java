@@ -16,6 +16,7 @@
 package io.airlift.stats;
 
 import io.airlift.stats.TimeStat.BlockTimer;
+import io.airlift.testing.TestingTicker;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
