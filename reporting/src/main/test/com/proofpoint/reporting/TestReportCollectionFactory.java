@@ -20,6 +20,7 @@ import org.mockito.ArgumentCaptor;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.weakref.jmx.MBeanExporter;
+import org.weakref.jmx.ObjectNameBuilder;
 
 import javax.management.ObjectName;
 import javax.validation.constraints.NotNull;
@@ -116,6 +117,31 @@ public class TestReportCollectionFactory
     private interface KeyedDistribution
     {
         SomeObject add(@Key("foo") String key, @NotNull @Key("bar") boolean bool);
+    }
+
+    @Test
+    public void testNamedCollection()
+            throws Exception
+    {
+        String name = new ObjectNameBuilder(KeyedDistribution.class.getPackage().getName())
+                .withProperty("a", "fooval")
+                .withProperty("b", "with\"quote")
+                .withProperty("c", "with,comma")
+                .withProperty("d", "with\\backslash")
+                .build();
+        KeyedDistribution keyedDistribution = reportCollectionFactory.createReportCollection(KeyedDistribution.class, name);
+        keyedDistribution.add("value", false);
+
+        ArgumentCaptor<String> stringCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<ObjectName> objectNameCaptor = ArgumentCaptor.forClass(ObjectName.class);
+        ArgumentCaptor<SomeObject> mbeanCaptor = ArgumentCaptor.forClass(SomeObject.class);
+        ArgumentCaptor<SomeObject> reportCaptor = ArgumentCaptor.forClass(SomeObject.class);
+
+        verify(mBeanExporter).export(stringCaptor.capture(), mbeanCaptor.capture());
+        assertEquals(stringCaptor.getValue(), "com.proofpoint.reporting:a=fooval,b=\"with\\\"quote\",c=\"with,comma\",d=with\\backslash,name=Add,foo=value,bar=false");
+        verify(reportExporter).export(objectNameCaptor.capture(), reportCaptor.capture());
+        assertEquals(objectNameCaptor.getValue().getCanonicalName(), "com.proofpoint.reporting:a=fooval,b=\"with\\\"quote\",bar=false,c=\"with,comma\",d=with\\backslash,foo=value,name=Add");
+        assertSame(mbeanCaptor.getValue(), reportCaptor.getValue());
     }
 
     @Test(expectedExceptions = RuntimeException.class,

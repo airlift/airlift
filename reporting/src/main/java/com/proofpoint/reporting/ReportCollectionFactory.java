@@ -168,6 +168,7 @@ public class ReportCollectionFactory
                                 index = name.length();
                             }
                             value = name.substring(separatorIndex, index);
+                            ++index;
                         }
                         properties.put(key, value);
                     }
