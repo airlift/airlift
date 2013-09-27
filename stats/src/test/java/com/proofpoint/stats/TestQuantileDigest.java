@@ -2,6 +2,7 @@ package com.proofpoint.stats;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
+import com.proofpoint.testing.TestingTicker;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;

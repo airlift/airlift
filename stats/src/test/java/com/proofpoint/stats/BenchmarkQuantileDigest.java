@@ -1,5 +1,6 @@
 package com.proofpoint.stats;
 
+import com.proofpoint.testing.TestingTicker;
 import com.proofpoint.units.Duration;
 
 import java.util.Random;

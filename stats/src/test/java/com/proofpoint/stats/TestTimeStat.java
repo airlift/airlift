@@ -16,6 +16,7 @@
 package com.proofpoint.stats;
 
 import com.proofpoint.stats.TimeStat.BlockTimer;
+import com.proofpoint.testing.TestingTicker;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 

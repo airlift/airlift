@@ -36,9 +36,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Implements ScheduledExecutorService with a controllable time elapse. Tasks are run
@@ -50,7 +50,7 @@ import static com.google.common.collect.Lists.newArrayList;
 public class SerialScheduledExecutorService
         implements ScheduledExecutorService
 {
-    private final ManualTicker ticker = new ManualTicker();
+    private final TestingTicker ticker = new TestingTicker();
     private final PriorityQueue<SerialScheduledFuture<?>> futureTasks = new PriorityQueue<SerialScheduledFuture<?>>();
     private Collection<SerialScheduledFuture<?>> tasks = futureTasks;
     private boolean isShutdown = false;
@@ -273,7 +273,7 @@ public class SerialScheduledExecutorService
         }
 
         // wind time off the clock, return the amount of used time in nanos
-        long elapseTime(long quantumNanos, @Nullable ManualTicker ticker)
+        long elapseTime(long quantumNanos, @Nullable TestingTicker ticker)
         {
             if (task.isDone() || task.isCancelled()) {
                 return 0;
@@ -281,7 +281,7 @@ public class SerialScheduledExecutorService
 
             if (remainingDelayNanos <= quantumNanos) {
                 if (ticker != null) {
-                    ticker.advance(remainingDelayNanos);
+                    ticker.increment(remainingDelayNanos, NANOSECONDS);
                 }
                 task.run();
                 return remainingDelayNanos;
@@ -304,7 +304,7 @@ public class SerialScheduledExecutorService
         @Override
         public long getDelay(TimeUnit timeUnit)
         {
-            return timeUnit.convert(remainingDelayNanos, TimeUnit.NANOSECONDS);
+            return timeUnit.convert(remainingDelayNanos, NANOSECONDS);
         }
 
         @Override
@@ -314,7 +314,7 @@ public class SerialScheduledExecutorService
                 SerialScheduledFuture other = (SerialScheduledFuture) delayed;
                 return Longs.compare(this.remainingDelayNanos, other.remainingDelayNanos);
             }
-            return Longs.compare(remainingDelayNanos, delayed.getDelay(TimeUnit.NANOSECONDS));
+            return Longs.compare(remainingDelayNanos, delayed.getDelay(NANOSECONDS));
         }
 
         @Override
@@ -400,7 +400,7 @@ public class SerialScheduledExecutorService
         }
     }
 
-    private void elapseTime(long quantum, @Nullable ManualTicker ticker)
+    private void elapseTime(long quantum, @Nullable TestingTicker ticker)
     {
         List<SerialScheduledFuture<?>> toRequeue = newArrayList();
 
@@ -436,7 +436,7 @@ public class SerialScheduledExecutorService
                     // out of convenience. Because this task is the next one that needs to run, all other tasks will need to
                     // run no more than once. When done, any new tasks that were added by the tasks that ran can be added to
                     // the queue for processing.
-                    elapseTime(used, (ManualTicker) null);
+                    elapseTime(used, (TestingTicker) null);
                     rescheduleTaskIfRequired(futureTasks, current);
                     futureTasks.addAll(tasks);
                     tasks.clear();
@@ -449,7 +449,7 @@ public class SerialScheduledExecutorService
                 }
             }
             if (ticker != null) {
-                ticker.advance(quantum);
+                ticker.increment(quantum, NANOSECONDS);
             }
         }
         finally {
@@ -470,22 +470,6 @@ public class SerialScheduledExecutorService
 
     private static long toNanos(long quantum, TimeUnit timeUnit)
     {
-        return TimeUnit.NANOSECONDS.convert(quantum, timeUnit);
-    }
-
-    private static class ManualTicker extends Ticker
-    {
-        private AtomicLong ticks = new AtomicLong(Integer.MAX_VALUE * 2L);
-
-        @Override
-        public long read()
-        {
-            return ticks.get();
-        }
-
-        public void advance(long nanos)
-        {
-            ticks.addAndGet(nanos);
-        }
+        return NANOSECONDS.convert(quantum, timeUnit);
     }
 }
