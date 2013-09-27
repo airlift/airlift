@@ -46,10 +46,11 @@ import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
 import static java.lang.reflect.Proxy.newProxyInstance;
 
-class ReportCollectionFactory
+public class ReportCollectionFactory
 {
     private final Ticker ticker;
     private final MBeanExporter mBeanExporter;
@@ -68,14 +69,20 @@ class ReportCollectionFactory
         this.ticker = ticker;
     }
 
+    @SuppressWarnings("unchecked")
     public <T> T createReportCollection(Class<T> aClass)
     {
-        return createReportCollection(aClass, null);
+        checkNotNull(aClass, "class is null");
+        return (T) newProxyInstance(aClass.getClassLoader(),
+                new Class[]{aClass},
+                new StatInvocationHandler(aClass, null));
     }
 
     @SuppressWarnings("unchecked")
-    public <T> T createReportCollection(Class<T> aClass, @Nullable String name)
+    public <T> T createReportCollection(Class<T> aClass, String name)
     {
+        checkNotNull(aClass, "class is null");
+        checkNotNull(name, "name is null");
         return (T) newProxyInstance(aClass.getClassLoader(),
                 new Class[]{aClass},
                 new StatInvocationHandler(aClass, name));

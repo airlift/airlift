@@ -16,6 +16,7 @@
 package com.proofpoint.http.client.balancing;
 
 import com.google.common.collect.ImmutableSet;
+import com.proofpoint.stats.CounterStat;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -23,17 +24,26 @@ import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 
 public class TestHttpServiceBalancerImpl
 {
     private HttpServiceBalancerImpl httpServiceBalancer;
+    private HttpServiceBalancerStats httpServiceBalancerStats;
 
     @BeforeMethod
     protected void setUp()
             throws Exception
     {
-        httpServiceBalancer = new HttpServiceBalancerImpl("type=[apple], pool=[pool]");
+        httpServiceBalancerStats = mock(HttpServiceBalancerStats.class);
+        httpServiceBalancer = new HttpServiceBalancerImpl("type=[apple], pool=[pool]", httpServiceBalancerStats);
     }
 
     @Test(expectedExceptions = ServiceUnavailableException.class)
@@ -56,6 +66,8 @@ public class TestHttpServiceBalancerImpl
             throws Exception
     {
         ImmutableSet<URI> expected = ImmutableSet.of(URI.create("http://apple-a.example.com"), URI.create("https://apple-a.example.com"));
+        CounterStat counterStat = mock(CounterStat.class);
+        when(httpServiceBalancerStats.failure(any(URI.class), eq("testing failure"))).thenReturn(counterStat);
 
         httpServiceBalancer.updateHttpUris(expected);
 
@@ -70,5 +82,10 @@ public class TestHttpServiceBalancerImpl
         uris.add(attempt.getUri());
 
         assertEquals(uris, expected);
+        for (URI uri : expected) {
+            verify(httpServiceBalancerStats).failure(uri, "testing failure");
+        }
+        verify(counterStat, times(2)).update(1);
+        verifyNoMoreInteractions(httpServiceBalancerStats, counterStat);
     }
 }

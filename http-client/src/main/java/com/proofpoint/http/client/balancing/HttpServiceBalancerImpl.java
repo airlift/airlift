@@ -31,10 +31,12 @@ public class HttpServiceBalancerImpl implements HttpServiceBalancer
 {
     private final AtomicReference<Set<URI>> httpUris = new AtomicReference<>((Set<URI>) ImmutableSet.<URI>of());
     private final String description;
+    private final HttpServiceBalancerStats httpServiceBalancerStats;
 
-    public HttpServiceBalancerImpl(String description)
+    public HttpServiceBalancerImpl(String description, HttpServiceBalancerStats httpServiceBalancerStats)
     {
         this.description = checkNotNull(description, "description is null");
+        this.httpServiceBalancerStats = checkNotNull(httpServiceBalancerStats, "httpServiceBalancerStats is null");
     }
 
     @Override
@@ -59,17 +61,19 @@ public class HttpServiceBalancerImpl implements HttpServiceBalancer
 
         private final List<URI> uris;
         private final int attempt;
+        private final URI uri;
 
         public HttpServiceAttemptImpl(List<URI> uris, int attempt)
         {
             this.uris = uris;
             this.attempt = attempt;
+            uri = uris.get(attempt % uris.size());
         }
 
         @Override
         public URI getUri()
         {
-            return uris.get(attempt % uris.size());
+            return uri;
         }
 
         @Override
@@ -81,7 +85,7 @@ public class HttpServiceBalancerImpl implements HttpServiceBalancer
         @Override
         public void markBad(String failureCategory)
         {
-            //todo
+            httpServiceBalancerStats.failure(uri, failureCategory).update(1);
         }
 
         @Override

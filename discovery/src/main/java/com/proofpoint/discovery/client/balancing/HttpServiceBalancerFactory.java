@@ -15,42 +15,52 @@
  */
 package com.proofpoint.discovery.client.balancing;
 
-import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.proofpoint.discovery.client.DiscoveryLookupClient;
 import com.proofpoint.discovery.client.ForDiscoveryClient;
 import com.proofpoint.discovery.client.ServiceDescriptorsUpdater;
 import com.proofpoint.discovery.client.ServiceSelectorConfig;
+import com.proofpoint.http.client.balancing.HttpServiceBalancerStats;
 import com.proofpoint.http.client.balancing.HttpServiceBalancer;
 import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
 import com.proofpoint.node.NodeInfo;
+import com.proofpoint.reporting.ReportCollectionFactory;
+import org.weakref.jmx.ObjectNameBuilder;
 
 import java.util.concurrent.ScheduledExecutorService;
 
 import static com.google.common.base.Objects.firstNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
 
 public final class HttpServiceBalancerFactory
 {
     private final DiscoveryLookupClient lookupClient;
     private final ScheduledExecutorService executor;
+    private final ReportCollectionFactory reportCollectionFactory;
 
     @Inject
-    public HttpServiceBalancerFactory(DiscoveryLookupClient lookupClient, @ForDiscoveryClient ScheduledExecutorService executor)
+    public HttpServiceBalancerFactory(DiscoveryLookupClient lookupClient, @ForDiscoveryClient ScheduledExecutorService executor, ReportCollectionFactory reportCollectionFactory)
     {
-        Preconditions.checkNotNull(lookupClient, "client is null");
-        Preconditions.checkNotNull(executor, "executor is null");
+        checkNotNull(lookupClient, "client is null");
+        checkNotNull(executor, "executor is null");
+        checkNotNull(reportCollectionFactory, "reportCollectionFactory is null");
         this.lookupClient = lookupClient;
         this.executor = executor;
+        this.reportCollectionFactory = reportCollectionFactory;
     }
 
     public HttpServiceBalancer createHttpServiceBalancer(String type, ServiceSelectorConfig selectorConfig, NodeInfo nodeInfo)
     {
-        Preconditions.checkNotNull(type, "type is null");
-        Preconditions.checkNotNull(selectorConfig, "selectorConfig is null");
+        checkNotNull(type, "type is null");
+        checkNotNull(selectorConfig, "selectorConfig is null");
 
         String pool = firstNonNull(selectorConfig.getPool(), nodeInfo.getPool());
-        HttpServiceBalancerImpl balancer = new HttpServiceBalancerImpl(format("type=[%s], pool=[%s]", type, pool));
+        String name = new ObjectNameBuilder(HttpServiceBalancerStats.class.getPackage().getName())
+                .withProperty("type", type)
+                .build();
+        HttpServiceBalancerStats httpServiceBalancerStats = reportCollectionFactory.createReportCollection(HttpServiceBalancerStats.class, name);
+        HttpServiceBalancerImpl balancer = new HttpServiceBalancerImpl(format("type=[%s], pool=[%s]", type, pool), httpServiceBalancerStats);
         ServiceDescriptorsUpdater updater = new ServiceDescriptorsUpdater(new HttpServiceBalancerListenerAdapter(balancer), type, selectorConfig, nodeInfo, lookupClient, executor);
         updater.start();
 

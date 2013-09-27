@@ -57,6 +57,9 @@ class ReportCollectionProvider<T> implements Provider<T>
     @Override
     public T get()
     {
+        if (name == null) {
+            return reportCollectionFactory.createReportCollection(iface);
+        }
         return reportCollectionFactory.createReportCollection(iface, name);
     }
 }

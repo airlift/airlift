@@ -27,8 +27,11 @@ import com.proofpoint.discovery.client.announce.DiscoveryAnnouncementClient;
 import com.proofpoint.discovery.client.announce.HttpDiscoveryAnnouncementClient;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
 import com.proofpoint.discovery.client.balancing.HttpServiceBalancerFactory;
+import com.proofpoint.http.client.balancing.HttpServiceBalancerStats;
 import com.proofpoint.http.client.balancing.HttpServiceBalancer;
 import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
+import com.proofpoint.reporting.ReportCollectionFactory;
+import org.weakref.jmx.ObjectNameBuilder;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -42,8 +45,7 @@ import static org.weakref.jmx.guice.ExportBinder.newExporter;
 public class DiscoveryModule
         implements Module
 {
-    // Binding this .toInstance() results in inexplicable NullPointerException errors during injection
-    private final HttpServiceBalancerImpl discoveryBalancer = new HttpServiceBalancerImpl("discovery");
+    private HttpServiceBalancerImpl discoveryBalancer = null;
 
     @Override
     public void configure(Binder binder)
@@ -85,15 +87,21 @@ public class DiscoveryModule
 
     @Provides
     @ServiceType("discovery")
-    public HttpServiceBalancer getHttpServiceBalancer()
+    public HttpServiceBalancer createHttpServiceBalancer(ReportCollectionFactory reportCollectionFactory)
     {
-        return discoveryBalancer;
+        return getHttpServiceBalancerImpl(reportCollectionFactory);
     }
 
     @Provides
     @ServiceType("discovery")
-    public HttpServiceBalancerImpl getHttpServiceBalancerImpl()
+    synchronized public HttpServiceBalancerImpl getHttpServiceBalancerImpl(ReportCollectionFactory reportCollectionFactory)
     {
+        if (discoveryBalancer == null) {
+            String name = new ObjectNameBuilder(HttpServiceBalancerStats.class.getPackage().getName())
+                    .withProperty("type", "discovery")
+                    .build();
+            discoveryBalancer = new HttpServiceBalancerImpl("discovery", reportCollectionFactory.createReportCollection(HttpServiceBalancerStats.class, name));
+        }
         return discoveryBalancer;
     }
 }

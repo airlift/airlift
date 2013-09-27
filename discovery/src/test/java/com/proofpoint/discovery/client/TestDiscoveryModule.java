@@ -16,16 +16,24 @@
 package com.proofpoint.discovery.client;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Module;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.discovery.client.announce.Announcer;
 import com.proofpoint.discovery.client.announce.DiscoveryAnnouncementClient;
 import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.testing.TestingNodeModule;
+import com.proofpoint.reporting.ReportingModule;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import org.weakref.jmx.guice.MBeanModule;
+
+import javax.management.MBeanServer;
+
+import static org.mockito.Mockito.mock;
 
 public class TestDiscoveryModule
 {
@@ -37,6 +45,16 @@ public class TestDiscoveryModule
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.of("testing.discovery.uri", "fake://server"))),
                 new JsonModule(),
                 new TestingNodeModule(),
+                new MBeanModule(),
+                new ReportingModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
+                    }
+                },
                 new DiscoveryModule()
         );
 

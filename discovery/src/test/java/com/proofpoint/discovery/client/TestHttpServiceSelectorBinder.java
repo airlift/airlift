@@ -28,8 +28,12 @@ import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.discovery.client.testing.InMemoryDiscoveryClient;
 import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
 import com.proofpoint.node.testing.TestingNodeModule;
+import com.proofpoint.reporting.ReportingModule;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.weakref.jmx.guice.MBeanModule;
 
+import javax.management.MBeanServer;
 import java.net.URI;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
@@ -37,27 +41,38 @@ import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
 import static com.proofpoint.discovery.client.announce.ServiceAnnouncement.serviceAnnouncement;
 import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
 import static com.proofpoint.testing.Assertions.assertEqualsIgnoreOrder;
+import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 
 public class TestHttpServiceSelectorBinder
 {
-    @Test
-    public void testHttpSelectorString()
+    private Injector injector;
+
+    @BeforeMethod
+    public void setUp()
+            throws Exception
     {
-        Injector injector = Guice.createInjector(
+        injector = Guice.createInjector(
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
                 new TestingNodeModule(),
                 new TestingDiscoveryModule(),
+                new MBeanModule(),
+                new ReportingModule(),
                 new Module()
                 {
                     @Override
                     public void configure(Binder binder)
                     {
+                        binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
                         discoveryBinder(binder).bindHttpSelector("apple");
                     }
                 }
         );
+    }
 
+    @Test
+    public void testHttpSelectorString()
+    {
         InMemoryDiscoveryClient discoveryClient = injector.getInstance(InMemoryDiscoveryClient.class);
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", "fake://server-http").build()));
 
@@ -68,15 +83,18 @@ public class TestHttpServiceSelectorBinder
     @Test
     public void testHttpSelectorAnnotation()
     {
-        Injector injector = Guice.createInjector(
+        injector = Guice.createInjector(
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
                 new TestingNodeModule(),
                 new TestingDiscoveryModule(),
+                new MBeanModule(),
+                new ReportingModule(),
                 new Module()
                 {
                     @Override
                     public void configure(Binder binder)
                     {
+                        binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
                         discoveryBinder(binder).bindHttpSelector(serviceType("apple"));
                     }
                 }
@@ -92,20 +110,6 @@ public class TestHttpServiceSelectorBinder
     @Test
     public void testHttpsSelector()
     {
-        Injector injector = Guice.createInjector(
-                new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
-                new TestingNodeModule(),
-                new TestingDiscoveryModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        discoveryBinder(binder).bindHttpSelector("apple");
-                    }
-                }
-        );
-
         InMemoryDiscoveryClient discoveryClient = injector.getInstance(InMemoryDiscoveryClient.class);
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("https", "fake://server-https").build()));
 
@@ -116,20 +120,6 @@ public class TestHttpServiceSelectorBinder
     @Test
     public void testFavorHttpsOverHttpSelector()
     {
-        Injector injector = Guice.createInjector(
-                new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
-                new TestingNodeModule(),
-                new TestingDiscoveryModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        discoveryBinder(binder).bindHttpSelector("apple");
-                    }
-                }
-        );
-
         InMemoryDiscoveryClient discoveryClient = injector.getInstance(InMemoryDiscoveryClient.class);
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", "fake://server-http").build(),
                 serviceAnnouncement("apple").addProperty("http", "fake://server-http-dontuse").addProperty("https", "fake://server-https").build()));
@@ -141,20 +131,6 @@ public class TestHttpServiceSelectorBinder
     @Test
     public void testNoHttpServices()
     {
-        Injector injector = Guice.createInjector(
-                new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
-                new TestingNodeModule(),
-                new TestingDiscoveryModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        discoveryBinder(binder).bindHttpSelector("apple");
-                    }
-                }
-        );
-
         InMemoryDiscoveryClient discoveryClient = injector.getInstance(InMemoryDiscoveryClient.class);
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("foo", "fake://server-https").build()));
 
@@ -166,20 +142,6 @@ public class TestHttpServiceSelectorBinder
     @Test
     public void testInvalidUris()
     {
-        Injector injector = Guice.createInjector(
-                new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
-                new TestingNodeModule(),
-                new TestingDiscoveryModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        discoveryBinder(binder).bindHttpSelector("apple");
-                    }
-                }
-        );
-
         InMemoryDiscoveryClient discoveryClient = injector.getInstance(InMemoryDiscoveryClient.class);
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", ":::INVALID:::").build()));
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("https", ":::INVALID:::").build()));

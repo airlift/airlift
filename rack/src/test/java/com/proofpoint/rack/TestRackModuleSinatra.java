@@ -28,11 +28,14 @@ import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.client.StringResponseHandler.StringResponse;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
+import com.proofpoint.jmx.testing.TestingJmxModule;
 import com.proofpoint.json.JsonCodec;
 import com.proofpoint.node.testing.TestingNodeModule;
+import com.proofpoint.reporting.ReportingModule;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.weakref.jmx.guice.MBeanModule;
 
 import java.util.Map;
 
@@ -59,7 +62,10 @@ public class TestRackModuleSinatra
                 new TestingHttpServerModule(),
                 new RackModule(),
                 new TestingNodeModule(),
-                new TestingDiscoveryModule());
+                new TestingDiscoveryModule(),
+                new ReportingModule(),
+                new MBeanModule(),
+                new TestingJmxModule());
 
         Injector injector = app
                 .doNotInitializeLogging()
