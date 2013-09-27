@@ -16,7 +16,6 @@
 package com.proofpoint.node;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.InetAddresses;
 import com.google.inject.Inject;
@@ -34,6 +33,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 @Singleton
 public class NodeInfo
@@ -85,10 +87,10 @@ public class NodeInfo
             String binarySpec,
             String configSpec)
     {
-        Preconditions.checkNotNull(environment, "environment is null");
-        Preconditions.checkNotNull(pool, "pool is null");
-        Preconditions.checkArgument(environment.matches(NodeConfig.ENV_REGEXP), String.format("environment '%s' is invalid", environment));
-        Preconditions.checkArgument(pool.matches(NodeConfig.POOL_REGEXP), String.format("pool '%s' is invalid", pool));
+        checkNotNull(environment, "environment is null");
+        checkNotNull(pool, "pool is null");
+        checkArgument(environment.matches(NodeConfig.ENV_REGEXP), String.format("environment '%s' is invalid", environment));
+        checkArgument(pool.matches(NodeConfig.POOL_REGEXP), String.format("pool '%s' is invalid", pool));
 
         this.environment = environment;
         this.pool = pool;
@@ -118,7 +120,7 @@ public class NodeInfo
         }
 
         if (internalHostname != null) {
-            Preconditions.checkArgument(internalHostname.matches(NodeConfig.HOSTNAME_REGEXP), String.format("hostname '%s' is invalid", environment));
+            checkArgument(internalHostname.equals("localhost") || internalHostname.matches(NodeConfig.HOSTNAME_REGEXP), String.format("hostname '%s' is invalid", internalHostname));
             this.internalHostname = internalHostname;
         }
         else {

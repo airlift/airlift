@@ -18,6 +18,7 @@ package com.proofpoint.http.server;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
+import com.google.common.net.InetAddresses;
 import com.proofpoint.http.client.ApacheHttpClient;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
@@ -25,6 +26,7 @@ import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.client.StringResponseHandler.StringResponse;
 import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 import com.proofpoint.http.server.testing.TestingHttpServer;
+import com.proofpoint.node.NodeConfig;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.testing.FileUtils;
 import com.proofpoint.tracetoken.TraceTokenManager;
@@ -51,6 +53,8 @@ import static org.testng.Assert.fail;
 
 public class TestHttpServerProvider
 {
+    private static final String JAVAX_NET_SSL_TRUST_STORE = "javax.net.ssl.trustStore";
+    private String originalTrustStore;
     private HttpServer server;
     private File tempDir;
     private NodeInfo nodeInfo;
@@ -61,11 +65,19 @@ public class TestHttpServerProvider
     public void setup()
             throws IOException
     {
+        originalTrustStore = System.getProperty(JAVAX_NET_SSL_TRUST_STORE);
+        System.setProperty(JAVAX_NET_SSL_TRUST_STORE, getResource("localhost.keystore").getPath());
         tempDir = Files.createTempDir().getCanonicalFile(); // getCanonicalFile needed to get around Issue 365 (http://code.google.com/p/guava-libraries/issues/detail?id=365)
         config = new HttpServerConfig()
                 .setHttpPort(0)
                 .setLogPath(new File(tempDir, "http-request.log").getAbsolutePath());
-        nodeInfo = new NodeInfo("test");
+        nodeInfo = new NodeInfo(new NodeConfig()
+                .setEnvironment("test")
+                .setNodeInternalIp(InetAddresses.forString("127.0.0.1"))
+                .setNodeBindIp(InetAddresses.forString("127.0.0.1"))
+                .setNodeExternalAddress("localhost")
+                .setNodeInternalHostname("localhost")
+        );
         httpServerInfo = new HttpServerInfo(config, nodeInfo);
     }
 
@@ -73,6 +85,13 @@ public class TestHttpServerProvider
     public void teardown()
             throws Exception
     {
+        if (originalTrustStore != null) {
+            System.setProperty(JAVAX_NET_SSL_TRUST_STORE, originalTrustStore);
+        }
+        else {
+            System.clearProperty(JAVAX_NET_SSL_TRUST_STORE);
+        }
+
         try {
             if (server != null) {
                 server.stop();
@@ -92,6 +111,26 @@ public class TestHttpServerProvider
 
         HttpClient client = new ApacheHttpClient();
         StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
+
+        assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+    }
+
+    @Test
+    public void testHttps()
+            throws Exception
+    {
+        config.setHttpEnabled(false)
+                .setHttpsEnabled(true)
+                .setHttpsPort(0)
+                .setKeystorePath(getResource("localhost.keystore").toString())
+                .setKeystorePassword("changeit");
+        httpServerInfo = new HttpServerInfo(config, nodeInfo);
+
+        createServer();
+        server.start();
+
+        HttpClient client = new ApacheHttpClient();
+        StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpsUri()).build(), createStatusResponseHandler());
 
         assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
     }
@@ -171,8 +210,8 @@ public class TestHttpServerProvider
         config.setHttpEnabled(false)
                 .setHttpsEnabled(true)
                 .setHttpsPort(0)
-                .setKeystorePath(getResource("test.keystore").toString())
-                .setKeystorePassword("airlift")
+                .setKeystorePath(getResource("localhost.keystore").toString())
+                .setKeystorePassword("changeit")
                 .setMaxThreads(1);
         createAndStartServer();
     }
