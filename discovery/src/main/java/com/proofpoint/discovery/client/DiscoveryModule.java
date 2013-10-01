@@ -51,7 +51,7 @@ public class DiscoveryModule
     public void configure(Binder binder)
     {
         // bind service inventory
-        binder.bind(ServiceInventory.class).in(Scopes.SINGLETON);
+        binder.bind(ServiceInventory.class).asEagerSingleton();
         bindConfig(binder).to(ServiceInventoryConfig.class);
 
         // for legacy configurations
