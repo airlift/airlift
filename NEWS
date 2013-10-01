@@ -1,3 +1,8 @@
+Airlift 0.82
+
+* Fix bug where the launcher was not starting processes in the data directory
+
+
 Airlift 0.81
 
 * Return local announcements from service selectors

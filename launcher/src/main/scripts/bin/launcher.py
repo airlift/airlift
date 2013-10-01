@@ -31,10 +31,10 @@ def find_install_path(f):
     return dirname(p)
 
 
-def create_parent_dirs(f):
-    """Create any missing parent directories for a file path"""
+def makedirs(p):
+    """Create directory and all intermediate ones"""
     try:
-        os.makedirs(dirname(f))
+        os.makedirs(p)
     except OSError, e:
         if e.errno != errno.EEXIST:
             raise
@@ -75,7 +75,7 @@ def open_read_write(f, mode):
 
 class Process:
     def __init__(self, path):
-        create_parent_dirs(path)
+        makedirs(dirname(path))
         self.path = path
         self.pid_file = open_read_write(path, 0600)
         self.refresh()
@@ -239,6 +239,9 @@ def run(process, options):
     create_app_symlinks(options)
     args, env = build_java_execution(options, False)
 
+    makedirs(options.data_dir)
+    os.chdir(options.data_dir)
+
     process.write_pid(os.getpid())
 
     redirect_stdin_to_devnull()
@@ -254,8 +257,11 @@ def start(process, options):
     create_app_symlinks(options)
     args, env = build_java_execution(options, True)
 
-    create_parent_dirs(options.launcher_log)
+    makedirs(dirname(options.launcher_log))
     log = open_append(options.launcher_log)
+
+    makedirs(options.data_dir)
+    os.chdir(options.data_dir)
 
     pid = os.fork()
     if pid > 0:

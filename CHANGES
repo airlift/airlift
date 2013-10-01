@@ -1,3 +1,7 @@
+* 0.82
+
+* [Bug] Launch processes from the data directory
+
 * 0.81
 
 - [Bug] Ignore IOException in Closeables.closeQuietly()
