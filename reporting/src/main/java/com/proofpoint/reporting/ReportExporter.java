@@ -17,8 +17,11 @@ package com.proofpoint.reporting;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
+import com.proofpoint.reporting.ReportException.Reason;
+import org.weakref.jmx.MBeanExporter;
 
 import javax.management.InstanceAlreadyExistsException;
+import javax.management.InstanceNotFoundException;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import java.lang.reflect.InvocationTargetException;
@@ -35,28 +38,68 @@ public class ReportExporter
 {
     private final ReportedBeanRegistry registry;
     private final BucketIdProvider bucketIdProvider;
+    private final MBeanExporter mBeanExporter;
 
     @Inject
-    ReportExporter(ReportedBeanRegistry registry, BucketIdProvider bucketIdProvider)
+    ReportExporter(ReportedBeanRegistry registry, BucketIdProvider bucketIdProvider, MBeanExporter mBeanExporter)
             throws MalformedObjectNameException, InstanceAlreadyExistsException
     {
         this.registry = checkNotNull(registry, "registry is null");
         this.bucketIdProvider = checkNotNull(bucketIdProvider, "bucketIdProvider is null");
+        this.mBeanExporter = checkNotNull(mBeanExporter, "mBeanExporter is null");
+    }
+
+    public void export(String name, Object object)
+    {
+        ObjectName objectName;
+        try {
+            objectName = new ObjectName(name);
+        }
+        catch (MalformedObjectNameException e) {
+            throw new ReportException(Reason.MALFORMED_OBJECT_NAME, e.getMessage());
+        }
+
+        export(objectName, object);
     }
 
     public void export(ObjectName objectName, Object object)
-            throws InstanceAlreadyExistsException
     {
         ReportedBean reportedBean = ReportedBean.forTarget(object);
         notifyBucketIdProvider(object, bucketIdProvider, null);
         if (!reportedBean.getAttributes().isEmpty()) {
-            registry.register(reportedBean, objectName);
+            try {
+                registry.register(reportedBean, objectName);
+            }
+            catch (InstanceAlreadyExistsException e) {
+                throw new ReportException(Reason.INSTANCE_ALREADY_EXISTS, e.getMessage());
+            }
         }
+        mBeanExporter.export(objectName, object);
+    }
+
+    public void unexport(String name)
+    {
+        ObjectName objectName;
+
+        try {
+            objectName = new ObjectName(name);
+        }
+        catch (MalformedObjectNameException e) {
+            throw new ReportException(Reason.MALFORMED_OBJECT_NAME, e.getMessage());
+        }
+
+        unexport(objectName);
     }
 
     public void unexport(ObjectName objectName)
     {
-        registry.unregister(objectName);
+        try {
+            registry.unregister(objectName);
+        }
+        catch (InstanceNotFoundException e) {
+            throw new ReportException(Reason.INSTANCE_NOT_FOUND, e.getMessage());
+        }
+        mBeanExporter.unexport(objectName);
     }
 
     @VisibleForTesting

@@ -29,6 +29,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.spi.TypeConverterBinding;
 import com.proofpoint.reporting.TestExporter.NamedObject;
 import org.testng.annotations.BeforeMethod;
+import org.weakref.jmx.MBeanExporter;
 
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceAlreadyExistsException;
@@ -45,10 +46,14 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.proofpoint.reporting.Util.getUniqueObjectName;
+import static org.mockito.Matchers.notNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class TestExporter extends AbstractReportedBeanTest<NamedObject>
 {
     private ReportedBeanRegistry registry;
+    private MBeanExporter mBeanExporter;
 
     static class NamedObject
     {
@@ -77,6 +82,7 @@ public class TestExporter extends AbstractReportedBeanTest<NamedObject>
     protected MBeanInfo getMBeanInfo(NamedObject namedObject)
             throws Exception
     {
+        verify(mBeanExporter).export(namedObject.objectName, namedObject.object);
         return registry.getReportedBeans().get(namedObject.objectName).getMBeanInfo();
     }
 
@@ -92,6 +98,7 @@ public class TestExporter extends AbstractReportedBeanTest<NamedObject>
             throws MalformedObjectNameException, InstanceAlreadyExistsException
     {
         registry = new ReportedBeanRegistry();
+        mBeanExporter = mock(MBeanExporter.class);
 
         objects = new ArrayList<>(2);
         objects.add(NamedObject.of(getUniqueObjectName(), new SimpleObject()));
@@ -111,7 +118,7 @@ public class TestExporter extends AbstractReportedBeanTest<NamedObject>
 
         new GuiceReportExporter(
                 mappingBuilder.build(),
-                new ReportExporter(registry, bucketIdProvider),
+                new ReportExporter(registry, bucketIdProvider, mBeanExporter),
                 new TestingInjector(instanceBuilder.build()));
     }
 

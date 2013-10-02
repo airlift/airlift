@@ -18,6 +18,7 @@ package com.proofpoint.reporting;
 import com.google.common.collect.ImmutableMap;
 
 import javax.management.InstanceAlreadyExistsException;
+import javax.management.InstanceNotFoundException;
 import javax.management.ObjectName;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
@@ -45,7 +46,10 @@ class ReportedBeanRegistry
     }
 
     public void unregister(ObjectName name)
+            throws InstanceNotFoundException
     {
-        reportedBeans.remove(name);
+        if (reportedBeans.remove(name) == null) {
+            throw new InstanceNotFoundException(name.getCanonicalName() + "not found");
+        }
     }
 }

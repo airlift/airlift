@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.inject.Inject;
-import org.weakref.jmx.MBeanExporter;
 import org.weakref.jmx.ObjectNameBuilder;
 
 import javax.annotation.Nullable;
@@ -53,18 +52,16 @@ import static java.lang.reflect.Proxy.newProxyInstance;
 public class ReportCollectionFactory
 {
     private final Ticker ticker;
-    private final MBeanExporter mBeanExporter;
     private final ReportExporter reportExporter;
 
     @Inject
-    public ReportCollectionFactory(MBeanExporter mBeanExporter, ReportExporter reportExporter)
+    public ReportCollectionFactory(ReportExporter reportExporter)
     {
-        this(mBeanExporter, reportExporter, Ticker.systemTicker());
+        this(reportExporter, Ticker.systemTicker());
     }
 
-    ReportCollectionFactory(MBeanExporter mBeanExporter, ReportExporter reportExporter, Ticker ticker)
+    ReportCollectionFactory(ReportExporter reportExporter, Ticker ticker)
     {
-        this.mBeanExporter = mBeanExporter;
         this.reportExporter = reportExporter;
         this.ticker = ticker;
     }
@@ -199,8 +196,7 @@ public class ReportCollectionFactory
                                     }
                                 }
                                 String objectName = objectNameBuilder.build();
-                                reportExporter.export(ObjectName.getInstance(objectName), stat);
-                                mBeanExporter.export(objectName, stat);
+                                reportExporter.export(objectName, stat);
                                 objectNameMap.put(stat, objectName);
                                 return stat;
                             }
@@ -232,12 +228,7 @@ public class ReportCollectionFactory
             public void onRemoval(RemovalNotification<List<Optional<String>>, Object> notification)
             {
                 String objectName = objectNameMap.remove(notification.getValue());
-                try {
-                    reportExporter.unexport(ObjectName.getInstance(objectName));
-                }
-                catch (MalformedObjectNameException ignored) {
-                }
-                mBeanExporter.unexport(objectName);
+                reportExporter.unexport(objectName);
             }
         }
     }

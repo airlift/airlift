@@ -18,20 +18,17 @@ package com.proofpoint.reporting;
 import com.google.inject.Key;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Named;
-import org.weakref.jmx.guice.ExportBinder;
 
 import static org.weakref.jmx.ObjectNames.generatedNameOf;
 
 public class NamedReportBinder
 {
     protected final Multibinder<Mapping> binder;
-    protected final ExportBinder exportBinder;
     protected final Key<?> key;
 
-    NamedReportBinder(Multibinder<Mapping> binder, ExportBinder exportBinder, Key<?> key)
+    NamedReportBinder(Multibinder<Mapping> binder, Key<?> key)
     {
         this.binder = binder;
-        this.exportBinder = exportBinder;
         this.key = key;
     }
 
@@ -59,6 +56,5 @@ public class NamedReportBinder
     public void as(String name)
     {
         binder.addBinding().toInstance(new Mapping(name, key));
-        exportBinder.export(key).as(name);
     }
 }

@@ -17,25 +17,20 @@ package com.proofpoint.reporting;
 
 import com.google.inject.Binder;
 import com.google.inject.Key;
-import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import org.weakref.jmx.guice.ExportBinder;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class ReportBinder
 {
     private final Binder binder;
     private final Multibinder<Mapping> multibinder;
-    private final ExportBinder exportBinder;
 
     private ReportBinder(Binder binder)
     {
         this.binder = checkNotNull(binder, "binder is null");
         this.multibinder = newSetBinder(binder, Mapping.class);
-        exportBinder = newExporter(binder);
     }
 
     public static ReportBinder reportBinder(Binder binder) {
@@ -44,12 +39,12 @@ public class ReportBinder
 
     public AnnotatedReportBinder export(Class<?> clazz)
     {
-        return new AnnotatedReportBinder(multibinder, exportBinder, Key.get(clazz));
+        return new AnnotatedReportBinder(multibinder, Key.get(clazz));
     }
 
     public NamedReportBinder export(Key<?> key)
     {
-        return new NamedReportBinder(multibinder, exportBinder, key);
+        return new NamedReportBinder(multibinder, key);
     }
 
     // todo: map and set

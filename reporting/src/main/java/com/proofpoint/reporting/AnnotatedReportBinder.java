@@ -17,25 +17,24 @@ package com.proofpoint.reporting;
 
 import com.google.inject.Key;
 import com.google.inject.multibindings.Multibinder;
-import org.weakref.jmx.guice.ExportBinder;
 
 import java.lang.annotation.Annotation;
 
 public class AnnotatedReportBinder
     extends NamedReportBinder
 {
-    AnnotatedReportBinder(Multibinder<Mapping> binder, ExportBinder exportBinder, Key<?> key)
+    AnnotatedReportBinder(Multibinder<Mapping> binder, Key<?> key)
     {
-        super(binder, exportBinder, key);
+        super(binder, key);
     }
 
     public NamedReportBinder annotatedWith(Annotation annotation)
     {
-        return new NamedReportBinder(binder, exportBinder, Key.get(key.getTypeLiteral(), annotation));
+        return new NamedReportBinder(binder, Key.get(key.getTypeLiteral(), annotation));
     }
 
     public NamedReportBinder annotatedWith(Class<? extends Annotation> annotationClass)
     {
-        return new NamedReportBinder(binder, exportBinder, Key.get(key.getTypeLiteral(), annotationClass));
+        return new NamedReportBinder(binder, Key.get(key.getTypeLiteral(), annotationClass));
     }
 }
