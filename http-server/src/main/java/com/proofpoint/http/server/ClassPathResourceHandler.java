@@ -19,7 +19,6 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
-import com.google.common.io.Closeables;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
@@ -112,10 +111,7 @@ public class ClassPathResourceHandler
             }
         }
 
-        InputStream resourceStream = null;
-        try {
-            resourceStream = resource.openStream();
-
+        try (InputStream resourceStream = resource.openStream()) {
             Buffer contentTypeBytes = MIME_TYPES.getMimeByExtension(resource.toString());
             if (contentTypeBytes != null) {
                 // convert the content type bytes to a string using the specified character set
@@ -142,9 +138,6 @@ public class ClassPathResourceHandler
             else {
                 ByteStreams.copy(resourceStream, out);
             }
-        }
-        finally {
-            Closeables.closeQuietly(resourceStream);
         }
     }
 

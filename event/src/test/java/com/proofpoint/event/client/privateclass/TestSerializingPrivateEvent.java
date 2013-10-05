@@ -17,7 +17,6 @@ package com.proofpoint.event.client.privateclass;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.google.common.io.NullOutputStream;
 import com.proofpoint.event.client.EventField;
 import com.proofpoint.event.client.EventType;
 import com.proofpoint.event.client.JsonEventSerializer;
@@ -26,6 +25,8 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 
+import static com.google.common.io.ByteStreams.nullOutputStream;
+
 public class TestSerializingPrivateEvent
 {
     @Test
@@ -33,7 +34,7 @@ public class TestSerializingPrivateEvent
             throws IOException
     {
         JsonEventSerializer serializer = new JsonEventSerializer(new NodeInfo("test"), PrivateEvent.class);
-        JsonGenerator generator = new JsonFactory().createJsonGenerator(new NullOutputStream());
+        JsonGenerator generator = new JsonFactory().createJsonGenerator(nullOutputStream());
         serializer.serialize(new PrivateEvent(), "sample-trace-token", generator);
     }
 
