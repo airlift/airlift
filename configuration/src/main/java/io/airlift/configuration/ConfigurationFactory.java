@@ -129,7 +129,7 @@ public class ConfigurationFactory
         registeredProviders.add(configurationProvider);
 
         // check for a prebuilt instance
-        T instance = (T) instanceCache.get(configurationProvider);
+        T instance = getCachedInstance(configurationProvider);
         if (instance != null) {
             return instance;
         }
@@ -145,13 +145,25 @@ public class ConfigurationFactory
         }
 
         // add to instance cache
-        T existingValue = (T) instanceCache.putIfAbsent(configurationProvider, instance);
+        T existingValue = putCachedInstance(configurationProvider, instance);
         // if key was already associated with a value, there was a
         // creation race and we lost. Just use the winners' instance;
         if (existingValue != null) {
             return existingValue;
         }
         return instance;
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T getCachedInstance(ConfigurationProvider<T> configurationProvider)
+    {
+        return (T) instanceCache.get(configurationProvider);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T putCachedInstance(ConfigurationProvider<T> configurationProvider, T instance)
+    {
+        return (T) instanceCache.putIfAbsent(configurationProvider, instance);
     }
 
     private <T> ConfigurationHolder<T> build(Class<T> configClass, String prefix)
@@ -162,7 +174,8 @@ public class ConfigurationFactory
 
         if (prefix == null) {
             prefix = "";
-        } else if (!prefix.isEmpty()) {
+        }
+        else if (!prefix.isEmpty()) {
             prefix += ".";
         }
 
@@ -176,7 +189,8 @@ public class ConfigurationFactory
         for (AttributeMetadata attribute : configurationMetadata.getAttributes().values()) {
             try {
                 setConfigProperty(instance, attribute, prefix, problems);
-            } catch (InvalidConfigurationException e) {
+            }
+            catch (InvalidConfigurationException e) {
                 problems.addError(e.getCause(), e.getMessage());
             }
         }
@@ -197,14 +211,15 @@ public class ConfigurationFactory
 
         problems.throwIfHasErrors();
 
-        return new ConfigurationHolder<T>(instance, problems);
+        return new ConfigurationHolder<>(instance, problems);
     }
 
     private <T> T newInstance(ConfigurationMetadata<T> configurationMetadata)
     {
         try {
             return configurationMetadata.getConstructor().newInstance();
-        } catch (Throwable e) {
+        }
+        catch (Throwable e) {
             if (e instanceof InvocationTargetException && e.getCause() != null) {
                 e = e.getCause();
             }
@@ -231,7 +246,8 @@ public class ConfigurationFactory
 
         try {
             injectionPoint.getSetter().invoke(instance, value);
-        } catch (Throwable e) {
+        }
+        catch (Throwable e) {
             if (e instanceof InvocationTargetException && e.getCause() != null) {
                 e = e.getCause();
             }
@@ -264,7 +280,8 @@ public class ConfigurationFactory
                     operativeInjectionPoint = injectionPoint;
                     operativeValue = value;
                     operativeName = fullName;
-                } else if (!value.equals(operativeValue)) {
+                }
+                else if (!value.equals(operativeValue)) {
                     problems.addError("Value for property '%s' (=%s) conflicts with property '%s' (=%s)", fullName, value, operativeName, operativeValue);
                 }
             }
@@ -311,26 +328,33 @@ public class ConfigurationFactory
             return null;
         }
 
-
         try {
             if (String.class.isAssignableFrom(type)) {
                 return value;
-            } else if (Boolean.class.isAssignableFrom(type) || Boolean.TYPE.isAssignableFrom(type)) {
+            }
+            else if (Boolean.class.isAssignableFrom(type) || Boolean.TYPE.isAssignableFrom(type)) {
                 return Boolean.valueOf(value);
-            } else if (Byte.class.isAssignableFrom(type) || Byte.TYPE.isAssignableFrom(type)) {
+            }
+            else if (Byte.class.isAssignableFrom(type) || Byte.TYPE.isAssignableFrom(type)) {
                 return Byte.valueOf(value);
-            } else if (Short.class.isAssignableFrom(type) || Short.TYPE.isAssignableFrom(type)) {
+            }
+            else if (Short.class.isAssignableFrom(type) || Short.TYPE.isAssignableFrom(type)) {
                 return Short.valueOf(value);
-            } else if (Integer.class.isAssignableFrom(type) || Integer.TYPE.isAssignableFrom(type)) {
+            }
+            else if (Integer.class.isAssignableFrom(type) || Integer.TYPE.isAssignableFrom(type)) {
                 return Integer.valueOf(value);
-            } else if (Long.class.isAssignableFrom(type) || Long.TYPE.isAssignableFrom(type)) {
+            }
+            else if (Long.class.isAssignableFrom(type) || Long.TYPE.isAssignableFrom(type)) {
                 return Long.valueOf(value);
-            } else if (Float.class.isAssignableFrom(type) || Float.TYPE.isAssignableFrom(type)) {
+            }
+            else if (Float.class.isAssignableFrom(type) || Float.TYPE.isAssignableFrom(type)) {
                 return Float.valueOf(value);
-            } else if (Double.class.isAssignableFrom(type) || Double.TYPE.isAssignableFrom(type)) {
+            }
+            else if (Double.class.isAssignableFrom(type) || Double.TYPE.isAssignableFrom(type)) {
                 return Double.valueOf(value);
             }
-        } catch (Exception ignored) {
+        }
+        catch (Exception ignored) {
             // ignore the random exceptions from the built in types
             return null;
         }
@@ -341,7 +365,8 @@ public class ConfigurationFactory
             if (fromString.getReturnType().isAssignableFrom(type)) {
                 return fromString.invoke(null, value);
             }
-        } catch (Throwable ignored) {
+        }
+        catch (Throwable ignored) {
         }
 
         // Look for a static valueOf(String) method
@@ -350,14 +375,16 @@ public class ConfigurationFactory
             if (valueOf.getReturnType().isAssignableFrom(type)) {
                 return valueOf.invoke(null, value);
             }
-        } catch (Throwable ignored) {
+        }
+        catch (Throwable ignored) {
         }
 
         // Look for a constructor taking a string
         try {
             Constructor<?> constructor = type.getConstructor(String.class);
             return constructor.newInstance(value);
-        } catch (Throwable ignored) {
+        }
+        catch (Throwable ignored) {
         }
 
         return null;
