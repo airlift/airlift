@@ -5,7 +5,7 @@
     <packaging>pom</packaging>
     <name>platform</name>
     <description>Proofpoint platform</description>
-    <url>http://github.com/proofpoint/platform</url>
+    <url>https://github.com/proofpoint/platform</url>
 
     <parent>
         <groupId>com.proofpoint.platform</groupId>
@@ -19,10 +19,11 @@
         <name>Proofpoint, Inc.</name>
         <url>http://www.proofpoint.com</url>
     </organization>
+
     <licenses>
         <license>
             <name>Apache License 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
