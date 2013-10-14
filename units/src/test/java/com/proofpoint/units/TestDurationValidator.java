@@ -148,6 +148,12 @@ public class TestDurationValidator
         {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public <T> T unwrap(Class<T> type)
+        {
+            throw new UnsupportedOperationException();
+        }
     }
 
     public static class ConstrainedDuration

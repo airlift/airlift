@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.inject.Binding;
 import com.google.inject.ConfigurationException;
 import com.google.inject.Module;
@@ -56,6 +57,9 @@ import java.util.concurrent.ConcurrentMap;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
+import static com.google.common.base.Throwables.propagate;
+import static com.google.common.collect.Sets.newConcurrentHashSet;
+import static com.proofpoint.configuration.ConfigurationMetadata.getConfigurationMetadata;
 import static com.proofpoint.configuration.ConfigurationMetadata.isConfigClass;
 import static com.proofpoint.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
@@ -69,10 +73,18 @@ public final class ConfigurationFactory
     private final Problems.Monitor monitor;
     private final Set<String> unusedProperties = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
     private final Collection<String> initialErrors;
-    private final LoadingCache<Class<?>, ConfigurationMetadata<?>> metadataCache;
     private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
-    private final Set<String> usedProperties = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
-    private final Set<ConfigurationProvider<?>> registeredProviders = Collections.newSetFromMap(new ConcurrentHashMap<ConfigurationProvider<?>, Boolean>());
+    private final Set<String> usedProperties = newConcurrentHashSet();
+    private final Set<ConfigurationProvider<?>> registeredProviders = newConcurrentHashSet();
+    private final LoadingCache<Class<?>, ConfigurationMetadata<?>> metadataCache = CacheBuilder.newBuilder()
+            .build(new CacheLoader<Class<?>, ConfigurationMetadata<?>>()
+            {
+                @Override
+                public ConfigurationMetadata<?> load(Class<?> configClass)
+                {
+                    return getConfigurationMetadata(configClass, monitor);
+                }
+            });
 
     public ConfigurationFactory(Map<String, String> properties)
     {
@@ -86,16 +98,6 @@ public final class ConfigurationFactory
         this.applicationDefaults = ImmutableMap.copyOf(applicationDefaults);
         unusedProperties.addAll(expectToUse);
         initialErrors = ImmutableList.copyOf(errors);
-
-        metadataCache = CacheBuilder.newBuilder().weakKeys().weakValues()
-                .build(new CacheLoader<Class<?>, ConfigurationMetadata<?>>()
-                {
-                    @Override
-                    public ConfigurationMetadata<?> load(Class<?> configClass)
-                    {
-                        return ConfigurationMetadata.getConfigurationMetadata(configClass, monitor);
-                    }
-                });
     }
 
     public Map<String, String> getProperties()
@@ -230,7 +232,7 @@ public final class ConfigurationFactory
             prefix += ".";
         }
 
-        @SuppressWarnings("unchecked") ConfigurationMetadata<T> configurationMetadata = (ConfigurationMetadata<T>) metadataCache.getUnchecked(configClass);
+        ConfigurationMetadata<T> configurationMetadata = getMetadata(configClass);
         configurationMetadata.getProblems().throwIfHasErrors();
 
         T instance = newInstance(configurationMetadata);
@@ -275,6 +277,17 @@ public final class ConfigurationFactory
         }
 
         return instance;
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> ConfigurationMetadata<T> getMetadata(Class<T> configClass)
+    {
+        try {
+            return (ConfigurationMetadata<T>) metadataCache.getUnchecked(configClass);
+        }
+        catch (UncheckedExecutionException e) {
+            throw propagate(e.getCause());
+        }
     }
 
     private static <T> T newInstance(ConfigurationMetadata<T> configurationMetadata)
