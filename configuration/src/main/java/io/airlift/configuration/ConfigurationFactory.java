@@ -16,13 +16,16 @@
 package io.airlift.configuration;
 
 import com.google.common.annotations.Beta;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.MapMaker;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.inject.Binding;
 import com.google.inject.ConfigurationException;
 import com.google.inject.Module;
@@ -37,16 +40,18 @@ import org.apache.bval.jsr303.ApacheValidationProvider;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static com.google.common.collect.Sets.newConcurrentHashSet;
+import static io.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
 import static io.airlift.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
 
@@ -56,10 +61,18 @@ public class ConfigurationFactory
 
     private final Map<String, String> properties;
     private final Problems.Monitor monitor;
-    private final ConcurrentMap<Class<?>, ConfigurationMetadata<?>> metadataCache;
-    private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<ConfigurationProvider<?>, Object>();
-    private final Set<String> usedProperties = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
-    private final Set<ConfigurationProvider<?>> registeredProviders = Collections.newSetFromMap(new ConcurrentHashMap<ConfigurationProvider<?>, Boolean>());
+    private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
+    private final Set<String> usedProperties = newConcurrentHashSet();
+    private final Set<ConfigurationProvider<?>> registeredProviders = newConcurrentHashSet();
+    private final LoadingCache<Class<?>, ConfigurationMetadata<?>> metadataCache = CacheBuilder.newBuilder()
+            .build(new CacheLoader<Class<?>, ConfigurationMetadata<?>>()
+            {
+                @Override
+                public ConfigurationMetadata<?> load(Class<?> configClass)
+                {
+                    return getConfigurationMetadata(configClass, monitor);
+                }
+            });
 
     public ConfigurationFactory(Map<String, String> properties)
     {
@@ -70,15 +83,6 @@ public class ConfigurationFactory
     {
         this.monitor = monitor;
         this.properties = ImmutableMap.copyOf(properties);
-
-        metadataCache = new MapMaker().weakKeys().weakValues().makeComputingMap(new Function<Class<?>, ConfigurationMetadata<?>>()
-        {
-            @Override
-            public ConfigurationMetadata<?> apply(Class<?> configClass)
-            {
-                return ConfigurationMetadata.getConfigurationMetadata(configClass, monitor);
-            }
-        });
     }
 
     public Map<String, String> getProperties()
@@ -179,7 +183,7 @@ public class ConfigurationFactory
             prefix += ".";
         }
 
-        ConfigurationMetadata<T> configurationMetadata = (ConfigurationMetadata<T>) metadataCache.get(configClass);
+        ConfigurationMetadata<T> configurationMetadata = getMetadata(configClass);
         configurationMetadata.getProblems().throwIfHasErrors();
 
         T instance = newInstance(configurationMetadata);
@@ -212,6 +216,17 @@ public class ConfigurationFactory
         problems.throwIfHasErrors();
 
         return new ConfigurationHolder<>(instance, problems);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> ConfigurationMetadata<T> getMetadata(Class<T> configClass)
+    {
+        try {
+            return (ConfigurationMetadata<T>) metadataCache.getUnchecked(configClass);
+        }
+        catch (UncheckedExecutionException e) {
+            throw Throwables.propagate(e.getCause());
+        }
     }
 
     private <T> T newInstance(ConfigurationMetadata<T> configurationMetadata)

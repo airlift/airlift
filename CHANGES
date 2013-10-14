@@ -1,6 +1,10 @@
+* 0.83
+
+- Upgrade to Guava 15.0
+
 * 0.82
 
-* [Bug] Launch processes from the data directory
+- [Bug] Launch processes from the data directory
 
 * 0.81
 
