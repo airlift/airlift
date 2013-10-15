@@ -407,7 +407,7 @@ public class Main
             try {
                 mainClassMethod.invoke(null, (Object) args.toArray(new String[0]));
             }
-            catch (Exception e) {
+            catch (Throwable e) {
                 System.exit(STATUS_GENERIC_ERROR);
             }
         }
