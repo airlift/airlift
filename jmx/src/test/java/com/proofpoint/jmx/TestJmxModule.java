@@ -21,7 +21,8 @@ import com.google.inject.Injector;
 import com.google.inject.Stage;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
-import com.proofpoint.node.NodeModule;
+import com.proofpoint.node.ApplicationNameModule;
+import com.proofpoint.node.testing.TestingNodeModule;
 import org.testng.annotations.Test;
 import org.weakref.jmx.guice.MBeanModule;
 
@@ -32,22 +33,14 @@ public class TestJmxModule
     @Test
     public void testCanConstruct()
     {
-        Map<String, String> properties = ImmutableMap.of("node.environment", "test");
+        Map<String, String> properties = ImmutableMap.of();
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
-        Injector injector = Guice.createInjector(new JmxModule(), new NodeModule(), new ConfigurationModule(configFactory));
+        Injector injector = Guice.createInjector(Stage.PRODUCTION,
+                new JmxModule(),
+                new ApplicationNameModule("test-application"),
+                new TestingNodeModule(),
+                new MBeanModule(),
+                new ConfigurationModule(configFactory));
         injector.getInstance(JmxAgent.class);
     }
-
-    @Test
-    public void testCanExportBeans()
-    {
-        Map<String, String> properties = ImmutableMap.of("node.environment", "test");
-        ConfigurationFactory configFactory = new ConfigurationFactory(properties);
-        Injector injector = Guice.createInjector(Stage.PRODUCTION, new JmxModule(),
-                                                 new NodeModule(),
-                                                 new MBeanModule(),
-                                                 new ConfigurationModule(configFactory));
-        injector.getInstance(JmxAgent.class);
-    }
-
 }

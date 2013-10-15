@@ -25,6 +25,7 @@ import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.json.JsonModule;
+import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -211,6 +212,7 @@ public class TestOverrideMethodFilterInHttpServer
     private static TestingHttpServer createServer(final TestResource resource)
     {
         return Guice.createInjector(
+                new ApplicationNameModule("test-application"),
                 new TestingNodeModule(),
                 new JaxrsModule(),
                 new JsonModule(),

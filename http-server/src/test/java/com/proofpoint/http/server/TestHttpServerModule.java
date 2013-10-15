@@ -37,8 +37,9 @@ import com.proofpoint.http.client.HttpStatus;
 import com.proofpoint.http.client.HttpUriBuilder;
 import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.client.StringResponseHandler.StringResponse;
+import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.node.NodeInfo;
-import com.proofpoint.node.NodeModule;
+import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.reporting.ReportingModule;
 import com.proofpoint.testing.FileUtils;
 import org.testng.annotations.AfterMethod;
@@ -94,14 +95,14 @@ public class TestHttpServerModule
             throws Exception
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("node.environment", "test")
                 .put("http-server.http.port", "0")
                 .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
                 .build();
 
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
         Injector injector = Guice.createInjector(new HttpServerModule(),
-                new NodeModule(),
+                new ApplicationNameModule("test-application"),
+                new TestingNodeModule(),
                 new ConfigurationModule(configFactory),
                 new NullEventModule(),
                 new MBeanModule(),
@@ -125,14 +126,14 @@ public class TestHttpServerModule
             throws Exception
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("node.environment", "test")
                 .put("http-server.http.port", "0")
                 .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
                 .build();
 
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
         Injector injector = Guice.createInjector(new HttpServerModule(),
-                new NodeModule(),
+                new ApplicationNameModule("test-application"),
+                new TestingNodeModule(),
                 new ConfigurationModule(configFactory),
                 new NullEventModule(),
                 new MBeanModule(),
@@ -169,14 +170,14 @@ public class TestHttpServerModule
             throws Exception
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("node.environment", "test")
                 .put("http-server.http.port", "0")
                 .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
                 .build();
 
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
         Injector injector = Guice.createInjector(new HttpServerModule(),
-                new NodeModule(),
+                new ApplicationNameModule("test-application"),
+                new TestingNodeModule(),
                 new ConfigurationModule(configFactory),
                 new NullEventModule(),
                 new MBeanModule(),

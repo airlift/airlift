@@ -14,6 +14,7 @@ import com.proofpoint.http.client.StringResponseHandler.StringResponse;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.json.JsonModule;
+import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import com.sun.jersey.spi.container.ResourceFilterFactory;
 import org.testng.annotations.Test;
@@ -115,6 +116,7 @@ public class TestJaxrsBinder
     private static TestingHttpServer createServerWithFilter (final TestResource resource, final Set<ResourceFilterFactory> filterFactories)
     {
         Injector injector = Guice.createInjector(
+                new ApplicationNameModule("test-application"),
                 new TestingNodeModule(),
                 new JaxrsModule(),
                 new JsonModule(),

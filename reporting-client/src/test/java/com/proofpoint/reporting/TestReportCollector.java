@@ -22,6 +22,7 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import org.testng.annotations.Test;
 import org.weakref.jmx.guice.MBeanModule;
@@ -35,6 +36,7 @@ public class TestReportCollector
     public void testReportingModule()
     {
         Guice.createInjector(
+                new ApplicationNameModule("test-application"),
                 new TestingNodeModule(),
                 new MBeanModule(),
                 new Module()

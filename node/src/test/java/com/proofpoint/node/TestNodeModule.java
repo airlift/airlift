@@ -33,9 +33,10 @@ public class TestNodeModule
         long testStartTime = System.currentTimeMillis();
 
         ConfigurationFactory configFactory = new ConfigurationFactory(ImmutableMap.<String, String>of("node.environment", "environment"));
-        Injector injector = Guice.createInjector(new NodeModule(), new ConfigurationModule(configFactory));
+        Injector injector = Guice.createInjector(new NodeModule(), new ConfigurationModule(configFactory), new ApplicationNameModule("test-application"));
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
         Assert.assertNotNull(nodeInfo);
+        Assert.assertEquals(nodeInfo.getApplication(), "test-application");
         Assert.assertEquals(nodeInfo.getEnvironment(), "environment");
         Assert.assertEquals(nodeInfo.getPool(), "general");
         Assert.assertNotNull(nodeInfo.getNodeId());
@@ -82,9 +83,10 @@ public class TestNodeModule
                 .build()
         );
 
-        Injector injector = Guice.createInjector(new NodeModule(), new ConfigurationModule(configFactory));
+        Injector injector = Guice.createInjector(new NodeModule(), new ConfigurationModule(configFactory), new ApplicationNameModule("test-application"));
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
         Assert.assertNotNull(nodeInfo);
+        Assert.assertEquals(nodeInfo.getApplication(), "test-application");
         Assert.assertEquals(nodeInfo.getEnvironment(), environment);
         Assert.assertEquals(nodeInfo.getPool(), pool);
         Assert.assertEquals(nodeInfo.getNodeId(), nodeId);
@@ -103,4 +105,5 @@ public class TestNodeModule
         // make sure toString doesn't throw an exception
         Assert.assertNotNull(nodeInfo.toString());
     }
+
 }

@@ -51,7 +51,7 @@ public class TestAnnouncer
     protected void setUp()
             throws Exception
     {
-        nodeInfo = new NodeInfo(new NodeConfig().setEnvironment("test").setPool("pool"));
+        nodeInfo = new NodeInfo("test-application", new NodeConfig().setEnvironment("test").setPool("pool"));
         discoveryClient = new InMemoryDiscoveryClient(nodeInfo, MAX_AGE);
         serviceAnnouncement = ServiceAnnouncement.serviceAnnouncement(serviceType.value()).addProperty("a", "apple").build();
         announcer = new Announcer(discoveryClient, ImmutableSet.of(serviceAnnouncement));

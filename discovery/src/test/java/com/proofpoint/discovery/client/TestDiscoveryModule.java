@@ -25,6 +25,7 @@ import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.discovery.client.announce.Announcer;
 import com.proofpoint.discovery.client.announce.DiscoveryAnnouncementClient;
 import com.proofpoint.json.JsonModule;
+import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.reporting.ReportingModule;
 import org.testng.Assert;
@@ -42,6 +43,7 @@ public class TestDiscoveryModule
             throws Exception
     {
         Injector injector = Guice.createInjector(
+                new ApplicationNameModule("test-application"),
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.of("testing.discovery.uri", "fake://server"))),
                 new JsonModule(),
                 new TestingNodeModule(),

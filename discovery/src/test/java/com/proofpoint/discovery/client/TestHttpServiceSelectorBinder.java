@@ -27,6 +27,7 @@ import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.discovery.client.testing.InMemoryDiscoveryClient;
 import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
+import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.reporting.ReportingModule;
 import org.testng.annotations.BeforeMethod;
@@ -53,6 +54,7 @@ public class TestHttpServiceSelectorBinder
             throws Exception
     {
         injector = Guice.createInjector(
+                new ApplicationNameModule("test-application"),
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
                 new TestingNodeModule(),
                 new TestingDiscoveryModule(),
@@ -84,6 +86,7 @@ public class TestHttpServiceSelectorBinder
     public void testHttpSelectorAnnotation()
     {
         injector = Guice.createInjector(
+                new ApplicationNameModule("test-application"),
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
                 new TestingNodeModule(),
                 new TestingDiscoveryModule(),

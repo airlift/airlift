@@ -24,6 +24,7 @@ import java.net.InetAddress;
 
 public class TestNodeInfo
 {
+    public static final String APPLICATION = "application_1234";
     public static final String ENVIRONMENT = "environment_1234";
     public static final String POOL = "pool_1234";
 
@@ -41,7 +42,8 @@ public class TestNodeInfo
         InetAddress bindIp = InetAddresses.forString("10.0.0.33");
         String externalAddress = "external";
 
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, nodeId, internalIp, internalHostname, bindIp, externalAddress, location, binarySpec, configSpec);
+        NodeInfo nodeInfo = new NodeInfo(APPLICATION, ENVIRONMENT, POOL, nodeId, internalIp, internalHostname, bindIp, externalAddress, location, binarySpec, configSpec);
+        Assert.assertEquals(nodeInfo.getApplication(), APPLICATION);
         Assert.assertEquals(nodeInfo.getEnvironment(), ENVIRONMENT);
         Assert.assertEquals(nodeInfo.getPool(), POOL);
         Assert.assertEquals(nodeInfo.getNodeId(), nodeId);
@@ -64,7 +66,7 @@ public class TestNodeInfo
     @Test
     public void testDefaultAddresses()
     {
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", InetAddresses.forString("10.0.0.22"), null, null, null, null, null, null);
+        NodeInfo nodeInfo = new NodeInfo(APPLICATION, ENVIRONMENT, POOL, "nodeInfo", InetAddresses.forString("10.0.0.22"), null, null, null, null, null, null);
         Assert.assertEquals(nodeInfo.getExternalAddress(), "10.0.0.22");
         Assert.assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
     }
@@ -72,18 +74,18 @@ public class TestNodeInfo
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testInvalidEnvironment()
     {
-        new NodeInfo("ENV", POOL, null, null, null, null, null, null, null, null);
+        new NodeInfo(APPLICATION, "ENV", POOL, null, null, null, null, null, null, null, null);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testInvalidHostname()
     {
-        new NodeInfo(ENVIRONMENT, POOL, null, null, "unqualified", null, null, null, null, null);
+        new NodeInfo(APPLICATION, ENVIRONMENT, POOL, null, null, "unqualified", null, null, null, null, null);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testInvalidPool()
     {
-        new NodeInfo(ENVIRONMENT, "POOL", null, null, null, null, null, null, null, null);
+        new NodeInfo(APPLICATION, ENVIRONMENT, "POOL", null, null, null, null, null, null, null, null);
     }
 }

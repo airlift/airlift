@@ -71,7 +71,7 @@ public class TestHttpServerProvider
         config = new HttpServerConfig()
                 .setHttpPort(0)
                 .setLogPath(new File(tempDir, "http-request.log").getAbsolutePath());
-        nodeInfo = new NodeInfo(new NodeConfig()
+        nodeInfo = new NodeInfo("test-application", new NodeConfig()
                 .setEnvironment("test")
                 .setNodeInternalIp(InetAddresses.forString("127.0.0.1"))
                 .setNodeBindIp(InetAddresses.forString("127.0.0.1"))

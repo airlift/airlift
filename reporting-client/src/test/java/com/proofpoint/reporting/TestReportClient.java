@@ -59,7 +59,7 @@ public class TestReportClient
     public void setup()
             throws MalformedObjectNameException
     {
-        nodeInfo = new NodeInfo(new NodeConfig()
+        nodeInfo = new NodeInfo("test-application", new NodeConfig()
                 .setEnvironment("test_environment")
                 .setNodeInternalHostname("test.hostname")
                 .setPool("test_pool")

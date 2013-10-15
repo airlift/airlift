@@ -82,7 +82,7 @@ public class TestCachingServiceSelector
     {
         serviceSelector = new CachingServiceSelector("apple",
                 new ServiceSelectorConfig(),
-                new NodeInfo(new NodeConfig().setEnvironment("environment").setPool("nodepool")));
+                new NodeInfo("test-application", new NodeConfig().setEnvironment("environment").setPool("nodepool")));
         assertEquals(serviceSelector.getType(), "apple");
         assertEquals(serviceSelector.getPool(), "nodepool");
     }
@@ -140,7 +140,7 @@ public class TestCachingServiceSelector
 
         updater = new ServiceDescriptorsUpdater(serviceSelector, "apple",
                 new ServiceSelectorConfig(),
-                new NodeInfo(new NodeConfig().setEnvironment("environment").setPool("pool")),
+                new NodeInfo("test-application", new NodeConfig().setEnvironment("environment").setPool("pool")),
                 discoveryClient,
                 executor);
         updater.start();

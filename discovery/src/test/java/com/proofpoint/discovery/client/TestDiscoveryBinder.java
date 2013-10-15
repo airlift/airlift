@@ -35,6 +35,7 @@ import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.HttpRequestFilter;
 import com.proofpoint.http.client.Request;
+import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.reporting.ReportingModule;
 import com.proofpoint.tracetoken.TraceTokenModule;
@@ -418,6 +419,7 @@ public class TestDiscoveryBinder
         @Override
         public void configure(Binder binder)
         {
+            binder.install(new ApplicationNameModule("test-application"));
             binder.install(new ConfigurationModule(new ConfigurationFactory(configProperties)));
             binder.install(new TestingNodeModule());
             binder.install(new TestingDiscoveryModule());

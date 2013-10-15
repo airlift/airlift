@@ -42,6 +42,7 @@ public class NodeInfo
 {
     private static final Pattern HOST_EXCEPTION_MESSAGE_PATTERN = Pattern.compile("([-_a-zA-Z0-9]+):.*");
 
+    private final String application;
     private final String environment;
     private final String pool;
     private final String nodeId;
@@ -57,13 +58,14 @@ public class NodeInfo
 
     public NodeInfo(String environment)
     {
-        this(new NodeConfig().setEnvironment(environment));
+        this("test-application", new NodeConfig().setEnvironment(environment));
     }
 
     @Inject
-    public NodeInfo(NodeConfig config)
+    public NodeInfo(@ApplicationName String application, NodeConfig config)
     {
-        this(config.getEnvironment(),
+        this(application,
+                config.getEnvironment(),
                 config.getPool(),
                 config.getNodeId(),
                 config.getNodeInternalIp(),
@@ -76,7 +78,8 @@ public class NodeInfo
         );
     }
 
-    public NodeInfo(String environment,
+    public NodeInfo(String application,
+            String environment,
             String pool,
             String nodeId,
             InetAddress internalIp,
@@ -87,11 +90,13 @@ public class NodeInfo
             String binarySpec,
             String configSpec)
     {
+        checkNotNull(application, "application is null");
         checkNotNull(environment, "environment is null");
         checkNotNull(pool, "pool is null");
         checkArgument(environment.matches(NodeConfig.ENV_REGEXP), String.format("environment '%s' is invalid", environment));
         checkArgument(pool.matches(NodeConfig.POOL_REGEXP), String.format("pool '%s' is invalid", pool));
 
+        this.application = application;
         this.environment = environment;
         this.pool = pool;
 
@@ -140,6 +145,15 @@ public class NodeInfo
         else {
             this.externalAddress = InetAddresses.toAddrString(this.internalIp);
         }
+    }
+
+    /**
+     * The name of this application server
+     */
+    @Managed
+    public String getApplication()
+    {
+        return application;
     }
 
     /**

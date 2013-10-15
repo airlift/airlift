@@ -39,6 +39,7 @@ import com.proofpoint.event.client.EventClient;
 import com.proofpoint.log.Logger;
 import com.proofpoint.log.Logging;
 import com.proofpoint.log.LoggingConfiguration;
+import com.proofpoint.node.ApplicationNameModule;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -73,6 +74,7 @@ public class Bootstrap
     private Map<String, String> applicationDefaults = null;
 
     private boolean initialized = false;
+    private String applicationName = "legacy-app";
 
     public Bootstrap(Module... modules)
     {
@@ -198,6 +200,7 @@ public class Bootstrap
         Builder<Module> moduleList = ImmutableList.builder();
         moduleList.add(new LifeCycleModule());
         moduleList.add(new ConfigurationModule(configurationFactory));
+        moduleList.add(new ApplicationNameModule(applicationName));
         if (!messages.isEmpty()) {
             moduleList.add(new ValidationErrorModule(messages));
         }

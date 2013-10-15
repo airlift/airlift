@@ -26,6 +26,7 @@ import com.proofpoint.discovery.client.announce.AnnouncementHttpServerInfo;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
 import com.proofpoint.discovery.client.announce.StaticAnnouncementHttpServerInfoImpl;
 import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
+import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.reporting.ReportingModule;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -119,6 +120,7 @@ public class TestHttpAnnouncementBinder
         );
 
         Injector injector = Guice.createInjector(
+                new ApplicationNameModule("test-application"),
                 new TestingDiscoveryModule(),
                 new MBeanModule(),
                 new ReportingModule(),
@@ -151,6 +153,7 @@ public class TestHttpAnnouncementBinder
     private Injector createInjector(final StaticAnnouncementHttpServerInfoImpl httpServerInfo)
     {
         return Guice.createInjector(
+                new ApplicationNameModule("test-application"),
                 new TestingDiscoveryModule(),
                 new MBeanModule(),
                 new ReportingModule(),

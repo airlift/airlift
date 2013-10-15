@@ -33,6 +33,7 @@ import com.proofpoint.http.server.HttpServerConfig;
 import com.proofpoint.http.server.HttpServerInfo;
 import com.proofpoint.http.server.QueryStringFilter;
 import com.proofpoint.http.server.TheServlet;
+import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.tracetoken.TraceTokenManager;
@@ -149,6 +150,7 @@ public class TestTestingHttpServer
 
         try {
             Injector injector = Guice.createInjector(
+                    new ApplicationNameModule("test-application"),
                     new TestingNodeModule(),
                     new TestingHttpServerModule(),
                     new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())),
@@ -190,6 +192,7 @@ public class TestTestingHttpServer
 
         try {
             Injector injector = Guice.createInjector(
+                    new ApplicationNameModule("test-application"),
                     new TestingNodeModule(),
                     new TestingHttpServerModule(),
                     new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())),
