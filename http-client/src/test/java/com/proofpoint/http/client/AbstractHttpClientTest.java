@@ -4,7 +4,6 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.proofpoint.testing.Assertions;
 import com.proofpoint.units.Duration;
 import org.eclipse.jetty.server.Server;
@@ -41,6 +40,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Throwables.propagate;
+import static com.proofpoint.concurrent.Threads.threadsNamed;
 import static com.proofpoint.http.client.Request.Builder.prepareDelete;
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static com.proofpoint.http.client.Request.Builder.preparePost;
@@ -542,7 +542,7 @@ public abstract class AbstractHttpClientTest
     public void setup()
             throws Exception
     {
-        executor = Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("test-%s").build());
+        executor = Executors.newCachedThreadPool(threadsNamed("test-%s"));
     }
 
     @AfterClass

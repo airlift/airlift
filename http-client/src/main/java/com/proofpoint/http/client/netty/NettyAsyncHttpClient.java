@@ -6,7 +6,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Closeables;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.proofpoint.concurrent.ThreadPoolExecutorMBean;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.BodyGenerator;
@@ -47,6 +46,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import static com.proofpoint.concurrent.Threads.daemonThreadsNamed;
+
 @Beta
 public class NettyAsyncHttpClient
         implements AsyncHttpClient
@@ -81,11 +82,11 @@ public class NettyAsyncHttpClient
         String namePrefix = "http-client-" + name;
 
         // shared timer for channel factory and read timeout channel handler
-        this.timer = new HashedWheelTimer(new ThreadFactoryBuilder().setNameFormat(namePrefix + "-timer-%s").setDaemon(true).build());
+        this.timer = new HashedWheelTimer(daemonThreadsNamed(namePrefix + "-timer-%s"));
 
         ChannelFactory channelFactory = new NioClientSocketChannelFactory(ioPool.getBossPool(), ioPool.getWorkerPool());
 
-        ThreadFactory workerThreadFactory = new ThreadFactoryBuilder().setNameFormat(namePrefix + "-worker-%s").setDaemon(true).build();
+        ThreadFactory workerThreadFactory = daemonThreadsNamed(namePrefix + "-worker-%s");
         this.executor = new OrderedMemoryAwareThreadPoolExecutor(asyncConfig.getWorkerThreads(), 0, 0, 30, TimeUnit.SECONDS, workerThreadFactory);
         this.executorMBean = new ThreadPoolExecutorMBean(executor);
 

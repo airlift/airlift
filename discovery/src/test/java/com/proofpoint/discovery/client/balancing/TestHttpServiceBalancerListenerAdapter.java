@@ -17,7 +17,6 @@ package com.proofpoint.discovery.client.balancing;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.proofpoint.discovery.client.ServiceDescriptor;
 import com.proofpoint.discovery.client.ServiceDescriptorsUpdater;
 import com.proofpoint.discovery.client.ServiceSelectorConfig;
@@ -36,6 +35,7 @@ import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
+import static com.proofpoint.concurrent.Threads.daemonThreadsNamed;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -58,8 +58,7 @@ public class TestHttpServiceBalancerListenerAdapter
     protected void setUp()
             throws Exception
     {
-        executor = new ScheduledThreadPoolExecutor(10,
-                new ThreadFactoryBuilder().setNameFormat("Discovery-%s").setDaemon(true).build());
+        executor = new ScheduledThreadPoolExecutor(10, daemonThreadsNamed("Discovery-%s"));
         nodeInfo = new NodeInfo("environment");
         discoveryClient = new InMemoryDiscoveryClient(nodeInfo);
         httpServiceBalancer = mock(HttpServiceBalancerImpl.class);

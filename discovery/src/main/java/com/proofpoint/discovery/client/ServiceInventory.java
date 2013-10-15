@@ -20,7 +20,6 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.proofpoint.discovery.client.balancing.HttpServiceBalancerListenerAdapter;
 import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
@@ -45,6 +44,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Lists.newArrayList;
+import static com.proofpoint.concurrent.Threads.daemonThreadsNamed;
 import static java.nio.file.Files.readAllBytes;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
@@ -59,7 +59,7 @@ public class ServiceInventory
     private final ServiceDescriptorsListener discoveryListener;
 
     private final AtomicReference<List<ServiceDescriptor>> serviceDescriptors = new AtomicReference<List<ServiceDescriptor>>(ImmutableList.<ServiceDescriptor>of());
-    private final ScheduledExecutorService executorService = newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("service-inventory-%s").setDaemon(true).build());
+    private final ScheduledExecutorService executorService = newSingleThreadScheduledExecutor(daemonThreadsNamed("service-inventory-%s"));
     private final AtomicBoolean serverUp = new AtomicBoolean(true);
     private ScheduledFuture<?> scheduledFuture = null;
 

@@ -35,11 +35,12 @@ import java.util.concurrent.ThreadPoolExecutor.DiscardOldestPolicy;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.proofpoint.concurrent.Threads.daemonThreadsNamed;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 class ReportCollector
 {
-    private ScheduledExecutorService collectionExecutorService = newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("reporting-collector-%s").setDaemon(true).build());
+    private ScheduledExecutorService collectionExecutorService = newSingleThreadScheduledExecutor(daemonThreadsNamed("reporting-collector-%s"));
     private MinuteBucketIdProvider bucketIdProvider;
     private ReportedBeanRegistry reportedBeanRegistry;
     private ExecutorService clientExecutorService;
@@ -62,7 +63,7 @@ class ReportCollector
         this.reportedBeanRegistry = checkNotNull(reportedBeanRegistry, "reportedBeanRegistry is null");
         this.reportClient = checkNotNull(reportClient, "reportClient is null");
         clientExecutorService = new ThreadPoolExecutor(1, 1, 0, TimeUnit.NANOSECONDS, new LinkedBlockingQueue<Runnable>(5),
-                new ThreadFactoryBuilder().setNameFormat("reporting-client-%s").setDaemon(true).build(),
+                daemonThreadsNamed("reporting-client-%s"),
                 new DiscardOldestPolicy());
     }
 
