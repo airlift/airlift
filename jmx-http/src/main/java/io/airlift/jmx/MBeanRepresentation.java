@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.google.common.io.NullOutputStream;
 
 import javax.management.Attribute;
 import javax.management.Descriptor;
@@ -36,6 +35,8 @@ import javax.management.ObjectName;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.google.common.io.ByteStreams.nullOutputStream;
 
 @JsonPropertyOrder({"objectName", "className", "description", "descriptor", "attributes", "operations"})
 public class MBeanRepresentation
@@ -171,7 +172,7 @@ public class MBeanRepresentation
             // the only good way to check if something can be serialized it to serialize it
             // We could save off the serialized data but it looks wrong when pretty printing is enabled
             try {
-                objectMapper.writeValue(new NullOutputStream(), value);
+                objectMapper.writeValue(nullOutputStream(), value);
                 return true;
             }
             catch (Exception e) {

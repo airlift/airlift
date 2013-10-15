@@ -1,3 +1,8 @@
+Airlift 0.83
+
+* Upgrade to Guava 15.0
+
+
 Airlift 0.82
 
 * Fix bug where the launcher was not starting processes in the data directory

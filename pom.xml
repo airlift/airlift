@@ -8,12 +8,12 @@
 
     <name>airlift</name>
     <description>Airlift</description>
-    <url>http://github.com/airlift/airlift</url>
+    <url>https://github.com/airlift/airlift</url>
 
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airbase</artifactId>
-        <version>12</version>
+        <version>13</version>
     </parent>
 
     <inceptionYear>2010</inceptionYear>
@@ -30,10 +30,11 @@
     <organization>
         <name>Airlift</name>
     </organization>
+
     <licenses>
         <license>
             <name>Apache License 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
@@ -45,9 +46,9 @@
     <scm>
         <connection>scm:git:git://github.com/airlift/airlift.git</connection>
         <developerConnection>scm:git:git@github.com:airlift/airlift.git</developerConnection>
-        <url>http://github.com/airlift/airlift/tree/master</url>
-      <tag>HEAD</tag>
-  </scm>
+        <url>https://github.com/airlift/airlift/tree/master</url>
+        <tag>HEAD</tag>
+    </scm>
 
     <modules>
         <!-- components -->

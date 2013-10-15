@@ -16,13 +16,16 @@
 package io.airlift.configuration;
 
 import com.google.common.annotations.Beta;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.MapMaker;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.inject.Binding;
 import com.google.inject.ConfigurationException;
 import com.google.inject.Module;
@@ -37,16 +40,18 @@ import org.apache.bval.jsr303.ApacheValidationProvider;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static com.google.common.collect.Sets.newConcurrentHashSet;
+import static io.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
 import static io.airlift.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
 
@@ -56,10 +61,18 @@ public class ConfigurationFactory
 
     private final Map<String, String> properties;
     private final Problems.Monitor monitor;
-    private final ConcurrentMap<Class<?>, ConfigurationMetadata<?>> metadataCache;
-    private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<ConfigurationProvider<?>, Object>();
-    private final Set<String> usedProperties = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
-    private final Set<ConfigurationProvider<?>> registeredProviders = Collections.newSetFromMap(new ConcurrentHashMap<ConfigurationProvider<?>, Boolean>());
+    private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
+    private final Set<String> usedProperties = newConcurrentHashSet();
+    private final Set<ConfigurationProvider<?>> registeredProviders = newConcurrentHashSet();
+    private final LoadingCache<Class<?>, ConfigurationMetadata<?>> metadataCache = CacheBuilder.newBuilder()
+            .build(new CacheLoader<Class<?>, ConfigurationMetadata<?>>()
+            {
+                @Override
+                public ConfigurationMetadata<?> load(Class<?> configClass)
+                {
+                    return getConfigurationMetadata(configClass, monitor);
+                }
+            });
 
     public ConfigurationFactory(Map<String, String> properties)
     {
@@ -70,15 +83,6 @@ public class ConfigurationFactory
     {
         this.monitor = monitor;
         this.properties = ImmutableMap.copyOf(properties);
-
-        metadataCache = new MapMaker().weakKeys().weakValues().makeComputingMap(new Function<Class<?>, ConfigurationMetadata<?>>()
-        {
-            @Override
-            public ConfigurationMetadata<?> apply(Class<?> configClass)
-            {
-                return ConfigurationMetadata.getConfigurationMetadata(configClass, monitor);
-            }
-        });
     }
 
     public Map<String, String> getProperties()
@@ -129,7 +133,7 @@ public class ConfigurationFactory
         registeredProviders.add(configurationProvider);
 
         // check for a prebuilt instance
-        T instance = (T) instanceCache.get(configurationProvider);
+        T instance = getCachedInstance(configurationProvider);
         if (instance != null) {
             return instance;
         }
@@ -145,13 +149,25 @@ public class ConfigurationFactory
         }
 
         // add to instance cache
-        T existingValue = (T) instanceCache.putIfAbsent(configurationProvider, instance);
+        T existingValue = putCachedInstance(configurationProvider, instance);
         // if key was already associated with a value, there was a
         // creation race and we lost. Just use the winners' instance;
         if (existingValue != null) {
             return existingValue;
         }
         return instance;
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T getCachedInstance(ConfigurationProvider<T> configurationProvider)
+    {
+        return (T) instanceCache.get(configurationProvider);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T putCachedInstance(ConfigurationProvider<T> configurationProvider, T instance)
+    {
+        return (T) instanceCache.putIfAbsent(configurationProvider, instance);
     }
 
     private <T> ConfigurationHolder<T> build(Class<T> configClass, String prefix)
@@ -162,11 +178,12 @@ public class ConfigurationFactory
 
         if (prefix == null) {
             prefix = "";
-        } else if (!prefix.isEmpty()) {
+        }
+        else if (!prefix.isEmpty()) {
             prefix += ".";
         }
 
-        ConfigurationMetadata<T> configurationMetadata = (ConfigurationMetadata<T>) metadataCache.get(configClass);
+        ConfigurationMetadata<T> configurationMetadata = getMetadata(configClass);
         configurationMetadata.getProblems().throwIfHasErrors();
 
         T instance = newInstance(configurationMetadata);
@@ -176,7 +193,8 @@ public class ConfigurationFactory
         for (AttributeMetadata attribute : configurationMetadata.getAttributes().values()) {
             try {
                 setConfigProperty(instance, attribute, prefix, problems);
-            } catch (InvalidConfigurationException e) {
+            }
+            catch (InvalidConfigurationException e) {
                 problems.addError(e.getCause(), e.getMessage());
             }
         }
@@ -197,14 +215,26 @@ public class ConfigurationFactory
 
         problems.throwIfHasErrors();
 
-        return new ConfigurationHolder<T>(instance, problems);
+        return new ConfigurationHolder<>(instance, problems);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> ConfigurationMetadata<T> getMetadata(Class<T> configClass)
+    {
+        try {
+            return (ConfigurationMetadata<T>) metadataCache.getUnchecked(configClass);
+        }
+        catch (UncheckedExecutionException e) {
+            throw Throwables.propagate(e.getCause());
+        }
     }
 
     private <T> T newInstance(ConfigurationMetadata<T> configurationMetadata)
     {
         try {
             return configurationMetadata.getConstructor().newInstance();
-        } catch (Throwable e) {
+        }
+        catch (Throwable e) {
             if (e instanceof InvocationTargetException && e.getCause() != null) {
                 e = e.getCause();
             }
@@ -231,7 +261,8 @@ public class ConfigurationFactory
 
         try {
             injectionPoint.getSetter().invoke(instance, value);
-        } catch (Throwable e) {
+        }
+        catch (Throwable e) {
             if (e instanceof InvocationTargetException && e.getCause() != null) {
                 e = e.getCause();
             }
@@ -264,7 +295,8 @@ public class ConfigurationFactory
                     operativeInjectionPoint = injectionPoint;
                     operativeValue = value;
                     operativeName = fullName;
-                } else if (!value.equals(operativeValue)) {
+                }
+                else if (!value.equals(operativeValue)) {
                     problems.addError("Value for property '%s' (=%s) conflicts with property '%s' (=%s)", fullName, value, operativeName, operativeValue);
                 }
             }
@@ -311,26 +343,33 @@ public class ConfigurationFactory
             return null;
         }
 
-
         try {
             if (String.class.isAssignableFrom(type)) {
                 return value;
-            } else if (Boolean.class.isAssignableFrom(type) || Boolean.TYPE.isAssignableFrom(type)) {
+            }
+            else if (Boolean.class.isAssignableFrom(type) || Boolean.TYPE.isAssignableFrom(type)) {
                 return Boolean.valueOf(value);
-            } else if (Byte.class.isAssignableFrom(type) || Byte.TYPE.isAssignableFrom(type)) {
+            }
+            else if (Byte.class.isAssignableFrom(type) || Byte.TYPE.isAssignableFrom(type)) {
                 return Byte.valueOf(value);
-            } else if (Short.class.isAssignableFrom(type) || Short.TYPE.isAssignableFrom(type)) {
+            }
+            else if (Short.class.isAssignableFrom(type) || Short.TYPE.isAssignableFrom(type)) {
                 return Short.valueOf(value);
-            } else if (Integer.class.isAssignableFrom(type) || Integer.TYPE.isAssignableFrom(type)) {
+            }
+            else if (Integer.class.isAssignableFrom(type) || Integer.TYPE.isAssignableFrom(type)) {
                 return Integer.valueOf(value);
-            } else if (Long.class.isAssignableFrom(type) || Long.TYPE.isAssignableFrom(type)) {
+            }
+            else if (Long.class.isAssignableFrom(type) || Long.TYPE.isAssignableFrom(type)) {
                 return Long.valueOf(value);
-            } else if (Float.class.isAssignableFrom(type) || Float.TYPE.isAssignableFrom(type)) {
+            }
+            else if (Float.class.isAssignableFrom(type) || Float.TYPE.isAssignableFrom(type)) {
                 return Float.valueOf(value);
-            } else if (Double.class.isAssignableFrom(type) || Double.TYPE.isAssignableFrom(type)) {
+            }
+            else if (Double.class.isAssignableFrom(type) || Double.TYPE.isAssignableFrom(type)) {
                 return Double.valueOf(value);
             }
-        } catch (Exception ignored) {
+        }
+        catch (Exception ignored) {
             // ignore the random exceptions from the built in types
             return null;
         }
@@ -341,7 +380,8 @@ public class ConfigurationFactory
             if (fromString.getReturnType().isAssignableFrom(type)) {
                 return fromString.invoke(null, value);
             }
-        } catch (Throwable ignored) {
+        }
+        catch (Throwable ignored) {
         }
 
         // Look for a static valueOf(String) method
@@ -350,14 +390,16 @@ public class ConfigurationFactory
             if (valueOf.getReturnType().isAssignableFrom(type)) {
                 return valueOf.invoke(null, value);
             }
-        } catch (Throwable ignored) {
+        }
+        catch (Throwable ignored) {
         }
 
         // Look for a constructor taking a string
         try {
             Constructor<?> constructor = type.getConstructor(String.class);
             return constructor.newInstance(value);
-        } catch (Throwable ignored) {
+        }
+        catch (Throwable ignored) {
         }
 
         return null;

@@ -15,7 +15,6 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
@@ -29,6 +28,7 @@ import java.net.URI;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
+import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.configuration.ConfigurationModule.bindConfig;
 import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
 import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
@@ -76,7 +76,7 @@ public class DiscoveryModule
     @ForDiscoveryClient
     public ScheduledExecutorService createDiscoveryExecutor()
     {
-        return new ScheduledThreadPoolExecutor(5, new ThreadFactoryBuilder().setNameFormat("Discovery-%s").setDaemon(true).build());
+        return new ScheduledThreadPoolExecutor(5, daemonThreadsNamed("Discovery-%s"));
     }
 
     @SuppressWarnings("deprecation")
