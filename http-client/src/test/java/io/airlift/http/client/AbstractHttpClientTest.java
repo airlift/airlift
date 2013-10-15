@@ -4,7 +4,6 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.airlift.testing.Assertions;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.server.Server;
@@ -41,6 +40,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Throwables.propagate;
+import static io.airlift.concurrent.Threads.threadsNamed;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
@@ -541,7 +541,7 @@ public abstract class AbstractHttpClientTest
     public void setup()
             throws Exception
     {
-        executor = Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("test-%s").build());
+        executor = Executors.newCachedThreadPool(threadsNamed("test-%s"));
     }
 
     @AfterClass

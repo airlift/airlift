@@ -17,7 +17,6 @@ package io.airlift.discovery.client;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.airlift.discovery.client.testing.InMemoryDiscoveryClient;
 import io.airlift.node.NodeInfo;
 import io.airlift.testing.Assertions;
@@ -29,6 +28,8 @@ import org.testng.annotations.Test;
 import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+
+import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 
 public class TestCachingServiceSelector
 {
@@ -44,8 +45,7 @@ public class TestCachingServiceSelector
     protected void setUp()
             throws Exception
     {
-        executor = new ScheduledThreadPoolExecutor(10,
-                new ThreadFactoryBuilder().setNameFormat("Discovery-%s").setDaemon(true).build());
+        executor = new ScheduledThreadPoolExecutor(10, daemonThreadsNamed("Discovery-%s"));
         nodeInfo = new NodeInfo("environment");
     }
 

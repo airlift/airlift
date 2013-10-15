@@ -16,7 +16,6 @@
 package io.airlift.http.client.netty;
 
 import com.google.common.annotations.Beta;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.jboss.netty.channel.socket.nio.NioClientBossPool;
 import org.jboss.netty.channel.socket.nio.NioWorkerPool;
 import org.jboss.netty.util.HashedWheelTimer;
@@ -28,6 +27,7 @@ import java.io.Closeable;
 import java.util.concurrent.ExecutorService;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 
 @Beta
@@ -53,12 +53,13 @@ public class NettyIoPool
 
         String prefix = "netty-client-" + name + "-io-";
 
-        this.hashedWheelTimer = new HashedWheelTimer(new ThreadFactoryBuilder().setNameFormat(prefix + "timer-%s").setDaemon(true).build());
+        String nameFormat = prefix + "timer-%s";
+        this.hashedWheelTimer = new HashedWheelTimer(daemonThreadsNamed(nameFormat));
 
         // Give netty infinite thread "sources" for worker and boss.
         // Netty will name the threads and will size the pool appropriately
-        this.bossExecutor = newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat(prefix + "boss-%s").setDaemon(true).build());
-        this.workerExecutor = newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat(prefix + "worker-%s").setDaemon(true).build());
+        this.bossExecutor = newCachedThreadPool(daemonThreadsNamed(prefix + "boss-%s"));
+        this.workerExecutor = newCachedThreadPool(daemonThreadsNamed(prefix + "worker-%s"));
 
         this.bossPool = new NioClientBossPool(bossExecutor, config.getIoBossThreads(), hashedWheelTimer, ThreadNameDeterminer.CURRENT);
         this.workerPool = new NioWorkerPool(workerExecutor, config.getIoWorkerThreads(), ThreadNameDeterminer.CURRENT);

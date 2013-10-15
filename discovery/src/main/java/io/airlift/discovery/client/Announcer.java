@@ -22,7 +22,6 @@ import com.google.common.collect.MapMaker;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
 import io.airlift.units.Duration;
@@ -41,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -70,7 +70,7 @@ public class Announcer
         for (ServiceAnnouncement serviceAnnouncement : serviceAnnouncements) {
             addServiceAnnouncement(serviceAnnouncement);
         }
-        executor = new ScheduledThreadPoolExecutor(5, new ThreadFactoryBuilder().setNameFormat("Announcer-%s").setDaemon(true).build());
+        executor = new ScheduledThreadPoolExecutor(5, daemonThreadsNamed("Announcer-%s"));
     }
 
     public void start()
