@@ -37,6 +37,7 @@ import org.weakref.jmx.guice.MBeanModule;
 
 import java.util.List;
 
+import static com.proofpoint.bootstrap.Bootstrap.bootstrapApplication;
 import static com.proofpoint.discovery.client.announce.ServiceAnnouncement.serviceAnnouncement;
 import static org.testng.Assert.assertEquals;
 
@@ -57,14 +58,16 @@ public class TestRackAnnounce
     public void testAnnouncement()
             throws Exception
     {
-        Bootstrap app = new Bootstrap(
-                new TestingHttpServerModule(),
-                new RackModule(),
-                new TestingNodeModule(),
-                new TestingDiscoveryModule(),
-                new ReportingModule(),
-                new MBeanModule(),
-                new TestingJmxModule());
+        Bootstrap app = bootstrapApplication("test-application")
+                .withModules(
+                        new TestingHttpServerModule(),
+                        new RackModule(),
+                        new TestingNodeModule(),
+                        new TestingDiscoveryModule(),
+                        new ReportingModule(),
+                        new MBeanModule(),
+                        new TestingJmxModule()
+                );
 
         Injector injector = app
                 .doNotInitializeLogging()

@@ -19,6 +19,7 @@ import org.testng.annotations.Test;
 
 import java.net.URI;
 
+import static com.proofpoint.bootstrap.Bootstrap.bootstrapApplication;
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
@@ -34,14 +35,16 @@ public class TestServer
     public void setup()
             throws Exception
     {
-        Bootstrap app = new Bootstrap(
-                new TestingNodeModule(),
-                new TestingHttpServerModule(),
-                new JsonModule(),
-                new JaxrsModule(),
-                new JmxHttpModule(),
-                new JmxModule(),
-                new MainModule());
+        Bootstrap app = bootstrapApplication("test-application")
+                .withModules(
+                        new TestingNodeModule(),
+                        new TestingHttpServerModule(),
+                        new JsonModule(),
+                        new JaxrsModule(),
+                        new JmxHttpModule(),
+                        new JmxModule(),
+                        new MainModule()
+                );
 
         Injector injector = app
                 .doNotInitializeLogging()

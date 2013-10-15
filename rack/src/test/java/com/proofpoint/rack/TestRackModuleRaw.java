@@ -34,6 +34,7 @@ import org.weakref.jmx.guice.MBeanModule;
 
 import java.util.Map;
 
+import static com.proofpoint.bootstrap.Bootstrap.bootstrapApplication;
 import static com.proofpoint.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static com.proofpoint.json.JsonCodec.mapJsonCodec;
@@ -49,14 +50,16 @@ public class TestRackModuleRaw
     public void setup()
             throws Exception
     {
-        Bootstrap app = new Bootstrap(
-                new TestingHttpServerModule(),
-                new RackModule(),
-                new TestingNodeModule(),
-                new TestingDiscoveryModule(),
-                new ReportingModule(),
-                new MBeanModule(),
-                new TestingJmxModule());
+        Bootstrap app = bootstrapApplication("test-application")
+                .withModules(
+                        new TestingHttpServerModule(),
+                        new RackModule(),
+                        new TestingNodeModule(),
+                        new TestingDiscoveryModule(),
+                        new ReportingModule(),
+                        new MBeanModule(),
+                        new TestingJmxModule()
+                );
 
         Injector injector = app
                 .doNotInitializeLogging()

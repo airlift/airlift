@@ -74,15 +74,34 @@ public class Bootstrap
     private Map<String, String> applicationDefaults = null;
 
     private boolean initialized = false;
-    private String applicationName = "legacy-app";
+    private final String applicationName;
 
+    /**
+     * @deprecated Use <tt>Bootstrap.bootstrapApplication(String).withModules(Module...)</tt> instead.
+     */
+    @Deprecated
     public Bootstrap(Module... modules)
     {
         this(ImmutableList.copyOf(modules));
     }
 
+    /**
+     * @deprecated Use <tt>Bootstrap.bootstrapApplication(String).withModules(Iterable &lt;? extends Module>&gt;)</tt> instead.
+     */
+    @Deprecated
     public Bootstrap(Iterable<? extends Module> modules)
     {
+        this("legacy-app", modules);
+    }
+
+    public static BootstrapBeforeModules bootstrapApplication(String applicationName)
+    {
+        return new BootstrapBeforeModules(applicationName);
+    }
+
+    private Bootstrap(String applicationName, Iterable<? extends Module> modules)
+    {
+        this.applicationName = checkNotNull(applicationName, "applicationName is null");
         this.modules = ImmutableList.copyOf(modules);
     }
 
@@ -288,5 +307,25 @@ public class Bootstrap
             }
         }
         return columnPrinter;
+    }
+
+    public static class BootstrapBeforeModules
+    {
+        private final String applicationName;
+
+        private BootstrapBeforeModules(String applicationName)
+        {
+            this.applicationName = checkNotNull(applicationName, "applicationName is null");
+        }
+
+        public Bootstrap withModules(Module... modules)
+        {
+            return withModules(ImmutableList.copyOf(modules));
+        }
+
+        public Bootstrap withModules(Iterable<? extends Module> modules)
+        {
+            return new Bootstrap(applicationName, modules);
+        }
     }
 }

@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import static com.proofpoint.bootstrap.Bootstrap.bootstrapApplication;
 import static com.proofpoint.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static com.proofpoint.http.client.Request.Builder.prepareDelete;
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
@@ -81,13 +82,15 @@ public class TestServer
     public void setup()
             throws Exception
     {
-        Bootstrap app = new Bootstrap(
-                new TestingNodeModule(),
-                new InMemoryEventModule(),
-                new TestingHttpServerModule(),
-                new JsonModule(),
-                new JaxrsModule(),
-                new MainModule());
+        Bootstrap app = bootstrapApplication("test-application")
+                .withModules(
+                        new TestingNodeModule(),
+                        new InMemoryEventModule(),
+                        new TestingHttpServerModule(),
+                        new JsonModule(),
+                        new JaxrsModule(),
+                        new MainModule()
+                );
 
         Injector injector = app
                 .doNotInitializeLogging()

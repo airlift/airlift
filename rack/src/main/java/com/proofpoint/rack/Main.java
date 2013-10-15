@@ -30,6 +30,8 @@ import com.proofpoint.reporting.ReportingModule;
 import com.proofpoint.tracetoken.TraceTokenModule;
 import org.weakref.jmx.guice.MBeanModule;
 
+import static com.proofpoint.bootstrap.Bootstrap.bootstrapApplication;
+
 /**
  * This is the default main-class that should be used in a pom in a ruby/rack project that runs via the platform http rack server.
  */
@@ -38,18 +40,20 @@ public class Main
     public static void main(String[] args)
             throws Exception
     {
-        Bootstrap app = new Bootstrap(
-                new NodeModule(),
-                new HttpServerModule(),
-                new HttpEventModule(),
-                new ReportingModule(),
-                new ReportingClientModule(),
-                new TraceTokenModule(),
-                new DiscoveryModule(),
-                new JsonModule(),
-                new MBeanModule(),
-                new RackModule(),
-                new JmxModule());
+        Bootstrap app = bootstrapApplication("rack")
+                .withModules(
+                        new NodeModule(),
+                        new HttpServerModule(),
+                        new HttpEventModule(),
+                        new ReportingModule(),
+                        new ReportingClientModule(),
+                        new TraceTokenModule(),
+                        new DiscoveryModule(),
+                        new JsonModule(),
+                        new MBeanModule(),
+                        new RackModule(),
+                        new JmxModule()
+                );
 
         try {
             Injector injector = app.initialize();
