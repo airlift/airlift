@@ -59,6 +59,7 @@ class ReportClient
         checkNotNull(reportClientConfig, "reportClientConfig is null");
 
         Builder<String, String> builder = ImmutableMap.builder();
+        builder.put("application", nodeInfo.getApplication());
         builder.put("host", nodeInfo.getInternalHostname());
         builder.put("environment", nodeInfo.getEnvironment());
         builder.put("pool", nodeInfo.getPool());
