@@ -112,7 +112,7 @@ public class TestReportClient
         assertEquals(tags.keySet(), ImmutableSet.of("application", "host", "environment", "pool", "package", "type", "name"));
         assertEquals(tags.get("package"), "com.example");
         assertEquals(tags.get("type"), "Foo");
-        assertEquals(tags.get("name"), "B\\a\"r");
+        assertEquals(tags.get("name"), "B_a_r"); // "B\\a\"r");
         tags = (Map<String, String>) sentJson.get(1).get("tags");
         assertEquals(tags.get("package"), "com.example");
         assertEquals(tags.get("name"), "Foo");

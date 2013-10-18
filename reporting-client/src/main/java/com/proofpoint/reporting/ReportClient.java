@@ -103,6 +103,7 @@ class ReportClient
     {
         private static final Pattern QUOTED_PATTERN = Pattern.compile("\"(.*)\"");
         private static final Pattern BACKQUOTE_PATTERN = Pattern.compile("\\\\(.)");
+        private static final Pattern NOT_ACCEPTED_CHARACTER_PATTERN = Pattern.compile("[^-A-Za-z0-9./_]");
         @JsonProperty
         private final String name;
         @JsonProperty
@@ -122,13 +123,14 @@ class ReportClient
                     .put("package", cell.getRowKey().getDomain());
             for (Entry<String, String> entry : cell.getRowKey().getKeyPropertyList().entrySet()) {
                 Matcher matcher = QUOTED_PATTERN.matcher(entry.getValue());
+                String dequoted;
                 if (matcher.matches()) {
-                    String dequoted = BACKQUOTE_PATTERN.matcher(matcher.group(1)).replaceAll("$1");
-                    builder.put(entry.getKey(), dequoted);
+                    dequoted = BACKQUOTE_PATTERN.matcher(matcher.group(1)).replaceAll("$1");
                 }
                 else {
-                    builder.put(entry.getKey(), entry.getValue());
+                    dequoted = entry.getValue();
                 }
+                builder.put(entry.getKey(), NOT_ACCEPTED_CHARACTER_PATTERN.matcher(dequoted).replaceAll("_"));
             }
             tags = builder.build();
         }
