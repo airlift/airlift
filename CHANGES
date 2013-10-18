@@ -1,3 +1,39 @@
+Platform 0.83
+
+* Application name
+
+  We've added a static factory for Bootstrap which takes the name of the
+  application server:
+
+    Bootstrap.bootstrapApplication("name-of-application")
+        .withModules(...)
+
+  The previous Bootstrap constructors are deprecated.
+
+  The application name can be obtained from NodeInfo.getApplication().
+
+  NodeModule and TestingNodeModule have a dependency on the newly created
+  ApplicationNameModule. This dependency is supplied by Bootstrap.
+
+  The application name is included in a tag named "application" in reported
+  metrics.
+
+* HttpServiceBalancer metrics
+
+  HttpServiceBalancer now reports:
+    - client response times by success/failure and target URI
+    - failures by failure category and target URI
+
+  DiscoveryModule now has a dependency on ReportingModule.
+
+* TestingTicker
+
+  TestingTicker now has public visibility in the testing package. It is an
+  implementation of Ticker that can be manually incremented.
+
+* Library upgrades
+  - Guava to 15.0
+
 Platform 0.82
 
 * We added JaxrsBinder.bindResourceFilterFactory for adding custom
