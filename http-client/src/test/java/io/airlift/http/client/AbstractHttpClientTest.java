@@ -45,12 +45,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Throwables.propagate;
+import static com.google.common.base.Throwables.propagateIfInstanceOf;
 import static io.airlift.concurrent.Threads.threadsNamed;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.Request.Builder.preparePut;
-import static io.airlift.testing.Assertions.assertInstanceOf;
 import static io.airlift.testing.Assertions.assertLessThan;
 import static io.airlift.testing.Closeables.closeQuietly;
 import static io.airlift.units.Duration.nanosSince;
@@ -195,7 +195,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test
+    @Test(expectedExceptions = ConnectException.class)
     public void testConnectionRefused()
             throws Exception
     {
@@ -213,7 +213,8 @@ public abstract class AbstractHttpClientTest
             fail("expected exception");
         }
         catch (CapturedException e) {
-            assertInstanceOf(e.getCause(), ConnectException.class);
+            propagateIfInstanceOf(e.getCause(), Exception.class);
+            propagate(e.getCause());
         }
     }
 
@@ -234,7 +235,7 @@ public abstract class AbstractHttpClientTest
         Assert.assertEquals(executeRequest(config, request, new DefaultOnExceptionResponseHandler(expected)), expected);
     }
 
-    @Test
+    @Test(expectedExceptions = {UnknownHostException.class, UnresolvedAddressException.class})
     public void testUnresolvableHost()
             throws Exception
     {
@@ -250,15 +251,13 @@ public abstract class AbstractHttpClientTest
             fail("Expected exception");
         }
         catch (CapturedException e) {
-            Throwable cause = e.getCause();
-            if (!(cause instanceof UnknownHostException) && !(cause instanceof UnresolvedAddressException)) {
-                fail("Expected UnknownHostException or UnresolvedAddressException, but got " + cause.getClass().getName());
-            }
+            propagateIfInstanceOf(e.getCause(), Exception.class);
+            propagate(e.getCause());
         }
     }
 
 
-    @Test
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testBadPort()
             throws Exception
     {
@@ -274,7 +273,8 @@ public abstract class AbstractHttpClientTest
             fail("expected exception");
         }
         catch (CapturedException e) {
-            assertInstanceOf(e.getCause(), IllegalArgumentException.class);
+            propagateIfInstanceOf(e.getCause(), Exception.class);
+            propagate(e.getCause());
         }
     }
 
