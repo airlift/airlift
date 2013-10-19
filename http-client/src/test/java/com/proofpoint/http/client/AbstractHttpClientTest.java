@@ -26,6 +26,7 @@ import org.testng.annotations.Test;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -44,12 +45,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Throwables.propagate;
+import static com.google.common.base.Throwables.propagateIfInstanceOf;
 import static com.proofpoint.concurrent.Threads.threadsNamed;
 import static com.proofpoint.http.client.Request.Builder.prepareDelete;
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static com.proofpoint.http.client.Request.Builder.preparePost;
 import static com.proofpoint.http.client.Request.Builder.preparePut;
-import static com.proofpoint.testing.Assertions.assertInstanceOf;
 import static com.proofpoint.testing.Assertions.assertLessThan;
 import static com.proofpoint.testing.Closeables.closeQuietly;
 import static com.proofpoint.units.Duration.nanosSince;
@@ -195,7 +196,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test
+    @Test(expectedExceptions = {ConnectException.class, SocketTimeoutException.class})
     public void testConnectionRefused()
             throws Exception
     {
@@ -213,12 +214,30 @@ public abstract class AbstractHttpClientTest
             fail("expected exception");
         }
         catch (CapturedException e) {
-            // TODO assertInstanceOf(e.getCause(), ConnectException.class);
-            assertFalse(e.getCause() instanceof CapturedException, "<" + e.getCause() + "> instance of CapturedException");
+            propagateIfInstanceOf(e.getCause(), Exception.class);
+            propagate(e.getCause());
         }
     }
 
     @Test
+    public void testConnectionRefusedWithDefaultingResponseExceptionHandler()
+            throws Exception
+    {
+        int port = findUnusedPort();
+
+        HttpClientConfig config = new HttpClientConfig();
+        config.setConnectTimeout(new Duration(5, MILLISECONDS));
+
+        Request request = prepareGet()
+                .setUri(new URI(scheme, null, host, port, "/", null, null))
+                .build();
+
+        Object expected = new Object();
+        Assert.assertEquals(executeRequest(config, request, new DefaultOnExceptionResponseHandler(expected)), expected);
+    }
+
+
+    @Test(expectedExceptions = {UnknownHostException.class, UnresolvedAddressException.class})
     public void testUnresolvableHost()
             throws Exception
     {
@@ -234,15 +253,12 @@ public abstract class AbstractHttpClientTest
             fail("Expected exception");
         }
         catch (CapturedException e) {
-            Throwable cause = e.getCause();
-            if (!(cause instanceof UnknownHostException) && !(cause instanceof UnresolvedAddressException)) {
-                fail("Expected UnknownHostException or UnresolvedAddressException, but got " + cause.getClass().getName());
-            }
+            propagateIfInstanceOf(e.getCause(), Exception.class);
+            propagate(e.getCause());
         }
     }
 
-
-    @Test
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testBadPort()
             throws Exception
     {
@@ -258,24 +274,9 @@ public abstract class AbstractHttpClientTest
             fail("expected exception");
         }
         catch (CapturedException e) {
-            assertInstanceOf(e.getCause(), IllegalArgumentException.class);
+            propagateIfInstanceOf(e.getCause(), Exception.class);
+            propagate(e.getCause());
         }
-    }
-
-    public void testConnectionRefusedWithDefaultingResponseExceptionHandler()
-            throws Exception
-    {
-        int port = findUnusedPort();
-
-        HttpClientConfig config = new HttpClientConfig();
-        config.setConnectTimeout(new Duration(5, MILLISECONDS));
-
-        Request request = prepareGet()
-                .setUri(new URI(scheme, null, host, port, "/", null, null))
-                .build();
-
-        Object expected = new Object();
-        Assert.assertEquals(executeRequest(config, request, new DefaultOnExceptionResponseHandler(expected)), expected);
     }
 
     @Test
