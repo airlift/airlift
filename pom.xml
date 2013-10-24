@@ -53,6 +53,7 @@
     <modules>
         <!-- components -->
         <module>bootstrap</module>
+        <module>command</module>
         <module>configuration</module>
         <module>concurrent</module>
         <module>dbpool</module>
@@ -89,6 +90,12 @@
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>bootstrap</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>command</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
 
