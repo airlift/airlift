@@ -28,6 +28,7 @@ import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.testing.TestingHttpClient;
+import com.proofpoint.json.ObjectMapperProvider;
 import com.proofpoint.node.NodeConfig;
 import com.proofpoint.node.NodeInfo;
 import org.testng.annotations.BeforeMethod;
@@ -35,12 +36,14 @@ import org.testng.annotations.Test;
 
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
 
 import static com.google.common.base.Throwables.propagate;
 import static org.testng.Assert.assertEquals;
@@ -54,6 +57,7 @@ public class TestReportClient
     private Table<ObjectName, String, Number> collectedData;
     private HttpClient httpClient;
     private List<Map<String, Object>> sentJson;
+    private final ObjectMapper objectMapper = new ObjectMapperProvider().get();
 
     @BeforeMethod
     public void setup()
@@ -84,7 +88,7 @@ public class TestReportClient
                 throw new UnsupportedOperationException();
             }
         });
-        ReportClient client = new ReportClient(nodeInfo, httpClient, new ReportClientConfig().setUri(null));
+        ReportClient client = new ReportClient(nodeInfo, httpClient, new ReportClientConfig().setUri(null), objectMapper);
         client.report(System.currentTimeMillis(), collectedData);
     }
 
@@ -92,7 +96,7 @@ public class TestReportClient
     public void testReportData()
     {
 
-        ReportClient client = new ReportClient(nodeInfo, httpClient, new ReportClientConfig().setUri(URI.create(TEST_URI)));
+        ReportClient client = new ReportClient(nodeInfo, httpClient, new ReportClientConfig().setUri(URI.create(TEST_URI)), objectMapper);
         client.report(TEST_TIME, collectedData);
         assertEquals(sentJson.size(), 2);
 
@@ -126,7 +130,7 @@ public class TestReportClient
         ReportClient client = new ReportClient(nodeInfo, httpClient,
                 new ReportClientConfig()
                         .setUri(URI.create(TEST_URI))
-                        .setTags(ImmutableMap.of("foo", "bar", "baz", "quux")));
+                        .setTags(ImmutableMap.of("foo", "bar", "baz", "quux")), objectMapper);
         client.report(TEST_TIME, collectedData);
         assertEquals(sentJson.size(), 2);
 
@@ -152,13 +156,14 @@ public class TestReportClient
             assertNull(sentJson);
             assertEquals(input.getMethod(), "POST");
             assertEquals(input.getUri().toString(), TEST_URI + "/api/v1/datapoints");
+            assertEquals(input.getHeader("Content-Type"), "application/gzip");
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             try {
                 input.getBodyGenerator().write(outputStream);
+                GZIPInputStream inputStream = new GZIPInputStream(new ByteArrayInputStream(outputStream.toByteArray()));
 
-                String json = new String(outputStream.toByteArray(), "UTF-8");
-                sentJson = new ObjectMapper().readValue(json, new TypeReference<List<Map<String, Object>>>()
+                sentJson = new ObjectMapper().readValue(inputStream, new TypeReference<List<Map<String, Object>>>()
                 {
                 });
             }

@@ -22,6 +22,7 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import org.testng.annotations.Test;
@@ -48,6 +49,7 @@ public class TestReportCollector
                     }
                 },
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
+                new JsonModule(),
                 new ReportingModule(),
                 new ReportingClientModule());
     }

@@ -16,45 +16,49 @@
 package com.proofpoint.reporting;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonEncoding;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Table;
 import com.google.common.collect.Table.Cell;
 import com.google.inject.Inject;
+import com.proofpoint.http.client.BodyGenerator;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
-import com.proofpoint.json.JsonCodec;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeInfo;
 
 import javax.management.ObjectName;
+import java.io.OutputStream;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPOutputStream;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.http.client.HttpUriBuilder.uriBuilderFrom;
-import static com.proofpoint.http.client.JsonBodyGenerator.jsonBodyGenerator;
 import static com.proofpoint.http.client.Request.Builder.preparePost;
 import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
-import static com.proofpoint.json.JsonCodec.listJsonCodec;
 
 class ReportClient
 {
     private static final Logger logger = Logger.get(ReportClient.class);
-    private static final JsonCodec<List<DataPoint>> dataPointListCodec = listJsonCodec(DataPoint.class);
+    private static final JsonFactory JSON_FACTORY = new JsonFactory();
     private final Map<String, String> instanceTags;
     private final HttpClient httpClient;
     private final URI uploadUri;
+    private final ObjectMapper objectMapper;
 
     @Inject
-    ReportClient(NodeInfo nodeInfo, @ForReportClient HttpClient httpClient, ReportClientConfig reportClientConfig)
+    ReportClient(NodeInfo nodeInfo, @ForReportClient HttpClient httpClient, ReportClientConfig reportClientConfig, ObjectMapper objectMapper)
     {
+        this.objectMapper = objectMapper;
         checkNotNull(nodeInfo, "nodeInfo is null");
         checkNotNull(reportClientConfig, "reportClientConfig is null");
 
@@ -84,14 +88,10 @@ class ReportClient
             return;
         }
 
-        List<DataPoint> dataPoints = new ArrayList<>();
-        for (Cell<ObjectName, String, Number> cell : collectedData.cellSet()) {
-            dataPoints.add(new DataPoint(systemTimeMillis, cell, instanceTags));
-        }
-
         Request request = preparePost()
                 .setUri(uploadUri)
-                .setBodyGenerator(jsonBodyGenerator(dataPointListCodec, dataPoints))
+                .setHeader("Content-Type", "application/gzip")
+                .setBodyGenerator(new CompressBodyGenerator(systemTimeMillis, collectedData))
                 .build();
         StatusResponse response = httpClient.execute(request, createStatusResponseHandler());
         if (response.getStatusCode() != 204) {
@@ -133,6 +133,37 @@ class ReportClient
                 builder.put(entry.getKey(), NOT_ACCEPTED_CHARACTER_PATTERN.matcher(dequoted).replaceAll("_"));
             }
             tags = builder.build();
+        }
+    }
+
+    private class CompressBodyGenerator implements BodyGenerator
+    {
+        private final long systemTimeMillis;
+        private final Table<ObjectName,String,Number> collectedData;
+
+        public CompressBodyGenerator(long systemTimeMillis, Table<ObjectName, String, Number> collectedData)
+        {
+            this.systemTimeMillis = systemTimeMillis;
+            this.collectedData = collectedData;
+        }
+
+        @Override
+        public void write(OutputStream out)
+                throws Exception
+        {
+            GZIPOutputStream gzipOutputStream = new GZIPOutputStream(out);
+            JsonGenerator generator = JSON_FACTORY.createGenerator(gzipOutputStream, JsonEncoding.UTF8)
+                .setCodec(objectMapper);
+
+            generator.writeStartArray();
+
+            for (Cell<ObjectName, String, Number> cell : collectedData.cellSet()) {
+                generator.writeObject(new DataPoint(systemTimeMillis, cell, instanceTags));
+            }
+
+            generator.writeEndArray();
+            generator.flush();
+            gzipOutputStream.finish();
         }
     }
 }
