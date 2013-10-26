@@ -41,6 +41,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
 
+import static com.google.common.base.CaseFormat.LOWER_CAMEL;
+import static com.google.common.base.CaseFormat.UPPER_CAMEL;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.http.client.HttpUriBuilder.uriBuilderFrom;
 import static com.proofpoint.http.client.Request.Builder.preparePost;
@@ -115,24 +117,44 @@ class ReportClient
 
         public DataPoint(long systemTimeMillis, Cell<ObjectName, String, Number> cell, Map<String, String> instanceTags)
         {
-            name = cell.getColumnKey();
+            Map<String,String> propertyList = cell.getRowKey().getKeyPropertyList();
+
+            StringBuilder nameBuilder = new StringBuilder();
+            if (propertyList.containsKey("type")) {
+                nameBuilder.append(LOWER_CAMEL.to(UPPER_CAMEL, dequote(propertyList.get("type"))))
+                        .append(".");
+            }
+            if (propertyList.containsKey("name")) {
+                nameBuilder.append(LOWER_CAMEL.to(UPPER_CAMEL, dequote(propertyList.get("name"))))
+                        .append(".");
+            }
+            name = nameBuilder.append(cell.getColumnKey()).toString();
+
             timestamp = systemTimeMillis;
             value = cell.getValue();
             Builder<String, String> builder = ImmutableMap.<String, String>builder()
                     .putAll(instanceTags)
                     .put("package", cell.getRowKey().getDomain());
-            for (Entry<String, String> entry : cell.getRowKey().getKeyPropertyList().entrySet()) {
-                Matcher matcher = QUOTED_PATTERN.matcher(entry.getValue());
-                String dequoted;
-                if (matcher.matches()) {
-                    dequoted = BACKQUOTE_PATTERN.matcher(matcher.group(1)).replaceAll("$1");
+            for (Entry<String, String> entry : propertyList.entrySet()) {
+                if (!entry.getKey().equals("type") && !entry.getKey().equals("name")) {
+                    String dequoted = dequote(entry.getValue());
+                    builder.put(entry.getKey(), NOT_ACCEPTED_CHARACTER_PATTERN.matcher(dequoted).replaceAll("_"));
                 }
-                else {
-                    dequoted = entry.getValue();
-                }
-                builder.put(entry.getKey(), NOT_ACCEPTED_CHARACTER_PATTERN.matcher(dequoted).replaceAll("_"));
             }
             tags = builder.build();
+        }
+
+        private static String dequote(String value)
+        {
+            Matcher matcher = QUOTED_PATTERN.matcher(value);
+            String dequoted;
+            if (matcher.matches()) {
+                dequoted = BACKQUOTE_PATTERN.matcher(matcher.group(1)).replaceAll("$1");
+            }
+            else {
+                dequoted = value;
+            }
+            return dequoted;
         }
     }
 

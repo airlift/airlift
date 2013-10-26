@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
@@ -41,6 +42,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
@@ -71,7 +74,7 @@ public class TestReportClient
 
         collectedData = HashBasedTable.create();
         collectedData.put(ObjectName.getInstance("com.example:name=Foo"), "Size", 1.1);
-        collectedData.put(ObjectName.getInstance("com.example:type=Foo,name=\"B\\\\a\\\"r\""), "Size", 1.2);
+        collectedData.put(ObjectName.getInstance("com.example:type=Foo,name=bar,tag1=\"B\\\\a\\\"z\""), "Size", 1.2);
 
         httpClient = new TestingHttpClient(new TestingResponseFunction());
         sentJson = null;
@@ -102,7 +105,6 @@ public class TestReportClient
 
         for (Map<String, Object> map : sentJson) {
             assertEquals(map.keySet(), ImmutableSet.of("name", "timestamp", "value", "tags"));
-            assertEquals(map.get("name"), "Size");
             assertEquals(map.get("timestamp"), TEST_TIME);
             Map<String, String> tags = (Map<String, String>) map.get("tags");
             assertEquals(tags.get("application"), "test-application");
@@ -110,17 +112,17 @@ public class TestReportClient
             assertEquals(tags.get("environment"), "test_environment");
             assertEquals(tags.get("pool"), "test_pool");
         }
+        assertEquals(sentJson.get(0).get("name"), "Foo.Bar.Size");
+        assertEquals(sentJson.get(1).get("name"), "Foo.Size");
         assertEquals(sentJson.get(0).get("value"), 1.2);
         assertEquals(sentJson.get(1).get("value"), 1.1);
         Map<String, String> tags = (Map<String, String>) sentJson.get(0).get("tags");
-        assertEquals(tags.keySet(), ImmutableSet.of("application", "host", "environment", "pool", "package", "type", "name"));
+        assertEquals(tags.keySet(), ImmutableSet.of("application", "host", "environment", "pool", "package", "tag1"));
         assertEquals(tags.get("package"), "com.example");
-        assertEquals(tags.get("type"), "Foo");
-        assertEquals(tags.get("name"), "B_a_r"); // "B\\a\"r");
+        assertEquals(tags.get("tag1"), "B_a_z"); // "B\\a\"z");
         tags = (Map<String, String>) sentJson.get(1).get("tags");
         assertEquals(tags.get("package"), "com.example");
-        assertEquals(tags.get("name"), "Foo");
-        assertEquals(tags.keySet(), ImmutableSet.of("application", "host", "environment", "pool", "package", "name"));
+        assertEquals(tags.keySet(), ImmutableSet.of("application", "host", "environment", "pool", "package"));
     }
 
     @Test
@@ -142,9 +144,9 @@ public class TestReportClient
             assertEquals(tags.get("baz"), "quux");
         }
         Map<String, String> tags = (Map<String, String>) sentJson.get(0).get("tags");
-        assertEquals(tags.keySet(), ImmutableSet.of("application", "host", "environment", "pool", "foo", "baz", "package", "type", "name"));
+        assertEquals(tags.keySet(), ImmutableSet.of("application", "host", "environment", "pool", "foo", "baz", "package", "tag1"));
         tags = (Map<String, String>) sentJson.get(1).get("tags");
-        assertEquals(tags.keySet(), ImmutableSet.of("application", "host", "environment", "pool", "foo", "baz", "package", "name"));
+        assertEquals(tags.keySet(), ImmutableSet.of("application", "host", "environment", "pool", "foo", "baz", "package"));
     }
 
     private class TestingResponseFunction
@@ -165,6 +167,15 @@ public class TestReportClient
 
                 sentJson = new ObjectMapper().readValue(inputStream, new TypeReference<List<Map<String, Object>>>()
                 {
+                });
+                sentJson = Lists.newArrayList(sentJson);
+                Collections.sort(sentJson, new Comparator<Map<String, Object>>()
+                {
+                    @Override
+                    public int compare(Map<String, Object> o1, Map<String, Object> o2)
+                    {
+                        return ((String) o1.get("name")).compareTo((String) o2.get("name"));
+                    }
                 });
             }
             catch (Exception e) {
