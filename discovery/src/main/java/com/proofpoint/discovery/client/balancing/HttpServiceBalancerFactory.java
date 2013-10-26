@@ -57,7 +57,7 @@ public final class HttpServiceBalancerFactory
 
         String pool = firstNonNull(selectorConfig.getPool(), nodeInfo.getPool());
         String name = new ObjectNameBuilder(HttpServiceBalancerStats.class.getPackage().getName())
-                .withProperty("type", type)
+                .withProperty("serviceType", type)
                 .build();
         HttpServiceBalancerStats httpServiceBalancerStats = reportCollectionFactory.createReportCollection(HttpServiceBalancerStats.class, name);
         HttpServiceBalancerImpl balancer = new HttpServiceBalancerImpl(format("type=[%s], pool=[%s]", type, pool), httpServiceBalancerStats);

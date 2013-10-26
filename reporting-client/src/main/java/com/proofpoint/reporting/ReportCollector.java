@@ -101,7 +101,7 @@ class ReportCollector
                 }
             }
         }
-        builder.put(REPORT_COLLECTOR_OBJECT_NAME, "numMetrics", numAtributes);
+        builder.put(REPORT_COLLECTOR_OBJECT_NAME, "NumMetrics", numAtributes);
         final Table<ObjectName, String, Number> collectedData = builder.build();
         clientExecutorService.submit(new Runnable()
         {
