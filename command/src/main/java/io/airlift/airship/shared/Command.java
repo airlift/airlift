@@ -11,6 +11,7 @@ import com.google.common.io.Closeables;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableFutureTask;
+import com.google.common.util.concurrent.RateLimiter;
 import io.airlift.units.Duration;
 
 import javax.annotation.concurrent.Immutable;
@@ -153,6 +154,8 @@ public class Command
         return new Command(command, successfulExitCodes, directory, environment, timeLimit);
     }
 
+    private static final RateLimiter RATE_LIMITER = RateLimiter.create(40);
+
     public int execute(Executor executor)
             throws CommandFailedException
     {
@@ -163,6 +166,8 @@ public class Command
         Future<Integer> future = submit(executor, processCallable);
 
         try {
+            RATE_LIMITER.acquire();
+
             Integer result = future.get((long) timeLimit.toMillis(), TimeUnit.MILLISECONDS);
             return result;
         }
@@ -179,8 +184,9 @@ public class Command
             throw new CommandFailedException(this, "interrupted", e);
         }
         catch (TimeoutException e) {
-            future.cancel(true);
             throw new CommandTimeoutException(this);
+        } finally {
+            future.cancel(true);
         }
     }
 
@@ -288,6 +294,19 @@ public class Command
                     if (outputProcessor != null) {
                         outputProcessor.destroy();
                     }
+                }
+            }
+        }
+
+        private static int waitFor(Process process)
+                throws InterruptedException
+        {
+            while (true) {
+                try {
+                    return process.exitValue();
+                }
+                catch (IllegalThreadStateException e) {
+                    TimeUnit.MILLISECONDS.sleep(5);
                 }
             }
         }
