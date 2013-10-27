@@ -1,4 +1,4 @@
-package io.airlift.airship.shared;
+package io.airlift.command;
 
 public class CommandTimeoutException extends CommandFailedException
 {

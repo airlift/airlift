@@ -1,4 +1,4 @@
-package io.airlift.airship.shared;
+package io.airlift.command;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
