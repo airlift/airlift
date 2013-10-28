@@ -245,7 +245,6 @@
                     <version>2.9</version>
                     <configuration>
                         <source>${project.build.targetJdk}</source>
-                        <target>${project.build.targetJdk}</target>
                         <encoding>${project.build.sourceEncoding}</encoding>
                         <maxmemory>${platform.build.jvmsize}</maxmemory>
                         <additionalparam>-quiet</additionalparam>
