@@ -23,17 +23,17 @@
         <format>tar.gz</format>
     </formats>
 
-    <files>
-        <file>
-            <source>README.txt</source>
-            <outputDirectory>/</outputDirectory>
-        </file>
-    </files>
-
     <fileSets>
         <fileSet>
             <directory>${project.build.directory}/plugin</directory>
             <outputDirectory>/plugin</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>NOTICE</include>
+                <include>README.txt</include>
+            </includes>
         </fileSet>
     </fileSets>
 
