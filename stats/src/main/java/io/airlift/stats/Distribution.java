@@ -17,34 +17,42 @@ import java.util.Map;
 @ThreadSafe
 public class Distribution
 {
-    private final static double MAX_ERROR = 0.01;
+    private static final double MAX_ERROR = 0.01;
 
     @GuardedBy("this")
     private final QuantileDigest digest;
 
+    private final DecayCounter total;
+
     public Distribution()
     {
         digest = new QuantileDigest(MAX_ERROR);
+        total = new DecayCounter(0);
     }
 
     public Distribution(double alpha)
     {
         digest = new QuantileDigest(MAX_ERROR, alpha);
+        total = new DecayCounter(alpha);
     }
 
     public Distribution(Distribution distribution)
     {
         digest = new QuantileDigest(distribution.digest);
+        total = new DecayCounter(distribution.digest.getAlpha());
+        total.merge(distribution.total);
     }
 
     public synchronized void add(long value)
     {
         digest.add(value);
+        total.add(value);
     }
 
     public synchronized void add(long value, long count)
     {
         digest.add(value, count);
+        total.add(value * count);
     }
 
     @Managed
@@ -57,6 +65,12 @@ public class Distribution
     public synchronized double getCount()
     {
         return digest.getCount();
+    }
+
+    @Managed
+    public synchronized double getTotal()
+    {
+        return total.getCount();
     }
 
     @Managed
@@ -157,6 +171,7 @@ public class Distribution
         return new DistributionSnapshot(
                 getMaxError(),
                 getCount(),
+                getTotal(),
                 quantiles.get(0),
                 quantiles.get(1),
                 quantiles.get(2),
@@ -174,6 +189,7 @@ public class Distribution
     {
         private final double maxError;
         private final double count;
+        private final double total;
         private final long p01;
         private final long p05;
         private final long p10;
@@ -190,6 +206,7 @@ public class Distribution
         public DistributionSnapshot(
                 @JsonProperty("maxError") double maxError,
                 @JsonProperty("count") double count,
+                @JsonProperty("total") double total,
                 @JsonProperty("p01") long p01,
                 @JsonProperty("p05") long p05,
                 @JsonProperty("p10") long p10,
@@ -204,6 +221,7 @@ public class Distribution
         {
             this.maxError = maxError;
             this.count = count;
+            this.total = total;
             this.p01 = p01;
             this.p05 = p05;
             this.p10 = p10;
@@ -227,6 +245,12 @@ public class Distribution
         public double getCount()
         {
             return count;
+        }
+
+        @JsonProperty
+        public double getTotal()
+        {
+            return total;
         }
 
         @JsonProperty
@@ -301,6 +325,7 @@ public class Distribution
             return Objects.toStringHelper(this)
                     .add("maxError", maxError)
                     .add("count", count)
+                    .add("total", total)
                     .add("p01", p01)
                     .add("p05", p05)
                     .add("p10", p10)

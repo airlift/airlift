@@ -1,3 +1,7 @@
+* 0.84
+
+- Add decayed total to Distribution
+
 * 0.83
 
 - Upgrade to Guava 15.0
