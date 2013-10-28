@@ -39,7 +39,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.http.client.CompositeQualifierImpl.compositeQualifier;
-import static org.weakref.jmx.guice.ExportBinder.newExporter;
+import static com.proofpoint.reporting.ReportBinder.reportBinder;
 
 @Beta
 public class AsyncHttpClientModule
@@ -91,7 +91,7 @@ public class AsyncHttpClientModule
 
         // export stats
         if (rootBinder == binder) {
-            newExporter(binder).export(AsyncHttpClient.class).annotatedWith(annotation).withGeneratedName();
+            reportBinder(binder).export(AsyncHttpClient.class).annotatedWith(annotation).withGeneratedName();
         }
     }
 

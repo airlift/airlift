@@ -25,7 +25,6 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 
 import javax.annotation.PreDestroy;
-
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +34,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.http.client.CompositeQualifierImpl.compositeQualifier;
-import static org.weakref.jmx.guice.ExportBinder.newExporter;
+import static com.proofpoint.reporting.ReportBinder.reportBinder;
 
 @Beta
 class HttpClientModule
@@ -66,7 +65,7 @@ class HttpClientModule
 
         // export stats
         if (binder == rootBinder) {
-            newExporter(binder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
+            reportBinder(binder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
         }
     }
 
