@@ -33,6 +33,7 @@ public final class BucketedDistribution
             {
                 synchronized (input) {
                     input.digest.add(value);
+                    input.total += value;
                 }
                 return null;
             }
@@ -51,6 +52,9 @@ public final class BucketedDistribution
     
         @GuardedBy("this")
         private final QuantileDigest digest;
+
+        @GuardedBy("this")
+        private long total = 0;
     
         public Distribution()
         {
@@ -67,6 +71,12 @@ public final class BucketedDistribution
         public synchronized double getCount()
         {
             return digest.getCount();
+        }
+
+        @Reported
+        public synchronized long getTotal()
+        {
+            return total;
         }
     
         @Reported
