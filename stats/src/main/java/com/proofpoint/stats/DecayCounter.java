@@ -37,7 +37,7 @@ public final class DecayCounter
 
     public DecayCounter(double alpha, Ticker ticker)
     {
-        checkArgument(alpha > 0.0, "alpha is non-positive");
+        checkArgument(alpha >= 0.0, "alpha is negative");
         this.alpha = alpha;
         this.ticker = ticker;
         landmarkInSeconds = getTickInSeconds();
