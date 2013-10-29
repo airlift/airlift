@@ -1,6 +1,7 @@
 * 0.84
 
 - Add decayed total to Distribution
+- Add NOTICE file to airlift distribution tar file if present in source tree
 
 * 0.83
 
