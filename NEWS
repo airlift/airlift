@@ -1,3 +1,11 @@
+Airlift 0.84
+
+* NOTICE file
+
+We made a minor improvement to allow projects that generate binary tarballs using
+airlift packaging to include a NOTICE file. To take advantage of this feature,
+place the NOTICE file at the root of the maven module.
+
 Airlift 0.83
 
 * Upgrade to Guava 15.0
