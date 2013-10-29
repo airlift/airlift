@@ -1,3 +1,18 @@
+Platform 0.84
+
+* We added Threads.threadsNamed(String) and Threads.daemonThreadsNamed(String)
+  methods to simplify creating a ThreadFactory.
+
+* We added decayed total to Distribution
+
+* We added merge support to CounterStat and DecayCounter
+
+* [Bug] Ignore IOException in Closeables.closeQuietly()
+
+* Library upgrades
+  - validation-api to 1.1.0.Final
+  - logback to 1.0.13
+
 Platform 0.83
 
 * Application name
