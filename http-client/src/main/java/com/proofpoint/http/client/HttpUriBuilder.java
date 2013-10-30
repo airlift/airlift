@@ -173,6 +173,13 @@ public class HttpUriBuilder
         return this;
     }
 
+    public HttpUriBuilder replaceRawQuery(String rawQuery)
+    {
+        params.clear();
+        params.putAll(parseParams(rawQuery));
+        return this;
+    }
+
     // return an RFC-3986-compatible URI
     public String toString()
     {

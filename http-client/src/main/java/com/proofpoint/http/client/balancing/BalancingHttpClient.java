@@ -66,6 +66,7 @@ public final class BalancingHttpClient implements HttpClient
         for (;;) {
             URI uri = uriBuilderFrom(attempt.getUri())
                     .appendPath(request.getUri().getPath())
+                    .replaceRawQuery(request.getUri().getRawQuery())
                     .build();
 
             Request subRequest = Request.Builder.fromRequest(request)

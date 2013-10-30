@@ -80,6 +80,7 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
 
         URI uri = uriBuilderFrom(attempt.getUri())
                 .appendPath(request.getUri().getPath())
+                .replaceRawQuery(request.getUri().getRawQuery())
                 .build();
 
         Request subRequest = Request.Builder.fromRequest(request)

@@ -116,6 +116,27 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
     }
 
     @Test
+    public void testSuccessfulQueryWithParameters()
+            throws Exception
+    {
+        request = preparePut().setUri(URI.create("v1/service?foo=bar&baz=quux")).setBodyGenerator(bodyGenerator).build();
+        httpClient.expectCall("http://s1.example.com/v1/service?foo=bar&baz=quux", response);
+
+        ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
+        when(responseHandler.handle(any(Request.class), same(response))).thenReturn("test response");
+
+        String returnValue = balancingHttpClient.execute(request, responseHandler);
+        assertEquals(returnValue, "test response", "return value from .execute()");
+
+        httpClient.assertDone();
+
+        verify(serviceAttempt1, atLeastOnce()).getUri();
+        verify(serviceAttempt1).markGood();
+        verify(responseHandler).handle(any(Request.class), same(response));
+        verifyNoMoreInteractions(serviceAttempt1, bodyGenerator, responseHandler);
+    }
+
+    @Test
     public void testSuccessfulQueryNullPath()
             throws Exception
     {

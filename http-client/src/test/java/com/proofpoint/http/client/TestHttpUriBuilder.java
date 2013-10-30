@@ -231,6 +231,16 @@ public class TestHttpUriBuilder
     }
 
     @Test
+    public void testReplaceRawQuery()
+    {
+        URI uri = HttpUriBuilder.uriBuilderFrom(URI.create("http://www.example.com:8081/a%20/%C3%A5?k1=1&k1=2&k2=3"))
+                .replaceRawQuery("k=1&k=2&%C3%A5=3")
+                .build();
+
+        assertEquals(uri.toASCIIString(), "http://www.example.com:8081/a%20/%C3%A5?k=1&k=2&%C3%A5=3");
+    }
+
+    @Test
     public void testReplacePort()
     {
         URI uri = HttpUriBuilder.uriBuilderFrom(URI.create("http://www.example.com:8081/"))
