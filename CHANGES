@@ -1,3 +1,7 @@
+Platform 0.85
+
+* [Bug] BalancingHttpClient preserve the query part of the URI
+
 Platform 0.84
 
 * Reporting (experimental)
@@ -13,8 +17,6 @@ Platform 0.84
 * We added decayed total to Distribution
 
 * We added merge support to CounterStat and DecayCounter
-
-* [Bug] BalancingHttpClient preserve the query part of the URI
 
 * [Bug] Ignore IOException in Closeables.closeQuietly()
 
