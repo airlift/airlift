@@ -1,3 +1,16 @@
+Platform 0.86
+
+* Reporting
+
+  - The reporting client now uses discovery. The "report.uri" configuration
+    property has been removed.
+
+  - Reporting is now enabled by default. It may be disabled with the
+    "reporting.enabled" configuration property.
+
+  - The "report.tags" configuration property has been renamed to
+    "reporting.tags".
+
 Platform 0.85
 
 * [Bug] BalancingHttpClient preserve the query part of the URI
