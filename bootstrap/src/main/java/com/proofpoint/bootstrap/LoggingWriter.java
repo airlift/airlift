@@ -62,14 +62,14 @@ class LoggingWriter extends StringWriter
                     default:
                     case DEBUG: {
                         if (logger.isDebugEnabled()) {
-                            logger.debug(line);
+                            logger.debug("%s", line);
                         }
                         break;
                     }
 
                     case INFO: {
                         if (logger.isInfoEnabled()) {
-                            logger.info(line);
+                            logger.info("%s", line);
                         }
                         break;
                     }
