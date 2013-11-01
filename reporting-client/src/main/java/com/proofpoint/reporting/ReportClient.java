@@ -87,9 +87,14 @@ class ReportClient
                 .setHeader("Content-Type", "application/gzip")
                 .setBodyGenerator(new CompressBodyGenerator(systemTimeMillis, collectedData))
                 .build();
-        StatusResponse response = httpClient.execute(request, createStatusResponseHandler());
-        if (response.getStatusCode() != 204) {
-            logger.warn("Failed to report stats: %s %s", response.getStatusCode(), response.getStatusMessage());
+        try {
+            StatusResponse response = httpClient.execute(request, createStatusResponseHandler());
+            if (response.getStatusCode() != 204) {
+                logger.warn("Failed to report stats: %s %s", response.getStatusCode(), response.getStatusMessage());
+            }
+        }
+        catch (RuntimeException e) {
+            logger.warn(e, "Exception when trying to report stats");
         }
     }
 
