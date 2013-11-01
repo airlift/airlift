@@ -20,7 +20,7 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
-import static com.proofpoint.http.client.HttpClientBinder.httpClientBinder;
+import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
 
 public class ReportingClientModule
     implements Module
@@ -31,7 +31,7 @@ public class ReportingClientModule
         binder.bind(ReportCollector.class).in(Scopes.SINGLETON);
         binder.bind(ReportClient.class).in(Scopes.SINGLETON);
 
-        httpClientBinder(binder).bindHttpClient("report", ForReportClient.class);
+        discoveryBinder(binder).bindDiscoveredHttpClient("reporting", ForReportClient.class);
         bindConfig(binder).to(ReportClientConfig.class);
     }
 }

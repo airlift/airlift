@@ -41,7 +41,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -54,7 +53,6 @@ import static org.testng.Assert.assertNull;
 
 public class TestReportClient
 {
-    private static final String TEST_URI = "http://example.com:8080";
     private static final int TEST_TIME = 1234567890;
     private NodeInfo nodeInfo;
     private Table<ObjectName, String, Number> collectedData;
@@ -81,7 +79,7 @@ public class TestReportClient
     }
 
     @Test
-    public void testNullReportUri()
+    public void testReportingDisabled()
     {
         httpClient = new TestingHttpClient(new Function<Request, Response>()
         {
@@ -91,7 +89,7 @@ public class TestReportClient
                 throw new UnsupportedOperationException();
             }
         });
-        ReportClient client = new ReportClient(nodeInfo, httpClient, new ReportClientConfig().setUri(null), objectMapper);
+        ReportClient client = new ReportClient(nodeInfo, httpClient, new ReportClientConfig().setEnabled(false), objectMapper);
         client.report(System.currentTimeMillis(), collectedData);
     }
 
@@ -99,7 +97,7 @@ public class TestReportClient
     public void testReportData()
     {
 
-        ReportClient client = new ReportClient(nodeInfo, httpClient, new ReportClientConfig().setUri(URI.create(TEST_URI)), objectMapper);
+        ReportClient client = new ReportClient(nodeInfo, httpClient, new ReportClientConfig(), objectMapper);
         client.report(TEST_TIME, collectedData);
         assertEquals(sentJson.size(), 2);
 
@@ -131,7 +129,6 @@ public class TestReportClient
 
         ReportClient client = new ReportClient(nodeInfo, httpClient,
                 new ReportClientConfig()
-                        .setUri(URI.create(TEST_URI))
                         .setTags(ImmutableMap.of("foo", "bar", "baz", "quux")), objectMapper);
         client.report(TEST_TIME, collectedData);
         assertEquals(sentJson.size(), 2);
@@ -157,7 +154,7 @@ public class TestReportClient
         {
             assertNull(sentJson);
             assertEquals(input.getMethod(), "POST");
-            assertEquals(input.getUri().toString(), TEST_URI + "/api/v1/datapoints");
+            assertEquals(input.getUri().toString(), "api/v1/datapoints");
             assertEquals(input.getHeader("Content-Type"), "application/gzip");
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

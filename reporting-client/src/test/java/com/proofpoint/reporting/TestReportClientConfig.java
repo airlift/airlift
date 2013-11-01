@@ -18,7 +18,6 @@ package com.proofpoint.reporting;
 import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.Test;
 
-import java.net.URI;
 import java.util.Map;
 
 import static com.proofpoint.configuration.testing.ConfigAssertions.assertFullMapping;
@@ -32,7 +31,7 @@ public class TestReportClientConfig
     public void testDefaults()
     {
         assertRecordedDefaults(recordDefaults(ReportClientConfig.class)
-                .setUri(null)
+                .setEnabled(true)
                 .setTags(ImmutableMap.<String, String>of()));
     }
 
@@ -40,12 +39,12 @@ public class TestReportClientConfig
     public void testExplicitPropertyMappings()
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("report.uri", "http://example.com/foo")
-                .put("report.tag.foo", "bar")
+                .put("reporting.enabled", "false")
+                .put("reporting.tag.foo", "bar")
                 .build();
 
         ReportClientConfig expected = new ReportClientConfig()
-                .setUri(URI.create("http://example.com/foo"))
+                .setEnabled(false)
                 .setTags(ImmutableMap.of("foo", "bar"));
 
         assertFullMapping(properties, expected);
@@ -54,6 +53,14 @@ public class TestReportClientConfig
     @Test
     public void testLegacyProperties()
     {
-        assertLegacyEquivalence(ReportClientConfig.class, ImmutableMap.<String, String>of());
+        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("reporting.tag.foo", "bar")
+                .build();
+
+        Map<String, String> olderProperties = new ImmutableMap.Builder<String, String>()
+                .put("report.tag.foo", "bar")
+                .build();
+
+        assertLegacyEquivalence(ReportClientConfig.class, properties, olderProperties);
     }
 }

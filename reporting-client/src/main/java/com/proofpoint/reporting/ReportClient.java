@@ -44,7 +44,6 @@ import java.util.zip.GZIPOutputStream;
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.proofpoint.http.client.HttpUriBuilder.uriBuilderFrom;
 import static com.proofpoint.http.client.Request.Builder.preparePost;
 import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
 
@@ -52,10 +51,11 @@ class ReportClient
 {
     private static final Logger logger = Logger.get(ReportClient.class);
     private static final JsonFactory JSON_FACTORY = new JsonFactory();
+    private static final URI UPLOAD_URI = URI.create("api/v1/datapoints");
     private final Map<String, String> instanceTags;
     private final HttpClient httpClient;
-    private final URI uploadUri;
     private final ObjectMapper objectMapper;
+    private final boolean enabled;
 
     @Inject
     ReportClient(NodeInfo nodeInfo, @ForReportClient HttpClient httpClient, ReportClientConfig reportClientConfig, ObjectMapper objectMapper)
@@ -73,25 +73,17 @@ class ReportClient
         this.instanceTags = builder.build();
 
         this.httpClient = checkNotNull(httpClient, "httpClient is null");
-
-        if (reportClientConfig.getUri() == null) {
-            uploadUri = null;
-        }
-        else {
-            uploadUri = uriBuilderFrom(reportClientConfig.getUri())
-                    .appendPath("api/v1/datapoints")
-                    .build();
-        }
+        enabled = reportClientConfig.isEnabled();
     }
 
     public void report(long systemTimeMillis, Table<ObjectName, String, Number> collectedData)
     {
-        if (uploadUri == null) {
+        if (!enabled) {
             return;
         }
 
         Request request = preparePost()
-                .setUri(uploadUri)
+                .setUri(UPLOAD_URI)
                 .setHeader("Content-Type", "application/gzip")
                 .setBodyGenerator(new CompressBodyGenerator(systemTimeMillis, collectedData))
                 .build();

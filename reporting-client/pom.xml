@@ -13,6 +13,11 @@
     <dependencies>
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
+            <artifactId>discovery</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
             <artifactId>http-client</artifactId>
         </dependency>
 

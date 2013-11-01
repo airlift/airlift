@@ -22,6 +22,7 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
 import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.node.testing.TestingNodeModule;
@@ -39,6 +40,7 @@ public class TestReportCollector
         Guice.createInjector(
                 new ApplicationNameModule("test-application"),
                 new TestingNodeModule(),
+                new TestingDiscoveryModule(),
                 new MBeanModule(),
                 new Module()
                 {
