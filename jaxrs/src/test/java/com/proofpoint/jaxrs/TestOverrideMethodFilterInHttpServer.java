@@ -27,16 +27,19 @@ import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.node.testing.TestingNodeModule;
+import com.proofpoint.reporting.ReportingModule;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.management.MBeanServer;
 import javax.ws.rs.core.Response.Status;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static java.lang.String.format;
+import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -216,6 +219,15 @@ public class TestOverrideMethodFilterInHttpServer
                 new TestingNodeModule(),
                 new JaxrsModule(),
                 new JsonModule(),
+                new ReportingModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
+                    }
+                },
                 new TestingHttpServerModule(),
                 new Module()
                 {

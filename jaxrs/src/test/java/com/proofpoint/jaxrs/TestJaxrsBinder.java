@@ -16,9 +16,11 @@ import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.node.testing.TestingNodeModule;
+import com.proofpoint.reporting.ReportingModule;
 import com.sun.jersey.spi.container.ResourceFilterFactory;
 import org.testng.annotations.Test;
 
+import javax.management.MBeanServer;
 import java.util.Set;
 
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
@@ -120,12 +122,14 @@ public class TestJaxrsBinder
                 new TestingNodeModule(),
                 new JaxrsModule(),
                 new JsonModule(),
+                new ReportingModule(),
                 new TestingHttpServerModule(),
                 new Module()
                 {
                     @Override
                     public void configure(Binder binder)
                     {
+                        binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
                         binder.bind(TestResource.class).toInstance(resource);
                         for (ResourceFilterFactory filterFactory : filterFactories) {
                             jaxrsBinder(binder)

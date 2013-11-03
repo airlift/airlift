@@ -37,6 +37,7 @@ public class JaxrsModule implements Module
         binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(Key.get(GuiceContainer.class));
         binder.bind(JsonMapper.class).in(Scopes.SINGLETON);
         binder.bind(ParsingExceptionMapper.class).in(Scopes.SINGLETON);
+        binder.bind(TimingResourceFilterFactory.class).in(Scopes.SINGLETON);
         binder.bind(new TypeLiteral<Map<String, String>>()
         {
         }).annotatedWith(TheServlet.class).toProvider(TheServletParametersProvider.class).in(Scopes.SINGLETON);

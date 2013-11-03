@@ -10,12 +10,14 @@ import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.jaxrs.JaxrsModule;
 import com.proofpoint.jmx.JmxHttpModule;
-import com.proofpoint.jmx.JmxModule;
+import com.proofpoint.jmx.testing.TestingJmxModule;
 import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.testing.TestingNodeModule;
+import com.proofpoint.reporting.ReportingModule;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.weakref.jmx.guice.MBeanModule;
 
 import java.net.URI;
 
@@ -42,7 +44,9 @@ public class TestServer
                         new JsonModule(),
                         new JaxrsModule(),
                         new JmxHttpModule(),
-                        new JmxModule(),
+                        new ReportingModule(),
+                        new MBeanModule(),
+                        new TestingJmxModule(),
                         new MainModule()
                 );
 

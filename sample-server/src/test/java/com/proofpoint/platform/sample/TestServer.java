@@ -31,12 +31,15 @@ import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.jaxrs.JaxrsModule;
+import com.proofpoint.jmx.testing.TestingJmxModule;
 import com.proofpoint.json.JsonCodec;
 import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.testing.TestingNodeModule;
+import com.proofpoint.reporting.ReportingModule;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.weakref.jmx.guice.MBeanModule;
 
 import java.io.IOException;
 import java.net.URI;
@@ -89,6 +92,9 @@ public class TestServer
                         new TestingHttpServerModule(),
                         new JsonModule(),
                         new JaxrsModule(),
+                        new ReportingModule(),
+                        new MBeanModule(),
+                        new TestingJmxModule(),
                         new MainModule()
                 );
 

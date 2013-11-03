@@ -25,6 +25,8 @@ import com.sun.jersey.spi.container.ResourceFilterFactory;
 import java.util.Map;
 import java.util.Set;
 
+import static com.google.common.base.Objects.firstNonNull;
+
 class TheServletParametersProvider
         implements Provider<Map<String, String>>
 {
@@ -43,27 +45,13 @@ class TheServletParametersProvider
     {
         Builder<String, String> builder = ImmutableMap.builder();
         builder.put(JERSEY_CONTAINER_REQUEST_FILTERS, OverrideMethodFilter.class.getName());
-        if ((resourceFilterFactorySet != null) && !resourceFilterFactorySet.isEmpty()) {
-            builder.put(JERSEY_RESOURCE_FILTERS, join(resourceFilterFactorySet));
-        }
-        return builder.build();
-    }
 
-    private String join(Set<ResourceFilterFactory> resourceFilterFactorySet)
-    {
-        StringBuilder stringBuilder = new StringBuilder();
-        boolean first = true;
-        if ((resourceFilterFactorySet != null) && (!resourceFilterFactorySet.isEmpty())) {
-            for (ResourceFilterFactory factory : resourceFilterFactorySet) {
-                if (first) {
-                    first = false;
-                }
-                else {
-                    stringBuilder.append(",");
-                }
-                stringBuilder.append(factory.getClass().getName());
-            }
+        StringBuilder sb = new StringBuilder(TimingResourceFilterFactory.class.getName());
+        for (ResourceFilterFactory factory : firstNonNull(resourceFilterFactorySet, ImmutableSet.<ResourceFilterFactory>of())) {
+            sb.append(",").append(factory.getClass().getName());
         }
-        return stringBuilder.toString();
+        builder.put(JERSEY_RESOURCE_FILTERS, sb.toString());
+
+        return builder.build();
     }
 }
