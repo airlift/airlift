@@ -72,7 +72,7 @@ public class TestReportClient
 
         collectedData = HashBasedTable.create();
         collectedData.put(ObjectName.getInstance("com.example:name=Foo"), "Size", 1.1);
-        collectedData.put(ObjectName.getInstance("com.example:type=Foo,name=bar,tag1=\"B\\\\a\\\"z\""), "Size", 1.2);
+        collectedData.put(ObjectName.getInstance("com.example:type=Foo,name=\"ba:r\",tag1=\"B\\\\a\\\"z\""), "Size", 1.2);
 
         httpClient = new TestingHttpClient(new TestingResponseFunction());
         sentJson = null;
@@ -110,7 +110,7 @@ public class TestReportClient
             assertEquals(tags.get("environment"), "test_environment");
             assertEquals(tags.get("pool"), "test_pool");
         }
-        assertEquals(sentJson.get(0).get("name"), "Foo.Bar.Size");
+        assertEquals(sentJson.get(0).get("name"), "Foo.Ba_r.Size");
         assertEquals(sentJson.get(1).get("name"), "Foo.Size");
         assertEquals(sentJson.get(0).get("value"), 1.2);
         assertEquals(sentJson.get(1).get("value"), 1.1);
@@ -129,7 +129,7 @@ public class TestReportClient
 
         ReportClient client = new ReportClient(nodeInfo, httpClient,
                 new ReportClientConfig()
-                        .setTags(ImmutableMap.of("foo", "bar", "baz", "quux")), objectMapper);
+                        .setTags(ImmutableMap.of("foo", "ba:r", "baz", "quux")), objectMapper);
         client.report(TEST_TIME, collectedData);
         assertEquals(sentJson.size(), 2);
 
@@ -137,7 +137,7 @@ public class TestReportClient
             assertEquals(map.keySet(), ImmutableSet.of("name", "timestamp", "value", "tags"));
             Map<String, String> tags = (Map<String, String>) map.get("tags");
             assertEquals(tags.get("package"), "com.example");
-            assertEquals(tags.get("foo"), "bar");
+            assertEquals(tags.get("foo"), "ba:r");
             assertEquals(tags.get("baz"), "quux");
         }
         Map<String, String> tags = (Map<String, String>) sentJson.get(0).get("tags");

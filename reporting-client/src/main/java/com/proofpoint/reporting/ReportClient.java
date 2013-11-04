@@ -125,7 +125,8 @@ class ReportClient
                 nameBuilder.append(LOWER_CAMEL.to(UPPER_CAMEL, dequote(propertyList.get("name"))))
                         .append(".");
             }
-            name = nameBuilder.append(cell.getColumnKey()).toString();
+            nameBuilder.append(cell.getColumnKey());
+            name = NOT_ACCEPTED_CHARACTER_PATTERN.matcher(nameBuilder.toString()).replaceAll("_");
 
             timestamp = systemTimeMillis;
             value = cell.getValue();
