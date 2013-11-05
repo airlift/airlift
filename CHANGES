@@ -1,6 +1,11 @@
 Platform 0.87
 
-* Permute reported metric names as necessary to make them acceptable to KairosDB
+* Reporting
+
+  - JAX-RS now reports response times per resource method and response code.
+    JaxrsModule now depends on ReportingModule.
+
+  - Permute reported metric names as necessary to make them acceptable to KairosDB
 
 Platform 0.86
 
