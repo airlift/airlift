@@ -1,7 +1,6 @@
 package com.proofpoint.jaxrs;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.sun.jersey.api.model.AbstractMethod;
 import com.sun.jersey.spi.container.ContainerRequest;
 import com.sun.jersey.spi.container.ContainerRequestFilter;
@@ -12,7 +11,8 @@ import com.sun.jersey.spi.container.ResourceFilterFactory;
 
 import java.util.List;
 
-public class SecondTestFilterFactory implements ResourceFilterFactory
+public class TestingFilterFactory
+        implements ResourceFilterFactory
 {
     @Override
     public List<ResourceFilter> create(AbstractMethod am)
@@ -40,7 +40,7 @@ public class SecondTestFilterFactory implements ResourceFilterFactory
                     @Override
                     public ContainerResponse filter(ContainerRequest request, ContainerResponse response)
                     {
-                        response.getHttpHeaders().put("NewHeader", Lists.<Object>newArrayList("NewValue"));
+                        response.setStatus(503);
                         return response;
                     }
                 };

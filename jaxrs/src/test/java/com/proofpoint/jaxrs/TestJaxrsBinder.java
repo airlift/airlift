@@ -70,7 +70,7 @@ public class TestJaxrsBinder
     public void testServerInstantiation() throws Exception
     {
         TestResource resource = new TestResource();
-        final ResourceFilterFactory filterFactory = new TestFilterFactory();
+        final ResourceFilterFactory filterFactory = new TestingFilterFactory();
         Set<ResourceFilterFactory> filterFactories = Sets.newHashSet();
         filterFactories.add(filterFactory);
 
@@ -92,8 +92,8 @@ public class TestJaxrsBinder
     public void testMultipleFiltersInServer() throws Exception
     {
         TestResource resource = new TestResource();
-        final ResourceFilterFactory statusCodeChangeFilterFactory = new TestFilterFactory();
-        final ResourceFilterFactory headerChangeFilterFactory = new SecondTestFilterFactory();
+        final ResourceFilterFactory statusCodeChangeFilterFactory = new TestingFilterFactory();
+        final ResourceFilterFactory headerChangeFilterFactory = new SecondTestingFilterFactory();
         Set<ResourceFilterFactory> filterFactories = Sets.newHashSet();
         filterFactories.add(statusCodeChangeFilterFactory);
         filterFactories.add(headerChangeFilterFactory);
