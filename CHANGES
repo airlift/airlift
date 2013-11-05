@@ -1,5 +1,7 @@
 Platform 0.87
 
+* The node.pool configuration property now allows uppercase in pool names.
+
 * Reporting
 
   - JAX-RS now reports response times per resource method and response code.
