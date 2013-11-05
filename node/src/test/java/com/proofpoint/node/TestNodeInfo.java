@@ -86,6 +86,6 @@ public class TestNodeInfo
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testInvalidPool()
     {
-        new NodeInfo(APPLICATION, ENVIRONMENT, "POOL", null, null, null, null, null, null, null, null);
+        new NodeInfo(APPLICATION, ENVIRONMENT, "P@OOL", null, null, null, null, null, null, null, null);
     }
 }
