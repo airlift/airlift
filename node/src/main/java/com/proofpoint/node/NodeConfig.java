@@ -29,7 +29,7 @@ public class NodeConfig
 {
     public static final String ENV_REGEXP = "[a-z0-9][_a-z0-9]*";
     public static final String HOSTNAME_REGEXP = "[a-z0-9][_a-z0-9]*(?:\\.[a-z0-9][_a-z0-9]*)+";
-    public static final String POOL_REGEXP = "[a-z0-9][_a-z0-9]*";
+    public static final String POOL_REGEXP = "[a-zA-Z0-9][_a-zA-Z0-9]*";
 
     private String environment;
     private String pool = "general";
