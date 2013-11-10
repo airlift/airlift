@@ -306,11 +306,20 @@ public class Main
 
             Process child = null;
             try {
-                child = new ProcessBuilder(javaArgs)
+                ProcessBuilder processBuilder = new ProcessBuilder(javaArgs)
                         .directory(new File(dataDir))
-                        .redirectInput(Processes.NULL_FILE)
-                        .redirectOutput(Redirect.INHERIT)
-                        .redirectError(Redirect.INHERIT)
+                        .redirectInput(Processes.NULL_FILE);
+                if (daemon) {
+                    processBuilder = processBuilder
+                            .redirectOutput(Processes.NULL_FILE)
+                            .redirectError(Processes.NULL_FILE);
+                }
+                else {
+                    processBuilder = processBuilder
+                            .redirectOutput(Redirect.INHERIT)
+                            .redirectError(Redirect.INHERIT);
+                }
+                child = processBuilder
                         .start();
             }
             catch (IOException e) {

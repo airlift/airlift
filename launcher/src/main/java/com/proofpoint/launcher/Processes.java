@@ -22,8 +22,6 @@ import jnr.posix.POSIXHandler;
 import sun.misc.Signal;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -62,14 +60,6 @@ class Processes
     {
         if (!System.getProperty("os.name").startsWith("Windows")) {
             posix.setsid();
-        }
-
-        try {
-            System.setIn(new FileInputStream(NULL_FILE));
-            System.setOut(new PrintStream(NULL_FILE));
-            System.setErr(new PrintStream(NULL_FILE));
-        }
-        catch (FileNotFoundException ignored) {
         }
     }
 
