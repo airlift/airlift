@@ -76,27 +76,6 @@ public class TestNodeConfig
     }
 
     @Test
-    public void testDeprecatedProperties()
-    {
-        Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
-                .put("node.environment", "environment")
-                .put("node.ip", "1.2.3.4")
-                .build();
-
-        Map<String, String> httpProperties = new ImmutableMap.Builder<String, String>()
-                .put("node.environment", "environment")
-                .put("http-server.ip", "1.2.3.4")
-                .build();
-
-        Map<String, String> jettyProperties = new ImmutableMap.Builder<String, String>()
-                .put("node.environment", "environment")
-                .put("jetty.ip", "1.2.3.4")
-                .build();
-
-        ConfigAssertions.assertDeprecatedEquivalence(NodeConfig.class, currentProperties, httpProperties, jettyProperties);
-    }
-
-    @Test
     public void testValidations()
     {
         assertValidates(new NodeConfig()

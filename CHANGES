@@ -1,6 +1,7 @@
 * 0.85
 
 - Add validation for nodeId
+- Defunct http-server.ip and jetty.ip
 
 * 0.84
 
