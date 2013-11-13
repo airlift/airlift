@@ -20,7 +20,14 @@ import com.google.common.net.InetAddresses;
 import io.airlift.configuration.testing.ConfigAssertions;
 import org.testng.annotations.Test;
 
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+
 import java.util.Map;
+import java.util.UUID;
+
+import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
+import static io.airlift.testing.ValidationAssertions.assertValidates;
 
 public class TestNodeConfig
 {
@@ -89,4 +96,18 @@ public class TestNodeConfig
         ConfigAssertions.assertDeprecatedEquivalence(NodeConfig.class, currentProperties, httpProperties, jettyProperties);
     }
 
+    @Test
+    public void testValidations()
+    {
+        assertValidates(new NodeConfig()
+                .setEnvironment("test")
+                .setNodeId(UUID.randomUUID().toString()));
+
+        assertFailsValidation(new NodeConfig().setNodeId("abc/123"), "nodeId", "is malformed", Pattern.class);
+
+        assertFailsValidation(new NodeConfig(), "environment", "may not be null", NotNull.class);
+        assertFailsValidation(new NodeConfig().setEnvironment("FOO"), "environment", "is malformed", Pattern.class);
+
+        assertFailsValidation(new NodeConfig().setPool("FOO"), "pool", "is malformed", Pattern.class);
+    }
 }

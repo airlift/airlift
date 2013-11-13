@@ -1,3 +1,7 @@
+* 0.85
+
+- Add validation for nodeId
+
 * 0.84
 
 - Add decayed total to Distribution

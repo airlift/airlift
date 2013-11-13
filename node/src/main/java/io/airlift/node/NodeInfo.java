@@ -16,7 +16,6 @@
 package io.airlift.node;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.InetAddresses;
 import com.google.inject.Inject;
@@ -32,6 +31,9 @@ import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 @Singleton
 public class NodeInfo
@@ -78,15 +80,16 @@ public class NodeInfo
             String binarySpec,
             String configSpec)
     {
-        Preconditions.checkNotNull(environment, "environment is null");
-        Preconditions.checkNotNull(pool, "pool is null");
-        Preconditions.checkArgument(environment.matches(NodeConfig.ENV_REGEXP), String.format("environment '%s' is invalid", environment));
-        Preconditions.checkArgument(pool.matches(NodeConfig.POOL_REGEXP), String.format("pool '%s' is invalid", pool));
+        checkNotNull(environment, "environment is null");
+        checkNotNull(pool, "pool is null");
+        checkArgument(environment.matches(NodeConfig.ENV_REGEXP), "environment '%s' is invalid", environment);
+        checkArgument(pool.matches(NodeConfig.POOL_REGEXP), "pool '%s' is invalid", pool);
 
         this.environment = environment;
         this.pool = pool;
 
         if (nodeId != null) {
+            checkArgument(nodeId.matches(NodeConfig.ID_REGEXP), "nodeId '%s' is invalid", nodeId);
             this.nodeId = nodeId;
         }
         else {
