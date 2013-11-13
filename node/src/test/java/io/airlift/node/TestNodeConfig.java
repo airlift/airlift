@@ -20,7 +20,14 @@ import com.google.common.net.InetAddresses;
 import io.airlift.configuration.testing.ConfigAssertions;
 import org.testng.annotations.Test;
 
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+
 import java.util.Map;
+import java.util.UUID;
+
+import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
+import static io.airlift.testing.ValidationAssertions.assertValidates;
 
 public class TestNodeConfig
 {
@@ -69,24 +76,17 @@ public class TestNodeConfig
     }
 
     @Test
-    public void testDeprecatedProperties()
+    public void testValidations()
     {
-        Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
-                .put("node.environment", "environment")
-                .put("node.ip", "1.2.3.4")
-                .build();
+        assertValidates(new NodeConfig()
+                .setEnvironment("test")
+                .setNodeId(UUID.randomUUID().toString()));
 
-        Map<String, String> httpProperties = new ImmutableMap.Builder<String, String>()
-                .put("node.environment", "environment")
-                .put("http-server.ip", "1.2.3.4")
-                .build();
+        assertFailsValidation(new NodeConfig().setNodeId("abc/123"), "nodeId", "is malformed", Pattern.class);
 
-        Map<String, String> jettyProperties = new ImmutableMap.Builder<String, String>()
-                .put("node.environment", "environment")
-                .put("jetty.ip", "1.2.3.4")
-                .build();
+        assertFailsValidation(new NodeConfig(), "environment", "may not be null", NotNull.class);
+        assertFailsValidation(new NodeConfig().setEnvironment("FOO"), "environment", "is malformed", Pattern.class);
 
-        ConfigAssertions.assertDeprecatedEquivalence(NodeConfig.class, currentProperties, httpProperties, jettyProperties);
+        assertFailsValidation(new NodeConfig().setPool("FOO"), "pool", "is malformed", Pattern.class);
     }
-
 }

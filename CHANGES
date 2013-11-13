@@ -1,3 +1,9 @@
+* 0.85
+
+- Add validation for nodeId
+- Defunct http-server.ip and jetty.ip
+- Defunct all legacy HTTP server properties
+
 * 0.84
 
 - Add decayed total to Distribution

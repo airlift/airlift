@@ -17,14 +17,17 @@ package io.airlift.node;
 
 import com.google.common.net.InetAddresses;
 import io.airlift.configuration.Config;
-import io.airlift.configuration.LegacyConfig;
+import io.airlift.configuration.DefunctConfig;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
+
 import java.net.InetAddress;
 
+@DefunctConfig({"http-server.ip", "jetty.ip"})
 public class NodeConfig
 {
+    public static final String ID_REGEXP = "[A-Za-z0-9][_A-Za-z0-9-]*";
     public static final String ENV_REGEXP = "[a-z0-9][_a-z0-9]*";
     public static final String POOL_REGEXP = "[a-z0-9][_a-z0-9]*";
 
@@ -66,6 +69,7 @@ public class NodeConfig
         return this;
     }
 
+    @Pattern(regexp = ID_REGEXP, message = "is malformed")
     public String getNodeId()
     {
         return nodeId;
@@ -102,7 +106,6 @@ public class NodeConfig
     }
 
     @Config("node.ip")
-    @LegacyConfig({"http-server.ip", "jetty.ip"})
     public NodeConfig setNodeInternalIp(String nodeInternalIp)
     {
         if (nodeInternalIp != null) {
