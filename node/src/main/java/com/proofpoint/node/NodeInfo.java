@@ -93,14 +93,15 @@ public class NodeInfo
         checkNotNull(application, "application is null");
         checkNotNull(environment, "environment is null");
         checkNotNull(pool, "pool is null");
-        checkArgument(environment.matches(NodeConfig.ENV_REGEXP), String.format("environment '%s' is invalid", environment));
-        checkArgument(pool.matches(NodeConfig.POOL_REGEXP), String.format("pool '%s' is invalid", pool));
+        checkArgument(environment.matches(NodeConfig.ENV_REGEXP), "environment '%s' is invalid", environment);
+        checkArgument(pool.matches(NodeConfig.POOL_REGEXP), "pool '%s' is invalid", pool);
 
         this.application = application;
         this.environment = environment;
         this.pool = pool;
 
         if (nodeId != null) {
+            checkArgument(nodeId.matches(NodeConfig.ID_REGEXP), "nodeId '%s' is invalid", nodeId);
             this.nodeId = nodeId;
         }
         else {

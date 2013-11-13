@@ -20,11 +20,16 @@ import com.google.common.net.InetAddresses;
 import com.proofpoint.configuration.testing.ConfigAssertions;
 import org.testng.annotations.Test;
 
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import java.util.Map;
+import java.util.UUID;
 
 import static com.proofpoint.configuration.testing.ConfigAssertions.assertFullMapping;
 import static com.proofpoint.configuration.testing.ConfigAssertions.assertLegacyEquivalence;
 import static com.proofpoint.configuration.testing.ConfigAssertions.assertRecordedDefaults;
+import static com.proofpoint.testing.ValidationAssertions.assertFailsValidation;
+import static com.proofpoint.testing.ValidationAssertions.assertValidates;
 
 public class TestNodeConfig
 {
@@ -85,4 +90,18 @@ public class TestNodeConfig
         assertLegacyEquivalence(NodeConfig.class, currentProperties);
     }
 
+    @Test
+    public void testValidations()
+    {
+        assertValidates(new NodeConfig()
+                .setEnvironment("test")
+                .setNodeId(UUID.randomUUID().toString()));
+
+        assertFailsValidation(new NodeConfig().setNodeId("abc/123"), "nodeId", "is malformed", Pattern.class);
+
+        assertFailsValidation(new NodeConfig(), "environment", "may not be null", NotNull.class);
+        assertFailsValidation(new NodeConfig().setEnvironment("FOO"), "environment", "is malformed", Pattern.class);
+
+        assertFailsValidation(new NodeConfig().setPool("FO/O"), "pool", "is malformed", Pattern.class);
+    }
 }

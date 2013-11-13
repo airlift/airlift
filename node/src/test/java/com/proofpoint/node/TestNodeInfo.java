@@ -71,19 +71,25 @@ public class TestNodeInfo
         Assert.assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "nodeId .*")
+    public void testInvalidNodeId()
+    {
+        new NodeInfo(APPLICATION, ENVIRONMENT, POOL, "abc/123", null, null, null, null, null, null, null);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "environment .*")
     public void testInvalidEnvironment()
     {
         new NodeInfo(APPLICATION, "ENV", POOL, null, null, null, null, null, null, null, null);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "hostname .*")
     public void testInvalidHostname()
     {
         new NodeInfo(APPLICATION, ENVIRONMENT, POOL, null, null, "unqualified", null, null, null, null, null);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "pool .*")
     public void testInvalidPool()
     {
         new NodeInfo(APPLICATION, ENVIRONMENT, "P@OOL", null, null, null, null, null, null, null, null);
