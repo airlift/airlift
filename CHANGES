@@ -2,6 +2,7 @@
 
 - Add validation for nodeId
 - Defunct http-server.ip and jetty.ip
+- Defunct all legacy HTTP server properties
 
 * 0.84
 
