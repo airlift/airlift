@@ -40,22 +40,22 @@ public class Main
     public static void main(String[] args)
             throws Exception
     {
-        Bootstrap app = bootstrapApplication("rack")
-                .withModules(
-                        new NodeModule(),
-                        new HttpServerModule(),
-                        new HttpEventModule(),
-                        new ReportingModule(),
-                        new ReportingClientModule(),
-                        new TraceTokenModule(),
-                        new DiscoveryModule(),
-                        new JsonModule(),
-                        new MBeanModule(),
-                        new RackModule(),
-                        new JmxModule()
-                );
-
         try {
+            Bootstrap app = bootstrapApplication("rack")
+                    .withModules(
+                            new NodeModule(),
+                            new HttpServerModule(),
+                            new HttpEventModule(),
+                            new ReportingModule(),
+                            new ReportingClientModule(),
+                            new TraceTokenModule(),
+                            new DiscoveryModule(),
+                            new JsonModule(),
+                            new MBeanModule(),
+                            new RackModule(),
+                            new JmxModule()
+                    );
+
             Injector injector = app.initialize();
             injector.getInstance(Announcer.class).start();
         }
