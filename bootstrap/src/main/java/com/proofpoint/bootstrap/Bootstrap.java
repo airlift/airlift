@@ -67,10 +67,10 @@ import static com.proofpoint.event.client.EventBinder.eventBinder;
 public class Bootstrap
 {
     private final Logger log = Logger.get("Bootstrap");
+    private final Logging logging;
     private final List<Module> modules;
 
     private Map<String, String> requiredConfigurationProperties = null;
-    private boolean initializeLogging = true;
     private Map<String, String> applicationDefaults = null;
     private boolean requireExplicitBindings = true;
 
@@ -92,7 +92,7 @@ public class Bootstrap
     @Deprecated
     public Bootstrap(Iterable<? extends Module> modules)
     {
-        this("legacy-app", modules);
+        this("legacy-app", modules, true);
     }
 
     public static BootstrapBeforeModules bootstrapApplication(String applicationName)
@@ -100,8 +100,24 @@ public class Bootstrap
         return new BootstrapBeforeModules(applicationName);
     }
 
-    private Bootstrap(String applicationName, Iterable<? extends Module> modules)
+    private Bootstrap(String applicationName, Iterable<? extends Module> modules, boolean initializeLogging)
     {
+        if (initializeLogging) {
+            logging = Logging.initialize();
+        }
+        else {
+            logging = null;
+        }
+
+        Thread.currentThread().setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler()
+        {
+            @Override
+            public void uncaughtException(Thread t, Throwable e)
+            {
+                log.error(e, "Uncaught exception in thread %s", t.getName());
+            }
+        });
+
         this.applicationName = checkNotNull(applicationName, "applicationName is null");
         this.modules = ImmutableList.copyOf(modules);
     }
@@ -123,13 +139,6 @@ public class Bootstrap
             this.requiredConfigurationProperties = new TreeMap<>();
         }
         this.requiredConfigurationProperties.putAll(requiredConfigurationProperties);
-        return this;
-    }
-
-    @Beta
-    public Bootstrap doNotInitializeLogging()
-    {
-        this.initializeLogging = false;
         return this;
     }
 
@@ -157,20 +166,6 @@ public class Bootstrap
     {
         checkState(!initialized, "Already initialized");
         initialized = true;
-
-        Logging logging = null;
-        if (initializeLogging) {
-            logging = Logging.initialize();
-        }
-
-        Thread.currentThread().setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler()
-        {
-            @Override
-            public void uncaughtException(Thread t, Throwable e)
-            {
-                log.error(e, "Uncaught exception in thread %s", t.getName());
-            }
-        });
 
         // initialize configuration
         ConfigurationFactoryBuilder builder = new ConfigurationFactoryBuilder();
@@ -321,10 +316,18 @@ public class Bootstrap
     public static class BootstrapBeforeModules
     {
         private final String applicationName;
+        private boolean initializeLogging = true;
 
         private BootstrapBeforeModules(String applicationName)
         {
             this.applicationName = checkNotNull(applicationName, "applicationName is null");
+        }
+
+        @Beta
+        public BootstrapBeforeModules doNotInitializeLogging()
+        {
+            this.initializeLogging = false;
+            return this;
         }
 
         public Bootstrap withModules(Module... modules)
@@ -334,7 +337,7 @@ public class Bootstrap
 
         public Bootstrap withModules(Iterable<? extends Module> modules)
         {
-            return new Bootstrap(applicationName, modules);
+            return new Bootstrap(applicationName, modules, initializeLogging);
         }
     }
 }

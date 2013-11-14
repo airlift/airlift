@@ -59,6 +59,7 @@ public class TestRackAnnounce
             throws Exception
     {
         Bootstrap app = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
                 .withModules(
                         new TestingHttpServerModule(),
                         new RackModule(),
@@ -70,7 +71,6 @@ public class TestRackAnnounce
                 );
 
         Injector injector = app
-                .doNotInitializeLogging()
                 .setRequiredConfigurationProperty("rackserver.rack-config-path", Resources.getResource("test/raw/config.ru").getFile())
                 .setRequiredConfigurationProperty("rackserver.announcement", "racktest")
                 .initialize();

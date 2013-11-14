@@ -1,3 +1,15 @@
+Platform 0.88
+
+* Bootstrap and Logging
+
+  - Bootstrap now initializes logging before the withModules() call. Any
+    test code that needs to call doNotInitializeLogging() now must do
+    so before the withModules() call.
+
+  - We modified the archetype Main classes to place the Bootstrap call inside
+    the try block. This allows more startup exceptions to be logged. We
+    recommend applications make a corresponding change to their Main class.
+
 Platform 0.87
 
 * The node.pool configuration property now allows uppercase in pool names.

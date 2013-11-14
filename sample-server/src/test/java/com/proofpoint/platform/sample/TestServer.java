@@ -86,6 +86,7 @@ public class TestServer
             throws Exception
     {
         Bootstrap app = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
                 .withModules(
                         new TestingNodeModule(),
                         new InMemoryEventModule(),
@@ -99,7 +100,6 @@ public class TestServer
                 );
 
         Injector injector = app
-                .doNotInitializeLogging()
                 .initialize();
 
         lifeCycleManager = injector.getInstance(LifeCycleManager.class);

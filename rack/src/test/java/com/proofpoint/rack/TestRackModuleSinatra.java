@@ -60,6 +60,7 @@ public class TestRackModuleSinatra
             throws Exception
     {
         Bootstrap app = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
                 .withModules(
                         new TestingHttpServerModule(),
                         new RackModule(),
@@ -71,7 +72,6 @@ public class TestRackModuleSinatra
                 );
 
         Injector injector = app
-                .doNotInitializeLogging()
                 .setRequiredConfigurationProperty("rackserver.rack-config-path", Resources.getResource("test/sinatra/config.ru").getFile())
                 .initialize();
 
