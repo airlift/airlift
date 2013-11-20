@@ -36,6 +36,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
 
 public class TestHttpServiceBalancerImpl
 {
@@ -166,5 +167,55 @@ public class TestHttpServiceBalancerImpl
         attempt.markGood();
 
         assertEquals(uris, expected);
+    }
+
+    @Test
+    public void testMinimizeConcurrentAttempts()
+            throws Exception
+    {
+        ImmutableSet<URI> expected = ImmutableSet.of(URI.create("http://apple-a.example.com"), URI.create("https://apple-a.example.com"));
+        TimeStat failureTimeStat = mock(TimeStat.class);
+        when(httpServiceBalancerStats.responseTime(any(URI.class), eq(Status.FAILURE))).thenReturn(failureTimeStat);
+        TimeStat successTimeStat = mock(TimeStat.class);
+        when(httpServiceBalancerStats.responseTime(any(URI.class), eq(Status.SUCCESS))).thenReturn(successTimeStat);
+        CounterStat counterStat = mock(CounterStat.class);
+        when(httpServiceBalancerStats.failure(any(URI.class), eq("testing failure"))).thenReturn(counterStat);
+
+        httpServiceBalancer.updateHttpUris(expected);
+
+        for (int i = 0; i < 10; ++i) {
+            HttpServiceAttempt attempt1 = httpServiceBalancer.createAttempt();
+            HttpServiceAttempt attempt2 = httpServiceBalancer.createAttempt();
+
+            assertNotEquals(attempt2.getUri(), attempt1.getUri(), "concurrent attempt");
+            attempt2.markBad("testing failure");
+            attempt2 = attempt2.next();
+            assertEquals(attempt2.getUri(), attempt1.getUri());
+            attempt2.markBad("testing failure");
+            attempt2 = attempt2.next();
+            assertNotEquals(attempt2.getUri(), attempt1.getUri(), "concurrent attempt");
+            attempt1.markGood();
+            attempt1 = httpServiceBalancer.createAttempt();
+            assertNotEquals(attempt1.getUri(), attempt2.getUri(), "concurrent attempt");
+
+            HttpServiceAttempt attempt3 = httpServiceBalancer.createAttempt();
+            HttpServiceAttempt attempt4 = httpServiceBalancer.createAttempt();
+
+            assertNotEquals(attempt4.getUri(), attempt3.getUri(), "concurrent attempt");
+            attempt4.markBad("testing failure");
+            attempt4 = attempt4.next();
+            assertEquals(attempt4.getUri(), attempt3.getUri());
+            attempt4.markBad("testing failure");
+            attempt4 = attempt4.next();
+            assertNotEquals(attempt4.getUri(), attempt3.getUri(), "concurrent attempt");
+            attempt3.markGood();
+            attempt3 = httpServiceBalancer.createAttempt();
+            assertNotEquals(attempt3.getUri(), attempt4.getUri(), "concurrent attempt");
+
+            attempt1.markGood();
+            attempt2.markGood();
+            attempt3.markGood();
+            attempt4.markGood();
+        }
     }
 }
