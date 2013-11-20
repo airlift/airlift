@@ -112,4 +112,59 @@ public class TestHttpServiceBalancerImpl
         verify(counterStat, times(2)).update(1);
         verifyNoMoreInteractions(httpServiceBalancerStats, failureTimeStat, successTimeStat, counterStat);
     }
+
+    @Test
+    public void testTakesUpdates()
+            throws Exception
+    {
+        URI firstUri = URI.create("http://apple-a.example.com");
+        URI secondUri = URI.create("https://apple-a.example.com");
+        TimeStat failureTimeStat = mock(TimeStat.class);
+        when(httpServiceBalancerStats.responseTime(any(URI.class), eq(Status.FAILURE))).thenReturn(failureTimeStat);
+        TimeStat successTimeStat = mock(TimeStat.class);
+        when(httpServiceBalancerStats.responseTime(any(URI.class), eq(Status.SUCCESS))).thenReturn(successTimeStat);
+        CounterStat counterStat = mock(CounterStat.class);
+        when(httpServiceBalancerStats.failure(any(URI.class), eq("testing failure"))).thenReturn(counterStat);
+
+        httpServiceBalancer.updateHttpUris(ImmutableSet.of(firstUri));
+
+        HttpServiceAttempt attempt = httpServiceBalancer.createAttempt();
+        assertEquals(attempt.getUri(), firstUri);
+        attempt.markBad("testing failure");
+
+        httpServiceBalancer.updateHttpUris(ImmutableSet.of(firstUri, secondUri));
+        attempt = attempt.next();
+        assertEquals(attempt.getUri(), secondUri);
+        attempt.markGood();
+    }
+
+    @Test
+    public void testReuseUri()
+            throws Exception
+    {
+        ImmutableSet<URI> expected = ImmutableSet.of(URI.create("http://apple-a.example.com"), URI.create("https://apple-a.example.com"));
+        TimeStat failureTimeStat = mock(TimeStat.class);
+        when(httpServiceBalancerStats.responseTime(any(URI.class), eq(Status.FAILURE))).thenReturn(failureTimeStat);
+        TimeStat successTimeStat = mock(TimeStat.class);
+        when(httpServiceBalancerStats.responseTime(any(URI.class), eq(Status.SUCCESS))).thenReturn(successTimeStat);
+        CounterStat counterStat = mock(CounterStat.class);
+        when(httpServiceBalancerStats.failure(any(URI.class), eq("testing failure"))).thenReturn(counterStat);
+
+        httpServiceBalancer.updateHttpUris(expected);
+
+        HttpServiceAttempt attempt = httpServiceBalancer.createAttempt();
+        attempt.markBad("testing failure");
+        attempt = attempt.next();
+        attempt.markBad("testing failure");
+
+        Set<URI> uris = new HashSet<>();
+        attempt = attempt.next();
+        uris.add(attempt.getUri());
+        attempt.markBad("testing failure");
+        attempt = attempt.next();
+        uris.add(attempt.getUri());
+        attempt.markGood();
+
+        assertEquals(uris, expected);
+    }
 }

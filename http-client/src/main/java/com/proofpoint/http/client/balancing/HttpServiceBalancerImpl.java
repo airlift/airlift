@@ -22,15 +22,15 @@ import com.proofpoint.http.client.balancing.HttpServiceBalancerStats.Status;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class HttpServiceBalancerImpl implements HttpServiceBalancer
+public class HttpServiceBalancerImpl
+        implements HttpServiceBalancer
 {
     private final AtomicReference<Set<URI>> httpUris = new AtomicReference<>((Set<URI>) ImmutableSet.<URI>of());
     private final String description;
@@ -52,12 +52,7 @@ public class HttpServiceBalancerImpl implements HttpServiceBalancer
     @Override
     public HttpServiceAttempt createAttempt()
     {
-        List<URI> httpUris = new ArrayList<>(this.httpUris.get());
-        if (httpUris.isEmpty()) {
-            throw new ServiceUnavailableException(description);
-        }
-        Collections.shuffle(httpUris);
-        return new HttpServiceAttemptImpl(httpUris, 0);
+        return new HttpServiceAttemptImpl(ImmutableSet.<URI>of());
     }
 
     @Beta
@@ -66,18 +61,29 @@ public class HttpServiceBalancerImpl implements HttpServiceBalancer
         httpUris.set(ImmutableSet.copyOf(newHttpUris));
     }
 
-    private class HttpServiceAttemptImpl implements HttpServiceAttempt
+    private class HttpServiceAttemptImpl
+            implements HttpServiceAttempt
     {
-        private final List<URI> uris;
-        private final int attempt;
+        private final Set<URI> attempted;
         private final URI uri;
         private final long startTick;
 
-        public HttpServiceAttemptImpl(List<URI> uris, int attempt)
+        public HttpServiceAttemptImpl(Set<URI> attempted)
         {
-            this.uris = uris;
-            this.attempt = attempt;
-            uri = uris.get(attempt % uris.size());
+            ArrayList<URI> httpUris = new ArrayList<>(HttpServiceBalancerImpl.this.httpUris.get());
+            httpUris.removeAll(attempted);
+
+            if (httpUris.isEmpty()) {
+                httpUris = new ArrayList<>(HttpServiceBalancerImpl.this.httpUris.get());
+                attempted = ImmutableSet.of();
+
+                if (httpUris.isEmpty()) {
+                    throw new ServiceUnavailableException(description);
+                }
+            }
+
+            this.attempted = attempted;
+            uri = httpUris.get(ThreadLocalRandom.current().nextInt(0, httpUris.size()));
             startTick = ticker.read();
         }
 
@@ -103,7 +109,11 @@ public class HttpServiceBalancerImpl implements HttpServiceBalancer
         @Override
         public HttpServiceAttempt next()
         {
-            return new HttpServiceAttemptImpl(uris, attempt + 1);
+            Set<URI> newAttempted = ImmutableSet.<URI>builder()
+                    .add(uri)
+                    .addAll(attempted)
+                    .build();
+            return new HttpServiceAttemptImpl(newAttempted);
         }
     }
 }
