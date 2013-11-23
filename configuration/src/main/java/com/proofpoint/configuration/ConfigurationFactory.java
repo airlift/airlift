@@ -74,7 +74,6 @@ public final class ConfigurationFactory
     private final Set<String> unusedProperties = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
     private final Collection<String> initialErrors;
     private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
-    private final Set<String> usedProperties = newConcurrentHashSet();
     private final Set<ConfigurationProvider<?>> registeredProviders = newConcurrentHashSet();
     private final LoadingCache<Class<?>, ConfigurationMetadata<?>> metadataCache = CacheBuilder.newBuilder()
             .build(new CacheLoader<Class<?>, ConfigurationMetadata<?>>()
@@ -112,14 +111,7 @@ public final class ConfigurationFactory
     public void consumeProperty(String property)
     {
         Preconditions.checkNotNull(property, "property is null");
-        usedProperties.add(property);
         unusedProperties.remove(property);
-    }
-
-    @Deprecated
-    public Set<String> getUsedProperties()
-    {
-        return ImmutableSortedSet.copyOf(usedProperties);
     }
 
     Set<String> getUnusedProperties()
@@ -491,7 +483,6 @@ public final class ConfigurationFactory
                     name,
                     injectionPoint.getSetter().toGenericString()));
         }
-        usedProperties.add(name);
         unusedProperties.remove(name);
         return finalValue;
     }
@@ -569,7 +560,6 @@ public final class ConfigurationFactory
                             injectionPoint.getSetter().toGenericString());
                     continue;
                 }
-                usedProperties.add(name + keyString);
                 unusedProperties.remove(name + keyString);
             }
             builder.put(key, value);

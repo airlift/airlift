@@ -149,12 +149,6 @@ public class Bootstrap
         return this;
     }
 
-    @Deprecated
-    public Bootstrap strictConfig()
-    {
-        return this;
-    }
-
     public Bootstrap requireExplicitBindings(boolean requireExplicitBindings)
     {
         this.requireExplicitBindings = requireExplicitBindings;
