@@ -3,6 +3,7 @@
 - Add validation for nodeId
 - Defunct http-server.ip and jetty.ip
 - Defunct all legacy HTTP server properties
+- Allow using resources with TestingHttpServer
 
 * 0.84
 
