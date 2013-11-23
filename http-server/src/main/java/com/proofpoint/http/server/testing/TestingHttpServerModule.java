@@ -19,9 +19,9 @@ import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
 import com.proofpoint.discovery.client.announce.AnnouncementHttpServerInfo;
 import com.proofpoint.http.server.HttpServer;
+import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 import com.proofpoint.http.server.HttpServerConfig;
 import com.proofpoint.http.server.HttpServerInfo;
 import com.proofpoint.http.server.LocalAnnouncementHttpServerInfo;
@@ -30,6 +30,8 @@ import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.tracetoken.TraceTokenManager;
 
 import javax.servlet.Filter;
+
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 
 public class TestingHttpServerModule
         implements Module
@@ -49,7 +51,8 @@ public class TestingHttpServerModule
         binder.bind(TestingHttpServer.class).in(Scopes.SINGLETON);
         binder.bind(HttpServer.class).to(Key.get(TestingHttpServer.class));
         binder.bind(QueryStringFilter.class).in(Scopes.SINGLETON);
-        Multibinder.newSetBinder(binder, Filter.class, TheServlet.class);
+        newSetBinder(binder, Filter.class, TheServlet.class);
+        newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
         binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class);
     }
 }

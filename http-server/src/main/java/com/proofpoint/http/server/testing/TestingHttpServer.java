@@ -45,16 +45,35 @@ public class TestingHttpServer extends HttpServer
 
     private final HttpServerInfo httpServerInfo;
 
-    public TestingHttpServer(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config, Servlet servlet, Map<String, String> initParameters)
+    public TestingHttpServer(
+            HttpServerInfo httpServerInfo,
+            NodeInfo nodeInfo,
+            HttpServerConfig config,
+            Servlet servlet,
+            Map<String, String> initParameters)
             throws IOException
     {
-        this(httpServerInfo, nodeInfo, config, servlet, initParameters, ImmutableSet.<Filter>of(), new QueryStringFilter(), new TraceTokenManager());
+        this(httpServerInfo,
+                nodeInfo,
+                config,
+                servlet,
+                initParameters,
+                ImmutableSet.<Filter>of(),
+                ImmutableSet.<HttpResourceBinding>of(),
+                new QueryStringFilter(),
+                new TraceTokenManager());
     }
 
     @Inject
-    public TestingHttpServer(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config,
-            @TheServlet Servlet servlet, @TheServlet Map<String, String> initParameters, @TheServlet Set<Filter> filters,
-            QueryStringFilter queryStringFilter, TraceTokenManager traceTokenManager)
+    public TestingHttpServer(HttpServerInfo httpServerInfo,
+            NodeInfo nodeInfo,
+            HttpServerConfig config,
+            @TheServlet Servlet servlet,
+            @TheServlet Map<String, String> initParameters,
+            @TheServlet Set<Filter> filters,
+            @TheServlet Set<HttpResourceBinding> resources,
+            QueryStringFilter queryStringFilter,
+            TraceTokenManager traceTokenManager)
             throws IOException
     {
         super(httpServerInfo,
@@ -63,7 +82,7 @@ public class TestingHttpServer extends HttpServer
                 servlet,
                 initParameters,
                 ImmutableSet.copyOf(filters),
-                ImmutableSet.<HttpResourceBinding>of(),
+                resources,
                 ImmutableMap.<String, String>of(),
                 ImmutableSet.<Filter>of(),
                 null,
