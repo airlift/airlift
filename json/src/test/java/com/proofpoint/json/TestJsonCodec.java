@@ -15,7 +15,7 @@
  */
 package com.proofpoint.json;
 
-import com.google.inject.TypeLiteral;
+import com.google.common.reflect.TypeToken;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -54,10 +54,10 @@ public class TestJsonCodec
     }
 
     @Test
-    public void testTypeLiteralList()
+    public void testTypeTokenList()
             throws Exception
     {
-        JsonCodec<List<Person>> jsonCodec = jsonCodec(new TypeLiteral<List<Person>>() { });
+        JsonCodec<List<Person>> jsonCodec = jsonCodec(new TypeToken<List<Person>>() {});
 
         Person.validatePersonListJsonCodec(jsonCodec);
     }
@@ -84,7 +84,7 @@ public class TestJsonCodec
     public void testTypeLiteralMap()
             throws Exception
     {
-        JsonCodec<Map<String, Person>> jsonCodec = jsonCodec(new TypeLiteral<Map<String, Person>>() {});
+        JsonCodec<Map<String, Person>> jsonCodec = jsonCodec(new TypeToken<Map<String, Person>>() {});
 
         Person.validatePersonMapJsonCodec(jsonCodec);
     }
@@ -126,10 +126,10 @@ public class TestJsonCodec
     }
 
     @Test
-    public void testImmutableTypeLiteralList()
+    public void testImmutableTypeTokenList()
             throws Exception
     {
-        JsonCodec<List<ImmutablePerson>> jsonCodec = jsonCodec(new TypeLiteral<List<ImmutablePerson>>() { });
+        JsonCodec<List<ImmutablePerson>> jsonCodec = jsonCodec(new TypeToken<List<ImmutablePerson>>() {});
 
         ImmutablePerson.validatePersonListJsonCodec(jsonCodec);
     }
@@ -153,10 +153,10 @@ public class TestJsonCodec
     }
 
     @Test
-    public void testImmutableTypeLiteralMap()
+    public void testImmutableTypeTokenMap()
             throws Exception
     {
-        JsonCodec<Map<String, ImmutablePerson>> jsonCodec = jsonCodec(new TypeLiteral<Map<String, ImmutablePerson>>() {});
+        JsonCodec<Map<String, ImmutablePerson>> jsonCodec = jsonCodec(new TypeToken<Map<String, ImmutablePerson>>() {});
 
         ImmutablePerson.validatePersonMapJsonCodec(jsonCodec);
     }

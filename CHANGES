@@ -1,5 +1,11 @@
 Platform 0.90
 
+* JsonCodec
+
+  The JsonCodec.jsonCodec() factory method now uses Guava's TypeToken rather than
+  Guice's TypeLiteral. This backwards incompatible change allows using the json
+  module without a dependency on Guice.
+
 * TestingHttpServer now supports resources
 
 Platform 0.89

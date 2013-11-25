@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
-import com.google.inject.TypeLiteral;
+import com.google.common.reflect.TypeToken;
 import com.google.inject.internal.MoreTypes.ParameterizedTypeImpl;
 
 import java.io.IOException;
@@ -48,7 +48,7 @@ public class JsonCodec<T>
         return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), type);
     }
 
-    public static <T> JsonCodec<T> jsonCodec(TypeLiteral<T> type)
+    public static <T> JsonCodec<T> jsonCodec(TypeToken<T> type)
     {
         checkNotNull(type, "type is null");
 
