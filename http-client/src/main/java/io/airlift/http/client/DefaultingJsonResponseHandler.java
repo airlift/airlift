@@ -23,6 +23,8 @@ import io.airlift.json.JsonCodec;
 
 import java.util.Set;
 
+import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+
 public class DefaultingJsonResponseHandler<T> implements ResponseHandler<T, RuntimeException>
 {
     private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
@@ -65,7 +67,7 @@ public class DefaultingJsonResponseHandler<T> implements ResponseHandler<T, Runt
         if (!successfulResponseCodes.contains(response.getStatusCode())) {
             return defaultValue;
         }
-        String contentType = response.getHeader("Content-Type");
+        String contentType = response.getHeader(CONTENT_TYPE);
         if (!MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
             return defaultValue;
         }

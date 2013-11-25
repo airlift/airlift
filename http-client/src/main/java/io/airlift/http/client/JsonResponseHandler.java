@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Set;
 
+import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class JsonResponseHandler<T> implements ResponseHandler<T, RuntimeException>
@@ -76,7 +77,7 @@ public class JsonResponseHandler<T> implements ResponseHandler<T, RuntimeExcepti
                     request,
                     response);
         }
-        String contentType = response.getHeader("Content-Type");
+        String contentType = response.getHeader(CONTENT_TYPE);
         if (contentType == null) {
             throw new UnexpectedResponseException("Content-Type is not set for response", request, response);
         }
