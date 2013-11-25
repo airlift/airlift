@@ -1,3 +1,12 @@
+Airlift 0.85
+
+* JsonCodec
+
+The JsonCodec.jsonCodec() factory method now uses Guava's TypeToken rather than
+Guice's TypeLiteral. This backwards incompatible change allows using the json
+module without a dependency on Guice.
+
+
 Airlift 0.84
 
 * NOTICE file
