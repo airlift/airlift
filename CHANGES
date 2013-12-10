@@ -10,6 +10,14 @@ Platform 0.88
     the try block. This allows more startup exceptions to be logged. We
     recommend applications make a corresponding change to their Main class.
 
+* We removed the deprecated Bootstrap.strictConfig() and
+  ConfigurationFactory.getUsedProperties() methods.
+
+* BalancingHttpClient now avoids concurrent calls to the same instance and
+  uses discovery changes that happen after the first attempt.
+
+* [Bug] The launcher wasn't disconnecting from the terminal upon server start.
+
 Platform 0.87
 
 * The node.pool configuration property now allows uppercase in pool names.
