@@ -23,6 +23,7 @@ import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.PrivateBinder;
 import com.google.inject.Scopes;
@@ -35,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static com.google.inject.name.Names.named;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -102,6 +104,35 @@ import static org.testng.Assert.fail;
         };
         Injector injector = createInjector(properties, module);
         verifyConfig(injector.getInstance(ExposeConfig.class).config1);
+    }
+
+    @Test
+    public void testPrivateBinderDifferentPrefix()
+    {
+        Module module = new Module()
+        {
+            @Override
+            public void configure(Binder binder)
+            {
+                PrivateBinder privateBinder = binder.newPrivateBinder();
+                privateBinder.install(createModule(Config1.class, null));
+                privateBinder.bind(ExposeConfig.class).annotatedWith(named("no-prefix")).to(ExposeConfig.class).in(Scopes.SINGLETON);
+                privateBinder.expose(Key.get(ExposeConfig.class, named("no-prefix")));
+
+                privateBinder = binder.newPrivateBinder();
+                privateBinder.install(createModule(Config1.class, "prefix"));
+                privateBinder.bind(ExposeConfig.class).annotatedWith(named("prefix")).to(ExposeConfig.class).in(Scopes.SINGLETON);
+                privateBinder.expose(Key.get(ExposeConfig.class, named("prefix")));
+            }
+
+        };
+        properties = ImmutableMap.<String, String>builder()
+                .putAll(properties)
+                .put("prefix.stringOption", "a prefix string")
+                .build();
+        Injector injector = createInjector(properties, module);
+        verifyConfig(injector.getInstance(Key.get(ExposeConfig.class, named("no-prefix"))).config1);
+        assertEquals(injector.getInstance(Key.get(ExposeConfig.class, named("prefix"))).config1.getStringOption(), "a prefix string");
     }
 
     private static void verifyConfig(Config1 config)

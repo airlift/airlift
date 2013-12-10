@@ -15,6 +15,7 @@
  */
 package com.proofpoint.configuration;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.google.inject.Key;
@@ -84,24 +85,21 @@ public class ConfigurationProvider<T> implements ConfigurationAwareProvider<T>
     }
 
     @Override
-    public boolean equals(Object o)
+    public int hashCode()
     {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        ConfigurationProvider<?> that = (ConfigurationProvider<?>) o;
-
-        return key.equals(that.key);
-
+        return Objects.hashCode(configClass, prefix);
     }
 
     @Override
-    public int hashCode()
+    public boolean equals(Object obj)
     {
-        return key.hashCode();
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        final ConfigurationProvider other = (ConfigurationProvider) obj;
+        return Objects.equal(this.configClass, other.configClass) && Objects.equal(this.prefix, other.prefix);
     }
 }

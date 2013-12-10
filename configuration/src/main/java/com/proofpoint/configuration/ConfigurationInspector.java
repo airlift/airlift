@@ -20,7 +20,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.ImmutableSortedSet.Builder;
-import com.google.common.collect.Ordering;
 import com.google.inject.Key;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
 
@@ -213,32 +212,30 @@ public class ConfigurationInspector
         }
 
         @Override
-        public boolean equals(Object o)
+        public int hashCode()
         {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            ConfigRecord<?> that = (ConfigRecord<?>) o;
-
-            return key.equals(that.key);
+            return Objects.hashCode(configClass, prefix);
         }
 
         @Override
-        public int hashCode()
+        public boolean equals(Object obj)
         {
-            return key.hashCode();
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null || getClass() != obj.getClass()) {
+                return false;
+            }
+            final ConfigRecord other = (ConfigRecord) obj;
+            return Objects.equal(this.configClass, other.configClass) && Objects.equal(this.prefix, other.prefix);
         }
 
         @Override
         public int compareTo(ConfigRecord<?> that)
         {
             return ComparisonChain.start()
-                    .compare(String.valueOf(this.key.getTypeLiteral().getType()), String.valueOf(that.key.getTypeLiteral().getType()))
-                    .compare(String.valueOf(this.key.getAnnotationType()), String.valueOf(that.key.getAnnotationType()))
-                    .compare(this.key, that.key, Ordering.arbitrary())
+                    .compare(this.configClass.getCanonicalName(), that.configClass.getCanonicalName())
+                    .compare(this.prefix, that.prefix)
                     .result();
         }
     }
