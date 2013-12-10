@@ -145,7 +145,7 @@ public class DiscoveryBinder
         PrivateBinder privateBinder = binder.newPrivateBinder();
         privateBinder.bind(HttpServiceBalancer.class).annotatedWith(ForBalancingHttpClient.class).to(Key.get(HttpServiceBalancer.class, serviceType));
         HttpClientBindingBuilder delegateBindingBuilder = httpClientPrivateBinder(privateBinder, binder).bindHttpClient(serviceType.value(), ForBalancingHttpClient.class);
-        bindConfig(binder).prefixedWith(serviceType.value()).to(BalancingHttpClientConfig.class);
+        bindConfig(privateBinder).prefixedWith(serviceType.value()).to(BalancingHttpClientConfig.class);
         privateBinder.bind(HttpClient.class).annotatedWith(annotation).to(BalancingHttpClient.class).in(Scopes.SINGLETON);
         privateBinder.expose(HttpClient.class).annotatedWith(annotation);
         reportBinder(binder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
@@ -172,7 +172,7 @@ public class DiscoveryBinder
         PrivateBinder privateBinder = binder.newPrivateBinder();
         privateBinder.bind(HttpServiceBalancer.class).annotatedWith(ForBalancingHttpClient.class).to(Key.get(HttpServiceBalancer.class, serviceType));
         HttpClientAsyncBindingBuilder delegateBindingBuilder = httpClientPrivateBinder(privateBinder, binder).bindAsyncHttpClient(serviceType.value(), ForBalancingHttpClient.class);
-        bindConfig(binder).prefixedWith(serviceType.value()).to(BalancingHttpClientConfig.class);
+        bindConfig(privateBinder).prefixedWith(serviceType.value()).to(BalancingHttpClientConfig.class);
         privateBinder.bind(AsyncHttpClient.class).annotatedWith(annotation).to(BalancingAsyncHttpClient.class).in(Scopes.SINGLETON);
         privateBinder.expose(AsyncHttpClient.class).annotatedWith(annotation);
         reportBinder(binder).export(AsyncHttpClient.class).annotatedWith(annotation).withGeneratedName();
