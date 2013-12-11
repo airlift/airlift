@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>rack-server-base</artifactId>
-    <version>0.88-SNAPSHOT</version>
+    <version>0.88</version>
     <packaging>pom</packaging>
     <name>rack-server-base</name>
     <description>Proofpoint Platform Rack Server base POM</description>
@@ -77,13 +77,13 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>rack</artifactId>
-            <version>0.88-SNAPSHOT</version>
+            <version>0.88</version>
         </dependency>
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>rack-launcher</artifactId>
-            <version>0.88-SNAPSHOT</version>
+            <version>0.88</version>
             <classifier>bin</classifier>
             <type>tar.gz</type>
         </dependency>
@@ -220,7 +220,7 @@
                             <dependency>
                                 <groupId>com.proofpoint.platform</groupId>
                                 <artifactId>rack-packaging</artifactId>
-                                <version>0.88-SNAPSHOT</version>
+                                <version>0.88</version>
                             </dependency>
                         </dependencies>
 
