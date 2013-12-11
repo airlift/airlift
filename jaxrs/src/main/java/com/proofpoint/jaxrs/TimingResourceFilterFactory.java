@@ -15,6 +15,8 @@
  */
 package com.proofpoint.jaxrs;
 
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.proofpoint.reporting.ReportCollectionFactory;
@@ -28,11 +30,21 @@ import org.weakref.jmx.ObjectNameBuilder;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.cache.CacheBuilder.newBuilder;
 
 class TimingResourceFilterFactory
     implements ResourceFilterFactory
 {
     private final ReportCollectionFactory reportCollectionFactory;
+    private final LoadingCache<String, RequestStats> requestStatsLoadingCache = newBuilder()
+            .build(new CacheLoader<String, RequestStats>()
+            {
+                @Override
+                public RequestStats load(String objectName)
+                {
+                    return reportCollectionFactory.createReportCollection(RequestStats.class, objectName);
+                }
+            });
 
     @Inject
     public TimingResourceFilterFactory(ReportCollectionFactory reportCollectionFactory)
@@ -43,7 +55,7 @@ class TimingResourceFilterFactory
     @Override
     public List<ResourceFilter> create(AbstractMethod abstractMethod)
     {
-        return ImmutableList.<ResourceFilter>of(new TimingResourceFilter(abstractMethod, reportCollectionFactory));
+        return ImmutableList.<ResourceFilter>of(new TimingResourceFilter(abstractMethod, requestStatsLoadingCache));
     }
 
     private static class TimingResourceFilter
@@ -52,13 +64,13 @@ class TimingResourceFilterFactory
         private final AbstractMethod abstractMethod;
         private final TimingFilter timingFilter;
 
-        private TimingResourceFilter(AbstractMethod abstractMethod, ReportCollectionFactory reportCollectionFactory)
+        private TimingResourceFilter(AbstractMethod abstractMethod, LoadingCache<String, RequestStats> requestStatsLoadingCache)
         {
             this.abstractMethod = abstractMethod;
             String objectName = new ObjectNameBuilder(abstractMethod.getResource().getResourceClass().getPackage().getName())
                     .withProperty("type", abstractMethod.getResource().getResourceClass().getSimpleName())
                     .build();
-            RequestStats requestStats = reportCollectionFactory.createReportCollection(RequestStats.class, objectName);
+            RequestStats requestStats = requestStatsLoadingCache.getUnchecked(objectName);
             timingFilter = new TimingFilter(this.abstractMethod, requestStats);
         }
 
