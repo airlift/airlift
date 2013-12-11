@@ -16,6 +16,11 @@ Platform 0.88
 * BalancingHttpClient now avoids concurrent calls to the same instance and
   uses discovery changes that happen after the first attempt.
 
+* [Bug] BalancingHttpClient instances couldn't be configured.
+
+* [Bug] JAX-RS response time reporting threw exceptions when a resource class
+  had multiple methods with the same name.
+
 * [Bug] The launcher wasn't disconnecting from the terminal upon server start.
 
 Platform 0.87
