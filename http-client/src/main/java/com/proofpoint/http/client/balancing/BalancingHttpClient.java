@@ -26,7 +26,6 @@ import java.net.URI;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.proofpoint.http.client.HttpUriBuilder.uriBuilderFrom;
 
 public final class BalancingHttpClient implements HttpClient
 {
@@ -64,10 +63,11 @@ public final class BalancingHttpClient implements HttpClient
         RetryingResponseHandler<T, E> retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler, false);
 
         for (;;) {
-            URI uri = uriBuilderFrom(attempt.getUri())
-                    .appendPath(request.getUri().getPath())
-                    .replaceRawQuery(request.getUri().getRawQuery())
-                    .build();
+            URI uri = attempt.getUri();
+            if (!uri.toString().endsWith("/")) {
+                uri = URI.create(uri.toString() + '/');
+            }
+            uri = uri.resolve(request.getUri());
 
             Request subRequest = Request.Builder.fromRequest(request)
                     .setUri(uri)

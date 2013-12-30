@@ -119,8 +119,8 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
     public void testSuccessfulQueryWithParameters()
             throws Exception
     {
-        request = preparePut().setUri(URI.create("v1/service?foo=bar&baz=quux")).setBodyGenerator(bodyGenerator).build();
-        httpClient.expectCall("http://s1.example.com/v1/service?foo=bar&baz=quux", response);
+        request = preparePut().setUri(URI.create("v1%2B/service?foo=bar&baz=qu%2Bux")).setBodyGenerator(bodyGenerator).build();
+        httpClient.expectCall("http://s1.example.com/v1%2B/service?foo=bar&baz=qu%2Bux", response);
 
         ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
         when(responseHandler.handle(any(Request.class), same(response))).thenReturn("test response");
