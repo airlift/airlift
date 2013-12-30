@@ -266,10 +266,10 @@ public class TestHttpUriBuilder
         URI uri = uriBuilder()
                 .scheme("http")
                 .host("www.example.com")
-                .replacePath("/`#%^{}|[]<>?áéíóú")
+                .replacePath("/`#%^{}|[]<>?áéíóú+?")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com/%60%23%25%5E%7B%7D%7C%5B%5D%3C%3E%3F%C3%A1%C3%A9%C3%AD%C3%B3%C3%BA");
+        assertEquals(uri.toASCIIString(), "http://www.example.com/%60%23%25%5E%7B%7D%7C%5B%5D%3C%3E%3F%C3%A1%C3%A9%C3%AD%C3%B3%C3%BA%2B%3F");
     }
 
 
@@ -297,10 +297,10 @@ public class TestHttpUriBuilder
         URI uri = uriBuilder()
             .scheme("http")
             .host("www.example.com")
-            .replaceParameter("a", "&")
+            .replaceParameter("a+&", "&+")
             .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com/?a=%26");
+        assertEquals(uri.toASCIIString(), "http://www.example.com/?a%2B%26=%26%2B");
     }
     
     @Test
