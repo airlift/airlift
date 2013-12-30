@@ -1,3 +1,9 @@
+Platform 0.89
+
+* [Bug] BalancingHttpClient no longer dequotes and requotes the URI.
+
+* [Bug] HttpUriBuilder now quotes the '+' character.
+
 Platform 0.88
 
 * Bootstrap and Logging
