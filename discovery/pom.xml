@@ -96,6 +96,7 @@
             <artifactId>annotations</artifactId>
         </dependency>
 
+        <!-- for testing -->
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
@@ -117,6 +118,12 @@
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-servlet</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>bootstrap</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
