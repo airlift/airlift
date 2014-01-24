@@ -1,5 +1,6 @@
 package io.airlift.stats;
 
+import io.airlift.testing.TestingTicker;
 import io.airlift.units.Duration;
 
 import java.util.Random;
