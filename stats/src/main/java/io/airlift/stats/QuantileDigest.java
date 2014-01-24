@@ -13,6 +13,7 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.util.concurrent.AtomicDouble;
+import org.openjdk.jol.info.ClassLayout;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.io.DataInput;
@@ -1186,8 +1187,8 @@ public class QuantileDigest
 
         public static final int DOUBLE = 8;
 
-        public static final int QUANTILE_DIGEST = UnsafeUtil.sizeOf(QuantileDigest.class);
-        public static final int NODE = UnsafeUtil.sizeOf(Node.class);
+        public static final int QUANTILE_DIGEST = ClassLayout.parseClass(QuantileDigest.class).instanceSize();
+        public static final int NODE = ClassLayout.parseClass(Node.class).instanceSize();
     }
 
     private static class Flags

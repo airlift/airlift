@@ -42,6 +42,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.openjdk.jol</groupId>
+            <artifactId>jol-core</artifactId>
+            <version>0.1</version>
+        </dependency>
+
+        <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>log</artifactId>
             <scope>test</scope>
