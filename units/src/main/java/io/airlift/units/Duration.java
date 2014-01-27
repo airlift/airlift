@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
 
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -123,7 +124,7 @@ public final class Duration implements Comparable<Duration>
         Preconditions.checkNotNull(timeUnit, "timeUnit is null");
         double magnitude = getValue(timeUnit);
         String timeUnitAbbreviation = timeUnitToString(timeUnit);
-        return String.format("%.2f%s", magnitude, timeUnitAbbreviation);
+        return String.format(Locale.ENGLISH, "%.2f%s", magnitude, timeUnitAbbreviation);
     }
 
     @JsonCreator

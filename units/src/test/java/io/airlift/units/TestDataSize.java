@@ -22,6 +22,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.Locale;
 
 import static io.airlift.testing.EquivalenceTester.comparisonTester;
 import static io.airlift.units.DataSize.Unit.BYTE;
@@ -81,6 +82,19 @@ public class TestDataSize
     public void testToString(String expectedString, double value, DataSize.Unit unit)
     {
         assertEquals(new DataSize(value, unit).toString(), expectedString);
+    }
+
+    @Test(dataProvider = "printedValues")
+    public void testNonEnglishLocale(String expectedString, double value, DataSize.Unit unit)
+    {
+        Locale previous = Locale.getDefault();
+        Locale.setDefault(Locale.GERMAN);
+        try {
+            assertEquals(new DataSize(value, unit).toString(), expectedString);
+        }
+        finally {
+            Locale.setDefault(previous);
+        }
     }
 
     @Test(dataProvider = "parseableValues")

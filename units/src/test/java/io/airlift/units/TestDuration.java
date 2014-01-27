@@ -22,6 +22,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import static io.airlift.testing.EquivalenceTester.comparisonTester;
@@ -109,6 +110,20 @@ public class TestDuration
     public void testToString(String expectedString, double value, TimeUnit unit)
     {
         assertEquals(new Duration(value, unit).toString(), expectedString);
+    }
+
+    @Test(dataProvider = "printedValues")
+    public void testNonEnglishLocale(String expectedString, double value, TimeUnit unit)
+            throws Exception
+    {
+        Locale previous = Locale.getDefault();
+        Locale.setDefault(Locale.GERMAN);
+        try {
+            assertEquals(new Duration(value, unit).toString(), expectedString);
+        }
+        finally {
+            Locale.setDefault(previous);
+        }
     }
 
     @Test(dataProvider = "parseableValues")
