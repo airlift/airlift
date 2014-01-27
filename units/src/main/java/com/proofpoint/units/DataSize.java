@@ -21,6 +21,7 @@ import com.google.common.annotations.Beta;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
 
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -104,7 +105,7 @@ public class DataSize
             return (long) (floor(value)) + unit.getUnitString();
         }
 
-        return String.format("%.2f%s", value, unit.getUnitString());
+        return String.format(Locale.ENGLISH, "%.2f%s", value, unit.getUnitString());
     }
 
     @JsonCreator
