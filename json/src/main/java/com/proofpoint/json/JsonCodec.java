@@ -19,8 +19,8 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
+import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
-import com.google.inject.internal.MoreTypes.ParameterizedTypeImpl;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -59,7 +59,10 @@ public class JsonCodec<T>
     {
         checkNotNull(type, "type is null");
 
-        ParameterizedTypeImpl listType = new ParameterizedTypeImpl(null, List.class, type);
+        Type listType = new TypeToken<List<T>>() {}
+                .where(new TypeParameter<T>() {}, type)
+                .getType();
+
         return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), listType);
     }
 
@@ -67,7 +70,10 @@ public class JsonCodec<T>
     {
         checkNotNull(type, "type is null");
 
-        ParameterizedTypeImpl listType = new ParameterizedTypeImpl(null, List.class, type.getType());
+        Type listType = new TypeToken<List<T>>() {}
+                .where(new TypeParameter<T>() {}, type.getTypeToken())
+                .getType();
+
         return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), listType);
     }
 
@@ -76,7 +82,11 @@ public class JsonCodec<T>
         checkNotNull(keyType, "keyType is null");
         checkNotNull(valueType, "valueType is null");
 
-        ParameterizedTypeImpl mapType = new ParameterizedTypeImpl(null, Map.class, keyType, valueType);
+        Type mapType = new TypeToken<Map<K, V>>() {}
+                .where(new TypeParameter<K>() {}, keyType)
+                .where(new TypeParameter<V>() {}, valueType)
+                .getType();
+
         return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), mapType);
     }
 
@@ -85,7 +95,11 @@ public class JsonCodec<T>
         checkNotNull(keyType, "keyType is null");
         checkNotNull(valueType, "valueType is null");
 
-        ParameterizedTypeImpl mapType = new ParameterizedTypeImpl(null, Map.class, keyType, valueType.getType());
+        Type mapType = new TypeToken<Map<K, V>>() {}
+                .where(new TypeParameter<K>() {}, keyType)
+                .where(new TypeParameter<V>() {}, valueType.getTypeToken())
+                .getType();
+
         return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), mapType);
     }
 
@@ -178,5 +192,11 @@ public class JsonCodec<T>
         catch (IOException e) {
             throw new IllegalArgumentException(String.format("%s could not be converted to json", instance.getClass().getName()), e);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private TypeToken<T> getTypeToken()
+    {
+        return (TypeToken<T>) TypeToken.of(type);
     }
 }
