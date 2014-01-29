@@ -56,6 +56,7 @@
             <artifactId>guice-multibindings</artifactId>
         </dependency>
 
+        <!-- for testing -->
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>testing</artifactId>
