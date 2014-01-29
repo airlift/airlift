@@ -17,18 +17,21 @@ package io.airlift.http.server.testing;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.net.HttpHeaders;
+import com.google.common.net.MediaType;
 import com.google.inject.Binder;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
-import io.airlift.configuration.ConfigurationFactory;
-import io.airlift.configuration.ConfigurationModule;
+import io.airlift.bootstrap.Bootstrap;
+import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.ApacheHttpClient;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpClientConfig;
+import io.airlift.http.client.HttpStatus;
+import io.airlift.http.client.HttpUriBuilder;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
+import io.airlift.http.client.StringResponseHandler;
 import io.airlift.http.server.HttpServerConfig;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.TheServlet;
@@ -48,18 +51,24 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
+import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
 import static io.airlift.testing.Assertions.assertGreaterThan;
-import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class TestTestingHttpServer
 {
@@ -86,25 +95,20 @@ public class TestTestingHttpServer
             throws Exception
     {
         DummyServlet servlet = new DummyServlet();
-        TestingHttpServer server = null;
-        HttpClient client = null;
+        TestingHttpServer server = createTestingHttpServer(servlet, ImmutableMap.<String, String>of());
 
         try {
-            server = createTestingHttpServer(servlet, Collections.<String, String>emptyMap());
-            client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)));
-
             server.start();
-            assertGreaterThan(server.getPort(), 0);
 
-            StatusResponse response = client.execute(prepareGet().setUri(new URI(format("http://localhost:%d/", server.getPort()))).build(), createStatusResponseHandler());
+            try (HttpClient client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+                StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
-            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
-            assertEquals(servlet.getCallCount(), 1);
+                assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+                assertEquals(servlet.getCallCount(), 1);
+            }
         }
         finally {
-            if (server != null) {
-                closeQuietly(server);
-            }
+            server.stop();
         }
     }
 
@@ -114,26 +118,21 @@ public class TestTestingHttpServer
     {
         DummyServlet servlet = new DummyServlet();
         DummyFilter filter = new DummyFilter();
-        TestingHttpServer server = null;
-        HttpClient client = null;
+        TestingHttpServer server = createTestingHttpServerWithFilter(servlet, ImmutableMap.<String, String>of(), filter);
 
         try {
-            server = createTestingHttpServerWithFilter(servlet, Collections.<String, String>emptyMap(), filter);
-            client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)));
-
             server.start();
-            assertGreaterThan(server.getPort(), 0);
 
-            StatusResponse response = client.execute(prepareGet().setUri(new URI(format("http://localhost:%d/", server.getPort()))).build(), createStatusResponseHandler());
+            try (HttpClient client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+                StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
-            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
-            assertEquals(servlet.getCallCount(), 1);
-            assertEquals(filter.getCallCount(), 1);
+                assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+                assertEquals(servlet.getCallCount(), 1);
+                assertEquals(filter.getCallCount(), 1);
+            }
         }
         finally {
-            if (server != null) {
-                closeQuietly(server);
-            }
+            server.stop();
         }
     }
 
@@ -141,91 +140,141 @@ public class TestTestingHttpServer
     public void testGuiceInjectionWithoutFilters()
             throws Exception
     {
-        TestingHttpServer server = null;
-        HttpClient client = null;
         final DummyServlet servlet = new DummyServlet();
 
-        try {
-            Injector injector = Guice.createInjector(
-                    new TestingNodeModule(),
-                    new TestingHttpServerModule(),
-                    new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())),
-                    new Module()
+        Bootstrap app = new Bootstrap(
+                new TestingNodeModule(),
+                new TestingHttpServerModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
                     {
-                        @Override
-                        public void configure(Binder binder)
-                        {
-                            binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
-                            binder.bind(new TypeLiteral<Map<String, String>>(){}).annotatedWith(TheServlet.class).toInstance(ImmutableMap.<String, String>of());
-                        }
-                    });
+                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
+                        binder.bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(TheServlet.class).toInstance(ImmutableMap.<String, String>of());
+                    }
+                });
 
-            server = injector.getInstance(TestingHttpServer.class);
-            server.start();
+        Injector injector = app
+                .strictConfig()
+                .doNotInitializeLogging()
+                .initialize();
 
-            client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)));
+        LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+        TestingHttpServer server = injector.getInstance(TestingHttpServer.class);
 
-            StatusResponse response = client.execute(prepareGet().setUri(new URI(format("http://localhost:%d/", server.getPort()))).build(), createStatusResponseHandler());
+        try (HttpClient client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+            StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
             assertEquals(servlet.getCallCount(), 1);
         }
         finally {
-            if (server != null) {
-                closeQuietly(server);
-            }
+            lifeCycleManager.stop();
         }
     }
-
     @Test
     public void testGuiceInjectionWithFilters()
             throws Exception
     {
-        TestingHttpServer server = null;
-        HttpClient client = null;
         final DummyServlet servlet = new DummyServlet();
         final DummyFilter filter = new DummyFilter();
 
-        try {
-            Injector injector = Guice.createInjector(
-                    new TestingNodeModule(),
-                    new TestingHttpServerModule(),
-                    new ConfigurationModule(new ConfigurationFactory(Collections.<String, String>emptyMap())),
-                    new Module()
+        Bootstrap app = new Bootstrap(
+                new TestingNodeModule(),
+                new TestingHttpServerModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
                     {
-                        @Override
-                        public void configure(Binder binder)
-                        {
-                            binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
-                            binder.bind(new TypeLiteral<Map<String, String>>(){}).annotatedWith(TheServlet.class).toInstance(ImmutableMap.<String, String>of());
-                        }
-                    },
-                    new Module()
-                    {
-                        @Override
-                        public void configure(Binder binder)
-                        {
-                            Multibinder.newSetBinder(binder, Filter.class, TheServlet.class).addBinding().toInstance(filter);
-                        }
+                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
+                        binder.bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(TheServlet.class).toInstance(ImmutableMap.<String, String>of());
+                        newSetBinder(binder, Filter.class, TheServlet.class).addBinding().toInstance(filter);
                     }
-            );
+                });
 
-            server = injector.getInstance(TestingHttpServer.class);
-            server.start();
+        Injector injector = app
+                .strictConfig()
+                .doNotInitializeLogging()
+                .initialize();
 
-            client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)));
+        LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+        TestingHttpServer server = injector.getInstance(TestingHttpServer.class);
 
-            StatusResponse response = client.execute(prepareGet().setUri(new URI(format("http://localhost:%d/", server.getPort()))).build(), createStatusResponseHandler());
+        try (HttpClient client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+            StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
             assertEquals(servlet.getCallCount(), 1);
             assertEquals(filter.getCallCount(), 1);
         }
+
         finally {
-            if (server != null) {
-                closeQuietly(server);
-            }
+            lifeCycleManager.stop();
         }
+    }
+
+    @Test
+    public void testGuiceInjectionWithResources()
+            throws Exception
+    {
+        final DummyServlet servlet = new DummyServlet();
+
+        Bootstrap app = new Bootstrap(
+                new TestingNodeModule(),
+                new TestingHttpServerModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
+                        binder.bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(TheServlet.class).toInstance(ImmutableMap.<String, String>of());
+                        httpServerBinder(binder).bindResource("/", "webapp/user").withWelcomeFile("user-welcome.txt");
+                        httpServerBinder(binder).bindResource("/", "webapp/user2");
+                        httpServerBinder(binder).bindResource("path", "webapp/user").withWelcomeFile("user-welcome.txt");
+                        httpServerBinder(binder).bindResource("path", "webapp/user2");
+                    }
+                });
+
+        Injector injector = app
+                .strictConfig()
+                .doNotInitializeLogging()
+                .initialize();
+
+        LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+        TestingHttpServer server = injector.getInstance(TestingHttpServer.class);
+
+        try (HttpClient client = new ApacheHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+            // test http resources
+            URI uri = server.getBaseUrl();
+            assertResource(uri, client, "", "welcome user!");
+            assertResource(uri, client, "user-welcome.txt", "welcome user!");
+            assertResource(uri, client, "user.txt", "user");
+            assertResource(uri, client, "user2.txt", "user2");
+            assertResource(uri, client, "path", "welcome user!");
+            assertResource(uri, client, "path/", "welcome user!");
+            assertResource(uri, client, "path/user-welcome.txt", "welcome user!");
+            assertResource(uri, client, "path/user.txt", "user");
+            assertResource(uri, client, "path/user2.txt", "user2");
+
+            // verify that servlet did not receive resource requests
+            assertEquals(servlet.getCallCount(), 0);
+        }
+        finally {
+            lifeCycleManager.stop();
+        }
+    }
+
+    private static void assertResource(URI baseUri, HttpClient client, String path, String contents)
+    {
+        HttpUriBuilder uriBuilder = uriBuilderFrom(baseUri);
+        StringResponseHandler.StringResponse data = client.execute(prepareGet().setUri(uriBuilder.appendPath(path).build()).build(), createStringResponseHandler());
+        assertEquals(data.getStatusCode(), HttpStatus.OK.code());
+        MediaType contentType = MediaType.parse(data.getHeader(HttpHeaders.CONTENT_TYPE));
+        assertTrue(PLAIN_TEXT_UTF_8.is(contentType), "Expected text/plain but got " + contentType);
+        assertEquals(data.getBody().trim(), contents);
     }
 
     private TestingHttpServer createTestingHttpServer(DummyServlet servlet, Map<String, String> params)
@@ -243,17 +292,7 @@ public class TestTestingHttpServer
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params, ImmutableSet.<Filter>of(filter));
-    }
-
-    private void closeQuietly(TestingHttpServer server)
-    {
-        try {
-            server.stop();
-        }
-        catch (Throwable e) {
-            // ignore
-        }
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params, ImmutableSet.<Filter>of(filter), ImmutableSet.<HttpResourceBinding>of());
     }
 
     static class DummyServlet

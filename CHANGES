@@ -3,6 +3,8 @@
 - Add validation for nodeId
 - Defunct http-server.ip and jetty.ip
 - Defunct all legacy HTTP server properties
+- Allow using resources with TestingHttpServer
+- Use Guava TypeToken instead of Guice TypeLiteral for JsonCodec
 
 * 0.84
 

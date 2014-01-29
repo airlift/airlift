@@ -17,17 +17,20 @@ package io.airlift.discovery.client;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.airlift.node.NodeInfo;
 
+import javax.annotation.PreDestroy;
 import javax.inject.Singleton;
 
 import java.net.URI;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
+import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.configuration.ConfigurationModule.bindConfig;
 import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
@@ -58,25 +61,25 @@ public class DiscoveryModule
 
         // bind announcer
         binder.bind(Announcer.class).in(Scopes.SINGLETON);
+
         // Must create a multibinder for service announcements or construction will fail if no
         // service announcements are bound, which is legal for processes that don't have public services
         Multibinder.newSetBinder(binder, ServiceAnnouncement.class);
 
+        // bind selector factory
         binder.bind(CachingServiceSelectorFactory.class).in(Scopes.SINGLETON);
         binder.bind(ServiceSelectorFactory.class).to(MergingServiceSelectorFactory.class).in(Scopes.SINGLETON);
+
+        binder.bind(ScheduledExecutorService.class)
+                .annotatedWith(ForDiscoveryClient.class)
+                .toProvider(DiscoveryExecutorProvider.class)
+                .in(Scopes.SINGLETON);
 
         // bind selector manager with initial empty multibinder
         Multibinder.newSetBinder(binder, ServiceSelector.class);
         binder.bind(ServiceSelectorManager.class).in(Scopes.SINGLETON);
 
         newExporter(binder).export(ServiceInventory.class).withGeneratedName();
-    }
-
-    @Provides
-    @ForDiscoveryClient
-    public ScheduledExecutorService createDiscoveryExecutor()
-    {
-        return new ScheduledThreadPoolExecutor(5, daemonThreadsNamed("Discovery-%s"));
     }
 
     @SuppressWarnings("deprecation")
@@ -115,5 +118,27 @@ public class DiscoveryModule
             NodeInfo nodeInfo)
     {
         return new MergingServiceSelectorFactory(factory, announcer, nodeInfo);
+    }
+
+    private static class DiscoveryExecutorProvider
+            implements Provider<ScheduledExecutorService>
+    {
+        private ScheduledExecutorService executor;
+
+        @Override
+        public ScheduledExecutorService get()
+        {
+            checkState(executor == null, "provider already used");
+            executor = new ScheduledThreadPoolExecutor(5, daemonThreadsNamed("Discovery-%s"));
+            return executor;
+        }
+
+        @PreDestroy
+        public void destroy()
+        {
+            if (executor != null) {
+                executor.shutdownNow();
+            }
+        }
     }
 }

@@ -42,14 +42,32 @@ public class TestingHttpServer
 {
     private final HttpServerInfo httpServerInfo;
 
-    public TestingHttpServer(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config, @TheServlet Servlet servlet, @TheServlet Map<String, String> initParameters)
+    public TestingHttpServer(
+            HttpServerInfo httpServerInfo,
+            NodeInfo nodeInfo,
+            HttpServerConfig config,
+            @TheServlet Servlet servlet,
+            @TheServlet Map<String, String> initParameters)
             throws IOException
     {
-        this(httpServerInfo, nodeInfo, config, servlet, initParameters, ImmutableSet.<Filter>of());
+        this(httpServerInfo,
+                nodeInfo,
+                config,
+                servlet,
+                initParameters,
+                ImmutableSet.<Filter>of(),
+                ImmutableSet.<HttpResourceBinding>of());
     }
 
     @Inject
-    public TestingHttpServer(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config, @TheServlet Servlet servlet, @TheServlet Map<String, String> initParameters, @TheServlet Set<Filter> filters)
+    public TestingHttpServer(
+            HttpServerInfo httpServerInfo,
+            NodeInfo nodeInfo,
+            HttpServerConfig config,
+            @TheServlet Servlet servlet,
+            @TheServlet Map<String, String> initParameters,
+            @TheServlet Set<Filter> filters,
+            @TheServlet Set<HttpResourceBinding> resources)
             throws IOException
     {
         super(httpServerInfo,
@@ -58,7 +76,7 @@ public class TestingHttpServer
                 servlet,
                 initParameters,
                 ImmutableSet.copyOf(filters),
-                ImmutableSet.<HttpResourceBinding>of(),
+                ImmutableSet.copyOf(resources),
                 null,
                 null,
                 ImmutableSet.<Filter>of(),
