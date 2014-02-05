@@ -1,6 +1,5 @@
 package com.proofpoint.http.client.netty;
 
-import com.google.common.io.Closeables;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
 import com.proofpoint.http.client.HttpRequestFilter;
@@ -45,8 +44,8 @@ public class StandaloneNettyAsyncHttpClient
     @SuppressWarnings("deprecation")
     public void close()
     {
-        Closeables.closeQuietly(httpClient);
-        Closeables.closeQuietly(ioPool);
+        httpClient.close();
+        ioPool.close();
     }
 
     @Override

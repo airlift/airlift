@@ -5,7 +5,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.Closeables;
 import com.proofpoint.concurrent.ThreadPoolExecutorMBean;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.BodyGenerator;
@@ -126,7 +125,12 @@ public class NettyAsyncHttpClient
             // ignored
         }
 
-        Closeables.closeQuietly(nettyConnectionPool);
+        try {
+            nettyConnectionPool.close();
+        }
+        catch (Exception e) {
+            // ignored
+        }
 
         try {
             timer.stop();

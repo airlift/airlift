@@ -9,6 +9,7 @@ Platform 0.90
 * TestingHttpServer now supports resources
 
 * Library upgrades
+  - Guava to 16.0.1
   - findbugs-annotations to 2.0.2
   - testng to 6.8.7
 
