@@ -65,6 +65,7 @@
             <artifactId>javax.servlet-api</artifactId>
         </dependency>
 
+        <!-- for testing -->
         <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>testing</artifactId>

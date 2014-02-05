@@ -1,6 +1,5 @@
 package io.airlift.http.client.netty;
 
-import com.google.common.io.Closeables;
 import io.airlift.http.client.AsyncHttpClient;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
@@ -45,8 +44,8 @@ public class StandaloneNettyAsyncHttpClient
     @SuppressWarnings("deprecation")
     public void close()
     {
-        Closeables.closeQuietly(httpClient);
-        Closeables.closeQuietly(ioPool);
+        httpClient.close();
+        ioPool.close();
     }
 
     @Override

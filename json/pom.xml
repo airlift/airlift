@@ -60,6 +60,7 @@
             <artifactId>guava</artifactId>
         </dependency>
 
+        <!-- for testing -->
         <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
