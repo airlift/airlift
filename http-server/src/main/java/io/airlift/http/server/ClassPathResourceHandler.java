@@ -19,7 +19,6 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
-import com.google.common.io.Closeables;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
@@ -28,9 +27,11 @@ import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
+import javax.annotation.Nullable;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -144,7 +145,7 @@ public class ClassPathResourceHandler
             }
         }
         finally {
-            Closeables.closeQuietly(resourceStream);
+            closeQuietly(resourceStream);
         }
     }
 
@@ -188,5 +189,17 @@ public class ClassPathResourceHandler
             }
         }
         return null;
+    }
+
+    private static void closeQuietly(@Nullable InputStream in)
+    {
+        if (in != null) {
+            try {
+                in.close();
+            }
+            catch (IOException e) {
+                // ignored
+            }
+        }
     }
 }
