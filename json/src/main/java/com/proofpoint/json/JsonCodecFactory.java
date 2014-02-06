@@ -17,10 +17,11 @@ package com.proofpoint.json;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.google.inject.TypeLiteral;
-import com.google.inject.internal.MoreTypes.ParameterizedTypeImpl;
+import com.google.common.reflect.TypeParameter;
+import com.google.common.reflect.TypeToken;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
 
 import java.lang.reflect.Type;
 import java.util.List;
@@ -59,37 +60,43 @@ public class JsonCodecFactory
     {
         Preconditions.checkNotNull(type, "type is null");
 
-        return new JsonCodec<T>(createObjectMapper(), type);
+        return new JsonCodec<>(createObjectMapper(), type);
     }
 
     public <T> JsonCodec<T> jsonCodec(Type type)
     {
         Preconditions.checkNotNull(type, "type is null");
 
-        return new JsonCodec<T>(createObjectMapper(), type);
+        return new JsonCodec<>(createObjectMapper(), type);
     }
 
-    public <T> JsonCodec<T> jsonCodec(TypeLiteral<T> type)
+    public <T> JsonCodec<T> jsonCodec(TypeToken<T> type)
     {
         Preconditions.checkNotNull(type, "type is null");
 
-        return new JsonCodec<T>(createObjectMapper(), type.getType());
+        return new JsonCodec<>(createObjectMapper(), type.getType());
     }
 
     public <T> JsonCodec<List<T>> listJsonCodec(Class<T> type)
     {
         Preconditions.checkNotNull(type, "type is null");
 
-        ParameterizedTypeImpl listType = new ParameterizedTypeImpl(null, List.class, type);
-        return new JsonCodec<List<T>>(createObjectMapper(), listType);
+        Type listType = new TypeToken<List<T>>() {}
+                .where(new TypeParameter<T>() {}, type)
+                .getType();
+
+        return new JsonCodec<>(createObjectMapper(), listType);
     }
 
     public <T> JsonCodec<List<T>> listJsonCodec(JsonCodec<T> type)
     {
         Preconditions.checkNotNull(type, "type is null");
 
-        ParameterizedTypeImpl listType = new ParameterizedTypeImpl(null, List.class, type.getType());
-        return new JsonCodec<List<T>>(createObjectMapper(), listType);
+        Type listType = new TypeToken<List<T>>() {}
+                .where(new TypeParameter<T>() {}, type.getTypeToken())
+                .getType();
+
+        return new JsonCodec<>(createObjectMapper(), listType);
     }
 
     public <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, Class<V> valueType)
@@ -97,8 +104,12 @@ public class JsonCodecFactory
         Preconditions.checkNotNull(keyType, "keyType is null");
         Preconditions.checkNotNull(valueType, "valueType is null");
 
-        ParameterizedTypeImpl mapType = new ParameterizedTypeImpl(null, Map.class, keyType, valueType);
-        return new JsonCodec<Map<K, V>>(createObjectMapper(), mapType);
+        Type mapType = new TypeToken<Map<K, V>>() {}
+                .where(new TypeParameter<K>() {}, keyType)
+                .where(new TypeParameter<V>() {}, valueType)
+                .getType();
+
+        return new JsonCodec<>(createObjectMapper(), mapType);
     }
 
     public <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, JsonCodec<V> valueType)
@@ -106,8 +117,12 @@ public class JsonCodecFactory
         Preconditions.checkNotNull(keyType, "keyType is null");
         Preconditions.checkNotNull(valueType, "valueType is null");
 
-        ParameterizedTypeImpl mapType = new ParameterizedTypeImpl(null, Map.class, keyType, valueType.getType());
-        return new JsonCodec<Map<K, V>>(createObjectMapper(), mapType);
+        Type mapType = new TypeToken<Map<K, V>>() {}
+                .where(new TypeParameter<K>() {}, keyType)
+                .where(new TypeParameter<V>() {}, valueType.getTypeToken())
+                .getType();
+
+        return new JsonCodec<>(createObjectMapper(), mapType);
     }
 
     private ObjectMapper createObjectMapper()

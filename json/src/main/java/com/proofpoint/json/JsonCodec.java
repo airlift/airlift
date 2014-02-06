@@ -195,7 +195,7 @@ public class JsonCodec<T>
     }
 
     @SuppressWarnings("unchecked")
-    private TypeToken<T> getTypeToken()
+    TypeToken<T> getTypeToken()
     {
         return (TypeToken<T>) TypeToken.of(type);
     }
