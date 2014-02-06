@@ -19,7 +19,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.TypeLiteral;
+import com.google.common.reflect.TypeToken;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -65,9 +65,7 @@ public class TestJsonCodecFactory
     public void testTypeLiteralList()
             throws Exception
     {
-        JsonCodec<List<Person>> jsonCodec = jsonCodecFactory.jsonCodec(new TypeLiteral<List<Person>>()
-        {
-        });
+        JsonCodec<List<Person>> jsonCodec = jsonCodecFactory.jsonCodec(new TypeToken<List<Person>>() {});
 
         validateListCodec(jsonCodec);
     }
@@ -106,9 +104,7 @@ public class TestJsonCodecFactory
     public void testTypeLiteralMap()
             throws Exception
     {
-        JsonCodec<Map<String, Person>> jsonCodec = jsonCodecFactory.jsonCodec(new TypeLiteral<Map<String, Person>>()
-        {
-        });
+        JsonCodec<Map<String, Person>> jsonCodec = jsonCodecFactory.jsonCodec(new TypeToken<Map<String,Person>>() {});
 
         validateMapCodec(jsonCodec);
     }
