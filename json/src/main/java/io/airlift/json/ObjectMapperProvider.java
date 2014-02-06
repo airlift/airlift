@@ -30,7 +30,8 @@ import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.google.inject.Provider;
+
+import javax.inject.Provider;
 
 import java.util.HashSet;
 import java.util.Map;
