@@ -144,8 +144,7 @@
                                     <exclude>commons-logging:commons-logging-api</exclude>
                                     <!-- clashes with cglib:cglib-nodep -->
                                     <exclude>cglib:cglib</exclude>
-                                    <!-- junit repackages hamcrest into its own jar, which is a big no-no.
-                                         junit-dep fixes this problem -->
+                                    <!-- old versions of junit repackage hamcrest -->
                                     <exclude>junit:junit</exclude>
                                     <!-- use guava -->
                                     <exclude>com.google.collections:google-collections</exclude>
@@ -174,7 +173,8 @@
                                 <includes>
                                     <!-- whitelist the well numbered guava releases -->
                                     <include>com.google.guava:guava:[10.0.1,)</include>
-                                </includes>
+                                    <!-- newer versions of junit do not repackage hamcrest -->
+                                    <include>junit:junit:[4.11,)</include>                                </includes>
                             </bannedDependencies>
                             <requireMavenVersion>
                                 <version>3.0.0</version>
