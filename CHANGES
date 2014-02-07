@@ -8,6 +8,9 @@ Platform 0.90
 
 * TestingHttpServer now supports resources
 
+* Library upgrades
+  - findbugs-annotations to 2.0.2
+
 Platform 0.89
 
 * [Bug] BalancingHttpClient no longer dequotes and requotes the URI.
