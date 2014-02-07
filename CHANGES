@@ -10,6 +10,7 @@ Platform 0.90
 
 * Library upgrades
   - findbugs-annotations to 2.0.2
+  - testng to 6.8.7
 
 Platform 0.89
 
