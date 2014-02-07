@@ -197,6 +197,7 @@
                         <encoding>${project.build.sourceEncoding}</encoding>
                         <maxmem>${platform.build.jvmsize}</maxmem>
                         <showWarnings>true</showWarnings>
+                        <fork>true</fork>
                     </configuration>
                 </plugin>
 
