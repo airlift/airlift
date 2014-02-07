@@ -10,6 +10,7 @@ Platform 0.90
 
 * Library upgrades
   - Guava to 16.0.1
+  - logback to 1.1.1
   - findbugs-annotations to 2.0.2
   - testng to 6.8.7
 
