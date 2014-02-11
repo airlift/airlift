@@ -1,8 +1,13 @@
 * 0.85
 
+- [Bug] Handle locales correctly in Duration and DataSize
+- [Bug] Shutdown discovery client executor using LifeCycle
+- Upgrade to Guava 16.0.1
 - Add validation for nodeId
 - Defunct http-server.ip and jetty.ip
 - Defunct all legacy HTTP server properties
+- Add TestingTicker to testing module
+- Capture log messages from commons-logging
 - Allow using resources with TestingHttpServer
 - Use Guava TypeToken instead of Guice TypeLiteral for JsonCodec
 
