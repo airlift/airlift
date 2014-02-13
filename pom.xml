@@ -235,18 +235,6 @@
             </dependency>
 
             <dependency>
-                <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpclient</artifactId>
-                <version>4.2.3</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpcore</artifactId>
-                <version>4.2.3</version>
-            </dependency>
-
-            <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-client</artifactId>
                 <version>${dep.jetty.version}</version>
@@ -256,12 +244,6 @@
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-io</artifactId>
                 <version>${dep.jetty.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty</artifactId>
-                <version>3.6.2.Final</version>
             </dependency>
 
             <dependency>
