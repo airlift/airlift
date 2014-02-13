@@ -280,12 +280,12 @@ public final class Assertions
         fail("%sexpected:<%s> to be between <%s> and <%s> exclusive", toMessageString(message), actual, lowerBound, upperBound);
     }
 
-    public static void assertInstanceOf(Object actual, Class<?> expectedType)
+    public static <T, U extends T> void assertInstanceOf(T actual, Class<U> expectedType)
     {
         assertInstanceOf(actual, expectedType, null);
     }
 
-    public static void assertInstanceOf(Object actual, Class<?> expectedType, String message)
+    public static <T, U extends T> void assertInstanceOf(T actual, Class<U> expectedType, String message)
     {
         assertNotNull(actual, "actual is null");
         assertNotNull(expectedType, "expectedType is null");
