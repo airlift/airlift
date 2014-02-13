@@ -68,6 +68,7 @@ public class Bootstrap
 
     private Map<String, String> requiredConfigurationProperties = null;
     private Map<String, String> applicationDefaults = null;
+    private boolean quiet = false;
     private boolean requireExplicitBindings = true;
 
     private boolean initialized = false;
@@ -145,6 +146,12 @@ public class Bootstrap
         return this;
     }
 
+    public Bootstrap quiet()
+    {
+        this.quiet = true;
+        return this;
+    }
+
     public Bootstrap requireExplicitBindings(boolean requireExplicitBindings)
     {
         this.requireExplicitBindings = requireExplicitBindings;
@@ -205,7 +212,9 @@ public class Bootstrap
         List<Message> messages = configurationValidator.validate(modules);
 
         // Log effective configuration
-        logConfiguration(configurationFactory);
+        if (!quiet) {
+            logConfiguration(configurationFactory);
+        }
 
         // system modules
         Builder<Module> moduleList = ImmutableList.builder();
