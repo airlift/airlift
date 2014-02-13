@@ -24,6 +24,7 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 import java.io.IOException;
@@ -284,6 +285,18 @@ class TimingFilter
                 throws IOException
         {
             delegate.close();
+        }
+
+        @Override
+        public boolean isReady()
+        {
+            return delegate.isReady();
+        }
+
+        @Override
+        public void setWriteListener(WriteListener writeListener)
+        {
+            delegate.setWriteListener(writeListener);
         }
     }
 

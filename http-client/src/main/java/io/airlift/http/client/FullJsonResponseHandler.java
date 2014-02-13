@@ -24,13 +24,14 @@ import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.json.JsonCodec;
 
 import java.io.IOException;
-import java.net.ConnectException;
 import java.util.List;
 
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<T>, RuntimeException>
+public class FullJsonResponseHandler<T>
+        implements ResponseHandler<JsonResponse<T>, RuntimeException>
 {
     private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
 
@@ -49,13 +50,7 @@ public class FullJsonResponseHandler<T> implements ResponseHandler<JsonResponse<
     @Override
     public JsonResponse<T> handleException(Request request, Exception exception)
     {
-        if (exception instanceof ConnectException) {
-            throw new RuntimeException("Server refused connection: " + request.getUri().toASCIIString());
-        }
-        if (exception instanceof RuntimeException) {
-            throw (RuntimeException) exception;
-        }
-        throw new RuntimeException(exception);
+        throw propagate(request, exception);
     }
 
     @Override

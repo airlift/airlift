@@ -20,6 +20,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ListMultimap;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
@@ -35,12 +36,12 @@ import io.airlift.configuration.ConfigurationModule;
 import io.airlift.event.client.EventModule;
 import io.airlift.event.client.InMemoryEventClient;
 import io.airlift.event.client.InMemoryEventModule;
-import io.airlift.http.client.ApacheHttpClient;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpStatus;
 import io.airlift.http.client.HttpUriBuilder;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
+import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.NodeModule;
 import io.airlift.testing.FileUtils;
@@ -56,6 +57,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -201,8 +203,7 @@ public class TestHttpServerModule
         HttpServer server = injector.getInstance(HttpServer.class);
         server.start();
 
-        try {
-            HttpClient client = new ApacheHttpClient();
+        try (HttpClient client = new JettyHttpClient()) {
 
             // test servlet bound correctly
             URI httpUri = httpServerInfo.getHttpUri();
@@ -291,8 +292,7 @@ public class TestHttpServerModule
 
         long beforeRequest = System.currentTimeMillis();
         long afterRequest;
-        try {
-            HttpClient client = new ApacheHttpClient();
+        try (JettyHttpClient client = new JettyHttpClient()) {
 
             // test servlet bound correctly
             StringResponse response = client.execute(
@@ -354,6 +354,8 @@ public class TestHttpServerModule
         protected void service(HttpServletRequest request, HttpServletResponse response)
                 throws ServletException, IOException
         {
+            ByteStreams.copy(request.getInputStream(), ByteStreams.nullOutputStream());
+
             remoteAddress = request.getRemoteAddr();
             for (Entry<String, String> entry : responseHeaders.entries()) {
                 response.addHeader(entry.getKey(), entry.getValue());

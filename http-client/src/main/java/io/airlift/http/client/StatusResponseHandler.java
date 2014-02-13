@@ -22,6 +22,8 @@ import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import java.net.ConnectException;
 import java.util.List;
 
+import static io.airlift.http.client.ResponseHandlerUtils.propagate;
+
 public class StatusResponseHandler implements ResponseHandler<StatusResponse, RuntimeException>
 {
     private static final StatusResponseHandler statusResponseHandler = new StatusResponseHandler();
@@ -38,13 +40,7 @@ public class StatusResponseHandler implements ResponseHandler<StatusResponse, Ru
     @Override
     public StatusResponse handleException(Request request, Exception exception)
     {
-        if (exception instanceof ConnectException) {
-            throw new RuntimeException("Server refused connection: " + request.getUri().toASCIIString(), exception);
-        }
-        if (exception instanceof RuntimeException) {
-            throw (RuntimeException) exception;
-        }
-        throw new RuntimeException(exception);
+        throw propagate(request, exception);
     }
 
     @Override

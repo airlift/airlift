@@ -3,9 +3,9 @@ package io.airlift.skeleton;
 import com.google.inject.Injector;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
-import io.airlift.http.client.ApacheHttpClient;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
+import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.jaxrs.JaxrsModule;
@@ -13,6 +13,7 @@ import io.airlift.jmx.JmxHttpModule;
 import io.airlift.jmx.JmxModule;
 import io.airlift.json.JsonModule;
 import io.airlift.node.testing.TestingNodeModule;
+import io.airlift.testing.Closeables;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -50,15 +51,20 @@ public class TestServer
 
         lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         server = injector.getInstance(TestingHttpServer.class);
-        client = new ApacheHttpClient();
+        client = new JettyHttpClient();
     }
 
     @AfterMethod
     public void teardown()
             throws Exception
     {
-        if (lifeCycleManager != null) {
-            lifeCycleManager.stop();
+        try {
+            if (lifeCycleManager != null) {
+                lifeCycleManager.stop();
+            }
+        }
+        finally {
+            Closeables.closeQuietly(client);
         }
     }
 

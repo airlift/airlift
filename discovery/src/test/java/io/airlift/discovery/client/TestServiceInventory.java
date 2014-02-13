@@ -18,12 +18,14 @@ package io.airlift.discovery.client;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
-import io.airlift.http.client.ApacheHttpClient;
+import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.json.JsonCodec;
 import io.airlift.node.NodeInfo;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.testng.Assert;
@@ -33,6 +35,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -42,37 +45,40 @@ public class TestServiceInventory
 {
     @Test
     public void testNullServiceInventory()
-            throws Exception
     {
-        ServiceInventory serviceInventory = new ServiceInventory(new ServiceInventoryConfig(),
-                new NodeInfo("test"),
-                JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
-                new ApacheHttpClient());
+        try (JettyHttpClient httpClient = new JettyHttpClient()) {
+            ServiceInventory serviceInventory = new ServiceInventory(new ServiceInventoryConfig(),
+                    new NodeInfo("test"),
+                    JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
+                    httpClient);
 
-        Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 0);
-        serviceInventory.updateServiceInventory();
-        Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 0);
+            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 0);
+            serviceInventory.updateServiceInventory();
+            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 0);
+        }
     }
 
     @Test
     public void testFileServiceInventory()
             throws Exception
     {
-        ServiceInventoryConfig serviceInventoryConfig = new ServiceInventoryConfig()
-                .setServiceInventoryUri(Resources.getResource("service-inventory.json").toURI());
+        try (JettyHttpClient httpClient = new JettyHttpClient()) {
+            ServiceInventoryConfig serviceInventoryConfig = new ServiceInventoryConfig()
+                    .setServiceInventoryUri(Resources.getResource("service-inventory.json").toURI());
 
-        ServiceInventory serviceInventory = new ServiceInventory(serviceInventoryConfig,
-                new NodeInfo("test"),
-                JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
-                new ApacheHttpClient());
+            ServiceInventory serviceInventory = new ServiceInventory(serviceInventoryConfig,
+                    new NodeInfo("test"),
+                    JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
+                    httpClient);
 
-        Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 2);
-        Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery")), 2);
-        Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")), 2);
-        serviceInventory.updateServiceInventory();
-        Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 2);
-        Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery")), 2);
-        Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")), 2);
+            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 2);
+            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery")), 2);
+            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")), 2);
+            serviceInventory.updateServiceInventory();
+            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 2);
+            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery")), 2);
+            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")), 2);
+        }
     }
 
     @Test
@@ -82,25 +88,23 @@ public class TestServiceInventory
         String serviceInventoryJson = Resources.toString(Resources.getResource("service-inventory.json"), Charsets.UTF_8);
 
         Server server = null;
-        try {
+        try (JettyHttpClient httpClient = new JettyHttpClient()) {
             int port;
-            ServerSocket socket = new ServerSocket();
-            try {
+            try (ServerSocket socket = new ServerSocket()) {
                 socket.bind(new InetSocketAddress(0));
                 port = socket.getLocalPort();
             }
-            finally {
-                socket.close();
-            }
             URI baseURI = new URI("http", null, "127.0.0.1", port, null, null, null);
 
-            server = new Server();
-            server.setSendServerVersion(false);
+            HttpConfiguration httpConfiguration = new HttpConfiguration();
+            httpConfiguration.setSendServerVersion(false);
+            httpConfiguration.setSendXPoweredBy(false);
 
-            SelectChannelConnector httpConnector;
-            httpConnector = new SelectChannelConnector();
-            httpConnector.setName("http");
+            server = new Server();
+
+            ServerConnector httpConnector = new ServerConnector(server, new HttpConnectionFactory(httpConfiguration));
             httpConnector.setPort(port);
+            httpConnector.setName("http");
             server.addConnector(httpConnector);
 
             ServletHolder servletHolder = new ServletHolder(new ServiceInventoryServlet(serviceInventoryJson));
@@ -120,7 +124,7 @@ public class TestServiceInventory
             ServiceInventory serviceInventory = new ServiceInventory(serviceInventoryConfig,
                     new NodeInfo("test"),
                     JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
-                    new ApacheHttpClient());
+                    httpClient);
 
             Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 2);
             Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery")), 2);
@@ -137,7 +141,8 @@ public class TestServiceInventory
         }
     }
 
-    private class ServiceInventoryServlet extends HttpServlet
+    private class ServiceInventoryServlet
+            extends HttpServlet
     {
         private final byte[] serviceInventory;
 
