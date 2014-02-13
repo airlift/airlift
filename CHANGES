@@ -1,3 +1,7 @@
+Platform 0.91
+
+* Configuration warnings are no longer sent to the event service upon startup.
+
 Platform 0.90
 
 * JsonCodec
