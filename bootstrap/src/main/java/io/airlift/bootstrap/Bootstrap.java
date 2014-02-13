@@ -71,10 +71,11 @@ public class Bootstrap
     private Map<String, String> requiredConfigurationProperties;
     private Map<String, String> optionalConfigurationProperties;
     private boolean initializeLogging = true;
-    private boolean strictConfig = false;
+    private boolean quiet;
+    private boolean strictConfig;
     private boolean requireExplicitBindings = true;
 
-    private boolean initialized = false;
+    private boolean initialized;
 
     public Bootstrap(Module... modules)
     {
@@ -130,6 +131,12 @@ public class Bootstrap
     public Bootstrap doNotInitializeLogging()
     {
         this.initializeLogging = false;
+        return this;
+    }
+
+    public Bootstrap quiet()
+    {
+        this.quiet = true;
         return this;
     }
 
@@ -228,7 +235,9 @@ public class Bootstrap
         unusedProperties.keySet().removeAll(configurationFactory.getUsedProperties());
 
         // Log effective configuration
-        logConfiguration(configurationFactory, unusedProperties);
+        if (!quiet) {
+            logConfiguration(configurationFactory, unusedProperties);
+        }
 
         // system modules
         Builder<Module> moduleList = ImmutableList.builder();
