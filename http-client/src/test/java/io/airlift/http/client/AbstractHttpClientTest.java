@@ -342,6 +342,21 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
+    public void testQuotedSpace()
+        throws Exception
+    {
+        URI uri = baseURI.resolve("/road/to/nowhere?query=ab%20cd");
+        Request request = prepareGet()
+                .setUri(uri)
+                .build();
+
+        int statusCode = executeRequest(request, new ResponseStatusCodeHandler());
+        Assert.assertEquals(statusCode, 200);
+        Assert.assertEquals(servlet.requestMethod, "GET");
+        Assert.assertEquals(servlet.requestUri, uri);
+    }
+
+    @Test
     public void testKeepAlive()
             throws Exception
     {
