@@ -15,7 +15,6 @@
  */
 package com.proofpoint.http.client.balancing;
 
-import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -28,24 +27,22 @@ import org.weakref.jmx.Flatten;
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
 import java.net.URI;
-import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
 
-public final class BalancingAsyncHttpClient implements AsyncHttpClient
+public final class BalancingAsyncHttpClient
+        extends BalancingHttpClient
+        implements AsyncHttpClient
 {
-    private final HttpServiceBalancer pool;
     private final AsyncHttpClient httpClient;
-    private final int maxAttempts;
 
     @Inject
     public BalancingAsyncHttpClient(@ForBalancingHttpClient HttpServiceBalancer pool, @ForBalancingHttpClient AsyncHttpClient httpClient, BalancingHttpClientConfig config)
     {
-        this.pool = checkNotNull(pool, "pool is null");
+        super(pool, httpClient, config);
         this.httpClient = checkNotNull(httpClient, "httpClient is null");
-        maxAttempts = checkNotNull(config, "config is null").getMaxAttempts();
     }
 
     @Override
@@ -90,30 +87,6 @@ public final class BalancingAsyncHttpClient implements AsyncHttpClient
         --attemptsLeft;
         AsyncHttpResponseFuture<T> future = httpClient.executeAsync(subRequest, retryingResponseHandler);
         retryFuture.newAttempt(future, attempt, uri, attemptsLeft);
-    }
-
-    @Override
-    public <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
-            throws E
-    {
-        try {
-            return executeAsync(request, responseHandler).get();
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw Throwables.propagate(e);
-        }
-        catch (ExecutionException e) {
-            Throwables.propagateIfPossible(e.getCause());
-
-            if (e.getCause() instanceof Exception) {
-                // the HTTP client and ResponseHandler interface enforces this
-                throw (E) e.getCause();
-            }
-
-            // e.getCause() is some direct subclass of throwable
-            throw Throwables.propagate(e.getCause());
-        }
     }
 
     @Flatten

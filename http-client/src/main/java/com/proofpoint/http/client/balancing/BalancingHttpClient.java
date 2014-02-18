@@ -27,11 +27,12 @@ import java.net.URI;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public final class BalancingHttpClient implements HttpClient
+public class BalancingHttpClient
+        implements HttpClient
 {
-    private final HttpServiceBalancer pool;
+    final HttpServiceBalancer pool;
     private final HttpClient httpClient;
-    private final int maxAttempts;
+    final int maxAttempts;
 
     @Inject
     public BalancingHttpClient(@ForBalancingHttpClient HttpServiceBalancer pool, @ForBalancingHttpClient HttpClient httpClient, BalancingHttpClientConfig config)

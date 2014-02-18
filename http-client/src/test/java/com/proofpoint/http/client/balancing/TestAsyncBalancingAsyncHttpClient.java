@@ -1,15 +1,19 @@
 package com.proofpoint.http.client.balancing;
 
+import com.google.common.util.concurrent.AbstractFuture;
 import com.proofpoint.http.client.AsyncHttpClient;
+import com.proofpoint.http.client.AsyncHttpClient.AsyncHttpResponseFuture;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
+import com.proofpoint.http.client.SyncToAsyncWrapperClient;
 import org.testng.annotations.Test;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.mockito.Mockito.mock;
@@ -21,8 +25,8 @@ import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-public class TestBalancingAsyncHttpClient
-    extends AbstractTestBalancingHttpClient<AsyncHttpClient>
+public class TestAsyncBalancingAsyncHttpClient
+    extends AbstractTestBalancingHttpClient<SyncToAsyncWrapperClient>
 {
     private TestingAsyncHttpClient asyncHttpClient;
 
@@ -34,22 +38,24 @@ public class TestBalancingAsyncHttpClient
     }
 
     @Override
-    protected BalancingAsyncHttpClient createBalancingHttpClient()
+    protected SyncToAsyncWrapperClient createBalancingHttpClient()
     {
-        return new BalancingAsyncHttpClient(serviceBalancer, asyncHttpClient,
-                new BalancingHttpClientConfig().setMaxAttempts(3));
+        return new SyncToAsyncWrapperClient(
+                new BalancingAsyncHttpClient(serviceBalancer, asyncHttpClient,
+                        new BalancingHttpClientConfig().setMaxAttempts(3)));
     }
 
     @Override
     protected void assertHandlerExceptionThrown(ResponseHandler responseHandler, RuntimeException handlerException)
             throws Exception
     {
+        AsyncHttpResponseFuture future = balancingHttpClient.executeAsync(request, responseHandler);
         try {
-            balancingHttpClient.execute(request, responseHandler);
+            future.get();
             fail("Exception not thrown");
         }
-        catch (Exception e) {
-            assertSame(e, handlerException, "Exception thrown by BalancingAsyncHttpClient");
+        catch (ExecutionException e) {
+            assertSame(e.getCause(), handlerException, "Exception thrown by BalancingAsyncHttpClient");
         }
     }
 
@@ -67,7 +73,8 @@ public class TestBalancingAsyncHttpClient
         AsyncHttpClient mockClient = mock(AsyncHttpClient.class);
         when(mockClient.getStats()).thenReturn(requestStats);
 
-        balancingHttpClient = new BalancingAsyncHttpClient(serviceBalancer, mockClient, new BalancingHttpClientConfig());
+        balancingHttpClient = new SyncToAsyncWrapperClient(
+                new BalancingAsyncHttpClient(serviceBalancer, mockClient, new BalancingHttpClientConfig()));
         assertSame(balancingHttpClient.getStats(), requestStats);
 
         verify(mockClient).getStats();
@@ -79,12 +86,15 @@ public class TestBalancingAsyncHttpClient
     {
         AsyncHttpClient mockClient = mock(AsyncHttpClient.class);
 
-        balancingHttpClient = new BalancingAsyncHttpClient(serviceBalancer, mockClient, new BalancingHttpClientConfig());
+        balancingHttpClient = new SyncToAsyncWrapperClient(
+                new BalancingAsyncHttpClient(serviceBalancer, mockClient, new BalancingHttpClientConfig()));
         balancingHttpClient.close();
 
         verify(mockClient).close();
         verifyNoMoreInteractions(mockClient, serviceBalancer);
     }
+
+    // TODO tests for interruption and cancellation
 
     class TestingAsyncHttpClient
             implements AsyncHttpClient, TestingClient
@@ -125,23 +135,34 @@ public class TestBalancingAsyncHttpClient
         @Override
         public <T, E extends Exception> AsyncHttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
         {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
-                throws E
-        {
             assertTrue(uris.size() > 0, "call was expected");
             assertEquals(request.getMethod(), method, "request method");
             assertEquals(request.getUri(), uris.remove(0), "request uri");
             assertEquals(request.getBodyGenerator(), bodyGenerator, "request body generator");
 
             Object response = responses.remove(0);
+            // TODO: defer availability of return values ?
             if (response instanceof Exception) {
-                return responseHandler.handleException(request, (Exception) response);
+                try {
+                    return new ImmediateAsyncHttpFuture<>(responseHandler.handleException(request, (Exception) response));
+                }
+                catch (Exception e) {
+                    return new ImmediateFailedAsyncHttpFuture<>((E) e);
+                }
             }
-            return responseHandler.handle(request, (Response) response);
+            try {
+                return new ImmediateAsyncHttpFuture<>(responseHandler.handle(request, (Response) response));
+            }
+            catch (Exception e) {
+                return new ImmediateFailedAsyncHttpFuture<>((E) e);
+            }
+        }
+
+        @Override
+        public <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
+                throws E
+        {
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -154,6 +175,43 @@ public class TestBalancingAsyncHttpClient
         public void close()
         {
             throw new UnsupportedOperationException();
+        }
+
+        private class ImmediateAsyncHttpFuture<T, E extends Exception>
+                extends AbstractFuture<T>
+                implements AsyncHttpResponseFuture<T>
+        {
+            public ImmediateAsyncHttpFuture(T value)
+            {
+                set(value);
+            }
+
+            @Override
+            public String getState()
+            {
+                throw new UnsupportedOperationException();
+            }
+        }
+
+        private class ImmediateFailedAsyncHttpFuture<T, E extends Exception>
+                extends AbstractFuture<T>
+                implements AsyncHttpResponseFuture<T>
+        {
+
+            private final E exception;
+
+            public ImmediateFailedAsyncHttpFuture(E exception)
+            {
+                this.exception = exception;
+                setException(exception);
+            }
+
+            @Override
+            public String getState()
+            {
+                throw new UnsupportedOperationException();
+            }
+
         }
     }
 }
