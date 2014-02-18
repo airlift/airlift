@@ -18,6 +18,7 @@ package com.proofpoint.http.client;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
+import com.google.common.io.ByteStreams;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -35,6 +36,7 @@ public final class EchoServlet
     String requestMethod;
     URI requestUri;
     final ListMultimap<String, String> requestHeaders = ArrayListMultimap.create();
+    byte[] requestBytes;
 
     int responseStatusCode = 200;
     String responseStatusMessage;
@@ -55,6 +57,8 @@ public final class EchoServlet
         for (String name : Collections.list(request.getHeaderNames())) {
             requestHeaders.putAll(name, Collections.list(request.getHeaders(name)));
         }
+
+        requestBytes = ByteStreams.toByteArray(request.getInputStream());
 
         if (responseStatusMessage != null) {
             response.sendError(responseStatusCode, responseStatusMessage);

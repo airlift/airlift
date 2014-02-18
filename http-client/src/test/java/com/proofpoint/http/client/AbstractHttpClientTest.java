@@ -26,6 +26,7 @@ import org.testng.annotations.Test;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -413,16 +414,17 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testPutMethodWithBodyGenerator()
+    public void testPutMethodWithStaticBodyGenerator()
             throws Exception
     {
         URI uri = baseURI.resolve("/road/to/nowhere");
+        byte[] body = {1, 2, 5};
         Request request = preparePut()
                 .setUri(uri)
                 .addHeader("foo", "bar")
                 .addHeader("dupe", "first")
                 .addHeader("dupe", "second")
-                .setBodyGenerator(StaticBodyGenerator.createStaticBodyGenerator(new byte[0]))
+                .setBodyGenerator(StaticBodyGenerator.createStaticBodyGenerator(body))
                 .build();
 
         int statusCode = executeRequest(request, new ResponseStatusCodeHandler());
@@ -432,6 +434,39 @@ public abstract class AbstractHttpClientTest
         Assert.assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
         Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
+        Assert.assertEquals(servlet.requestBytes, body);
+    }
+
+    @Test
+    public void testPutMethodWithDynamicBodyGenerator()
+            throws Exception
+    {
+        URI uri = baseURI.resolve("/road/to/nowhere");
+        Request request = preparePut()
+                .setUri(uri)
+                .addHeader("foo", "bar")
+                .addHeader("dupe", "first")
+                .addHeader("dupe", "second")
+                .setBodyGenerator(new BodyGenerator()
+                {
+                    @Override
+                    public void write(OutputStream out)
+                            throws Exception
+                    {
+                        out.write(1);
+                        out.write(new byte[] {2, 5});
+                    }
+                })
+                .build();
+
+        int statusCode = executeRequest(request, new ResponseStatusCodeHandler());
+        Assert.assertEquals(statusCode, 200);
+        Assert.assertEquals(servlet.requestMethod, "PUT");
+        Assert.assertEquals(servlet.requestUri, uri);
+        Assert.assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
+        Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
+        Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
+        Assert.assertEquals(servlet.requestBytes, new byte[] {1, 2, 5});
     }
 
     @Test(expectedExceptions = {SocketTimeoutException.class, TimeoutException.class, ClosedChannelException.class})
