@@ -3,7 +3,7 @@ package io.airlift.http.client.testing;
 import com.google.common.base.Function;
 import io.airlift.http.client.AbstractHttpClientTest.CaptureExceptionResponseHandler;
 import io.airlift.http.client.AbstractHttpClientTest.CapturedException;
-import io.airlift.http.client.AsyncHttpClient.AsyncHttpResponseFuture;
+import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.Response;
 import org.testng.annotations.Test;
@@ -28,7 +28,7 @@ public class TestTestingHttpClient
 
         final RuntimeException expectedException = new RuntimeException("test exception");
 
-        AsyncHttpResponseFuture<String> future = new TestingHttpClient(
+        HttpResponseFuture<String> future = new TestingHttpClient(
                 new Function<Request, Response>()
                 {
                     @Override
