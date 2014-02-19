@@ -53,7 +53,7 @@ public class HttpServerConfig
     private boolean adminEnabled = true;
     private int adminPort = 0;
     private int adminMinThreads = 2;
-    private int adminMaxThreads = 20;
+    private int adminMaxThreads = 200;
 
     public boolean isHttpEnabled()
     {
