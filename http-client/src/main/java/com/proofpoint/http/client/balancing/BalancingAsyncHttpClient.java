@@ -46,7 +46,7 @@ public final class BalancingAsyncHttpClient
     }
 
     @Override
-    public <T, E extends Exception> AsyncHttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
     {
         checkArgument(!request.getUri().isAbsolute(), request.getUri() + " is not a relative URI");
         checkArgument(request.getUri().getHost() == null, request.getUri() + " has a host component");
@@ -59,10 +59,10 @@ public final class BalancingAsyncHttpClient
         }
         catch (RuntimeException e) {
             try {
-                return new ImmediateAsyncHttpResponseFuture<>(responseHandler.handleException(request, e));
+                return new ImmediateHttpResponseFuture<>(responseHandler.handleException(request, e));
             }
             catch (Exception e1) {
-                return new ImmediateFailedAsyncHttpResponseFuture<>((E) e1);
+                return new ImmediateFailedHttpResponseFuture<>((E) e1);
             }
         }
         RetryFuture<T, E> retryFuture = new RetryFuture<>(request, responseHandler);
@@ -85,7 +85,7 @@ public final class BalancingAsyncHttpClient
                 .build();
 
         --attemptsLeft;
-        AsyncHttpResponseFuture<T> future = httpClient.executeAsync(subRequest, retryingResponseHandler);
+        HttpResponseFuture<T> future = httpClient.executeAsync(subRequest, retryingResponseHandler);
         retryFuture.newAttempt(future, attempt, uri, attemptsLeft);
     }
 
@@ -104,7 +104,7 @@ public final class BalancingAsyncHttpClient
 
     private class RetryFuture<T, E extends Exception>
             extends AbstractFuture<T>
-            implements AsyncHttpResponseFuture<T>
+            implements HttpResponseFuture<T>
     {
 
         private final Request request;
@@ -115,7 +115,7 @@ public final class BalancingAsyncHttpClient
         @GuardedBy("subFutureLock")
         private URI uri = null;
         @GuardedBy("subFutureLock")
-        private AsyncHttpResponseFuture<T> subFuture = null;
+        private HttpResponseFuture<T> subFuture = null;
 
         public RetryFuture(Request request, ResponseHandler<T, E> responseHandler)
         {
@@ -123,7 +123,7 @@ public final class BalancingAsyncHttpClient
             this.responseHandler = responseHandler;
         }
 
-        void newAttempt(final AsyncHttpResponseFuture<T> future, final HttpServiceAttempt attempt, URI uri, final int attemptsLeft)
+        void newAttempt(final HttpResponseFuture<T> future, final HttpServiceAttempt attempt, URI uri, final int attemptsLeft)
         {
             synchronized (subFutureLock) {
                 this.attempt = attempt;
@@ -205,14 +205,14 @@ public final class BalancingAsyncHttpClient
         }
     }
 
-    private static class ImmediateAsyncHttpResponseFuture<T, E extends Exception>
+    private static class ImmediateHttpResponseFuture<T, E extends Exception>
             extends AbstractFuture<T>
-            implements AsyncHttpResponseFuture<T>
+            implements HttpResponseFuture<T>
     {
 
         private final T result;
 
-        public ImmediateAsyncHttpResponseFuture(T result)
+        public ImmediateHttpResponseFuture(T result)
         {
             this.result = result;
             set(result);
@@ -225,14 +225,14 @@ public final class BalancingAsyncHttpClient
         }
     }
 
-    private static class ImmediateFailedAsyncHttpResponseFuture<T, E extends Exception>
+    private static class ImmediateFailedHttpResponseFuture<T, E extends Exception>
             extends AbstractFuture<T>
-            implements AsyncHttpResponseFuture<T>
+            implements HttpResponseFuture<T>
     {
 
         private final E exception;
 
-        public ImmediateFailedAsyncHttpResponseFuture(E exception)
+        public ImmediateFailedHttpResponseFuture(E exception)
         {
             this.exception = exception;
             setException(exception);

@@ -59,7 +59,7 @@ public class TestingHttpClient
     }
 
     @Override
-    public <T, E extends Exception> AsyncHttpResponseFuture<T> executeAsync(final Request request, final ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> HttpResponseFuture<T> executeAsync(final Request request, final ResponseHandler<T, E> responseHandler)
     {
         checkNotNull(request, "request is null");
         checkNotNull(responseHandler, "responseHandler is null");
@@ -76,7 +76,7 @@ public class TestingHttpClient
             }
         });
 
-        return new TestingAsyncHttpResponseFuture<>(future, state);
+        return new TestingHttpResponseFuture<>(future, state);
     }
 
     @Override
@@ -154,14 +154,14 @@ public class TestingHttpClient
                 throws Exception;
     }
 
-    private class TestingAsyncHttpResponseFuture<T>
+    private class TestingHttpResponseFuture<T>
             extends ForwardingListenableFuture<T>
-            implements AsyncHttpResponseFuture<T>
+            implements HttpResponseFuture<T>
     {
         private final AtomicReference<String> state;
         private final ListenableFuture<T> future;
 
-        private TestingAsyncHttpResponseFuture(ListenableFuture<T> future, AtomicReference<String> state)
+        private TestingHttpResponseFuture(ListenableFuture<T> future, AtomicReference<String> state)
         {
             this.future = future;
             this.state = state;

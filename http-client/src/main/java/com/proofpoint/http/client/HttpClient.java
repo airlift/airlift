@@ -16,6 +16,7 @@
 package com.proofpoint.http.client;
 
 import com.google.common.annotations.Beta;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.Closeable;
 
@@ -26,8 +27,19 @@ public interface HttpClient
     <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
             throws E;
 
+    <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler);
+
     RequestStats getStats();
 
     @Override
     void close();
+
+    public interface HttpResponseFuture<T>
+            extends ListenableFuture<T>
+    {
+        /**
+         * State for diagnostics.  Do not rely on values from this method.
+         */
+        String getState();
+    }
 }

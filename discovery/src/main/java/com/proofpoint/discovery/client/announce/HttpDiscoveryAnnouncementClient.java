@@ -24,7 +24,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
 import com.proofpoint.discovery.client.DiscoveryException;
 import com.proofpoint.discovery.client.ForDiscoveryClient;
-import com.proofpoint.http.client.AsyncHttpClient;
+import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.CacheControl;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.Response;
@@ -50,12 +50,12 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
 
     private final NodeInfo nodeInfo;
     private final JsonCodec<Announcement> announcementCodec;
-    private final AsyncHttpClient httpClient;
+    private final HttpClient httpClient;
 
     @Inject
     public HttpDiscoveryAnnouncementClient(NodeInfo nodeInfo,
             JsonCodec<Announcement> announcementCodec,
-            @ForDiscoveryClient AsyncHttpClient httpClient)
+            @ForDiscoveryClient HttpClient httpClient)
     {
         Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
         Preconditions.checkNotNull(announcementCodec, "announcementCodec is null");

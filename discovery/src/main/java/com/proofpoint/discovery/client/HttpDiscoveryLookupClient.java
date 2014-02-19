@@ -19,8 +19,8 @@ import com.google.common.io.ByteStreams;
 import com.google.common.net.HttpHeaders;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
-import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.CacheControl;
+import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.Request.Builder;
 import com.proofpoint.http.client.RequestStats;
@@ -48,12 +48,12 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
     private final String environment;
     private final NodeInfo nodeInfo;
     private final JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec;
-    private final AsyncHttpClient httpClient;
+    private final HttpClient httpClient;
 
     @Inject
     public HttpDiscoveryLookupClient(NodeInfo nodeInfo,
             JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec,
-            @ForDiscoveryClient AsyncHttpClient httpClient,
+            @ForDiscoveryClient HttpClient httpClient,
             ServiceInventory serviceInventory)
     {
         checkNotNull(nodeInfo, "nodeInfo is null");

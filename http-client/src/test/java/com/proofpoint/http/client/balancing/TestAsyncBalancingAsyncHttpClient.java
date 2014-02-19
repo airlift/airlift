@@ -2,7 +2,7 @@ package com.proofpoint.http.client.balancing;
 
 import com.google.common.util.concurrent.AbstractFuture;
 import com.proofpoint.http.client.AsyncHttpClient;
-import com.proofpoint.http.client.AsyncHttpClient.AsyncHttpResponseFuture;
+import com.proofpoint.http.client.HttpClient.HttpResponseFuture;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.Response;
@@ -49,7 +49,7 @@ public class TestAsyncBalancingAsyncHttpClient
     protected void assertHandlerExceptionThrown(ResponseHandler responseHandler, RuntimeException handlerException)
             throws Exception
     {
-        AsyncHttpResponseFuture future = balancingHttpClient.executeAsync(request, responseHandler);
+        HttpResponseFuture future = balancingHttpClient.executeAsync(request, responseHandler);
         try {
             future.get();
             fail("Exception not thrown");
@@ -133,7 +133,7 @@ public class TestAsyncBalancingAsyncHttpClient
         }
 
         @Override
-        public <T, E extends Exception> AsyncHttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
+        public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
         {
             assertTrue(uris.size() > 0, "call was expected");
             assertEquals(request.getMethod(), method, "request method");
@@ -179,7 +179,7 @@ public class TestAsyncBalancingAsyncHttpClient
 
         private class ImmediateAsyncHttpFuture<T, E extends Exception>
                 extends AbstractFuture<T>
-                implements AsyncHttpResponseFuture<T>
+                implements HttpResponseFuture<T>
         {
             public ImmediateAsyncHttpFuture(T value)
             {
@@ -195,7 +195,7 @@ public class TestAsyncBalancingAsyncHttpClient
 
         private class ImmediateFailedAsyncHttpFuture<T, E extends Exception>
                 extends AbstractFuture<T>
-                implements AsyncHttpResponseFuture<T>
+                implements HttpResponseFuture<T>
         {
 
             private final E exception;

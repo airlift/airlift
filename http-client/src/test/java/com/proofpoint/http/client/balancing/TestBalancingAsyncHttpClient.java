@@ -123,7 +123,7 @@ public class TestBalancingAsyncHttpClient
         }
 
         @Override
-        public <T, E extends Exception> AsyncHttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
+        public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
         {
             throw new UnsupportedOperationException();
         }

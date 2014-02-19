@@ -23,8 +23,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
 import com.proofpoint.discovery.client.HttpServiceSelector;
 import com.proofpoint.discovery.client.ServiceType;
-import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.BodyGenerator;
+import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.Response;
@@ -55,7 +55,7 @@ public class HttpEventClient
 
     private final HttpServiceSelector serviceSelector;
     private final JsonEventWriter eventWriter;
-    private final AsyncHttpClient httpClient;
+    private final HttpClient httpClient;
     private final NodeInfo nodeInfo;
     private final TraceTokenManager traceTokenManager;
 
@@ -64,7 +64,7 @@ public class HttpEventClient
             @ServiceType("collector") HttpServiceSelector serviceSelector,
             JsonEventWriter eventWriter,
             NodeInfo nodeInfo,
-            @ForEventClient AsyncHttpClient httpClient,
+            @ForEventClient HttpClient httpClient,
             TraceTokenManager traceTokenManager)
     {
         this.serviceSelector = checkNotNull(serviceSelector, "serviceSelector is null");

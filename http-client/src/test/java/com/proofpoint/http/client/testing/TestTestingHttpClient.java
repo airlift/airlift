@@ -1,7 +1,7 @@
 package com.proofpoint.http.client.testing;
 
 import com.google.common.base.Function;
-import com.proofpoint.http.client.AsyncHttpClient.AsyncHttpResponseFuture;
+import com.proofpoint.http.client.HttpClient.HttpResponseFuture;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
@@ -28,7 +28,7 @@ public class TestTestingHttpClient
 
         final RuntimeException expectedException = new RuntimeException("test exception");
 
-        AsyncHttpResponseFuture<String> future = new TestingHttpClient(
+        HttpResponseFuture<String> future = new TestingHttpClient(
                 new Function<Request, Response>()
                 {
                     @Override
@@ -60,7 +60,7 @@ public class TestTestingHttpClient
         final RuntimeException testingException = new RuntimeException("test exception");
         final Object expectedResponse = new Object();
 
-        AsyncHttpResponseFuture<Object> future = new TestingHttpClient(
+        HttpResponseFuture<Object> future = new TestingHttpClient(
                 new Function<Request, Response>()
                 {
                     @Override

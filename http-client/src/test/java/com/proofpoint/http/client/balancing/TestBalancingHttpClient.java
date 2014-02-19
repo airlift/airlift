@@ -136,6 +136,12 @@ public class TestBalancingHttpClient
         }
 
         @Override
+        public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public RequestStats getStats()
         {
             throw new UnsupportedOperationException();
