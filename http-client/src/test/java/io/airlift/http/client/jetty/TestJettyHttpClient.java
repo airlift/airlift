@@ -25,6 +25,7 @@ public class TestJettyHttpClient
         httpClient = new JettyHttpClient(new HttpClientConfig(), jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
 
+    @Override
     @AfterMethod
     public void tearDown()
             throws Exception
