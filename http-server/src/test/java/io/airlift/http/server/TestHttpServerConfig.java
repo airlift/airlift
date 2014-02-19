@@ -46,7 +46,7 @@ public class TestHttpServerConfig
                 .setAdminEnabled(true)
                 .setAdminPort(0)
                 .setAdminMinThreads(2)
-                .setAdminMaxThreads(20)
+                .setAdminMaxThreads(200)
                 .setMaxRequestHeaderSize(null)
         );
     }
