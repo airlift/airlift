@@ -21,8 +21,8 @@ import com.google.common.net.HttpHeaders;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
-import io.airlift.http.client.AsyncHttpClient;
 import io.airlift.http.client.CacheControl;
+import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.Request.Builder;
 import io.airlift.http.client.RequestStats;
@@ -35,7 +35,6 @@ import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
 import javax.inject.Provider;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.CancellationException;
@@ -53,13 +52,13 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
     private final Provider<URI> discoveryServiceURI;
     private final NodeInfo nodeInfo;
     private final JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec;
-    private final AsyncHttpClient httpClient;
+    private final HttpClient httpClient;
 
     @Inject
     public HttpDiscoveryLookupClient(@ForDiscoveryClient Provider<URI> discoveryServiceURI,
             NodeInfo nodeInfo,
             JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec,
-            @ForDiscoveryClient AsyncHttpClient httpClient)
+            @ForDiscoveryClient HttpClient httpClient)
     {
         Preconditions.checkNotNull(discoveryServiceURI, "discoveryServiceURI is null");
         Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");

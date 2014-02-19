@@ -55,6 +55,10 @@ public class HttpClientBinder
                 newSetBinder(binder, HttpRequestFilter.class, module.getFilterQualifier()));
     }
 
+    /**
+     * @deprecated Use {@link #bindHttpClient(String, Class)}
+     */
+    @Deprecated
     public HttpClientAsyncBindingBuilder bindAsyncHttpClient(String name, Class<? extends Annotation> annotation)
     {
         checkNotNull(name, "name is null");

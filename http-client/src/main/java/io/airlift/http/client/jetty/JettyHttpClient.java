@@ -215,7 +215,7 @@ public class JettyHttpClient
     }
 
     @Override
-    public <T, E extends Exception> AsyncHttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
     {
         Preconditions.checkNotNull(request, "request is null");
         Preconditions.checkNotNull(responseHandler, "responseHandler is null");
@@ -375,7 +375,7 @@ public class JettyHttpClient
 
     private static class JettyResponseFuture<T, E extends Exception>
             extends AbstractFuture<T>
-            implements AsyncHttpResponseFuture<T>
+            implements HttpResponseFuture<T>
     {
         public enum JettyAsyncHttpState
         {

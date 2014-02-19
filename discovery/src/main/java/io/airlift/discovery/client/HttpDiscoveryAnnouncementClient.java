@@ -23,8 +23,8 @@ import com.google.common.net.MediaType;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
-import io.airlift.http.client.AsyncHttpClient;
 import io.airlift.http.client.CacheControl;
+import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.Response;
 import io.airlift.http.client.ResponseHandler;
@@ -33,7 +33,6 @@ import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
 
 import javax.inject.Provider;
-
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -52,13 +51,13 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
     private final Provider<URI> discoveryServiceURI;
     private final NodeInfo nodeInfo;
     private final JsonCodec<Announcement> announcementCodec;
-    private final AsyncHttpClient httpClient;
+    private final HttpClient httpClient;
 
     @Inject
     public HttpDiscoveryAnnouncementClient(@ForDiscoveryClient Provider<URI> discoveryServiceURI,
             NodeInfo nodeInfo,
             JsonCodec<Announcement> announcementCodec,
-            @ForDiscoveryClient AsyncHttpClient httpClient)
+            @ForDiscoveryClient HttpClient httpClient)
     {
         Preconditions.checkNotNull(discoveryServiceURI, "discoveryServiceURI is null");
         Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");

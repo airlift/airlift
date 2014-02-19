@@ -19,7 +19,7 @@ import com.google.common.base.Throwables;
 import com.google.common.io.CharStreams;
 import io.airlift.discovery.client.HttpServiceSelector;
 import io.airlift.discovery.client.testing.StaticHttpServiceSelector;
-import io.airlift.http.client.AsyncHttpClient;
+import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.node.NodeInfo;
@@ -40,7 +40,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
@@ -67,7 +66,7 @@ public class TestHttpEventClient
     private HttpEventClient client;
     private Server server;
     private URI baseUri;
-    private AsyncHttpClient httpClient;
+    private HttpClient httpClient;
 
     @Test(expectedExceptions = ServiceUnavailableException.class, expectedExceptionsMessageRegExp = ".*is not available.*")
     public void testFutureFailsWhenServiceUnavailable()

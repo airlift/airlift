@@ -23,8 +23,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
 import io.airlift.discovery.client.HttpServiceSelector;
 import io.airlift.discovery.client.ServiceType;
-import io.airlift.http.client.AsyncHttpClient;
 import io.airlift.http.client.BodyGenerator;
+import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.Response;
@@ -53,7 +53,7 @@ public class HttpEventClient
 
     private final HttpServiceSelector serviceSelector;
     private final JsonEventWriter eventWriter;
-    private final AsyncHttpClient httpClient;
+    private final HttpClient httpClient;
     private final NodeInfo nodeInfo;
 
     @Inject
@@ -61,7 +61,7 @@ public class HttpEventClient
             @ServiceType("collector") HttpServiceSelector serviceSelector,
             JsonEventWriter eventWriter,
             NodeInfo nodeInfo,
-            @ForEventClient AsyncHttpClient httpClient)
+            @ForEventClient HttpClient httpClient)
     {
         this.serviceSelector = checkNotNull(serviceSelector, "serviceSelector is null");
         this.eventWriter = checkNotNull(eventWriter, "eventWriter is null");
