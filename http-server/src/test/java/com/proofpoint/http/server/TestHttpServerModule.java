@@ -38,6 +38,7 @@ import com.proofpoint.http.client.HttpUriBuilder;
 import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.client.StringResponseHandler.StringResponse;
 import com.proofpoint.http.client.jetty.JettyHttpClient;
+import com.proofpoint.log.Logging;
 import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.node.testing.TestingNodeModule;
@@ -45,6 +46,7 @@ import com.proofpoint.reporting.ReportingModule;
 import com.proofpoint.testing.FileUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 import org.weakref.jmx.testing.TestingMBeanModule;
 
@@ -74,6 +76,12 @@ import static org.testng.Assert.assertTrue;
 public class TestHttpServerModule
 {
     private File tempDir;
+
+    @BeforeSuite
+    public void setupSuite()
+    {
+        Logging.initialize();
+    }
 
     @BeforeMethod
     public void setup()

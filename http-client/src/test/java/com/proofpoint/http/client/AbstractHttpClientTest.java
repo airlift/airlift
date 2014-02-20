@@ -4,6 +4,7 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
+import com.proofpoint.log.Logging;
 import com.proofpoint.testing.Assertions;
 import com.proofpoint.units.Duration;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -21,6 +22,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
 import java.io.Closeable;
@@ -85,6 +87,12 @@ public abstract class AbstractHttpClientTest
 
     public abstract <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception;
+
+    @BeforeSuite
+    public void setupSuite()
+    {
+        Logging.initialize();
+    }
 
     @BeforeMethod
     public void abstractSetup()

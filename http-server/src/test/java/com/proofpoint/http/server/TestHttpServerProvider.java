@@ -26,6 +26,7 @@ import com.proofpoint.http.client.StringResponseHandler.StringResponse;
 import com.proofpoint.http.client.jetty.JettyHttpClient;
 import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 import com.proofpoint.http.server.testing.TestingHttpServer;
+import com.proofpoint.log.Logging;
 import com.proofpoint.node.NodeConfig;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.testing.FileUtils;
@@ -34,6 +35,7 @@ import com.proofpoint.units.Duration;
 import org.apache.commons.codec.binary.Base64;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
 import javax.servlet.Filter;
@@ -62,6 +64,12 @@ public class TestHttpServerProvider
     private NodeInfo nodeInfo;
     private HttpServerConfig config;
     private HttpServerInfo httpServerInfo;
+
+    @BeforeSuite
+    public void setupSuite()
+    {
+        Logging.initialize();
+    }
 
     @BeforeMethod
     public void setup()

@@ -37,10 +37,12 @@ import com.proofpoint.http.server.HttpServerConfig;
 import com.proofpoint.http.server.HttpServerInfo;
 import com.proofpoint.http.server.QueryStringFilter;
 import com.proofpoint.http.server.TheServlet;
+import com.proofpoint.log.Logging;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import com.proofpoint.units.Duration;
+import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
 import javax.servlet.Filter;
@@ -74,6 +76,12 @@ import static org.testng.Assert.assertTrue;
 
 public class TestTestingHttpServer
 {
+    @BeforeSuite
+    public void setupSuite()
+    {
+        Logging.initialize();
+    }
+
     @Test
     public void testInitialization()
             throws Exception
