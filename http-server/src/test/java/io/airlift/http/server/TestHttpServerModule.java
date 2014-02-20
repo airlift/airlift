@@ -42,6 +42,7 @@ import io.airlift.http.client.HttpUriBuilder;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
+import io.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.NodeModule;
 import io.airlift.testing.FileUtils;
@@ -49,6 +50,7 @@ import io.airlift.tracetoken.TraceTokenModule;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
 import javax.servlet.Filter;
@@ -85,6 +87,12 @@ import static org.testng.Assert.assertTrue;
 public class TestHttpServerModule
 {
     private File tempDir;
+
+    @BeforeSuite
+    public void setupSuite()
+    {
+        Logging.initialize();
+    }
 
     @BeforeMethod
     public void setup()

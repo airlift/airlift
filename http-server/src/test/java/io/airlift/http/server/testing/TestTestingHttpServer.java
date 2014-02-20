@@ -35,9 +35,11 @@ import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.server.HttpServerConfig;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.TheServlet;
+import io.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.testing.TestingNodeModule;
 import io.airlift.units.Duration;
+import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
 import javax.servlet.Filter;
@@ -72,6 +74,12 @@ import static org.testng.Assert.assertTrue;
 
 public class TestTestingHttpServer
 {
+    @BeforeSuite
+    public void setupSuite()
+    {
+        Logging.initialize();
+    }
+
     @Test
     public void testInitialization()
             throws Exception
