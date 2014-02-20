@@ -17,6 +17,7 @@ package io.airlift.discovery.client;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -24,6 +25,7 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationModule;
 import io.airlift.discovery.client.testing.TestingDiscoveryModule;
@@ -33,12 +35,16 @@ import org.testng.annotations.Test;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
 
 public class TestDiscoveryBinder
 {
+    private static final ServiceDescriptor SERVICE1 = new ServiceDescriptor(UUID.randomUUID(), "nodeId1", "type1", "pool1", "localhost", ServiceState.RUNNING, ImmutableMap.<String, String>of());
+    private static final ServiceDescriptor SERVICE2 = new ServiceDescriptor(UUID.randomUUID(), "nodeId2", "type2", "pool1", "localhost", ServiceState.RUNNING, ImmutableMap.<String, String>of());
+    private static final ServiceDescriptor SERVICE3 = new ServiceDescriptor(UUID.randomUUID(), "nodeId3", "type2", "pool2", "localhost", ServiceState.RUNNING, ImmutableMap.<String, String>of());
 
     @Test
     public void testBindSelector()
@@ -174,6 +180,58 @@ public class TestDiscoveryBinder
         );
 
         assertCanCreateServiceSelector(injector, "apple", "apple-pool");
+    }
+
+    @Test
+    public void testServiceInventoryManagerMerge()
+            throws Exception
+    {
+        Injector injector = Guice.createInjector(
+                new TestModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        TestingServiceInventory testingServiceInventory1 = new TestingServiceInventory();
+                        testingServiceInventory1.addServiceDescriptor(SERVICE1)
+                                .addServiceDescriptor(SERVICE2);
+                        Multibinder.newSetBinder(binder, ServiceInventory.class).addBinding().toInstance(testingServiceInventory1);
+                    }
+                },
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        TestingServiceInventory testingServiceInventory2 = new TestingServiceInventory();
+                        testingServiceInventory2.addServiceDescriptor(SERVICE3);
+                        Multibinder.newSetBinder(binder, ServiceInventory.class).addBinding().toInstance(testingServiceInventory2);
+                    }
+                }
+        );
+
+        ServiceInventory serviceInventory = injector.getInstance(ServiceInventory.class);
+        Assert.assertNotNull(serviceInventory);
+
+        Iterable<ServiceDescriptor> descriptors = serviceInventory.getServiceDescriptors();
+        Assert.assertEquals(Iterables.size(descriptors), 3);
+        Set<ServiceDescriptor> descriptorSet = ImmutableSet.copyOf(descriptors);
+        Assert.assertEquals(descriptorSet, ImmutableSet.of(SERVICE1, SERVICE2, SERVICE3));
+
+        descriptors = serviceInventory.getServiceDescriptors("type1");
+        Assert.assertEquals(Iterables.size(descriptors), 1);
+        Assert.assertEquals(Iterables.getOnlyElement(descriptors), SERVICE1);
+        descriptors = serviceInventory.getServiceDescriptors("type2");
+        Assert.assertEquals(Iterables.size(descriptors), 2);
+        descriptorSet = ImmutableSet.copyOf(descriptors);
+        Assert.assertEquals(descriptorSet, ImmutableSet.of(SERVICE2, SERVICE3));
+        Assert.assertTrue(Iterables.isEmpty(serviceInventory.getServiceDescriptors("type3")));
+
+        descriptors = serviceInventory.getServiceDescriptors("type1", "pool1");
+        Assert.assertEquals(Iterables.size(descriptors), 1);
+        Assert.assertEquals(Iterables.getOnlyElement(descriptors), SERVICE1);
+        Assert.assertTrue(Iterables.isEmpty(serviceInventory.getServiceDescriptors("type1", "pool2")));
     }
 
     private void assertCanCreateServiceSelector(Injector injector, String expectedType, String expectedPool)

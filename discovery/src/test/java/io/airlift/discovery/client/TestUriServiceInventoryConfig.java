@@ -24,12 +24,12 @@ import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class TestServiceInventoryConfig
+public class TestUriServiceInventoryConfig
 {
     @Test
     public void testDefaults()
     {
-        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(ServiceInventoryConfig.class)
+        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(UriServiceInventoryConfig.class)
                 .setServiceInventoryUri(null)
                 .setUpdateInterval(new Duration(10, TimeUnit.SECONDS)));
     }
@@ -42,7 +42,7 @@ public class TestServiceInventoryConfig
                 .put("service-inventory.update-interval", "15m")
                 .build();
 
-        ServiceInventoryConfig expected = new ServiceInventoryConfig()
+        UriServiceInventoryConfig expected = new UriServiceInventoryConfig()
                 .setServiceInventoryUri(URI.create("fake://server"))
                 .setUpdateInterval(new Duration(15, TimeUnit.MINUTES));
 
