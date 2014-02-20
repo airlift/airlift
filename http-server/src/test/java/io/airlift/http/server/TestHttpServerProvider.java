@@ -25,6 +25,7 @@ import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
+import io.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
 import io.airlift.testing.FileUtils;
 import io.airlift.tracetoken.TraceTokenManager;
@@ -32,6 +33,7 @@ import io.airlift.units.Duration;
 import org.apache.commons.codec.binary.Base64;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
 import javax.servlet.Filter;
@@ -57,6 +59,12 @@ public class TestHttpServerProvider
     private NodeInfo nodeInfo;
     private HttpServerConfig config;
     private HttpServerInfo httpServerInfo;
+
+    @BeforeSuite
+    public void setupSuite()
+    {
+        Logging.initialize();
+    }
 
     @BeforeMethod
     public void setup()

@@ -74,8 +74,8 @@ public class TestMBeanResource
                 });
 
         Injector injector = app
+                .quiet()
                 .strictConfig()
-                .doNotInitializeLogging()
                 .initialize();
 
         lifeCycleManager = injector.getInstance(LifeCycleManager.class);
