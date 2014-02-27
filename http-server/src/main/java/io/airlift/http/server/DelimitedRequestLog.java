@@ -44,7 +44,7 @@ class DelimitedRequestLog
     private final TraceTokenManager traceTokenManager;
     private final EventClient eventClient;
     private final CurrentTimeMillisProvider currentTimeMillisProvider;
-    private RollingFileAppender<HttpRequestEvent> fileAppender;
+    private final RollingFileAppender<HttpRequestEvent> fileAppender;
 
     public DelimitedRequestLog(String filename, int retainDays, TraceTokenManager traceTokenManager, EventClient eventClient)
             throws IOException
