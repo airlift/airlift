@@ -59,11 +59,6 @@
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
-            <artifactId>http-client</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.proofpoint.platform</groupId>
             <artifactId>testing</artifactId>
         </dependency>
 
@@ -163,6 +158,12 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>bootstrap</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>http-client</artifactId>
             <scope>test</scope>
         </dependency>
 
