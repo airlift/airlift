@@ -97,7 +97,10 @@ public class ConfigurationInspector
                 // provider could blow up for any reason, which is fine for this code
                 // this is catch throwable because we may get an AssertionError
             }
-            T defaults = newDefaultInstance(metadata);
+            T defaults = configurationProvider.getDefaults();
+            if (defaults == null) {
+                defaults = newDefaultInstance(metadata);
+            }
 
             String prefix = configurationProvider.getPrefix();
             prefix = prefix == null ? "" : (prefix + ".");

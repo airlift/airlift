@@ -121,7 +121,7 @@ public class ConfigurationFactory
 
     public <T> T build(Class<T> configClass)
     {
-        return build(configClass, null).instance;
+        return build(configClass, null, null).instance;
     }
 
     /**
@@ -138,7 +138,7 @@ public class ConfigurationFactory
             return instance;
         }
 
-        ConfigurationHolder<T> holder = build(configurationProvider.getConfigClass(), configurationProvider.getPrefix());
+        ConfigurationHolder<T> holder = build(configurationProvider.getConfigClass(), configurationProvider.getDefaults(), configurationProvider.getPrefix());
         instance = holder.instance;
 
         // inform caller about warnings
@@ -170,7 +170,7 @@ public class ConfigurationFactory
         return (T) instanceCache.putIfAbsent(configurationProvider, instance);
     }
 
-    private <T> ConfigurationHolder<T> build(Class<T> configClass, String prefix)
+    private <T> ConfigurationHolder<T> build(Class<T> configClass, T defaults, String prefix)
     {
         if (configClass == null) {
             throw new NullPointerException("configClass is null");
@@ -186,7 +186,13 @@ public class ConfigurationFactory
         ConfigurationMetadata<T> configurationMetadata = getMetadata(configClass);
         configurationMetadata.getProblems().throwIfHasErrors();
 
-        T instance = newInstance(configurationMetadata);
+        T instance;
+        if (defaults == null) {
+            instance = newInstance(configurationMetadata);
+        }
+        else {
+            instance = newInstanceWithDefaults(defaults);
+        }
 
         Problems problems = new Problems(monitor);
 
@@ -226,6 +232,19 @@ public class ConfigurationFactory
         }
         catch (UncheckedExecutionException e) {
             throw Throwables.propagate(e.getCause());
+        }
+    }
+
+    private <T> T newInstanceWithDefaults(T defaults)
+    {
+        try {
+            return (T) defaults.getClass().getConstructor(defaults.getClass()).newInstance(defaults);
+        }
+        catch (Throwable e) {
+            if (e instanceof InvocationTargetException && e.getCause() != null) {
+                e = e.getCause();
+            }
+            throw exceptionFor(e, "Error duplicating configuration defaults object [%s]", defaults.getClass().getName());
         }
     }
 
