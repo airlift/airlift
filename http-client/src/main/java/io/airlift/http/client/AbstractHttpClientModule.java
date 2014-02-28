@@ -27,12 +27,14 @@ abstract class AbstractHttpClientModule
 {
     protected final String name;
     protected final Class<? extends Annotation> annotation;
+    protected final HttpClientConfig defaultConfig;
     protected Binder binder;
 
-    protected AbstractHttpClientModule(String name, Class<? extends Annotation> annotation)
+    protected AbstractHttpClientModule(String name, Class<? extends Annotation> annotation, HttpClientConfig defaultConfig)
     {
         this.name = checkNotNull(name, "name is null");
         this.annotation = checkNotNull(annotation, "annotation is null");
+        this.defaultConfig = defaultConfig;
     }
 
     @Override

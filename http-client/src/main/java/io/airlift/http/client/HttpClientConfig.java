@@ -40,6 +40,22 @@ public class HttpClientConfig
     private String keyStorePath = System.getProperty(JAVAX_NET_SSL_KEY_STORE);
     private String keyStorePassword = System.getProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD);
 
+    public HttpClientConfig()
+    {
+    }
+
+    public HttpClientConfig(HttpClientConfig httpClientConfig)
+    {
+        this.connectTimeout = httpClientConfig.connectTimeout;
+        this.readTimeout = httpClientConfig.readTimeout;
+        this.keepAliveInterval = httpClientConfig.keepAliveInterval;
+        this.maxConnections = httpClientConfig.maxConnections;
+        this.maxConnectionsPerServer = httpClientConfig.maxConnectionsPerServer;
+        this.socksProxy = httpClientConfig.socksProxy;
+        this.keyStorePath = httpClientConfig.keyStorePath;
+        this.keyStorePassword = httpClientConfig.keyStorePassword;
+    }
+
     @NotNull
     @MinDuration("0ms")
     public Duration getConnectTimeout()

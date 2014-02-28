@@ -48,9 +48,9 @@ public class AsyncHttpClientModule
 {
     private static final Logger log = Logger.get(AsyncHttpClientModule.class);
 
-    protected AsyncHttpClientModule(String name, Class<? extends Annotation> annotation)
+    protected AsyncHttpClientModule(String name, Class<? extends Annotation> annotation, HttpClientConfig defaults)
     {
-        super(name, annotation);
+        super(name, annotation, defaults);
     }
 
     @Override
@@ -65,11 +65,22 @@ public class AsyncHttpClientModule
         binder.bind(JettyIoPoolManager.class).annotatedWith(annotation).toInstance(new JettyIoPoolManager(name, annotation));
     }
 
+    void withPrivateIoThreadPool(JettyIoPoolConfig defaultConfig)
+    {
+        bindConfig(binder).annotatedWith(annotation).prefixedWith(name).toDefaults(defaultConfig);
+        binder.bind(JettyIoPoolManager.class).annotatedWith(annotation).toInstance(new JettyIoPoolManager(name, annotation));
+    }
+
     @Override
     public void configure()
     {
         // bind the configuration
-        bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(HttpClientConfig.class);
+        if (defaultConfig == null) {
+            bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(HttpClientConfig.class);
+        }
+        else {
+            bindConfig(binder).annotatedWith(annotation).prefixedWith(name).toDefaults(defaultConfig);
+        }
 
         // Shared thread pool
         bindConfig(binder).to(JettyIoPoolConfig.class);
@@ -118,6 +129,7 @@ public class AsyncHttpClientModule
         public AsyncHttpClient get()
         {
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
+
             Set<HttpRequestFilter> filters = injector.getInstance(filterKey(annotation));
 
             JettyIoPoolManager ioPoolProvider;
