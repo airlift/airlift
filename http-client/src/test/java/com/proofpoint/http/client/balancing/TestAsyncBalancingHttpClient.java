@@ -1,7 +1,7 @@
 package com.proofpoint.http.client.balancing;
 
 import com.google.common.util.concurrent.AbstractFuture;
-import com.proofpoint.http.client.AsyncHttpClient;
+import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.HttpClient.HttpResponseFuture;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
@@ -25,23 +25,20 @@ import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-public class TestAsyncBalancingAsyncHttpClient
+public class TestAsyncBalancingHttpClient
     extends AbstractTestBalancingHttpClient<SyncToAsyncWrapperClient>
 {
-    private TestingAsyncHttpClient asyncHttpClient;
-
     @Override
-    protected TestingAsyncHttpClient createTestingClient()
+    protected TestingHttpClient createTestingClient()
     {
-        asyncHttpClient = new TestingAsyncHttpClient("PUT");
-        return asyncHttpClient;
+        return new TestingHttpClient("PUT");
     }
 
     @Override
     protected SyncToAsyncWrapperClient createBalancingHttpClient()
     {
         return new SyncToAsyncWrapperClient(
-                new BalancingAsyncHttpClient(serviceBalancer, asyncHttpClient,
+                new BalancingHttpClient(serviceBalancer, httpClient,
                         new BalancingHttpClientConfig().setMaxAttempts(3)));
     }
 
@@ -70,11 +67,11 @@ public class TestAsyncBalancingAsyncHttpClient
     public void testGetStats()
     {
         RequestStats requestStats = new RequestStats();
-        AsyncHttpClient mockClient = mock(AsyncHttpClient.class);
+        HttpClient mockClient = mock(HttpClient.class);
         when(mockClient.getStats()).thenReturn(requestStats);
 
         balancingHttpClient = new SyncToAsyncWrapperClient(
-                new BalancingAsyncHttpClient(serviceBalancer, mockClient, new BalancingHttpClientConfig()));
+                new BalancingHttpClient(serviceBalancer, mockClient, new BalancingHttpClientConfig()));
         assertSame(balancingHttpClient.getStats(), requestStats);
 
         verify(mockClient).getStats();
@@ -84,10 +81,10 @@ public class TestAsyncBalancingAsyncHttpClient
     @Test
     public void testClose()
     {
-        AsyncHttpClient mockClient = mock(AsyncHttpClient.class);
+        HttpClient mockClient = mock(HttpClient.class);
 
         balancingHttpClient = new SyncToAsyncWrapperClient(
-                new BalancingAsyncHttpClient(serviceBalancer, mockClient, new BalancingHttpClientConfig()));
+                new BalancingHttpClient(serviceBalancer, mockClient, new BalancingHttpClientConfig()));
         balancingHttpClient.close();
 
         verify(mockClient).close();
@@ -96,31 +93,31 @@ public class TestAsyncBalancingAsyncHttpClient
 
     // TODO tests for interruption and cancellation
 
-    class TestingAsyncHttpClient
-            implements AsyncHttpClient, TestingClient
+    class TestingHttpClient
+            implements HttpClient, TestingClient
     {
 
         private String method;
         private List<URI> uris = new ArrayList<>();
         private List<Object> responses = new ArrayList<>();
 
-        TestingAsyncHttpClient(String method)
+        TestingHttpClient(String method)
         {
             this.method = method;
             checkArgument(uris.size() == responses.size(), "uris same size as responses");
         }
 
-        public TestingAsyncHttpClient expectCall(String uri, Response response)
+        public TestingHttpClient expectCall(String uri, Response response)
         {
             return expectCall(URI.create(uri), response);
         }
 
-        public TestingAsyncHttpClient expectCall(String uri, Exception exception)
+        public TestingHttpClient expectCall(String uri, Exception exception)
         {
             return expectCall(URI.create(uri), exception);
         }
 
-        private TestingAsyncHttpClient expectCall(URI uri, Object response)
+        private TestingHttpClient expectCall(URI uri, Object response)
         {
             uris.add(uri);
             responses.add(response);
@@ -197,7 +194,6 @@ public class TestAsyncBalancingAsyncHttpClient
                 extends AbstractFuture<T>
                 implements HttpResponseFuture<T>
         {
-
             private final E exception;
 
             public ImmediateFailedAsyncHttpFuture(E exception)
@@ -211,7 +207,6 @@ public class TestAsyncBalancingAsyncHttpClient
             {
                 throw new UnsupportedOperationException();
             }
-
         }
     }
 }

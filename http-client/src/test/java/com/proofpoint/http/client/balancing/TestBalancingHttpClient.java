@@ -45,7 +45,7 @@ public class TestBalancingHttpClient
             balancingHttpClient.execute(request, responseHandler);
             fail("Exception not thrown");
         }
-        catch (RuntimeException e) {
+        catch (Exception e) {
             assertSame(e, handlerException, "Exception thrown by BalancingHttpClient");
         }
     }
@@ -54,7 +54,7 @@ public class TestBalancingHttpClient
     protected void issueRequest()
             throws Exception
     {
-        balancingHttpClient.execute(request, mock(ResponseHandler.class));
+        balancingHttpClient.executeAsync(request, mock(ResponseHandler.class));
     }
 
     @Test
@@ -120,6 +120,12 @@ public class TestBalancingHttpClient
         }
 
         @Override
+        public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
                 throws E
         {
@@ -133,12 +139,6 @@ public class TestBalancingHttpClient
                 return responseHandler.handleException(request, (Exception) response);
             }
             return responseHandler.handle(request, (Response) response);
-        }
-
-        @Override
-        public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
-        {
-            throw new UnsupportedOperationException();
         }
 
         @Override

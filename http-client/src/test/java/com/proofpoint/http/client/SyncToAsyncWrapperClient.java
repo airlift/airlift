@@ -22,11 +22,11 @@ import java.util.concurrent.ExecutionException;
 import static com.google.common.base.Throwables.propagate;
 
 public class SyncToAsyncWrapperClient
-    implements AsyncHttpClient
+    implements HttpClient
 {
-    private final AsyncHttpClient delegate;
+    private final HttpClient delegate;
 
-    public SyncToAsyncWrapperClient(AsyncHttpClient delegate)
+    public SyncToAsyncWrapperClient(HttpClient delegate)
     {
         this.delegate = delegate;
     }

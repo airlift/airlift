@@ -35,6 +35,7 @@ import com.proofpoint.http.client.HttpClientBinder.HttpClientAsyncBindingBuilder
 import com.proofpoint.http.client.HttpClientBinder.HttpClientBindingBuilder;
 import com.proofpoint.http.client.HttpRequestFilter;
 import com.proofpoint.http.client.balancing.BalancingAsyncHttpClient;
+import com.proofpoint.http.client.balancing.BalancingHttpClient;
 import com.proofpoint.http.client.balancing.BalancingHttpClientConfig;
 import com.proofpoint.http.client.balancing.ForBalancingHttpClient;
 import com.proofpoint.http.client.balancing.HttpServiceBalancer;
@@ -150,7 +151,7 @@ public class DiscoveryBinder
         privateBinder.bind(HttpServiceBalancer.class).annotatedWith(ForBalancingHttpClient.class).to(Key.get(HttpServiceBalancer.class, serviceType));
         HttpClientBindingBuilder delegateBindingBuilder = httpClientPrivateBinder(privateBinder, binder).bindHttpClient(serviceType.value(), ForBalancingHttpClient.class);
         bindConfig(privateBinder).prefixedWith(serviceType.value()).to(BalancingHttpClientConfig.class);
-        privateBinder.bind(HttpClient.class).annotatedWith(annotation).to(BalancingAsyncHttpClient.class).in(Scopes.SINGLETON);
+        privateBinder.bind(HttpClient.class).annotatedWith(annotation).to(BalancingHttpClient.class).in(Scopes.SINGLETON);
         privateBinder.expose(HttpClient.class).annotatedWith(annotation);
         reportBinder(binder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
 
