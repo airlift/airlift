@@ -2,6 +2,12 @@ Platform 0.91
 
 * Configuration warnings are no longer sent to the event service upon startup.
 
+* Library upgrades
+  - Jetty to 9.1.2
+
+* Maven plugin upgrades
+  - maven-duplicate-finder-plugin 1.0.6
+
 Platform 0.90
 
 * JsonCodec

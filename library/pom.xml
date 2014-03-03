@@ -77,7 +77,7 @@
         <platform.check.fail-enforcer>${platform.check.fail-basic}</platform.check.fail-enforcer>
         <platform.check.fail-duplicate-finder>${platform.check.fail-basic}</platform.check.fail-duplicate-finder>
 
-        <dep.jetty.version>9.1.1.v20140108</dep.jetty.version>
+        <dep.jetty.version>9.1.2.v20140210</dep.jetty.version>
         <dep.slf4j.version>1.7.5</dep.slf4j.version>
         <dep.logback.version>1.1.1</dep.logback.version>
         <dep.javax-servlet.version>3.1.0</dep.javax-servlet.version>
@@ -289,7 +289,7 @@
                 <plugin>
                     <groupId>com.ning.maven.plugins</groupId>
                     <artifactId>maven-duplicate-finder-plugin</artifactId>
-                    <version>1.0.4</version>
+                    <version>1.0.6</version>
                     <configuration>
                         <skip>${platform.check.skip-duplicate-finder}</skip>
                         <failBuildInCaseOfConflict>${platform.check.fail-duplicate-finder}</failBuildInCaseOfConflict>
