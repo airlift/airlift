@@ -1,9 +1,27 @@
 Platform 0.91
 
+* AsyncHttpClient collapsed into HttpClient
+
+  - We moved the executeAsync() method into the HttpClient interface.
+  - The AsyncHttpClient interface is now deprecated.
+  - The AsyncHttpClient.AsyncHttpResponseFuture interface is now named
+    HttpClient.HttpResponseFuture
+
+* HttpClient uses Jetty
+
+  We replaced the Apache and Netty HttpClient implementations with a Jetty
+  implementation.
+
 * Configuration warnings are no longer sent to the event service upon startup.
+
+* We added a Bootstrap.quiet() method to disable logging of configuration.
+
+* We tightened the type bounds of Assertions.assertInstanceOf() to catch some
+  errors at compile time.
 
 * Library upgrades
   - Jetty to 9.1.2
+  - JRuby to 1.7.11
 
 * Maven plugin upgrades
   - maven-duplicate-finder-plugin 1.0.6
