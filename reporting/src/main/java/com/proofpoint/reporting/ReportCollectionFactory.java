@@ -16,6 +16,7 @@
 package com.proofpoint.reporting;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Supplier;
 import com.google.common.base.Ticker;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -63,7 +64,7 @@ public class ReportCollectionFactory
         this(reportExporter, Ticker.systemTicker());
     }
 
-    ReportCollectionFactory(ReportExporter reportExporter, Ticker ticker)
+    protected ReportCollectionFactory(ReportExporter reportExporter, Ticker ticker)
     {
         this.reportExporter = reportExporter;
         this.ticker = ticker;
@@ -130,14 +131,7 @@ public class ReportCollectionFactory
 
         <T> PerMethodCache(Class<T> aClass, Method method, String name)
         {
-            final Constructor<?> constructor;
-            try {
-                constructor = method.getReturnType().getConstructor();
-            }
-            catch (NoSuchMethodException e) {
-                throw new RuntimeException(methodName(method) + " return type " + method.getReturnType().getSimpleName()
-                        + " has no public no-arg constructor");
-            }
+            final Supplier<Object> returnValueSupplier = getReturnValueSupplier(method);
 
             ImmutableList.Builder<String> keyNameBuilder = ImmutableList.builder();
             int argPosition = 0;
@@ -217,7 +211,7 @@ public class ReportCollectionFactory
                         public Object load(List<Optional<String>> key)
                                 throws Exception
                         {
-                            Object stat = constructor.newInstance();
+                            Object returnValue = returnValueSupplier.get();
 
                             ObjectNameBuilder objectNameBuilder = new ObjectNameBuilder(packageName);
                             for (Entry<String, String> entry : properties.entrySet()) {
@@ -237,11 +231,11 @@ public class ReportCollectionFactory
                                     reinsertedSet.add(existingStat);
                                     return existingStat;
                                 }
-                                registeredMap.put(key, stat);
-                                reportExporter.export(objectName, stat);
-                                objectNameMap.put(stat, objectName);
+                                registeredMap.put(key, returnValue);
+                                reportExporter.export(objectName, returnValue);
+                                objectNameMap.put(returnValue, objectName);
                             }
-                            return stat;
+                            return returnValue;
                         }
                     });
         }
@@ -269,7 +263,32 @@ public class ReportCollectionFactory
         }
     }
 
-    private String methodName(Method method)
+    protected Supplier<Object> getReturnValueSupplier(Method method) {
+        final Constructor<?> constructor;
+        try {
+            constructor = method.getReturnType().getConstructor();
+        }
+        catch (NoSuchMethodException e) {
+            throw new RuntimeException(methodName(method) + " return type " + method.getReturnType().getSimpleName()
+                    + " has no public no-arg constructor");
+        }
+
+        return new Supplier<Object>()
+        {
+            @Override
+            public Object get()
+            {
+                try {
+                    return constructor.newInstance();
+                }
+                catch (Exception e) {
+                    throw propagate(e);
+                }
+            }
+        };
+    }
+
+    private static String methodName(Method method)
     {
         StringBuilder builder = new StringBuilder(method.getDeclaringClass().getName());
         builder.append(".").append(method.getName()).append('(');

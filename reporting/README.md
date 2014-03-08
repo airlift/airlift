@@ -134,22 +134,22 @@ class StoreStatsRecorder {
     private final StoreStats storeStats;
     
     @Inject
-    public StoreStatsRecorder(StoreStat storeStat)
+    public StoreStatsRecorder(StoreStats storeStats)
     {
-        this.storeStat = storeStat;
+        this.storeStats = storeStats;
     }
     
-    public void recordSuccessfullAdd(MediaType mediaType)
+    public void recordSuccessfulAdd(MediaType mediaType)
     {
-        storeStat.added(mediaType, SUCCESS)
+        storeStats.added(mediaType, SUCCESS)
             .update(1);
     }
 }
 ```
-A call to `storeStat.added(mediaType.TEXT_PLAIN, SUCCESS)` will
+A call to `storeStats.added(mediaType.TEXT_PLAIN, SUCCESS)` will
 return a `CounterStat` exported to both reporting and JMX with the name
-`"type=StoreStat,name=Added,mediaType=text/plain,status=success"`. Such a
-name will result in a metric named `StoreStat.Added.Count` to be reported
+`"type=StoreStats,name=Added,mediaType=text/plain,status=success"`. Such a
+name will result in a metric named `StoreStats.Added.Count` to be reported
 with tags `"mediaType=text/plain"` and `"status=success"`.
 
 Alternatively, `ReportCollectionFactory.createReportCollection()` may be used
@@ -166,6 +166,51 @@ same set of `.toString()` values will result in the same returned object. After
 some minutes of a particular returned object not being returned again, the
 object will be unexported from reporting and JMX and allowed to be garbage
 collected.
+
+Testing report collections
+--------------------------
+
+The `TestingReportCollectionFactory` class produces report collection
+implementations for use in unit tests.
+
+For any report collection created by `createReportCollection(...)`,
+interactions may be verified through objects returned by the following
+methods:
+
+`TestingReportCollectionFactory.getArgumentVerifier(...)` returns a mock that
+can be used to verify arguments to the report collection methods.
+
+`TestingReportCollectionFactory.getReportCollection(...)` returns an
+implementation returning the same values as the one previously created by
+`createReportCollection(...)` but which does not affect the argument verifier.
+All returned values are Mockito spies, so can have their method calls verified.
+
+```java
+class TestStoreStatsRecorder {
+    private StoreStatsRecorder storeStatsRecorder;
+    private TestingReportCollectionFactory factory;
+
+    @BeforeMethod
+    public void setup()
+    {
+        factory = new TestingReportCollectionFactory();
+        storeStatsRecorder = new StoreStatsRecorder(
+            factory.createReportCollection(StoreStats.class));
+    }
+
+    @Test
+    public void testRecordSuccessfulAdd()
+    {
+        storeStatsRecorder.recordSuccessfulAdd(TEXT_PLAIN);
+
+        verify(factory.getArgumentVerifier(StoreStats.class)).added(TEXT_PLAIN, SUCCESS);
+        verifyNoMoreInteractions(factory.getArgumentVerifier(StoreStats.class));
+
+        verify(factory.getReportCollection(StoreStats.class).added(TEXT_PLAIN, SUCCESS)).update(1);
+        verifyNoMoreInteractions(factory.getReportCollection(StoreStats.class).added(TEXT_PLAIN, SUCCESS));
+    }
+}
+```
 
 Reporting client
 ================
