@@ -1,3 +1,8 @@
+* 0.86
+- Upgrade to Jetty 9.1.2
+- Added new JettyHttpClient
+- Removed ApacheHttpClient, StandaloneNettyAsyncHttpClient and NettyAsyncHttpClient
+
 * 0.85
 
 - [Bug] Handle locales correctly in Duration and DataSize
