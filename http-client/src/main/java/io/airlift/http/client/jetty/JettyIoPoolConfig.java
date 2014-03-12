@@ -1,6 +1,7 @@
 package io.airlift.http.client.jetty;
 
 import io.airlift.configuration.Config;
+import io.airlift.configuration.LegacyConfig;
 
 import javax.validation.constraints.Min;
 
@@ -16,6 +17,7 @@ public class JettyIoPoolConfig
     }
 
     @Config("http-client.max-threads")
+    @LegacyConfig("http-client.threads")
     public JettyIoPoolConfig setMaxThreads(int maxThreads)
     {
         this.maxThreads = maxThreads;
