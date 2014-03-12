@@ -1,3 +1,26 @@
+Airlift 0.86
+
+* Upgrade to Jetty 9.1
+
+We have upgraded the Jetty server to version 9.1.2 which includes support for
+the Servlet API 3.1, websockets and SPDY with server side push.  In Jetty 9,
+the team rewrote significant portions of the core engine which results in a
+dramatic reduction in latency.
+
+* Replaced NettyHttpClient and ApacheHttpClient with JettyHttpClient
+
+We replaced the custom HttpClient based on Netty with the far superior Jetty
+http client.  The new JettyHttpClient handles both synchronous and asynchronous
+requests using a single client, so you no longer need to bind multiple clients.
+
+To migrate to this version you will need to make the the following changes:
+
+  - Replace direct uses of ApacheHttpClient, StandaloneNettyAsyncHttpClient
+    and NettyAsyncHttpClient with JettyHttpClient
+
+  - The AsyncHttpClient interface is now deprecated and can be replaced with
+    HttpClient which now has asynchronous methods.
+
 Airlift 0.85
 
 * JsonCodec

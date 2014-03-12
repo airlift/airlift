@@ -18,6 +18,8 @@ package io.airlift.http.client;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HostAndPort;
 import io.airlift.configuration.testing.ConfigAssertions;
+import io.airlift.units.DataSize;
+import io.airlift.units.DataSize.Unit;
 import io.airlift.units.Duration;
 import org.testng.annotations.Test;
 
@@ -41,6 +43,7 @@ public class TestHttpClientConfig
                 .setKeepAliveInterval(null)
                 .setMaxConnections(200)
                 .setMaxConnectionsPerServer(20)
+                .setMaxContentLength(new DataSize(16, Unit.MEGABYTE))
                 .setSocksProxy(null)
                 .setKeyStorePath(System.getProperty(JAVAX_NET_SSL_KEY_STORE))
                 .setKeyStorePassword(System.getProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD)));
@@ -55,6 +58,7 @@ public class TestHttpClientConfig
                 .put("http-client.keep-alive-interval", "6s")
                 .put("http-client.max-connections", "12")
                 .put("http-client.max-connections-per-server", "3")
+                .put("http-client.max-content-length", "1MB")
                 .put("http-client.socks-proxy", "localhost:1080")
                 .put("http-client.key-store-path", "key-store")
                 .put("http-client.key-store-password", "key-store-password")
@@ -66,6 +70,7 @@ public class TestHttpClientConfig
                 .setKeepAliveInterval(new Duration(6, TimeUnit.SECONDS))
                 .setMaxConnections(12)
                 .setMaxConnectionsPerServer(3)
+                .setMaxContentLength(new DataSize(1, Unit.MEGABYTE))
                 .setSocksProxy(HostAndPort.fromParts("localhost", 1080))
                 .setKeyStorePath("key-store")
                 .setKeyStorePassword("key-store-password");

@@ -1,7 +1,6 @@
 package io.airlift.http.client.jetty;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
@@ -56,10 +55,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class JettyHttpClient
         implements AsyncHttpClient
 {
     private final HttpClient httpClient;
+    private final long maxContentLength;
     private final RequestStats stats = new RequestStats();
     private final List<HttpRequestFilter> requestFilters;
     private final Exception created = new Exception();
@@ -78,6 +80,7 @@ public class JettyHttpClient
     public JettyHttpClient(HttpClientConfig config, Iterable<? extends HttpRequestFilter> requestFilters)
     {
         this.name = "Anonymous";
+        maxContentLength = checkNotNull(config, "config is null").getMaxContentLength().toBytes();
         httpClient = createHttpClient(config, created);
 
         try {
@@ -97,6 +100,7 @@ public class JettyHttpClient
     public JettyHttpClient(HttpClientConfig config, JettyIoPool jettyIoPool, Iterable<? extends HttpRequestFilter> requestFilters)
     {
         this.name = jettyIoPool.getName();
+        maxContentLength = checkNotNull(config, "config is null").getMaxContentLength().toBytes();
         httpClient = createHttpClient(config, created);
         httpClient.setExecutor(jettyIoPool.getExecutor());
         httpClient.setByteBufferPool(jettyIoPool.setByteBufferPool());
@@ -161,7 +165,7 @@ public class JettyHttpClient
 
         // create jetty request and response listener
         HttpRequest jettyRequest = buildJettyRequest(request);
-        InputStreamResponseListener listener = new InputStreamResponseListener()
+        InputStreamResponseListener listener = new InputStreamResponseListener(maxContentLength)
         {
             @Override
             public void onContent(Response response, ByteBuffer content)
@@ -217,8 +221,8 @@ public class JettyHttpClient
     @Override
     public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
     {
-        Preconditions.checkNotNull(request, "request is null");
-        Preconditions.checkNotNull(responseHandler, "responseHandler is null");
+        checkNotNull(request, "request is null");
+        checkNotNull(responseHandler, "responseHandler is null");
 
         request = applyRequestFilters(request);
 
