@@ -1,6 +1,7 @@
 package com.proofpoint.http.client.jetty;
 
 import com.proofpoint.configuration.Config;
+import com.proofpoint.configuration.LegacyConfig;
 
 import javax.validation.constraints.Min;
 
@@ -16,6 +17,7 @@ public class JettyIoPoolConfig
     }
 
     @Config("http-client.max-threads")
+    @LegacyConfig("http-client.threads")
     public JettyIoPoolConfig setMaxThreads(int maxThreads)
     {
         this.maxThreads = maxThreads;
