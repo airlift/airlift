@@ -323,7 +323,7 @@ public class MBeanRepresentation
         ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
         for (String fieldName : descriptor.getFieldNames()) {
             Object fieldValue = descriptor.getFieldValue(fieldName);
-            if (fieldName != null) {
+            if (fieldValue != null) {
                 builder.put(fieldName, fieldValue);
             }
         }
