@@ -56,6 +56,12 @@
             <artifactId>guava</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-library</artifactId>
+            <optional>true</optional>
+        </dependency>
+
         <!-- for testing -->
         <dependency>
             <groupId>joda-time</groupId>
