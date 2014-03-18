@@ -1,3 +1,9 @@
+Platform 0.92
+
+* We created TestingReportCollectionFactory
+
+* JsonTester.assertJsonEncode() now supports Hamcrest matchers
+
 Platform 0.91
 
 * AsyncHttpClient collapsed into HttpClient
