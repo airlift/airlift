@@ -8,7 +8,7 @@
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>0.92-SNAPSHOT</version>
+        <version>0.92</version>
     </parent>
 
     <properties>
