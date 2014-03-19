@@ -35,6 +35,8 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.weakref.jmx.Flatten;
+import org.weakref.jmx.Managed;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -296,6 +298,8 @@ public class JettyHttpClient
     }
 
     @Override
+    @Managed
+    @Flatten
     public RequestStats getStats()
     {
         return stats;
