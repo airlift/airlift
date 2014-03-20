@@ -107,6 +107,6 @@ public class TestRackModuleRaw
         assertEquals(response.get("REQUEST_METHOD"), "GET");
         assertEquals(response.get("SCRIPT_NAME"), "");
         assertEquals(response.get("PATH_INFO"), "/hello%20world+bye");
-// todo Jetty client mangles this       assertEquals(response.get("QUERY_STRING"), "foo%2Fbar=123%20999");
+        assertEquals(response.get("QUERY_STRING"), "foo%2Fbar=123%20999");
     }
 }
