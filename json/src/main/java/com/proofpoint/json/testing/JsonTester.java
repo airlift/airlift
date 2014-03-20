@@ -18,14 +18,12 @@ package com.proofpoint.json.testing;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.proofpoint.json.JsonCodec;
 import com.proofpoint.json.ObjectMapperProvider;
-import org.hamcrest.Matcher;
 
 import java.io.IOException;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static com.google.common.base.Throwables.propagate;
 import static com.proofpoint.json.JsonCodec.jsonCodec;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.testng.Assert.assertEquals;
 
 public class JsonTester
@@ -48,12 +46,7 @@ public class JsonTester
                 builder.append(message).append(' ');
             }
             builder.append("JSON encoding ").append(json);
-            if (expected instanceof Matcher) {
-                assertThat(builder.toString(), new ObjectMapper().readValue(json, Object.class), (Matcher) expected);
-            }
-            else {
-                assertEquals(new ObjectMapper().readValue(json, Object.class), expected, builder.toString());
-            }
+            assertEquals(new ObjectMapper().readValue(json, Object.class), expected, builder.toString());
         }
         catch (IOException e) {
             throw propagate(e);

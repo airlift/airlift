@@ -17,10 +17,6 @@ package com.proofpoint.json.testing;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.Matchers;
-import org.hamcrest.TypeSafeMatcher;
 import org.joda.time.DateTime;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -30,9 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.proofpoint.json.testing.JsonTester.assertJsonEncode;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasEntry;
 
 public class TestJsonTester
 {
@@ -134,36 +127,6 @@ public class TestJsonTester
     {
         simpleExpected.put("s", "wrong");
         assertJsonEncode(complexEncoder, complexExpected);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Test
-    public void testEncodeHamcrest()
-    {
-        assertJsonEncode(complexEncoder, Matchers.allOf(
-                new TypeSafeMatcher<Map<?, ?>>()
-                {
-                    @Override
-                    protected boolean matchesSafely(Map<?, ?> item)
-                    {
-                        return item.size() == 2;
-                    }
-
-                    @Override
-                    public void describeTo(Description description)
-                    {
-                        description.appendText(" has size 2");
-                    }
-                },
-                Matchers.<String, Object>hasEntry("obj", simpleExpected),
-                (Matcher<Map<String, ?>>) (Matcher) hasEntry(equalTo("list"), containsInAnyOrder("a", "a", "b"))
-        ));
-    }
-
-    @Test(expectedExceptions =  AssertionError.class)
-    public void testEncodeHamcrestFailure()
-    {
-        assertJsonEncode(complexEncoder, hasEntry(equalTo("list"), containsInAnyOrder("a", "b")));
     }
 
     private static class SimpleEncoder
