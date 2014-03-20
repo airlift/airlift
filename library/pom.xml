@@ -229,8 +229,8 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>2.14</version>
                     <configuration>
-                        <!-- Work around Cobertura incompatibilty with Java 7 -->
-                        <argLine>-XX:-UseSplitVerifier</argLine>
+                        <!-- Work around Cobertura incompatibilty with Java 7/8 -->
+                        <argLine>-noverify</argLine>
                         <systemPropertyVariables>
                             <file.encoding>${project.build.sourceEncoding}</file.encoding>
                             <sun.jnu.encoding>${project.build.sourceEncoding}</sun.jnu.encoding>
