@@ -1,5 +1,6 @@
 package io.airlift.http.client;
 
+import com.google.common.net.HostAndPort;
 import org.testng.annotations.Test;
 
 import java.net.URI;
@@ -251,6 +252,92 @@ public class TestHttpUriBuilder
     }
 
     @Test
+    public void testHostWithIpv6()
+    {
+        URI uri = HttpUriBuilder.uriBuilder()
+                .scheme("http")
+                .host("FEDC:BA98:7654:3210:FEDC:BA98:7654:3210")
+                .port(8081)
+                .replacePath("/a/b")
+                .build();
+
+        assertEquals(uri.toASCIIString(), "http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:8081/a/b");
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "host starts with a bracket")
+    public void testHostWithBracketedIpv6()
+    {
+        URI uri = HttpUriBuilder.uriBuilder()
+                .scheme("http")
+                .host("[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]")
+                .port(8081)
+                .replacePath("/a/b")
+                .build();
+
+        assertEquals(uri.toASCIIString(), "http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:8081/a/b");
+    }
+
+    @Test
+    public void testHostAndPortWithHostPort()
+    {
+        URI uri = HttpUriBuilder.uriBuilder()
+                .scheme("http")
+                .port(8888)
+                .hostAndPort(HostAndPort.fromParts("example.com", 8081))
+                .build();
+
+        assertEquals(uri.toASCIIString(), "http://example.com:8081");
+    }
+
+    @Test
+    public void testHostAndPortWithHostOnly()
+    {
+        URI uri = HttpUriBuilder.uriBuilder()
+                .scheme("http")
+                .port(8888)
+                .hostAndPort(HostAndPort.fromString("example.com"))
+                .build();
+
+        assertEquals(uri.toASCIIString(), "http://example.com");
+    }
+
+    @Test
+    public void testHostAndPortWithBracketedIpv6()
+    {
+        URI uri = HttpUriBuilder.uriBuilder()
+                .scheme("http")
+                .port(8888)
+                .hostAndPort(HostAndPort.fromParts("[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]", 8081))
+                .build();
+
+        assertEquals(uri.toASCIIString(), "http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:8081");
+    }
+
+    @Test
+    public void testHostAndPortWithUnbracketedIpv6()
+    {
+        URI uri = HttpUriBuilder.uriBuilder()
+                .scheme("http")
+                .port(8888)
+                .hostAndPort(HostAndPort.fromParts("FEDC:BA98:7654:3210:FEDC:BA98:7654:3210", 8081))
+                .build();
+
+        assertEquals(uri.toASCIIString(), "http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:8081");
+    }
+
+    @Test
+    public void testHostAndPortWithUnbracketedIpv6String()
+    {
+        URI uri = HttpUriBuilder.uriBuilder()
+                .scheme("http")
+                .port(8888)
+                .hostAndPort(HostAndPort.fromString("FEDC:BA98:7654:3210:FEDC:BA98:7654:3210"))
+                .build();
+
+        assertEquals(uri.toASCIIString(), "http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]");
+    }
+
+    @Test
     public void testEncodesPath()
     {
         URI uri = uriBuilder()
@@ -301,5 +388,4 @@ public class TestHttpUriBuilder
         uriBuilderFrom(URI.create("HTTP://example.com"));
         uriBuilderFrom(URI.create("HTTPS://example.com"));
     }
-
 }

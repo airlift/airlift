@@ -9,6 +9,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
+import com.google.common.net.HostAndPort;
 import com.google.common.primitives.Bytes;
 
 import java.io.ByteArrayOutputStream;
@@ -80,6 +81,11 @@ public class HttpUriBuilder
     public HttpUriBuilder host(String host)
     {
         Preconditions.checkNotNull(host, "host is null");
+        Preconditions.checkArgument(!host.startsWith("["), "host starts with a bracket");
+        Preconditions.checkArgument(!host.endsWith("]"), "host ends with a bracket");
+        if (host.contains(":")) {
+            host = "[" + host + "]";
+        }
         this.host = host;
         return this;
     }
@@ -90,10 +96,18 @@ public class HttpUriBuilder
         this.port = port;
         return this;
     }
-    
+
     public HttpUriBuilder defaultPort()
     {
         this.port = -1;
+        return this;
+    }
+
+    public HttpUriBuilder hostAndPort(HostAndPort hostAndPort)
+    {
+        Preconditions.checkNotNull(hostAndPort, "hostAndPort is null");
+        this.host = bracketedHostString(hostAndPort);
+        this.port = hostAndPort.hasPort() ? hostAndPort.getPort() : -1;
         return this;
     }
 
@@ -297,5 +311,15 @@ public class HttpUriBuilder
         catch (CharacterCodingException e) {
             throw new IllegalArgumentException("input does not represent a proper UTF8-encoded string");
         }
+    }
+
+    private static String bracketedHostString(HostAndPort hostAndPort)
+    {
+        // HostAndPort cannot return just the bracketed host
+        String host = hostAndPort.getHostText();
+        if (hostAndPort.toString().startsWith("[")) {
+            return "[" + host + "]";
+        }
+        return host;
     }
 }
