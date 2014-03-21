@@ -1,3 +1,20 @@
+Airlift 0.87
+
+* HttpUriBuilder
+
+We've added support for constructing Http URIs with IPv6 addresses in the
+host part.
+
+    URI uri = HttpUriBuilder.uriBuilder()
+                .scheme("http")
+                .host("FEDC:BA98:7654:3210:FEDC:BA98:7654:3210")
+                .port(8081)
+                .build();
+
+    assertEquals(uri.toASCIIString(), "http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:8081");
+
+* Jetty updated to 9.1.3
+
 Airlift 0.86
 
 * Upgrade to Jetty 9.1
