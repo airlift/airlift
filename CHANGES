@@ -1,3 +1,16 @@
+Platform 0.94
+
+* The launcher now invokes the JVM with the following default switches:
+
+    -server
+    -XX:+UseConcMarkSweepGC
+    -XX:+ExplicitGCInvokesConcurrent
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:+AggressiveOpts
+    -XX:+DoEscapeAnalysis
+    -XX:+UseCompressedOops
+    -XX:OnOutOfMemoryError=kill -9 %p
+
 Platform 0.93
 
 * Reverted the Hamcrest support in JsonTester.assertJsonEncode()
