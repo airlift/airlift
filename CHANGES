@@ -11,6 +11,12 @@ Platform 0.94
     -XX:+UseCompressedOops
     -XX:OnOutOfMemoryError=kill -9 %p
 
+* We removed unnecessary features from the Rack launcher:
+
+  - The rack launcher no longer copies the etc directory to rack/config
+  - The rack config path is now always "rack/config.ru"
+  - The rack environment is now always "production"
+
 Platform 0.93
 
 * Reverted the Hamcrest support in JsonTester.assertJsonEncode()
@@ -35,8 +41,8 @@ Platform 0.91
 
 * HttpClient uses Jetty
 
-  We replaced the Apache and Netty HttpClient implementations with a Jetty
-  implementation.
+  We replaced the Apache and Netty HttpClient implementations with
+  JettyHttpClient, a Jetty implementation.
 
 * Configuration warnings are no longer sent to the event service upon startup.
 
