@@ -52,7 +52,7 @@ public class TimeStat
 
     public void add(double value, TimeUnit timeUnit)
     {
-        add(new Duration(value, timeUnit));
+        add(new Duration(value, timeUnit).roundTo(TimeUnit.NANOSECONDS));
     }
 
     public void add(Duration duration)
