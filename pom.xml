@@ -10,7 +10,7 @@
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>library</artifactId>
-        <version>0.94-SNAPSHOT</version>
+        <version>0.94</version>
         <relativePath>library/pom.xml</relativePath>
     </parent>
 
