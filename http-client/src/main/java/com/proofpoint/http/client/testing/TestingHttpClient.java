@@ -15,6 +15,7 @@ import com.proofpoint.units.Duration;
 import javax.validation.constraints.NotNull;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -93,25 +94,35 @@ public class TestingHttpClient
             throws E
     {
         state.set("PROCESSING_REQUEST");
+        long requestStart = System.nanoTime();
         Response response;
-        Duration requestProcessingTime = null;
         try {
-            long requestStart = System.nanoTime();
             response = processor.handle(request);
-            requestProcessingTime = Duration.nanosSince(requestStart);
         }
         catch (Throwable e) {
             state.set("FAILED");
-            stats.record(request.getMethod(),
-                    0,
-                    0,
-                    0,
-                    requestProcessingTime,
-                    null);
+            long responseStart = System.nanoTime();
+            Duration requestProcessingTime = new Duration(responseStart - requestStart, TimeUnit.NANOSECONDS);
             if (e instanceof Exception) {
-                return responseHandler.handleException(request, (Exception) e);
+                try {
+                    return responseHandler.handleException(request, (Exception) e);
+                }
+                finally {
+                    stats.record(request.getMethod(),
+                            0,
+                            0,
+                            0,
+                            requestProcessingTime,
+                            Duration.nanosSince(responseStart));
+                }
             }
             else {
+                stats.record(request.getMethod(),
+                        0,
+                        0,
+                        0,
+                        requestProcessingTime,
+                        new Duration(0, TimeUnit.NANOSECONDS));
                 throw (Error) e;
             }
         }
@@ -120,18 +131,18 @@ public class TestingHttpClient
         // notify handler
         state.set("PROCESSING_RESPONSE");
         long responseStart = System.nanoTime();
+        Duration requestProcessingTime = new Duration(responseStart - requestStart, TimeUnit.NANOSECONDS);
         try {
             return responseHandler.handle(request, response);
         }
         finally {
             state.set("DONE");
-            Duration responseProcessingTime = Duration.nanosSince(responseStart);
             stats.record(request.getMethod(),
                     response.getStatusCode(),
                     response.getBytesRead(),
                     response.getBytesRead(),
                     requestProcessingTime,
-                    responseProcessingTime);
+                    Duration.nanosSince(responseStart));
         }
     }
 
