@@ -53,12 +53,8 @@ public class RequestStats
             Duration responseProcessingTime)
     {
         request.update(1);
-        if (requestProcessingTime != null) {
-            requestTime.add(requestProcessingTime);
-        }
-        if (requestProcessingTime != null) {
-            responseTime.add(responseProcessingTime);
-        }
+        requestTime.add(requestProcessingTime);
+        responseTime.add(responseProcessingTime);
         readBytes.add(responseSizeInBytes);
         writtenBytes.add(requestSizeInBytes);
     }
