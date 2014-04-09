@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.util.concurrent.MoreExecutors.listeningDecorator;
 import static com.google.common.util.concurrent.MoreExecutors.newDirectExecutorService;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class TestingHttpClient
         implements HttpClient
@@ -69,23 +70,33 @@ public class TestingHttpClient
     {
         state.set("PROCESSING_REQUEST");
         Response response;
-        Duration requestProcessingTime;
         long requestStart = System.nanoTime();
         try {
             response = processor.handle(request);
-            requestProcessingTime = Duration.nanosSince(requestStart);
         }
         catch (Exception | Error e) {
             state.set("FAILED");
+            long responseStart = System.nanoTime();
+            Duration requestProcessingTime = new Duration(responseStart - requestStart, NANOSECONDS);
+            if (e instanceof Exception) {
+                try {
+                    return responseHandler.handleException(request, (Exception) e);
+                }
+                finally {
+                    stats.record(request.getMethod(),
+                            0,
+                            0,
+                            0,
+                            requestProcessingTime,
+                            Duration.nanosSince(responseStart));
+                }
+            }
             stats.record(request.getMethod(),
                     0,
                     0,
                     0,
-                    Duration.nanosSince(requestStart),
-                    null);
-            if (e instanceof Exception) {
-                return responseHandler.handleException(request, (Exception) e);
-            }
+                    requestProcessingTime,
+                    new Duration(0, NANOSECONDS));
             throw (Error) e;
         }
         checkState(response != null, "response is null");
@@ -93,18 +104,18 @@ public class TestingHttpClient
         // notify handler
         state.set("PROCESSING_RESPONSE");
         long responseStart = System.nanoTime();
+        Duration requestProcessingTime = new Duration(responseStart - requestStart, NANOSECONDS);
         try {
             return responseHandler.handle(request, response);
         }
         finally {
             state.set("DONE");
-            Duration responseProcessingTime = Duration.nanosSince(responseStart);
             stats.record(request.getMethod(),
                     response.getStatusCode(),
                     response.getBytesRead(),
                     response.getBytesRead(),
                     requestProcessingTime,
-                    responseProcessingTime);
+                    Duration.nanosSince(responseStart));
         }
     }
 
