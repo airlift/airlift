@@ -17,7 +17,6 @@ package com.proofpoint.reporting;
 
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.configuration.Config;
-import com.proofpoint.configuration.ConfigMap;
 import com.proofpoint.configuration.DefunctConfig;
 import com.proofpoint.configuration.LegacyConfig;
 
@@ -48,7 +47,6 @@ public class ReportClientConfig
 
     @Config("reporting.tag")
     @LegacyConfig("report.tag")
-    @ConfigMap
     public ReportClientConfig setTags(Map<String, String> tags)
     {
         this.tags = tags;

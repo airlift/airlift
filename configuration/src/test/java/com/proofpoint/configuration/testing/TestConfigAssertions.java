@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.proofpoint.configuration.Config;
 import com.proofpoint.configuration.Config1;
-import com.proofpoint.configuration.ConfigMap;
 import com.proofpoint.configuration.LegacyConfig;
 import com.proofpoint.configuration.testing.ConfigAssertions.$$RecordedConfigData;
 import org.testng.annotations.Test;
@@ -33,8 +32,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.proofpoint.configuration.testing.ConfigAssertions.assertDefaults;
-import static com.proofpoint.configuration.testing.ConfigAssertions.assertLegacyEquivalence;
 import static com.proofpoint.configuration.testing.ConfigAssertions.assertFullMapping;
+import static com.proofpoint.configuration.testing.ConfigAssertions.assertLegacyEquivalence;
 import static com.proofpoint.configuration.testing.ConfigAssertions.assertRecordedDefaults;
 import static com.proofpoint.testing.Assertions.assertContains;
 import static org.testng.Assert.assertEquals;
@@ -794,7 +793,6 @@ public class TestConfigAssertions
 
         @Config("simple")
         @LegacyConfig("simple-legacy")
-        @ConfigMap
         public MapConfig setSimpleMap(Map<String, String> simpleMap)
         {
             this.simpleMap = simpleMap;
@@ -808,7 +806,6 @@ public class TestConfigAssertions
 
         @Config("sub")
         @LegacyConfig("sub-legacy")
-        @ConfigMap(SubConfig.class)
         public MapConfig setSubMap(Map<String, SubConfig> subMap)
         {
             this.subMap = subMap;

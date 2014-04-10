@@ -17,10 +17,10 @@ package com.proofpoint.configuration.testing;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
-import com.proofpoint.configuration.ConfigMap;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationMetadata;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
+import com.proofpoint.configuration.MapClasses;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
@@ -144,11 +144,11 @@ public final class ConfigAssertions
 
     private static boolean isPropertyTested(String property, AttributeMetadata attribute, Set<String> testedProperties)
     {
-        final ConfigMap configMap = attribute.getConfigMap();
+        final MapClasses configMap = attribute.getMapClasses();
         if (configMap == null) {
             return testedProperties.contains(property);
         }
-        if (isConfigClass(configMap.value())) {
+        if (isConfigClass(configMap.getValue())) {
             for (String testedProperty : testedProperties) {
                 if (testedProperty.startsWith(property) &&
                         testedProperty.charAt(property.length()) == '.' &&
@@ -228,12 +228,12 @@ public final class ConfigAssertions
         Set<String> deprecatedProperties = new TreeSet<>(propertyNames);
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
             final String property = attribute.getInjectionPoint().getProperty();
-            final ConfigMap configMap = attribute.getConfigMap();
+            final MapClasses mapClasses = attribute.getMapClasses();
             if (property != null) {
-                markPropertySupported(property, configMap, unsupportedProperties, deprecatedProperties);
+                markPropertySupported(property, mapClasses, unsupportedProperties, deprecatedProperties);
             }
             for (ConfigurationMetadata.InjectionPointMetaData deprecated : attribute.getLegacyInjectionPoints()) {
-                markPropertySupported(deprecated.getProperty(), configMap, unsupportedProperties, null);
+                markPropertySupported(deprecated.getProperty(), mapClasses, unsupportedProperties, null);
             }
         }
 
@@ -247,15 +247,15 @@ public final class ConfigAssertions
         }
     }
 
-    private static void markPropertySupported(String property, ConfigMap configMap, Set<String> unsupportedProperties, Set<String> deprecatedProperties)
+    private static void markPropertySupported(String property, MapClasses mapClasses, Set<String> unsupportedProperties, Set<String> deprecatedProperties)
     {
-        if (configMap == null) {
+        if (mapClasses == null) {
             if (deprecatedProperties != null) {
                 deprecatedProperties.remove(property);
             }
             unsupportedProperties.remove(property);
         }
-        else if (isConfigClass(configMap.value())) {
+        else if (isConfigClass(mapClasses.getValue())) {
             for (Iterator<String> iterator = unsupportedProperties.iterator(); iterator.hasNext(); ) {
                 String unsupportedProperty = iterator.next();
                 if (unsupportedProperty.startsWith(property) &&

@@ -1071,7 +1071,6 @@ public class ConfigurationFactoryTest
         }
 
         @Config("map-a")
-        @ConfigMap
         void setMapA(Map<String, String> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);
@@ -1083,7 +1082,6 @@ public class ConfigurationFactoryTest
         }
 
         @Config("map-b")
-        @ConfigMap(Config1.class)
         public void setMapB(Map<String, Config1> mapValue)
         {
             this.mapB = ImmutableMap.copyOf(mapValue);
@@ -1102,7 +1100,6 @@ public class ConfigurationFactoryTest
 
         @Config("map-a")
         @LegacyConfig("map-value")
-        @ConfigMap
         void setMapA(Map<String, String> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);
@@ -1110,7 +1107,6 @@ public class ConfigurationFactoryTest
 
         @Deprecated
         @LegacyConfig(value = "deprecated-map-value", replacedBy = "map-a")
-        @ConfigMap
         private void setDeprecatedMapA(Map<String, String> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);
@@ -1122,7 +1118,6 @@ public class ConfigurationFactoryTest
         }
 
         @Config("map-b")
-        @ConfigMap
         public void setMapB(Map<String, String> mapValue)
         {
             this.mapB = ImmutableMap.copyOf(mapValue);
@@ -1142,7 +1137,6 @@ public class ConfigurationFactoryTest
 
         @Deprecated
         @Config("map-a")
-        @ConfigMap
         void setMapA(Map<String, String> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);
@@ -1154,7 +1148,6 @@ public class ConfigurationFactoryTest
         }
 
         @Config("map-b")
-        @ConfigMap
         private void setMapB(Map<String, String> mapValue)
         {
             this.mapB = ImmutableMap.copyOf(mapValue);
@@ -1171,7 +1164,6 @@ public class ConfigurationFactoryTest
         }
 
         @Config("map-a")
-        @ConfigMap(LegacyConfigPresent.class)
         void setMapA(Map<String, LegacyConfigPresent> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);
@@ -1188,7 +1180,6 @@ public class ConfigurationFactoryTest
         }
 
         @Config("map-a")
-        @ConfigMap(DeprecatedConfigPresent.class)
         private void setMapA(Map<String, DeprecatedConfigPresent> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);
@@ -1205,7 +1196,6 @@ public class ConfigurationFactoryTest
         }
 
         @Config("map-a")
-        @ConfigMap(DefunctConfigPresent.class)
         void setMapA(Map<String, DefunctConfigPresent> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);
@@ -1222,7 +1212,6 @@ public class ConfigurationFactoryTest
         }
 
         @Config("map-a")
-        @ConfigMap(BeanValidationClass.class)
         private void setMapA(Map<String, BeanValidationClass> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);
@@ -1239,7 +1228,6 @@ public class ConfigurationFactoryTest
         }
 
         @Config("map-a")
-        @ConfigMap(key = Integer.class, value = LegacyConfigPresent.class)
         private void setMapA(Map<Integer, LegacyConfigPresent> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);
@@ -1256,7 +1244,6 @@ public class ConfigurationFactoryTest
         }
 
         @Config("map-a")
-        @ConfigMap(key = Integer.class)
         void setMapA(Map<Integer, String> mapValue)
         {
             this.mapA = ImmutableMap.copyOf(mapValue);

@@ -15,6 +15,8 @@
  */
 package com.proofpoint.configuration;
 
+import com.google.common.collect.ForwardingMap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -872,18 +874,32 @@ public class ConfigurationMetadataTest
     }
 
     @Test
-    public void testMapConfigNotMapArgumentClass()
+    public void testMapConfigTypesNotConcreteClass()
             throws Exception
     {
         TestMonitor monitor = new TestMonitor();
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(MapConfigNotMapArgumentClass.class, monitor);
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(MapConfigTypesNotConcreteClass.class, monitor);
         Map<String, Set<String>> expectedAttributes = Maps.newHashMap();
-        expectedAttributes.put("Value", ImmutableSet.of("value"));
 
-        verifyMetaData(metadata, MapConfigNotMapArgumentClass.class, null, false, expectedAttributes);
+        verifyMetaData(metadata, MapConfigTypesNotConcreteClass.class, null, false, expectedAttributes);
+        monitor.assertNumberOfErrors(2);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("Configuration setter method", "setValue", "Map key type is not a concrete class");
+        monitor.assertMatchingErrorRecorded("Configuration setter method", "setValue", "Map value type is not a concrete class");
+    }
+
+    @Test
+    public void testMapConfigRawType()
+            throws Exception
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(MapConfigNotGenericClass.class, monitor);
+        Map<String, Set<String>> expectedAttributes = Maps.newHashMap();
+
+        verifyMetaData(metadata, MapConfigNotGenericClass.class, null, false, expectedAttributes);
         monitor.assertNumberOfErrors(1);
         monitor.assertNumberOfWarnings(0);
-        monitor.assertMatchingErrorRecorded("@ConfigMap method", "setValue", "does not have Map as the parameter type");
+        monitor.assertMatchingErrorRecorded("Configuration setter method", "setValue", "Map is a raw type");
     }
 
     @Test
@@ -898,7 +914,7 @@ public class ConfigurationMetadataTest
         verifyMetaData(metadata, MapConfigValueTypeErrorClass.class, null, false, expectedAttributes);
         monitor.assertNumberOfErrors(1);
         monitor.assertNumberOfWarnings(0);
-        monitor.assertMatchingErrorRecorded("@ConfigMap method", "setValue", "value type GetterNoSetterClass: Error: Method", "getValue", "is not a valid setter");
+        monitor.assertMatchingErrorRecorded("Configuration setter method", "setValue", "Map value type GetterNoSetterClass: Error: Method", "getValue", "is not a valid setter");
     }
 
     @Test
@@ -913,7 +929,36 @@ public class ConfigurationMetadataTest
         verifyMetaData(metadata, MapConfigValueTypeWarningClass.class, null, false, expectedAttributes);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
-        monitor.assertMatchingWarningRecorded("@ConfigMap method", "setValue", "value type LegacyConfigOnNonDeprecatedSetterClass: Warning: Replaced @LegacyConfig method", "setValue", "should be @Deprecated");
+        monitor.assertMatchingWarningRecorded("Configuration setter method", "setValue", "Map value type LegacyConfigOnNonDeprecatedSetterClass: Warning: Replaced @LegacyConfig method", "setValue", "should be @Deprecated");
+    }
+
+    @Test
+    public void testDeprecatedMapConfigTypesNotConcreteClass()
+            throws Exception
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(DeprecatedMapConfigTypesNotConcreteClass.class, monitor);
+        Map<String, Set<String>> expectedAttributes = Maps.newHashMap();
+        expectedAttributes.put("Value", ImmutableSet.of("value"));
+
+        verifyMetaData(metadata, DeprecatedMapConfigTypesNotConcreteClass.class, null, false, expectedAttributes);
+        // This condition unfortunately generates cascades, so don't test number of errors/warnings
+        monitor.assertMatchingErrorRecorded("Configuration setter method", "setValue", "Map key type is not a concrete class");
+        monitor.assertMatchingErrorRecorded("Configuration setter method", "setValue", "Map value type is not a concrete class");
+    }
+
+    @Test
+    public void testConfigValueImplementingMapNotTreatedAsConfigMap()
+            throws Exception
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(ConfigValueImplementsMapClass.class, monitor);
+        Map<String, Set<String>> expectedAttributes = Maps.newHashMap();
+        expectedAttributes.put("Value", ImmutableSet.of("value"));
+
+        verifyMetaData(metadata, ConfigValueImplementsMapClass.class, null, false, expectedAttributes);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
     }
 
     private void verifyMetaData(ConfigurationMetadata<?> metadata, Class<?> configClass, String description, boolean securitySensitive, Map<String, Set<String>> attributeProperties)
@@ -1911,26 +1956,72 @@ public class ConfigurationMetadataTest
         @SuppressWarnings("AssignmentToCollectionOrArrayFieldFromParameter")
         @Deprecated
         @LegacyConfig("replacedValue")
-        @ConfigMap
         public void setValue(Map<String, String> value)
         {
             this.value = value;
         }
     }
 
-    public static class MapConfigNotMapArgumentClass
+    public static class MapConfigTypesNotConcreteClass
     {
-        private Map<String,String> value;
+        private Map<? extends String, ?> value;
 
-        public Map<String, String> getValue()
+        public Map<? extends String, ?> getValue()
         {
             return value;
         }
 
+        @SuppressWarnings("AssignmentToCollectionOrArrayFieldFromParameter")
         @Config("value")
-        @ConfigMap
-        public void setValue(String value) {
-            this.value = new HashMap<>();
+        public void setValue(Map<? extends String, ?> value) {
+            this.value = value;
+        }
+    }
+
+    public static class MapConfigNotGenericClass
+    {
+        private Map value;
+
+        public Map getValue()
+        {
+            return value;
+        }
+
+        @SuppressWarnings("AssignmentToCollectionOrArrayFieldFromParameter")
+        @Config("value")
+        public void setValue(Map value) {
+            this.value = value;
+        }
+    }
+
+    public static class ConfigValueImplementsMapClass
+    {
+        private ImplementsMap value;
+
+        public ImplementsMap getValue()
+        {
+            return value;
+        }
+
+        @SuppressWarnings("AssignmentToCollectionOrArrayFieldFromParameter")
+        @Config("value")
+        public void setValue(ImplementsMap value) {
+            this.value = value;
+        }
+
+        private static class ImplementsMap
+            extends ForwardingMap<String, Class<?>>
+        {
+            @Override
+            protected Map<String, Class<?>> delegate()
+            {
+                return ImmutableMap.of();
+            }
+
+            public ImplementsMap fromString(String value)
+            {
+                return new ImplementsMap();
+            }
         }
     }
 
@@ -1945,7 +2036,6 @@ public class ConfigurationMetadataTest
 
         @SuppressWarnings("AssignmentToCollectionOrArrayFieldFromParameter")
         @Config("value")
-        @ConfigMap(value = GetterNoSetterClass.class)
         public void setValue(Map<String,GetterNoSetterClass> value) {
             this.value = value;
         }
@@ -1962,8 +2052,30 @@ public class ConfigurationMetadataTest
 
         @SuppressWarnings("AssignmentToCollectionOrArrayFieldFromParameter")
         @Config("value")
-        @ConfigMap(value = LegacyConfigOnNonDeprecatedSetterClass.class)
         public void setValue(Map<String,LegacyConfigOnNonDeprecatedSetterClass> value) {
+            this.value = value;
+        }
+    }
+
+    public static class DeprecatedMapConfigTypesNotConcreteClass
+    {
+        private Map<? extends String, ? super String> value;
+
+        public Map<? extends String, ? super String> getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        public void setValue(String value) {
+            this.value = new HashMap<>();
+        }
+
+        @SuppressWarnings("AssignmentToCollectionOrArrayFieldFromParameter")
+        @Deprecated
+        @LegacyConfig("replacedValue")
+        public void setValue(Map<? extends String, ? super String> value)
+        {
             this.value = value;
         }
     }

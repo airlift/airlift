@@ -16,7 +16,6 @@ public class ConfigMapComplex
     }
 
     @Config("map")
-    @ConfigMap(key = Integer.class, value = Config1.class)
     public void setMap(Map<Integer, Config1> map)
     {
         assertInstanceOf(map, ImmutableMap.class);

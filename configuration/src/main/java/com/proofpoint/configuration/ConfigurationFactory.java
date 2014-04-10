@@ -452,9 +452,9 @@ public final class ConfigurationFactory
     {
         // Get the property value
         String name = prefix + injectionPoint.getProperty();
-        final ConfigMap configMap = injectionPoint.getConfigMap();
-        if (configMap != null) {
-            return getInjectedMap(attribute, injectionPoint, name + ".", problems, configMap.key(), configMap.value());
+        final MapClasses mapClasses = injectionPoint.getMapClasses();
+        if (mapClasses != null) {
+            return getInjectedMap(attribute, injectionPoint, name + ".", problems, mapClasses.getKey(), mapClasses.getValue());
         }
 
         String value = properties.get(name);

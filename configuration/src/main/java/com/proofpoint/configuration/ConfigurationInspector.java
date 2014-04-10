@@ -125,9 +125,9 @@ public class ConfigurationInspector
 
                 String description = firstNonNull(attribute.getDescription(), "");
 
-                final ConfigMap configMap = attribute.getConfigMap();
-                if (getter != null && instance != null && !attribute.isSecuritySensitive() && configMap != null) {
-                    final Class<?> valueClass = configMap.value();
+                final MapClasses mapClasses = attribute.getMapClasses();
+                if (getter != null && instance != null && !attribute.isSecuritySensitive() && mapClasses != null) {
+                    final Class<?> valueClass = mapClasses.getValue();
                     Class<?> valueConfigClass = null;
                     if (isConfigClass(valueClass)) {
                         valueConfigClass = valueClass;
