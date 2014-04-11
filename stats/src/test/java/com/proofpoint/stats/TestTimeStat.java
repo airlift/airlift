@@ -84,7 +84,7 @@ public class TestTimeStat
     }
 
     @Test
-    public void time()
+    public void testTimeCallable()
             throws Exception
     {
         TimeStat stat = new TimeStat(ticker);
@@ -105,7 +105,7 @@ public class TestTimeStat
     }
 
     @Test
-    public void timeTry()
+    public void testTimeTry()
             throws Exception
     {
         TimeStat stat = new TimeStat(ticker);

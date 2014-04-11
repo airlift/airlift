@@ -103,8 +103,8 @@ metrics by one or more keys. For example:
 ```java
 public interface StoreStats
 {
-    CounterStat added(@Key("mediaType") MediaType mediaType,
-                      @Key("status") Status status);
+    SparseCounterStat added(@Key("mediaType") MediaType mediaType,
+                            @Key("status") Status status);
 
     public enum Status {
         SUCCESS, FAILURE;
@@ -132,13 +132,13 @@ implementation:
 ```java
 class StoreStatsRecorder {
     private final StoreStats storeStats;
-    
+
     @Inject
     public StoreStatsRecorder(StoreStats storeStats)
     {
         this.storeStats = storeStats;
     }
-    
+
     public void recordSuccessfulAdd(MediaType mediaType)
     {
         storeStats.added(mediaType, SUCCESS)
@@ -147,7 +147,7 @@ class StoreStatsRecorder {
 }
 ```
 A call to `storeStats.added(mediaType.TEXT_PLAIN, SUCCESS)` will
-return a `CounterStat` exported to both reporting and JMX with the name
+return a `SparseCounterStat` exported to both reporting and JMX with the name
 `"type=StoreStats,name=Added,mediaType=text/plain,status=success"`. Such a
 name will result in a metric named `StoreStats.Added.Count` to be reported
 with tags `"mediaType=text/plain"` and `"status=success"`.
@@ -158,7 +158,8 @@ to dynamically create a report collection implementation.
 The interface may have multiple methods. The method return type may be any
 class with a public no-arg constructor. The capitalized form of the method
 name is used for the "name" property. The `@Key` annotation must be on every
-parameter and specifies the tag name. The `.toString()` of parameter's value
+parameter and specifies the tag name. (By convention, the parameter name should
+match the tag name.) The `.toString()` of parameter's value
 is used for the corresponding tag value.
 
 Subsequent calls to the same interface method with parameters that have the
@@ -166,6 +167,15 @@ same set of `.toString()` values will result in the same returned object. After
 some minutes of a particular returned object not being returned again, the
 object will be unexported from reporting and JMX and allowed to be garbage
 collected.
+
+Sparse stats objects
+--------------------
+
+The stats objects `SparseCounterStat`, `SparseDistributionStat`, and
+`SparseTimeStat` are variants of `CounterStat`, `DistributionStat`, and
+`TimeStat` which are intended for use with report collections.
+They do not report any metrics for minutes in which no data
+were added to the object. They also do not export any attributes to JMX.
 
 Testing report collections
 --------------------------
@@ -261,7 +271,7 @@ public class HttpServerModule
 
 public interface DetailedRequestStats
 {
-    TimeStat requestTime(@Key("responseCode") int responseCode);
+    SparseTimeStat requestTime(@Key("responseCode") int responseCode);
 }
 
 public class RequestStats

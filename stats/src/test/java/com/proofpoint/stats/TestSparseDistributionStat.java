@@ -9,7 +9,7 @@ import java.lang.reflect.Method;
 
 import static org.testng.Assert.assertEquals;
 
-public class TestBucketedDistribution
+public class TestSparseDistributionStat
 {
     private TestingBucketIdProvider bucketIdProvider;
 
@@ -23,7 +23,7 @@ public class TestBucketedDistribution
     public void testInitialState()
             throws Exception
     {
-        BucketedDistribution distribution = new BucketedDistribution();
+        SparseDistributionStat distribution = new SparseDistributionStat();
         distribution.add(1);
         assertPreviousDistributionEmpty(distribution);
     }
@@ -32,7 +32,7 @@ public class TestBucketedDistribution
     public void testWithBucketIdProvider()
             throws Exception
     {
-        BucketedDistribution distribution = new BucketedDistribution();
+        SparseDistributionStat distribution = new SparseDistributionStat();
         distribution.setBucketIdProvider(bucketIdProvider);
         distribution.add(1);
         assertPreviousDistributionEmpty(distribution);
@@ -41,14 +41,18 @@ public class TestBucketedDistribution
         distribution.add(3);
         assertPreviousDistribution(distribution, 1, 1, 1, 1);
         ++bucketIdProvider.id;
+        distribution.add(1);
+        distribution.add(-1);
         assertPreviousDistribution(distribution, 2, 2, 3, 5);
+        ++bucketIdProvider.id;
+        assertPreviousDistribution(distribution, 2, -1, 1, 0);
     }
 
     @Test
     public void testDiscardsBuckets()
             throws Exception
     {
-        BucketedDistribution distribution = new BucketedDistribution();
+        SparseDistributionStat distribution = new SparseDistributionStat();
         distribution.add(100);
         distribution.setBucketIdProvider(bucketIdProvider);
         distribution.add(1);
@@ -69,19 +73,20 @@ public class TestBucketedDistribution
         assertPreviousDistributionEmpty(distribution);
     }
 
-    private void assertPreviousDistributionEmpty(BucketedDistribution distribution)
+    private void assertPreviousDistributionEmpty(SparseDistributionStat distribution)
             throws Exception
     {
-        assertPreviousDistribution(distribution, 0, Long.MAX_VALUE, Long.MIN_VALUE, 0);
+        // Don't care about the precise values as long as none of them are reported
+        assertPreviousDistribution(distribution, Double.NaN, Long.MAX_VALUE, Long.MIN_VALUE, Long.MIN_VALUE);
     }
 
-    private void assertPreviousDistribution(BucketedDistribution distribution, int expectedCount, long expectedMin, long expectedMax, long expectedTotal)
+    private void assertPreviousDistribution(SparseDistributionStat distribution, double expectedCount, long expectedMin, long expectedMax, long expectedTotal)
             throws Exception
     {
         Method method = Bucketed.class.getDeclaredMethod("getPreviousBucket");
         method.setAccessible(true);
-        BucketedDistribution.Distribution previousBucket = (BucketedDistribution.Distribution) method.invoke(distribution);
-        assertEquals(previousBucket.getCount(), (double) expectedCount);
+        SparseDistributionStat.Distribution previousBucket = (SparseDistributionStat.Distribution) method.invoke(distribution);
+        assertEquals(previousBucket.getCount(), expectedCount);
         assertEquals(previousBucket.getMin(), expectedMin);
         assertEquals(previousBucket.getMax(), expectedMax);
         assertEquals(previousBucket.getTotal(), expectedTotal);
