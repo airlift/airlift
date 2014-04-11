@@ -9,7 +9,9 @@ Platform 0.95
     - Failure.Count renamed to ServiceClient.Failure.Count
     - ResponseTime.* renamed to ServiceClient.RequestTime.*
 
-  We no longer report a MaxError metric from TimeStat and DistributionStat
+  We no longer report a MaxError metric from TimeStat and DistributionStat.
+
+  We no longer include a "package" tag in reported metrics.
 
 Platform 0.94
 

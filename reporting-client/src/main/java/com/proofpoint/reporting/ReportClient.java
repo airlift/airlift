@@ -131,8 +131,7 @@ class ReportClient
             timestamp = systemTimeMillis;
             value = cell.getValue();
             Builder<String, String> builder = ImmutableMap.<String, String>builder()
-                    .putAll(instanceTags)
-                    .put("package", cell.getRowKey().getDomain());
+                    .putAll(instanceTags);
             for (Entry<String, String> entry : propertyList.entrySet()) {
                 if (!entry.getKey().equals("type") && !entry.getKey().equals("name")) {
                     String dequoted = dequote(entry.getValue());

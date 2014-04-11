@@ -115,12 +115,10 @@ public class TestReportClient
         assertEquals(sentJson.get(0).get("value"), 1.2);
         assertEquals(sentJson.get(1).get("value"), 1.1);
         Map<String, String> tags = (Map<String, String>) sentJson.get(0).get("tags");
-        assertEquals(tags.keySet(), ImmutableSet.of("application", "host", "environment", "pool", "package", "tag1"));
-        assertEquals(tags.get("package"), "com.example");
+        assertEquals(tags.keySet(), ImmutableSet.of("application", "host", "environment", "pool", "tag1"));
         assertEquals(tags.get("tag1"), "B_a_z"); // "B\\a\"z");
         tags = (Map<String, String>) sentJson.get(1).get("tags");
-        assertEquals(tags.get("package"), "com.example");
-        assertEquals(tags.keySet(), ImmutableSet.of("application", "host", "environment", "pool", "package"));
+        assertEquals(tags.keySet(), ImmutableSet.of("application", "host", "environment", "pool"));
     }
 
     @Test
@@ -136,14 +134,13 @@ public class TestReportClient
         for (Map<String, Object> map : sentJson) {
             assertEquals(map.keySet(), ImmutableSet.of("name", "timestamp", "value", "tags"));
             Map<String, String> tags = (Map<String, String>) map.get("tags");
-            assertEquals(tags.get("package"), "com.example");
             assertEquals(tags.get("foo"), "ba:r");
             assertEquals(tags.get("baz"), "quux");
         }
         Map<String, String> tags = (Map<String, String>) sentJson.get(0).get("tags");
-        assertEquals(tags.keySet(), ImmutableSet.of("application", "host", "environment", "pool", "foo", "baz", "package", "tag1"));
+        assertEquals(tags.keySet(), ImmutableSet.of("application", "host", "environment", "pool", "foo", "baz", "tag1"));
         tags = (Map<String, String>) sentJson.get(1).get("tags");
-        assertEquals(tags.keySet(), ImmutableSet.of("application", "host", "environment", "pool", "foo", "baz", "package"));
+        assertEquals(tags.keySet(), ImmutableSet.of("application", "host", "environment", "pool", "foo", "baz"));
     }
 
     private class TestingResponseFunction

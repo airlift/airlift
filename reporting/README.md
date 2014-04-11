@@ -37,8 +37,8 @@ public class MyModule
 }
 ```
 will cause the getter to be called every minute and the returned value to be
-reported with the metric name `ReportedObject.Value` and tag
-`package=com.example`. The attribute is also exposed through JMX with the
+reported with the metric name `ReportedObject.Value`.
+The attribute is also exposed through JMX with the
 attribute `Value` of ObjectName `"com.example:name=ReportedObject"`,
 just as if `ReportedObject` had been bound with
 `ExportBinder.newExporter(binder).export(ReportedObject).withGeneratedName()`.
@@ -226,8 +226,7 @@ name, separated by ".", when the metric is reported to KairosDB. For example,
 the attribute `Count` in an object exported with type `StoreStat` and name
 `Added` will be reported as `StoreStat.Added.Count`.
 
-All other `ObjectName` parameters will be reported as tag/value pairs. The
-domain of the `ObjectName` will be reported as the value of the `package` tag.
+All other `ObjectName` parameters will be reported as tag/value pairs.
 
 The application name that was supplied to `Bootstrap.bootstrapApplication()`
 will be reported as the value of the `application` tag.
