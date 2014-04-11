@@ -28,7 +28,7 @@ public class TestSparseSerialization
             throws Exception
     {
         Slice expected = new DynamicSliceOutput(1)
-                .appendByte(0b1_000_0000) // type + version
+                .appendByte(0)  // format tag
                 .appendByte(12) // p
                         // number of short hashes
                 .appendByte(0)
@@ -48,7 +48,7 @@ public class TestSparseSerialization
             throws Exception
     {
         Slice expected = new DynamicSliceOutput(1)
-                .appendByte(0b1_000_0000) // type + version
+                .appendByte(0)  // format tag
                 .appendByte(12) // p
                         // number of short hashes
                 .appendByte(1)
@@ -73,7 +73,7 @@ public class TestSparseSerialization
             throws Exception
     {
         Slice expected = new DynamicSliceOutput(1)
-                .appendByte(0b1000_0000) // type + version
+                .appendByte(0)  // format tag
                 .appendByte(12) // p
                         // number of short hashes
                 .appendByte(1)
@@ -101,7 +101,7 @@ public class TestSparseSerialization
             throws Exception
     {
         Slice expected = new DynamicSliceOutput(1)
-                .appendByte(0b1000_0000) // type + version
+                .appendByte(0)  // format tag
                 .appendByte(12) // p
                         // number of short hashes
                 .appendByte(2)

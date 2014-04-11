@@ -18,10 +18,12 @@ import com.google.common.base.Preconditions;
 import io.airlift.slice.Murmur3;
 import io.airlift.slice.Slice;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.stats.cardinality.Utils.indexBitLength;
 
 public class HyperLogLog
 {
+    private static final int MAX_NUMBER_OF_BUCKETS = 8192;
     private HllInstance instance;
 
     private HyperLogLog(HllInstance instance)
@@ -31,7 +33,7 @@ public class HyperLogLog
 
     public static HyperLogLog newInstance(int numberOfBuckets)
     {
-        Preconditions.checkArgument(numberOfBuckets <= 8192, "numberOfBuckets must be <= 8192, actual: %s", numberOfBuckets);
+        checkArgument(numberOfBuckets <= MAX_NUMBER_OF_BUCKETS, "numberOfBuckets must be <= %s, actual: %s", MAX_NUMBER_OF_BUCKETS, numberOfBuckets);
 
         return new HyperLogLog(new SparseHll(indexBitLength(numberOfBuckets)));
     }
@@ -62,8 +64,8 @@ public class HyperLogLog
     {
         instance.insertHash(hash);
 
-        if (instance instanceof SparseHll && instance.estimatedInMemorySize() > DenseHll.estimatedInMemorySize(instance.getIndexBitLength())) {
-            instance = ((SparseHll) instance).toDense();
+        if (instance instanceof SparseHll) {
+            instance = makeDenseIfNecessary((SparseHll) instance);
         }
     }
 
@@ -71,6 +73,7 @@ public class HyperLogLog
     {
         if (instance instanceof SparseHll && other.instance instanceof SparseHll) {
             ((SparseHll) instance).mergeWith((SparseHll) other.instance);
+            instance = makeDenseIfNecessary((SparseHll) instance);
         }
         else {
             DenseHll dense = instance.toDense();
@@ -100,9 +103,23 @@ public class HyperLogLog
         return instance.serialize();
     }
 
+    public void makeDense()
+    {
+        instance = instance.toDense();
+    }
+
     @VisibleForTesting
     void verify()
     {
         instance.verify();
+    }
+
+    private static HllInstance makeDenseIfNecessary(SparseHll instance)
+    {
+        if (instance.estimatedInMemorySize() > DenseHll.estimatedInMemorySize(instance.getIndexBitLength())) {
+            return instance.toDense();
+        }
+
+        return instance;
     }
 }

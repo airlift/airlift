@@ -61,25 +61,6 @@ public class TestSparseHll
         verifyToDense(ImmutableList.of(224L, 271L));
     }
 
-//    @Test
-    public void testSomething()
-            throws Exception
-    {
-        Multimap<Integer, Integer> values = ArrayListMultimap.create();
-
-        for (int i = 0; i < 100000; i++) {
-            long hash = Murmur3.hash64(i);
-            int index = Utils.computeIndex(hash, 11);
-            int zeros = Long.numberOfLeadingZeros(hash << 11);
-            if (zeros > 5) {
-                values.put(index, i);
-//                System.out.println(i + ","+ zeros);
-            }
-        }
-
-        System.out.println(values);
-    }
-
     private static void verifyMerge(List<Long> one, List<Long> two)
     {
         SparseHll hll1 = new SparseHll(11);

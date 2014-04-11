@@ -15,30 +15,30 @@ package io.airlift.stats.cardinality;
 
 import com.google.common.base.Preconditions;
 
-class Utils
+final class Utils
 {
+    private Utils()
+    {
+    }
+
     public static double alpha(int indexBitLength)
     {
-        double alpha;
         switch (indexBitLength) {
             case 4:
-                alpha = 0.673;
-                break;
+                return 0.673;
             case 5:
-                alpha = 0.697;
-                break;
+                return 0.697;
             case 6:
-                alpha = 0.709;
-                break;
+                return 0.709;
             default:
-                alpha = (0.7213 / (1 + 1.079 / numberOfBuckets(indexBitLength)));
+                return (0.7213 / (1 + 1.079 / numberOfBuckets(indexBitLength)));
         }
-        return alpha;
     }
 
     public static boolean isPowerOf2(long value)
     {
-        return (value & value - 1) == 0;
+        Preconditions.checkArgument(value > 0, "value must be positive");
+        return (value & (value - 1)) == 0;
     }
 
     public static int indexBitLength(int numberOfBuckets)

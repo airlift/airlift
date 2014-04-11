@@ -42,9 +42,6 @@ import static io.airlift.stats.cardinality.Utils.numberOfLeadingZeros;
 class SparseHll
         implements HllInstance
 {
-    private static final int SPARSE_TAG = 0b1000_0000;
-    private static final int VERSION = 0;
-
     private static final int SPARSE_INSTANCE_SIZE = ClassLayout.parseClass(SparseHll.class).instanceSize();
 
     private final byte indexBitLength;
@@ -55,7 +52,7 @@ class SparseHll
 
     public SparseHll(int indexBitLength)
     {
-        checkArgument(indexBitLength <= 13, "indexBitLength must be <= 13, actual: %s", indexBitLength);
+        checkArgument(indexBitLength >= 1 && indexBitLength <= 13, "indexBitLength is out of range");
 
         this.indexBitLength = (byte) indexBitLength;
         shortHashes = new short[1];
@@ -66,9 +63,10 @@ class SparseHll
     {
         BasicSliceInput input = serialized.getInput();
 
-        checkArgument(input.readUnsignedByte() == (SPARSE_TAG | VERSION), "Wrong type/version");
+        checkArgument(input.readByte() == Format.SPARSE_V1.getTag(), "invalid format tag");
 
         indexBitLength = input.readByte();
+        checkArgument(indexBitLength >= 1 && indexBitLength <= 13, "indexBitLength is out of range");
 
         numberOfHashes = input.readShort();
         numberOfOverflows = input.readShort();
@@ -86,7 +84,7 @@ class SparseHll
 
     public static boolean canDeserialize(Slice serialized)
     {
-        return serialized.getUnsignedByte(0) == (SPARSE_TAG | VERSION);
+        return serialized.getByte(0) == Format.SPARSE_V1.getTag();
     }
 
     public void insertHash(long hash)
@@ -197,9 +195,9 @@ class SparseHll
     @Override
     public int estimatedInMemorySize()
     {
-        return (int) (SPARSE_INSTANCE_SIZE +
-                SizeOf.sizeOf(overflows) +
-                SizeOf.sizeOf(shortHashes));
+        return SPARSE_INSTANCE_SIZE +
+                SizeOf.SIZE_OF_SHORT * numberOfHashes +
+                SizeOf.SIZE_OF_SHORT * numberOfOverflows;
     }
 
     @Override
@@ -419,7 +417,7 @@ class SparseHll
                 SizeOf.SIZE_OF_SHORT * numberOfOverflows;
 
         DynamicSliceOutput out = new DynamicSliceOutput(size)
-                .appendByte(SPARSE_TAG | VERSION)
+                .appendByte(Format.SPARSE_V1.getTag())
                 .appendByte(indexBitLength)
                 .appendShort(numberOfHashes)
                 .appendShort(numberOfOverflows);

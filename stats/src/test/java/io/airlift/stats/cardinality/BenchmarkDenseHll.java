@@ -51,8 +51,8 @@ public class BenchmarkDenseHll
     @State(Scope.Thread)
     public static class Data
     {
-        public DenseHll instance = new DenseHll(11);
-        public long[] hashes = new long[500];
+        public final DenseHll instance = new DenseHll(11);
+        public final long[] hashes = new long[500];
 
         @Setup(Level.Iteration)
         public void initialize()
@@ -73,5 +73,4 @@ public class BenchmarkDenseHll
 
         new Runner(options).run();
     }
-
 }
