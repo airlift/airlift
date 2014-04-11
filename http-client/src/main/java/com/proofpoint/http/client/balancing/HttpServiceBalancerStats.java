@@ -16,16 +16,16 @@
 package com.proofpoint.http.client.balancing;
 
 import com.proofpoint.reporting.Key;
-import com.proofpoint.stats.CounterStat;
-import com.proofpoint.stats.TimeStat;
+import com.proofpoint.stats.SparseCounterStat;
+import com.proofpoint.stats.SparseTimeStat;
 
 import java.net.URI;
 
 public interface HttpServiceBalancerStats
 {
-    CounterStat failure(@Key("targetUri") URI uri, @Key("failure") String failureCategory);
+    SparseCounterStat failure(@Key("targetUri") URI uri, @Key("failure") String failureCategory);
 
-    TimeStat requestTime(@Key("targetUri") URI uri, @Key("status") Status status);
+    SparseTimeStat requestTime(@Key("targetUri") URI uri, @Key("status") Status status);
 
     public enum Status {
         SUCCESS, FAILURE;

@@ -17,8 +17,8 @@ package com.proofpoint.http.client.balancing;
 
 import com.google.common.collect.ImmutableSet;
 import com.proofpoint.http.client.balancing.HttpServiceBalancerStats.Status;
-import com.proofpoint.stats.CounterStat;
-import com.proofpoint.stats.TimeStat;
+import com.proofpoint.stats.SparseCounterStat;
+import com.proofpoint.stats.SparseTimeStat;
 import com.proofpoint.testing.TestingTicker;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -73,11 +73,11 @@ public class TestHttpServiceBalancerImpl
             throws Exception
     {
         ImmutableSet<URI> expected = ImmutableSet.of(URI.create("http://apple-a.example.com"), URI.create("https://apple-a.example.com"));
-        TimeStat failureTimeStat = mock(TimeStat.class);
+        SparseTimeStat failureTimeStat = mock(SparseTimeStat.class);
         when(httpServiceBalancerStats.requestTime(any(URI.class), eq(Status.FAILURE))).thenReturn(failureTimeStat);
-        TimeStat successTimeStat = mock(TimeStat.class);
+        SparseTimeStat successTimeStat = mock(SparseTimeStat.class);
         when(httpServiceBalancerStats.requestTime(any(URI.class), eq(Status.SUCCESS))).thenReturn(successTimeStat);
-        CounterStat counterStat = mock(CounterStat.class);
+        SparseCounterStat counterStat = mock(SparseCounterStat.class);
         when(httpServiceBalancerStats.failure(any(URI.class), eq("testing failure"))).thenReturn(counterStat);
 
         httpServiceBalancer.updateHttpUris(expected);
@@ -120,11 +120,11 @@ public class TestHttpServiceBalancerImpl
     {
         URI firstUri = URI.create("http://apple-a.example.com");
         URI secondUri = URI.create("https://apple-a.example.com");
-        TimeStat failureTimeStat = mock(TimeStat.class);
+        SparseTimeStat failureTimeStat = mock(SparseTimeStat.class);
         when(httpServiceBalancerStats.requestTime(any(URI.class), eq(Status.FAILURE))).thenReturn(failureTimeStat);
-        TimeStat successTimeStat = mock(TimeStat.class);
+        SparseTimeStat successTimeStat = mock(SparseTimeStat.class);
         when(httpServiceBalancerStats.requestTime(any(URI.class), eq(Status.SUCCESS))).thenReturn(successTimeStat);
-        CounterStat counterStat = mock(CounterStat.class);
+        SparseCounterStat counterStat = mock(SparseCounterStat.class);
         when(httpServiceBalancerStats.failure(any(URI.class), eq("testing failure"))).thenReturn(counterStat);
 
         httpServiceBalancer.updateHttpUris(ImmutableSet.of(firstUri));
@@ -144,11 +144,11 @@ public class TestHttpServiceBalancerImpl
             throws Exception
     {
         ImmutableSet<URI> expected = ImmutableSet.of(URI.create("http://apple-a.example.com"), URI.create("https://apple-a.example.com"));
-        TimeStat failureTimeStat = mock(TimeStat.class);
+        SparseTimeStat failureTimeStat = mock(SparseTimeStat.class);
         when(httpServiceBalancerStats.requestTime(any(URI.class), eq(Status.FAILURE))).thenReturn(failureTimeStat);
-        TimeStat successTimeStat = mock(TimeStat.class);
+        SparseTimeStat successTimeStat = mock(SparseTimeStat.class);
         when(httpServiceBalancerStats.requestTime(any(URI.class), eq(Status.SUCCESS))).thenReturn(successTimeStat);
-        CounterStat counterStat = mock(CounterStat.class);
+        SparseCounterStat counterStat = mock(SparseCounterStat.class);
         when(httpServiceBalancerStats.failure(any(URI.class), eq("testing failure"))).thenReturn(counterStat);
 
         httpServiceBalancer.updateHttpUris(expected);
@@ -174,11 +174,11 @@ public class TestHttpServiceBalancerImpl
             throws Exception
     {
         ImmutableSet<URI> expected = ImmutableSet.of(URI.create("http://apple-a.example.com"), URI.create("https://apple-a.example.com"));
-        TimeStat failureTimeStat = mock(TimeStat.class);
+        SparseTimeStat failureTimeStat = mock(SparseTimeStat.class);
         when(httpServiceBalancerStats.requestTime(any(URI.class), eq(Status.FAILURE))).thenReturn(failureTimeStat);
-        TimeStat successTimeStat = mock(TimeStat.class);
+        SparseTimeStat successTimeStat = mock(SparseTimeStat.class);
         when(httpServiceBalancerStats.requestTime(any(URI.class), eq(Status.SUCCESS))).thenReturn(successTimeStat);
-        CounterStat counterStat = mock(CounterStat.class);
+        SparseCounterStat counterStat = mock(SparseCounterStat.class);
         when(httpServiceBalancerStats.failure(any(URI.class), eq("testing failure"))).thenReturn(counterStat);
 
         httpServiceBalancer.updateHttpUris(expected);

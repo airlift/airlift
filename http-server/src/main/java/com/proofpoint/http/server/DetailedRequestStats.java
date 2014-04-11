@@ -16,9 +16,9 @@
 package com.proofpoint.http.server;
 
 import com.proofpoint.reporting.Key;
-import com.proofpoint.stats.TimeStat;
+import com.proofpoint.stats.SparseTimeStat;
 
 public interface DetailedRequestStats
 {
-    TimeStat requestTimeByCode(@Key("responseCode") int responseCode);
+    SparseTimeStat requestTimeByCode(@Key("responseCode") int responseCode);
 }

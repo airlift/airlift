@@ -16,9 +16,9 @@
 package com.proofpoint.jaxrs;
 
 import com.proofpoint.reporting.Key;
-import com.proofpoint.stats.TimeStat;
+import com.proofpoint.stats.SparseTimeStat;
 
 interface RequestStats
 {
-    TimeStat requestTime(@Key("method") String method, @Key("responseCode") int responseCode);
+    SparseTimeStat requestTime(@Key("method") String method, @Key("responseCode") int responseCode);
 }

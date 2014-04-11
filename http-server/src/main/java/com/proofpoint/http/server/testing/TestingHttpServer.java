@@ -26,7 +26,7 @@ import com.proofpoint.http.server.QueryStringFilter;
 import com.proofpoint.http.server.RequestStats;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.node.NodeInfo;
-import com.proofpoint.stats.TimeStat;
+import com.proofpoint.stats.SparseTimeStat;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 
@@ -115,9 +115,9 @@ public class TestingHttpServer extends HttpServer
     public static class DetailedRequestStats implements com.proofpoint.http.server.DetailedRequestStats
     {
         @Override
-        public TimeStat requestTimeByCode(int responseCode)
+        public SparseTimeStat requestTimeByCode(int responseCode)
         {
-            return new TimeStat();
+            return new SparseTimeStat();
         }
     }
 }
