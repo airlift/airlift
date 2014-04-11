@@ -25,7 +25,7 @@ public interface HttpServiceBalancerStats
 {
     CounterStat failure(@Key("targetUri") URI uri, @Key("failure") String failureCategory);
 
-    TimeStat responseTime(@Key("targetUri") URI uri, @Key("status") Status status);
+    TimeStat requestTime(@Key("targetUri") URI uri, @Key("status") Status status);
 
     public enum Status {
         SUCCESS, FAILURE;

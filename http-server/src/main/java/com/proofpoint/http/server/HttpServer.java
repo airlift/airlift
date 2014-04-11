@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.weakref.jmx.Flatten;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -69,6 +70,7 @@ public class HttpServer
     private final ServerConnector httpConnector;
     private final ServerConnector httpsConnector;
     private final ServerConnector adminConnector;
+    private final RequestStats stats;
 
     @SuppressWarnings({"deprecation"})
     public HttpServer(HttpServerInfo httpServerInfo,
@@ -99,6 +101,7 @@ public class HttpServer
         threadPool.setIdleTimeout(Ints.checkedCast(config.getThreadMaxIdleTime().toMillis()));
         threadPool.setName("http-worker");
         server = new Server(threadPool);
+        this.stats = stats;
 
         if (mbeanServer != null) {
             // export jmx mbeans if a server was provided
@@ -354,6 +357,12 @@ public class HttpServer
             throws Exception
     {
         server.stop();
+    }
+
+    @Flatten
+    public RequestStats getStats()
+    {
+        return stats;
     }
 
     private static void checkSufficientThreads(Connector connector, String name)

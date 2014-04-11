@@ -115,7 +115,7 @@ public class TestingHttpServer extends HttpServer
     public static class DetailedRequestStats implements com.proofpoint.http.server.DetailedRequestStats
     {
         @Override
-        public TimeStat requestTime(int responseCode)
+        public TimeStat requestTimeByCode(int responseCode)
         {
             return new TimeStat();
         }

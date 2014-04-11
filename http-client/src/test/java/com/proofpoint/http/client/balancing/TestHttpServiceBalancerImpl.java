@@ -74,9 +74,9 @@ public class TestHttpServiceBalancerImpl
     {
         ImmutableSet<URI> expected = ImmutableSet.of(URI.create("http://apple-a.example.com"), URI.create("https://apple-a.example.com"));
         TimeStat failureTimeStat = mock(TimeStat.class);
-        when(httpServiceBalancerStats.responseTime(any(URI.class), eq(Status.FAILURE))).thenReturn(failureTimeStat);
+        when(httpServiceBalancerStats.requestTime(any(URI.class), eq(Status.FAILURE))).thenReturn(failureTimeStat);
         TimeStat successTimeStat = mock(TimeStat.class);
-        when(httpServiceBalancerStats.responseTime(any(URI.class), eq(Status.SUCCESS))).thenReturn(successTimeStat);
+        when(httpServiceBalancerStats.requestTime(any(URI.class), eq(Status.SUCCESS))).thenReturn(successTimeStat);
         CounterStat counterStat = mock(CounterStat.class);
         when(httpServiceBalancerStats.failure(any(URI.class), eq("testing failure"))).thenReturn(counterStat);
 
@@ -104,10 +104,10 @@ public class TestHttpServiceBalancerImpl
 
         assertEquals(uris, expected);
         for (URI uri : expected) {
-            verify(httpServiceBalancerStats).responseTime(uri, Status.FAILURE);
+            verify(httpServiceBalancerStats).requestTime(uri, Status.FAILURE);
             verify(httpServiceBalancerStats).failure(uri, "testing failure");
         }
-        verify(httpServiceBalancerStats).responseTime(any(URI.class), eq(Status.SUCCESS));
+        verify(httpServiceBalancerStats).requestTime(any(URI.class), eq(Status.SUCCESS));
         verify(failureTimeStat, times(2)).add(TimeUnit.SECONDS.toNanos(10), TimeUnit.NANOSECONDS);
         verify(successTimeStat).add(TimeUnit.SECONDS.toNanos(20), TimeUnit.NANOSECONDS);
         verify(counterStat, times(2)).update(1);
@@ -121,9 +121,9 @@ public class TestHttpServiceBalancerImpl
         URI firstUri = URI.create("http://apple-a.example.com");
         URI secondUri = URI.create("https://apple-a.example.com");
         TimeStat failureTimeStat = mock(TimeStat.class);
-        when(httpServiceBalancerStats.responseTime(any(URI.class), eq(Status.FAILURE))).thenReturn(failureTimeStat);
+        when(httpServiceBalancerStats.requestTime(any(URI.class), eq(Status.FAILURE))).thenReturn(failureTimeStat);
         TimeStat successTimeStat = mock(TimeStat.class);
-        when(httpServiceBalancerStats.responseTime(any(URI.class), eq(Status.SUCCESS))).thenReturn(successTimeStat);
+        when(httpServiceBalancerStats.requestTime(any(URI.class), eq(Status.SUCCESS))).thenReturn(successTimeStat);
         CounterStat counterStat = mock(CounterStat.class);
         when(httpServiceBalancerStats.failure(any(URI.class), eq("testing failure"))).thenReturn(counterStat);
 
@@ -145,9 +145,9 @@ public class TestHttpServiceBalancerImpl
     {
         ImmutableSet<URI> expected = ImmutableSet.of(URI.create("http://apple-a.example.com"), URI.create("https://apple-a.example.com"));
         TimeStat failureTimeStat = mock(TimeStat.class);
-        when(httpServiceBalancerStats.responseTime(any(URI.class), eq(Status.FAILURE))).thenReturn(failureTimeStat);
+        when(httpServiceBalancerStats.requestTime(any(URI.class), eq(Status.FAILURE))).thenReturn(failureTimeStat);
         TimeStat successTimeStat = mock(TimeStat.class);
-        when(httpServiceBalancerStats.responseTime(any(URI.class), eq(Status.SUCCESS))).thenReturn(successTimeStat);
+        when(httpServiceBalancerStats.requestTime(any(URI.class), eq(Status.SUCCESS))).thenReturn(successTimeStat);
         CounterStat counterStat = mock(CounterStat.class);
         when(httpServiceBalancerStats.failure(any(URI.class), eq("testing failure"))).thenReturn(counterStat);
 
@@ -175,9 +175,9 @@ public class TestHttpServiceBalancerImpl
     {
         ImmutableSet<URI> expected = ImmutableSet.of(URI.create("http://apple-a.example.com"), URI.create("https://apple-a.example.com"));
         TimeStat failureTimeStat = mock(TimeStat.class);
-        when(httpServiceBalancerStats.responseTime(any(URI.class), eq(Status.FAILURE))).thenReturn(failureTimeStat);
+        when(httpServiceBalancerStats.requestTime(any(URI.class), eq(Status.FAILURE))).thenReturn(failureTimeStat);
         TimeStat successTimeStat = mock(TimeStat.class);
-        when(httpServiceBalancerStats.responseTime(any(URI.class), eq(Status.SUCCESS))).thenReturn(successTimeStat);
+        when(httpServiceBalancerStats.requestTime(any(URI.class), eq(Status.SUCCESS))).thenReturn(successTimeStat);
         CounterStat counterStat = mock(CounterStat.class);
         when(httpServiceBalancerStats.failure(any(URI.class), eq("testing failure"))).thenReturn(counterStat);
 

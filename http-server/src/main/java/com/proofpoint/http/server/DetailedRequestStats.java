@@ -20,5 +20,5 @@ import com.proofpoint.stats.TimeStat;
 
 public interface DetailedRequestStats
 {
-    TimeStat requestTime(@Key("responseCode") int responseCode);
+    TimeStat requestTimeByCode(@Key("responseCode") int responseCode);
 }

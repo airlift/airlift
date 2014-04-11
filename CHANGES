@@ -1,3 +1,14 @@
+Platform 0.95
+
+* Reporting
+
+  We changed some metric names:
+
+    - RequestStats.* renamed to HttpServer.*
+    - DetailedRequestStats.RequestTime.* renamed to HttpServer.RequestTimeByCode.*
+    - Failure.Count renamed to ServiceClient.Failure.Count
+    - ResponseTime.* renamed to ServiceClient.RequestTime.*
+
 Platform 0.94
 
 * The launcher now invokes the JVM with the following default switches:

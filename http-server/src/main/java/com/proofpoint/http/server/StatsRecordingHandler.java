@@ -47,7 +47,7 @@ public class StatsRecordingHandler
         Duration schedulingDelay = new Duration(max(0, dispatchTime - request.getTimeStamp()), TimeUnit.MILLISECONDS);
 
         stats.record(request.getMethod(), response.getStatus(), request.getContentRead(), response.getContentCount(), schedulingDelay, requestTime);
-        detailedRequestStats.requestTime(response.getStatus()).add(requestTime);
+        detailedRequestStats.requestTimeByCode(response.getStatus()).add(requestTime);
     }
 
     @Override

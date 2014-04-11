@@ -120,14 +120,14 @@ public class HttpServiceBalancerImpl
         public void markGood()
         {
             decrementConcurrency();
-            httpServiceBalancerStats.responseTime(uri, Status.SUCCESS).add(ticker.read() - startTick, TimeUnit.NANOSECONDS);
+            httpServiceBalancerStats.requestTime(uri, Status.SUCCESS).add(ticker.read() - startTick, TimeUnit.NANOSECONDS);
         }
 
         @Override
         public void markBad(String failureCategory)
         {
             decrementConcurrency();
-            httpServiceBalancerStats.responseTime(uri, Status.FAILURE).add(ticker.read() - startTick, TimeUnit.NANOSECONDS);
+            httpServiceBalancerStats.requestTime(uri, Status.FAILURE).add(ticker.read() - startTick, TimeUnit.NANOSECONDS);
             httpServiceBalancerStats.failure(uri, failureCategory).update(1);
         }
 
