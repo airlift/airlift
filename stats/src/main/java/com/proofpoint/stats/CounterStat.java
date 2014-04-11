@@ -36,6 +36,19 @@ public class CounterStat
     private final DecayCounter fifteenMinute = new DecayCounter(ExponentialDecay.fifteenMinutes());
     private final BucketedCounter bucket = new BucketedCounter();
 
+    public void add(long count)
+    {
+        oneMinute.add(count);
+        fiveMinute.add(count);
+        fifteenMinute.add(count);
+        bucket.add(count);
+        this.count.addAndGet(count);
+    }
+
+    /**
+     * @deprecated Use {@link #add(long)}
+     */
+    @Deprecated
     public void update(long count)
     {
         oneMinute.add(count);

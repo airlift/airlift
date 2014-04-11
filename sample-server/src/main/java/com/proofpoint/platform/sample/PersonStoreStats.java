@@ -58,24 +58,24 @@ public class PersonStoreStats
 
     public void personFetched()
     {
-        fetched.update(1);
+        fetched.add(1);
     }
 
     public void personAdded(String id, Person person)
     {
-        added.update(1);
+        added.add(1);
         eventClient.post(PersonEvent.personAdded(id, person));
     }
 
     public void personUpdated(String id, Person person)
     {
-        updated.update(1);
+        updated.add(1);
         eventClient.post(PersonEvent.personUpdated(id, person));
     }
 
     public void personRemoved(String id, Person person)
     {
-        removed.update(1);
+        removed.add(1);
         eventClient.post(PersonEvent.personRemoved(id, person));
     }
 }

@@ -51,7 +51,7 @@ public class RequestStats
             Duration requestProcessingTime,
             Duration responseProcessingTime)
     {
-        request.update(1);
+        request.add(1);
         requestTime.add(requestProcessingTime);
         responseTime.add(responseProcessingTime);
         readBytes.add(responseSizeInBytes);

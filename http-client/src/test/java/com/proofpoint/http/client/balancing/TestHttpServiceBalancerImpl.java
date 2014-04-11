@@ -110,7 +110,7 @@ public class TestHttpServiceBalancerImpl
         verify(httpServiceBalancerStats).requestTime(any(URI.class), eq(Status.SUCCESS));
         verify(failureTimeStat, times(2)).add(TimeUnit.SECONDS.toNanos(10), TimeUnit.NANOSECONDS);
         verify(successTimeStat).add(TimeUnit.SECONDS.toNanos(20), TimeUnit.NANOSECONDS);
-        verify(counterStat, times(2)).update(1);
+        verify(counterStat, times(2)).add(1);
         verifyNoMoreInteractions(httpServiceBalancerStats, failureTimeStat, successTimeStat, counterStat);
     }
 

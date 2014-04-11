@@ -2,16 +2,20 @@ Platform 0.95
 
 * Reporting
 
-  We changed some metric names:
+  - We changed some metric names:
 
     - RequestStats.* renamed to HttpServer.*
     - DetailedRequestStats.RequestTime.* renamed to HttpServer.RequestTimeByCode.*
     - Failure.Count renamed to ServiceClient.Failure.Count
     - ResponseTime.* renamed to ServiceClient.RequestTime.*
 
-  We no longer report a MaxError metric from TimeStat and DistributionStat.
+  - We no longer report a MaxError metric from TimeStat and DistributionStat.
 
-  We no longer include a "package" tag in reported metrics.
+  - We no longer include a "package" tag in reported metrics.
+
+* Stats
+
+  We have deprecated CounterStat.update(long), replacing it by CounterStat.add(long)
 
 Platform 0.94
 

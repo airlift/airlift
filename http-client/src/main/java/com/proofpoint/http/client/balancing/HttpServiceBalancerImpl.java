@@ -128,7 +128,7 @@ public class HttpServiceBalancerImpl
         {
             decrementConcurrency();
             httpServiceBalancerStats.requestTime(uri, Status.FAILURE).add(ticker.read() - startTick, TimeUnit.NANOSECONDS);
-            httpServiceBalancerStats.failure(uri, failureCategory).update(1);
+            httpServiceBalancerStats.failure(uri, failureCategory).add(1);
         }
 
         private void decrementConcurrency()

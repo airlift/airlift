@@ -142,7 +142,7 @@ class StoreStatsRecorder {
     public void recordSuccessfulAdd(MediaType mediaType)
     {
         storeStats.added(mediaType, SUCCESS)
-            .update(1);
+            .add(1);
     }
 }
 ```
@@ -206,7 +206,7 @@ class TestStoreStatsRecorder {
         verify(factory.getArgumentVerifier(StoreStats.class)).added(TEXT_PLAIN, SUCCESS);
         verifyNoMoreInteractions(factory.getArgumentVerifier(StoreStats.class));
 
-        verify(factory.getReportCollection(StoreStats.class).added(TEXT_PLAIN, SUCCESS)).update(1);
+        verify(factory.getReportCollection(StoreStats.class).added(TEXT_PLAIN, SUCCESS)).add(1);
         verifyNoMoreInteractions(factory.getReportCollection(StoreStats.class).added(TEXT_PLAIN, SUCCESS));
     }
 }
