@@ -9,6 +9,8 @@ Platform 0.95
     - Failure.Count renamed to ServiceClient.Failure.Count
     - ResponseTime.* renamed to ServiceClient.RequestTime.*
 
+  We no longer report a MaxError metric from TimeStat and DistributionStat
+
 Platform 0.94
 
 * The launcher now invokes the JVM with the following default switches:

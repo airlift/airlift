@@ -60,13 +60,7 @@ public final class BucketedDistribution
         {
             digest = new QuantileDigest(MAX_ERROR);
         }
-    
-        @Reported
-        public synchronized double getMaxError()
-        {
-            return digest.getConfidenceFactor();
-        }
-    
+
         @Reported
         public synchronized double getCount()
         {
