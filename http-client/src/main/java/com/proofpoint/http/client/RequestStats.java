@@ -16,11 +16,9 @@
 package com.proofpoint.http.client;
 
 import com.google.common.annotations.Beta;
-import com.proofpoint.stats.CounterStat;
 import com.proofpoint.stats.DistributionStat;
 import com.proofpoint.stats.TimeStat;
 import com.proofpoint.units.Duration;
-import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Nested;
 
 import javax.inject.Inject;
@@ -28,7 +26,6 @@ import javax.inject.Inject;
 @Beta
 public class RequestStats
 {
-    private final CounterStat request;
     private final TimeStat requestTime;
     private final TimeStat responseTime;
     private final DistributionStat readBytes;
@@ -37,7 +34,6 @@ public class RequestStats
     @Inject
     public RequestStats()
     {
-        request = new CounterStat();
         requestTime = new TimeStat();
         responseTime = new TimeStat();
         readBytes = new DistributionStat();
@@ -51,17 +47,10 @@ public class RequestStats
             Duration requestProcessingTime,
             Duration responseProcessingTime)
     {
-        request.add(1);
         requestTime.add(requestProcessingTime);
         responseTime.add(responseProcessingTime);
         readBytes.add(responseSizeInBytes);
         writtenBytes.add(requestSizeInBytes);
-    }
-
-    @Flatten
-    public CounterStat getRequest()
-    {
-        return request;
     }
 
     @Nested

@@ -13,6 +13,8 @@ Platform 0.95
 
   - We no longer include a "package" tag in reported metrics.
 
+  - We removed the HttpClient._BindingAnnotation_.Count metric as redundant.
+
 * Stats
 
   We have deprecated CounterStat.update(long), replacing it by CounterStat.add(long)
