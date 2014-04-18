@@ -13,16 +13,11 @@
  */
 package io.airlift.stats.cardinality;
 
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import io.airlift.slice.Murmur3;
 import org.testng.annotations.Test;
-import org.testng.collections.SetMultiMap;
 
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
 import static io.airlift.stats.cardinality.TestUtils.sequence;

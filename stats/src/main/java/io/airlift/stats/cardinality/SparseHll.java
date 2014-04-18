@@ -80,6 +80,8 @@ class SparseHll
         for (int i = 0; i < numberOfOverflows; i++) {
             overflows[i] = input.readShort();
         }
+
+        checkArgument(!input.isReadable(), "input is too big");
     }
 
     public static boolean canDeserialize(Slice serialized)
@@ -96,14 +98,15 @@ class SparseHll
     private void insertOverflowEntryIfNeeded(long hash)
     {
         int zeros = numberOfLeadingZeros(hash, indexBitLength);
-        if (zeros > (Short.SIZE - indexBitLength)) {
-            int overflowZeros = zeros - (Short.SIZE - indexBitLength) - 1;
+        int overflowBits = Short.SIZE - indexBitLength;
+        if (zeros > overflowBits) {
+            int overflowZeros = zeros - overflowBits - 1;
 
             int bucketIndex = computeIndex(hash, indexBitLength);
 
             // truncate overflow values to fit in (Short.SIZE - indexBitLength) bits.
             // TODO: this introduces a minor error. Document probability and impact of this happening
-            short overflowEntry = (short) ((bucketIndex << (Short.SIZE - indexBitLength)) |
+            short overflowEntry = (short) ((bucketIndex << overflowBits) |
                     (overflowZeros & valueMask(indexBitLength)));
 
             int position = searchOverflow(bucketIndex);
@@ -153,8 +156,9 @@ class SparseHll
             int zeros = numberOfLeadingZeros(toLongHash(shortHash), indexBitLength);
 
             // do we need to look at overflows?
-            if (zeros > (Short.SIZE - indexBitLength)) {
-                zeros = Short.SIZE - indexBitLength;
+            int valueBits = Short.SIZE - indexBitLength;
+            if (zeros > valueBits) {
+                zeros = valueBits;
 
                 while (overflowIndex < numberOfOverflows) {
                     short overflow = overflows[overflowIndex];
@@ -185,7 +189,7 @@ class SparseHll
     {
         // Estimate the cardinality using linear counting over the theoretical 2^Short.SIZE buckets available due
         // to the fact that we're recording the raw 16-bit hashes. This produces much better precision while in
-        // the sparse regime
+        // the sparse regime.
         int totalBuckets = numberOfBuckets(Short.SIZE);
         int zeroBuckets = totalBuckets - numberOfHashes;
 
@@ -352,8 +356,8 @@ class SparseHll
                 result[index++] = other.shortHashes[rightIndex++];
             }
             else {
-                result[index] = shortHashes[leftIndex];
-                index++;
+                // values are equal, so pick one arbitrarily
+                result[index++] = shortHashes[leftIndex];
                 leftIndex++;
                 rightIndex++;
             }
