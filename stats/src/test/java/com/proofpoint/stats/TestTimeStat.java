@@ -68,7 +68,30 @@ public class TestTimeStat
         assertPercentile("tp99", allTime.getP99(), values, 0.99);
     }
 
+    @Test
+    public void testFractional()
+    {
+        TimeStat stat = new TimeStat();
+        List<Long> values = new ArrayList<>(VALUES);
+        for (long i = 0; i < VALUES; i++) {
+            values.add(i);
+        }
+        Collections.shuffle(values);
+        for (Long value : values) {
+            stat.add(value * .001, TimeUnit.SECONDS);
+        }
+        Collections.sort(values);
 
+        TimeDistribution allTime = stat.getAllTime();
+        assertEquals(allTime.getCount(), (double)values.size());
+        assertTrue(fuzzyEquals(allTime.getMax(), values.get(values.size() - 1) * 0.001, 0.000_000_000_1));
+        assertEquals(allTime.getMin(), values.get(0) * 0.001);
+
+        assertPercentile("tp50", allTime.getP50(), values, 0.50);
+        assertPercentile("tp50", allTime.getP75(), values, 0.75);
+        assertPercentile("tp90", allTime.getP90(), values, 0.90);
+        assertPercentile("tp99", allTime.getP99(), values, 0.99);
+    }
 
     @Test
     public void testEmpty()
@@ -105,12 +128,55 @@ public class TestTimeStat
     }
 
     @Test
+    public void testTimeCallableException()
+            throws Exception
+    {
+        TimeStat stat = new TimeStat(ticker);
+        try {
+            stat.time(new Callable<Void>()
+            {
+                @Override
+                public Void call()
+                {
+                    ticker.increment(10, TimeUnit.MILLISECONDS);
+                    throw new RuntimeException("test exception");
+                }
+            });
+        }
+        catch (RuntimeException ignored) {
+        }
+
+        TimeDistribution allTime = stat.getAllTime();
+        assertEquals(allTime.getCount(), 1.0);
+        assertEquals(allTime.getMin(), 0.010);
+        assertEquals(allTime.getMax(), 0.010);
+    }
+
+    @Test
     public void testTimeTry()
             throws Exception
     {
         TimeStat stat = new TimeStat(ticker);
         try (BlockTimer ignored = stat.time()) {
             ticker.increment(10, TimeUnit.MILLISECONDS);
+        }
+
+        TimeDistribution allTime = stat.getAllTime();
+        assertEquals(allTime.getCount(), 1.0);
+        assertEquals(allTime.getMin(), 0.010);
+        assertEquals(allTime.getMax(), 0.010);
+    }
+
+    @Test
+    public void testTimeTryException()
+            throws Exception
+    {
+        TimeStat stat = new TimeStat(ticker);
+        try (BlockTimer ignored = stat.time()) {
+            ticker.increment(10, TimeUnit.MILLISECONDS);
+            throw new Exception("test exception");
+        }
+        catch (Exception ignored) {
         }
 
         TimeDistribution allTime = stat.getAllTime();

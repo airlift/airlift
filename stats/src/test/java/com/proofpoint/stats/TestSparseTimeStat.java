@@ -100,6 +100,32 @@ public class TestSparseTimeStat
     }
 
     @Test
+    public void testTimeCallableException()
+            throws Exception
+    {
+        SparseTimeStat stat = new SparseTimeStat(ticker);
+        stat.setBucketIdProvider(bucketIdProvider);
+
+        try {
+            stat.time(new Callable<Void>()
+            {
+                @Override
+                public Void call()
+                {
+                    ticker.increment(10, TimeUnit.MILLISECONDS);
+                    throw new RuntimeException("test exception");
+                }
+            });
+        }
+        catch (RuntimeException ignored) {
+        }
+
+
+        ++bucketIdProvider.id;
+        assertPreviousDistribution(stat, 1, 0.010, 0.010);
+    }
+
+    @Test
     public void testTimeTry()
             throws Exception
     {
@@ -108,6 +134,24 @@ public class TestSparseTimeStat
 
         try (BlockTimer ignored = stat.time()) {
             ticker.increment(10, TimeUnit.MILLISECONDS);
+        }
+
+        ++bucketIdProvider.id;
+        assertPreviousDistribution(stat, 1, 0.010, 0.010);
+    }
+
+    @Test
+    public void testTimeTryException()
+            throws Exception
+    {
+        SparseTimeStat stat = new SparseTimeStat(ticker);
+        stat.setBucketIdProvider(bucketIdProvider);
+
+        try (BlockTimer ignored = stat.time()) {
+            ticker.increment(10, TimeUnit.MILLISECONDS);
+            throw new Exception("test exception");
+        }
+        catch (Exception ignored) {
         }
 
         ++bucketIdProvider.id;

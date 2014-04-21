@@ -42,6 +42,11 @@ public class SparseTimeStat
         this.ticker = ticker;
     }
 
+    public void add(long value, TimeUnit timeUnit)
+    {
+        add(timeUnit.toNanos(value));
+    }
+
     public void add(double value, TimeUnit timeUnit)
     {
         add(new Duration(value, timeUnit).roundTo(NANOSECONDS));
@@ -70,10 +75,9 @@ public class SparseTimeStat
     public <T> T time(Callable<T> callable)
             throws Exception
     {
-        long start = ticker.read();
-        T result = callable.call();
-        add(ticker.read() - start);
-        return result;
+        try (BlockTimer blockTimer = time()) {
+            return callable.call();
+        }
     }
 
     public BlockTimer time() {
