@@ -1,6 +1,5 @@
 package com.proofpoint.stats;
 
-import com.proofpoint.reporting.BucketIdProvider;
 import com.proofpoint.reporting.Bucketed;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -90,17 +89,5 @@ public class TestSparseDistributionStat
         assertEquals(previousBucket.getMin(), expectedMin);
         assertEquals(previousBucket.getMax(), expectedMax);
         assertEquals(previousBucket.getTotal(), expectedTotal);
-    }
-
-    private static class TestingBucketIdProvider
-        implements BucketIdProvider
-    {
-        private int id = 0;
-
-        @Override
-        public int get()
-        {
-            return id;
-        }
     }
 }

@@ -1,6 +1,5 @@
 package com.proofpoint.stats;
 
-import com.proofpoint.reporting.BucketIdProvider;
 import com.proofpoint.reporting.Bucketed;
 import com.proofpoint.stats.SparseCounterStat.Counter;
 import org.testng.annotations.BeforeMethod;
@@ -89,15 +88,4 @@ public class TestSparseCounterStat
         assertNull(previousBucket.getCount());
     }
 
-    private static class TestingBucketIdProvider
-        implements BucketIdProvider
-    {
-        private int id = 0;
-
-        @Override
-        public int get()
-        {
-            return id;
-        }
-    }
 }

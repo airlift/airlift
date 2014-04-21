@@ -1,6 +1,5 @@
 package com.proofpoint.stats;
 
-import com.proofpoint.reporting.BucketIdProvider;
 import com.proofpoint.reporting.Bucketed;
 import com.proofpoint.stats.SparseTimeStat.BlockTimer;
 import com.proofpoint.testing.TestingTicker;
@@ -130,17 +129,5 @@ public class TestSparseTimeStat
         assertEquals(previousBucket.getCount(), expectedCount);
         assertEquals(previousBucket.getMin(), expectedMin);
         assertEquals(previousBucket.getMax(), expectedMax);
-    }
-
-    private static class TestingBucketIdProvider
-        implements BucketIdProvider
-    {
-        private int id = 0;
-
-        @Override
-        public int get()
-        {
-            return id;
-        }
     }
 }

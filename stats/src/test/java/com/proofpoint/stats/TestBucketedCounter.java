@@ -1,6 +1,5 @@
 package com.proofpoint.stats;
 
-import com.proofpoint.reporting.BucketIdProvider;
 import com.proofpoint.reporting.Bucketed;
 import com.proofpoint.stats.BucketedCounter.Counter;
 import org.testng.annotations.BeforeMethod;
@@ -77,17 +76,5 @@ public class TestBucketedCounter
         method.setAccessible(true);
         Counter previousBucket = (Counter) method.invoke(counter);
         assertEquals(previousBucket.getCount(), expected);
-    }
-
-    private static class TestingBucketIdProvider
-        implements BucketIdProvider
-    {
-        private int id = 0;
-
-        @Override
-        public int get()
-        {
-            return id;
-        }
     }
 }
