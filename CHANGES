@@ -19,6 +19,14 @@ Platform 0.95
 
   We have deprecated CounterStat.update(long), replacing it by CounterStat.add(long)
 
+  We created SparseCounterStat, etc. for use with report collections. These stats
+  objects do not report any metrics for minutes in which no data were added to the
+  object. They also do not export any attributes to JMX.
+
+* Configuration
+
+  The @ConfigMap annotation is no longer necessary and is deprecated.
+
 Platform 0.94
 
 * The launcher now invokes the JVM with the following default switches:
