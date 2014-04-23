@@ -13,7 +13,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airbase</artifactId>
-        <version>17</version>
+        <version>20</version>
     </parent>
 
     <inceptionYear>2010</inceptionYear>
@@ -24,7 +24,6 @@
         <air.check.fail-basic>true</air.check.fail-basic>
 
         <dep.airlift.version>0.88-SNAPSHOT</dep.airlift.version>
-        <dep.jetty.version>9.1.3.v20140225</dep.jetty.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
     </properties>
 
@@ -231,18 +230,6 @@
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
                 <version>1.7</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-client</artifactId>
-                <version>${dep.jetty.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-io</artifactId>
-                <version>${dep.jetty.version}</version>
             </dependency>
 
             <dependency>
