@@ -19,8 +19,6 @@ import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.http.client.StaticBodyGenerator;
 import com.proofpoint.log.Logger;
-import com.proofpoint.units.DataSize;
-import com.proofpoint.units.DataSize.Unit;
 import com.proofpoint.units.Duration;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpRequest;
@@ -232,7 +230,7 @@ public class JettyHttpClient
 
         final JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest, responseHandler, stats);
 
-        BufferingResponseListener listener = new BufferingResponseListener(Ints.checkedCast(new DataSize(10, Unit.MEGABYTE).toBytes()))
+        BufferingResponseListener listener = new BufferingResponseListener(Ints.saturatedCast(maxContentLength))
         {
             @Override
             public void onComplete(Result result)
