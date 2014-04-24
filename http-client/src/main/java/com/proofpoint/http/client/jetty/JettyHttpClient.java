@@ -378,6 +378,16 @@ public class JettyHttpClient
         {
             return inputStream;
         }
+
+        @Override
+        public String toString()
+        {
+            return Objects.toStringHelper(this)
+                    .add("statusCode", getStatusCode())
+                    .add("statusMessage", getStatusMessage())
+                    .add("headers", getHeaders())
+                    .toString();
+        }
     }
 
 
