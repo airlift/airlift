@@ -289,6 +289,7 @@ public class JettyHttpClient
                 jettyRequest.content(new BodyGeneratorContentProvider(bodyGenerator, httpClient.getExecutor()));
             }
         }
+        jettyRequest.followRedirects(finalRequest.isFollowRedirects());
         return jettyRequest;
     }
 
