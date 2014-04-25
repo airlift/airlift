@@ -36,8 +36,13 @@ public class Request
     private final String method;
     private final ListMultimap<String, String> headers;
     private final BodyGenerator bodyGenerator;
+    private final boolean followRedirects;
 
     public Request(URI uri, String method, ListMultimap<String, String> headers, BodyGenerator bodyGenerator)
+    {
+        this(uri, method, headers, bodyGenerator, true);
+    }
+    public Request(URI uri, String method, ListMultimap<String, String> headers, BodyGenerator bodyGenerator, boolean followRedirects)
     {
         checkNotNull(uri, "uri is null");
         checkNotNull(method, "method is null");
@@ -46,6 +51,7 @@ public class Request
         this.method = method;
         this.headers = ImmutableListMultimap.copyOf(headers);
         this.bodyGenerator = bodyGenerator;
+        this.followRedirects = followRedirects;
     }
 
     public static Request.Builder builder()
@@ -82,6 +88,11 @@ public class Request
         return bodyGenerator;
     }
 
+    public boolean isFollowRedirects()
+    {
+        return followRedirects;
+    }
+
     @Override
     public String toString()
     {
@@ -90,6 +101,7 @@ public class Request
                 .add("method", method)
                 .add("headers", headers)
                 .add("bodyGenerator", bodyGenerator)
+                .add("followRedirects", followRedirects)
                 .toString();
     }
 
@@ -103,13 +115,14 @@ public class Request
         return equal(uri, r.uri) &&
                 equal(method, r.method) &&
                 equal(headers, r.headers) &&
-                equal(bodyGenerator, r.bodyGenerator);
+                equal(bodyGenerator, r.bodyGenerator) &&
+                equal(followRedirects, r.followRedirects);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hashCode(uri, method, headers, bodyGenerator);
+        return Objects.hashCode(uri, method, headers, bodyGenerator, followRedirects);
     }
 
     @Beta
@@ -157,6 +170,7 @@ public class Request
         private String method;
         private final ListMultimap<String, String> headers = ArrayListMultimap.create();
         private BodyGenerator bodyGenerator;
+        private boolean followRedirects = true;
 
         public Builder setUri(URI uri)
         {
@@ -189,9 +203,15 @@ public class Request
             return this;
         }
 
+        public Builder setFollowRedirects(boolean followRedirects)
+        {
+            this.followRedirects = followRedirects;
+            return this;
+        }
+
         public Request build()
         {
-            return new Request(uri, method, headers, bodyGenerator);
+            return new Request(uri, method, headers, bodyGenerator, followRedirects);
         }
     }
 
