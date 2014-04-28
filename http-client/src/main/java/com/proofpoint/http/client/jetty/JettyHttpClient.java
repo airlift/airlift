@@ -114,6 +114,10 @@ public class JettyHttpClient
 
         try {
             httpClient.start();
+
+            // remove the GZIP encoding from the client
+            // todo change this when https://bugs.eclipse.org/bugs/show_bug.cgi?id=433690 is resolved
+            httpClient.getContentDecoderFactories().clear();
         }
         catch (Exception e) {
             throw Throwables.propagate(e);
