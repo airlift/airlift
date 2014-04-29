@@ -1,3 +1,8 @@
+Platform 0.96
+
+* Library upgrade
+  - Jetty to 9.1.4
+
 Platform 0.95
 
 * Reporting
