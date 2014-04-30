@@ -13,6 +13,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AbstractFuture;
 import io.airlift.http.client.AsyncHttpClient;
 import io.airlift.http.client.BodyGenerator;
+import io.airlift.http.client.ResponseTooLargeException;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.Request;
@@ -679,7 +680,10 @@ public class JettyHttpClient
         {
             long length = response.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH.asString());
             if (length > maxLength) {
-                response.abort(new IllegalArgumentException("Buffering capacity exceeded"));
+                response.abort(new ResponseTooLargeException());
+            }
+            if (length > buffer.length) {
+                buffer = Arrays.copyOf(buffer, Ints.saturatedCast(length));
             }
         }
 
@@ -690,7 +694,7 @@ public class JettyHttpClient
             int requiredCapacity = size + length;
             if (requiredCapacity > buffer.length) {
                 if (requiredCapacity > maxLength) {
-                    response.abort(new IllegalArgumentException("Buffering capacity exceeded"));
+                    response.abort(new ResponseTooLargeException());
                     return;
                 }
 
