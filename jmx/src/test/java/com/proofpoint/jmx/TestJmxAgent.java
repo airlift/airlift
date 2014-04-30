@@ -11,6 +11,7 @@ import javax.management.remote.JMXServiceURL;
 import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class TestJmxAgent
@@ -21,7 +22,7 @@ public class TestJmxAgent
     {
         HostAndPort address = JmxAgent.getRunningAgentAddress(null, null);
 
-        JmxAgent agent = new JmxAgent(new JmxConfig());
+        JmxAgent agent = new JmxAgent(new JmxConfig().setEnabled(true));
         if (address == null) {
             // if agent wasn't running, it must have been started by the instantiation of JmxAgent
             address = JmxAgent.getRunningAgentAddress(null, null);
@@ -37,5 +38,21 @@ public class TestJmxAgent
 
         MBeanServerConnection connection = connector.getMBeanServerConnection();
         assertTrue(connection.getMBeanCount() > 0);
+    }
+
+    @Test
+    public void testDisabled()
+            throws Exception
+    {
+        HostAndPort address = JmxAgent.getRunningAgentAddress(null, null);
+
+        JmxAgent agent = new JmxAgent(new JmxConfig().setEnabled(false));
+        if (address == null) {
+            // if agent wasn't running, it must not have been started by the instantiation of JmxAgent
+            address = JmxAgent.getRunningAgentAddress(null, null);
+            assertNull(address);
+        }
+
+        assertNull(agent.getUrl(), "agent url");
     }
 }

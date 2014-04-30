@@ -25,6 +25,7 @@ import sun.management.Agent;
 import sun.management.jmxremote.ConnectorBootstrap;
 import sun.rmi.server.UnicastRef;
 
+import javax.annotation.Nullable;
 import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXServiceURL;
 import java.io.IOException;
@@ -51,7 +52,7 @@ public class JmxAgent
         if (address != null) {
             log.info("JMX agent already running and listening on %s", address);
         }
-        else {
+        else if (config.isEnabled()) {
             // otherwise, start it manually
             int registryPort;
             if (config.getRmiRegistryPort() == null) {
@@ -94,9 +95,15 @@ public class JmxAgent
             log.info("JMX agent started and listening on %s", address);
         }
 
-        this.url = new JMXServiceURL(String.format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi", address.getHostText(), address.getPort()));
+        if (config.isEnabled()) {
+            this.url = new JMXServiceURL(String.format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi", address.getHostText(), address.getPort()));
+        }
+        else {
+            this.url = null;
+        }
     }
 
+    @Nullable
     public JMXServiceURL getUrl()
     {
         return url;
