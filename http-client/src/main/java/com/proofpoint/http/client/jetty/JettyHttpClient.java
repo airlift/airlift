@@ -18,6 +18,7 @@ import com.proofpoint.http.client.HttpRequestFilter;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.ResponseHandler;
+import com.proofpoint.http.client.ResponseTooLargeException;
 import com.proofpoint.http.client.StaticBodyGenerator;
 import com.proofpoint.log.Logger;
 import com.proofpoint.units.DataSize;
@@ -679,7 +680,7 @@ public class JettyHttpClient
         {
             long length = response.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH.asString());
             if (length > maxLength) {
-                response.abort(new IllegalArgumentException("Buffering capacity exceeded"));
+                response.abort(new ResponseTooLargeException());
             }
             if (length > buffer.length) {
                 buffer = Arrays.copyOf(buffer, Ints.saturatedCast(length));
@@ -693,7 +694,7 @@ public class JettyHttpClient
             int requiredCapacity = size + length;
             if (requiredCapacity > buffer.length) {
                 if (requiredCapacity > maxLength) {
-                    response.abort(new IllegalArgumentException("Buffering capacity exceeded"));
+                    response.abort(new ResponseTooLargeException());
                     return;
                 }
 
