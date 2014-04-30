@@ -681,6 +681,9 @@ public class JettyHttpClient
             if (length > maxLength) {
                 response.abort(new IllegalArgumentException("Buffering capacity exceeded"));
             }
+            if (length > buffer.length) {
+                buffer = Arrays.copyOf(buffer, Ints.saturatedCast(length));
+            }
         }
 
         @Override
