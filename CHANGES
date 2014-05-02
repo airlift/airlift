@@ -1,5 +1,22 @@
 Platform 0.96
 
+* JMX
+
+  - We no longer announce the "jmx" service to discovery
+
+  - We no longer enable remote JMX by default. Remote JMX may be enabled with
+    the "jmx.enabled" config option.
+
+* HttpClient
+
+  This release fixes a couple of performance issues and bugs in the HttpClient:
+    - The client was inadvertently requesting GZIP responses. We've disabled this
+      behavior since it affects CPU utilization.
+    - We've fixed an issue in the way the response buffers are managed that
+      affects performance due to unnecessary resizing.
+    - The maximum response size was hard-coded instead of using the existing
+      config option.
+
 * Library upgrade
   - Jetty to 9.1.4
 
