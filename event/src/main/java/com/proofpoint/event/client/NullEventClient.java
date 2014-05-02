@@ -17,8 +17,8 @@ package com.proofpoint.event.client;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import java.net.URI;
 import java.util.Arrays;
@@ -27,7 +27,7 @@ public final class NullEventClient implements EventClient
 {
     @Override
     @SafeVarargs
-    public final <T> CheckedFuture<Void, RuntimeException> post(T... events)
+    public final <T> ListenableFuture<Void> post(T... events)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(events, "event is null");
@@ -35,18 +35,18 @@ public final class NullEventClient implements EventClient
     }
 
     @Override
-    public <T> CheckedFuture<Void, RuntimeException> post(Iterable<T> events)
+    public <T> ListenableFuture<Void> post(Iterable<T> events)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(events, "event is null");
         for (T event : events) {
             Preconditions.checkNotNull(event, "event is null");
         }
-        return Futures.immediateCheckedFuture(null);
+        return Futures.immediateFuture(null);
     }
 
     @Override
-    public <T> CheckedFuture<Void, RuntimeException> post(EventGenerator<T> eventGenerator)
+    public <T> ListenableFuture<Void> post(EventGenerator<T> eventGenerator)
             throws IllegalArgumentException
     {
         Preconditions.checkNotNull(eventGenerator, "eventGenerator is null");
@@ -61,8 +61,8 @@ public final class NullEventClient implements EventClient
             });
         }
         catch (Exception e) {
-            return Futures.<Void, RuntimeException>immediateFailedCheckedFuture(new EventSubmissionFailedException("event", "general", ImmutableMap.of(URI.create("null://"), e)));
+            return Futures.immediateFailedFuture(new EventSubmissionFailedException("event", "general", ImmutableMap.of(URI.create("null://"), e)));
         }
-        return Futures.immediateCheckedFuture(null);
+        return Futures.immediateFuture(null);
     }
 }
