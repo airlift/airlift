@@ -1,3 +1,20 @@
+Airlift 0.88
+
+* HttpClient
+
+This release fixes a couple of performance issues and bugs in the HttpClient:
+  - The client was inadvertently requesting GZIP responses. We've disabled this
+    behavior since it affects CPU utilization.
+  - We've fixed an issue in the way the response buffers are managed that
+    affects performance due to unnecessary resizing.
+  - The maximum response size was hard-coded instead of using the existing
+    config option.
+
+* HyperLogLog
+
+We've added an implementation of HyperLogLog for cardinality estimation.
+
+
 Airlift 0.87
 
 * HttpUriBuilder

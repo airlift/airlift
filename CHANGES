@@ -1,3 +1,11 @@
+* 0.88
+
+- Add HyperLogLog
+- [Bug] Max response size in HttpClient was hard-coded
+- Optimize buffer management in HttpClient response handler
+- Remove GZIP handler from HttpClient
+- Fix failing unit tests in Java 8
+
 * 0.87
 
 - Upgrade to Jetty 9.1.3
