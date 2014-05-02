@@ -15,21 +15,16 @@
  */
 package com.proofpoint.event.client;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.google.common.net.MediaType;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
-import com.proofpoint.discovery.client.HttpServiceSelector;
-import com.proofpoint.discovery.client.ServiceType;
 import com.proofpoint.http.client.BodyGenerator;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
-import com.proofpoint.http.client.balancing.ServiceUnavailableException;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.tracetoken.TraceTokenManager;
@@ -42,7 +37,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.http.client.Request.Builder.preparePost;
@@ -52,8 +46,8 @@ public class HttpEventClient
 {
     private static final Logger log = Logger.get(HttpEventClient.class);
     private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
+    private static final EventResponseHandler EVENT_RESPONSE_HANDLER = new EventResponseHandler();
 
-    private final HttpServiceSelector serviceSelector;
     private final JsonEventWriter eventWriter;
     private final HttpClient httpClient;
     private final NodeInfo nodeInfo;
@@ -61,13 +55,11 @@ public class HttpEventClient
 
     @Inject
     public HttpEventClient(
-            @ServiceType("collector") HttpServiceSelector serviceSelector,
             JsonEventWriter eventWriter,
             NodeInfo nodeInfo,
             @ForEventClient HttpClient httpClient,
             TraceTokenManager traceTokenManager)
     {
-        this.serviceSelector = checkNotNull(serviceSelector, "serviceSelector is null");
         this.eventWriter = checkNotNull(eventWriter, "eventWriter is null");
         this.nodeInfo = checkNotNull(nodeInfo, "nodeInfo is null");
         this.httpClient = checkNotNull(httpClient, "httpClient is null");
@@ -113,20 +105,13 @@ public class HttpEventClient
         checkNotNull(eventGenerator, "eventGenerator is null");
         String token = traceTokenManager.getCurrentRequestToken();
 
-        List<URI> uris = serviceSelector.selectHttpService();
-
-        if (uris.isEmpty()) {
-            return Futures.<Void, RuntimeException>immediateFailedCheckedFuture(new ServiceUnavailableException("type=[" + serviceSelector.getType() + "], pool=[" + serviceSelector.getPool() + "]"));
-        }
-
-        // todo this doesn't really work due to returning the future which can fail without being retried
         Request request = preparePost()
-                .setUri(uris.get(0).resolve("/v2/event"))
+                .setUri(URI.create("v2/event"))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
                 .setHeader("Content-Type", MEDIA_TYPE_JSON.toString())
                 .setBodyGenerator(new JsonEntityWriter<>(eventWriter, eventGenerator, token))
                 .build();
-        return httpClient.executeAsync(request, new EventResponseHandler(serviceSelector.getType(), serviceSelector.getPool()));
+        return httpClient.executeAsync(request, EVENT_RESPONSE_HANDLER);
     }
 
     private static class JsonEntityWriter<T>
@@ -152,22 +137,14 @@ public class HttpEventClient
         }
     }
 
-    private static class EventResponseHandler implements ResponseHandler<Void, RuntimeException>
+    private static class EventResponseHandler implements ResponseHandler<Void, Exception>
     {
-        private final String type;
-        private final String pool;
-
-        public EventResponseHandler(String type, String pool)
-        {
-            this.type = checkNotNull(type, "type is null");
-            this.pool = checkNotNull(pool, "pool is null");
-        }
-
         @Override
         public Void handleException(Request request, Exception exception)
+                throws Exception
         {
-            log.debug("Posting event to %s failed", request.getUri());
-            throw new EventSubmissionFailedException(type, pool, ImmutableMap.of(request.getUri(), exception));
+            log.debug(exception, "Posting event to %s failed", request.getUri());
+            throw exception;
         }
 
         @Override

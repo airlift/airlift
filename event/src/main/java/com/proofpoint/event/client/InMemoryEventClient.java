@@ -17,12 +17,10 @@ package com.proofpoint.event.client;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
@@ -69,7 +67,7 @@ public class InMemoryEventClient implements EventClient
             });
         }
         catch (IOException e) {
-            return Futures.immediateFailedFuture(new EventSubmissionFailedException("event", "general", ImmutableMap.of(URI.create("in-memory://"), e)));
+            return Futures.immediateFailedFuture(e);
         }
         return Futures.immediateFuture(null);
     }

@@ -16,11 +16,9 @@
 package com.proofpoint.event.client;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import java.net.URI;
 import java.util.Arrays;
 
 public final class NullEventClient implements EventClient
@@ -61,7 +59,7 @@ public final class NullEventClient implements EventClient
             });
         }
         catch (Exception e) {
-            return Futures.immediateFailedFuture(new EventSubmissionFailedException("event", "general", ImmutableMap.of(URI.create("null://"), e)));
+            return Futures.immediateFailedFuture(e);
         }
         return Futures.immediateFuture(null);
     }

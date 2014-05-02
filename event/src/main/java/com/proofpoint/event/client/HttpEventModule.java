@@ -22,7 +22,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 
 import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
-import static com.proofpoint.http.client.HttpClientBinder.httpClientBinder;
+import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class HttpEventModule implements Module
@@ -34,10 +34,9 @@ public class HttpEventModule implements Module
 
         binder.bind(EventClient.class).to(HttpEventClient.class).in(Scopes.SINGLETON);
         newExporter(binder).export(EventClient.class).withGeneratedName();
-        discoveryBinder(binder).bindHttpSelector("collector");
 
         // bind the http client
-        httpClientBinder(binder).bindAsyncHttpClient("event", ForEventClient.class);
+        discoveryBinder(binder).bindDiscoveredHttpClient("event", serviceType("collector"), ForEventClient.class);
 
         // Kick off the binding of Set<EventTypeMetadata> in case no events are bound
         Multibinder.newSetBinder(binder, new TypeLiteral<EventTypeMetadata<?>>() {});

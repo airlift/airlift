@@ -16,14 +16,18 @@
 package com.proofpoint.event.client;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharStreams;
-import com.proofpoint.discovery.client.HttpServiceSelector;
-import com.proofpoint.discovery.client.testing.StaticHttpServiceSelector;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
+import com.proofpoint.http.client.balancing.BalancingHttpClient;
+import com.proofpoint.http.client.balancing.BalancingHttpClientConfig;
+import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
+import com.proofpoint.http.client.balancing.HttpServiceBalancerStats;
 import com.proofpoint.http.client.balancing.ServiceUnavailableException;
 import com.proofpoint.http.client.jetty.JettyHttpClient;
 import com.proofpoint.node.NodeInfo;
+import com.proofpoint.reporting.testing.TestingReportCollectionFactory;
 import com.proofpoint.tracetoken.TraceTokenManager;
 import com.proofpoint.units.Duration;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -47,7 +51,6 @@ import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -57,7 +60,6 @@ import java.util.concurrent.Future;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.proofpoint.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 import static com.proofpoint.event.client.TestingUtils.getNormalizedJson;
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -69,12 +71,13 @@ public class TestHttpEventClient
     private Server server;
     private URI baseUri;
     private HttpClient httpClient;
+    private HttpServiceBalancerImpl balancer;
 
     @Test(expectedExceptions = ServiceUnavailableException.class, expectedExceptionsMessageRegExp = ".*has no instances.*")
     public void testFutureFailsWhenServiceUnavailable()
             throws ExecutionException, InterruptedException
     {
-        client = newEventClient(Collections.<URI>emptyList());
+        client = newEventClient(ImmutableSet.<URI>of());
 
         try {
             client.post(new FixedDummyEventClass("host", new DateTime(), UUID.randomUUID(), 1, "foo")).get();
@@ -88,7 +91,7 @@ public class TestHttpEventClient
     public void testCallSucceedsWhenServiceUnavailable()
             throws ExecutionException, InterruptedException
     {
-        client = newEventClient(Collections.<URI>emptyList());
+        client = newEventClient(ImmutableSet.<URI>of());
 
         client.post(new FixedDummyEventClass("host", new DateTime(), UUID.randomUUID(), 1, "foo"));
 
@@ -100,7 +103,7 @@ public class TestHttpEventClient
     public void testReceivesEvent()
             throws ExecutionException, InterruptedException, IOException
     {
-        client = newEventClient(asList(baseUri));
+        client = newEventClient(ImmutableSet.of(baseUri));
 
         client.post(TestingUtils.getEvents()).get();
 
@@ -112,7 +115,7 @@ public class TestHttpEventClient
     public void loadTest()
             throws ExecutionException, InterruptedException, IOException
     {
-        client = newEventClient(asList(baseUri));
+        client = newEventClient(ImmutableSet.of(baseUri));
 
         List<Future<Void>> futures = newArrayList();
         for (int i = 0; i < 100; i++) {
@@ -131,8 +134,11 @@ public class TestHttpEventClient
     public void setup()
             throws Exception
     {
-        httpClient = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS)));
+        balancer = new HttpServiceBalancerImpl("test collector balancer", new TestingReportCollectionFactory().createReportCollection(HttpServiceBalancerStats.class));
 
+        httpClient = new BalancingHttpClient(balancer,
+                new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))),
+                new BalancingHttpClientConfig());
         servlet = new DummyServlet();
         server = createServer(servlet);
         server.start();
@@ -149,10 +155,10 @@ public class TestHttpEventClient
         httpClient.close();
     }
 
-    private HttpEventClient newEventClient(List<URI> uris)
+    private HttpEventClient newEventClient(Set<URI> uris)
     {
-        HttpServiceSelector selector = new StaticHttpServiceSelector("collector", "general", uris);
         NodeInfo nodeInfo = new NodeInfo("test");
+        balancer.updateHttpUris(uris);
 
         Set<EventTypeMetadata<?>> eventTypes = getValidEventTypeMetaDataSet(FixedDummyEventClass.class);
         JsonEventWriter eventWriter = new JsonEventWriter(nodeInfo, eventTypes);
@@ -160,7 +166,6 @@ public class TestHttpEventClient
         traceTokenManager.registerRequestToken("sample-trace-token");
 
         return new HttpEventClient(
-                selector,
                 eventWriter,
                 nodeInfo,
                 httpClient,
