@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.configuration.ConfigurationModule.bindConfig;
@@ -51,24 +52,33 @@ public class AsyncHttpClientModule
 {
     private static final Logger log = Logger.get(AsyncHttpClientModule.class);
     protected final String name;
-    protected final Class<? extends Annotation> annotation;
+    protected final Class<? extends Annotation> annotationType;
+    protected final Annotation annotation;
     protected Binder binder;
 
-    protected AsyncHttpClientModule(String name, Class<? extends Annotation> annotation)
+    protected AsyncHttpClientModule(String name, Class<? extends Annotation> annotationType)
     {
         this.name = checkNotNull(name, "name is null");
+        this.annotationType = checkNotNull(annotationType, "annotationType is null");
+        annotation = null;
+    }
+
+    public AsyncHttpClientModule(String name, Annotation annotation)
+    {
+        this.name = checkNotNull(name, "name is null");
+        annotationType = null;
         this.annotation = checkNotNull(annotation, "annotation is null");
     }
 
     public Annotation getFilterQualifier()
     {
-        return filterQualifier(annotation);
+        return firstNonNull(annotation, filterQualifier(annotationType));
     }
 
     void withPrivateIoThreadPool()
     {
-        bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(JettyIoPoolConfig.class);
-        binder.bind(JettyIoPoolManager.class).annotatedWith(annotation).toInstance(new JettyIoPoolManager(name, annotation));
+        bindConfig(binder).annotatedWith(getFilterQualifier()).prefixedWith(name).to(JettyIoPoolConfig.class);
+        binder.bind(JettyIoPoolManager.class).annotatedWith(getFilterQualifier()).toInstance(new JettyIoPoolManager(name, getFilterQualifier()));
     }
 
     @Override
@@ -81,39 +91,69 @@ public class AsyncHttpClientModule
     public void configure()
     {
         // bind the configuration
-        bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(HttpClientConfig.class);
+        bindConfig(binder).annotatedWith(getFilterQualifier()).prefixedWith(name).to(HttpClientConfig.class);
 
         // Shared thread pool
         bindConfig(binder).to(JettyIoPoolConfig.class);
         binder.bind(JettyIoPoolManager.class).to(SharedJettyIoPoolManager.class).in(Scopes.SINGLETON);
 
-        // bind the async client
-        binder.bind(AsyncHttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(name, annotation)).in(Scopes.SINGLETON);
+        if (annotationType != null) {
+            // bind the async client
+            binder.bind(AsyncHttpClient.class).annotatedWith(annotationType).toProvider(new HttpClientProvider(name, getFilterQualifier())).in(Scopes.SINGLETON);
 
-        // bind the a sync client also
-        binder.bind(HttpClient.class).annotatedWith(annotation).to(Key.get(AsyncHttpClient.class, annotation));
+            // bind the a sync client also
+            binder.bind(HttpClient.class).annotatedWith(annotationType).to(Key.get(AsyncHttpClient.class, annotationType));
+
+            // export stats
+            newExporter(binder).export(AsyncHttpClient.class).annotatedWith(annotationType).withGeneratedName();
+        }
+        else {
+            // bind the async client
+            binder.bind(AsyncHttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(name, annotation)).in(Scopes.SINGLETON);
+
+            // bind the a sync client also
+            binder.bind(HttpClient.class).annotatedWith(annotation).to(Key.get(AsyncHttpClient.class, annotation));
+
+            // export stats
+            newExporter(binder).export(AsyncHttpClient.class).annotatedWith(annotation).withGeneratedName();
+        }
 
         // kick off the binding for the filter set
-        newSetBinder(binder, HttpRequestFilter.class, filterQualifier(annotation));
-
-        // export stats
-        newExporter(binder).export(AsyncHttpClient.class).annotatedWith(annotation).withGeneratedName();
+        newSetBinder(binder, HttpRequestFilter.class, getFilterQualifier());
     }
 
     public void addAlias(Class<? extends Annotation> alias)
     {
-        binder.bind(AsyncHttpClient.class).annotatedWith(alias).to(Key.get(AsyncHttpClient.class, annotation));
-        binder.bind(HttpClient.class).annotatedWith(alias).to(Key.get(AsyncHttpClient.class, annotation));
+        if (annotationType != null) {
+            binder.bind(AsyncHttpClient.class).annotatedWith(alias).to(Key.get(AsyncHttpClient.class, annotationType));
+            binder.bind(HttpClient.class).annotatedWith(alias).to(Key.get(AsyncHttpClient.class, annotationType));
+        }
+        else {
+            binder.bind(AsyncHttpClient.class).annotatedWith(alias).to(Key.get(AsyncHttpClient.class, annotation));
+            binder.bind(HttpClient.class).annotatedWith(alias).to(Key.get(AsyncHttpClient.class, annotation));
+        }
+    }
+
+    public void addAlias(Annotation alias)
+    {
+        if (annotationType != null) {
+            binder.bind(AsyncHttpClient.class).annotatedWith(alias).to(Key.get(AsyncHttpClient.class, annotationType));
+            binder.bind(HttpClient.class).annotatedWith(alias).to(Key.get(AsyncHttpClient.class, annotationType));
+        }
+        else {
+            binder.bind(AsyncHttpClient.class).annotatedWith(alias).to(Key.get(AsyncHttpClient.class, annotation));
+            binder.bind(HttpClient.class).annotatedWith(alias).to(Key.get(AsyncHttpClient.class, annotation));
+        }
     }
 
     private static class HttpClientProvider
             implements Provider<AsyncHttpClient>
     {
         private final String name;
-        private final Class<? extends Annotation> annotation;
+        private final Annotation annotation;
         private Injector injector;
 
-        private HttpClientProvider(String name, Class<? extends Annotation> annotation)
+        private HttpClientProvider(String name, Annotation annotation)
         {
             this.name = name;
             this.annotation = annotation;
@@ -161,12 +201,12 @@ public class AsyncHttpClientModule
     {
         private final List<JettyHttpClient> clients = new ArrayList<>();
         private final String name;
-        private final Class<? extends Annotation> annotation;
+        private final Annotation annotation;
         private final AtomicBoolean destroyed = new AtomicBoolean();
         private JettyIoPool pool;
         private Injector injector;
 
-        private JettyIoPoolManager(String name, Class<? extends Annotation> annotation)
+        private JettyIoPoolManager(String name, Annotation annotation)
         {
             this.name = name;
             this.annotation = annotation;
@@ -213,14 +253,14 @@ public class AsyncHttpClientModule
         }
     }
 
-    private static <T> Key<T> keyFromNullable(Class<T> type, Class<? extends Annotation> annotation)
+    private static <T> Key<T> keyFromNullable(Class<T> type, Annotation annotation)
     {
         return (annotation != null) ? Key.get(type, annotation) : Key.get(type);
     }
 
-    private static Key<Set<HttpRequestFilter>> filterKey(Class<? extends Annotation> annotation)
+    private static Key<Set<HttpRequestFilter>> filterKey(Annotation annotation)
     {
-        return Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, filterQualifier(annotation));
+        return Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, annotation);
     }
 
     private static CompositeQualifier filterQualifier(Class<? extends Annotation> annotation)
