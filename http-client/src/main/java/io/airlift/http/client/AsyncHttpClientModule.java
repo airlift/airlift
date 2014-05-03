@@ -18,9 +18,11 @@ package io.airlift.http.client;
 import com.google.common.annotations.Beta;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Binder;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
@@ -37,6 +39,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.configuration.ConfigurationModule.bindConfig;
 import static io.airlift.http.client.CompositeQualifierImpl.compositeQualifier;
@@ -44,16 +47,19 @@ import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 @Beta
 public class AsyncHttpClientModule
-        extends AbstractHttpClientModule
+        implements Module
 {
     private static final Logger log = Logger.get(AsyncHttpClientModule.class);
+    protected final String name;
+    protected final Class<? extends Annotation> annotation;
+    protected Binder binder;
 
     protected AsyncHttpClientModule(String name, Class<? extends Annotation> annotation)
     {
-        super(name, annotation);
+        this.name = checkNotNull(name, "name is null");
+        this.annotation = checkNotNull(annotation, "annotation is null");
     }
 
-    @Override
     public Annotation getFilterQualifier()
     {
         return filterQualifier(annotation);
@@ -66,6 +72,12 @@ public class AsyncHttpClientModule
     }
 
     @Override
+    public final void configure(Binder binder)
+    {
+        this.binder = binder;
+        configure();
+    }
+
     public void configure()
     {
         // bind the configuration
@@ -88,7 +100,6 @@ public class AsyncHttpClientModule
         newExporter(binder).export(AsyncHttpClient.class).annotatedWith(annotation).withGeneratedName();
     }
 
-    @Override
     public void addAlias(Class<? extends Annotation> alias)
     {
         binder.bind(AsyncHttpClient.class).annotatedWith(alias).to(Key.get(AsyncHttpClient.class, annotation));

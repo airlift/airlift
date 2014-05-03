@@ -102,10 +102,10 @@ public class HttpClientBinder
 
     protected abstract static class AbstractHttpClientBindingBuilder<T extends AbstractHttpClientBindingBuilder<T>>
     {
-        protected final AbstractHttpClientModule module;
+        protected final AsyncHttpClientModule module;
         private final Multibinder<HttpRequestFilter> multibinder;
 
-        private AbstractHttpClientBindingBuilder(AbstractHttpClientModule module, Multibinder<HttpRequestFilter> multibinder)
+        private AbstractHttpClientBindingBuilder(AsyncHttpClientModule module, Multibinder<HttpRequestFilter> multibinder)
         {
             this.module = module;
             this.multibinder = multibinder;
