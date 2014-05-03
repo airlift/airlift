@@ -138,19 +138,25 @@ public class DiscoveryBinder
 
     public BalancingHttpClientBindingBuilder bindDiscoveredHttpClient(ServiceType serviceType, Class<? extends Annotation> annotation)
     {
-        bindHttpBalancer(serviceType);
-        return bindDiscoveredHttpClientWithBalancer(serviceType, annotation);
+        return bindDiscoveredHttpClient(serviceType.value(), serviceType, annotation);
     }
 
-    BalancingHttpClientBindingBuilder bindDiscoveredHttpClientWithBalancer(ServiceType serviceType, Class<? extends Annotation> annotation)
+    public BalancingHttpClientBindingBuilder bindDiscoveredHttpClient(String name, ServiceType serviceType, Class<? extends Annotation> annotation)
     {
+        bindHttpBalancer(serviceType);
+        return bindDiscoveredHttpClientWithBalancer(name, serviceType, annotation);
+    }
+
+    BalancingHttpClientBindingBuilder bindDiscoveredHttpClientWithBalancer(String name, ServiceType serviceType, Class<? extends Annotation> annotation)
+    {
+        checkNotNull(name, "name is null");
         checkNotNull(serviceType, "serviceType is null");
         checkNotNull(annotation, "annotation is null");
 
         PrivateBinder privateBinder = binder.newPrivateBinder();
         privateBinder.bind(HttpServiceBalancer.class).annotatedWith(ForBalancingHttpClient.class).to(Key.get(HttpServiceBalancer.class, serviceType));
-        HttpClientBindingBuilder delegateBindingBuilder = httpClientPrivateBinder(privateBinder, binder).bindHttpClient(serviceType.value(), ForBalancingHttpClient.class);
-        bindConfig(privateBinder).prefixedWith(serviceType.value()).to(BalancingHttpClientConfig.class);
+        HttpClientBindingBuilder delegateBindingBuilder = httpClientPrivateBinder(privateBinder, binder).bindHttpClient(name, ForBalancingHttpClient.class);
+        bindConfig(privateBinder).prefixedWith(name).to(BalancingHttpClientConfig.class);
         privateBinder.bind(HttpClient.class).annotatedWith(annotation).to(BalancingHttpClient.class).in(Scopes.SINGLETON);
         privateBinder.expose(HttpClient.class).annotatedWith(annotation);
         reportBinder(binder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
@@ -193,7 +199,7 @@ public class DiscoveryBinder
         private final ServiceAnnouncementBuilder builder;
         private AnnouncementHttpServerInfo httpServerInfo;
 
-        public HttpAnnouncementProvider(ServiceAnnouncementBuilder serviceAnnouncementBuilder)
+        HttpAnnouncementProvider(ServiceAnnouncementBuilder serviceAnnouncementBuilder)
         {
             builder = serviceAnnouncementBuilder;
         }
@@ -249,7 +255,7 @@ public class DiscoveryBinder
         private final Class<? extends Annotation> annotation;
         protected final D delegateBindingBuilder;
 
-        public AbstractBalancingHttpClientBindingBuilder(Binder binder, Class<T> aClass, Class<? extends Annotation> annotation, D delegateBindingBuilder)
+        protected AbstractBalancingHttpClientBindingBuilder(Binder binder, Class<T> aClass, Class<? extends Annotation> annotation, D delegateBindingBuilder)
         {
             this.binder = binder;
             this.aClass = aClass;

@@ -67,7 +67,7 @@ public class DiscoveryModule
         jsonCodecBinder(binder).bindJsonCodec(Announcement.class);
 
         // bind the http client
-        discoveryBinder(binder).bindDiscoveredHttpClientWithBalancer(serviceType("discovery"), ForDiscoveryClient.class);
+        discoveryBinder(binder).bindDiscoveredHttpClientWithBalancer("discovery", serviceType("discovery"), ForDiscoveryClient.class);
 
         // bind announcer
         binder.bind(Announcer.class).in(Scopes.SINGLETON);
