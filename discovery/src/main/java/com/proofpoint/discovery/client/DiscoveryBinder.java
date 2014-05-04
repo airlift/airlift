@@ -30,7 +30,6 @@ import com.proofpoint.discovery.client.announce.ServiceAnnouncement.ServiceAnnou
 import com.proofpoint.discovery.client.balancing.HttpServiceBalancerProvider;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.HttpClient;
-import com.proofpoint.http.client.HttpClientBinder.AbstractHttpClientBindingBuilder;
 import com.proofpoint.http.client.HttpClientBinder.HttpClientAsyncBindingBuilder;
 import com.proofpoint.http.client.HttpClientBinder.HttpClientBindingBuilder;
 import com.proofpoint.http.client.HttpRequestFilter;
@@ -254,15 +253,9 @@ public class DiscoveryBinder
         {
             super(binder, AsyncHttpClient.class, annotation, delegateBindingBuilder);
         }
-
-        public BalancingHttpClientAsyncBindingBuilder withPrivateIoThreadPool()
-        {
-            super.delegateBindingBuilder.withPrivateIoThreadPool();
-            return this;
-        }
     }
 
-    protected abstract static class AbstractBalancingHttpClientBindingBuilder<T, B extends AbstractBalancingHttpClientBindingBuilder<T, B, D>, D extends AbstractHttpClientBindingBuilder<D>>
+    protected abstract static class AbstractBalancingHttpClientBindingBuilder<T, B extends AbstractBalancingHttpClientBindingBuilder<T, B, D>, D extends HttpClientAsyncBindingBuilder>
     {
         private final Binder binder;
         private final Class<T> aClass;
@@ -309,6 +302,13 @@ public class DiscoveryBinder
         public B withTracing()
         {
             delegateBindingBuilder.withTracing();
+            return (B) this;
+        }
+
+        @SuppressWarnings("unchecked")
+        public B withPrivateIoThreadPool()
+        {
+            delegateBindingBuilder.withPrivateIoThreadPool();
             return (B) this;
         }
     }
