@@ -1,8 +1,17 @@
+Platform 0.97
+
+* Events
+
+  - The event client now retries failed requests.
+  - The Future returned from EventClient.post() now fails with
+    UnexpectedResponseException when the collector service returns a failure
+    response code.
+
 Platform 0.96
 
 * JMX
 
-  - We no longer announce the "jmx" service to discovery
+  - We no longer announce the "jmx" service to discovery.
 
   - We no longer enable remote JMX by default. Remote JMX may be enabled with
     the "jmx.enabled" config option.
