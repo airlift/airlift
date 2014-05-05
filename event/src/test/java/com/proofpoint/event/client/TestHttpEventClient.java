@@ -18,8 +18,10 @@ package com.proofpoint.event.client;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharStreams;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
+import com.proofpoint.http.client.UnexpectedResponseException;
 import com.proofpoint.http.client.balancing.BalancingHttpClient;
 import com.proofpoint.http.client.balancing.BalancingHttpClientConfig;
 import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
@@ -60,9 +62,11 @@ import java.util.concurrent.Future;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.proofpoint.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 import static com.proofpoint.event.client.TestingUtils.getNormalizedJson;
+import static com.proofpoint.testing.Assertions.assertInstanceOf;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.fail;
 
 public class TestHttpEventClient
 {
@@ -72,10 +76,11 @@ public class TestHttpEventClient
     private URI baseUri;
     private HttpClient httpClient;
     private HttpServiceBalancerImpl balancer;
+    private int responseCode;
 
     @Test(expectedExceptions = ServiceUnavailableException.class, expectedExceptionsMessageRegExp = ".*has no instances.*")
     public void testFutureFailsWhenServiceUnavailable()
-            throws ExecutionException, InterruptedException
+            throws InterruptedException
     {
         client = newEventClient(ImmutableSet.<URI>of());
 
@@ -89,7 +94,6 @@ public class TestHttpEventClient
 
     @Test
     public void testCallSucceedsWhenServiceUnavailable()
-            throws ExecutionException, InterruptedException
     {
         client = newEventClient(ImmutableSet.<URI>of());
 
@@ -97,6 +101,26 @@ public class TestHttpEventClient
 
         assertNull(servlet.lastPath);
         assertNull(servlet.lastBody);
+    }
+
+    @Test
+    public void testServerFails()
+            throws InterruptedException
+    {
+        responseCode = 503;
+        client = newEventClient(ImmutableSet.of(baseUri));
+
+        ListenableFuture<Void> future = client.post(TestingUtils.getEvents());
+
+        try {
+            future.get();
+            fail("expected exception");
+        }
+        catch (ExecutionException e) {
+            assertInstanceOf(e.getCause(), UnexpectedResponseException.class);
+        }
+
+        assertEquals(servlet.lastPath, "/v2/event");
     }
 
     @Test
@@ -172,7 +196,7 @@ public class TestHttpEventClient
                 traceTokenManager);
     }
 
-    private Server createServer(final DummyServlet servlet)
+    private Server createServer(final HttpServlet servlet)
             throws Exception
     {
         int port;
@@ -202,7 +226,7 @@ public class TestHttpEventClient
         return server;
     }
 
-    private static class DummyServlet
+    private class DummyServlet
             extends HttpServlet
     {
         private volatile String lastPath;
@@ -218,6 +242,9 @@ public class TestHttpEventClient
         {
             lastPath = request.getPathInfo();
             lastBody = CharStreams.toString(new InputStreamReader(request.getInputStream(), "UTF-8"));
+            if (responseCode != 0) {
+                response.sendError(responseCode);
+            }
         }
     }
 }

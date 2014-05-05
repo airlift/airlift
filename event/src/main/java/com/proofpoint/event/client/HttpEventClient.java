@@ -25,6 +25,7 @@ import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
+import com.proofpoint.http.client.UnexpectedResponseException;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.tracetoken.TraceTokenManager;
@@ -40,6 +41,7 @@ import java.util.Arrays;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.http.client.Request.Builder.preparePost;
+import static java.lang.String.format;
 
 public class HttpEventClient
         implements EventClient
@@ -167,7 +169,7 @@ public class HttpEventClient
                         response.getStatusMessage(),
                         bodyError.getMessage());
             }
-            return null;
+            throw new UnexpectedResponseException(format("Posting event to %s failed", request.getUri()), request, response);
         }
     }
 }
