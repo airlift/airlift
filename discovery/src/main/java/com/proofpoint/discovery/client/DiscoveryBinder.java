@@ -123,6 +123,7 @@ public class DiscoveryBinder
      * {@link #bindHttpBalancer(String)} to get a
      * {@link com.proofpoint.http.client.balancing.HttpServiceBalancer}.
      */
+    @SuppressWarnings("deprecation")
     @Deprecated
     public void bindHttpSelector(String type)
     {
@@ -136,6 +137,7 @@ public class DiscoveryBinder
      * {@link #bindHttpBalancer(ServiceType)} to get a
      * {@link com.proofpoint.http.client.balancing.HttpServiceBalancer}.
      */
+    @SuppressWarnings("deprecation")
     @Deprecated
     public void bindHttpSelector(ServiceType serviceType)
     {
@@ -146,18 +148,19 @@ public class DiscoveryBinder
 
     public BalancingHttpClientBindingBuilder bindDiscoveredHttpClient(String type)
     {
-        return bindDiscoveredHttpClient(serviceType(checkNotNull(type, "type is null")));
+        return bindDiscoveredHttpClient(checkNotNull(type, "type is null"), serviceType(type));
     }
 
-    public BalancingHttpClientBindingBuilder bindDiscoveredHttpClient(ServiceType serviceType)
+    public BalancingHttpClientBindingBuilder bindDiscoveredHttpClient(String name, ServiceType serviceType)
     {
+        checkNotNull(name, "name is null");
         checkNotNull(serviceType, "serviceType is null");
 
         bindHttpBalancer(serviceType);
         PrivateBinder privateBinder = binder.newPrivateBinder();
         privateBinder.bind(HttpServiceBalancer.class).annotatedWith(ForBalancingHttpClient.class).to(Key.get(HttpServiceBalancer.class, serviceType));
-        HttpClientBindingBuilder delegateBindingBuilder = httpClientPrivateBinder(privateBinder, binder).bindHttpClient(serviceType.value(), ForBalancingHttpClient.class);
-        bindConfig(privateBinder).prefixedWith(serviceType.value()).to(BalancingHttpClientConfig.class);
+        HttpClientBindingBuilder delegateBindingBuilder = httpClientPrivateBinder(privateBinder, binder).bindHttpClient(name, ForBalancingHttpClient.class);
+        bindConfig(privateBinder).prefixedWith(name).to(BalancingHttpClientConfig.class);
         privateBinder.bind(HttpClient.class).annotatedWith(serviceType).to(BalancingHttpClient.class).in(Scopes.SINGLETON);
         privateBinder.expose(HttpClient.class).annotatedWith(serviceType);
         reportBinder(binder).export(HttpClient.class).annotatedWith(serviceType).withGeneratedName();
@@ -201,6 +204,7 @@ public class DiscoveryBinder
     /**
      * @deprecated Use {@link #bindDiscoveredHttpClient(String, Class)}
      */
+    @SuppressWarnings("deprecation")
     @Deprecated
     public BalancingHttpClientAsyncBindingBuilder bindDiscoveredAsyncHttpClient(String type, Class<? extends Annotation> annotation)
     {
@@ -210,6 +214,7 @@ public class DiscoveryBinder
     /**
      * @deprecated Use {@link #bindDiscoveredHttpClient(ServiceType, Class)}
      */
+    @SuppressWarnings("deprecation")
     @Deprecated
     public BalancingHttpClientAsyncBindingBuilder bindDiscoveredAsyncHttpClient(ServiceType serviceType, Class<? extends Annotation> annotation)
     {
@@ -272,6 +277,7 @@ public class DiscoveryBinder
         }
     }
 
+    @SuppressWarnings("deprecation")
     public static class BalancingHttpClientAsyncBindingBuilder
             extends AbstractBalancingHttpClientBindingBuilder<AsyncHttpClient, BalancingHttpClientAsyncBindingBuilder, HttpClientAsyncBindingBuilder>
     {

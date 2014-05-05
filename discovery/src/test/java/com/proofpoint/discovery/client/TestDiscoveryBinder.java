@@ -19,14 +19,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
-import com.proofpoint.configuration.ConfigurationFactory;
-import com.proofpoint.configuration.ConfigurationModule;
+import com.proofpoint.bootstrap.Bootstrap;
 import com.proofpoint.discovery.client.DiscoveryBinder.BalancingHttpClientBindingBuilder;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
 import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
@@ -35,7 +33,6 @@ import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.HttpRequestFilter;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.balancing.HttpServiceBalancer;
-import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.reporting.ReportingModule;
 import com.proofpoint.tracetoken.TraceTokenModule;
@@ -47,7 +44,6 @@ import javax.inject.Qualifier;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.util.Map;
 import java.util.Set;
 
 import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
@@ -64,8 +60,8 @@ public class TestDiscoveryBinder
     public void testBindAnnouncements()
             throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new TestModule(),
+        Injector injector = createInjector(
+                ImmutableMap.<String, String>of(),
                 new Module()
                 {
                     @Override
@@ -86,8 +82,8 @@ public class TestDiscoveryBinder
     public void testBindAnnouncementProviderClass()
             throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new TestModule(),
+        Injector injector = createInjector(
+                ImmutableMap.<String, String>of(),
                 new Module()
                 {
                     @Override
@@ -108,8 +104,8 @@ public class TestDiscoveryBinder
     public void testBindAnnouncementProviderInstance()
             throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new TestModule(),
+        Injector injector = createInjector(
+                ImmutableMap.<String, String>of(),
                 new Module()
                 {
                     @Override
@@ -130,8 +126,8 @@ public class TestDiscoveryBinder
     public void testBindSelectorString()
             throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new TestModule(),
+        Injector injector = createInjector(
+                ImmutableMap.<String, String>of(),
                 new Module()
                 {
                     @Override
@@ -149,8 +145,8 @@ public class TestDiscoveryBinder
     public void testBindSelectorAnnotation()
             throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new TestModule(),
+        Injector injector = createInjector(
+                ImmutableMap.<String, String>of(),
                 new Module()
                 {
                     @Override
@@ -168,8 +164,8 @@ public class TestDiscoveryBinder
     public void testBindSelectorStringWithPool()
             throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new TestModule(ImmutableMap.of("discovery.apple.pool", "apple-pool")),
+        Injector injector = createInjector(
+                ImmutableMap.of("discovery.apple.pool", "apple-pool"),
                 new Module()
                 {
                     @Override
@@ -187,8 +183,8 @@ public class TestDiscoveryBinder
     public void testBindSelectorAnnotationWithPool()
             throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new TestModule(ImmutableMap.of("discovery.apple.pool", "apple-pool")),
+        Injector injector = createInjector(
+                ImmutableMap.of("discovery.apple.pool", "apple-pool"),
                 new Module()
                 {
                     @Override
@@ -206,8 +202,8 @@ public class TestDiscoveryBinder
     public void testBindHttpServiceBalancerString()
             throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new TestModule(),
+        Injector injector = createInjector(
+                ImmutableMap.<String, String>of(),
                 new Module()
                 {
                     @Override
@@ -225,8 +221,8 @@ public class TestDiscoveryBinder
     public void testBindHttpServiceBalancerAnnotation()
             throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new TestModule(),
+        Injector injector = createInjector(
+                ImmutableMap.<String, String>of(),
                 new Module()
                 {
                     @Override
@@ -244,8 +240,8 @@ public class TestDiscoveryBinder
     public void testBindHttpServiceBalancerStringWithPool()
             throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new TestModule(ImmutableMap.of("discovery.apple.pool", "apple-pool")),
+        Injector injector = createInjector(
+                ImmutableMap.of("discovery.apple.pool", "apple-pool"),
                 new Module()
                 {
                     @Override
@@ -263,8 +259,8 @@ public class TestDiscoveryBinder
     public void testBindHttpServiceBalancerAnnotationWithPool()
             throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new TestModule(ImmutableMap.of("discovery.apple.pool", "apple-pool")),
+        Injector injector = createInjector(
+                ImmutableMap.of("discovery.apple.pool", "apple-pool"),
                 new Module()
                 {
                     @Override
@@ -279,10 +275,15 @@ public class TestDiscoveryBinder
     }
 
     @Test
-    public void testBindHttpClientWithoutDefaultAnnotation()
+    public void testBindHttpClientWithDefaultAnnotation()
+            throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new TestModule(ImmutableMap.of("discovery.foo.pool", "foo-pool")),
+        Injector injector = createInjector(
+                ImmutableMap.of(
+                        "discovery.foo.pool", "foo-pool",
+                        "foo.http-client.read-timeout", "1s",
+                        "foo.http-client.max-attempts", "2"
+                ),
                 new Module()
                 {
                     @Override
@@ -297,10 +298,33 @@ public class TestDiscoveryBinder
     }
 
     @Test
-    public void testBindHttpClientWithoutFilters()
+    public void testBindHttpClientWithNameAndDefaultAnnotation()
+            throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new TestModule(ImmutableMap.of("discovery.foo.pool", "foo-pool")),
+        Injector injector = createInjector(
+                ImmutableMap.of(
+                        "discovery.foo.pool", "foo-pool",
+                        "bar.http-client.read-timeout", "1s",
+                        "bar.http-client.max-attempts", "2"
+                ),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        discoveryBinder(binder).bindDiscoveredHttpClient("bar", serviceType("foo"));
+                    }
+                });
+
+        assertNotNull(injector.getInstance(Key.get(HttpClient.class, serviceType("foo"))));
+    }
+
+    @Test
+    public void testBindHttpClientWithoutFilters()
+            throws Exception
+    {
+        Injector injector = createInjector(
+                ImmutableMap.of("discovery.foo.pool", "foo-pool"),
                 new Module()
                 {
                     @Override
@@ -316,9 +340,10 @@ public class TestDiscoveryBinder
 
     @Test
     public void testBindHttpClientWithAliases()
+            throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new TestModule(ImmutableMap.of("discovery.foo.pool", "foo-pool")),
+        Injector injector = createInjector(
+                ImmutableMap.of("discovery.foo.pool", "foo-pool"),
                 new Module()
                 {
                     @Override
@@ -338,11 +363,13 @@ public class TestDiscoveryBinder
 
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testBindAsyncHttpClientWithAliases()
+            throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new TestModule(ImmutableMap.of("discovery.foo.pool", "foo-pool")),
+        Injector injector = createInjector(
+                ImmutableMap.of("discovery.foo.pool", "foo-pool"),
                 new Module()
                 {
                     @Override
@@ -364,11 +391,12 @@ public class TestDiscoveryBinder
 
     @Test
     public void testBindingMultipleFiltersAndClients()
+            throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new TestModule(ImmutableMap.of(
+        Injector injector = createInjector(
+                ImmutableMap.of(
                         "discovery.foo.pool", "foo-pool",
-                        "discovery.bar.pool", "bar-pool")),
+                        "discovery.bar.pool", "bar-pool"),
                 new Module()
                 {
                     @Override
@@ -382,19 +410,21 @@ public class TestDiscoveryBinder
                         BalancingHttpClientBindingBuilder builder = discoveryBinder(binder).bindDiscoveredHttpClient("bar", BarClient.class);
                         builder.withFilter(TestingRequestFilter.class);
                         builder.addFilterBinding().to(AnotherHttpRequestFilter.class);
+                        binder.install(new TraceTokenModule());
                     }
-                },
-                new TraceTokenModule());
+                });
 
         assertNotNull(injector.getInstance(Key.get(HttpClient.class, FooClient.class)));
         assertNotNull(injector.getInstance(Key.get(HttpClient.class, BarClient.class)));
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testPrivateThreadPool()
+            throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new TestModule(ImmutableMap.of("discovery.foo.pool", "foo-pool")),
+        Injector injector = createInjector(
+                ImmutableMap.of("discovery.foo.pool", "foo-pool"),
                 new Module()
                 {
                     @Override
@@ -418,30 +448,21 @@ public class TestDiscoveryBinder
         Assert.assertEquals(actualServiceSelector.getPool(), expectedPool);
     }
 
-    private static class TestModule implements Module
+    private Injector createInjector(ImmutableMap<String, String> configurationProperties, Module module)
+            throws Exception
     {
-        private Map<String, String> configProperties;
-
-        private TestModule()
-        {
-            configProperties = ImmutableMap.of();
-        }
-
-        private TestModule(Map<String, String> configProperties)
-        {
-            this.configProperties = ImmutableMap.copyOf(configProperties);
-        }
-
-        @Override
-        public void configure(Binder binder)
-        {
-            binder.install(new ApplicationNameModule("test-application"));
-            binder.install(new ConfigurationModule(new ConfigurationFactory(configProperties)));
-            binder.install(new TestingNodeModule());
-            binder.install(new TestingDiscoveryModule());
-            binder.install(new TestingMBeanModule());
-            binder.install(new ReportingModule());
-        }
+        return Bootstrap.bootstrapApplication("test-application")
+                .doNotInitializeLogging()
+                .withModules(
+                        new TestingNodeModule(),
+                        new TestingDiscoveryModule(),
+                        new TestingMBeanModule(),
+                        new ReportingModule(),
+                        module
+                )
+                .quiet()
+                .setRequiredConfigurationProperties(configurationProperties)
+                .initialize();
     }
 
     private static final ServiceAnnouncement ANNOUNCEMENT = ServiceAnnouncement.serviceAnnouncement("apple").addProperty("a", "apple").build();
