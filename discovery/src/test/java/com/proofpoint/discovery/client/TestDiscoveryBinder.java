@@ -279,6 +279,24 @@ public class TestDiscoveryBinder
     }
 
     @Test
+    public void testBindHttpClientWithoutDefaultAnnotation()
+    {
+        Injector injector = Guice.createInjector(
+                new TestModule(ImmutableMap.of("discovery.foo.pool", "foo-pool")),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        discoveryBinder(binder).bindDiscoveredHttpClient("foo");
+                    }
+                }
+        );
+
+        assertNotNull(injector.getInstance(Key.get(HttpClient.class, serviceType("foo"))));
+    }
+
+    @Test
     public void testBindHttpClientWithoutFilters()
     {
         Injector injector = Guice.createInjector(
@@ -392,7 +410,7 @@ public class TestDiscoveryBinder
         assertNotNull(fooClient);
     }
 
-    private void assertCanCreateServiceSelector(Injector injector, String expectedType, String expectedPool)
+    private static void assertCanCreateServiceSelector(Injector injector, String expectedType, String expectedPool)
     {
         ServiceSelector actualServiceSelector = injector.getInstance(Key.get(ServiceSelector.class, serviceType(expectedType)));
         Assert.assertNotNull(actualServiceSelector);
