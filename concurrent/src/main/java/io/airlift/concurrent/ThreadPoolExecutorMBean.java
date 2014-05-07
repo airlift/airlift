@@ -16,7 +16,7 @@ public class ThreadPoolExecutorMBean
 
     public ThreadPoolExecutorMBean(ThreadPoolExecutor threadPoolExecutor)
     {
-        this.threadPoolExecutor = threadPoolExecutor;
+        this.threadPoolExecutor = checkNotNull(threadPoolExecutor, "threadPoolExecutor is null");
     }
 
     @Managed
