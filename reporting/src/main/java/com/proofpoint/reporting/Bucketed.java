@@ -36,7 +36,7 @@ public abstract class Bucketed<T>
 
     protected abstract T createBucket();
 
-    protected synchronized <R> R applyToCurrentBucket(Function<T, R> function)
+    protected final synchronized <R> R applyToCurrentBucket(Function<T, R> function)
     {
         rotateBucketIfNeeded();
         return function.apply(currentBucket);

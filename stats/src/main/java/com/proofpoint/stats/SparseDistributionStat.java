@@ -41,7 +41,7 @@ public class SparseDistributionStat
     }
 
     @Override
-    protected Distribution createBucket()
+    protected final Distribution createBucket()
     {
         return new Distribution();
     }
