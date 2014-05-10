@@ -25,6 +25,7 @@ import javax.annotation.concurrent.GuardedBy;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class SparseTimeStat
@@ -75,23 +76,36 @@ public class SparseTimeStat
     public <T> T time(Callable<T> callable)
             throws Exception
     {
-        try (BlockTimer blockTimer = time()) {
+        try (BlockTimer ignored = time()) {
             return callable.call();
         }
     }
 
     public BlockTimer time() {
-        return new BlockTimer();
+        return new BlockTimer(this);
     }
 
-    public class BlockTimer implements AutoCloseable
+    public static class BlockTimer implements AutoCloseable
     {
-        private final long start = ticker.read();
+        private final long start;
+        private SparseTimeStat sparseTimeStat;
+
+        public BlockTimer(SparseTimeStat sparseTimeStat)
+        {
+            this.sparseTimeStat = sparseTimeStat;
+            start = sparseTimeStat.ticker.read();
+        }
+
+        public void timeTo(SparseTimeStat sparseTimeStat)
+        {
+            checkArgument(sparseTimeStat.ticker == this.sparseTimeStat.ticker, "sparseTimeStat uses the same ticker");
+            this.sparseTimeStat = sparseTimeStat;
+        }
 
         @Override
         public void close()
         {
-            add(ticker.read() - start);
+            sparseTimeStat.add(sparseTimeStat.ticker.read() - start);
         }
     }
 

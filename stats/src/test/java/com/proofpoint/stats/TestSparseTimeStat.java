@@ -158,6 +158,24 @@ public class TestSparseTimeStat
         assertPreviousDistribution(stat, 1, 0.010, 0.010);
     }
 
+    @Test
+    public void testTimeTrySetTimer()
+            throws Exception
+    {
+        SparseTimeStat oldStat = new SparseTimeStat(ticker);
+        SparseTimeStat stat = new SparseTimeStat(ticker);
+        stat.setBucketIdProvider(bucketIdProvider);
+
+        try (BlockTimer timer = oldStat.time()) {
+            ticker.increment(10, TimeUnit.MILLISECONDS);
+            timer.timeTo(stat);
+        }
+
+        ++bucketIdProvider.id;
+        assertPreviousDistribution(stat, 1, 0.010, 0.010);
+        assertPreviousDistribution(oldStat, Double.NaN, Double.NaN, Double.NaN);
+    }
+
     private void assertPreviousDistributionEmpty(SparseTimeStat distribution)
             throws Exception
     {

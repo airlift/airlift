@@ -185,6 +185,24 @@ public class TestTimeStat
         assertEquals(allTime.getMax(), 0.010);
     }
 
+    @Test
+    public void testTimeTrySetTimer()
+            throws Exception
+    {
+        TimeStat oldStat = new TimeStat(ticker);
+        TimeStat stat = new TimeStat(ticker);
+        try (BlockTimer timer = oldStat.time()) {
+            ticker.increment(10, TimeUnit.MILLISECONDS);
+            timer.timeTo(stat);
+        }
+
+        TimeDistribution allTime = stat.getAllTime();
+        assertEquals(allTime.getCount(), 1.0);
+        assertEquals(allTime.getMin(), 0.010);
+        assertEquals(allTime.getMax(), 0.010);
+        assertEquals(oldStat.getAllTime().getCount(), 0.0);
+    }
+
     private static void assertPercentile(String name, double value, List<Long> values, double percentile)
     {
         int index = (int) (values.size() * percentile);

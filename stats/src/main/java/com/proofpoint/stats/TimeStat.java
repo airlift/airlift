@@ -27,6 +27,8 @@ import org.weakref.jmx.Nested;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 public class TimeStat
 {
     private final TimeDistribution oneMinute;
@@ -77,23 +79,36 @@ public class TimeStat
     public <T> T time(Callable<T> callable)
             throws Exception
     {
-        try (BlockTimer blockTimer = time()) {
+        try (BlockTimer ignored = time()) {
             return callable.call();
         }
     }
 
     public BlockTimer time() {
-        return new BlockTimer();
+        return new BlockTimer(this);
     }
 
-    public class BlockTimer implements AutoCloseable
+    public static class BlockTimer implements AutoCloseable
     {
-        private final long start = ticker.read();
+        private final long start;
+        private TimeStat timeStat;
+
+        public BlockTimer(TimeStat timeStat)
+        {
+            this.timeStat = timeStat;
+            start = timeStat.ticker.read();
+        }
+
+        public void timeTo(TimeStat timeStat)
+        {
+            checkArgument(timeStat.ticker == this.timeStat.ticker, "timeStat uses the same ticker");
+            this.timeStat = timeStat;
+        }
 
         @Override
         public void close()
         {
-            add(ticker.read() - start);
+            timeStat.add(timeStat.ticker.read() - start);
         }
     }
 
