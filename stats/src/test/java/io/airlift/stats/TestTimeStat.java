@@ -24,10 +24,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 import static com.google.common.math.DoubleMath.fuzzyEquals;
 import static java.lang.Math.min;
+import static java.util.concurrent.TimeUnit.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -54,7 +54,7 @@ public class TestTimeStat
         }
         Collections.shuffle(values);
         for (Long value : values) {
-            stat.add(value, TimeUnit.MILLISECONDS);
+            stat.add(value, MILLISECONDS);
         }
         Collections.sort(values);
 
@@ -62,14 +62,13 @@ public class TestTimeStat
         assertEquals(allTime.getCount(), (double)values.size());
         assertTrue(fuzzyEquals(allTime.getMax(), values.get(values.size() - 1) * 0.001, 0.000_000_000_1));
         assertEquals(allTime.getMin(), values.get(0) * 0.001);
+        assertEquals(allTime.getUnit(), SECONDS);
 
         assertPercentile("tp50", allTime.getP50(), values, 0.50);
-        assertPercentile("tp50", allTime.getP75(), values, 0.75);
+        assertPercentile("tp75", allTime.getP75(), values, 0.75);
         assertPercentile("tp90", allTime.getP90(), values, 0.90);
         assertPercentile("tp99", allTime.getP99(), values, 0.99);
     }
-
-
 
     @Test
     public void testEmpty()
@@ -94,7 +93,7 @@ public class TestTimeStat
             @Override
             public Void call()
             {
-                ticker.increment(10, TimeUnit.MILLISECONDS);
+                ticker.increment(10, MILLISECONDS);
                 return null;
             }
         });
@@ -111,13 +110,35 @@ public class TestTimeStat
     {
         TimeStat stat = new TimeStat(ticker);
         try (BlockTimer ignored = stat.time()) {
-            ticker.increment(10, TimeUnit.MILLISECONDS);
+            ticker.increment(10, MILLISECONDS);
         }
 
         TimeDistribution allTime = stat.getAllTime();
         assertEquals(allTime.getCount(), 1.0);
         assertEquals(allTime.getMin(), 0.010);
         assertEquals(allTime.getMax(), 0.010);
+    }
+
+    @Test
+    public void testUnit()
+    {
+        TimeStat stat = new TimeStat(ticker, MILLISECONDS);
+        stat.add(1, SECONDS);
+
+        TimeDistribution allTime = stat.getAllTime();
+        assertEquals(allTime.getMin(), 1000.0);
+        assertEquals(allTime.getMax(), 1000.0);
+    }
+
+    @Test
+    public void testUnitOverflow() {
+        TimeStat stat = new TimeStat(ticker, DAYS);
+        stat.add(1, NANOSECONDS);
+        stat.add(Long.MAX_VALUE - 1, NANOSECONDS);
+
+        TimeDistribution allTime = stat.getAllTime();
+        assertBounded("min", allTime.getMin(), -1, 0);
+        assertEquals(allTime.getMax(), Double.NaN);
     }
 
     private static void assertPercentile(String name, double value, List<Long> values, double percentile)
