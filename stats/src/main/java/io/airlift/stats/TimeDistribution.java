@@ -3,13 +3,18 @@ package io.airlift.stats;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import org.weakref.jmx.Managed;
 
 import javax.annotation.concurrent.GuardedBy;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TimeDistribution
 {
@@ -17,15 +22,32 @@ public class TimeDistribution
 
     @GuardedBy("this")
     private final QuantileDigest digest;
+    private final TimeUnit unit;
 
     public TimeDistribution()
     {
+        this(SECONDS);
+    }
+
+    public TimeDistribution(TimeUnit unit)
+    {
+        Preconditions.checkNotNull(unit, "unit is null");
+
         digest = new QuantileDigest(MAX_ERROR);
+        this.unit = unit;
     }
 
     public TimeDistribution(double alpha)
     {
+        this(alpha, SECONDS);
+    }
+
+    public TimeDistribution(double alpha, TimeUnit unit)
+    {
+        Preconditions.checkNotNull(unit, "unit is null");
+
         digest = new QuantileDigest(MAX_ERROR, alpha);
+        this.unit = unit;
     }
 
     public synchronized void add(long value)
@@ -48,43 +70,49 @@ public class TimeDistribution
     @Managed
     public synchronized double getP50()
     {
-        return convertToSeconds(digest.getQuantile(0.5));
+        return convertToUnit(digest.getQuantile(0.5));
     }
 
     @Managed
     public synchronized double getP75()
     {
-        return convertToSeconds(digest.getQuantile(0.75));
+        return convertToUnit(digest.getQuantile(0.75));
     }
 
     @Managed
     public synchronized double getP90()
     {
-        return convertToSeconds(digest.getQuantile(0.90));
+        return convertToUnit(digest.getQuantile(0.90));
     }
 
     @Managed
     public synchronized double getP95()
     {
-        return convertToSeconds(digest.getQuantile(0.95));
+        return convertToUnit(digest.getQuantile(0.95));
     }
 
     @Managed
     public synchronized double getP99()
     {
-        return convertToSeconds(digest.getQuantile(0.99));
+        return convertToUnit(digest.getQuantile(0.99));
     }
 
     @Managed
     public synchronized double getMin()
     {
-        return convertToSeconds(digest.getMin());
+        return convertToUnit(digest.getMin());
     }
 
     @Managed
     public synchronized double getMax()
     {
-        return convertToSeconds(digest.getMax());
+        return convertToUnit(digest.getMax());
+    }
+
+    @Managed
+    public TimeUnit getUnit()
+    {
+        return unit;
     }
 
     @Managed
@@ -102,18 +130,18 @@ public class TimeDistribution
 
         Map<Double, Double> result = new LinkedHashMap<>(values.size());
         for (int i = 0; i < percentiles.size(); ++i) {
-            result.put(percentiles.get(i), convertToSeconds(values.get(i)));
+            result.put(percentiles.get(i), convertToUnit(values.get(i)));
         }
 
         return result;
     }
 
-    private double convertToSeconds(long nanos)
+    private double convertToUnit(long nanos)
     {
         if (nanos == Long.MAX_VALUE || nanos == Long.MIN_VALUE) {
             return Double.NaN;
         }
-        return nanos * 0.000_000_001;
+        return nanos * 1.0 / unit.toNanos(1);
     }
 
     public TimeDistributionSnapshot snapshot()
@@ -127,7 +155,8 @@ public class TimeDistribution
                 getP95(),
                 getP99(),
                 getMin(),
-                getMax());
+                getMax(),
+                getUnit());
     }
 
     public static class TimeDistributionSnapshot
@@ -141,6 +170,7 @@ public class TimeDistribution
         private final double p99;
         private final double min;
         private final double max;
+        private final TimeUnit unit;
 
         @JsonCreator
         public TimeDistributionSnapshot(
@@ -152,7 +182,8 @@ public class TimeDistribution
                 @JsonProperty("p95") double p95,
                 @JsonProperty("p99") double p99,
                 @JsonProperty("min") double min,
-                @JsonProperty("max") double max)
+                @JsonProperty("max") double max,
+                @JsonProperty("unit") TimeUnit unit)
         {
             this.maxError = maxError;
             this.count = count;
@@ -163,6 +194,7 @@ public class TimeDistribution
             this.p99 = p99;
             this.min = min;
             this.max = max;
+            this.unit = unit;
         }
 
         @JsonProperty
@@ -219,6 +251,12 @@ public class TimeDistribution
             return max;
         }
 
+        @JsonProperty
+        public TimeUnit unit()
+        {
+            return unit;
+        }
+
         @Override
         public String toString()
         {
@@ -232,6 +270,7 @@ public class TimeDistribution
                     .add("p99", p99)
                     .add("min", min)
                     .add("max", max)
+                    .add("unit", unit)
                     .toString();
         }
     }
