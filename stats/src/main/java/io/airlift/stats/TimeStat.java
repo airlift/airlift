@@ -37,16 +37,21 @@ public class TimeStat
 
     public TimeStat()
     {
-        this(Ticker.systemTicker());
+        this(Ticker.systemTicker(), TimeUnit.SECONDS);
     }
 
     public TimeStat(Ticker ticker)
     {
+        this(ticker, TimeUnit.SECONDS);
+    }
+
+    public TimeStat(Ticker ticker, TimeUnit unit)
+    {
         this.ticker = ticker;
-        oneMinute = new TimeDistribution(ExponentialDecay.oneMinute());
-        fiveMinutes = new TimeDistribution(ExponentialDecay.fiveMinutes());
-        fifteenMinutes = new TimeDistribution(ExponentialDecay.fifteenMinutes());
-        allTime = new TimeDistribution();
+        oneMinute = new TimeDistribution(ExponentialDecay.oneMinute(), unit);
+        fiveMinutes = new TimeDistribution(ExponentialDecay.fiveMinutes(), unit);
+        fifteenMinutes = new TimeDistribution(ExponentialDecay.fifteenMinutes(), unit);
+        allTime = new TimeDistribution(unit);
     }
 
     public void add(double value, TimeUnit timeUnit)
