@@ -65,7 +65,7 @@ public class TestTimeStat
         assertEquals(allTime.getUnit(), TimeUnit.SECONDS);
 
         assertPercentile("tp50", allTime.getP50(), values, 0.50);
-        assertPercentile("tp50", allTime.getP75(), values, 0.75);
+        assertPercentile("tp75", allTime.getP75(), values, 0.75);
         assertPercentile("tp90", allTime.getP90(), values, 0.90);
         assertPercentile("tp99", allTime.getP99(), values, 0.99);
     }
