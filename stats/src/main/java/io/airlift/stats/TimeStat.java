@@ -81,11 +81,13 @@ public class TimeStat
         return result;
     }
 
-    public BlockTimer time() {
+    public BlockTimer time()
+    {
         return new BlockTimer();
     }
 
-    public class BlockTimer implements AutoCloseable
+    public class BlockTimer
+            implements AutoCloseable
     {
         private final long start = ticker.read();
 

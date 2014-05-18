@@ -32,7 +32,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-
 public class TestTimeStat
 {
     private static final int VALUES = 1000;
@@ -59,7 +58,7 @@ public class TestTimeStat
         Collections.sort(values);
 
         TimeDistribution allTime = stat.getAllTime();
-        assertEquals(allTime.getCount(), (double)values.size());
+        assertEquals(allTime.getCount(), (double) values.size());
         assertTrue(fuzzyEquals(allTime.getMax(), values.get(values.size() - 1) * 0.001, 0.000_000_000_1));
         assertEquals(allTime.getMin(), values.get(0) * 0.001);
         assertEquals(allTime.getUnit(), TimeUnit.SECONDS);
@@ -69,8 +68,6 @@ public class TestTimeStat
         assertPercentile("tp90", allTime.getP90(), values, 0.90);
         assertPercentile("tp99", allTime.getP99(), values, 0.99);
     }
-
-
 
     @Test
     public void testEmpty()
