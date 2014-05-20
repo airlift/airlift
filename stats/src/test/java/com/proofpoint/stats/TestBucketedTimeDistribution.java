@@ -38,9 +38,9 @@ public class TestBucketedTimeDistribution
         ++bucketIdProvider.id;
         distribution.add(2_000_000);
         distribution.add(3_000_000);
-        assertPreviousDistribution(distribution, 1, .001, .001);
+        assertPreviousDistribution(distribution, 1, .001, .001, .001);
         ++bucketIdProvider.id;
-        assertPreviousDistribution(distribution, 2, .002, .003);
+        assertPreviousDistribution(distribution, 2, .002, .003, .005);
     }
 
     @Test
@@ -55,13 +55,13 @@ public class TestBucketedTimeDistribution
         ++bucketIdProvider.id;
         distribution.add(2_000_000);
         distribution.add(3_000_000);
-        assertPreviousDistribution(distribution, 1, .001, .001);
+        assertPreviousDistribution(distribution, 1, .001, .001, .001);
         ++bucketIdProvider.id;
         ++bucketIdProvider.id;
         distribution.add(100_000_000);
         assertPreviousDistributionEmpty(distribution);
         ++bucketIdProvider.id;
-        assertPreviousDistribution(distribution, 1, .1, .1);
+        assertPreviousDistribution(distribution, 1, .1, .1, .1);
         distribution.add(200_000_000);
         ++bucketIdProvider.id;
         ++bucketIdProvider.id;
@@ -71,10 +71,10 @@ public class TestBucketedTimeDistribution
     private void assertPreviousDistributionEmpty(BucketedTimeDistribution distribution)
             throws Exception
     {
-        assertPreviousDistribution(distribution, 0, Double.NaN, Double.NaN);
+        assertPreviousDistribution(distribution, 0, Double.NaN, Double.NaN, 0.0);
     }
 
-    private void assertPreviousDistribution(BucketedTimeDistribution distribution, int expectedCount, double expectedMin, double expectedMax)
+    private void assertPreviousDistribution(BucketedTimeDistribution distribution, int expectedCount, double expectedMin, double expectedMax, double expectedTotal)
             throws Exception
     {
         Method method = Bucketed.class.getDeclaredMethod("getPreviousBucket");
@@ -83,5 +83,6 @@ public class TestBucketedTimeDistribution
         assertEquals(previousBucket.getCount(), (double) expectedCount);
         assertEquals(previousBucket.getMin(), expectedMin);
         assertEquals(previousBucket.getMax(), expectedMax);
+        assertEquals(previousBucket.getTotal(), expectedTotal);
     }
 }

@@ -18,19 +18,25 @@ public class TimeDistribution
     @GuardedBy("this")
     private final QuantileDigest digest;
 
+    @GuardedBy("this")
+    private final DecayCounter total;
+
     public TimeDistribution()
     {
         digest = new QuantileDigest(MAX_ERROR);
+        total = new DecayCounter(0);
     }
 
     public TimeDistribution(double alpha)
     {
         digest = new QuantileDigest(MAX_ERROR, alpha);
+        total = new DecayCounter(alpha);
     }
 
     public synchronized void add(long value)
     {
         digest.add(value);
+        total.add(value);
     }
 
     @Managed
@@ -43,6 +49,11 @@ public class TimeDistribution
     public synchronized double getCount()
     {
         return digest.getCount();
+    }
+
+    @Managed
+    public synchronized double getTotal() {
+        return convertToSeconds((long) total.getCount());
     }
 
     @Managed
@@ -121,6 +132,7 @@ public class TimeDistribution
         return new TimeDistributionSnapshot(
                 getMaxError(),
                 getCount(),
+                getTotal(),
                 getP50(),
                 getP75(),
                 getP90(),
@@ -134,6 +146,7 @@ public class TimeDistribution
     {
         private final double maxError;
         private final double count;
+        private final double total;
         private final double p50;
         private final double p75;
         private final double p90;
@@ -146,6 +159,7 @@ public class TimeDistribution
         public TimeDistributionSnapshot(
                 @JsonProperty("maxError") double maxError,
                 @JsonProperty("count") double count,
+                @JsonProperty("total") double total,
                 @JsonProperty("p50") double p50,
                 @JsonProperty("p75") double p75,
                 @JsonProperty("p90") double p90,
@@ -156,6 +170,7 @@ public class TimeDistribution
         {
             this.maxError = maxError;
             this.count = count;
+            this.total = total;
             this.p50 = p50;
             this.p75 = p75;
             this.p90 = p90;
@@ -175,6 +190,11 @@ public class TimeDistribution
         public double getCount()
         {
             return count;
+        }
+
+        @JsonProperty
+        public double getTotal() {
+            return total;
         }
 
         @JsonProperty
@@ -225,6 +245,7 @@ public class TimeDistribution
             return Objects.toStringHelper(this)
                     .add("maxError", maxError)
                     .add("count", count)
+                    .add("total", total)
                     .add("p50", p50)
                     .add("p75", p75)
                     .add("p90", p90)

@@ -22,6 +22,7 @@ public class Distribution
     @GuardedBy("this")
     private final QuantileDigest digest;
 
+    @GuardedBy("this")
     private final DecayCounter total;
 
     public Distribution()

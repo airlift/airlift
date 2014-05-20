@@ -48,8 +48,10 @@ public class TestTimeStat
     {
         TimeStat stat = new TimeStat();
         List<Long> values = new ArrayList<>(VALUES);
+        long total = 0;
         for (long i = 0; i < VALUES; i++) {
             values.add(i);
+            total += i;
         }
         Collections.shuffle(values);
         for (Long value : values) {
@@ -59,6 +61,7 @@ public class TestTimeStat
 
         TimeDistribution allTime = stat.getAllTime();
         assertEquals(allTime.getCount(), (double)values.size());
+        assertEquals((long)allTime.getTotal(), TimeUnit.MILLISECONDS.toSeconds(total));
         assertTrue(fuzzyEquals(allTime.getMax(), values.get(values.size() - 1) * 0.001, 0.000_000_000_1));
         assertEquals(allTime.getMin(), values.get(0) * 0.001);
 
@@ -73,8 +76,10 @@ public class TestTimeStat
     {
         TimeStat stat = new TimeStat();
         List<Long> values = new ArrayList<>(VALUES);
+        long total = 0;
         for (long i = 0; i < VALUES; i++) {
             values.add(i);
+            total += i;
         }
         Collections.shuffle(values);
         for (Long value : values) {
@@ -84,6 +89,7 @@ public class TestTimeStat
 
         TimeDistribution allTime = stat.getAllTime();
         assertEquals(allTime.getCount(), (double)values.size());
+        assertEquals((long)(allTime.getTotal() * 1000), total);
         assertTrue(fuzzyEquals(allTime.getMax(), values.get(values.size() - 1) * 0.001, 0.000_000_000_1));
         assertEquals(allTime.getMin(), values.get(0) * 0.001);
 
@@ -98,6 +104,8 @@ public class TestTimeStat
     {
         TimeStat stat = new TimeStat();
         TimeDistribution allTime = stat.getAllTime();
+        assertEquals(allTime.getCount(), 0.0);
+        assertEquals(allTime.getTotal(), 0.0);
         assertEquals(allTime.getMin(), Double.NaN);
         assertEquals(allTime.getMax(), Double.NaN);
         assertEquals(allTime.getP50(), Double.NaN);
@@ -123,6 +131,7 @@ public class TestTimeStat
 
         TimeDistribution allTime = stat.getAllTime();
         assertEquals(allTime.getCount(), 1.0);
+        assertEquals(allTime.getTotal(), 0.010);
         assertEquals(allTime.getMin(), 0.010);
         assertEquals(allTime.getMax(), 0.010);
     }
@@ -148,6 +157,7 @@ public class TestTimeStat
 
         TimeDistribution allTime = stat.getAllTime();
         assertEquals(allTime.getCount(), 1.0);
+        assertEquals(allTime.getTotal(), 0.010);
         assertEquals(allTime.getMin(), 0.010);
         assertEquals(allTime.getMax(), 0.010);
     }
@@ -163,6 +173,7 @@ public class TestTimeStat
 
         TimeDistribution allTime = stat.getAllTime();
         assertEquals(allTime.getCount(), 1.0);
+        assertEquals(allTime.getTotal(), 0.010);
         assertEquals(allTime.getMin(), 0.010);
         assertEquals(allTime.getMax(), 0.010);
     }
@@ -181,6 +192,7 @@ public class TestTimeStat
 
         TimeDistribution allTime = stat.getAllTime();
         assertEquals(allTime.getCount(), 1.0);
+        assertEquals(allTime.getTotal(), 0.010);
         assertEquals(allTime.getMin(), 0.010);
         assertEquals(allTime.getMax(), 0.010);
     }
@@ -198,6 +210,7 @@ public class TestTimeStat
 
         TimeDistribution allTime = stat.getAllTime();
         assertEquals(allTime.getCount(), 1.0);
+        assertEquals(allTime.getTotal(), 0.010);
         assertEquals(allTime.getMin(), 0.010);
         assertEquals(allTime.getMax(), 0.010);
         assertEquals(oldStat.getAllTime().getCount(), 0.0);

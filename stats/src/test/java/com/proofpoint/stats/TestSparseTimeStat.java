@@ -48,9 +48,9 @@ public class TestSparseTimeStat
         ++bucketIdProvider.id;
         stat.add(new Duration(2, MILLISECONDS));
         stat.add(3_000_000, NANOSECONDS);
-        assertPreviousDistribution(stat, 1, .001, .001);
+        assertPreviousDistribution(stat, 1, .001, .001, .001);
         ++bucketIdProvider.id;
-        assertPreviousDistribution(stat, 2, .002, .003);
+        assertPreviousDistribution(stat, 2, .002, .003, .005);
     }
 
     @Test
@@ -65,13 +65,13 @@ public class TestSparseTimeStat
         ++bucketIdProvider.id;
         distribution.add(2, MILLISECONDS);
         distribution.add(3, MILLISECONDS);
-        assertPreviousDistribution(distribution, 1, .001, .001);
+        assertPreviousDistribution(distribution, 1, .001, .001, .001);
         ++bucketIdProvider.id;
         ++bucketIdProvider.id;
         distribution.add(0.1, SECONDS);
         assertPreviousDistributionEmpty(distribution);
         ++bucketIdProvider.id;
-        assertPreviousDistribution(distribution, 1, .1, .1);
+        assertPreviousDistribution(distribution, 1, .1, .1, .1);
         distribution.add(0.2, SECONDS);
         ++bucketIdProvider.id;
         ++bucketIdProvider.id;
@@ -96,7 +96,7 @@ public class TestSparseTimeStat
         });
 
         ++bucketIdProvider.id;
-        assertPreviousDistribution(stat, 1, 0.010, 0.010);
+        assertPreviousDistribution(stat, 1, 0.010, 0.010, 0.010);
     }
 
     @Test
@@ -122,7 +122,7 @@ public class TestSparseTimeStat
 
 
         ++bucketIdProvider.id;
-        assertPreviousDistribution(stat, 1, 0.010, 0.010);
+        assertPreviousDistribution(stat, 1, 0.010, 0.010, 0.010);
     }
 
     @Test
@@ -137,7 +137,7 @@ public class TestSparseTimeStat
         }
 
         ++bucketIdProvider.id;
-        assertPreviousDistribution(stat, 1, 0.010, 0.010);
+        assertPreviousDistribution(stat, 1, 0.010, 0.010, 0.010);
     }
 
     @Test
@@ -155,7 +155,7 @@ public class TestSparseTimeStat
         }
 
         ++bucketIdProvider.id;
-        assertPreviousDistribution(stat, 1, 0.010, 0.010);
+        assertPreviousDistribution(stat, 1, 0.010, 0.010, 0.010);
     }
 
     @Test
@@ -172,17 +172,17 @@ public class TestSparseTimeStat
         }
 
         ++bucketIdProvider.id;
-        assertPreviousDistribution(stat, 1, 0.010, 0.010);
-        assertPreviousDistribution(oldStat, Double.NaN, Double.NaN, Double.NaN);
+        assertPreviousDistribution(stat, 1, 0.010, 0.010, 0.010);
+        assertPreviousDistributionEmpty(oldStat);
     }
 
     private void assertPreviousDistributionEmpty(SparseTimeStat distribution)
             throws Exception
     {
-        assertPreviousDistribution(distribution, Double.NaN, Double.NaN, Double.NaN);
+        assertPreviousDistribution(distribution, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
     }
 
-    private void assertPreviousDistribution(SparseTimeStat distribution, double expectedCount, double expectedMin, double expectedMax)
+    private void assertPreviousDistribution(SparseTimeStat distribution, double expectedCount, double expectedMin, double expectedMax, double expectedTotal)
             throws Exception
     {
         Method method = Bucketed.class.getDeclaredMethod("getPreviousBucket");
@@ -191,5 +191,6 @@ public class TestSparseTimeStat
         assertEquals(previousBucket.getCount(), expectedCount);
         assertEquals(previousBucket.getMin(), expectedMin);
         assertEquals(previousBucket.getMax(), expectedMax);
+        assertEquals(previousBucket.getTotal(), expectedTotal);
     }
 }

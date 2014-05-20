@@ -67,6 +67,7 @@ public class SparseTimeStat
             {
                 synchronized (input) {
                     input.digest.add(value);
+                    input.total += value;
                 }
                 return null;
             }
@@ -121,6 +122,9 @@ public class SparseTimeStat
     
         @GuardedBy("this")
         private final QuantileDigest digest;
+
+        @GuardedBy("this")
+        private long total = 0;
     
         public Distribution()
         {
@@ -135,6 +139,14 @@ public class SparseTimeStat
                 return Double.NaN;
             }
             return count;
+        }
+
+        @Reported
+        public synchronized double getTotal() {
+            if (digest.getCount() == 0.0) {
+                return Double.NaN;
+            }
+            return convertToSeconds(total);
         }
     
         @Reported
