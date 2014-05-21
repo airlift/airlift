@@ -69,6 +69,9 @@
         <platform.check.skip-enforcer>${platform.check.skip-basic}</platform.check.skip-enforcer>
         <platform.check.skip-duplicate-finder>${platform.check.skip-basic}</platform.check.skip-duplicate-finder>
 
+        <!-- extended checks -->
+        <platform.check.skip-jacoco>${platform.check.skip-extended}</platform.check.skip-jacoco>
+
         <platform.check.fail-all>true</platform.check.fail-all>
         <platform.check.fail-basic>${platform.check.fail-all}</platform.check.fail-basic>
         <platform.check.fail-extended>${platform.check.fail-all}</platform.check.fail-extended>
@@ -229,8 +232,6 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>2.14</version>
                     <configuration>
-                        <!-- Work around Cobertura incompatibilty with Java 7/8 -->
-                        <argLine>-noverify</argLine>
                         <systemPropertyVariables>
                             <file.encoding>${project.build.sourceEncoding}</file.encoding>
                             <sun.jnu.encoding>${project.build.sourceEncoding}</sun.jnu.encoding>
@@ -342,6 +343,30 @@
                 </plugin>
 
                 <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>0.6.2.201302030002</version>
+                    <executions>
+                        <execution>
+                            <id>default</id>
+                            <goals>
+                                <goal>prepare-agent</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>report</id>
+                            <phase>prepare-package</phase>
+                            <goals>
+                                <goal>report</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <skip>${platform.check.skip-jacoco}</skip>
+                    </configuration>
+                </plugin>
+
+                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-site-plugin</artifactId>
                     <version>3.2</version>
@@ -390,6 +415,11 @@
             <plugin>
                 <groupId>com.ning.maven.plugins</groupId>
                 <artifactId>maven-duplicate-finder-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
@@ -827,6 +857,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
                     </plugin>
+
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
