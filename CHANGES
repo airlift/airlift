@@ -1,3 +1,22 @@
+Platform 0.98
+
+* JaCoCo replaces Cobertura
+
+  We replaced Cobertura with JaCoCo. JaCoCo is now run by default in projects
+  that use library or rest-server-base as a parent POM.
+
+* TimeStat and SparseTimeStat
+
+  - TimeStat and SparseTimeStat now export a Total metric.
+
+  - We added a BlockTimer.timeTo() method for changing the stat object used
+    to record the time.
+
+* BoundedExecutor
+
+  We added BoundedExecutor, which guarantees that no more than maxThreads will
+  be used to execute tasks.
+
 Platform 0.97
 
 * Events
