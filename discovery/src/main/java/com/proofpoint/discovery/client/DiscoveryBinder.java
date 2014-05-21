@@ -118,12 +118,26 @@ public class DiscoveryBinder
         return serviceAnnouncementBuilder;
     }
 
+    /**
+     * @deprecated Use {@link #bindDiscoveredHttpClient(String, Class)} to get a
+     * {@link com.proofpoint.http.client.balancing.BalancingHttpClient} or use
+     * {@link #bindHttpBalancer(String)} to get a
+     * {@link com.proofpoint.http.client.balancing.HttpServiceBalancer}.
+     */
+    @Deprecated
     public void bindHttpSelector(String type)
     {
         checkNotNull(type, "type is null");
         bindHttpSelector(serviceType(type));
     }
 
+    /**
+     * @deprecated Use {@link #bindDiscoveredHttpClient(ServiceType, Class)} to get a
+     * {@link com.proofpoint.http.client.balancing.BalancingHttpClient} or use
+     * {@link #bindHttpBalancer(ServiceType)} to get a
+     * {@link com.proofpoint.http.client.balancing.HttpServiceBalancer}.
+     */
+    @Deprecated
     public void bindHttpSelector(ServiceType serviceType)
     {
         checkNotNull(serviceType, "serviceType is null");

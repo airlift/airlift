@@ -18,6 +18,13 @@ package com.proofpoint.discovery.client;
 import java.net.URI;
 import java.util.List;
 
+/**
+ * @deprecated Use {@link DiscoveryBinder#bindDiscoveredHttpClient(String, Class)} to get a
+ * {@link com.proofpoint.http.client.balancing.BalancingHttpClient} or use
+ * {@link DiscoveryBinder#bindHttpBalancer(String)} to get a
+ * {@link com.proofpoint.http.client.balancing.HttpServiceBalancer}.
+ */
+@Deprecated
 public interface HttpServiceSelector
 {
     String getType();

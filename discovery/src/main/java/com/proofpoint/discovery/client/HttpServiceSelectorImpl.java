@@ -24,6 +24,7 @@ import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 
+@Deprecated
 public class HttpServiceSelectorImpl implements HttpServiceSelector
 {
     private final ServiceSelector serviceSelector;

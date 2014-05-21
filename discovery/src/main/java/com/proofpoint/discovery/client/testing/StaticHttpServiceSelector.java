@@ -25,6 +25,7 @@ import java.util.List;
 
 import static com.proofpoint.discovery.client.ServiceSelectorConfig.DEFAULT_POOL;
 
+@Deprecated
 public class StaticHttpServiceSelector implements HttpServiceSelector
 {
     private static final String UNKNOWN_TYPE = "unknown";
