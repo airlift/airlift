@@ -1,3 +1,15 @@
+Platform 0.99
+
+* HTTPClient
+
+  - We have disabled following HTTP redirects by default. Redirects may be
+    enabled per-request using Request.Builder.setFollowRedirects(true).
+
+* HttpServiceSelector
+
+  HttpServiceSelector is now deprecated. Code using it should be rewritten
+  to use a BalancingHttpClient instead.
+
 Platform 0.98
 
 * JaCoCo replaces Cobertura
