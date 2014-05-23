@@ -40,7 +40,7 @@ public class Request
 
     public Request(URI uri, String method, ListMultimap<String, String> headers, BodyGenerator bodyGenerator)
     {
-        this(uri, method, headers, bodyGenerator, true);
+        this(uri, method, headers, bodyGenerator, false);
     }
     public Request(URI uri, String method, ListMultimap<String, String> headers, BodyGenerator bodyGenerator, boolean followRedirects)
     {
@@ -159,6 +159,7 @@ public class Request
             requestBuilder.setMethod(request.getMethod());
             requestBuilder.setBodyGenerator(request.getBodyGenerator());
             requestBuilder.setUri(request.getUri());
+            requestBuilder.setFollowRedirects(request.isFollowRedirects());
 
             for (Entry<String, String> entry : request.getHeaders().entries()) {
                 requestBuilder.addHeader(entry.getKey(), entry.getValue());
@@ -170,7 +171,7 @@ public class Request
         private String method;
         private final ListMultimap<String, String> headers = ArrayListMultimap.create();
         private BodyGenerator bodyGenerator;
-        private boolean followRedirects = true;
+        private boolean followRedirects = false;
 
         public Builder setUri(URI uri)
         {

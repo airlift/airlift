@@ -58,7 +58,6 @@ import static com.proofpoint.units.Duration.nanosSince;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.fail;
 
 public abstract class AbstractHttpClientTest
@@ -467,6 +466,75 @@ public abstract class AbstractHttpClientTest
         Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
         Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
         Assert.assertEquals(servlet.requestBytes, new byte[] {1, 2, 5});
+    }
+
+    @Test
+    public void testNoFollowRedirect()
+            throws Exception
+    {
+        servlet.responseStatusCode = 302;
+        servlet.responseBody = "body text";
+        servlet.responseHeaders.put("Location", "http://127.0.0.1:1");
+
+        Request request = prepareGet()
+                .setUri(baseURI)
+                .build();
+
+        int statusCode = executeRequest(request, new ResponseStatusCodeHandler());
+        Assert.assertEquals(statusCode, 302);
+    }
+
+    @Test
+    public void testFollowRedirect()
+            throws Exception
+    {
+        EchoServlet destinationServlet = new EchoServlet();
+
+        int port;
+        try (ServerSocket socket = new ServerSocket()) {
+            socket.bind(new InetSocketAddress(0));
+            port = socket.getLocalPort();
+        }
+
+        Server server = new Server();
+
+        HttpConfiguration httpConfiguration = new HttpConfiguration();
+        httpConfiguration.setSendServerVersion(false);
+        httpConfiguration.setSendXPoweredBy(false);
+
+        ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfiguration));
+
+        connector.setIdleTimeout(30000);
+        connector.setName("http");
+        connector.setPort(port);
+
+        server.addConnector(connector);
+
+        ServletHolder servletHolder = new ServletHolder(destinationServlet);
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
+        context.addServlet(servletHolder, "/redirect");
+        HandlerCollection handlers = new HandlerCollection();
+        handlers.addHandler(context);
+        server.setHandler(handlers);
+
+        try {
+            server.start();
+
+            servlet.responseStatusCode = 302;
+            servlet.responseBody = "body text";
+            servlet.responseHeaders.put("Location", format("http://127.0.0.1:%d/redirect", port));
+
+            Request request = prepareGet()
+                    .setUri(baseURI)
+                    .setFollowRedirects(true)
+                    .build();
+
+            int statusCode = executeRequest(request, new ResponseStatusCodeHandler());
+            Assert.assertEquals(statusCode, 200);
+        }
+        finally {
+            server.stop();
+        }
     }
 
     @Test(expectedExceptions = {SocketTimeoutException.class, TimeoutException.class, ClosedChannelException.class})
@@ -920,7 +988,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    private class DefaultOnExceptionResponseHandler
+    private static class DefaultOnExceptionResponseHandler
             implements ResponseHandler<Object, RuntimeException>
     {
 

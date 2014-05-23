@@ -22,8 +22,12 @@ import java.net.URI;
 
 import static com.proofpoint.http.client.Request.Builder.fromRequest;
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
+import static com.proofpoint.http.client.Request.Builder.preparePut;
 import static com.proofpoint.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 public class TestRequestBuilder
 {
@@ -38,6 +42,7 @@ public class TestRequestBuilder
         assertEquals(request.getUri(), URI.create("http://example.com"));
         assertEquals(request.getHeaders(), ImmutableListMultimap.of(
                 "newheader", "withvalue", "anotherheader", "anothervalue"));
+        assertTrue(request.isFollowRedirects());
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Cannot make requests to HTTP port 0")
@@ -54,6 +59,19 @@ public class TestRequestBuilder
         assertEquals(fromRequest(request).build(), request);
     }
 
+    @Test
+    public void testDefaults()
+    {
+        Request request = preparePut()
+                .setUri(URI.create("http://example.com"))
+                .build();
+        assertEquals(request.getMethod(), "PUT");
+        assertNull(request.getBodyGenerator());
+        assertEquals(request.getUri(), URI.create("http://example.com"));
+        assertEquals(request.getHeaders(), ImmutableListMultimap.<String, String>of());
+        assertFalse(request.isFollowRedirects());
+    }
+
     private Request createRequest()
     {
         return prepareGet()
@@ -61,6 +79,7 @@ public class TestRequestBuilder
                     .addHeader("newheader", "withvalue")
                     .addHeader("anotherheader", "anothervalue")
                     .setBodyGenerator(NULL_BODY_GENERATOR)
+                    .setFollowRedirects(true)
                     .build();
     }
 }

@@ -32,10 +32,10 @@ public class TestRequest
         EquivalenceTester.<Request>equivalenceTester()
                 .addEquivalentGroup(
                         new Request(createUri1(), "GET", createHeaders1(), null),
-                        new Request(createUri1(), "GET", createHeaders1(), null))
+                        new Request(createUri1(), "GET", createHeaders1(), null, false))
                 .addEquivalentGroup(
                         new Request(createUri1(), "GET", createHeaders1(), bodyGenerator),
-                        new Request(createUri1(), "GET", createHeaders1(), bodyGenerator))
+                        new Request(createUri1(), "GET", createHeaders1(), bodyGenerator, false))
                 .addEquivalentGroup(
                         new Request(createUri1(), "GET", createHeaders2(), bodyGenerator))
                 .addEquivalentGroup(
@@ -54,6 +54,10 @@ public class TestRequest
                         new Request(createUri1(), "GET", createHeaders1(), createBodyGenerator()))
                 .addEquivalentGroup(
                         new Request(createUri1(), "PUT", createHeaders1(), createBodyGenerator()))
+                .addEquivalentGroup(
+                        new Request(createUri1(), "GET", createHeaders1(), null, true),
+                        new Request(createUri1(), "GET", createHeaders1(), null, true)
+                )
                 .check();
     }
 
