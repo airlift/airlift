@@ -28,6 +28,7 @@ import sun.rmi.server.UnicastRef;
 import javax.annotation.Nullable;
 import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXServiceURL;
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.MalformedURLException;
@@ -112,40 +113,45 @@ public class JmxAgent
     @VisibleForTesting
     static HostAndPort getRunningAgentAddress(Integer registryPort, Integer serverPort)
     {
+        JMXConnectorServer jmxServer;
+        RemoteObject registry;
+        int actualRegistryPort;
         try {
-            JMXConnectorServer jmxServer = getField(Agent.class, JMXConnectorServer.class, "jmxServer");
-            RemoteObject registry = getField(ConnectorBootstrap.class, RemoteObject.class, "registry");
+            jmxServer = getField(Agent.class, JMXConnectorServer.class, "jmxServer");
+            registry = getField(ConnectorBootstrap.class, RemoteObject.class, "registry");
 
-            if (jmxServer != null && registry != null) {
-                int actualRegistryPort = ((UnicastRef) registry.getRef()).getLiveRef().getPort();
-
-                checkState(actualRegistryPort > 0, "Expected actual RMI registry port to be > 0, actual: %s", actualRegistryPort);
-
-                // if registry port and server port were configured and the agent is already running, make sure
-                // the configuration agrees to avoid surprises
-                if (registryPort != null && registryPort != 0) {
-                    checkArgument(actualRegistryPort == registryPort,
-                            "JMX agent is already running, but actual RMI registry port (%s) doesn't match configured port (%s)",
-                            actualRegistryPort,
-                            registryPort);
-                }
-
-                if (serverPort != null && serverPort != 0) {
-                    int actualServerPort = jmxServer.getAddress().getPort();
-                    checkArgument(actualServerPort == serverPort,
-                            "JMX agent is already running, but actual RMI server port (%s) doesn't match configured port (%s)",
-                            actualServerPort,
-                            serverPort);
-                }
-
-                return HostAndPort.fromParts(jmxServer.getAddress().getHost(), actualRegistryPort);
+            if (jmxServer == null || registry == null) {
+                log.warn("Cannot determine if JMX agent is already running (not an Oracle JVM?). Will try to start it manually.");
+                return null;
             }
+
+            actualRegistryPort = ((UnicastRef) registry.getRef()).getLiveRef().getPort();
         }
         catch (Exception e) {
             log.warn(e, "Cannot determine if JMX agent is already running. Will try to start it manually.");
+            return null;
         }
 
-        return null;
+        checkState(actualRegistryPort > 0, "Expected actual RMI registry port to be > 0, actual: %s", actualRegistryPort);
+
+        // if registry port and server port were configured and the agent is already running, make sure
+        // the configuration agrees to avoid surprises
+        if (registryPort != null && registryPort != 0) {
+            checkArgument(actualRegistryPort == registryPort,
+                    "JMX agent is already running, but actual RMI registry port (%s) doesn't match configured port (%s)",
+                    actualRegistryPort,
+                    registryPort);
+        }
+
+        if (serverPort != null && serverPort != 0) {
+            int actualServerPort = jmxServer.getAddress().getPort();
+            checkArgument(actualServerPort == serverPort,
+                    "JMX agent is already running, but actual RMI server port (%s) doesn't match configured port (%s)",
+                    actualServerPort,
+                    serverPort);
+        }
+
+        return HostAndPort.fromParts(jmxServer.getAddress().getHost(), actualRegistryPort);
     }
 
     private static <T> T getField(Class<?> clazz, Class<T> returnType, String name)
