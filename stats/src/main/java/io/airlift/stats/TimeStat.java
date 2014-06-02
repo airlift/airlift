@@ -45,6 +45,11 @@ public class TimeStat
         this(ticker, TimeUnit.SECONDS);
     }
 
+    public TimeStat(TimeUnit unit)
+    {
+        this(Ticker.systemTicker(), unit);
+    }
+
     public TimeStat(Ticker ticker, TimeUnit unit)
     {
         this.ticker = ticker;
