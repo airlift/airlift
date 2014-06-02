@@ -15,61 +15,22 @@
  */
 package com.proofpoint.event.client;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
-import static com.google.common.collect.Lists.newArrayList;
-
-public class InMemoryEventClient implements EventClient
+public class InMemoryEventClient
+        extends AbstractEventClient
 {
-    private final List<Object> events = newArrayList();
+    private final List<Object> events = new ArrayList<>();
 
     @Override
-    @SafeVarargs
-    public final <T> ListenableFuture<Void> post(T... events)
-            throws IllegalArgumentException
+    protected <T> void postEvent(T event)
+            throws IOException
     {
-        return post(Arrays.asList(events));
-    }
-
-    @Override
-    public <T> ListenableFuture<Void> post(Iterable<T> events)
-            throws IllegalArgumentException
-    {
-        Preconditions.checkNotNull(events, "event is null");
-        for (T event : events) {
-            Preconditions.checkNotNull(event, "event is null");
-            this.events.add(event);
-        }
-        return Futures.immediateFuture(null);
-    }
-
-    @Override
-    public <T> ListenableFuture<Void> post(EventGenerator<T> eventGenerator)
-            throws IllegalArgumentException
-    {
-        Preconditions.checkNotNull(eventGenerator, "eventGenerator is null");
-        try {
-            eventGenerator.generate(new EventPoster<T>()
-            {
-                @Override
-                public void post(T event)
-                {
-                    Preconditions.checkNotNull(event, "event is null");
-                    InMemoryEventClient.this.events.add(event);
-                }
-            });
-        }
-        catch (IOException e) {
-            return Futures.immediateFailedFuture(e);
-        }
-        return Futures.immediateFuture(null);
+        events.add(event);
     }
 
     public List<Object> getEvents()
