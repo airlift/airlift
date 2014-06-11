@@ -1,3 +1,7 @@
+* 0.90
+
+- Add AbstractEventClient
+
 * 0.89
 
 - [Bug] Fix inadvertent masking of errors when detecting jmx agent
