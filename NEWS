@@ -1,3 +1,13 @@
+Airlift 0.89
+
+* BoundedExecutor
+
+BoundedExecutor is a light-weight executor decorator that guarantees that no more
+than a certain number of threads will run tasks submitted through it. Multiple
+BoundedExecutors that delegate to the same underlying executor will a fair share
+of the threads proportional to the configured limit.
+
+
 Airlift 0.88
 
 * HttpClient

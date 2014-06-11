@@ -1,3 +1,9 @@
+* 0.89
+
+- [Bug] Fix inadvertent masking of errors when detecting jmx agent
+- Allow TimeStat unit to be specified at instantiation
+- Add BoundedExecutor
+
 * 0.88
 
 - Add HyperLogLog
