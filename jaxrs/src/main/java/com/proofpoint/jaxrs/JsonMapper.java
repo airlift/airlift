@@ -95,11 +95,13 @@ class JsonMapper
         this.queryStringFilter = queryStringFilter;
     }
 
+    @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType)
     {
         return canReadOrWrite(type);
     }
 
+    @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType)
     {
         return canReadOrWrite(type);
@@ -119,6 +121,7 @@ class JsonMapper
         return true;
     }
 
+    @Override
     public Object readFrom(Class<Object> type,
             Type genericType,
             Annotation[] annotations,
@@ -169,6 +172,7 @@ class JsonMapper
         return object;
     }
 
+    @Override
     public long getSize(Object value, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType)
     {
         // In general figuring output size requires actual writing; usually not
@@ -176,6 +180,7 @@ class JsonMapper
         return -1;
     }
 
+    @Override
     public void writeTo(Object value,
             Class<?> type,
             Type genericType,

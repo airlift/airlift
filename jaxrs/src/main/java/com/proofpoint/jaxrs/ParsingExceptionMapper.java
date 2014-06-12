@@ -25,6 +25,7 @@ import javax.ws.rs.ext.Provider;
 @Provider
 public class ParsingExceptionMapper implements ExceptionMapper<ParsingException>
 {
+    @Override
     public Response toResponse(ParsingException e)
     {
         return Response.status(Response.Status.BAD_REQUEST)
