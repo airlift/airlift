@@ -26,7 +26,6 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.util.JSONPObject;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HttpHeaders;
 import com.google.inject.Inject;
@@ -54,8 +53,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 // This code is based on JacksonJsonProvider
@@ -96,11 +93,13 @@ class JsonMapper
         this.webApplication = webApplication;
     }
 
+    @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType)
     {
         return canReadOrWrite(type);
     }
 
+    @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType)
     {
         return canReadOrWrite(type);
@@ -120,6 +119,7 @@ class JsonMapper
         return true;
     }
 
+    @Override
     public Object readFrom(Class<Object> type,
             Type genericType,
             Annotation[] annotations,
@@ -161,6 +161,7 @@ class JsonMapper
         return object;
     }
 
+    @Override
     public long getSize(Object value, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType)
     {
         // In general figuring output size requires actual writing; usually not
@@ -168,6 +169,7 @@ class JsonMapper
         return -1;
     }
 
+    @Override
     public void writeTo(Object value,
             Class<?> type,
             Type genericType,
@@ -271,16 +273,6 @@ class JsonMapper
             return null;
         }
         return queryParameters.getFirst("jsonp");
-    }
-
-    private static List<String> messagesFor(Collection<? extends ConstraintViolation<?>> violations)
-    {
-        ImmutableList.Builder<String> messages = new ImmutableList.Builder<String>();
-        for (ConstraintViolation<?> violation : violations) {
-            messages.add(violation.getPropertyPath().toString() + " " + violation.getMessage());
-        }
-
-        return messages.build();
     }
 
     private static class HTMLCharacterEscapes

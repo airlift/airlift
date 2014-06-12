@@ -43,6 +43,7 @@ public class OverrideMethodFilter
      */
     public static final String METHOD_PARAM = "_method";
 
+    @Override
     public ContainerRequest filter(ContainerRequest request)
     {
         String method = request.getRequestHeaders().getFirst(HEADER);

@@ -51,7 +51,7 @@ public class JaxrsModule
     @TheServlet
     public Map<String, String> createTheServletParams()
     {
-        Map<String, String> initParams = new HashMap<String, String>();
+        Map<String, String> initParams = new HashMap<>();
         initParams.put("com.sun.jersey.spi.container.ContainerRequestFilters", OverrideMethodFilter.class.getName());
 
         return initParams;
