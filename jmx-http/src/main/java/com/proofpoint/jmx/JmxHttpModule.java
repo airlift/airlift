@@ -34,7 +34,6 @@ import com.google.inject.Binder;
 import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.Provider;
-import com.google.inject.Scopes;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement.ServiceAnnouncementBuilder;
 import com.proofpoint.http.server.HttpServerInfo;
@@ -55,6 +54,7 @@ import java.util.Set;
 
 import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
 import static com.proofpoint.discovery.client.announce.ServiceAnnouncement.serviceAnnouncement;
+import static com.proofpoint.jaxrs.JaxrsBinder.jaxrsBinder;
 import static com.proofpoint.json.JsonBinder.jsonBinder;
 
 @Beta
@@ -65,7 +65,7 @@ public class JmxHttpModule implements Module
     {
         binder.disableCircularProxies();
 
-        binder.bind(MBeanResource.class).in(Scopes.SINGLETON);
+        jaxrsBinder(binder).bind(MBeanResource.class);
         jsonBinder(binder).addSerializerBinding(InetAddress.class).toInstance(ToStringSerializer.instance);
         jsonBinder(binder).addSerializerBinding(ObjectName.class).toInstance(ToStringSerializer.instance);
         jsonBinder(binder).addSerializerBinding(OpenType.class).toInstance(ToStringSerializer.instance);

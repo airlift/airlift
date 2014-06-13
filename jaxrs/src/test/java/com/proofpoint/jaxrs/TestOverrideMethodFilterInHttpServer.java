@@ -39,6 +39,8 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static com.proofpoint.jaxrs.JaxrsBinder.jaxrsBinder;
+import static com.proofpoint.jaxrs.JaxrsModule.explicitJaxrsModule;
 import static java.lang.String.format;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
@@ -218,7 +220,7 @@ public class TestOverrideMethodFilterInHttpServer
         return Guice.createInjector(
                 new ApplicationNameModule("test-application"),
                 new TestingNodeModule(),
-                new JaxrsModule(),
+                explicitJaxrsModule(),
                 new JsonModule(),
                 new ReportingModule(),
                 new Module()
@@ -235,7 +237,7 @@ public class TestOverrideMethodFilterInHttpServer
                     @Override
                     public void configure(Binder binder)
                     {
-                        binder.bind(TestResource.class).toInstance(resource);
+                        jaxrsBinder(binder).bindInstance(resource);
                     }
                 }).getInstance(TestingHttpServer.class);
     }

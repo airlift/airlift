@@ -17,14 +17,13 @@ package com.proofpoint.platform.sample;
 
 import com.google.inject.Injector;
 import com.proofpoint.bootstrap.Bootstrap;
-import com.proofpoint.discovery.client.announce.Announcer;
 import com.proofpoint.discovery.client.DiscoveryModule;
+import com.proofpoint.discovery.client.announce.Announcer;
 import com.proofpoint.event.client.HttpEventModule;
-import com.proofpoint.jmx.JmxHttpModule;
-import com.proofpoint.json.JsonModule;
 import com.proofpoint.http.server.HttpServerModule;
-import com.proofpoint.jaxrs.JaxrsModule;
+import com.proofpoint.jmx.JmxHttpModule;
 import com.proofpoint.jmx.JmxModule;
+import com.proofpoint.json.JsonModule;
 import com.proofpoint.log.LogJmxModule;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeModule;
@@ -34,6 +33,7 @@ import com.proofpoint.tracetoken.TraceTokenModule;
 import org.weakref.jmx.guice.MBeanModule;
 
 import static com.proofpoint.bootstrap.Bootstrap.bootstrapApplication;
+import static com.proofpoint.jaxrs.JaxrsModule.explicitJaxrsModule;
 
 public class Main
 {
@@ -49,7 +49,7 @@ public class Main
                             new DiscoveryModule(),
                             new HttpServerModule(),
                             new JsonModule(),
-                            new JaxrsModule(),
+                            explicitJaxrsModule(),
                             new MBeanModule(),
                             new JmxModule(),
                             new JmxHttpModule(),

@@ -30,7 +30,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HttpHeaders;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
-import com.proofpoint.http.server.QueryStringFilter;
 import com.proofpoint.log.Logger;
 import org.apache.bval.jsr303.ApacheValidationProvider;
 
@@ -40,9 +39,11 @@ import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
@@ -55,14 +56,13 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import static com.sun.jersey.api.uri.UriComponent.decodeQuery;
+import java.util.concurrent.atomic.AtomicReference;
 
 // This code is based on JacksonJsonProvider
 @Provider
 @Consumes({MediaType.APPLICATION_JSON, "text/json"})
 @Produces({MediaType.APPLICATION_JSON, "text/json"})
-class JsonMapper
+public class JsonMapper
         implements MessageBodyReader<Object>, MessageBodyWriter<Object>
 {
     private static final Validator VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
@@ -86,13 +86,24 @@ class JsonMapper
     public static final Logger log = Logger.get(JsonMapper.class);
 
     private final ObjectMapper objectMapper;
-    private final QueryStringFilter queryStringFilter;
+
+    private final AtomicReference<UriInfo> uriInfo = new AtomicReference<>();
 
     @Inject
-    public JsonMapper(ObjectMapper objectMapper, QueryStringFilter queryStringFilter)
+    public JsonMapper(ObjectMapper objectMapper)
     {
         this.objectMapper = objectMapper;
-        this.queryStringFilter = queryStringFilter;
+    }
+
+    @Context
+    public void setUriInfo(UriInfo uriInfo)
+    {
+        this.uriInfo.set(uriInfo);
+    }
+
+    private UriInfo getUriInfo()
+    {
+        return this.uriInfo.get();
     }
 
     @Override
@@ -245,14 +256,12 @@ class JsonMapper
 
     private boolean isPrettyPrintRequested()
     {
-        if (queryStringFilter == null) {
+        UriInfo uriInfo = getUriInfo();
+        if (uriInfo == null) {
             return false;
         }
-        String queryString = queryStringFilter.getQueryString();
-        if (queryString == null) {
-            return false;
-        }
-        MultivaluedMap<String, String> queryParameters = decodeQuery(queryString, false);
+
+        MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
         return queryParameters.containsKey("pretty");
     }
 

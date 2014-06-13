@@ -64,7 +64,7 @@ public class TestJsonMapper
             throws IOException
     {
         JsonCodec<String> jsonCodec = JsonCodec.jsonCodec(String.class);
-        JsonMapper jsonMapper = new JsonMapper(new ObjectMapper(), null);
+        JsonMapper jsonMapper = new JsonMapper(new ObjectMapper());
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         MultivaluedMap<String, Object> headers = GuavaMultivaluedMap.create();
@@ -85,7 +85,7 @@ public class TestJsonMapper
             throws IOException
     {
         try {
-            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper(), null);
+            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper());
             jsonMapper.readFrom(Object.class, Object.class, null, null, null, new InputStream()
             {
                 @Override
@@ -121,7 +121,7 @@ public class TestJsonMapper
             throws IOException
     {
         try {
-            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper(), null);
+            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper());
             jsonMapper.readFrom(Object.class, Object.class, null, null, null, new InputStream()
             {
                 @Override
@@ -157,7 +157,7 @@ public class TestJsonMapper
             throws IOException
     {
         try {
-            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper(), null);
+            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper());
             jsonMapper.readFrom(Object.class, Object.class, null, null, null, new InputStream()
             {
                 @Override
@@ -192,7 +192,7 @@ public class TestJsonMapper
     public void testBeanValidationThrowsBeanValidationException() throws IOException
     {
         try {
-            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper(), null);
+            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper());
             InputStream is = new ByteArrayInputStream("{}".getBytes());
             jsonMapper.readFrom(Object.class, JsonClass.class, null, null, null, is);
             fail("Should have thrown an BeanValidationException");
@@ -209,7 +209,7 @@ public class TestJsonMapper
     public void testBeanValidationOfListThrowsBeanValidationException() throws IOException
     {
         try {
-            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper(), null);
+            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper());
             InputStream is = new ByteArrayInputStream("[{}]".getBytes());
             Type listJsonClassType = new TypeToken<List<JsonClass>>()
             {
@@ -229,7 +229,7 @@ public class TestJsonMapper
     public void testBeanValidationOfMapThrowsBeanValidationException() throws IOException
     {
         try {
-            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper(), null);
+            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper());
             InputStream is = new ByteArrayInputStream("{\"foo\":{}}".getBytes());
             Type mapJsonClassType = new TypeToken<Map<String, JsonClass>>()
             {

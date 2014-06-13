@@ -8,7 +8,6 @@ import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.client.jetty.JettyHttpClient;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
-import com.proofpoint.jaxrs.JaxrsModule;
 import com.proofpoint.jmx.JmxHttpModule;
 import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.testing.TestingNodeModule;
@@ -24,6 +23,7 @@ import java.net.URI;
 import static com.proofpoint.bootstrap.Bootstrap.bootstrapApplication;
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static com.proofpoint.jaxrs.JaxrsModule.explicitJaxrsModule;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.testng.Assert.assertEquals;
 
@@ -43,7 +43,7 @@ public class TestServer
                         new TestingNodeModule(),
                         new TestingHttpServerModule(),
                         new JsonModule(),
-                        new JaxrsModule(),
+                        explicitJaxrsModule(),
                         new JmxHttpModule(),
                         new ReportingModule(),
                         new TestingMBeanModule(),
