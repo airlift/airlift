@@ -15,20 +15,21 @@
  */
 package io.airlift.jaxrs;
 
-import com.sun.jersey.core.header.InBoundHeaders;
-import com.sun.jersey.spi.container.ContainerRequest;
-import com.sun.jersey.spi.container.WebApplication;
+import com.google.common.collect.ImmutableList;
+import org.glassfish.jersey.internal.PropertiesDelegate;
+import org.glassfish.jersey.server.ContainerRequest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
-import java.io.ByteArrayInputStream;
+import javax.ws.rs.core.SecurityContext;
+
 import java.net.URI;
+import java.security.Principal;
+import java.util.Collection;
 
 import static io.airlift.testing.Assertions.assertEqualsIgnoreCase;
-import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -93,16 +94,15 @@ public class TestOverrideMethodFilter
     {
         OverrideMethodFilter filter = new OverrideMethodFilter();
 
-        WebApplication webApp = mock(WebApplication.class, RETURNS_MOCKS);
-        ContainerRequest request = new ContainerRequest(webApp,
+        ContainerRequest request = new ContainerRequest(
+                URI.create("http://www.example.com/"),
+                URI.create("http://www.example.com/"),
                 method,
-                URI.create("http://www.example.com/"),
-                URI.create("http://www.example.com/"),
-                new InBoundHeaders(),
-                new ByteArrayInputStream(new byte[0]));
+                new MockSecurityContext(),
+                new MockPropertiesDelegate());
 
-        ContainerRequest result = filter.filter(request);
-        assertEqualsIgnoreCase(result.getMethod(), method);
+        filter.filter(request);
+        assertEqualsIgnoreCase(request.getMethod(), method);
     }
 
     @Test
@@ -110,37 +110,35 @@ public class TestOverrideMethodFilter
     {
         OverrideMethodFilter filter = new OverrideMethodFilter();
 
-        WebApplication webApp = mock(WebApplication.class, RETURNS_MOCKS);
-        InBoundHeaders headers = new InBoundHeaders();
-        headers.add(OverrideMethodFilter.HEADER, "DELETE");
-        ContainerRequest request = new ContainerRequest(webApp,
-                "POST",
+        ContainerRequest request = new ContainerRequest(
                 URI.create("http://www.example.com/"),
                 URI.create("http://www.example.com/?_method=PUT"),
-                headers,
-                new ByteArrayInputStream(new byte[0]));
+                "POST",
+                new MockSecurityContext(),
+                new MockPropertiesDelegate());
+        request.header(OverrideMethodFilter.HEADER, "DELETE");
 
-        ContainerRequest result = filter.filter(request);
-        assertEqualsIgnoreCase(result.getMethod(), "DELETE");
+        filter.filter(request);
+        assertEqualsIgnoreCase(request.getMethod(), "DELETE");
 
     }
 
-    public String testQueryParam(String requestMethod, String override)
+    public static String testQueryParam(String requestMethod, String override)
     {
         OverrideMethodFilter filter = new OverrideMethodFilter();
 
-        WebApplication webApp = mock(WebApplication.class, RETURNS_MOCKS);
-        ContainerRequest request = new ContainerRequest(webApp,
-                requestMethod,
+        ContainerRequest request = new ContainerRequest(
                 URI.create("http://www.example.com/"),
                 URI.create(String.format("http://www.example.com/?_method=%s", override)),
-                new InBoundHeaders(),
-                new ByteArrayInputStream(new byte[0]));
+                requestMethod,
+                new MockSecurityContext(),
+                new MockPropertiesDelegate());
 
-        return filter.filter(request).getMethod();
+        filter.filter(request);
+        return request.getMethod();
     }
 
-    private void assertHeaderThrowsException(String requestMethod, String override)
+    private static void assertHeaderThrowsException(String requestMethod, String override)
     {
         try {
             testHeader(requestMethod, override);
@@ -151,13 +149,13 @@ public class TestOverrideMethodFilter
         }
     }
 
-    private void assertHeaderOverridesMethod(String requestMethod, String override)
+    private static void assertHeaderOverridesMethod(String requestMethod, String override)
     {
         String resultMethod = testHeader(requestMethod, override);
         assertEqualsIgnoreCase(resultMethod, override);
     }
 
-    private void assertQueryParamThrowsException(String requestMethod, String override)
+    private static void assertQueryParamThrowsException(String requestMethod, String override)
     {
         try {
             testQueryParam(requestMethod, override);
@@ -168,26 +166,79 @@ public class TestOverrideMethodFilter
         }
     }
 
-    private void assertQueryParamOverridesMethod(String requestMethod, String override)
+    private static void assertQueryParamOverridesMethod(String requestMethod, String override)
     {
         String resultMethod = testQueryParam(requestMethod, override);
         assertEqualsIgnoreCase(resultMethod, override);
     }
 
-    private String testHeader(String requestMethod, String override)
+    private static String testHeader(String requestMethod, String override)
     {
         OverrideMethodFilter filter = new OverrideMethodFilter();
 
-        WebApplication webApp = mock(WebApplication.class, RETURNS_MOCKS);
-        InBoundHeaders headers = new InBoundHeaders();
-        headers.add("X-HTTP-Method-Override", override);
-        ContainerRequest request = new ContainerRequest(webApp,
+        ContainerRequest request = new ContainerRequest(
+                URI.create("http://www.example.com/"),
+                URI.create("http://www.example.com/"),
                 requestMethod,
-                URI.create("http://www.example.com/"),
-                URI.create("http://www.example.com/"),
-                headers,
-                new ByteArrayInputStream(new byte[0]));
+                new MockSecurityContext(),
+                new MockPropertiesDelegate());
+        request.header("X-HTTP-Method-Override", override);
 
-        return filter.filter(request).getMethod();
+        filter.filter(request);
+        return request.getMethod();
+    }
+
+    private static class MockPropertiesDelegate
+            implements PropertiesDelegate
+    {
+        @Override
+        public Object getProperty(String name)
+        {
+            return null;
+        }
+
+        @Override
+        public Collection<String> getPropertyNames()
+        {
+            return ImmutableList.of();
+        }
+
+        @Override
+        public void setProperty(String name, Object object)
+        {
+        }
+
+        @Override
+        public void removeProperty(String name)
+        {
+        }
+    }
+
+    private static class MockSecurityContext
+            implements SecurityContext
+    {
+        @Override
+        public Principal getUserPrincipal()
+        {
+            return null;
+        }
+
+        @Override
+        public boolean isUserInRole(String role)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isSecure()
+        {
+            return false;
+        }
+
+        @Override
+        public String getAuthenticationScheme()
+        {
+            return null;
+        }
     }
 }

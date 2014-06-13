@@ -31,25 +31,18 @@ package io.airlift.jaxrs.testing;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ForwardingMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.ListMultimap;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.util.List;
-import java.util.Map;
-
-import static io.airlift.jaxrs.testing.MockUriInfo.GuavaMultivaluedMap.createGuavaMultivaluedMap;
-import static io.airlift.jaxrs.testing.MockUriInfo.GuavaMultivaluedMap.emptyMultivaluedMap;
 
 public class MockUriInfo implements UriInfo
 {
@@ -83,52 +76,62 @@ public class MockUriInfo implements UriInfo
         this.baseUri = baseUri;
     }
 
+    @Override
     public URI getBaseUri()
     {
         return baseUri;
     }
 
+    @Override
     public UriBuilder getBaseUriBuilder()
     {
         return UriBuilder.fromUri(getBaseUri());
     }
 
+    @Override
     public URI getRequestUri()
     {
         return requestUri;
     }
 
+    @Override
     public UriBuilder getRequestUriBuilder()
     {
         return UriBuilder.fromUri(getRequestUri());
     }
 
+    @Override
     public URI getAbsolutePath()
     {
         return UriBuilder.fromUri(requestUri).replaceQuery("").fragment("").build();
     }
 
+    @Override
     public UriBuilder getAbsolutePathBuilder()
     {
         return UriBuilder.fromUri(getAbsolutePath());
     }
 
+    @Override
     public String getPath()
     {
         return getPath(true);
     }
 
+    @Override
     public String getPath(boolean decode)
     {
         // todo decode is ignored
         return getRequestUri().getRawPath().substring(getBaseUri().getRawPath().length());
     }
 
+    @Override
     public List<PathSegment> getPathSegments()
     {
         return getPathSegments(true);
     }
 
+    @Override
     public List<PathSegment> getPathSegments(boolean decode)
     {
         Builder<PathSegment> builder = ImmutableList.builder();
@@ -138,20 +141,37 @@ public class MockUriInfo implements UriInfo
         return builder.build();
     }
 
+    @Override
     public MultivaluedMap<String, String> getQueryParameters()
     {
         return getQueryParameters(true);
     }
 
+    @Override
     public MultivaluedMap<String, String> getQueryParameters(boolean decode)
     {
         return decodeQuery(getRequestUri().getRawQuery(), decode);
     }
 
+    @Override
+    public URI resolve(URI uri)
+    {
+        return baseUri.resolve(uri);
+    }
+
+    @Override
+    public URI relativize(URI uri)
+    {
+        if (!uri.isAbsolute()) {
+            uri = resolve(uri);
+        }
+        return baseUri.resolve(uri);
+    }
+
     public static MultivaluedMap<String, String> decodeQuery(String query, boolean decode)
     {
         if (query == null) {
-            return emptyMultivaluedMap();
+            return new GuavaMultivaluedMap<>();
         }
 
         ArrayListMultimap<String, String> map = ArrayListMultimap.create();
@@ -175,7 +195,7 @@ public class MockUriInfo implements UriInfo
             map.put(key, value);
         }
 
-        return createGuavaMultivaluedMap(map);
+        return new GuavaMultivaluedMap<>(map);
     }
 
     private static String urlDecode(String value)
@@ -188,81 +208,39 @@ public class MockUriInfo implements UriInfo
         }
     }
 
+    @Override
     public MultivaluedMap<String, String> getPathParameters()
     {
         return getPathParameters(true);
     }
 
+    @Override
     public MultivaluedMap<String, String> getPathParameters(boolean decode)
     {
         // this requires knowledge of @Path
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public List<String> getMatchedURIs()
     {
         return getMatchedURIs(true);
     }
 
+    @Override
     public List<String> getMatchedURIs(boolean decode)
     {
         // this requires knowledge of @Path
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public List<Object> getMatchedResources()
     {
         // this requires knowledge of @Path
         throw new UnsupportedOperationException();
     }
 
-
-    static class GuavaMultivaluedMap<K, V> extends ForwardingMap<K, List<V>> implements MultivaluedMap<K, V>
-    {
-        private final ListMultimap<K, V> multimap;
-
-        static <K, V> GuavaMultivaluedMap<K, V> emptyMultivaluedMap()
-        {
-            return new GuavaMultivaluedMap<K, V>(ImmutableListMultimap.<K, V>of());
-        }
-
-        static <K, V> GuavaMultivaluedMap<K, V> createGuavaMultivaluedMap(ListMultimap<K, V> multimap)
-        {
-            return new GuavaMultivaluedMap<K, V>(multimap);
-        }
-
-        private GuavaMultivaluedMap(ListMultimap<K, V> multimap)
-        {
-            this.multimap = multimap;
-        }
-
-        @Override
-        public void putSingle(K key, V value)
-        {
-            multimap.removeAll(key);
-            multimap.put(key, value);
-        }
-
-        @Override
-        @SuppressWarnings({"RedundantCast"})
-        protected Map<K, List<V>> delegate()
-        {
-            // forced cast
-            return (Map<K, List<V>>) (Object) multimap.asMap();
-        }
-
-        @Override
-        public void add(K key, V value)
-        {
-            multimap.put(key, value);
-        }
-
-        @Override
-        public V getFirst(K key)
-        {
-            return Iterables.getFirst(multimap.get(key), null);
-        }
-    }
 
     private static class ImmutablePathSegment implements PathSegment
     {
@@ -282,7 +260,7 @@ public class MockUriInfo implements UriInfo
         @Override
         public MultivaluedMap<String, String> getMatrixParameters()
         {
-            return emptyMultivaluedMap();
+            return new GuavaMultivaluedMap<>();
         }
     }
 }

@@ -48,6 +48,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
+@Test(singleThreaded = true)
 public class TestOverrideMethodFilterInHttpServer
 {
     private static final String GET = "GET";
@@ -270,7 +271,7 @@ public class TestOverrideMethodFilterInHttpServer
         }
     }
 
-    private TestingHttpServer createServer(final TestResource resource)
+    private static TestingHttpServer createServer(final TestResource resource)
     {
         return Guice.createInjector(
                 new TestingNodeModule(),
