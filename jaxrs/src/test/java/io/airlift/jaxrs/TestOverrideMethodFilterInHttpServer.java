@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -273,7 +274,7 @@ public class TestOverrideMethodFilterInHttpServer
     {
         return Guice.createInjector(
                 new TestingNodeModule(),
-                new JaxrsModule(),
+                new JaxrsModule(true),
                 new JsonModule(),
                 new TestingHttpServerModule(),
                 new Module()
@@ -281,7 +282,7 @@ public class TestOverrideMethodFilterInHttpServer
                     @Override
                     public void configure(Binder binder)
                     {
-                        binder.bind(TestResource.class).toInstance(resource);
+                        jaxrsBinder(binder).bindInstance(resource);
                     }
                 }).getInstance(TestingHttpServer.class);
     }

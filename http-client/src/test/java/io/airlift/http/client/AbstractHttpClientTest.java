@@ -903,7 +903,7 @@ public abstract class AbstractHttpClientTest
         @Override
         public String handleException(Request request, Exception exception)
         {
-            throw new UnsupportedOperationException("not yet implemented");
+            throw new UnsupportedOperationException("not yet implemented", exception);
         }
 
         @Override

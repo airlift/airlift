@@ -64,7 +64,7 @@ public class TestJsonMapper
             throws IOException
     {
         JsonCodec<String> jsonCodec = JsonCodec.jsonCodec(String.class);
-        JsonMapper jsonMapper = new JsonMapper(new ObjectMapper(), null);
+        JsonMapper jsonMapper = new JsonMapper(new ObjectMapper());
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         MultivaluedMap<String, Object> headers = GuavaMultivaluedMap.create();
@@ -85,7 +85,7 @@ public class TestJsonMapper
             throws IOException
     {
         try {
-            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper(), null);
+            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper());
             jsonMapper.readFrom(Object.class, Object.class, null, null, null, new InputStream()
             {
                 @Override
@@ -121,7 +121,7 @@ public class TestJsonMapper
             throws IOException
     {
         try {
-            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper(), null);
+            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper());
             jsonMapper.readFrom(Object.class, Object.class, null, null, null, new InputStream()
             {
                 @Override
@@ -157,7 +157,7 @@ public class TestJsonMapper
             throws IOException
     {
         try {
-            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper(), null);
+            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper());
             jsonMapper.readFrom(Object.class, Object.class, null, null, null, new InputStream()
             {
                 @Override
@@ -193,7 +193,7 @@ public class TestJsonMapper
             throws IOException
     {
         try {
-            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper(), null);
+            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper());
             InputStream is = new ByteArrayInputStream("{}".getBytes());
             jsonMapper.readFrom(Object.class, JsonClass.class, null, null, null, is);
             Assert.fail("Should have thrown an BeanValidationException");

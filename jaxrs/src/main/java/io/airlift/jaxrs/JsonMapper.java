@@ -29,8 +29,6 @@ import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HttpHeaders;
 import com.google.inject.Inject;
-import com.sun.jersey.api.core.HttpContext;
-import com.sun.jersey.spi.container.WebApplication;
 import io.airlift.log.Logger;
 import org.apache.bval.jsr303.ApacheValidationProvider;
 
@@ -39,6 +37,7 @@ import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -54,12 +53,13 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 // This code is based on JacksonJsonProvider
 @Provider
 @Consumes({MediaType.APPLICATION_JSON, "text/json"})
 @Produces({MediaType.APPLICATION_JSON, "text/json"})
-class JsonMapper
+public class JsonMapper
         implements MessageBodyReader<Object>, MessageBodyWriter<Object>
 {
     private static final Validator VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
@@ -84,13 +84,23 @@ class JsonMapper
 
     private final ObjectMapper objectMapper;
 
-    private final WebApplication webApplication;
+    private final AtomicReference<UriInfo> uriInfo = new AtomicReference<>();
 
     @Inject
-    public JsonMapper(ObjectMapper objectMapper, WebApplication webApplication)
+    public JsonMapper(ObjectMapper objectMapper)
     {
         this.objectMapper = objectMapper;
-        this.webApplication = webApplication;
+    }
+
+    @Context
+    public void setUriInfo(UriInfo uriInfo)
+    {
+        this.uriInfo.set(uriInfo);
+    }
+
+    private UriInfo getUriInfo()
+    {
+        return this.uriInfo.get();
     }
 
     @Override
@@ -240,34 +250,22 @@ class JsonMapper
 
     private boolean isPrettyPrintRequested()
     {
-        if (webApplication == null) {
-            return false;
-        }
-        HttpContext httpContext = webApplication.getThreadLocalHttpContext();
-        if (httpContext == null) {
-            return false;
-        }
-        UriInfo uriInfo = httpContext.getUriInfo();
+        UriInfo uriInfo = getUriInfo();
         if (uriInfo == null) {
             return false;
         }
+
         MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
         return queryParameters != null && queryParameters.containsKey("pretty");
     }
 
     private String getJsonpFunctionName()
     {
-        if (webApplication == null) {
-            return null;
-        }
-        HttpContext httpContext = webApplication.getThreadLocalHttpContext();
-        if (httpContext == null) {
-            return null;
-        }
-        UriInfo uriInfo = httpContext.getUriInfo();
+        UriInfo uriInfo = getUriInfo();
         if (uriInfo == null) {
             return null;
         }
+
         MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
         if (queryParameters == null) {
             return null;

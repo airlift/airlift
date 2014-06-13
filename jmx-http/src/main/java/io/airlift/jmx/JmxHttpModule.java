@@ -32,7 +32,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
 import com.google.inject.Module;
-import com.google.inject.Scopes;
 import io.airlift.discovery.client.DiscoveryBinder;
 import sun.management.LazyCompositeData;
 
@@ -49,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 import static io.airlift.json.JsonBinder.jsonBinder;
 
 @Beta
@@ -59,7 +59,7 @@ public class JmxHttpModule implements Module
     {
         binder.disableCircularProxies();
 
-        binder.bind(MBeanResource.class).in(Scopes.SINGLETON);
+        jaxrsBinder(binder).bind(MBeanResource.class);
         jsonBinder(binder).addSerializerBinding(InetAddress.class).toInstance(ToStringSerializer.instance);
         jsonBinder(binder).addSerializerBinding(ObjectName.class).toInstance(ToStringSerializer.instance);
         jsonBinder(binder).addSerializerBinding(OpenType.class).toInstance(ToStringSerializer.instance);

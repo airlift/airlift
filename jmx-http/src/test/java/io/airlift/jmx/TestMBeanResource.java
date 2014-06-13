@@ -62,7 +62,7 @@ public class TestMBeanResource
                 new TestingNodeModule(),
                 new TestingHttpServerModule(),
                 new JsonModule(),
-                new JaxrsModule(),
+                new JaxrsModule(true),
                 new JmxHttpModule(),
                 new Module()
                 {
