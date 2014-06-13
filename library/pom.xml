@@ -84,6 +84,7 @@
         <dep.slf4j.version>1.7.5</dep.slf4j.version>
         <dep.logback.version>1.1.1</dep.logback.version>
         <dep.javax-servlet.version>3.1.0</dep.javax-servlet.version>
+        <dep.jersey.version>2.9.1</dep.jersey.version>
     </properties>
 
     <scm>
@@ -642,34 +643,57 @@
                 <version>${dep.logback.version}</version>
             </dependency>
 
+            <!-- jersey -->
             <dependency>
-                <groupId>com.sun.jersey</groupId>
-                <artifactId>jersey-core</artifactId>
-                <version>1.17.1</version>
+                <groupId>javax.ws.rs</groupId>
+                <artifactId>javax.ws.rs-api</artifactId>
+                <version>2.0</version>
             </dependency>
 
             <dependency>
-                <groupId>com.sun.jersey.contribs</groupId>
-                <artifactId>jersey-guice</artifactId>
-                <version>1.17.1</version>
+                <groupId>org.glassfish.jersey.core</groupId>
+                <artifactId>jersey-common</artifactId>
+                <version>${dep.jersey.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.glassfish.hk2.external</groupId>
+                        <artifactId>javax.inject</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.glassfish.hk2.external</groupId>
+                        <artifactId>aopalliance-repackaged</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
-                <groupId>com.sun.jersey.contribs</groupId>
-                <artifactId>jersey-multipart</artifactId>
-                <version>1.17.1</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.sun.jersey</groupId>
+                <groupId>org.glassfish.jersey.core</groupId>
                 <artifactId>jersey-server</artifactId>
-                <version>1.17.1</version>
+                <version>${dep.jersey.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.glassfish.hk2.external</groupId>
+                        <artifactId>javax.inject</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
-                <groupId>com.sun.jersey</groupId>
-                <artifactId>jersey-servlet</artifactId>
-                <version>1.17.1</version>
+                <groupId>org.glassfish.jersey.containers</groupId>
+                <artifactId>jersey-container-servlet-core</artifactId>
+                <version>${dep.jersey.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.glassfish.hk2.external</groupId>
+                        <artifactId>javax.inject</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>javax.annotation</groupId>
+                <artifactId>javax.annotation-api</artifactId>
+                <version>1.2</version>
             </dependency>
 
             <dependency>

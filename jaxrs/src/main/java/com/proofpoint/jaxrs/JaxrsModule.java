@@ -24,12 +24,12 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.log.Logger;
-import com.sun.jersey.api.core.DefaultResourceConfig;
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
+import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.servlet.ServletContainer;
 
 import javax.servlet.Servlet;
 import javax.ws.rs.Path;
+import javax.ws.rs.core.Application;
 import javax.ws.rs.ext.Provider;
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -71,6 +71,7 @@ public class JaxrsModule
         binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(Key.get(ServletContainer.class));
         jaxrsBinder(binder).bind(JsonMapper.class);
         jaxrsBinder(binder).bind(ParsingExceptionMapper.class);
+        jaxrsBinder(binder).bind(OverrideMethodFilter.class);
 
         newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
         newSetBinder(binder, JaxrsBinding.class, JaxrsResource.class).permitDuplicates();
@@ -83,7 +84,13 @@ public class JaxrsModule
     }
 
     @Provides
-    public ResourceConfig createResourceConfig(@JaxrsResource Set<Object> jaxRsSingletons, @JaxrsResource Set<JaxrsBinding> jaxrsBinding, Injector injector)
+    public static ResourceConfig createResourceConfig(Application application)
+    {
+        return ResourceConfig.forApplication(application);
+    }
+
+    @Provides
+    public Application createJaxRsApplication(@JaxrsResource Set<Object> jaxRsSingletons, @JaxrsResource Set<JaxrsBinding> jaxrsBinding, Injector injector)
     {
         // detect jax-rs services that are bound into Guice, but not explicitly exported
         Set<Key<?>> missingBindings = new HashSet<>();
@@ -107,11 +114,7 @@ public class JaxrsModule
         }
         checkState(!requireExplicitBindings || missingBindings.isEmpty(), "Jax-rs services must be explicitly bound using the JaxRsBinder: ", missingBindings);
 
-        DefaultResourceConfig resourceConfig = new DefaultResourceConfig();
-        resourceConfig.getSingletons().addAll(singletons.build());
-        resourceConfig.getProperties().put("com.sun.jersey.spi.container.ContainerRequestFilters", OverrideMethodFilter.class.getName());
-
-        return resourceConfig;
+        return new JaxRsApplication(singletons.build());
     }
 
     @Provides
@@ -152,5 +155,22 @@ public class JaxrsModule
         }
 
         return false;
+    }
+
+    private static class JaxRsApplication
+            extends Application
+    {
+        private final Set<Object> jaxRsSingletons;
+
+        public JaxRsApplication(Set<Object> jaxRsSingletons)
+        {
+            this.jaxRsSingletons = jaxRsSingletons;
+        }
+
+        @Override
+        public Set<Object> getSingletons()
+        {
+            return jaxRsSingletons;
+        }
     }
 }

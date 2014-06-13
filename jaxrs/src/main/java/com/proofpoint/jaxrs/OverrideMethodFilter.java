@@ -16,11 +16,13 @@
 package com.proofpoint.jaxrs;
 
 import com.google.common.base.Strings;
-import com.sun.jersey.spi.container.ContainerRequest;
-import com.sun.jersey.spi.container.ContainerRequestFilter;
 
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.PreMatching;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.Provider;
 
 /**
  * Allows for overriding the request method via a special header or query param when using POST. It can be useful
@@ -30,6 +32,8 @@ import javax.ws.rs.core.Response;
  * parameter in a POST. If both the X-HTTP-Method-Override header and _method parameter are present in
  * the request then the X-HTTP-Method-Override header will be used.
  */
+@Provider
+@PreMatching
 public class OverrideMethodFilter
         implements ContainerRequestFilter
 {
@@ -44,11 +48,11 @@ public class OverrideMethodFilter
     public static final String METHOD_PARAM = "_method";
 
     @Override
-    public ContainerRequest filter(ContainerRequest request)
+    public void filter(ContainerRequestContext request)
     {
-        String method = request.getRequestHeaders().getFirst(HEADER);
+        String method = request.getHeaders().getFirst(HEADER);
         if (Strings.isNullOrEmpty(method)) {
-            method = request.getQueryParameters().getFirst(METHOD_PARAM);
+            method = request.getUriInfo().getQueryParameters().getFirst(METHOD_PARAM);
         }
 
         if (!Strings.isNullOrEmpty(method)) {
@@ -61,7 +65,5 @@ public class OverrideMethodFilter
                 throw new WebApplicationException(Response.Status.BAD_REQUEST);
             }
         }
-
-        return request;
     }
 }
