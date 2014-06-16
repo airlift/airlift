@@ -51,6 +51,29 @@ public final class Assertions
         }
         fail("%sexpected:<%s> to contain <%s>", toMessageString(message), actual, expectedPart);
     }
+    public static void assertNotContains(String actual, String expectedPart)
+    {
+        assertNotContains(actual, expectedPart, null);
+    }
+
+    public static void assertNotContainsAnyOf(String actual, String... expectedParts)
+    {
+        // todo improve naive implementation
+        for (String expected : expectedParts) {
+            assertNotContains(actual, expected, null);
+        }
+    }
+
+    public static void assertNotContains(String actual, String expectedPart, String message)
+    {
+        assertNotNull(actual, "actual is null");
+        assertNotNull(expectedPart, "expectedPart is null");
+        if (!actual.contains(expectedPart)) {
+            // ok
+            return;
+        }
+        fail("%sexpected:<%s> to not contain <%s>", toMessageString(message), actual, expectedPart);
+    }
 
     public static void assertEqualsIgnoreCase(String actual, String expected)
     {

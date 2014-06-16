@@ -68,6 +68,42 @@ public class TestAssertions
     }
 
     @Test
+    public void testAssertNotContains()
+    {
+        failNotContains("hello", "hello");
+        failNotContains("XXX hello XXXX", "hello");
+
+        passNotContains("hello", "bye");
+        passNotContains("XXX hello XXX", "HELLO");
+    }
+
+    private void passNotContains(String actual, String expected)
+    {
+        Assertions.assertNotContains(actual, expected);
+        Assertions.assertNotContains(actual, expected, MESSAGE);
+    }
+
+    private void failNotContains(String actual, String expected)
+    {
+        try {
+            Assertions.assertNotContains(actual, expected);
+            Assert.fail("Expected AssertionError"); // TODO: bug... this will throw AssertionError
+        }
+        catch (AssertionError e) {
+            verifyExceptionMessage(e, null, actual, expected);
+        }
+
+        try {
+            Assertions.assertNotContains(actual, expected, MESSAGE);
+            Assert.fail("Expected AssertionError");
+        }
+        catch (AssertionError e) {
+            // success
+            verifyExceptionMessage(e, MESSAGE, actual, expected);
+        }
+    }
+
+    @Test
     public void testAssertEqualsIgnoreCase()
     {
         passEqualsIgnoreCase("hello", "hello");
