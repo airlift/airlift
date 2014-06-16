@@ -114,6 +114,11 @@ public class JsonCodec<T>
         this.javaType = mapper.getTypeFactory().constructType(type);
     }
 
+    public JsonCodec<T> withoutPretty()
+    {
+        return new JsonCodec<>(mapper.copy().disable(INDENT_OUTPUT), type);
+    }
+
     /**
      * Gets the type this codec supports.
      */

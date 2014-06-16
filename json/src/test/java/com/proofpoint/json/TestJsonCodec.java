@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 
 import static com.proofpoint.json.JsonCodec.*;
+import static com.proofpoint.testing.Assertions.assertContains;
+import static com.proofpoint.testing.Assertions.assertNotContains;
 import static org.testng.Assert.assertNull;
 
 public class TestJsonCodec
@@ -159,5 +161,28 @@ public class TestJsonCodec
         JsonCodec<Map<String, ImmutablePerson>> jsonCodec = jsonCodec(new TypeToken<Map<String, ImmutablePerson>>() {});
 
         ImmutablePerson.validatePersonMapJsonCodec(jsonCodec);
+    }
+
+    @Test
+    public void testIsPretty()
+    {
+        JsonCodec<Person> jsonCodec = jsonCodec(Person.class);
+        String json = jsonCodec.toJson(new Person().setName("dain").setRocks(true));
+        assertContains(json, "\n");
+    }
+
+    @Test
+    public void testNonPretty()
+    {
+        JsonCodec<Person> prettyJsonCodec = jsonCodec(Person.class);
+        JsonCodec<Person> jsonCodec = prettyJsonCodec.withoutPretty();
+
+        String json = jsonCodec.toJson(new Person().setName("dain").setRocks(true));
+        assertNotContains(json, "\n");
+
+        Person.validatePersonJsonCodec(jsonCodec);
+
+        json = prettyJsonCodec.toJson(new Person().setName("dain").setRocks(true));
+        assertContains(json, "\n");
     }
 }
