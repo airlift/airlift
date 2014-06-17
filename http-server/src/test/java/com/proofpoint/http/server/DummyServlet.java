@@ -15,6 +15,8 @@
  */
 package com.proofpoint.http.server;
 
+import com.google.common.io.ByteStreams;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -32,5 +34,13 @@ class DummyServlet
         if (req.getUserPrincipal() != null) {
             resp.getOutputStream().write(req.getUserPrincipal().getName().getBytes());
         }
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException
+    {
+        resp.setStatus(HttpServletResponse.SC_OK);
+        ByteStreams.copy(req.getInputStream(), resp.getOutputStream());
     }
 }

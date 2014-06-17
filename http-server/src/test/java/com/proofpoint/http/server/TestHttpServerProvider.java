@@ -45,6 +45,8 @@ import java.util.concurrent.TimeUnit;
 
 import static com.google.common.io.Resources.getResource;
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
+import static com.proofpoint.http.client.Request.Builder.preparePut;
+import static com.proofpoint.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static com.proofpoint.http.client.StringResponseHandler.createStringResponseHandler;
 import static org.testng.Assert.assertEquals;
@@ -148,6 +150,29 @@ public class TestHttpServerProvider
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_PAYMENT_REQUIRED);
             assertEquals(response.getStatusMessage(), "filtered");
+        }
+    }
+
+    @Test
+    public void testCompressedRequest()
+            throws Exception
+    {
+        createAndStartServer();
+
+        try (JettyHttpClient httpClient = new JettyHttpClient()) {
+            StringResponse response = httpClient.execute(
+                    preparePut()
+                            .setUri(httpServerInfo.getHttpUri())
+                            .setHeader("Content-Encoding", "gzip")
+                            .setBodyGenerator(createStaticBodyGenerator(new byte[] {
+                                    31, -117, 8, 0, -123, -120, -97, 83, 0, 3, 75, -83,
+                                    40, 72, 77, 46, 73, 77, 1, 0, -60, -72, 96, 80, 8, 0, 0, 0
+                            }))
+                            .build(),
+                    createStringResponseHandler());
+
+            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+            assertEquals(response.getBody(), "expected");
         }
     }
 

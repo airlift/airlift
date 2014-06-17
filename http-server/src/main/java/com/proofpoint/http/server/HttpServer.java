@@ -270,6 +270,8 @@ public class HttpServer
 
         // -- gzip response filter
         context.addFilter(GzipFilter.class, "/*", null);
+        // -- gzip request filter
+        context.addFilter(GZipRequestFilter.class, "/*", null);
         // -- security handler
         if (loginService != null) {
             SecurityHandler securityHandler = createSecurityHandler(loginService);
