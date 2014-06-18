@@ -1,3 +1,19 @@
+Platform 1.00
+
+* HttpServer
+
+  We restored support for compressed request bodies. This had been removed in
+  the Jetty 9 upgrade in Platform 0.91.
+
+* JsonCodec
+
+  We added JsonCodec.withoutPretty() which returns a JsonCodec that doesn't
+  add whitespace to the encoded JSON.
+
+* Assertions
+
+  We added Assertions.assertNotContains() methods.
+
 Platform 0.99
 
 * HTTPClient
