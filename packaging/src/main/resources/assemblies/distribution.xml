@@ -39,9 +39,13 @@
             <useProjectArtifact>false</useProjectArtifact>
             <outputDirectory>lib/</outputDirectory>
             <outputFileNameMapping>${artifact.artifactId}-${artifact.baseVersion}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
+            <useTransitiveFiltering>true</useTransitiveFiltering>
             <includes>
                 <include>*:jar:*</include>
             </includes>
+            <excludes>
+                <exclude>*:zip:*</exclude>
+            </excludes>
         </dependencySet>
         <dependencySet>
             <unpack>true</unpack>
