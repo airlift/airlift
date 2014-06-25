@@ -101,6 +101,7 @@ public class DiscoveryModule
     {
         if (discoveryBalancer == null) {
             String name = new ObjectNameBuilder(HttpServiceBalancerStats.class.getPackage().getName())
+                    .withProperty("type", "ServiceClient")
                     .withProperty("serviceType", "discovery")
                     .build();
             discoveryBalancer = new HttpServiceBalancerImpl("discovery", reportCollectionFactory.createReportCollection(HttpServiceBalancerStats.class, name));
