@@ -322,6 +322,10 @@
                             <!-- For all the jetty packages -->
                             <ignoredResource>about\.html</ignoredResource>
                             <ignoredResource>META-INF/.*</ignoredResource>
+                            <ignoredResource>about_files/.*</ignoredResource>
+                            <ignoredResource>plugin\.properties</ignoredResource>
+                            <ignoredResource>.*\.java</ignoredResource>
+                            <ignoredResource>THIRD-PARTY</ignoredResource>
                         </ignoredResources>
 
                         <ignoredDependencies>
