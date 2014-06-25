@@ -1,3 +1,9 @@
+Platform 1.01
+
+* Library updates
+  - jmxutils to 1.18
+  - findbugs-annotations to 2.0.3
+
 Platform 1.00
 
 * HttpServer
