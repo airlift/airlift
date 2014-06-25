@@ -26,6 +26,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.ValidationException;
 import javax.validation.Validator;
+import javax.validation.metadata.ConstraintDescriptor;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -103,7 +104,9 @@ public class TestDurationValidator
         assertTrue(violations.isEmpty());
     }
 
+    // TODO: remove casts and @SuppressWarnings after moving to Java 8
     @Test
+    @SuppressWarnings("unchecked")
     public void testFailsMaxDurationConstraint()
     {
         ConstrainedDuration object = new ConstrainedDuration(new Duration(11, TimeUnit.SECONDS));
@@ -111,11 +114,12 @@ public class TestDurationValidator
         assertEquals(violations.size(), 2);
 
         for (ConstraintViolation<ConstrainedDuration> violation : violations) {
-            Assertions.assertInstanceOf(violation.getConstraintDescriptor().getAnnotation(), MaxDuration.class);
+            Assertions.assertInstanceOf(((ConstraintDescriptor<MaxDuration>) violation.getConstraintDescriptor()).getAnnotation(), MaxDuration.class);
         }
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testFailsMinDurationConstraint()
     {
         ConstrainedDuration object = new ConstrainedDuration(new Duration(1, TimeUnit.SECONDS));
@@ -123,7 +127,7 @@ public class TestDurationValidator
         assertEquals(violations.size(), 2);
 
         for (ConstraintViolation<ConstrainedDuration> violation : violations) {
-            Assertions.assertInstanceOf(violation.getConstraintDescriptor().getAnnotation(), MinDuration.class);
+            Assertions.assertInstanceOf(((ConstraintDescriptor<MinDuration>) violation.getConstraintDescriptor()).getAnnotation(), MinDuration.class);
         }
     }
 
