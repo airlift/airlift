@@ -34,10 +34,9 @@ import com.proofpoint.reporting.ReportingModule;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.weakref.jmx.guice.MBeanModule;
-import org.weakref.jmx.testing.TestingMBeanServer;
+import org.weakref.jmx.testing.TestingMBeanModule;
 
 import javax.management.MBeanServer;
-
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -88,15 +87,7 @@ public class TestDiscoveryModule
                         new TestingNodeModule(),
                         new DiscoveryModule(),
                         new ReportingModule(),
-                        new MBeanModule(),
-                        new Module()
-                        {
-                            @Override
-                            public void configure(Binder binder)
-                            {
-                                binder.bind(MBeanServer.class).to(TestingMBeanServer.class);
-                            }
-                        }
+                        new TestingMBeanModule()
                 );
 
         Injector injector = app.initialize();

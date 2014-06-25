@@ -31,7 +31,6 @@ import com.proofpoint.http.client.jetty.JettyHttpClient;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
 import com.proofpoint.jaxrs.JaxrsModule;
-import com.proofpoint.jmx.testing.TestingJmxModule;
 import com.proofpoint.json.JsonCodec;
 import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.testing.TestingNodeModule;
@@ -40,7 +39,7 @@ import com.proofpoint.testing.Closeables;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import org.weakref.jmx.guice.MBeanModule;
+import org.weakref.jmx.testing.TestingMBeanModule;
 
 import java.io.IOException;
 import java.net.URI;
@@ -95,8 +94,7 @@ public class TestServer
                         new JsonModule(),
                         new JaxrsModule(),
                         new ReportingModule(),
-                        new MBeanModule(),
-                        new TestingJmxModule(),
+                        new TestingMBeanModule(),
                         new MainModule()
                 );
 
@@ -134,7 +132,7 @@ public class TestServer
                 prepareGet().setUri(uriFor("/v1/person")).build(),
                 createJsonResponseHandler(listCodec));
 
-        assertEquals(response, Collections.<Object>emptyList());
+        assertEquals(response, Collections.emptyList());
     }
 
     @Test
