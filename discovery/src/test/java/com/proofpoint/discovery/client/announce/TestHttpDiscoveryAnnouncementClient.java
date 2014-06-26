@@ -101,14 +101,14 @@ public class TestHttpDiscoveryAnnouncementClient
     public void testAnnounceBadStatus()
             throws Exception
     {
-        when(processor.handle(any(Request.class))).thenReturn(mockResponse(INTERNAL_SERVER_ERROR));
+        when(processor.handle(any(Request.class))).thenReturn(mockResponse(NOT_FOUND));
         try {
             client.announce(announcements).get();
             fail("expected ExecutionException");
         }
         catch (ExecutionException e) {
             assertInstanceOf(e.getCause(), DiscoveryException.class);
-            assertContains(e.getCause().getMessage(), "Announcement failed with status code 500: ");
+            assertContains(e.getCause().getMessage(), "Announcement failed with status code 404: ");
         }
     }
 
@@ -124,6 +124,39 @@ public class TestHttpDiscoveryAnnouncementClient
         catch (ExecutionException e) {
             assertInstanceOf(e.getCause(), DiscoveryException.class);
             assertEquals(e.getCause().getMessage(), "Announcement failed");
+        }
+    }
+
+    @Test
+    public void testAnnounceZeroAnnouncements()
+            throws Exception
+    {
+        when(processor.handle(any(Request.class))).thenReturn(mockResponse(NOT_FOUND));
+        Duration duration = client.announce(ImmutableSet.<ServiceAnnouncement>of()).get();
+
+        assertEquals(duration, new Duration(10, TimeUnit.SECONDS));
+
+        ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
+        verify(processor).handle(captor.capture());
+        Request request = captor.getValue();
+        assertEquals(request.getMethod(), "DELETE");
+        assertEquals(request.getUri(), URI.create("v1/announcement/" + nodeInfo.getNodeId()));
+        assertEquals(request.getHeader("User-Agent"), nodeInfo.getNodeId());
+    }
+
+
+    @Test
+    public void testAnnounceZeroAnnouncementsBadStatus()
+            throws Exception
+    {
+        when(processor.handle(any(Request.class))).thenReturn(mockResponse(INTERNAL_SERVER_ERROR));
+        try {
+            client.announce(ImmutableSet.<ServiceAnnouncement>of()).get();
+            fail("expected ExecutionException");
+        }
+        catch (ExecutionException e) {
+            assertInstanceOf(e.getCause(), DiscoveryException.class);
+            assertContains(e.getCause().getMessage(), "Announcement failed with status code 500: ");
         }
     }
 

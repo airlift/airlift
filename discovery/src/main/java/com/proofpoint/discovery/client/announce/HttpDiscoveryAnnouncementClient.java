@@ -26,6 +26,7 @@ import com.proofpoint.discovery.client.ForDiscoveryClient;
 import com.proofpoint.http.client.CacheControl;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
+import com.proofpoint.http.client.Request.Builder;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.json.JsonCodec;
@@ -71,13 +72,22 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
     {
         checkNotNull(services, "services is null");
 
-        Announcement announcement = new Announcement(nodeInfo.getEnvironment(), nodeInfo.getNodeId(), nodeInfo.getPool(), nodeInfo.getLocation(), services);
-        Request request = preparePut()
+        Builder builder;
+        final boolean servicesEmpty = services.isEmpty();
+        if (servicesEmpty) {
+            builder = prepareDelete();
+        }
+        else {
+            Announcement announcement = new Announcement(nodeInfo.getEnvironment(), nodeInfo.getNodeId(), nodeInfo.getPool(), nodeInfo.getLocation(), services);
+            builder = preparePut()
+                    .setHeader("Content-Type", MEDIA_TYPE_JSON.toString())
+                    .setBodyGenerator(jsonBodyGenerator(announcementCodec, announcement));
+        }
+        Request request = builder
                 .setUri(URI.create("v1/announcement/" + nodeInfo.getNodeId()))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
-                .setHeader("Content-Type", MEDIA_TYPE_JSON.toString())
-                .setBodyGenerator(jsonBodyGenerator(announcementCodec, announcement))
                 .build();
+
         return httpClient.executeAsync(request, new DiscoveryResponseHandler<Duration>("Announcement")
         {
             @Override
@@ -85,6 +95,9 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
                     throws DiscoveryException
             {
                 int statusCode = response.getStatusCode();
+                if (statusCode == 404 && servicesEmpty) {
+                    statusCode = 200;
+                }
                 if (!isSuccess(statusCode)) {
                     throw new DiscoveryException(String.format("Announcement failed with status code %s: %s", statusCode, getBodyForError(response)));
                 }
