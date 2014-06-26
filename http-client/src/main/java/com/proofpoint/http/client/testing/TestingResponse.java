@@ -90,6 +90,11 @@ public class TestingResponse
         return ImmutableListMultimap.of(HttpHeaders.CONTENT_TYPE, type.toString());
     }
 
+    public static Response mockResponse(HttpStatus status)
+    {
+        return new TestingResponse(status, ImmutableListMultimap.<String, String>of(), new byte[0]);
+    }
+
     public static Response mockResponse(HttpStatus status, MediaType type, String content)
     {
         return new TestingResponse(status, contentType(type), content.getBytes(Charsets.UTF_8));

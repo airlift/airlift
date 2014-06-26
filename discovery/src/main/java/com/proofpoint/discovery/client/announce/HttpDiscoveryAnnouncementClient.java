@@ -16,7 +16,6 @@
 package com.proofpoint.discovery.client.announce;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Preconditions;
 import com.google.common.io.CharStreams;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
@@ -24,8 +23,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
 import com.proofpoint.discovery.client.DiscoveryException;
 import com.proofpoint.discovery.client.ForDiscoveryClient;
-import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.CacheControl;
+import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
@@ -40,6 +39,7 @@ import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.http.client.JsonBodyGenerator.jsonBodyGenerator;
 import static com.proofpoint.http.client.Request.Builder.prepareDelete;
 import static com.proofpoint.http.client.Request.Builder.preparePut;
@@ -57,9 +57,9 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
             JsonCodec<Announcement> announcementCodec,
             @ForDiscoveryClient HttpClient httpClient)
     {
-        Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
-        Preconditions.checkNotNull(announcementCodec, "announcementCodec is null");
-        Preconditions.checkNotNull(httpClient, "httpClient is null");
+        checkNotNull(nodeInfo, "nodeInfo is null");
+        checkNotNull(announcementCodec, "announcementCodec is null");
+        checkNotNull(httpClient, "httpClient is null");
 
         this.nodeInfo = nodeInfo;
         this.announcementCodec = announcementCodec;
@@ -69,7 +69,7 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
     @Override
     public ListenableFuture<Duration> announce(Set<ServiceAnnouncement> services)
     {
-        Preconditions.checkNotNull(services, "services is null");
+        checkNotNull(services, "services is null");
 
         Announcement announcement = new Announcement(nodeInfo.getEnvironment(), nodeInfo.getNodeId(), nodeInfo.getPool(), nodeInfo.getLocation(), services);
         Request request = preparePut()
@@ -131,7 +131,8 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
         return DEFAULT_DELAY;
     }
 
-    private class DiscoveryResponseHandler<T> implements ResponseHandler<T, DiscoveryException>
+    private static class DiscoveryResponseHandler<T>
+            implements ResponseHandler<T, DiscoveryException>
     {
         private final String name;
 
