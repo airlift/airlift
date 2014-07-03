@@ -32,17 +32,15 @@ import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.reporting.ReportingModule;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import org.weakref.jmx.guice.MBeanModule;
+import org.weakref.jmx.testing.TestingMBeanModule;
 
-import javax.management.MBeanServer;
 import java.net.URI;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
-import static com.proofpoint.discovery.client.announce.ServiceAnnouncement.serviceAnnouncement;
 import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
+import static com.proofpoint.discovery.client.announce.ServiceAnnouncement.serviceAnnouncement;
 import static com.proofpoint.testing.Assertions.assertEqualsIgnoreOrder;
-import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 
 public class TestHttpServiceSelectorBinder
@@ -58,14 +56,13 @@ public class TestHttpServiceSelectorBinder
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
                 new TestingNodeModule(),
                 new TestingDiscoveryModule(),
-                new MBeanModule(),
+                new TestingMBeanModule(),
                 new ReportingModule(),
                 new Module()
                 {
                     @Override
                     public void configure(Binder binder)
                     {
-                        binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
                         discoveryBinder(binder).bindHttpSelector("apple");
                     }
                 }
@@ -90,14 +87,13 @@ public class TestHttpServiceSelectorBinder
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
                 new TestingNodeModule(),
                 new TestingDiscoveryModule(),
-                new MBeanModule(),
+                new TestingMBeanModule(),
                 new ReportingModule(),
                 new Module()
                 {
                     @Override
                     public void configure(Binder binder)
                     {
-                        binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
                         discoveryBinder(binder).bindHttpSelector(serviceType("apple"));
                     }
                 }

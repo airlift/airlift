@@ -46,9 +46,8 @@ import com.proofpoint.testing.FileUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import org.weakref.jmx.guice.MBeanModule;
+import org.weakref.jmx.testing.TestingMBeanModule;
 
-import javax.management.MBeanServer;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
@@ -67,7 +66,6 @@ import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static com.proofpoint.http.client.StringResponseHandler.createStringResponseHandler;
 import static com.proofpoint.http.server.HttpServerBinder.httpServerBinder;
-import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -106,7 +104,7 @@ public class TestHttpServerModule
                 new TestingNodeModule(),
                 new ConfigurationModule(configFactory),
                 new NullEventModule(),
-                new MBeanModule(),
+                new TestingMBeanModule(),
                 new ReportingModule(),
                 new Module()
                 {
@@ -114,7 +112,6 @@ public class TestHttpServerModule
                     public void configure(Binder binder)
                     {
                         binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
-                        binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
                     }
                 });
 
@@ -137,7 +134,7 @@ public class TestHttpServerModule
                 new TestingNodeModule(),
                 new ConfigurationModule(configFactory),
                 new NullEventModule(),
-                new MBeanModule(),
+                new TestingMBeanModule(),
                 new ReportingModule(),
                 new Module()
                 {
@@ -145,7 +142,6 @@ public class TestHttpServerModule
                     public void configure(Binder binder)
                     {
                         binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
-                        binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
                     }
                 });
 
@@ -181,7 +177,7 @@ public class TestHttpServerModule
                 new TestingNodeModule(),
                 new ConfigurationModule(configFactory),
                 new NullEventModule(),
-                new MBeanModule(),
+                new TestingMBeanModule(),
                 new ReportingModule(),
                 new Module()
                 {
@@ -189,7 +185,6 @@ public class TestHttpServerModule
                     public void configure(Binder binder)
                     {
                         binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
-                        binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
                         Multibinder.newSetBinder(binder, Filter.class, TheServlet.class).addBinding().to(DummyFilter.class).in(Scopes.SINGLETON);
                         httpServerBinder(binder).bindResource("/", "webapp/user").withWelcomeFile("user-welcome.txt");
                         httpServerBinder(binder).bindResource("/", "webapp/user2");

@@ -30,14 +30,12 @@ import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.reporting.ReportingModule;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import org.weakref.jmx.guice.MBeanModule;
+import org.weakref.jmx.testing.TestingMBeanModule;
 
-import javax.management.MBeanServer;
 import java.net.URI;
 import java.util.Set;
 
 import static com.proofpoint.discovery.client.announce.ServiceAnnouncement.serviceAnnouncement;
-import static org.mockito.Mockito.mock;
 
 public class TestHttpAnnouncementBinder
 {
@@ -122,7 +120,7 @@ public class TestHttpAnnouncementBinder
         Injector injector = Guice.createInjector(
                 new ApplicationNameModule("test-application"),
                 new TestingDiscoveryModule(),
-                new MBeanModule(),
+                new TestingMBeanModule(),
                 new ReportingModule(),
                 new Module()
                 {
@@ -130,7 +128,6 @@ public class TestHttpAnnouncementBinder
                     public void configure(Binder binder)
                     {
                         binder.bind(AnnouncementHttpServerInfo.class).toInstance(httpServerInfo);
-                        binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
                         DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("apple").addProperty("a", "apple");
                     }
                 }
@@ -155,7 +152,7 @@ public class TestHttpAnnouncementBinder
         return Guice.createInjector(
                 new ApplicationNameModule("test-application"),
                 new TestingDiscoveryModule(),
-                new MBeanModule(),
+                new TestingMBeanModule(),
                 new ReportingModule(),
                 new Module()
                 {
@@ -163,7 +160,6 @@ public class TestHttpAnnouncementBinder
                     public void configure(Binder binder)
                     {
                         binder.bind(AnnouncementHttpServerInfo.class).toInstance(httpServerInfo);
-                        binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
                         DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("apple");
                     }
                 }

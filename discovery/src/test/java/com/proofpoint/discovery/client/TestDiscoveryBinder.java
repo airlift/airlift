@@ -29,22 +29,21 @@ import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.discovery.client.DiscoveryBinder.BalancingHttpClientBindingBuilder;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
-import com.proofpoint.http.client.balancing.HttpServiceBalancer;
 import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.HttpRequestFilter;
 import com.proofpoint.http.client.Request;
+import com.proofpoint.http.client.balancing.HttpServiceBalancer;
 import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.reporting.ReportingModule;
 import com.proofpoint.tracetoken.TraceTokenModule;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import org.weakref.jmx.guice.MBeanModule;
+import org.weakref.jmx.testing.TestingMBeanModule;
 
 import javax.inject.Qualifier;
-import javax.management.MBeanServer;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -55,7 +54,6 @@ import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
 import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
 import static com.proofpoint.http.client.Request.Builder.fromRequest;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
-import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 
@@ -423,9 +421,8 @@ public class TestDiscoveryBinder
             binder.install(new ConfigurationModule(new ConfigurationFactory(configProperties)));
             binder.install(new TestingNodeModule());
             binder.install(new TestingDiscoveryModule());
-            binder.install(new MBeanModule());
+            binder.install(new TestingMBeanModule());
             binder.install(new ReportingModule());
-            binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
         }
     }
 
