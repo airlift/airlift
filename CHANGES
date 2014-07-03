@@ -1,8 +1,14 @@
 Platform 1.01
 
+* Change packaging to not include zip file dependencies
+
 * Library updates
   - jmxutils to 1.18
   - findbugs-annotations to 2.0.3
+
+* [Bug] Fix Discovery announcer client to handle zero announcements
+
+* [Bug] Fix inadvertent masking of errors when detecting jmx agent
 
 Platform 1.00
 
