@@ -1,3 +1,8 @@
+Platform 1.02
+
+* Library updates
+  - jacoco to 0.7.1
+
 Platform 1.01
 
 * Change packaging to not include zip file dependencies
