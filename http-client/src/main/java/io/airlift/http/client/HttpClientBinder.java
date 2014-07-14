@@ -41,7 +41,14 @@ public class HttpClientBinder
         return new HttpClientBinder(binder);
     }
 
-    public HttpClientBindingBuilder bindHttpClient(String name, Class<? extends Annotation> annotation)
+    public HttpClientBindingBuilder bindHttpClient(String name, Class<? extends Annotation> annotationType)
+    {
+        checkNotNull(name, "name is null");
+        checkNotNull(annotationType, "annotationType is null");
+        return createBindingBuilder(new AsyncHttpClientModule(name, annotationType));
+    }
+
+    public HttpClientBindingBuilder bindHttpClient(String name, Annotation annotation)
     {
         checkNotNull(name, "name is null");
         checkNotNull(annotation, "annotation is null");
@@ -73,6 +80,7 @@ public class HttpClientBinder
                 newSetBinder(binder, HttpRequestFilter.class, module.getFilterQualifier()));
     }
 
+
     public static class HttpClientBindingBuilder
         extends HttpClientAsyncBindingBuilder
     {
@@ -102,10 +110,10 @@ public class HttpClientBinder
 
     protected abstract static class AbstractHttpClientBindingBuilder<T extends AbstractHttpClientBindingBuilder<T>>
     {
-        protected final AbstractHttpClientModule module;
+        protected final AsyncHttpClientModule module;
         private final Multibinder<HttpRequestFilter> multibinder;
 
-        private AbstractHttpClientBindingBuilder(AbstractHttpClientModule module, Multibinder<HttpRequestFilter> multibinder)
+        private AbstractHttpClientBindingBuilder(AsyncHttpClientModule module, Multibinder<HttpRequestFilter> multibinder)
         {
             this.module = module;
             this.multibinder = multibinder;
@@ -124,6 +132,13 @@ public class HttpClientBinder
             for (Class<? extends Annotation> annotation : aliases) {
                 module.addAlias(annotation);
             }
+            return (T) this;
+        }
+
+        @SuppressWarnings("unchecked")
+        public T withAlias(Annotation alias)
+        {
+            module.addAlias(alias);
             return (T) this;
         }
 
