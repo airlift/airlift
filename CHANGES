@@ -1,7 +1,13 @@
 Platform 1.02
 
+* BalancingHttpClient
+
+  We added DiscoveryBinder.bindDiscoveredHttpClient(String) and
+  DiscoveryBinder.bindDiscoveredHttpClient(String, ServiceType) methods which
+  bind the HttpClient with the @ServiceType(type) annotation.
+
 * Library updates
-  - jacoco to 0.7.1
+  - jacoco to 0.7.1 (fixes failures when compiling with JDK 8)
 
 Platform 1.01
 
