@@ -52,7 +52,7 @@ public class DecayCounter
         count += value * weight(nowInSeconds, landmarkInSeconds);
     }
 
-    public void merge(DecayCounter decayCounter)
+    public synchronized void merge(DecayCounter decayCounter)
     {
         checkNotNull(decayCounter, "decayCounter is null");
         checkArgument(decayCounter.alpha == alpha, "Expected decayCounter to have alpha %s, but was %s", alpha, decayCounter.alpha);
