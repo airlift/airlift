@@ -101,7 +101,7 @@ public class JaxrsModule
                         missingBindings.add(key);
                     }
                     else {
-                        log.error("Jax-rs service %s is not explicitly bound using the JaxRsBinder", key);
+                        log.warn("Jax-rs service %s is not explicitly bound using the JaxrsBinder", key);
                         Object jaxRsSingleton = entry.getValue().getProvider().get();
                         singletons.add(jaxRsSingleton);
                     }
