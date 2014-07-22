@@ -1,3 +1,21 @@
+Airlift 0.92
+
+* JAX-RS 2
+
+We have upgraded to Jersey 2.9.1 which implements the JAX-RS 2 specification.  As
+part of this upgrade we have introduced an explicit binder for JAX-RS resources.
+For example the following registers the person JAX-RS resource:
+
+   JaxrsBinder.jaxrsBinder(binder).bind(PersonResource.class)
+
+The new explicit binding code is backwards compatible with the "binding scraping"
+code, so you do not need to immediately update your code.  The new JaxrsModule
+will print a warning for each resource that was not explicitly bound, so it is
+easy to find update existing code Once you have updated everything, set the
+"requireExplicitBindings" when constructing the JaxrsModule to prevent
+regressions.  In a future version we will remove the backwards compatibility,
+so please update soon.
+
 Airlift 0.91
 
 Minor maintenance release. See CHANGES.

@@ -1,3 +1,10 @@
+* 0.92
+
+- Upgrade to Jersey 2.9.1
+- Add JaxrsBinder for explicit resource binding
+- Add JaxrsModule constructor parameter to require explicit bindings
+- Add missing synchronization on DecayCounter.merge
+
 * 0.91
 
 - Change packaging to not include zip file dependencies
