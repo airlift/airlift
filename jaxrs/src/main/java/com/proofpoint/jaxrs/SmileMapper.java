@@ -1,5 +1,5 @@
 /*
- * Copyright 2010, 2012 Proofpoint, Inc.
+ * Copyright 2010 Proofpoint, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,57 +15,48 @@
  */
 package com.proofpoint.jaxrs;
 
-
-import com.fasterxml.jackson.core.JsonEncoding;
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.SerializableString;
-import com.fasterxml.jackson.core.io.CharacterEscapes;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.dataformat.smile.SmileFactory;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.net.HttpHeaders;
-import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.proofpoint.log.Logger;
-import org.apache.bval.jsr303.ApacheValidationProvider;
 
 import javax.validation.ConstraintViolation;
-import javax.validation.Valid;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 // This code is based on JacksonJsonProvider
 @Provider
-@Consumes({MediaType.APPLICATION_JSON, "text/json"})
-@Produces({MediaType.APPLICATION_JSON, "text/json"})
-public class JsonMapper
+@Consumes("application/x-jackson-smile")
+@Produces("application/x-jackson-smile; qs=0.1")
+public class SmileMapper
         implements MessageBodyReader<Object>, MessageBodyWriter<Object>
 {
-    private static final Validator VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
+    public static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
 
     /**
      * Looks like we need to worry about accidental
@@ -73,7 +64,7 @@ public class JsonMapper
      * probably not a very good way to do it, but let's start by
      * blacklisting things we are not to handle.
      */
-    private final static ImmutableSet<Class<?>> IO_CLASSES = ImmutableSet.<Class<?>>builder()
+    private static final ImmutableSet<Class<?>> IO_CLASSES = ImmutableSet.<Class<?>>builder()
             .add(InputStream.class)
             .add(java.io.Reader.class)
             .add(OutputStream.class)
@@ -83,27 +74,15 @@ public class JsonMapper
             .add(javax.ws.rs.core.StreamingOutput.class)
             .add(Response.class)
             .build();
-    public static final Logger log = Logger.get(JsonMapper.class);
+
+    public static final Logger log = Logger.get(SmileMapper.class);
 
     private final ObjectMapper objectMapper;
 
-    private final AtomicReference<UriInfo> uriInfo = new AtomicReference<>();
-
     @Inject
-    public JsonMapper(ObjectMapper objectMapper)
+    public SmileMapper(ObjectMapper objectMapper)
     {
         this.objectMapper = objectMapper;
-    }
-
-    @Context
-    public void setUriInfo(UriInfo uriInfo)
-    {
-        this.uriInfo.set(uriInfo);
-    }
-
-    private UriInfo getUriInfo()
-    {
-        return this.uriInfo.get();
     }
 
     @Override
@@ -143,7 +122,7 @@ public class JsonMapper
     {
         Object object;
         try {
-            JsonParser jsonParser = objectMapper.getFactory().createJsonParser(inputStream);
+            JsonParser jsonParser = new SmileFactory().createParser(inputStream);
 
             // Important: we are NOT to close the underlying stream after
             // mapping, so we need to instruct parser:
@@ -152,33 +131,31 @@ public class JsonMapper
             object = objectMapper.readValue(jsonParser, objectMapper.getTypeFactory().constructType(genericType));
         }
         catch (Exception e) {
-            // We want to handle parsing exceptions differently than regular IOExceptions so just rethrow IOExceptions
+            // we want to return a 400 for bad JSON but not for a real IO exception
             if (e instanceof IOException && !(e instanceof JsonProcessingException) && !(e instanceof EOFException)) {
-                throw e;
+                throw (IOException) e;
             }
 
             // log the exception at debug so it can be viewed during development
             // Note: we are not logging at a higher level because this could cause a denial of service
             log.debug(e, "Invalid json for Java type %s", type);
 
-            // Invalid json request. Throwing exception so the response code can be overridden using a mapper.
-            throw new JsonMapperParsingException(type, e);
+            // invalid json request
+            throw new WebApplicationException(
+                    Response.status(Response.Status.BAD_REQUEST)
+                            .entity("Invalid json for Java type " + type)
+                            .build());
         }
 
         // validate object using the bean validation framework
-        Set<ConstraintViolation<Object>> violations;
-        if (TypeToken.of(genericType).getRawType().equals(List.class)) {
-            violations = VALIDATOR.<Object>validate(new ValidatableList((List<?>) object));
-        }
-        else if (TypeToken.of(genericType).getRawType().equals(Map.class)) {
-            violations = VALIDATOR.<Object>validate(new ValidatableMap((Map<?, ?>) object));
-        }
-        else {
-            violations = VALIDATOR.validate(object);
-        }
+        Set<ConstraintViolation<Object>> violations = VALIDATOR.validate(object);
         if (!violations.isEmpty()) {
-            throw new BeanValidationException(violations);
+            throw new WebApplicationException(
+                    Response.status(Response.Status.BAD_REQUEST)
+                            .entity(messagesFor(violations))
+                            .build());
         }
+
 
         return object;
     }
@@ -201,38 +178,27 @@ public class JsonMapper
             OutputStream outputStream)
             throws IOException
     {
-        // Prevent broken browser from attempting to render the json as html
-        httpHeaders.add(HttpHeaders.X_CONTENT_TYPE_OPTIONS, "nosniff");
-
-        JsonFactory jsonFactory = objectMapper.getFactory();
-        jsonFactory.setCharacterEscapes(HTMLCharacterEscapes.INSTANCE);
-
-        JsonGenerator jsonGenerator = jsonFactory.createJsonGenerator(outputStream, JsonEncoding.UTF8);
+        JsonGenerator jsonGenerator = new SmileFactory().createGenerator(outputStream);
 
         // Important: we are NOT to close the underlying stream after
         // mapping, so we need to instruct generator:
         jsonGenerator.disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
 
-        // Pretty print?
-        if (isPrettyPrintRequested()) {
-            jsonGenerator.useDefaultPrettyPrinter();
-        }
-
         // 04-Mar-2010, tatu: How about type we were given? (if any)
         JavaType rootType = null;
         if (genericType != null && value != null) {
             // 10-Jan-2011, tatu: as per [JACKSON-456], it's not safe to just force root
-            //    type since it prevents polymorphic type serialization. Since we really
-            //    just need this for generics, let's only use generic type if it's truly
-            //    generic.
+            // type since it prevents polymorphic type serialization. Since we really
+            // just need this for generics, let's only use generic type if it's truly
+            // generic.
             if (genericType.getClass() != Class.class) { // generic types are other implementations of 'java.lang.reflect.Type'
                 // This is still not exactly right; should root type be further
                 // specialized with 'value.getClass()'? Let's see how well this works before
                 // trying to come up with more complete solution.
                 rootType = objectMapper.getTypeFactory().constructType(genericType);
                 // 26-Feb-2011, tatu: To help with [JACKSON-518], we better recognize cases where
-                //    type degenerates back into "Object.class" (as is the case with plain TypeVariable,
-                //    for example), and not use that.
+                // type degenerates back into "Object.class" (as is the case with plain TypeVariable,
+                // for example), and not use that.
                 //
                 if (rootType.getRawClass() == Object.class) {
                     rootType = null;
@@ -240,85 +206,21 @@ public class JsonMapper
             }
         }
 
-        ObjectWriter writer;
         if (rootType != null) {
-            writer = objectMapper.writerWithType(rootType);
+            objectMapper.writerWithType(rootType).writeValue(jsonGenerator, value);
         }
         else {
-            writer = objectMapper.writer();
-        }
-
-        writer.writeValue(jsonGenerator, value);
-
-        // add a newline so when you use curl it looks nice
-        outputStream.write('\n');
-    }
-
-    private boolean isPrettyPrintRequested()
-    {
-        UriInfo uriInfo = getUriInfo();
-        if (uriInfo == null) {
-            return false;
-        }
-
-        MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
-        return queryParameters.containsKey("pretty");
-    }
-
-    private static class HTMLCharacterEscapes
-            extends CharacterEscapes
-    {
-        private static final HTMLCharacterEscapes INSTANCE = new HTMLCharacterEscapes();
-
-        private final int[] asciiEscapes;
-
-        private HTMLCharacterEscapes()
-        {
-            // start with set of characters known to require escaping (double-quote, backslash etc)
-            int[] esc = CharacterEscapes.standardAsciiEscapesForJSON();
-
-            // and force escaping of a few others:
-            esc['<'] = CharacterEscapes.ESCAPE_STANDARD;
-            esc['>'] = CharacterEscapes.ESCAPE_STANDARD;
-            esc['&'] = CharacterEscapes.ESCAPE_STANDARD;
-            esc['\''] = CharacterEscapes.ESCAPE_STANDARD;
-
-            asciiEscapes = esc;
-        }
-
-        @Override
-        public int[] getEscapeCodesForAscii()
-        {
-            return asciiEscapes;
-        }
-
-        @Override
-        public SerializableString getEscapeSequence(int ch)
-        {
-            // no further escaping (beyond ASCII chars) needed:
-            return null;
+            objectMapper.writeValue(jsonGenerator, value);
         }
     }
 
-    private static class ValidatableList
+    private static List<String> messagesFor(Collection<? extends ConstraintViolation<?>> violations)
     {
-        @Valid
-        final private List<?> list;
-
-        ValidatableList(List<?> list)
-        {
-            this.list = list;
+        ImmutableList.Builder<String> messages = new ImmutableList.Builder<>();
+        for (ConstraintViolation<?> violation : violations) {
+            messages.add(violation.getPropertyPath() + " " + violation.getMessage());
         }
-    }
 
-    private static class ValidatableMap
-    {
-        @Valid
-        final private Map<?, ?> map;
-
-        ValidatableMap(Map<?, ?> map)
-        {
-            this.map = map;
-        }
+        return messages.build();
     }
 }
