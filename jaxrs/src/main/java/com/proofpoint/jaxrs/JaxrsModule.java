@@ -18,12 +18,14 @@ package com.proofpoint.jaxrs;
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.proofpoint.http.server.TheServlet;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
 
 import javax.servlet.Servlet;
+import java.util.HashMap;
 import java.util.Map;
 
 public class JaxrsModule implements Module
@@ -37,9 +39,14 @@ public class JaxrsModule implements Module
         binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(Key.get(GuiceContainer.class));
         binder.bind(JsonMapper.class).in(Scopes.SINGLETON);
         binder.bind(ParsingExceptionMapper.class).in(Scopes.SINGLETON);
-        binder.bind(TimingResourceFilterFactory.class).in(Scopes.SINGLETON);
-        binder.bind(new TypeLiteral<Map<String, String>>()
-        {
-        }).annotatedWith(TheServlet.class).toProvider(TheServletParametersProvider.class).in(Scopes.SINGLETON);
+    }
+
+    @Provides
+    @TheServlet
+    public static Map<String, String> createTheServletParams()
+    {
+        HashMap<String, String> params = new HashMap<>();
+        params.put("com.sun.jersey.spi.container.ContainerRequestFilters", OverrideMethodFilter.class.getName());
+        return params;
     }
 }

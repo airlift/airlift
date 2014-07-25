@@ -244,7 +244,7 @@ public class HttpServer
 
         HandlerList rootHandlers = new HandlerList();
         if (config.isAdminEnabled()) {
-            rootHandlers.addHandler(createServletContext(theServlet, adminParameters, true, adminFilters, queryStringFilter, tokenManager, loginService, "admin"));
+        //todo fix     rootHandlers.addHandler(createServletContext(theServlet, adminParameters, true, adminFilters, queryStringFilter, tokenManager, loginService, "admin"));
         }
         rootHandlers.addHandler(statsHandler);
         server.setHandler(rootHandlers);

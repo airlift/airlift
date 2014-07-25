@@ -16,41 +16,36 @@
 package com.proofpoint.jaxrs;
 
 import com.proofpoint.units.Duration;
-import com.sun.jersey.api.model.AbstractMethod;
-import com.sun.jersey.spi.container.ContainerRequest;
-import com.sun.jersey.spi.container.ContainerRequestFilter;
-import com.sun.jersey.spi.container.ContainerResponse;
-import com.sun.jersey.spi.container.ContainerResponseFilter;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 class TimingFilter
-        implements ContainerRequestFilter, ContainerResponseFilter
+//todo fix        implements ContainerRequestFilter, ContainerResponseFilter
 {
-    private static final String START_TIME_KEY = TimingFilter.class.getName() + ".start-time";
-    private final AbstractMethod abstractMethod;
-    private final RequestStats requestStats;
-
-    TimingFilter(AbstractMethod abstractMethod, RequestStats requestStats)
-    {
-        this.abstractMethod = checkNotNull(abstractMethod, "abstractMethod is null");
-        this.requestStats = checkNotNull(requestStats, "requestStats is null");
-    }
-
-    @Override
-    public ContainerRequest filter(ContainerRequest request)
-    {
-        request.getProperties().put(START_TIME_KEY, System.nanoTime());
-        return request;
-    }
-
-    @Override
-    public ContainerResponse filter(ContainerRequest request, ContainerResponse response)
-    {
-        Long startTime = (Long) request.getProperties().get(START_TIME_KEY);
-        requestStats.requestTime(abstractMethod.getMethod().getName(), response.getStatus())
-                .add(Duration.nanosSince(startTime));
-
-        return response;
-    }
+//    private static final String START_TIME_KEY = TimingFilter.class.getName() + ".start-time";
+//    private final AbstractMethod abstractMethod;
+//    private final RequestStats requestStats;
+//
+//    TimingFilter(AbstractMethod abstractMethod, RequestStats requestStats)
+//    {
+//        this.abstractMethod = checkNotNull(abstractMethod, "abstractMethod is null");
+//        this.requestStats = checkNotNull(requestStats, "requestStats is null");
+//    }
+//
+//    @Override
+//    public ContainerRequest filter(ContainerRequest request)
+//    {
+//        request.getProperties().put(START_TIME_KEY, System.nanoTime());
+//        return request;
+//    }
+//
+//    @Override
+//    public ContainerResponse filter(ContainerRequest request, ContainerResponse response)
+//    {
+//        Long startTime = (Long) request.getProperties().get(START_TIME_KEY);
+//        requestStats.requestTime(abstractMethod.getMethod().getName(), response.getStatus())
+//                .add(Duration.nanosSince(startTime));
+//
+//        return response;
+//    }
 }
