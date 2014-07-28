@@ -65,7 +65,7 @@ public class JmxHttpModule implements Module
     {
         binder.disableCircularProxies();
 
-        jaxrsBinder(binder).bind(MBeanResource.class);
+        jaxrsBinder(binder).bindAdmin(MBeanResource.class);
         jsonBinder(binder).addSerializerBinding(InetAddress.class).toInstance(ToStringSerializer.instance);
         jsonBinder(binder).addSerializerBinding(ObjectName.class).toInstance(ToStringSerializer.instance);
         jsonBinder(binder).addSerializerBinding(OpenType.class).toInstance(ToStringSerializer.instance);

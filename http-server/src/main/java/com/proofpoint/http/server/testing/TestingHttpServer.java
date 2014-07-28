@@ -83,6 +83,7 @@ public class TestingHttpServer extends HttpServer
                 initParameters,
                 ImmutableSet.copyOf(filters),
                 resources,
+                null,
                 ImmutableMap.<String, String>of(),
                 ImmutableSet.<Filter>of(),
                 null,

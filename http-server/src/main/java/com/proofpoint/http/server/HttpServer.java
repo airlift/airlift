@@ -80,6 +80,7 @@ public class HttpServer
             Map<String, String> parameters,
             Set<Filter> filters,
             Set<HttpResourceBinding> resources,
+            Servlet theAdminServlet,
             Map<String, String> adminParameters,
             Set<Filter> adminFilters,
             MBeanServer mbeanServer,
@@ -212,7 +213,6 @@ public class HttpServer
          *           |       |--- resource handlers
          *           |--- log handler
          *    |-- admin context handler
-         *           |--- admin filter
          *           |--- timing filter
          *           |--- query string filter
          *           |--- trace token filter
@@ -243,8 +243,8 @@ public class HttpServer
         statsHandler.setHandler(handlers);
 
         HandlerList rootHandlers = new HandlerList();
-        if (config.isAdminEnabled()) {
-        //todo fix     rootHandlers.addHandler(createServletContext(theServlet, adminParameters, true, adminFilters, queryStringFilter, tokenManager, loginService, "admin"));
+        if (theAdminServlet != null && config.isAdminEnabled()) {
+            rootHandlers.addHandler(createServletContext(theAdminServlet, adminParameters, true, adminFilters, queryStringFilter, tokenManager, loginService, "admin"));
         }
         rootHandlers.addHandler(statsHandler);
         server.setHandler(rootHandlers);
@@ -261,7 +261,11 @@ public class HttpServer
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
 
-        context.addFilter(new FilterHolder(new AdminFilter(isAdmin)), "/*", null);
+        if (!isAdmin) {
+            // Filter out any /admin JAX-RS resources that were implicitly bound.
+            // May be removed once we require explicit JAX-RS binding.
+            context.addFilter(new FilterHolder(new AdminFilter(false)), "/*", null);
+        }
         context.addFilter(new FilterHolder(new TimingFilter()), "/*", null);
         context.addFilter(new FilterHolder(queryStringFilter), "/*", null);
         if (tokenManager != null) {

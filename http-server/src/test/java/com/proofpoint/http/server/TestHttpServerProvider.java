@@ -268,6 +268,7 @@ public class TestHttpServerProvider
                 new DummyServlet(),
                 ImmutableSet.<Filter>of(new DummyFilter()),
                 ImmutableSet.<HttpResourceBinding>of(),
+                new DummyServlet(),
                 ImmutableSet.<Filter>of(),
                 new RequestStats(),
                 new TestingHttpServer.DetailedRequestStats(),

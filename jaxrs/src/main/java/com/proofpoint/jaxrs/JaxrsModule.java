@@ -15,6 +15,7 @@
  */
 package com.proofpoint.jaxrs;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
 import com.google.inject.Binding;
@@ -22,6 +23,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provides;
+import com.proofpoint.http.server.TheAdminServlet;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.log.Logger;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -72,6 +74,8 @@ public class JaxrsModule
         jaxrsBinder(binder).bind(JsonMapper.class);
         jaxrsBinder(binder).bind(ParsingExceptionMapper.class);
         jaxrsBinder(binder).bind(OverrideMethodFilter.class);
+        jaxrsBinder(binder).bindAdmin(ParsingExceptionMapper.class);
+        jaxrsBinder(binder).bindAdmin(OverrideMethodFilter.class);
 
         newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
         newSetBinder(binder, JaxrsBinding.class, JaxrsResource.class).permitDuplicates();
@@ -131,6 +135,19 @@ public class JaxrsModule
             return false;
         }
         return isJaxRsType((Class<?>) type);
+    }
+
+    @Provides
+    @TheAdminServlet
+    public static Servlet createTheAdminServlet(@AdminJaxrsResource Set<Object> adminJaxRsSingletons, ObjectMapper objectMapper) {
+        // The admin servlet needs its own JsonMapper object so that it references
+        // the admin port's UriInfo
+        ImmutableSet.Builder<Object> singletons = ImmutableSet.builder();
+        singletons.addAll(adminJaxRsSingletons);
+        singletons.add(new JsonMapper(objectMapper));
+
+        Application application = new JaxRsApplication(singletons.build());
+        return new ServletContainer(ResourceConfig.forApplication(application));
     }
 
     private static boolean isJaxRsType(Class<?> type)

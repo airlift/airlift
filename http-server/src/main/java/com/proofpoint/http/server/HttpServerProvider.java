@@ -47,6 +47,7 @@ public class HttpServerProvider
     private final Servlet theServlet;
     private final Set<HttpResourceBinding> resources;
     private Map<String, String> servletInitParameters = ImmutableMap.of();
+    private final Servlet theAdminServlet;
     private Map<String, String> adminServletInitParameters = ImmutableMap.of();
     private MBeanServer mbeanServer;
     private LoginService loginService;
@@ -64,6 +65,7 @@ public class HttpServerProvider
             @TheServlet Servlet theServlet,
             @TheServlet Set<Filter> filters,
             @TheServlet Set<HttpResourceBinding> resources,
+            @TheAdminServlet Servlet theAdminServlet,
             @TheAdminServlet Set<Filter> adminFilters,
             RequestStats stats,
             DetailedRequestStats detailedRequestStats,
@@ -75,6 +77,7 @@ public class HttpServerProvider
         checkNotNull(theServlet, "theServlet is null");
         checkNotNull(filters, "filters is null");
         checkNotNull(resources, "resources is null");
+        checkNotNull(theAdminServlet, "theAdminServlet is null");
         checkNotNull(adminFilters, "adminFilters is null");
         checkNotNull(stats, "stats is null");
         checkNotNull(detailedRequestStats, "detailedRequestStats is null");
@@ -86,6 +89,7 @@ public class HttpServerProvider
         this.theServlet = theServlet;
         this.filters = ImmutableSet.copyOf(filters);
         this.resources = ImmutableSet.copyOf(resources);
+        this.theAdminServlet = theAdminServlet;
         this.adminFilters = ImmutableSet.copyOf(adminFilters);
         this.stats = stats;
         this.detailedRequestStats = detailedRequestStats;
@@ -132,6 +136,7 @@ public class HttpServerProvider
                     servletInitParameters,
                     filters,
                     resources,
+                    theAdminServlet,
                     adminServletInitParameters,
                     adminFilters,
                     mbeanServer,
