@@ -1,3 +1,35 @@
+Platform 1.03
+
+* JAX-RS 2
+
+  We have upgraded to Jersey 2.9.1 which implements the JAX-RS 2 specification.
+  Platform clients need to change the dependency:
+
+    <groupId>com.sun.jersey</groupId>
+    <artifactId>jersey-core</artifactId>
+
+  to:
+
+    <groupId>javax.ws.rs</groupId>
+    <artifactId>javax.ws.rs-api</artifactId>
+
+  As part of this upgrade we have introduced an explicit binder for JAX-RS
+  resources. For example, the following registers the person JAX-RS resource:
+
+    JaxrsBinder.jaxrsBinder(binder).bind(PersonResource.class)
+
+  The new explicit binding code is backwards compatible with the "binding
+  scraping" code, so you do not need to immediately update your code. The new
+  JaxrsModule will print a warning for each resource that was not explicitly
+  bound, so it is easy to find update existing code. Once you have updated
+  everything, use JaxrsModule.explicitJaxrsModule() to prevent regressions.
+  In a future version we will remove the backwards compatibility, so please
+  update soon.
+
+  We have removed JaxrsBinder.bindResourceFilterFactory(). Users of this  will
+  have to convert their ResouceFilterFactory implementations to JAX-RS 2
+  server filters.
+
 Platform 1.02
 
 * BalancingHttpClient
