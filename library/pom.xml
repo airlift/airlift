@@ -333,6 +333,26 @@
                 </plugin>
 
                 <plugin>
+                    <groupId>com.mycila.maven-license-plugin</groupId>
+                    <artifactId>maven-license-plugin</artifactId>
+                    <version>1.9.0</version>
+                    <configuration>
+                        <skipExistingHeaders>true</skipExistingHeaders>
+                        <header>license-header.txt</header>
+                        <mapping>
+                            <java>SLASHSTAR_STYLE</java>
+                        </mapping>
+                        <excludes>
+                            <exclude>**/README.txt</exclude>
+                            <exclude>**/config.properties</exclude>
+                            <exclude>**/log.properties</exclude>
+                            <exclude>**/src/*/resources/**</exclude>
+                            <exclude>**/*.html</exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
+
+                <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
                     <version>0.7.1.201405082137</version>

@@ -43,30 +43,6 @@
         <maven>3.0</maven>
     </prerequisites>
 
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <inherited>false</inherited>
-                    <groupId>com.mycila.maven-license-plugin</groupId>
-                    <artifactId>maven-license-plugin</artifactId>
-                    <version>1.9.0</version>
-                    <configuration>
-                        <header>license-header.txt</header>
-                        <mapping>
-                            <java>SLASHSTAR_STYLE</java>
-                        </mapping>
-                        <excludes>
-                            <exclude>**/README.txt</exclude>
-                            <exclude>**/config.properties</exclude>
-                            <exclude>**/log.properties</exclude>
-                        </excludes>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
-
     <profiles>
         <profile>
             <id>child-project-profile</id>
