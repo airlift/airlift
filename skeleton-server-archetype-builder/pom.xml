@@ -123,6 +123,12 @@
   <description>Skeleton server archetype</description>
   <url>http://github.com/proofpoint/platform</url>
 
+  <parent>
+      <groupId>com.proofpoint.platform</groupId>
+      <artifactId>library</artifactId>
+      <version>1.04</version>
+  </parent>
+
   <inceptionYear>2010</inceptionYear>
   <organization>
     <name>Proofpoint, Inc.</name>
@@ -164,33 +170,6 @@
     <developerConnection>scm:git:git@github.com:proofpoint/platform.git</developerConnection>
     <url>http://github.com/proofpoint/platform/tree/master</url>
   </scm>
-
-    <profiles>
-        <profile>
-            <id>sonatype-oss-release</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.4</version>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                                <configuration>
-                                    <useAgent>true</useAgent>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 
   <build>]]></replacevalue>
                                     </replacefilter>

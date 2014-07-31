@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.proofpoint.platform</groupId>
     <artifactId>rack-server-base</artifactId>
-    <version>1.04-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>rack-server-base</name>
     <description>Proofpoint Platform Rack Server base POM</description>
     <url>http://github.com/proofpoint/platform</url>
+
+    <parent>
+        <groupId>com.proofpoint.platform</groupId>
+        <artifactId>library</artifactId>
+        <version>1.04-SNAPSHOT</version>
+        <relativePath>../library/pom.xml</relativePath>
+    </parent>
 
     <inceptionYear>2010</inceptionYear>
     <organization>
@@ -100,27 +105,6 @@
             </activation>
 
             <build>
-                <pluginManagement>
-                    <plugins>
-                        <plugin>
-                            <groupId>org.apache.maven.plugins</groupId>
-                            <artifactId>maven-gpg-plugin</artifactId>
-                            <version>1.4</version>
-                            <executions>
-                                <execution>
-                                    <id>sign-artifacts</id>
-                                    <phase>verify</phase>
-                                    <goals>
-                                        <goal>sign</goal>
-                                    </goals>
-                                    <configuration>
-                                        <useAgent>true</useAgent>
-                                    </configuration>
-                                </execution>
-                            </executions>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
                 <plugins>
                     <plugin>
                          <groupId>org.apache.maven.plugins</groupId>
@@ -297,19 +281,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.4</version>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                                <configuration>
-                                    <useAgent>true</useAgent>
-                                </configuration>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>
