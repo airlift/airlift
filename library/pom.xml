@@ -55,6 +55,7 @@
         <platform.check.skip-duplicate-finder>${platform.check.skip-basic}</platform.check.skip-duplicate-finder>
 
         <!-- extended checks -->
+        <platform.check.skip-findbugs>${platform.check.skip-extended}</platform.check.skip-findbugs>
         <platform.check.skip-jacoco>${platform.check.skip-extended}</platform.check.skip-jacoco>
 
         <platform.check.fail-all>true</platform.check.fail-all>
@@ -64,6 +65,9 @@
         <!-- basic checks -->
         <platform.check.fail-enforcer>${platform.check.fail-basic}</platform.check.fail-enforcer>
         <platform.check.fail-duplicate-finder>${platform.check.fail-basic}</platform.check.fail-duplicate-finder>
+
+        <!-- extended checks -->
+        <platform.check.fail-findbugs>${platform.check.fail-extended}</platform.check.fail-findbugs>
 
         <dep.jetty.version>9.1.4.v20140401</dep.jetty.version>
         <dep.slf4j.version>1.7.5</dep.slf4j.version>
@@ -325,6 +329,26 @@
                     <executions>
                         <execution>
                             <phase>process-test-classes</phase>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>findbugs-maven-plugin</artifactId>
+                    <version>2.5.2</version>
+                    <configuration>
+                        <skip>${platform.check.skip-findbugs}</skip>
+                        <jvmArgs>-Xmx${platform.build.jvmsize}</jvmArgs>
+                        <failOnError>${platform.check.fail-findbugs}</failOnError>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>default</id>
+                            <phase>verify</phase>
                             <goals>
                                 <goal>check</goal>
                             </goals>
