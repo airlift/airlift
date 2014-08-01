@@ -46,10 +46,6 @@
         <url>http://github.com/proofpoint/platform/tree/master</url>
     </scm>
 
-    <prerequisites>
-        <maven>3.0</maven>
-    </prerequisites>
-
     <build>
         <pluginManagement>
             <plugins>
