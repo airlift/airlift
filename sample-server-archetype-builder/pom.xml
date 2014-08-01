@@ -20,7 +20,6 @@
             <!-- This all super lame but works around a ton of bugs/limitations in the archetype plugin -->
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.6</version>
                 <executions>
                     <execution>
                         <id>make-clean-copy-of-project</id>
@@ -50,7 +49,6 @@
             </plugin>
             <plugin>
                 <artifactId>maven-invoker-plugin</artifactId>
-                <version>1.5</version>
                 <executions>
                     <execution>
                         <id>generate-archetype</id>
@@ -81,7 +79,6 @@
             </plugin>
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.6</version>
                 <executions>
                     <execution>
                         <id>munge-generated-pom</id>
@@ -165,7 +162,6 @@
 
             <plugin>
                 <artifactId>maven-invoker-plugin</artifactId>
-                <version>1.5</version>
                 <configuration>
                     <pomIncludes>
                         <pomInclude>pom.xml</pomInclude>
@@ -221,7 +217,6 @@
                 <plugins>
                     <plugin>
                         <artifactId>maven-invoker-plugin</artifactId>
-                        <version>1.5</version>
                         <configuration>
                             <projectsDirectory>${project.build.directory}/archetype</projectsDirectory>
                             <streamLogs>true</streamLogs>
