@@ -112,6 +112,7 @@ public class TestHttpServerModule
                     public void configure(Binder binder)
                     {
                         binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
+                        binder.bind(Servlet.class).annotatedWith(TheAdminServlet.class).to(DummyServlet.class);
                     }
                 });
 
@@ -142,6 +143,7 @@ public class TestHttpServerModule
                     public void configure(Binder binder)
                     {
                         binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
+                        binder.bind(Servlet.class).annotatedWith(TheAdminServlet.class).to(DummyServlet.class);
                     }
                 });
 
@@ -185,6 +187,7 @@ public class TestHttpServerModule
                     public void configure(Binder binder)
                     {
                         binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
+                        binder.bind(Servlet.class).annotatedWith(TheAdminServlet.class).to(DummyServlet.class);
                         Multibinder.newSetBinder(binder, Filter.class, TheServlet.class).addBinding().to(DummyFilter.class).in(Scopes.SINGLETON);
                         httpServerBinder(binder).bindResource("/", "webapp/user").withWelcomeFile("user-welcome.txt");
                         httpServerBinder(binder).bindResource("/", "webapp/user2");
