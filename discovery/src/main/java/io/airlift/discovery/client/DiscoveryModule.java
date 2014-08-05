@@ -80,6 +80,7 @@ public class DiscoveryModule
         binder.bind(ServiceSelectorManager.class).in(Scopes.SINGLETON);
 
         newExporter(binder).export(ServiceInventory.class).withGeneratedName();
+        newExporter(binder).export(Announcer.class).withGeneratedName();
     }
 
     @SuppressWarnings("deprecation")

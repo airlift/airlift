@@ -25,6 +25,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
 import io.airlift.units.Duration;
+import org.weakref.jmx.Managed;
 
 import javax.annotation.PreDestroy;
 
@@ -52,6 +53,7 @@ public class Announcer
     private final DiscoveryAnnouncementClient announcementClient;
     private final ScheduledExecutorService executor;
     private final AtomicBoolean started = new AtomicBoolean(false);
+    private final AtomicBoolean suspended = new AtomicBoolean(false);
 
     private final ExponentialBackOff errorBackOff = new ExponentialBackOff(
             new Duration(1, MILLISECONDS),
@@ -98,6 +100,10 @@ public class Announcer
         }
 
         // unannounce
+        if (suspended.get()) {
+            return;
+        }
+
         try {
             getFutureResult(announcementClient.unannounce(), DiscoveryException.class);
         }
@@ -107,6 +113,26 @@ public class Announcer
             }
             else {
                 log.error(e);
+            }
+        }
+    }
+
+    @Managed
+    public boolean getSuspendAnnouncing()
+    {
+        return suspended.get();
+    }
+
+    @Managed
+    public void setSuspendAnnouncing(boolean suspend)
+    {
+        if (suspend) {
+            if (!suspended.getAndSet(true)) {
+                announcementClient.unannounce();
+            }
+        } else {
+            if (suspended.getAndSet(false)) {
+                announcementClient.announce(getServiceAnnouncements());
             }
         }
     }
@@ -165,7 +191,9 @@ public class Announcer
             @Override
             public void run()
             {
-                announce();
+                if (!suspended.get()) {
+                    announce();
+                }
             }
         }, delay.toMillis(), MILLISECONDS);
     }

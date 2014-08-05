@@ -144,6 +144,26 @@ public class TestAnnouncer
         assertAnnounced();
     }
 
+    @Test
+    public void testSuspendAndResume()
+        throws Exception
+    {
+        announcer.start();
+
+        Thread.sleep(100);
+        assertAnnounced(serviceAnnouncement);
+
+        announcer.setSuspendAnnouncing(true);
+
+        Thread.sleep(100);
+        assertAnnounced();
+
+        announcer.setSuspendAnnouncing(false);
+
+        Thread.sleep(100);
+        assertAnnounced(serviceAnnouncement);
+    }
+
     private void assertAnnounced(ServiceAnnouncement... serviceAnnouncements)
     {
         ServiceDescriptors serviceDescriptors = discoveryClient.getServices(serviceType.value(), "pool").checkedGet();
