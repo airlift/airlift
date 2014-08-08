@@ -31,6 +31,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.rpm.username>${project.artifactId}</project.rpm.username>
     </properties>
 
     <scm>
@@ -208,6 +209,148 @@
                             <localCheckout>true</localCheckout>
                             <preparationGoals>clean install</preparationGoals>
                             <tagNameFormat>@{project.version}</tagNameFormat>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>create-rpm</id>
+            <activation>
+                <os>
+                    <name>Linux</name>
+                </os>
+                <file>
+                    <exists>.build-rpm</exists>
+                </file>
+            </activation>
+            <build>
+                <plugins>
+                    <!-- This is here to explode the launcher tarball for packaging -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+            			<version>2.7</version>
+                        <executions>
+                            <execution>
+                                <id>unpack launcher</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>unpack</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>com.proofpoint.platform</groupId>
+                                            <artifactId>launcher</artifactId>
+                                            <classifier>bin</classifier>
+                                            <type>tar.gz</type>
+                                            <outputDirectory>${project.build.directory}/launcher</outputDirectory>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>rpm-maven-plugin</artifactId>
+                        <version>2.1-alpha-4</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>attached-rpm</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <group>Application/Services</group>
+                            <defaultDirmode>755</defaultDirmode>
+                            <defaultFilemode>644</defaultFilemode>
+                            <defaultUsername>root</defaultUsername>
+                            <defaultGroupname>root</defaultGroupname>
+                            <mappings>
+                            <!-- Root directory and README -->
+                                 <mapping>
+                                     <directory>/opt/proofpoint/${project.artifactId}</directory>
+                                     <directoryIncluded>true</directoryIncluded>
+                                     <sources>
+                                         <source>
+                                             <location>README.txt</location>
+                                         </source>
+                                     </sources>
+                                 </mapping>
+                            <!-- Launch scripts (copied from the dir that was unpacked by the dependency plugin) -->
+                                 <mapping>
+                                     <directory>/opt/proofpoint/${project.artifactId}/bin</directory>
+                                     <directoryIncluded>true</directoryIncluded>
+                                     <sources>
+                                         <source>
+                                             <location>${project.build.directory}/launcher/bin</location>
+                                             <excludes>
+                                                 <exclude>**/init.redhat</exclude>
+                                             </excludes>
+                                         </source>
+                                         <source>
+                                             <location>${project.build.directory}/launcher/bin/init.redhat</location>
+                                             <filter>true</filter>
+                                         </source>
+                                     </sources>
+                                     <username>root</username>
+                                     <groupname>root</groupname>
+                                     <filemode>755</filemode>
+                                 </mapping>
+                            <!-- Service control -->
+                                 <mapping>
+                                     <directory>/etc/init.d</directory>
+                                     <sources>
+                                         <softlinkSource>
+                                             <location>/opt/proofpoint/${project.artifactId}/bin/init.redhat</location>
+                                             <destination>${project.artifactId}</destination>
+                                         </softlinkSource>
+                                     </sources>
+                                     <username>root</username>
+                                     <groupname>root</groupname>
+                                     <filemode>755</filemode>
+                                 </mapping>
+                            <!-- Libraries -->
+                                 <mapping>
+                                     <directory>/opt/proofpoint/${project.artifactId}/lib</directory>
+                                     <directoryIncluded>true</directoryIncluded>
+                                     <dependency />
+                                     <!-- Manually include the JAR containing the application code -->
+                                     <sources>
+                                         <source>
+                                             <location>${project.build.directory}/${project.artifactId}-${project.version}.jar</location>
+                                             <destination>main.jar</destination>
+                                         </source>
+                                         <source>
+                                             <location>${project.build.directory}/launcher/lib/launcher.jar</location>
+                                             <destination>launcher.jar</destination>
+                                         </source>
+                                     </sources>
+                                 </mapping>
+                            <!-- Configuration directory should be owned by this package -->
+                                 <mapping>
+                                     <directory>/opt/proofpoint/${project.artifactId}/etc</directory>
+                                     <directoryIncluded>true</directoryIncluded>
+                                     <configuration>noreplace</configuration>
+                                 </mapping>
+                            <!-- local output directory for logging and so on -->
+                                 <mapping>
+                                     <directory>/opt/proofpoint/${project.artifactId}/var</directory>
+                                     <directoryIncluded>true</directoryIncluded>
+                                     <username>${project.rpm.username}</username>
+                                     <groupname>${project.rpm.username}</groupname>
+                                     <filemode>755</filemode>
+                                 </mapping>
+                            </mappings>
+                            <preinstallScriptlet>
+                                <script>if ! id ${project.rpm.username} >/dev/null ; then exit 1; fi</script>
+                            </preinstallScriptlet>
+                            <preremoveScriptlet>
+                                <script>/sbin/service ${project.artifactId} stop</script>
+                            </preremoveScriptlet>
                         </configuration>
                     </plugin>
                 </plugins>

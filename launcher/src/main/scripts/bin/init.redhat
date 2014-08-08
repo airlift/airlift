@@ -1,0 +1,63 @@
+#!/bin/bash
+#
+
+#
+# chkconfig: 2345 99 01
+# description: init script
+
+# Source function library.
+. /etc/init.d/functions
+
+target=`readlink -f $0`
+bin_dir=`dirname $target`
+launcher=$bin_dir/launcher
+install_path=`readlink -f $bin_dir/..`
+name=`basename $install_path`
+
+# Run-as user
+user=${project.rpm.username}
+
+start() {
+       echo -n "Starting: ${name}  "
+       daemon --user=${user} ${launcher} start
+       RETVAL=$?
+       echo
+       return $RETVAL
+}
+
+stop() {
+       echo -n $"Stopping: ${name}  "
+       daemon --user=${user} ${launcher} stop
+       RETVAL=$?
+       echo
+       return $RETVAL
+}
+
+status () {
+       daemon --user=${user} ${launcher} status
+       RETVAL=$?
+       return $RETVAL
+}
+
+restart() {
+       stop
+       start
+}
+
+case "$1" in
+ start)
+       start
+       ;;
+ stop)
+       stop
+       ;;
+ restart)
+       restart
+       ;;
+ status)
+       status
+       ;;
+ *)
+       echo $"Usage: $0 {start|stop|status|restart}"
+       exit 1
+esac
