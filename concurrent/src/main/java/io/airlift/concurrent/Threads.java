@@ -22,6 +22,7 @@ public final class Threads
     {
         return new ThreadFactoryBuilder()
                 .setNameFormat(nameFormat)
+                .setThreadFactory(new ContextClassLoaderThreadFactory(Thread.currentThread().getContextClassLoader()))
                 .build();
     }
 
@@ -37,6 +38,26 @@ public final class Threads
         return new ThreadFactoryBuilder()
                 .setNameFormat(nameFormat)
                 .setDaemon(true)
+                .setThreadFactory(new ContextClassLoaderThreadFactory(Thread.currentThread().getContextClassLoader()))
                 .build();
+    }
+
+    private static class ContextClassLoaderThreadFactory
+            implements ThreadFactory
+    {
+        private final ClassLoader classLoader;
+
+        public ContextClassLoaderThreadFactory(ClassLoader classLoader)
+        {
+            this.classLoader = classLoader;
+        }
+
+        @Override
+        public Thread newThread(Runnable runnable)
+        {
+            Thread thread = new Thread(runnable);
+            thread.setContextClassLoader(classLoader);
+            return thread;
+        }
     }
 }
