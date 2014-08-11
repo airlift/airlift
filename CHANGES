@@ -22,6 +22,9 @@ Platform 1.04
 
   Findbugs is now hooked into the verify lifecycle phase.
 
+* Library upgrades
+  - Guava to 17.0
+
 * Maven plugin upgrades
   - findbugs-maven-plugin to 2.5.2
   - maven-release-plugin to 2.5
