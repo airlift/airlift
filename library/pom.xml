@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.proofpoint.platform</groupId>
     <artifactId>library</artifactId>
-    <version>1.04-SNAPSHOT</version>
+    <version>1.04</version>
     <packaging>pom</packaging>
     <name>Library POM</name>
     <description>Library POM</description>
@@ -80,7 +80,8 @@
         <connection>scm:git:git://github.com/proofpoint/platform.git</connection>
         <developerConnection>scm:git:git@github.com:proofpoint/platform.git</developerConnection>
         <url>http://github.com/proofpoint/platform/tree/master</url>
-    </scm>
+      <tag>1.04</tag>
+  </scm>
 
     <prerequisites>
         <maven>3.2.2</maven>
@@ -499,73 +500,73 @@
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>bootstrap</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>configuration</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>concurrent</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>dbpool</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>discovery</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>event</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>jaxrs</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>http-server</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>http-client</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>json</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>jmx</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>launcher</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
                 <classifier>bin</classifier>
                 <type>tar.gz</type>
             </dependency>
@@ -573,55 +574,55 @@
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>log</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>node</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>reporting</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>reporting-client</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>stats</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>units</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>testing</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>trace-token</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>jmx-http</artifactId>
-                <version>1.04-SNAPSHOT</version>
+                <version>1.04</version>
             </dependency>
 
             <!-- Java APIs -->
