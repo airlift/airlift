@@ -1,3 +1,31 @@
+Platform 1.04
+
+* RPM packaging
+
+  We added support to rest-server-base for packaging projects into RPMs.
+  This profile is activated on Linux by creating a file .build-rpm in
+  the root of the module or submodule. This file can be empty. The RPM
+  is attached as an additional artifact.
+
+  The username used to run the server defaults to ${project.artifactId}
+  and can be changed by setting the property ${project.rpm.username}.
+
+  The RPM will stop the server upon upgrade or removal and will refuse
+  to install if the server username does not exist.
+
+* Maven 3.2.2 required
+
+  In order to support RPM packaging, we increased the minimum version of
+  Maven to 3.2.2.
+
+* Findbugs run by default
+
+  Findbugs is now hooked into the verify lifecycle phase.
+
+* Maven plugin upgrades
+  - findbugs-maven-plugin to 2.5.2
+  - maven-release-plugin to 2.5
+
 Platform 1.03
 
 * JAX-RS 2
