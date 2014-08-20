@@ -1,3 +1,8 @@
+* 0.93
+
+- Add JAX-RS mapper for Smile encoded data
+- Set thread context class loader in thread factories
+
 * 0.92
 
 - Upgrade to Jersey 2.9.1
