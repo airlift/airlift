@@ -1,3 +1,17 @@
+Platform 1.05
+
+* Thread Factory
+
+  We have changed the thread factory implementations to capture the thread
+  context class loader during factory creation and set this class loader on
+  threads created by the factory.
+
+* Smile mapper
+
+  We have added a JAX-RS mapper encoding responses using Smile.  Smile is a
+  highly efficient binary encoding of JSON data.  For more information on
+  Smile see: http://wiki.fasterxml.com/SmileFormatSpec
+
 Platform 1.04
 
 * RPM packaging
