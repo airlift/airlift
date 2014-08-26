@@ -26,6 +26,7 @@ import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
 import org.testng.Assert;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Map;
@@ -129,6 +130,26 @@ public final class ConfigAssertions
 
         // verify that a configuration object created from the properties is equivalent to the expected object
         assertAttributesEqual(metadata, actual, expected);
+
+        // check for a copy constructor
+        Constructor<T> copyConstructor = null;
+        try {
+            copyConstructor = configClass.getConstructor(configClass);
+        }
+        catch (NoSuchMethodException ignored) {
+        }
+
+        // if config class has a copy constructor, verity if round trips correctly
+        if (copyConstructor != null) {
+            T copy = null;
+            try {
+                copy = copyConstructor.newInstance(expected);
+            }
+            catch (Exception e) {
+                Assert.fail("Error copying configuration object", e);
+            }
+            assertAttributesEqual(metadata, copy, expected);
+        }
     }
 
     @SafeVarargs

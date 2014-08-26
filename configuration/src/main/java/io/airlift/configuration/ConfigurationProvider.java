@@ -24,10 +24,11 @@ public class ConfigurationProvider<T> implements ConfigurationAwareProvider<T>
     private final Key<T> key;
     private final Class<T> configClass;
     private final String prefix;
+    private final T defaults;
     private ConfigurationFactory configurationFactory;
     private WarningsMonitor warningsMonitor;
 
-    public ConfigurationProvider(Key<T> key, Class<T> configClass, String prefix)
+    public ConfigurationProvider(Key<T> key, Class<T> configClass, String prefix, T defaults)
     {
         Preconditions.checkNotNull(key, "key");
         Preconditions.checkNotNull(configClass, "configClass");
@@ -35,6 +36,7 @@ public class ConfigurationProvider<T> implements ConfigurationAwareProvider<T>
         this.key = key;
         this.configClass = configClass;
         this.prefix = prefix;
+        this.defaults = defaults;
     }
 
     @Inject
@@ -62,6 +64,11 @@ public class ConfigurationProvider<T> implements ConfigurationAwareProvider<T>
     public String getPrefix()
     {
         return prefix;
+    }
+
+    public T getDefaults()
+    {
+        return defaults;
     }
 
     public ConfigurationMetadata<T> getConfigurationMetadata() {

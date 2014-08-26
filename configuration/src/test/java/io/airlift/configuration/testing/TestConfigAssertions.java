@@ -303,6 +303,31 @@ public class TestConfigAssertions
     }
 
     @Test
+    public void testBadCopyConstructor()
+    {
+        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("name", "Good")
+                .build();
+
+        BadCopyConstructor expected = new BadCopyConstructor()
+                .setName("Good");
+
+        boolean pass = true;
+        try {
+            ConfigAssertions.assertFullMapping(properties, expected);
+        }
+        catch (AssertionError e) {
+            // expected
+            pass = false;
+            Assertions.assertContains(e.getMessage(), "Bad");
+        }
+
+        if (pass) {
+            Assert.fail("Expected AssertionError");
+        }
+    }
+
+    @Test
     public void testNoDeprecatedProperties()
     {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
@@ -547,6 +572,18 @@ public class TestConfigAssertions
         private String phone;
         private URI homePage = URI.create("http://iq80.com");
 
+        public PersonConfig()
+        {
+        }
+
+        public PersonConfig(PersonConfig personConfig)
+        {
+            this.name = personConfig.name;
+            this.email = personConfig.email;
+            this.phone = personConfig.phone;
+            this.homePage = personConfig.homePage;
+        }
+
         public String getName()
         {
             return name;
@@ -661,6 +698,31 @@ public class TestConfigAssertions
         public NoDeprecatedConfig setHomePage(URI homePage)
         {
             this.homePage = homePage;
+            return this;
+        }
+    }
+
+    public static class BadCopyConstructor
+    {
+        private String name = "Bad";
+
+        public BadCopyConstructor()
+        {
+        }
+
+        public BadCopyConstructor(BadCopyConstructor badCopyConstructor)
+        {
+        }
+
+        public String getName()
+        {
+            return name;
+        }
+
+        @Config("name")
+        public BadCopyConstructor setName(String name)
+        {
+            this.name = name;
             return this;
         }
     }

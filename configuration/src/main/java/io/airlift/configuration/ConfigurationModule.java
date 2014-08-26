@@ -15,11 +15,14 @@
  */
 package io.airlift.configuration;
 
+import com.google.common.annotations.Beta;
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Module;
 
 import java.lang.annotation.Annotation;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class ConfigurationModule
         implements Module
@@ -110,17 +113,44 @@ public class ConfigurationModule
             this.prefix = prefix;
         }
 
-        public <T> void to(Class<T> configClass) {
+        @Beta
+        public <T> void toDefaults(T defaults)
+        {
+            checkNotNull(defaults, "defaults is null");
+
+            Class<T> configClass = (Class<T>) defaults.getClass();
+
             Key<T> key;
             if (annotationType != null) {
                 key = Key.get(configClass, annotationType);
-            } else if(annotation != null) {
+            }
+            else if (annotation != null) {
                 key = Key.get(configClass, annotation);
-            } else {
+            }
+            else {
                 key = Key.get(configClass);
             }
 
-            ConfigurationProvider<T> configurationProvider = new ConfigurationProvider<T>(key, configClass, prefix);
+            ConfigurationProvider<T> configurationProvider = new ConfigurationProvider<>(key, configClass, prefix, defaults);
+            binder.bind(key).toProvider(configurationProvider);
+        }
+
+        public <T> void to(Class<T> configClass)
+        {
+            checkNotNull(configClass, "configClass is null");
+
+            Key<T> key;
+            if (annotationType != null) {
+                key = Key.get(configClass, annotationType);
+            }
+            else if (annotation != null) {
+                key = Key.get(configClass, annotation);
+            }
+            else {
+                key = Key.get(configClass);
+            }
+
+            ConfigurationProvider<T> configurationProvider = new ConfigurationProvider<>(key, configClass, prefix, null);
             binder.bind(key).toProvider(configurationProvider);
         }
     }

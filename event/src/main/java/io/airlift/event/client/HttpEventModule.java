@@ -42,7 +42,7 @@ public class HttpEventModule implements Module
         discoveryBinder(binder).bindHttpSelector("collector");
 
         // bind the http client
-        httpClientBinder(binder).bindAsyncHttpClient("event", ForEventClient.class);
+        httpClientBinder(binder).bindHttpClient("event", ForEventClient.class);
 
         // Kick off the binding of Set<EventTypeMetadata> in case no events are bound
         newSetBinder(binder, new TypeLiteral<EventTypeMetadata<?>>() {});
