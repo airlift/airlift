@@ -15,14 +15,12 @@
  */
 package com.proofpoint.units;
 
-import com.proofpoint.units.Duration;
-import com.proofpoint.units.MaxDuration;
-
 import javax.validation.Payload;
 import java.lang.annotation.Annotation;
 
+@SuppressWarnings("ClassExplicitlyAnnotation")
 class MockMaxDuration
-    implements MaxDuration
+        implements MaxDuration
 {
     private final Duration duration;
 
