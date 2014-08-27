@@ -16,10 +16,12 @@
 package io.airlift.units;
 
 import javax.validation.Payload;
+
 import java.lang.annotation.Annotation;
 
+@SuppressWarnings("ClassExplicitlyAnnotation")
 class MockMaxDuration
-    implements MaxDuration
+        implements MaxDuration
 {
     private final Duration duration;
 

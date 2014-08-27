@@ -16,10 +16,12 @@
 package io.airlift.units;
 
 import javax.validation.Payload;
+
 import java.lang.annotation.Annotation;
 
+@SuppressWarnings("ClassExplicitlyAnnotation")
 class MockMinDuration
-    implements MinDuration
+        implements MinDuration
 {
     private final Duration duration;
 
