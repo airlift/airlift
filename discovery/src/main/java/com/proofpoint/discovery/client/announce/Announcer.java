@@ -94,6 +94,10 @@ public class Announcer
             Thread.currentThread().interrupt();
         }
 
+        if (!started.get()) {
+            return;
+        }
+
         // unannounce
         try {
             getFutureResult(announcementClient.unannounce(), DiscoveryException.class);

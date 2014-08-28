@@ -18,6 +18,8 @@ Platform 1.05
   - Jetty to 9.2.2
   - Jackson to 2.4.2
 
+* [Bug] Don't unannounce from discovery if Announcer never started.
+
 Platform 1.04
 
 * RPM packaging

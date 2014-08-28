@@ -34,6 +34,8 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
@@ -87,7 +89,7 @@ public class TestAnnouncer
             announcer.start();
             fail("Expected IllegalStateException");
         }
-        catch (IllegalStateException expected) {
+        catch (IllegalStateException ignored) {
         }
     }
 
@@ -115,7 +117,12 @@ public class TestAnnouncer
     public void destroyNoStart()
             throws Exception
     {
+        discoveryClient = spy(discoveryClient);
+        announcer = new Announcer(discoveryClient, ImmutableSet.of(serviceAnnouncement));
+
         announcer.destroy();
+
+        verifyNoMoreInteractions(discoveryClient);
     }
 
     @Test
