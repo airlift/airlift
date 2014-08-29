@@ -139,6 +139,7 @@ public class JettyHttpClient
 
         HttpClient httpClient = new HttpClient(sslContextFactory);
         httpClient.setMaxConnectionsPerDestination(config.getMaxConnectionsPerServer());
+        httpClient.setMaxRequestsQueuedPerDestination(config.getMaxRequestsQueuedPerDestination());
 
         // disable cookies
         httpClient.setCookieStore(new HttpCookieStore.Empty());

@@ -39,6 +39,7 @@ public class HttpClientConfig
     private Duration keepAliveInterval = null;
     private int maxConnections = 200;
     private int maxConnectionsPerServer = 20;
+    private int maxRequestsQueuedPerDestination = 1024;
     private DataSize maxContentLength = new DataSize(16, Unit.MEGABYTE);
     private HostAndPort socksProxy;
     private String keyStorePath = System.getProperty(JAVAX_NET_SSL_KEY_STORE);
@@ -107,6 +108,19 @@ public class HttpClientConfig
     public HttpClientConfig setMaxConnectionsPerServer(int maxConnectionsPerServer)
     {
         this.maxConnectionsPerServer = maxConnectionsPerServer;
+        return this;
+    }
+
+    @Min(1)
+    public int getMaxRequestsQueuedPerDestination()
+    {
+        return maxRequestsQueuedPerDestination;
+    }
+
+    @Config("http-client.max-requests-queued-per-destination")
+    public HttpClientConfig setMaxRequestsQueuedPerDestination(int maxRequestsQueuedPerDestination)
+    {
+        this.maxRequestsQueuedPerDestination = maxRequestsQueuedPerDestination;
         return this;
     }
 
