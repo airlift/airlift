@@ -12,6 +12,12 @@ Platform 1.05
   highly efficient binary encoding of JSON data.  For more information on
   Smile see: http://wiki.fasterxml.com/SmileFormatSpec
 
+* Library upgrades
+  - joda-time to 2.4
+  - Jersey to 2.12
+  - Jetty to 9.2.2
+  - Jackson to 2.4.2
+
 Platform 1.04
 
 * RPM packaging
