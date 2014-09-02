@@ -44,7 +44,7 @@ public class TestReportedBean extends AbstractReportedBeanTest<Object>
     }
 
     @Override
-    protected Number getAttribute(Object object, String attributeName)
+    protected Object getAttribute(Object object, String attributeName)
             throws AttributeNotFoundException, MBeanException, ReflectionException
     {
         return reportedBeans.get(object).getAttribute(attributeName);
@@ -83,32 +83,6 @@ public class TestReportedBean extends AbstractReportedBeanTest<Object>
             @Reported
             public void getVoid()
             {
-            }
-        });
-    }
-
-    @Test(expectedExceptions = RuntimeException.class,
-            expectedExceptionsMessageRegExp = "report annotation on non-numeric, non-boolean getter .*getString\\(\\)")
-    public void testStringGetter()
-    {
-        ReportedBean.forTarget(new Object() {
-            @Reported
-            public String getString()
-            {
-                return "0";
-            }
-        });
-    }
-
-    @Test(expectedExceptions = RuntimeException.class,
-            expectedExceptionsMessageRegExp = "report annotation on non-numeric, non-boolean getter .*getObject\\(\\)")
-    public void testObjectGetter()
-    {
-        ReportedBean.forTarget(new Object() {
-            @Reported
-            public Object getObject()
-            {
-                return 0;
             }
         });
     }

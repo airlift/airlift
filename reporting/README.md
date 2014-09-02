@@ -1,4 +1,4 @@
-The reporting module is an experimental annotation-based API for
+The reporting module is an annotation-based API for
 reporting metrics into a [KairosDB](https://code.google.com/p/kairosdb)
 time-series database.
 
@@ -46,9 +46,14 @@ just as if `ReportedObject` had been bound with
 If the attribute is not to be exported to JMX, the `@Reported`
 annotation may be used instead.
 
-A getter annotated with either `@Gauge` or `@Reported` must return either a
-number or boolean. Returning `null` causes the metric to not be reported that
-minute.
+Returning `null` causes the metric to not be reported that minute. 
+For `Long`, `Integer` and `Short`, returning either `MAX_VALUE` or `MIN_VALUE`
+causes the metric to not be reported that minute. For `Double` and `Float`,
+returning either a NaN or Infinite value causes the metric to not be reported
+that minute.
+
+Boolean values are reported as 1 for true and 0 for false. Non-numeric values
+have the value of their `toString()` method reported as strings.
 
 Nested objects
 --------------

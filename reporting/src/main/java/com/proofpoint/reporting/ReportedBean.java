@@ -80,7 +80,7 @@ class ReportedBean
         return attributes.values();
     }
 
-    public Number getAttribute(String name)
+    public Object getAttribute(String name)
             throws AttributeNotFoundException, MBeanException, ReflectionException
     {
         checkNotNull(name, "name is null");

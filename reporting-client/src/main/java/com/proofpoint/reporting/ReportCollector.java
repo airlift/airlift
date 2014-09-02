@@ -83,11 +83,11 @@ class ReportCollector
     private void collectData()
     {
         final long lastSystemTimeMillis = bucketIdProvider.getLastSystemTimeMillis();
-        ImmutableTable.Builder<ObjectName, String, Number> builder = ImmutableTable.builder();
+        ImmutableTable.Builder<ObjectName, String, Object> builder = ImmutableTable.builder();
         int numAtributes = 0;
         for (Entry<ObjectName, ReportedBean> reportedBeanEntry : reportedBeanRegistry.getReportedBeans().entrySet()) {
             for (ReportedBeanAttribute attribute : reportedBeanEntry.getValue().getAttributes()) {
-                Number value = null;
+                Object value = null;
 
                 try {
                     value = attribute.getValue(null);
@@ -95,14 +95,18 @@ class ReportCollector
                 catch (AttributeNotFoundException | MBeanException | ReflectionException ignored) {
                 }
 
-                if (isReportable(value)) {
+                if (value != null && isReportable(value)) {
+                    if (!(value instanceof Number)) {
+                        value = value.toString();
+                    }
+
                     ++numAtributes;
                     builder.put(reportedBeanEntry.getKey(), attribute.getName(), value);
                 }
             }
         }
         builder.put(REPORT_COLLECTOR_OBJECT_NAME, "NumMetrics", numAtributes);
-        final Table<ObjectName, String, Number> collectedData = builder.build();
+        final Table<ObjectName, String, Object> collectedData = builder.build();
         clientExecutorService.submit(new Runnable()
         {
             @Override
@@ -113,11 +117,8 @@ class ReportCollector
         });
     }
 
-    private static boolean isReportable(Number value)
+    private static boolean isReportable(Object value)
     {
-        if (value == null) {
-            return false;
-        }
         if (value instanceof Double) {
             return !(((Double) value).isNaN() || ((Double) value).isInfinite());
         }

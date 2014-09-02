@@ -51,7 +51,7 @@ class BooleanReportedBeanAttribute implements ReportedBeanAttribute
         return name;
     }
 
-    public Number getValue(@Nullable Object target)
+    public Object getValue(@Nullable Object target)
             throws AttributeNotFoundException, MBeanException, ReflectionException
     {
         Boolean value = (Boolean) invoke(firstNonNull(target, this.target), getter);

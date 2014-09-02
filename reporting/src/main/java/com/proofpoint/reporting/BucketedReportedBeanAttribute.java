@@ -56,7 +56,7 @@ class BucketedReportedBeanAttribute implements ReportedBeanAttribute
         return info.getName();
     }
 
-    public Number getValue(Object target)
+    public Object getValue(Object target)
             throws AttributeNotFoundException, MBeanException, ReflectionException
     {
         return delegate.getValue(invoke(firstNonNull(target, holder), GET_PREVIOUS_BUCKET));

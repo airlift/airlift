@@ -62,6 +62,14 @@ public interface SimpleInterface
 
     int getNotReported();
 
+    String getStringValue();
+
+    void setStringValue(String stringValue);
+
+    Object getObjectValue();
+
+    void setObjectValue(Object objectValue);
+
     void setBucketedBooleanValue(boolean bucketedBooleanValue);
 
     void setBucketedIntegerValue(int bucketedIntegerValue);

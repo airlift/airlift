@@ -27,6 +27,6 @@ interface ReportedBeanAttribute
 
     String getName();
 
-    Number getValue(@Nullable Object target)
+    Object getValue(@Nullable Object target)
             throws AttributeNotFoundException, MBeanException, ReflectionException;
 }

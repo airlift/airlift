@@ -19,6 +19,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -55,7 +56,7 @@ public class TestReportClient
 {
     private static final int TEST_TIME = 1234567890;
     private NodeInfo nodeInfo;
-    private Table<ObjectName, String, Number> collectedData;
+    private Table<ObjectName, String, Object> collectedData;
     private HttpClient httpClient;
     private List<Map<String, Object>> sentJson;
     private final ObjectMapper objectMapper = new ObjectMapperProvider().get();
@@ -119,6 +120,31 @@ public class TestReportClient
         assertEquals(tags.get("tag1"), "B_a_z"); // "B\\a\"z");
         tags = (Map<String, String>) sentJson.get(1).get("tags");
         assertEquals(tags.keySet(), ImmutableSet.of("application", "host", "environment", "pool"));
+    }
+
+    @Test
+    public void testReportString()
+            throws MalformedObjectNameException
+    {
+
+        ReportClient client = new ReportClient(nodeInfo, httpClient, new ReportClientConfig(), objectMapper);
+        collectedData = HashBasedTable.create();
+        collectedData.put(ObjectName.getInstance("com.example:name=Foo"), "String", "test value");
+        client.report(TEST_TIME, collectedData);
+        assertEquals(sentJson, ImmutableList.of(
+                ImmutableMap.of(
+                        "name", "Foo.String",
+                        "timestamp", TEST_TIME,
+                        "type", "string",
+                        "value", "test value",
+                        "tags", ImmutableMap.of(
+                                "application", "test-application",
+                                "host", "test.hostname",
+                                "environment", "test_environment",
+                                "pool", "test_pool"
+                        )
+                )
+        ));
     }
 
     @Test

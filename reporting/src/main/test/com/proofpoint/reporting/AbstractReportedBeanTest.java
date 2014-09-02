@@ -27,7 +27,7 @@ public abstract class AbstractReportedBeanTest<T>
     protected abstract MBeanInfo getMBeanInfo(T t)
             throws Exception;
 
-    protected abstract Number getAttribute(T t, String attributeName)
+    protected abstract Object getAttribute(T t, String attributeName)
             throws Exception;
 
     @Test(dataProvider = "fixtures")
@@ -157,6 +157,10 @@ public abstract class AbstractReportedBeanTest<T>
                 new Object[] { "DoubleBoxedValue", false,
                                new Object[] { -Double.MIN_VALUE, -Double.MAX_VALUE, Double.MAX_VALUE, Double.MIN_VALUE,
                                               0.0, Double.NaN }, Double.class },
+
+                new Object[] { "StringValue", false, new Object[] { null, "hello there" }, String.class },
+
+                new Object[] { "ObjectValue", false, new Object[] { "random object", 1, true }, Object.class },
 
                 new Object[] { "PrivateValue", false, new Object[] { Integer.MAX_VALUE, Integer.MIN_VALUE, 0 },
                         Integer.TYPE },

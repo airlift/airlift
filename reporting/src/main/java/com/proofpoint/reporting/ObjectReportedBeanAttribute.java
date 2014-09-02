@@ -26,14 +26,14 @@ import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.reporting.ReflectionUtils.invoke;
 
-class NumberReportedBeanAttribute implements ReportedBeanAttribute
+class ObjectReportedBeanAttribute implements ReportedBeanAttribute
 {
     private final MBeanAttributeInfo info;
     private final Object target;
     private final String name;
     private final Method getter;
 
-    public NumberReportedBeanAttribute(MBeanAttributeInfo info, Object target, Method getter)
+    public ObjectReportedBeanAttribute(MBeanAttributeInfo info, Object target, Method getter)
     {
         this.info = checkNotNull(info, "info is null");
         this.target = checkNotNull(target, "target is null");
@@ -51,9 +51,9 @@ class NumberReportedBeanAttribute implements ReportedBeanAttribute
         return name;
     }
 
-    public Number getValue(@Nullable Object target)
+    public Object getValue(@Nullable Object target)
             throws AttributeNotFoundException, MBeanException, ReflectionException
     {
-        return (Number) invoke(firstNonNull(target, this.target), getter);
+        return invoke(firstNonNull(target, this.target), getter);
     }
 }

@@ -23,6 +23,8 @@ public class CustomAnnotationObject
     private Float floatBoxedValue;
     private double doubleValue;
     private Double doubleBoxedValue;
+    private String stringValue;
+    private Object objectValue;
     private int privateValue;
 
     private int notReported;
@@ -203,6 +205,28 @@ public class CustomAnnotationObject
     public int getNotReported()
     {
         return notReported;
+    }
+
+    @Reported1
+    public String getStringValue()
+    {
+        return stringValue;
+    }
+
+    public void setStringValue(String stringValue)
+    {
+        this.stringValue = stringValue;
+    }
+
+    @Reported1
+    public Object getObjectValue()
+    {
+        return objectValue;
+    }
+
+    public void setObjectValue(Object objectValue)
+    {
+        this.objectValue = objectValue;
     }
 
     @Reported1

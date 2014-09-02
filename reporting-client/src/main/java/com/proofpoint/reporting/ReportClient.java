@@ -76,7 +76,7 @@ class ReportClient
         enabled = reportClientConfig.isEnabled();
     }
 
-    public void report(long systemTimeMillis, Table<ObjectName, String, Number> collectedData)
+    public void report(long systemTimeMillis, Table<ObjectName, String, Object> collectedData)
     {
         if (!enabled) {
             return;
@@ -108,11 +108,13 @@ class ReportClient
         @JsonProperty
         private final long timestamp;
         @JsonProperty
-        private final Number value;
+        private final String type;
+        @JsonProperty
+        private final Object value;
         @JsonProperty
         private final Map<String, String> tags;
 
-        public DataPoint(long systemTimeMillis, Cell<ObjectName, String, Number> cell, Map<String, String> instanceTags)
+        public DataPoint(long systemTimeMillis, Cell<ObjectName, String, Object> cell, Map<String, String> instanceTags)
         {
             Map<String,String> propertyList = cell.getRowKey().getKeyPropertyList();
 
@@ -130,6 +132,11 @@ class ReportClient
 
             timestamp = systemTimeMillis;
             value = cell.getValue();
+            if (value instanceof Number) {
+                type = null;
+            } else {
+                type = "string";
+            }
             Builder<String, String> builder = ImmutableMap.<String, String>builder()
                     .putAll(instanceTags);
             for (Entry<String, String> entry : propertyList.entrySet()) {
@@ -158,9 +165,9 @@ class ReportClient
     private class CompressBodyGenerator implements BodyGenerator
     {
         private final long systemTimeMillis;
-        private final Table<ObjectName,String,Number> collectedData;
+        private final Table<ObjectName,String,Object> collectedData;
 
-        public CompressBodyGenerator(long systemTimeMillis, Table<ObjectName, String, Number> collectedData)
+        public CompressBodyGenerator(long systemTimeMillis, Table<ObjectName, String, Object> collectedData)
         {
             this.systemTimeMillis = systemTimeMillis;
             this.collectedData = collectedData;
@@ -176,7 +183,7 @@ class ReportClient
 
             generator.writeStartArray();
 
-            for (Cell<ObjectName, String, Number> cell : collectedData.cellSet()) {
+            for (Cell<ObjectName, String, Object> cell : collectedData.cellSet()) {
                 generator.writeObject(new DataPoint(systemTimeMillis, cell, instanceTags));
             }
 
