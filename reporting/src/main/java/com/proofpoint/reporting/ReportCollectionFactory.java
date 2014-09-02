@@ -131,6 +131,10 @@ public class ReportCollectionFactory
 
         <T> PerMethodCache(Class<T> aClass, Method method, String name)
         {
+            if (method.getParameterTypes().length == 0) {
+                throw new RuntimeException(methodName(method) + " has no parameters");
+            }
+
             final Supplier<Object> returnValueSupplier = getReturnValueSupplier(method);
 
             ImmutableList.Builder<String> keyNameBuilder = ImmutableList.builder();

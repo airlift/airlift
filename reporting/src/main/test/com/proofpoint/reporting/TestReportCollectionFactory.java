@@ -148,6 +148,18 @@ public class TestReportCollectionFactory
         ConstructorNeedsArgument add(@Key("foo") String key, @Key("bar") boolean bool);
     }
 
+    @Test(expectedExceptions = RuntimeException.class,
+            expectedExceptionsMessageRegExp = "com\\.proofpoint\\.reporting\\.TestReportCollectionFactory\\$MissingParameters\\.add\\(\\) has no parameters")
+    public void testNoParameters()
+    {
+        reportCollectionFactory.createReportCollection(MissingParameters.class);
+    }
+
+    private interface MissingParameters
+    {
+        SomeObject add();
+    }
+
     public static class SomeObject
     {
     }
