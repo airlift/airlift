@@ -24,6 +24,7 @@ package com.proofpoint.testing;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Collection;
 import java.util.List;
@@ -83,6 +84,7 @@ public final class EquivalenceTester
         }
 
         @SuppressWarnings({"ObjectEqualsNull"})
+        @SuppressFBWarnings("EC_NULL_ARG")
         private List<ElementCheckFailure> checkEquivalence()
         {
             ImmutableList.Builder<ElementCheckFailure> errors = new ImmutableList.Builder<>();

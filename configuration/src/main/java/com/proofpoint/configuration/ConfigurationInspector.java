@@ -260,13 +260,13 @@ public class ConfigurationInspector
 
             this.attributeName = attributeName;
             this.propertyName = propertyName;
-            if (securitySensitive && defaultValue != null) {
+            if (securitySensitive) {
                 this.defaultValue = "[REDACTED]";
             }
             else {
                 this.defaultValue = defaultValue;
             }
-            if (securitySensitive && currentValue != null) {
+            if (securitySensitive) {
                 this.currentValue = "[REDACTED]";
             }
             else {

@@ -31,16 +31,20 @@ import org.slf4j.MDC;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
+
+import static com.google.common.base.Charsets.UTF_8;
 
 /**
  * Initializes the logging subsystem.
@@ -103,8 +107,12 @@ public class Logging
     @SuppressWarnings("IOResourceOpenedButNotSafelyClosed")
     private void redirectStdStreamsToSlf4j()
     {
-        System.setOut(new PrintStream(new LoggingOutputStream(LoggerFactory.getLogger("stdout")), true));
-        System.setErr(new PrintStream(new LoggingOutputStream(LoggerFactory.getLogger("stderr")), true));
+        try {
+            System.setOut(new PrintStream(new LoggingOutputStream(LoggerFactory.getLogger("stdout")), true, "UTF-8"));
+            System.setErr(new PrintStream(new LoggingOutputStream(LoggerFactory.getLogger("stderr")), true, "UTF-8"));
+        }
+        catch (UnsupportedEncodingException ignored) {
+        }
     }
 
     private void redirectSlf4jTo(OutputStream stream)
@@ -183,7 +191,7 @@ public class Logging
             throws IOException
     {
         Properties properties = new Properties();
-        try (Reader reader = new FileReader(file)) {
+        try (Reader reader = new InputStreamReader(new FileInputStream(file), UTF_8)) {
             properties.load(reader);
         }
 

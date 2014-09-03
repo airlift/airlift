@@ -41,7 +41,7 @@ class LoggingOutputStream
             throws IOException
     {
         super.flush();
-        String record = this.toString();
+        String record = this.toString("UTF-8");
         super.reset();
 
         if (record.isEmpty() || record.equals(lineSeparator)) {

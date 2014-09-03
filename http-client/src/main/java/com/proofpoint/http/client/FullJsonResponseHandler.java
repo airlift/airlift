@@ -22,6 +22,7 @@ import com.google.common.io.ByteStreams;
 import com.google.common.net.MediaType;
 import com.proofpoint.http.client.FullJsonResponseHandler.JsonResponse;
 import com.proofpoint.json.JsonCodec;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
 import java.util.List;
@@ -92,6 +93,7 @@ public class FullJsonResponseHandler<T>
         }
 
         @SuppressWarnings("ThrowableInstanceNeverThrown")
+        @SuppressFBWarnings("EI_EXPOSE_REP2")
         public JsonResponse(int statusCode, String statusMessage, ListMultimap<String, String> headers, JsonCodec<T> jsonCodec, byte[] jsonBytes)
         {
             this.statusCode = statusCode;

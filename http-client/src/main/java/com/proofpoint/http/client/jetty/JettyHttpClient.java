@@ -608,7 +608,7 @@ public class JettyHttpClient
             };
         }
 
-        private final class BodyGeneratorOutputStream
+        private static final class BodyGeneratorOutputStream
                 extends OutputStream
         {
             private final BlockingQueue<ByteBuffer> chunks;

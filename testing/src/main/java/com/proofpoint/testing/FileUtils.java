@@ -23,6 +23,8 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 //This is a copy from galaxy-server's com.proofpoint.galaxy.shared.FileUtils
 public class FileUtils
 {
@@ -88,7 +90,7 @@ public class FileUtils
 
     public static boolean deleteDirectoryContents(File directory)
     {
-        Preconditions.checkArgument(directory.isDirectory(), "Not a directory: %s", directory);
+        checkArgument(directory.isDirectory(), "Not a directory: %s", directory);
 
         // Don't delete symbolic link directories
         if (isSymbolicLink(directory)) {
@@ -114,15 +116,17 @@ public class FileUtils
 
     public static boolean copyDirectoryContents(File src, File target)
     {
-        Preconditions.checkArgument(src.isDirectory(), "Source dir is not a directory: %s", src);
+        checkArgument(src.isDirectory(), "Source dir is not a directory: %s", src);
 
         // Don't delete symbolic link directories
         if (isSymbolicLink(src)) {
             return false;
         }
 
-        target.mkdirs();
-        Preconditions.checkArgument(target.isDirectory(), "Target dir is not a directory: %s", src);
+        if (!target.mkdirs()) {
+            // ignore error
+        }
+        checkArgument(target.isDirectory(), "Target dir is not a directory: %s", src);
 
         boolean success = true;
         for (File file : listFiles(src)) {
