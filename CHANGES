@@ -1,5 +1,20 @@
 Platform 1.05
 
+* Findbugs run by default
+
+  Findbugs is now hooked into the verify lifecycle phase. (The previous
+  attempt was missing a step.) Failing the build on Findbugs failures is
+  now disabled by default.
+
+* MaxDataSize and MinDataSize
+
+  We added MaxDataSize and MinDataSize Bean validations.
+
+* HttpClient
+
+  We added a "http-client.max-requests-queued-per-destination" config option
+  (default 1024).
+
 * Thread Factory
 
   We have changed the thread factory implementations to capture the thread
@@ -17,6 +32,9 @@ Platform 1.05
   - Jersey to 2.12
   - Jetty to 9.2.2
   - Jackson to 2.4.2
+
+* Maven plugin upgrades
+  - findbugs-maven-plugin to 3.0.0
 
 * [Bug] Don't unannounce from discovery if Announcer never started.
 
@@ -39,10 +57,6 @@ Platform 1.04
 
   In order to support RPM packaging, we increased the minimum version of
   Maven to 3.2.2.
-
-* Findbugs run by default
-
-  Findbugs is now hooked into the verify lifecycle phase.
 
 * Library upgrades
   - Guava to 17.0
