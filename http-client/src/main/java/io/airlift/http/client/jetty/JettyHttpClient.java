@@ -694,7 +694,7 @@ public class JettyHttpClient
         }
 
         @Override
-        public void onHeaders(Response response)
+        public synchronized void onHeaders(Response response)
         {
             long length = response.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH.asString());
             if (length > maxLength) {
