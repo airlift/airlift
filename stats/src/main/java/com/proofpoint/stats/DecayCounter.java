@@ -63,15 +63,17 @@ public final class DecayCounter
         checkNotNull(decayCounter, "decayCounter is null");
         checkArgument(decayCounter.alpha == alpha, "Expected decayCounter to have alpha %s, but was %s", alpha, decayCounter.alpha);
 
-        // if the landmark this counter is behind the other counter
-        if (landmarkInSeconds < decayCounter.landmarkInSeconds) {
-            // rescale this counter to the other counter, and add
-            rescaleToNewLandmark(decayCounter.landmarkInSeconds);
-            count += decayCounter.count;
-        } else {
-            // rescale the other counter and add
-            double otherRescaledCount = decayCounter.count / weight(landmarkInSeconds, decayCounter.landmarkInSeconds);
-            count += otherRescaledCount;
+        synchronized (decayCounter) {
+            // if the landmark this counter is behind the other counter
+            if (landmarkInSeconds < decayCounter.landmarkInSeconds) {
+                // rescale this counter to the other counter, and add
+                rescaleToNewLandmark(decayCounter.landmarkInSeconds);
+                count += decayCounter.count;
+            } else {
+                // rescale the other counter and add
+                double otherRescaledCount = decayCounter.count / weight(landmarkInSeconds, decayCounter.landmarkInSeconds);
+                count += otherRescaledCount;
+            }
         }
     }
 
@@ -95,8 +97,10 @@ public final class DecayCounter
     @Deprecated
     public synchronized void resetTo(DecayCounter counter)
     {
-        landmarkInSeconds = counter.landmarkInSeconds;
-        count = counter.count;
+        synchronized (counter) {
+            landmarkInSeconds = counter.landmarkInSeconds;
+            count = counter.count;
+        }
     }
 
     @Managed
