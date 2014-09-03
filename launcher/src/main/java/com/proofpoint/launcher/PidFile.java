@@ -15,6 +15,9 @@
  */
 package com.proofpoint.launcher;
 
+import com.google.common.base.Charsets;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -39,6 +42,8 @@ class PidFile implements PidStatusSource
     private FileChannel pidChannel = null;
     private FileChannel lockChannel = null;
     private FileLock startLock = null;
+    @SuppressWarnings("unused") // Need to hold this lock while the server is running
+    @SuppressFBWarnings("URF_UNREAD_FIELD")
     private FileLock runningLock = null;
     private FileLock notYetRunningLock = null;
 
@@ -46,8 +51,9 @@ class PidFile implements PidStatusSource
     {
         checkNotNull(pidFilePath, "pidFilePath is null");
 
-        //noinspection ResultOfMethodCallIgnored
-        new File(pidFilePath).getParentFile().mkdirs();
+        if (!new File(pidFilePath).getParentFile().mkdirs()) {
+            // ignore failure
+        }
         try {
             pidChannel = new RandomAccessFile(pidFilePath, "rw").getChannel();
         }
@@ -71,7 +77,7 @@ class PidFile implements PidStatusSource
     }
 
     void indicateStarting()
-            throws AlreadyRunningException
+            throws AlreadyRunningError
     {
         try {
             // If obtained, startLock will be held for the lifetime of this process,
@@ -83,7 +89,7 @@ class PidFile implements PidStatusSource
         }
 
         if (startLock == null) {
-            throw new AlreadyRunningException(readPid());
+            throw new AlreadyRunningError(readPid());
         }
 
         // There is a race here between the time we lock the file and the
@@ -92,7 +98,7 @@ class PidFile implements PidStatusSource
         // have not yet found a way to call fcntl(F_GETLK) from Java.
         try {
             pidChannel.truncate(0);
-            pidChannel.write(ByteBuffer.wrap((Integer.toString(Processes.getpid()) + "\n").getBytes()));
+            pidChannel.write(ByteBuffer.wrap((Integer.toString(Processes.getpid()) + "\n").getBytes(Charsets.US_ASCII)));
         }
         catch (IOException e) {
             throw new RuntimeException("Cannot write to pid file: " + e);
@@ -109,6 +115,7 @@ class PidFile implements PidStatusSource
         }
     }
 
+    @SuppressFBWarnings(value = "OS_OPEN_STREAM", justification = "false positive")
     private int readPid()
     {
         for (int i = 0; i < 10; ++i) {

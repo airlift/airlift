@@ -15,13 +15,14 @@
  */
 package com.proofpoint.launcher;
 
+import com.google.common.base.Charsets;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
+import java.io.InputStreamReader;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -37,8 +38,9 @@ public class LegacyPidFile implements PidStatusSource
     @Override
     public PidStatus getStatus()
     {
-        try (FileChannel fileChannel = new FileInputStream(pidFilePath).getChannel()) {
-            String line = new BufferedReader(Channels.newReader(fileChannel, "us-ascii")).readLine();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(pidFilePath), Charsets.US_ASCII)))
+        {
+            String line = reader.readLine();
             if (line != null) {
                 int pid = Integer.decode(line);
                 if (Processes.exists(pid)) {
@@ -52,7 +54,9 @@ public class LegacyPidFile implements PidStatusSource
         catch (IOException | NumberFormatException ignored) {
         }
 
-        new File(pidFilePath).delete();
+        if (!new File(pidFilePath).delete()) {
+            // ignore failure
+        }
         return PidStatus.notHeld();
     }
 }

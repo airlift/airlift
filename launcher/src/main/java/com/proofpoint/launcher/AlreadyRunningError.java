@@ -15,13 +15,12 @@
  */
 package com.proofpoint.launcher;
 
-public class AlreadyRunningException extends Throwable
+public class AlreadyRunningError extends Throwable
 {
     private final int pid;
 
-    public AlreadyRunningException(int pid)
+    public AlreadyRunningError(int pid)
     {
-
         this.pid = pid;
     }
 
