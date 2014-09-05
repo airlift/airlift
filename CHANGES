@@ -6,6 +6,11 @@ Platform 1.05
   attempt was missing a step.) Failing the build on Findbugs failures is
   now disabled by default.
 
+* Reporting
+
+  We added support for reporting string values to KairosDB. Reported values
+  that are not Number or Boolean have their toString() reported as a string.
+
 * MaxDataSize and MinDataSize
 
   We added MaxDataSize and MinDataSize Bean validations.
