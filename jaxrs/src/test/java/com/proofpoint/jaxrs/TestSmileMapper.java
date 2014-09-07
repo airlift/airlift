@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Proofpoint, Inc.
+ * Copyright 2014 Proofpoint, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,34 +16,28 @@
 package com.proofpoint.jaxrs;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Charsets;
-import com.google.common.net.HttpHeaders;
-import com.proofpoint.json.JsonCodec;
-import org.testng.Assert;
+import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import org.testng.annotations.BeforeMethod;
 
 import javax.ws.rs.core.MultivaluedMap;
+import java.io.IOException;
 
-public class TestJsonMapper
-    extends AbstractMapperTest<JsonMapper>
+import static org.testng.Assert.assertEquals;
+
+public class TestSmileMapper
+        extends AbstractMapperTest<SmileMapper>
 {
     @BeforeMethod
     public void setup()
     {
-        mapper = new JsonMapper(new ObjectMapper());
+        mapper = new SmileMapper(new ObjectMapper());
     }
 
     @Override
     protected void assertEncodedProperly(byte[] encoded, MultivaluedMap<String, Object> headers, String expected)
+            throws IOException
     {
-        JsonCodec<String> jsonCodec = JsonCodec.jsonCodec(String.class);
-        String json = new String(encoded, Charsets.UTF_8);
-        Assert.assertTrue(!json.contains("<"));
-        Assert.assertTrue(!json.contains(">"));
-        Assert.assertTrue(!json.contains("'"));
-        Assert.assertTrue(!json.contains("&"));
-        Assert.assertEquals(jsonCodec.fromJson(json), expected);
-
-        Assert.assertEquals(headers.getFirst(HttpHeaders.X_CONTENT_TYPE_OPTIONS), "nosniff");
+        ObjectMapper smileMapper = new ObjectMapper(new SmileFactory());
+        assertEquals(smileMapper.readValue(encoded, String.class), expected);
     }
 }

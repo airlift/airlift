@@ -34,7 +34,6 @@ import com.proofpoint.log.Logger;
 import org.apache.bval.jsr303.ApacheValidationProvider;
 
 import javax.validation.ConstraintViolation;
-import javax.validation.Valid;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.ws.rs.Consumes;
@@ -297,28 +296,6 @@ public class JsonMapper
         {
             // no further escaping (beyond ASCII chars) needed:
             return null;
-        }
-    }
-
-    private static class ValidatableList
-    {
-        @Valid
-        final private List<?> list;
-
-        ValidatableList(List<?> list)
-        {
-            this.list = list;
-        }
-    }
-
-    private static class ValidatableMap
-    {
-        @Valid
-        final private Map<?, ?> map;
-
-        ValidatableMap(Map<?, ?> map)
-        {
-            this.map = map;
         }
     }
 }

@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.proofpoint.log.Logger;
 
@@ -31,14 +32,12 @@ import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -47,6 +46,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 // This code is based on JacksonJsonProvider
@@ -140,22 +140,24 @@ public class SmileMapper
             // Note: we are not logging at a higher level because this could cause a denial of service
             log.debug(e, "Invalid json for Java type %s", type);
 
-            // invalid json request
-            throw new WebApplicationException(
-                    Response.status(Response.Status.BAD_REQUEST)
-                            .entity("Invalid json for Java type " + type)
-                            .build());
+            // Invalid json request. Throwing exception so the response code can be overridden using a mapper.
+            throw new JsonMapperParsingException(type, e);
         }
 
         // validate object using the bean validation framework
-        Set<ConstraintViolation<Object>> violations = VALIDATOR.validate(object);
-        if (!violations.isEmpty()) {
-            throw new WebApplicationException(
-                    Response.status(Response.Status.BAD_REQUEST)
-                            .entity(messagesFor(violations))
-                            .build());
+        Set<ConstraintViolation<Object>> violations;
+        if (TypeToken.of(genericType).getRawType().equals(List.class)) {
+            violations = VALIDATOR.<Object>validate(new ValidatableList((List<?>) object));
         }
-
+        else if (TypeToken.of(genericType).getRawType().equals(Map.class)) {
+            violations = VALIDATOR.<Object>validate(new ValidatableMap((Map<?, ?>) object));
+        }
+        else {
+            violations = VALIDATOR.validate(object);
+        }
+        if (!violations.isEmpty()) {
+            throw new BeanValidationException(violations);
+        }
 
         return object;
     }
