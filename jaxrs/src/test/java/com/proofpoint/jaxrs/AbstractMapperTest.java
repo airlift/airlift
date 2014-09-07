@@ -42,6 +42,7 @@ import java.util.zip.ZipException;
 
 import static com.google.common.base.Throwables.propagate;
 import static com.proofpoint.testing.Assertions.assertEqualsIgnoreOrder;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;
 
 public abstract class AbstractMapperTest<T extends MessageBodyReader<Object> & MessageBodyWriter<Object>>
@@ -231,6 +232,16 @@ public abstract class AbstractMapperTest<T extends MessageBodyReader<Object> & M
         }
     }
 
+    @Test
+    public void testNoPropertyMutatorInference()
+            throws IOException
+    {
+        InputStream is = getInputStream(ImmutableMap.of("firstField", "first", "secondField", "second", "notWritable", "foo"));
+        JsonClass jsonClass = (JsonClass) mapper.readFrom(Object.class, JsonClass.class, null, null, null, is);
+        assertNull(jsonClass.getNotWritable());
+
+    }
+
     private InputStream getInputStream(Object jsonStructure)
     {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -261,11 +272,19 @@ public abstract class AbstractMapperTest<T extends MessageBodyReader<Object> & M
         @NotNull
         private String secondField;
 
+        private String notWritable = null;
+
         @JsonCreator
         private JsonClass(@JsonProperty("firstField") String firstField, @JsonProperty("secondField") String secondField)
         {
             this.firstField = firstField;
             this.secondField = secondField;
+        }
+
+        @JsonProperty
+        public String getNotWritable()
+        {
+            return notWritable;
         }
     }
 }

@@ -17,6 +17,7 @@ package com.proofpoint.jaxrs;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
+import com.proofpoint.json.ObjectMapperProvider;
 import org.testng.annotations.BeforeMethod;
 
 import javax.ws.rs.core.MultivaluedMap;
@@ -30,7 +31,7 @@ public class TestSmileMapper
     @BeforeMethod
     public void setup()
     {
-        mapper = new SmileMapper(new ObjectMapper());
+        mapper = new SmileMapper(new ObjectMapperProvider().get());
     }
 
     @Override

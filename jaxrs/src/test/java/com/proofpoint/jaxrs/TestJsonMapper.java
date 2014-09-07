@@ -15,10 +15,10 @@
  */
 package com.proofpoint.jaxrs;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.net.HttpHeaders;
 import com.proofpoint.json.JsonCodec;
+import com.proofpoint.json.ObjectMapperProvider;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 
@@ -30,7 +30,7 @@ public class TestJsonMapper
     @BeforeMethod
     public void setup()
     {
-        mapper = new JsonMapper(new ObjectMapper());
+        mapper = new JsonMapper(new ObjectMapperProvider().get());
     }
 
     @Override
