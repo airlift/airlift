@@ -2,24 +2,31 @@ package com.proofpoint.http.client;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.net.MediaType;
 import com.proofpoint.http.client.testing.TestingResponse;
 import com.proofpoint.json.JsonCodec;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.net.MediaType.JSON_UTF_8;
+import static com.google.common.base.Throwables.propagate;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
-import static com.proofpoint.http.client.FullJsonResponseHandler.JsonResponse;
-import static com.proofpoint.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
+import static com.proofpoint.http.client.FullSmileResponseHandler.SmileResponse;
+import static com.proofpoint.http.client.FullSmileResponseHandler.createFullSmileResponseHandler;
 import static com.proofpoint.http.client.HttpStatus.INTERNAL_SERVER_ERROR;
 import static com.proofpoint.http.client.HttpStatus.OK;
 import static com.proofpoint.http.client.testing.TestingResponse.contentType;
 import static com.proofpoint.http.client.testing.TestingResponse.mockResponse;
+import static com.proofpoint.testing.Assertions.assertContains;
 import static com.proofpoint.testing.Assertions.assertInstanceOf;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -27,110 +34,106 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-public class TestFullJsonResponseHandler
+public class TestFullSmileResponseHandler
 {
+    private static final MediaType MEDIA_TYPE_SMILE = MediaType.create("application", "x-jackson-smile");
+
     private JsonCodec<User> codec;
-    private FullJsonResponseHandler<User> handler;
+    private FullSmileResponseHandler<User> handler;
 
     @BeforeMethod
     public void setUp()
     {
         codec = JsonCodec.jsonCodec(User.class);
-        handler = createFullJsonResponseHandler(codec);
+        handler = createFullSmileResponseHandler(codec);
     }
 
     @Test
-    public void testValidJson()
+    public void testValidSmile()
     {
-        User user = new User("Joe", 25);
-        String json = codec.toJson(user);
-        JsonResponse<User> response = handler.handle(null, mockResponse(OK, JSON_UTF_8, json));
+        SmileResponse<User> response = handler.handle(null, createSmileResponse(OK, ImmutableMap.of(
+                "name", "Joe",
+                "age", 25,
+                "extra", true
+        )));
 
         assertTrue(response.hasValue());
-        assertEquals(response.getJsonBytes(), json.getBytes(UTF_8));
-        assertEquals(response.getJson(), json);
-        assertEquals(response.getValue().getName(), user.getName());
-        assertEquals(response.getValue().getAge(), user.getAge());
-
-        assertNotSame(response.getJson(), response.getJson());
-        assertNotSame(response.getJsonBytes(), response.getJsonBytes());
+        assertEquals(response.getValue().getName(), "Joe");
+        assertEquals(response.getValue().getAge(), 25);
     }
 
     @Test
-    public void testInvalidJson()
+    public void testInvalidSmile()
     {
-        String json = "{\"age\": \"foo\"}";
-        JsonResponse<User> response = handler.handle(null, mockResponse(OK, JSON_UTF_8, json));
+        SmileResponse<User> response = handler.handle(null, createSmileResponse(OK, ImmutableMap.of(
+                "age", "foo"
+        )));
 
         assertFalse(response.hasValue());
         assertEquals(response.getException().getMessage(),
-                "Unable to create " + User.class + " from JSON response:\n" + json);
-        assertInstanceOf(response.getException().getCause(), IllegalArgumentException.class);
-        assertEquals(response.getException().getCause().getMessage(), "Invalid [simple type, class com.proofpoint.http.client.TestFullJsonResponseHandler$User] json bytes");
+                "Unable to create " + User.class + " from SMILE response");
+        assertInstanceOf(response.getException().getCause(), InvalidFormatException.class);
+        assertContains(response.getException().getCause().getMessage(),
+                "Can not construct instance of java.lang.Integer from String value 'foo': not a valid Integer value");
     }
 
     @Test
-    public void testInvalidJsonGetValue()
+    public void testInvalidSmileGetValue()
     {
-        String json = "{\"age\": \"foo\"}";
-        JsonResponse<User> response = handler.handle(null, mockResponse(OK, JSON_UTF_8, json));
+        SmileResponse<User> response = handler.handle(null, createSmileResponse(OK, ImmutableMap.of(
+                "age", "foo"
+        )));
 
         try {
             response.getValue();
             fail("expected exception");
         }
         catch (IllegalStateException e) {
-            assertEquals(e.getMessage(), "Response does not contain a JSON value");
-            assertEquals(e.getCause(), response.getException());
+            assertEquals(e.getMessage(), "Response does not contain a SMILE value");
+            assertSame(e.getCause(), response.getException());
         }
     }
 
     @Test
-    public void testNonJsonResponse()
+    public void testNonSmileResponse()
     {
-        JsonResponse<User> response = handler.handle(null, mockResponse(OK, PLAIN_TEXT_UTF_8, "hello"));
+        SmileResponse<User> response = handler.handle(null, mockResponse(OK, PLAIN_TEXT_UTF_8, "hello"));
 
         assertFalse(response.hasValue());
         assertNull(response.getException());
-        assertNull(response.getJson());
-        assertNull(response.getJsonBytes());
     }
 
     @Test
     public void testMissingContentType()
     {
-        JsonResponse<User> response = handler.handle(null,
+        SmileResponse<User> response = handler.handle(null,
                 new TestingResponse(OK, ImmutableListMultimap.<String, String>of(), "hello".getBytes(UTF_8)));
 
         assertFalse(response.hasValue());
         assertNull(response.getException());
-        assertNull(response.getJson());
-        assertNull(response.getJsonBytes());
         assertTrue(response.getHeaders().isEmpty());
     }
 
     @Test
-    public void testJsonErrorResponse()
+    public void testSmileErrorResponse()
     {
-        String json = "{\"error\": true}";
-        JsonResponse<User> response = handler.handle(null, mockResponse(INTERNAL_SERVER_ERROR, JSON_UTF_8, json));
+        SmileResponse<User> response = handler.handle(null, createSmileResponse(INTERNAL_SERVER_ERROR, ImmutableMap.of(
+                "error", true
+        )));
 
         assertTrue(response.hasValue());
-        assertEquals(response.getJson(), json);
-        assertEquals(response.getJsonBytes(), json.getBytes(UTF_8));
         assertNull(response.getValue().getName());
         assertEquals(response.getValue().getAge(), 0);
     }
 
     @Test
-    public void testJsonReadException()
+    public void testSmileReadException()
             throws IOException
     {
         InputStream inputStream = mock(InputStream.class);
@@ -140,13 +143,25 @@ public class TestFullJsonResponseHandler
         when(inputStream.read(any(byte[].class), anyInt(), anyInt())).thenThrow(expectedException);
 
         try {
-            handler.handle(null, new TestingResponse(OK, contentType(JSON_UTF_8), inputStream));
+            handler.handle(null, new TestingResponse(OK, contentType(MEDIA_TYPE_SMILE), inputStream));
             fail("expected exception");
         }
         catch (RuntimeException e) {
-            assertEquals(e.getMessage(), "Error reading JSON response from server");
+            assertEquals(e.getMessage(), "Error reading SMILE response from server");
             assertSame(e.getCause(), expectedException);
         }
+    }
+
+    private Response createSmileResponse(HttpStatus status, Object value)
+    {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            new ObjectMapper(new SmileFactory()).writeValue(outputStream, value);
+        }
+        catch (IOException e) {
+            throw propagate(e);
+        }
+        return new TestingResponse(status, contentType(MEDIA_TYPE_SMILE), outputStream.toByteArray());
     }
 
     static class User
