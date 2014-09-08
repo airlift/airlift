@@ -83,7 +83,7 @@ public class JsonResponseHandler<T> implements ResponseHandler<T, RuntimeExcepti
             bytes = ByteStreams.toByteArray(response.getInputStream());
         }
         catch (IOException e) {
-            throw new RuntimeException("Error reading response from server");
+            throw new RuntimeException("Error reading JSON response from server", e);
         }
         try {
             return jsonCodec.fromJson(bytes);
