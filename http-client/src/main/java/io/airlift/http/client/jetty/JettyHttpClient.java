@@ -1,6 +1,7 @@
 package io.airlift.http.client.jetty;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.AbstractIterator;
@@ -13,12 +14,12 @@ import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AbstractFuture;
 import io.airlift.http.client.AsyncHttpClient;
 import io.airlift.http.client.BodyGenerator;
-import io.airlift.http.client.ResponseTooLargeException;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
+import io.airlift.http.client.ResponseTooLargeException;
 import io.airlift.http.client.StaticBodyGenerator;
 import io.airlift.log.Logger;
 import io.airlift.units.DataSize;
@@ -71,7 +72,7 @@ public class JettyHttpClient
     private final long maxContentLength;
     private final RequestStats stats = new RequestStats();
     private final List<HttpRequestFilter> requestFilters;
-    private final Exception created = new Exception();
+    private final Exception creationLocation = new Exception();
     private final String name;
 
     public JettyHttpClient()
@@ -86,41 +87,45 @@ public class JettyHttpClient
 
     public JettyHttpClient(HttpClientConfig config, Iterable<? extends HttpRequestFilter> requestFilters)
     {
-        this.name = "Anonymous";
-        maxContentLength = checkNotNull(config, "config is null").getMaxContentLength().toBytes();
-        httpClient = createHttpClient(config, created);
-
-        try {
-            httpClient.start();
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw Throwables.propagate(e);
-        }
-        catch (Exception e) {
-            throw Throwables.propagate(e);
-        }
-
-        this.requestFilters = ImmutableList.copyOf(requestFilters);
+        this(config, Optional.<JettyIoPool>absent(), requestFilters);
     }
 
     public JettyHttpClient(HttpClientConfig config, JettyIoPool jettyIoPool, Iterable<? extends HttpRequestFilter> requestFilters)
     {
-        this.name = jettyIoPool.getName();
-        maxContentLength = checkNotNull(config, "config is null").getMaxContentLength().toBytes();
-        httpClient = createHttpClient(config, created);
-        httpClient.setExecutor(jettyIoPool.getExecutor());
-        httpClient.setByteBufferPool(jettyIoPool.setByteBufferPool());
-        httpClient.setScheduler(jettyIoPool.setScheduler());
+        this(config, Optional.of(jettyIoPool), requestFilters);
+    }
+
+    private JettyHttpClient(HttpClientConfig config, Optional<JettyIoPool> jettyIoPool, Iterable<? extends HttpRequestFilter> requestFilters)
+    {
+        checkNotNull(config, "config is null");
+        checkNotNull(jettyIoPool, "jettyIoPool is null");
+        checkNotNull(requestFilters, "requestFilters is null");
+
+        maxContentLength = config.getMaxContentLength().toBytes();
+        httpClient = createHttpClient(config, creationLocation);
+
+        if (jettyIoPool.isPresent()) {
+            JettyIoPool pool = jettyIoPool.get();
+            name = pool.getName();
+            httpClient.setExecutor(pool.getExecutor());
+            httpClient.setByteBufferPool(pool.setByteBufferPool());
+            httpClient.setScheduler(pool.setScheduler());
+        }
+        else {
+            name = "Anonymous";
+        }
 
         try {
             httpClient.start();
 
             // remove the GZIP encoding from the client
-            // todo change this when https://bugs.eclipse.org/bugs/show_bug.cgi?id=433690 is resolved
+            // TODO: there should be a better way to to do this
             httpClient.getContentDecoderFactories().clear();
         }
         catch (Exception e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
             throw Throwables.propagate(e);
         }
 
@@ -315,6 +320,20 @@ public class JettyHttpClient
         }
     }
 
+    @Override
+    public String toString()
+    {
+        return Objects.toStringHelper(this)
+                .addValue(name)
+                .toString();
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public StackTraceElement[] getCreationLocation()
+    {
+        return creationLocation.getStackTrace();
+    }
+
     private static class JettyResponse
             implements io.airlift.http.client.Response
     {
@@ -382,7 +401,6 @@ public class JettyHttpClient
         }
     }
 
-
     private static class JettyResponseFuture<T, E extends Exception>
             extends AbstractFuture<T>
             implements HttpResponseFuture<T>
@@ -406,7 +424,6 @@ public class JettyHttpClient
         private final org.eclipse.jetty.client.api.Request jettyRequest;
         private final ResponseHandler<T, E> responseHandler;
         private final RequestStats stats;
-
 
         public JettyResponseFuture(Request request, org.eclipse.jetty.client.api.Request jettyRequest, ResponseHandler<T, E> responseHandler, RequestStats stats)
         {
