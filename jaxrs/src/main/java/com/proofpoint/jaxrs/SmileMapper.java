@@ -23,13 +23,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.proofpoint.log.Logger;
 
 import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
@@ -46,8 +43,8 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+
+import static com.proofpoint.jaxrs.ValidationUtils.validateObject;
 
 // This code is based on JacksonJsonProvider
 @Provider
@@ -56,8 +53,6 @@ import java.util.Set;
 public class SmileMapper
         implements MessageBodyReader<Object>, MessageBodyWriter<Object>
 {
-    public static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
-
     /**
      * Looks like we need to worry about accidental
      * data binding for types we shouldn't be handling. This is
@@ -145,19 +140,7 @@ public class SmileMapper
         }
 
         // validate object using the bean validation framework
-        Set<ConstraintViolation<Object>> violations;
-        if (TypeToken.of(genericType).getRawType().equals(List.class)) {
-            violations = VALIDATOR.<Object>validate(new ValidatableList((List<?>) object));
-        }
-        else if (TypeToken.of(genericType).getRawType().equals(Map.class)) {
-            violations = VALIDATOR.<Object>validate(new ValidatableMap((Map<?, ?>) object));
-        }
-        else {
-            violations = VALIDATOR.validate(object);
-        }
-        if (!violations.isEmpty()) {
-            throw new BeanValidationException(violations);
-        }
+        validateObject(genericType, object);
 
         return object;
     }

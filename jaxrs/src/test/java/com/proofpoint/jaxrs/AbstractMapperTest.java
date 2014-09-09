@@ -36,8 +36,10 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.ZipException;
 
 import static com.google.common.base.Throwables.propagate;
@@ -197,8 +199,11 @@ public abstract class AbstractMapperTest<T extends MessageBodyReader<Object> & M
     @Test
     public void testBeanValidationOfListThrowsBeanValidationException() throws IOException
     {
+        ArrayList<Object> jsonStructure = new ArrayList<>();
+        jsonStructure.add(null);
+        jsonStructure.add(ImmutableMap.of());
         try {
-            InputStream is = getInputStream(ImmutableList.of(ImmutableMap.of()));
+            InputStream is = getInputStream(jsonStructure);
             Type listJsonClassType = new TypeToken<List<JsonClass>>()
             {
             }.getType();
@@ -207,8 +212,27 @@ public abstract class AbstractMapperTest<T extends MessageBodyReader<Object> & M
         }
         catch (BeanValidationException e) {
             assertEqualsIgnoreOrder(e.getErrorMessages(), ImmutableList.of(
-                    "list[0].secondField may not be null",
-                    "list[0].firstField may not be null"
+                    "list[1].secondField may not be null",
+                    "list[1].firstField may not be null"
+            ));
+        }
+    }
+
+    @Test
+    public void testBeanValidationOfSetThrowsBeanValidationException() throws IOException
+    {
+        try {
+            InputStream is = getInputStream(ImmutableList.of(ImmutableMap.of()));
+            Type setJsonClassType = new TypeToken<Set<JsonClass>>()
+            {
+            }.getType();
+            mapper.readFrom(Object.class, setJsonClassType, null, null, null, is);
+            fail("Should have thrown an BeanValidationException");
+        }
+        catch (BeanValidationException e) {
+            assertEqualsIgnoreOrder(e.getErrorMessages(), ImmutableList.of(
+                    "collection[].secondField may not be null",
+                    "collection[].firstField may not be null"
             ));
         }
     }
