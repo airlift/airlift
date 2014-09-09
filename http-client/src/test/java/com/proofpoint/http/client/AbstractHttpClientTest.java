@@ -662,6 +662,19 @@ public abstract class AbstractHttpClientTest
         executeRequest(request, new UnexpectedResponseStatusCodeHandler(200));
     }
 
+    @Test
+    public void testCompressionIsDisabled()
+            throws Exception
+    {
+        Request request = prepareGet()
+                .setUri(baseURI)
+                .build();
+
+        String body = executeRequest(request, new ResponseToStringHandler());
+        Assert.assertEquals(body, "");
+        Assert.assertFalse(servlet.requestHeaders.containsKey("Accept-Encoding"));
+    }
+
     private ExecutorService executor;
 
     @BeforeClass
