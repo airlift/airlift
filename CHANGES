@@ -1,3 +1,9 @@
+Platform 1.06
+
+* Rack moved to separate project
+
+  We moved the rack packaging support into the platform-rack project.
+
 Platform 1.05
 
 * Findbugs run by default
