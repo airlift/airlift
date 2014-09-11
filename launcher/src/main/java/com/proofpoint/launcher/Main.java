@@ -230,6 +230,7 @@ public class Main
             execute();
         }
 
+        @SuppressFBWarnings(value = "OS_OPEN_STREAM", justification = "false positive")
         protected void start(List<String> args, boolean daemon)
         {
             PidFile pidFile = new PidFile(pidFilePath);
@@ -376,6 +377,7 @@ public class Main
             System.exit(0);
         }
 
+        @SuppressFBWarnings(value = "OS_OPEN_STREAM", justification = "false positive")
         protected void invokeMain(List<String> args, boolean daemon)
         {
             if (!installPath.equals(dataDir)) {

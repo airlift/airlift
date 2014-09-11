@@ -13,6 +13,7 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.util.concurrent.AtomicDouble;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.openjdk.jol.info.ClassLayout;
 
 import javax.annotation.concurrent.NotThreadSafe;
@@ -936,6 +937,7 @@ public class QuantileDigest
                 "Found a linear chain of zero-weight nodes");
     }
 
+    @SuppressFBWarnings(value = "VA_FORMAT_STRING_USES_NEWLINE", justification = "don't care")
     public String toGraphviz()
     {
         StringBuilder builder = new StringBuilder();
