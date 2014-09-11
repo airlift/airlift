@@ -1,5 +1,10 @@
 Platform 1.06
 
+* Smile support in http-client
+
+  We added SmileBodyMapper, SmileResponseHandler, and
+  FullSmileResponseHandler classes to the http-client sub-project.
+
 * Rack moved to separate project
 
   We moved the rack packaging support into the platform-rack project.
