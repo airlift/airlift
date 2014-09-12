@@ -20,6 +20,7 @@ import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.Futures;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -51,7 +52,7 @@ public class SerialScheduledExecutorService
         implements ScheduledExecutorService
 {
     private final TestingTicker ticker = new TestingTicker();
-    private final PriorityQueue<SerialScheduledFuture<?>> futureTasks = new PriorityQueue<SerialScheduledFuture<?>>();
+    private final PriorityQueue<SerialScheduledFuture<?>> futureTasks = new PriorityQueue<>();
     private Collection<SerialScheduledFuture<?>> tasks = futureTasks;
     private boolean isShutdown = false;
 
@@ -208,7 +209,7 @@ public class SerialScheduledExecutorService
     {
         Preconditions.checkNotNull(runnable, "Task object is null");
         Preconditions.checkArgument(l >= 0, "Delay must not be negative");
-        SerialScheduledFuture<?> future = new SerialScheduledFuture<Void>(new FutureTask<Void>(runnable, null), toNanos(l, timeUnit));
+        SerialScheduledFuture<?> future = new SerialScheduledFuture<>(new FutureTask<Void>(runnable, null), toNanos(l, timeUnit));
         if (l == 0) {
             future.task.run();
         }
@@ -223,7 +224,7 @@ public class SerialScheduledExecutorService
     {
         Preconditions.checkNotNull(vCallable, "Task object is null");
         Preconditions.checkArgument(l >= 0, "Delay must not be negative");
-        SerialScheduledFuture<V> future = new SerialScheduledFuture<V>(new FutureTask<V>(vCallable), toNanos(l, timeUnit));
+        SerialScheduledFuture<V> future = new SerialScheduledFuture<>(new FutureTask<V>(vCallable), toNanos(l, timeUnit));
         if (l == 0) {
             future.task.run();
         }
@@ -260,7 +261,8 @@ public class SerialScheduledExecutorService
         return scheduleAtFixedRate(runnable, initialDelay, period, timeUnit);
     }
 
-    class SerialScheduledFuture<T>
+    @SuppressFBWarnings(value = "EQ_COMPARETO_USE_OBJECT_EQUALS", justification = "as required by Delayed interface")
+    static class SerialScheduledFuture<T>
             implements ScheduledFuture<T>
     {
         long remainingDelayNanos;
@@ -373,7 +375,7 @@ public class SerialScheduledExecutorService
         }
     }
 
-    class RecurringRunnableSerialScheduledFuture
+    static class RecurringRunnableSerialScheduledFuture
             extends SerialScheduledFuture<Void>
     {
         private final long recurringDelayNanos;
@@ -395,7 +397,7 @@ public class SerialScheduledExecutorService
         @Override
         public void restartDelayTimer()
         {
-            task = new FutureTask<Void>(runnable, null);
+            task = new FutureTask<>(runnable, null);
             remainingDelayNanos = recurringDelayNanos;
         }
     }
