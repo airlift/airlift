@@ -294,6 +294,21 @@
                         <failBuildInCaseOfConflict>${platform.check.fail-duplicate-finder}</failBuildInCaseOfConflict>
                         <exceptions>
                             <exception>
+                                <conflictingDependencies>
+                                    <dependency>
+                                        <groupId>com.proofpoint.platform</groupId>
+                                        <artifactId>http-server</artifactId>
+                                    </dependency>
+                                    <dependency>
+                                        <groupId>com.proofpoint.platform</groupId>
+                                        <artifactId>http-client</artifactId>
+                                    </dependency>
+                                </conflictingDependencies>
+                                <resources>
+                                    <resource>jetty-logging.properties</resource>
+                                </resources>
+                            </exception>
+                            <exception>
                                 <!-- For bval-jsr303 -->
                                 <conflictingDependencies>
                                     <dependency>
