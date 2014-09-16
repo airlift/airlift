@@ -154,6 +154,11 @@ public class Announcer
         return future;
     }
 
+    public ListenableFuture<?> forceAnnounce()
+    {
+        return announcementClient.announce(getServiceAnnouncements());
+    }
+
     private void scheduleNextAnnouncement(Duration delay)
     {
         // already stopped?  avoids rejection exception
