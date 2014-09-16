@@ -46,6 +46,11 @@ public final class Duration implements Comparable<Duration>
         return new Duration(millis, MILLISECONDS);
     }
 
+    public static Duration durationSince(long start)
+    {
+        return nanosSince(start).convertToMostSuccinctTimeUnit();
+    }
+
     private final double value;
     private final TimeUnit unit;
 
