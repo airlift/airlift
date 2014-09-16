@@ -15,7 +15,6 @@
  */
 package com.proofpoint.discovery.client.testing;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.proofpoint.discovery.client.HttpServiceSelector;
@@ -23,6 +22,7 @@ import com.proofpoint.discovery.client.HttpServiceSelector;
 import java.net.URI;
 import java.util.List;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.proofpoint.discovery.client.ServiceSelectorConfig.DEFAULT_POOL;
 
 @Deprecated
@@ -95,7 +95,7 @@ public class StaticHttpServiceSelector implements HttpServiceSelector
     @Override
     public String toString()
     {
-        return Objects.toStringHelper(this)
+        return toStringHelper(this)
                 .add("type", type)
                 .add("pool", pool)
                 .add("uris", uris)

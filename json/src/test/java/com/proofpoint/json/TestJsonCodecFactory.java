@@ -16,7 +16,6 @@
 package com.proofpoint.json;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
@@ -26,6 +25,7 @@ import org.testng.annotations.Test;
 import java.util.List;
 import java.util.Map;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 
 public class TestJsonCodecFactory
 {
@@ -186,7 +186,7 @@ public class TestJsonCodecFactory
         @Override
         public String toString()
         {
-            return Objects.toStringHelper(this)
+            return toStringHelper(this)
                     .add("name", name)
                     .add("rocks", rocks)
                     .toString();

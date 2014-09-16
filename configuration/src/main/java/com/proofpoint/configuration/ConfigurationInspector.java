@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedSet;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Objects.firstNonNull;
 import static com.proofpoint.configuration.ConfigurationMetadata.isConfigClass;
 
@@ -330,7 +331,7 @@ public class ConfigurationInspector
         @Override
         public String toString()
         {
-            return Objects.toStringHelper(this)
+            return toStringHelper(this)
                     .add("attributeName", attributeName)
                     .add("propertyName", propertyName)
                     .add("defaultValue", defaultValue)

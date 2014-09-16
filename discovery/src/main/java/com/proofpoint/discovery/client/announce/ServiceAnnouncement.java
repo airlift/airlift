@@ -16,7 +16,6 @@
 package com.proofpoint.discovery.client.announce;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.discovery.client.ServiceDescriptor;
@@ -26,6 +25,7 @@ import com.proofpoint.node.NodeInfo;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.proofpoint.discovery.client.ServiceDescriptor.serviceDescriptor;
 
 public class ServiceAnnouncement
@@ -89,7 +89,7 @@ public class ServiceAnnouncement
     @Override
     public String toString()
     {
-        return Objects.toStringHelper(this)
+        return toStringHelper(this)
                 .add("id", id)
                 .add("type", type)
                 .add("properties", properties)

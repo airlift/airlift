@@ -4,6 +4,7 @@ import com.google.common.base.Objects;
 import com.proofpoint.event.client.EventField;
 import com.proofpoint.event.client.EventType;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @EventType("Person")
@@ -87,7 +88,7 @@ public class PersonEvent
     @Override
     public String toString()
     {
-        return Objects.toStringHelper(this)
+        return toStringHelper(this)
                 .add("operation", operation)
                 .add("personId", personId)
                 .add("person", person)

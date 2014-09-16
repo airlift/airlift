@@ -2,12 +2,12 @@ package com.proofpoint.stats;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 import org.weakref.jmx.Managed;
 
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -137,7 +137,7 @@ public final class DecayCounter
     @Override
     public String toString()
     {
-        return Objects.toStringHelper(this)
+        return toStringHelper(this)
                 .add("count", getCount())
                 .add("rate", getRate())
                 .toString();
@@ -170,7 +170,7 @@ public final class DecayCounter
         @Override
         public String toString()
         {
-            return Objects.toStringHelper(this)
+            return toStringHelper(this)
                     .add("count", count)
                     .add("rate", rate)
                     .toString();

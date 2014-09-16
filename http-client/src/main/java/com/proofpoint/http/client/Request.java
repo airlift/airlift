@@ -25,6 +25,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map.Entry;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Objects.equal;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -96,7 +97,7 @@ public class Request
     @Override
     public String toString()
     {
-        return Objects.toStringHelper(this)
+        return toStringHelper(this)
                 .add("uri", uri)
                 .add("method", method)
                 .add("headers", headers)

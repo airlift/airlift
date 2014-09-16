@@ -2,10 +2,11 @@ package com.proofpoint.stats;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Objects;
 import com.proofpoint.stats.Distribution.DistributionSnapshot;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Nested;
+
+import static com.google.common.base.MoreObjects.toStringHelper;
 
 public class DistributionStat
 {
@@ -118,7 +119,7 @@ public class DistributionStat
         @Override
         public String toString()
         {
-            return Objects.toStringHelper(this)
+            return toStringHelper(this)
                     .add("oneMinute", oneMinute)
                     .add("fiveMinute", fiveMinute)
                     .add("fifteenMinute", fifteenMinute)

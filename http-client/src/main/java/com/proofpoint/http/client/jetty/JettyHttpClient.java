@@ -1,6 +1,5 @@
 package com.proofpoint.http.client.jetty;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
@@ -62,6 +61,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Math.min;
 
@@ -325,7 +325,7 @@ public class JettyHttpClient
     @Override
     public String toString()
     {
-        return Objects.toStringHelper(this)
+        return toStringHelper(this)
                 .addValue(name)
                 .toString();
     }
@@ -395,7 +395,7 @@ public class JettyHttpClient
         @Override
         public String toString()
         {
-            return Objects.toStringHelper(this)
+            return toStringHelper(this)
                     .add("statusCode", getStatusCode())
                     .add("statusMessage", getStatusMessage())
                     .add("headers", getHeaders())
@@ -532,7 +532,7 @@ public class JettyHttpClient
         @Override
         public String toString()
         {
-            return Objects.toStringHelper(this)
+            return toStringHelper(this)
                     .add("requestStart", requestStart)
                     .add("state", state)
                     .add("request", request)
