@@ -26,6 +26,8 @@ import io.airlift.discovery.client.DiscoveryAnnouncementClient;
 import io.airlift.discovery.client.DiscoveryLookupClient;
 import io.airlift.discovery.client.MergingServiceSelectorFactory;
 import io.airlift.discovery.client.ServiceAnnouncement;
+import io.airlift.discovery.client.ServiceInventory;
+import io.airlift.discovery.client.ServiceInventoryManager;
 import io.airlift.discovery.client.ServiceSelector;
 import io.airlift.discovery.client.ServiceSelectorFactory;
 import io.airlift.discovery.client.ServiceSelectorManager;
@@ -39,6 +41,11 @@ public class TestingDiscoveryModule
     @Override
     public void configure(Binder binder)
     {
+        // bind service inventory with initial empty multibinder
+        Multibinder.newSetBinder(binder, ServiceInventory.class);
+
+        binder.bind(ServiceInventory.class).to(ServiceInventoryManager.class).in(Scopes.SINGLETON);
+
         // bind discovery client and dependencies
         binder.bind(InMemoryDiscoveryClient.class).in(Scopes.SINGLETON);
         binder.bind(DiscoveryAnnouncementClient.class).to(Key.get(InMemoryDiscoveryClient.class)).in(Scopes.SINGLETON);

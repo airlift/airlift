@@ -23,7 +23,7 @@ import javax.validation.constraints.NotNull;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
-public class ServiceInventoryConfig
+public class UriServiceInventoryConfig
 {
     private URI serviceInventoryUri;
     private Duration updateInterval = new Duration(10, TimeUnit.SECONDS);
@@ -35,7 +35,7 @@ public class ServiceInventoryConfig
 
     @Config("service-inventory.uri")
     @ConfigDescription("Service inventory base URI")
-    public ServiceInventoryConfig setServiceInventoryUri(URI uri)
+    public UriServiceInventoryConfig setServiceInventoryUri(URI uri)
     {
         this.serviceInventoryUri = uri;
         return this;
@@ -49,7 +49,7 @@ public class ServiceInventoryConfig
 
     @Config("service-inventory.update-interval")
     @ConfigDescription("Service inventory update interval")
-    public ServiceInventoryConfig setUpdateInterval(Duration updateInterval)
+    public UriServiceInventoryConfig setUpdateInterval(Duration updateInterval)
     {
         this.updateInterval = updateInterval;
         return this;

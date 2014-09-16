@@ -44,8 +44,12 @@ public class DiscoveryModule
     public void configure(Binder binder)
     {
         // bind service inventory
-        binder.bind(ServiceInventory.class).in(Scopes.SINGLETON);
-        bindConfig(binder).to(ServiceInventoryConfig.class);
+        bindConfig(binder).to(UriServiceInventoryConfig.class);
+        binder.bind(UriServiceInventory.class).in(Scopes.SINGLETON);
+        newExporter(binder).export(UriServiceInventory.class).withGeneratedName();
+        Multibinder.newSetBinder(binder, ServiceInventory.class).addBinding().to(UriServiceInventory.class).in(Scopes.SINGLETON);
+
+        binder.bind(ServiceInventory.class).to(ServiceInventoryManager.class).in(Scopes.SINGLETON);
 
         // for legacy configurations
         bindConfig(binder).to(DiscoveryClientConfig.class);
@@ -78,8 +82,6 @@ public class DiscoveryModule
         // bind selector manager with initial empty multibinder
         Multibinder.newSetBinder(binder, ServiceSelector.class);
         binder.bind(ServiceSelectorManager.class).in(Scopes.SINGLETON);
-
-        newExporter(binder).export(ServiceInventory.class).withGeneratedName();
     }
 
     @SuppressWarnings("deprecation")

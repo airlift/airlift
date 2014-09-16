@@ -41,13 +41,13 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
 
-public class TestServiceInventory
+public class TestUriServiceInventory
 {
     @Test
     public void testNullServiceInventory()
     {
         try (JettyHttpClient httpClient = new JettyHttpClient()) {
-            ServiceInventory serviceInventory = new ServiceInventory(new ServiceInventoryConfig(),
+            UriServiceInventory serviceInventory = new UriServiceInventory(new UriServiceInventoryConfig(),
                     new NodeInfo("test"),
                     JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
                     httpClient);
@@ -63,10 +63,10 @@ public class TestServiceInventory
             throws Exception
     {
         try (JettyHttpClient httpClient = new JettyHttpClient()) {
-            ServiceInventoryConfig serviceInventoryConfig = new ServiceInventoryConfig()
+            UriServiceInventoryConfig uriServiceInventoryConfig = new UriServiceInventoryConfig()
                     .setServiceInventoryUri(Resources.getResource("service-inventory.json").toURI());
 
-            ServiceInventory serviceInventory = new ServiceInventory(serviceInventoryConfig,
+            UriServiceInventory serviceInventory = new UriServiceInventory(uriServiceInventoryConfig,
                     new NodeInfo("test"),
                     JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
                     httpClient);
@@ -107,7 +107,7 @@ public class TestServiceInventory
             httpConnector.setName("http");
             server.addConnector(httpConnector);
 
-            ServletHolder servletHolder = new ServletHolder(new ServiceInventoryServlet(serviceInventoryJson));
+            ServletHolder servletHolder = new ServletHolder(new UriServiceInventoryServlet(serviceInventoryJson));
             ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
             context.addServlet(servletHolder, "/*");
             HandlerCollection handlers = new HandlerCollection();
@@ -118,10 +118,10 @@ public class TestServiceInventory
 
 
             // test
-            ServiceInventoryConfig serviceInventoryConfig = new ServiceInventoryConfig()
+            UriServiceInventoryConfig uriServiceInventoryConfig = new UriServiceInventoryConfig()
                     .setServiceInventoryUri(baseURI);
 
-            ServiceInventory serviceInventory = new ServiceInventory(serviceInventoryConfig,
+            UriServiceInventory serviceInventory = new UriServiceInventory(uriServiceInventoryConfig,
                     new NodeInfo("test"),
                     JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
                     httpClient);
@@ -141,12 +141,12 @@ public class TestServiceInventory
         }
     }
 
-    private class ServiceInventoryServlet
+    private class UriServiceInventoryServlet
             extends HttpServlet
     {
         private final byte[] serviceInventory;
 
-        private ServiceInventoryServlet(String serviceInventory)
+        private UriServiceInventoryServlet(String serviceInventory)
         {
             this.serviceInventory = serviceInventory.getBytes(Charsets.UTF_8);
         }
