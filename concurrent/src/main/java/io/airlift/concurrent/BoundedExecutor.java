@@ -6,8 +6,8 @@ import io.airlift.log.Logger;
 import javax.annotation.concurrent.ThreadSafe;
 
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -29,7 +29,7 @@ public class BoundedExecutor
 {
     private static final Logger log = Logger.get(BoundedExecutor.class);
 
-    private final Queue<Runnable> queue = new LinkedBlockingQueue<>();
+    private final Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
     private final AtomicInteger queueSize = new AtomicInteger(0);
     private final Runnable triggerTask = new Runnable()
     {
