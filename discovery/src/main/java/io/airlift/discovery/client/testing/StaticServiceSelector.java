@@ -18,6 +18,8 @@ package io.airlift.discovery.client.testing;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.discovery.client.ServiceDescriptor;
 import io.airlift.discovery.client.ServiceSelector;
 
@@ -73,5 +75,11 @@ public class StaticServiceSelector implements ServiceSelector
     public List<ServiceDescriptor> selectAllServices()
     {
         return serviceDescriptors;
+    }
+
+    @Override
+    public ListenableFuture<List<ServiceDescriptor>> refresh()
+    {
+        return Futures.immediateFuture(serviceDescriptors);
     }
 }

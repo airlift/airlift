@@ -15,6 +15,7 @@
  */
 package io.airlift.discovery.client;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.FutureCallback;
@@ -108,11 +109,12 @@ public class CachingServiceSelector
         return serviceDescriptors.getServiceDescriptors();
     }
 
-    ListenableFuture<ServiceDescriptors> refresh()
+    @Override
+    public ListenableFuture<List<ServiceDescriptor>> refresh()
     {
-        final ServiceDescriptors oldDescriptors = this.serviceDescriptors.get();
+        ServiceDescriptors oldDescriptors = this.serviceDescriptors.get();
 
-        final ListenableFuture<ServiceDescriptors> future;
+        ListenableFuture<ServiceDescriptors> future;
         if (oldDescriptors == null) {
             future = lookupClient.getServices(type, pool);
         }
@@ -120,7 +122,7 @@ public class CachingServiceSelector
             future = lookupClient.refreshServices(oldDescriptors);
         }
 
-        return chainedCallback(future, new FutureCallback<ServiceDescriptors>()
+        future = chainedCallback(future, new FutureCallback<ServiceDescriptors>()
         {
             @Override
             public void onSuccess(ServiceDescriptors newDescriptors)
@@ -142,6 +144,15 @@ public class CachingServiceSelector
                 scheduleRefresh(duration);
             }
         }, executor);
+
+        return Futures.transform(future, new Function<ServiceDescriptors, List<ServiceDescriptor>>()
+        {
+            @Override
+            public List<ServiceDescriptor> apply(ServiceDescriptors serviceDescriptors)
+            {
+                return serviceDescriptors.getServiceDescriptors();
+            }
+        });
     }
 
     private void scheduleRefresh(Duration delay)

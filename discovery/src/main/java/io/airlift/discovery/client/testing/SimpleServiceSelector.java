@@ -15,9 +15,11 @@
  */
 package io.airlift.discovery.client.testing;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.discovery.client.DiscoveryException;
 import io.airlift.discovery.client.DiscoveryLookupClient;
@@ -74,6 +76,19 @@ public class SimpleServiceSelector implements ServiceSelector
             log.error(e);
             return ImmutableList.of();
         }
+    }
+
+    @Override
+    public ListenableFuture<List<ServiceDescriptor>> refresh()
+    {
+        return Futures.transform(lookupClient.getServices(type, pool), new Function<ServiceDescriptors, List<ServiceDescriptor>>()
+        {
+            @Override
+            public List<ServiceDescriptor> apply(ServiceDescriptors serviceDescriptors)
+            {
+                return serviceDescriptors.getServiceDescriptors();
+            }
+        });
     }
 
     // TODO: move this to a utility package

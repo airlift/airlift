@@ -33,7 +33,7 @@ public class ServiceSelectorManager
 
     public void forceRefresh()
     {
-        for (ListenableFuture<ServiceDescriptors> future : initiateRefresh()) {
+        for (ListenableFuture<?> future : initiateRefresh()) {
             Futures.getUnchecked(future);
         }
     }
@@ -50,13 +50,11 @@ public class ServiceSelectorManager
         }
     }
 
-    private List<ListenableFuture<ServiceDescriptors>> initiateRefresh()
+    private List<ListenableFuture<?>> initiateRefresh()
     {
-        ImmutableList.Builder<ListenableFuture<ServiceDescriptors>> futures = ImmutableList.builder();
+        ImmutableList.Builder<ListenableFuture<?>> futures = ImmutableList.builder();
         for (ServiceSelector selector : serviceSelectors) {
-            if (selector instanceof CachingServiceSelector) {
-                futures.add(((CachingServiceSelector) selector).refresh());
-            }
+            futures.add(selector.refresh());
         }
         return futures.build();
     }

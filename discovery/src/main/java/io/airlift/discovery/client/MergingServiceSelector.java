@@ -1,6 +1,9 @@
 package io.airlift.discovery.client;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.node.NodeInfo;
 
 import java.util.HashSet;
@@ -38,14 +41,32 @@ public class MergingServiceSelector
     @Override
     public List<ServiceDescriptor> selectAllServices()
     {
+        return merge(announcer.getServiceAnnouncements(), selector.selectAllServices());
+    }
+
+    @Override
+    public ListenableFuture<List<ServiceDescriptor>> refresh()
+    {
+        return Futures.transform(selector.refresh(), new Function<List<ServiceDescriptor>, List<ServiceDescriptor>>()
+        {
+            @Override
+            public List<ServiceDescriptor> apply(List<ServiceDescriptor> serviceDescriptors)
+            {
+                return merge(announcer.getServiceAnnouncements(), serviceDescriptors);
+            }
+        });
+    }
+
+    private List<ServiceDescriptor> merge(Set<ServiceAnnouncement> serviceAnnouncements, List<ServiceDescriptor> serviceDescriptors)
+    {
         Set<ServiceDescriptor> set = new HashSet<>();
-        for (ServiceAnnouncement announcement : announcer.getServiceAnnouncements()) {
+        for (ServiceAnnouncement announcement : serviceAnnouncements) {
             ServiceDescriptor descriptor = announcement.toServiceDescriptor(nodeInfo);
             if (descriptor.getType().equals(getType()) && descriptor.getPool().equals(getPool())) {
                 set.add(descriptor);
             }
         }
-        set.addAll(selector.selectAllServices());
+        set.addAll(serviceDescriptors);
         return ImmutableList.copyOf(set);
     }
 }
