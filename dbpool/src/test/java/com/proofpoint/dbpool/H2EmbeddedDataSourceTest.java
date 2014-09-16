@@ -85,7 +85,7 @@ public class H2EmbeddedDataSourceTest
         ResultSet resultSet = null;
         try {
             URL url = Resources.getResource("com/proofpoint/dbpool/h2.ddl");
-            Files.copy(Resources.newReaderSupplier(url, Charsets.UTF_8), initScript, Charsets.UTF_8);
+            Resources.asCharSource(url, Charsets.UTF_8).copyTo(Files.asCharSink(initScript, Charsets.UTF_8));
 
             H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
                     .setFilename(file.getAbsolutePath())

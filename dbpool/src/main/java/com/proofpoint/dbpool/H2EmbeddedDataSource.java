@@ -101,7 +101,7 @@ public class H2EmbeddedDataSource extends ManagedDataSource
                 }
 
                 // execute init script
-                try (Reader reader = Resources.newReaderSupplier(url, Charsets.UTF_8).getInput()) {
+                try (Reader reader = Resources.asCharSource(url, Charsets.UTF_8).openStream()) {
                     ScriptReader scriptReader = new ScriptReader(reader);
                     for (String statement = scriptReader.readStatement(); statement != null; statement = scriptReader.readStatement()) {
                         executeCommand(connection, statement);
