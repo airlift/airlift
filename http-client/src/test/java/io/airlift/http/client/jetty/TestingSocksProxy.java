@@ -1,6 +1,7 @@
 package io.airlift.http.client.jetty;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import com.google.common.net.HostAndPort;
 import com.google.common.net.InetAddresses;
@@ -218,9 +219,11 @@ public class TestingSocksProxy
             proxyData(sourceInput, sourceOutput, targetInput, targetOutput);
         }
 
-        private void responseSocks4(DataOutputStream sourceOutput, int status, int port, int address)
+        private void responseSocks4(DataOutputStream output, int status, int port, int address)
                 throws IOException
         {
+            ByteArrayDataOutput sourceOutput = ByteStreams.newDataOutput();
+
             // field 1: null byte
             sourceOutput.write(0);
 
@@ -232,6 +235,10 @@ public class TestingSocksProxy
 
             // field 4: network byte order IP address, 4 bytes
             sourceOutput.writeInt(address);
+
+            // write all at once to avoid Jetty bug
+            // TODO: remove this when fixed in Jetty
+            output.write(sourceOutput.toByteArray());
         }
 
         private void socks5(DataInputStream sourceInput, DataOutputStream sourceOutput)
