@@ -59,6 +59,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -67,6 +68,8 @@ import static java.lang.Math.min;
 public class JettyHttpClient
         implements AsyncHttpClient
 {
+    private final static AtomicLong nameCounter = new AtomicLong();
+
     private final HttpClient httpClient;
     private final long maxContentLength;
     private final RequestStats stats = new RequestStats();
@@ -103,16 +106,15 @@ public class JettyHttpClient
         maxContentLength = config.getMaxContentLength().toBytes();
         httpClient = createHttpClient(config, creationLocation);
 
-        if (jettyIoPool.isPresent()) {
-            JettyIoPool pool = jettyIoPool.get();
-            name = pool.getName();
-            httpClient.setExecutor(pool.getExecutor());
-            httpClient.setByteBufferPool(pool.setByteBufferPool());
-            httpClient.setScheduler(pool.setScheduler());
+        JettyIoPool pool = jettyIoPool.orNull();
+        if (pool == null) {
+            pool = new JettyIoPool("anonymous" + nameCounter.incrementAndGet(), new JettyIoPoolConfig());
         }
-        else {
-            name = "Anonymous";
-        }
+
+        name = pool.getName();
+        httpClient.setExecutor(pool.getExecutor());
+        httpClient.setByteBufferPool(pool.setByteBufferPool());
+        httpClient.setScheduler(pool.setScheduler());
 
         try {
             httpClient.start();
