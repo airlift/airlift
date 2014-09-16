@@ -123,9 +123,14 @@ public class Announcer
         announcements.remove(serviceId);
     }
 
+    private Set<ServiceAnnouncement> getServiceAnnouncements()
+    {
+        return ImmutableSet.copyOf(announcements.values());
+    }
+
     private ListenableFuture<Duration> announce()
     {
-        final ListenableFuture<Duration> future = announcementClient.announce(ImmutableSet.copyOf(announcements.values()));
+        final ListenableFuture<Duration> future = announcementClient.announce(getServiceAnnouncements());
 
         Futures.addCallback(future, new FutureCallback<Duration>()
         {
@@ -148,6 +153,11 @@ public class Announcer
         }, executor);
 
         return future;
+    }
+
+    public ListenableFuture<?> forceAnnounce()
+    {
+        return announcementClient.announce(getServiceAnnouncements());
     }
 
     private void scheduleNextAnnouncement(Duration delay)
