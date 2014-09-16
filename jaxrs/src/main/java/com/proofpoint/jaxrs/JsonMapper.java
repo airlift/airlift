@@ -134,7 +134,7 @@ public class JsonMapper
     {
         Object object;
         try {
-            JsonParser jsonParser = objectMapper.getFactory().createJsonParser(inputStream);
+            JsonParser jsonParser = objectMapper.getFactory().createParser(inputStream);
 
             // Important: we are NOT to close the underlying stream after
             // mapping, so we need to instruct parser:
@@ -186,7 +186,7 @@ public class JsonMapper
         JsonFactory jsonFactory = objectMapper.getFactory();
         jsonFactory.setCharacterEscapes(HTMLCharacterEscapes.INSTANCE);
 
-        JsonGenerator jsonGenerator = jsonFactory.createJsonGenerator(outputStream, JsonEncoding.UTF8);
+        JsonGenerator jsonGenerator = jsonFactory.createGenerator(outputStream, JsonEncoding.UTF8);
 
         // Important: we are NOT to close the underlying stream after
         // mapping, so we need to instruct generator:

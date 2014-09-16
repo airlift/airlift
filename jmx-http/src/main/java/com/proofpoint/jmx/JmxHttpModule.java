@@ -98,10 +98,10 @@ public class JmxHttpModule implements Module
                     return ObjectName.getInstance(jsonParser.getText());
                 }
                 catch (MalformedObjectNameException e) {
-                    throw context.instantiationException(getValueClass(), e);
+                    throw context.instantiationException(handledType(), e);
                 }
             }
-            throw context.mappingException(getValueClass());
+            throw context.mappingException(handledType());
         }
     }
 
@@ -135,7 +135,7 @@ public class JmxHttpModule implements Module
         {
             // List<Map<String, Object>
             ObjectNode o = createSchemaNode("array", true);
-            o.put("items", createSchemaNode("object", true));
+            o.set("items", createSchemaNode("object", true));
             return o;
         }
 

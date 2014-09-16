@@ -34,9 +34,9 @@ public class TestBalancingHttpClientConfig
     }
 
     @Test
-    public void testDeprecatedProperties()
+    public void testLegacyProperties()
     {
-        ConfigAssertions.assertDeprecatedEquivalence(BalancingHttpClientConfig.class,
+        ConfigAssertions.assertLegacyEquivalence(BalancingHttpClientConfig.class,
                 ImmutableMap.<String, String>of());
     }
 

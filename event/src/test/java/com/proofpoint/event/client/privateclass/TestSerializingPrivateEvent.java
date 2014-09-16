@@ -34,7 +34,7 @@ public class TestSerializingPrivateEvent
             throws IOException
     {
         JsonEventSerializer serializer = new JsonEventSerializer(new NodeInfo("test"), PrivateEvent.class);
-        JsonGenerator generator = new JsonFactory().createJsonGenerator(nullOutputStream());
+        JsonGenerator generator = new JsonFactory().createGenerator(nullOutputStream());
         serializer.serialize(new PrivateEvent(), "sample-trace-token", generator);
     }
 

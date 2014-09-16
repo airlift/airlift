@@ -35,7 +35,7 @@ public class TestJsonEventSerializer
         JsonEventSerializer eventSerializer = new JsonEventSerializer(new NodeInfo("test"), FixedDummyEventClass.class);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        JsonGenerator jsonGenerator = new JsonFactory().createJsonGenerator(out, JsonEncoding.UTF8);
+        JsonGenerator jsonGenerator = new JsonFactory().createGenerator(out, JsonEncoding.UTF8);
 
         FixedDummyEventClass event = TestingUtils.getEvents().get(0);
         eventSerializer.serialize(event, "sample-trace-token", jsonGenerator);
@@ -51,7 +51,7 @@ public class TestJsonEventSerializer
         JsonEventSerializer eventSerializer = new JsonEventSerializer(new NodeInfo("test"), DummyEventClass.class);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        JsonGenerator jsonGenerator = new JsonFactory().createJsonGenerator(out, JsonEncoding.UTF8);
+        JsonGenerator jsonGenerator = new JsonFactory().createGenerator(out, JsonEncoding.UTF8);
 
         FixedDummyEventClass event = TestingUtils.getEvents().get(0);
         eventSerializer.serialize(event, "sample-trace-token", jsonGenerator);

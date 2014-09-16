@@ -378,7 +378,7 @@ public class TestJsonModule
             if (token == JsonToken.VALUE_STRING) {
                 return new SuperDuperNameList(jp.getText(), null);
             }
-            throw context.mappingException(getValueClass());
+            throw context.mappingException(handledType());
         }
     }
 
