@@ -15,62 +15,20 @@
  */
 package com.proofpoint.platform.sample;
 
-import com.google.common.base.Objects;
+import com.google.auto.value.AutoValue;
 
 import javax.annotation.concurrent.Immutable;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 @Immutable
-public class Person
+@AutoValue
+public abstract class Person
 {
-    private final String email;
-    private final String name;
-
-    public Person(String email, String name)
+    static Person createPerson(String email, String name)
     {
-        checkNotNull(email, "email is null");
-        checkNotNull(name, "name is null");
-
-        this.email = email;
-        this.name = name;
+        return new AutoValue_Person(email, name);
     }
 
-    public String getEmail()
-    {
-        return email;
-    }
+    public abstract String getEmail();
 
-    public String getName()
-    {
-        return name;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hashCode(email, name);
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        final Person other = (Person) obj;
-        return Objects.equal(this.email, other.email) && Objects.equal(this.name, other.name);
-    }
-
-    @Override
-    public String toString()
-    {
-        return Objects.toStringHelper(this)
-                .add("email", email)
-                .add("name", name)
-                .toString();
-    }
+    public abstract String getName();
 }

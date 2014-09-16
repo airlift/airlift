@@ -27,6 +27,7 @@ import java.util.Map;
 
 import static com.proofpoint.json.JsonCodec.jsonCodec;
 import static com.proofpoint.json.testing.JsonTester.decodeJson;
+import static com.proofpoint.platform.sample.Person.createPerson;
 import static com.proofpoint.testing.ValidationAssertions.assertFailsValidation;
 import static com.proofpoint.testing.ValidationAssertions.assertValidates;
 import static org.testng.Assert.assertEquals;
@@ -47,7 +48,7 @@ public class TestPersonRepresentation
     public void testJsonDecode()
     {
         PersonRepresentation personRepresentation = assertValidates(decodeJson(codec, jsonStructure));
-        assertEquals(personRepresentation.toPerson(), new Person("foo@example.com", "Mr Foo"));
+        assertEquals(personRepresentation.toPerson(), createPerson("foo@example.com", "Mr Foo"));
     }
 
     @Test

@@ -16,71 +16,32 @@
 package com.proofpoint.platform.sample;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Objects;
+import com.google.auto.value.AutoValue;
 
 import java.net.URI;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-public class PersonWithSelf
+@AutoValue
+public abstract class PersonWithSelf
 {
-    private final Person person;
-    private final URI self;
-
     public static PersonWithSelf createPersonWithSelf(Person person, URI self)
     {
-        return new PersonWithSelf(person, self);
+        return new AutoValue_PersonWithSelf(person, self);
     }
 
-    private PersonWithSelf(Person person, URI self)
-    {
-        this.person = person;
-        this.self = checkNotNull(self);
-    }
+    abstract Person getPerson();
 
     @JsonProperty
     public String getEmail()
     {
-        return person.getEmail();
+        return getPerson().getEmail();
     }
 
     @JsonProperty
     public String getName()
     {
-        return person.getName();
+        return getPerson().getName();
     }
 
     @JsonProperty
-    public URI getSelf()
-    {
-        return self;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hashCode(person, self);
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        final PersonWithSelf other = (PersonWithSelf) obj;
-        return Objects.equal(this.person, other.person) && Objects.equal(this.self, other.self);
-    }
-
-    @Override
-    public String toString()
-    {
-        return Objects.toStringHelper(this)
-                .add("person", person)
-                .add("self", self)
-                .toString();
-    }
+    public abstract URI getSelf();
 }

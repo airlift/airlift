@@ -59,6 +59,7 @@ import static com.proofpoint.http.client.StatusResponseHandler.createStatusRespo
 import static com.proofpoint.jaxrs.JaxrsModule.explicitJaxrsModule;
 import static com.proofpoint.json.JsonCodec.listJsonCodec;
 import static com.proofpoint.json.JsonCodec.mapJsonCodec;
+import static com.proofpoint.platform.sample.Person.createPerson;
 import static com.proofpoint.platform.sample.PersonEvent.personAdded;
 import static com.proofpoint.platform.sample.PersonEvent.personRemoved;
 import static com.proofpoint.testing.Assertions.assertEqualsIgnoreOrder;
@@ -139,8 +140,8 @@ public class TestServer
     public void testGetAll()
             throws IOException, ExecutionException, InterruptedException
     {
-        store.put("bar", new Person("bar@example.com", "Mr Bar"));
-        store.put("foo", new Person("foo@example.com", "Mr Foo"));
+        store.put("bar", createPerson("bar@example.com", "Mr Bar"));
+        store.put("foo", createPerson("foo@example.com", "Mr Foo"));
 
         List<Object> expected = new ArrayList<>();
         expected.add(ImmutableMap.of("self", uriFor("/v1/person/foo").toString(), "name", "Mr Foo", "email", "foo@example.com"));
@@ -156,7 +157,7 @@ public class TestServer
     public void testGetSingle()
             throws IOException, ExecutionException, InterruptedException
     {
-        store.put("foo", new Person("foo@example.com", "Mr Foo"));
+        store.put("foo", createPerson("foo@example.com", "Mr Foo"));
 
         URI requestUri = uriFor("/v1/person/foo");
 
@@ -186,10 +187,10 @@ public class TestServer
 
         assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.CREATED.getStatusCode());
 
-        assertEquals(store.get("foo"), new Person("foo@example.com", "Mr Foo"));
+        assertEquals(store.get("foo"), createPerson("foo@example.com", "Mr Foo"));
 
         assertEquals(eventClient.getEvents(), ImmutableList.of(
-                personAdded("foo", new Person("foo@example.com", "Mr Foo"))
+                personAdded("foo", createPerson("foo@example.com", "Mr Foo"))
         ));
     }
 
@@ -197,7 +198,7 @@ public class TestServer
     public void testDelete()
             throws IOException, ExecutionException, InterruptedException
     {
-        store.put("foo", new Person("foo@example.com", "Mr Foo"));
+        store.put("foo", createPerson("foo@example.com", "Mr Foo"));
 
         StatusResponse response = client.execute(
                 prepareDelete()
@@ -211,8 +212,8 @@ public class TestServer
         assertNull(store.get("foo"));
 
         assertEquals(eventClient.getEvents(), ImmutableList.of(
-                personAdded("foo", new Person("foo@example.com", "Mr Foo")),
-                personRemoved("foo", new Person("foo@example.com", "Mr Foo"))
+                personAdded("foo", createPerson("foo@example.com", "Mr Foo")),
+                personRemoved("foo", createPerson("foo@example.com", "Mr Foo"))
         ));
     }
 
