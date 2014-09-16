@@ -2,7 +2,6 @@ package com.proofpoint.stats;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.base.Ticker;
@@ -26,6 +25,7 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -832,7 +832,7 @@ public class QuantileDigest
                 min == other.min &&
                 max == other.max &&
                 weightedCount == other.weightedCount &&
-                Objects.equal(root, other.root));
+                Objects.equals(root, other.root));
     }
 
     private void rescaleToCommonLandmark(QuantileDigest one, QuantileDigest two)
@@ -1152,7 +1152,7 @@ public class QuantileDigest
         @Override
         public int hashCode()
         {
-            return Objects.hashCode(weightedCount, level, bits, left, right);
+            return Objects.hash(weightedCount, level, bits, left, right);
         }
 
         @Override
@@ -1165,11 +1165,11 @@ public class QuantileDigest
                 return false;
             }
             final Node other = (Node) obj;
-            return Objects.equal(this.weightedCount, other.weightedCount) &&
-                    Objects.equal(this.level, other.level) &&
-                    Objects.equal(this.bits, other.bits) &&
-                    Objects.equal(this.left, other.left) &&
-                    Objects.equal(this.right, other.right);
+            return Objects.equals(this.weightedCount, other.weightedCount) &&
+                    Objects.equals(this.level, other.level) &&
+                    Objects.equals(this.bits, other.bits) &&
+                    Objects.equals(this.left, other.left) &&
+                    Objects.equals(this.right, other.right);
         }
     }
 

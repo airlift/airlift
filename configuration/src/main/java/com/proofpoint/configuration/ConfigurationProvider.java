@@ -15,10 +15,11 @@
  */
 package com.proofpoint.configuration;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.google.inject.Key;
+
+import java.util.Objects;
 
 public class ConfigurationProvider<T> implements ConfigurationAwareProvider<T>
 {
@@ -87,7 +88,7 @@ public class ConfigurationProvider<T> implements ConfigurationAwareProvider<T>
     @Override
     public int hashCode()
     {
-        return Objects.hashCode(configClass, prefix);
+        return Objects.hash(configClass, prefix);
     }
 
     @Override
@@ -100,6 +101,6 @@ public class ConfigurationProvider<T> implements ConfigurationAwareProvider<T>
             return false;
         }
         final ConfigurationProvider other = (ConfigurationProvider) obj;
-        return Objects.equal(this.configClass, other.configClass) && Objects.equal(this.prefix, other.prefix);
+        return Objects.equals(this.configClass, other.configClass) && Objects.equals(this.prefix, other.prefix);
     }
 }

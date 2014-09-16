@@ -1,8 +1,9 @@
 package com.proofpoint.platform.sample;
 
-import com.google.common.base.Objects;
 import com.proofpoint.event.client.EventField;
 import com.proofpoint.event.client.EventType;
+
+import java.util.Objects;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -69,7 +70,7 @@ public class PersonEvent
     @Override
     public int hashCode()
     {
-        return Objects.hashCode(operation, personId, person);
+        return Objects.hash(operation, personId, person);
     }
 
     @Override
@@ -82,7 +83,7 @@ public class PersonEvent
             return false;
         }
         final PersonEvent other = (PersonEvent) obj;
-        return Objects.equal(this.operation, other.operation) && Objects.equal(this.personId, other.personId) && Objects.equal(this.person, other.person);
+        return Objects.equals(this.operation, other.operation) && Objects.equals(this.personId, other.personId) && Objects.equals(this.person, other.person);
     }
 
     @Override

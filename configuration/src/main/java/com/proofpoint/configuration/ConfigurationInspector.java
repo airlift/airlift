@@ -15,7 +15,6 @@
  */
 package com.proofpoint.configuration;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableSortedSet;
@@ -26,6 +25,7 @@ import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.SortedSet;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
@@ -215,7 +215,7 @@ public class ConfigurationInspector
         @Override
         public int hashCode()
         {
-            return Objects.hashCode(configClass, prefix);
+            return Objects.hash(configClass, prefix);
         }
 
         @Override
@@ -228,7 +228,7 @@ public class ConfigurationInspector
                 return false;
             }
             final ConfigRecord other = (ConfigRecord) obj;
-            return Objects.equal(this.configClass, other.configClass) && Objects.equal(this.prefix, other.prefix);
+            return Objects.equals(this.configClass, other.configClass) && Objects.equals(this.prefix, other.prefix);
         }
 
         @Override

@@ -17,12 +17,12 @@ package com.proofpoint.json;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static org.testng.Assert.assertEquals;
@@ -101,24 +101,24 @@ public class ImmutablePerson
     }
 
     @Override
+    public int hashCode()
+    {
+        return Objects.hash(name, rocks, notWritable);
+    }
+
+    @Override
     public boolean equals(Object obj)
     {
         if (this == obj) {
             return true;
         }
-        if ((obj == null) || (getClass() != obj.getClass())) {
+        if (obj == null || getClass() != obj.getClass()) {
             return false;
         }
-        ImmutablePerson o = (ImmutablePerson) obj;
-        return Objects.equal(this.name, o.name) &&
-                Objects.equal(this.rocks, o.rocks) &&
-                Objects.equal(this.notWritable, o.notWritable);
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hashCode(name, rocks, notWritable);
+        final ImmutablePerson other = (ImmutablePerson) obj;
+        return Objects.equals(this.name, other.name) &&
+                Objects.equals(this.rocks, other.rocks) &&
+                Objects.equals(this.notWritable, other.notWritable);
     }
 
     @Override

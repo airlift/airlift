@@ -15,7 +15,6 @@
  */
 package com.proofpoint.discovery.client.balancing;
 
-import com.google.common.base.Objects;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -23,6 +22,8 @@ import com.google.inject.Provider;
 import com.proofpoint.discovery.client.ServiceSelectorConfig;
 import com.proofpoint.http.client.balancing.HttpServiceBalancer;
 import com.proofpoint.node.NodeInfo;
+
+import java.util.Objects;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
@@ -77,7 +78,7 @@ public final class HttpServiceBalancerProvider
     @Override
     public int hashCode()
     {
-        return Objects.hashCode(type, serviceBalancerFactory, injector);
+        return Objects.hash(type, serviceBalancerFactory, injector, nodeInfo);
     }
 
     @Override
@@ -90,6 +91,6 @@ public final class HttpServiceBalancerProvider
             return false;
         }
         final HttpServiceBalancerProvider other = (HttpServiceBalancerProvider) obj;
-        return Objects.equal(this.type, other.type) && Objects.equal(this.serviceBalancerFactory, other.serviceBalancerFactory) && Objects.equal(this.injector, other.injector);
+        return Objects.equals(this.type, other.type) && Objects.equals(this.serviceBalancerFactory, other.serviceBalancerFactory) && Objects.equals(this.injector, other.injector) && Objects.equals(this.nodeInfo, other.nodeInfo);
     }
 }

@@ -16,7 +16,6 @@
 package com.proofpoint.http.client;
 
 import com.google.common.annotations.Beta;
-import com.google.common.base.Objects;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
@@ -24,9 +23,9 @@ import com.google.common.collect.ListMultimap;
 import java.net.URI;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Objects;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.base.Objects.equal;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -107,23 +106,23 @@ public class Request
     }
 
     @Override
-    public boolean equals(Object o)
+    public int hashCode()
     {
-        if (!(o instanceof Request)) {
-            return false;
-        }
-        Request r = (Request) o;
-        return equal(uri, r.uri) &&
-                equal(method, r.method) &&
-                equal(headers, r.headers) &&
-                equal(bodyGenerator, r.bodyGenerator) &&
-                equal(followRedirects, r.followRedirects);
+        return Objects.hash(uri, method, headers, bodyGenerator, followRedirects);
     }
 
     @Override
-    public int hashCode()
+    public boolean equals(Object obj)
     {
-        return Objects.hashCode(uri, method, headers, bodyGenerator, followRedirects);
+        if (!(obj instanceof Request)) {
+            return false;
+        }
+        final Request other = (Request) obj;
+        return Objects.equals(this.uri, other.uri) &&
+                Objects.equals(this.method, other.method) &&
+                Objects.equals(this.headers, other.headers) &&
+                Objects.equals(this.bodyGenerator, other.bodyGenerator) &&
+                Objects.equals(this.followRedirects, other.followRedirects);
     }
 
     @Beta

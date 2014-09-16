@@ -15,7 +15,6 @@
  */
 package com.proofpoint.configuration.testing;
 
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.proofpoint.configuration.Config;
@@ -30,6 +29,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.proofpoint.configuration.testing.ConfigAssertions.assertDefaults;
 import static com.proofpoint.configuration.testing.ConfigAssertions.assertFullMapping;
@@ -751,7 +751,7 @@ public class TestConfigAssertions
         @Override
         public int hashCode()
         {
-            return Objects.hashCode(phone);
+            return Objects.hash(phone);
         }
 
         @Override
@@ -764,7 +764,7 @@ public class TestConfigAssertions
                 return false;
             }
             final SubConfig other = (SubConfig) obj;
-            return Objects.equal(this.phone, other.phone);
+            return Objects.equals(this.phone, other.phone);
         }
     }
 

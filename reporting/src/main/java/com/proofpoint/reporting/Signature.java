@@ -15,12 +15,12 @@
  */
 package com.proofpoint.reporting;
 
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Objects;
 
 final class Signature
 {
@@ -41,7 +41,7 @@ final class Signature
     @Override
     public int hashCode()
     {
-        return Objects.hashCode(actionName, parameterTypes);
+        return Objects.hash(actionName, parameterTypes);
     }
 
     @Override
@@ -54,7 +54,7 @@ final class Signature
             return false;
         }
         final Signature other = (Signature) obj;
-        return Objects.equal(this.actionName, other.actionName) && Objects.equal(this.parameterTypes, other.parameterTypes);
+        return Objects.equals(this.actionName, other.actionName) && Objects.equals(this.parameterTypes, other.parameterTypes);
     }
 
     @Override
