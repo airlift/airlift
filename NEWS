@@ -1,3 +1,16 @@
+Airlift 0.94
+
+* SetThreadName
+
+The SetThreadName class takes advantage of try-with-resources to safely rename a
+thread and restore its original name when it goes out of scope.
+
+Here's a usage example:
+
+    try (SetThreadName ignored = new SetThreadName("query-%s", queryId)) {
+        ...
+    }
+
 Airlift 0.93
 
 * Thread Factory
