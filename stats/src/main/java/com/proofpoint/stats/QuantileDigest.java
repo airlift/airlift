@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
@@ -1107,7 +1108,7 @@ public class QuantileDigest
         public Node getSingleChild()
         {
             checkState(hasSingleChild(), "Node does not have a single child");
-            return Objects.firstNonNull(left, right);
+            return firstNonNull(left, right);
         }
 
         public long getUpperBound()

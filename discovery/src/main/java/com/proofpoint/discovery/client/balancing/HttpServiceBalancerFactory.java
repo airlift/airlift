@@ -20,16 +20,16 @@ import com.proofpoint.discovery.client.DiscoveryLookupClient;
 import com.proofpoint.discovery.client.ForDiscoveryClient;
 import com.proofpoint.discovery.client.ServiceDescriptorsUpdater;
 import com.proofpoint.discovery.client.ServiceSelectorConfig;
-import com.proofpoint.http.client.balancing.HttpServiceBalancerStats;
 import com.proofpoint.http.client.balancing.HttpServiceBalancer;
 import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
+import com.proofpoint.http.client.balancing.HttpServiceBalancerStats;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.reporting.ReportCollectionFactory;
 import org.weakref.jmx.ObjectNameBuilder;
 
 import java.util.concurrent.ScheduledExecutorService;
 
-import static com.google.common.base.Objects.firstNonNull;
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
 

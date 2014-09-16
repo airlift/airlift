@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static com.google.common.base.Objects.firstNonNull;
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.proofpoint.testing.Assertions.assertContainsAllOf;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
