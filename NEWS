@@ -11,6 +11,12 @@ Here's a usage example:
         ...
     }
 
+* HttpClient
+
+JettyHttpClient would request GZIP responses if constructed manually using a
+rarely used second constructor.
+
+
 Airlift 0.93
 
 * Thread Factory

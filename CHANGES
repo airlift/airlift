@@ -1,3 +1,12 @@
+* 0.94
+
+- Add min/max validators for DataSize
+- Allow JettyHttpClient to configure maxRequestsQueuedPerDestination
+- Add Jersey AsyncContextDelegateProvider implementation
+- Upgrade to Airbase 26
+- Always remove GZIP handler from JettyHttpClient
+- Switch BoundedExecutor queue to ConcurrentLinkedQueue
+
 * 0.93
 
 - Add JAX-RS mapper for Smile encoded data
