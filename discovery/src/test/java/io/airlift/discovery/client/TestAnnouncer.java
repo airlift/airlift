@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class TestAnnouncer
@@ -142,6 +143,26 @@ public class TestAnnouncer
 
         Thread.sleep(100);
         assertAnnounced();
+    }
+
+    @Test
+    public void testSuspendAndResume()
+        throws Exception
+    {
+        announcer.start();
+
+        Thread.sleep(100);
+        assertAnnounced(serviceAnnouncement);
+
+        assertTrue(announcer.suspendAnnoucing());
+
+        Thread.sleep(100);
+        assertAnnounced();
+
+        assertTrue(announcer.resumeAnnoucing());
+
+        Thread.sleep(100);
+        assertAnnounced(serviceAnnouncement);
     }
 
     private void assertAnnounced(ServiceAnnouncement... serviceAnnouncements)

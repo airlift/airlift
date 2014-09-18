@@ -25,6 +25,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
 import io.airlift.units.Duration;
+import org.weakref.jmx.Managed;
 
 import javax.annotation.PreDestroy;
 
@@ -38,6 +39,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.RejectedExecutionException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
@@ -50,8 +53,9 @@ public class Announcer
     private final ConcurrentMap<UUID, ServiceAnnouncement> announcements = new MapMaker().makeMap();
 
     private final DiscoveryAnnouncementClient announcementClient;
-    private final ScheduledExecutorService executor;
-    private final AtomicBoolean started = new AtomicBoolean(false);
+
+    private volatile boolean destroyed = false;
+    private volatile ScheduledExecutorService executor = null;
 
     private final ExponentialBackOff errorBackOff = new ExponentialBackOff(
             new Duration(1, MILLISECONDS),
@@ -70,36 +74,28 @@ public class Announcer
         for (ServiceAnnouncement serviceAnnouncement : serviceAnnouncements) {
             addServiceAnnouncement(serviceAnnouncement);
         }
-        executor = new ScheduledThreadPoolExecutor(5, daemonThreadsNamed("Announcer-%s"));
     }
 
     public void start()
     {
-        Preconditions.checkState(!executor.isShutdown(), "Announcer has been destroyed");
-        if (started.compareAndSet(false, true)) {
-            // announce immediately, if discovery is running
-            try {
-                announce().get(30, TimeUnit.SECONDS);
+        ListenableFuture<Duration> future = resume();
+        try {
+            if (future != null) {
+                future.get(30, TimeUnit.SECONDS);
             }
-            catch (Exception ignored) {
-            }
+        }
+        catch (Exception ignored) {
         }
     }
 
     @PreDestroy
     public void destroy()
     {
-        executor.shutdownNow();
         try {
-            executor.awaitTermination(30, TimeUnit.SECONDS);
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        // unannounce
-        try {
-            getFutureResult(announcementClient.unannounce(), DiscoveryException.class);
+            ListenableFuture<Void> future = suspend(false);
+            if (future != null) {
+                getFutureResult(future, DiscoveryException.class);
+            }
         }
         catch (DiscoveryException e) {
             if (e.getCause() instanceof ConnectException) {
@@ -109,6 +105,58 @@ public class Announcer
                 log.error(e);
             }
         }
+    }
+
+    private synchronized ListenableFuture<Duration> resume()
+    {
+        Preconditions.checkState(!destroyed, "Announcer has been destroyed");
+
+        if (executor == null) {
+            executor = new ScheduledThreadPoolExecutor(5, daemonThreadsNamed("Announcer-%s"));
+
+            // announce immediately, if discovery is running
+            return announce(executor);
+
+        } else {
+            return null;
+        }
+    }
+
+    private synchronized ListenableFuture<Void> suspend(boolean allowResuming)
+    {
+        if (!allowResuming) {
+            destroyed = true;
+        }
+
+        if (executor != null) {
+            executor.shutdownNow();
+            ScheduledExecutorService shutdownInProgress = executor;
+            executor = null;
+
+            try {
+                shutdownInProgress.awaitTermination(30, TimeUnit.SECONDS);
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            return announcementClient.unannounce();
+
+        } else {
+            return null;
+        }
+    }
+
+    @Managed
+    public boolean suspendAnnoucing()
+    {
+        return suspend(true) != null;
+    }
+
+    @Managed
+    public boolean resumeAnnoucing()
+    {
+        return resume() != null;
     }
 
     public void addServiceAnnouncement(ServiceAnnouncement serviceAnnouncement)
@@ -127,7 +175,7 @@ public class Announcer
         return ImmutableSet.copyOf(announcements.values());
     }
 
-    private ListenableFuture<Duration> announce()
+    private ListenableFuture<Duration> announce(final ScheduledExecutorService executor)
     {
         ListenableFuture<Duration> future = announcementClient.announce(getServiceAnnouncements());
 
@@ -140,21 +188,21 @@ public class Announcer
 
                 // wait 80% of the suggested delay
                 duration = new Duration(duration.toMillis() * 0.8, MILLISECONDS);
-                scheduleNextAnnouncement(duration);
+                scheduleNextAnnouncement(executor, duration);
             }
 
             @Override
             public void onFailure(Throwable t)
             {
                 Duration duration = errorBackOff.failed(t);
-                scheduleNextAnnouncement(duration);
+                scheduleNextAnnouncement(executor, duration);
             }
         }, executor);
 
         return future;
     }
 
-    private void scheduleNextAnnouncement(Duration delay)
+    private void scheduleNextAnnouncement(final ScheduledExecutorService executor, Duration delay)
     {
         // already stopped?  avoids rejection exception
         if (executor.isShutdown()) {
@@ -165,7 +213,7 @@ public class Announcer
             @Override
             public void run()
             {
-                announce();
+                announce(executor);
             }
         }, delay.toMillis(), MILLISECONDS);
     }
