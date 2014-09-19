@@ -43,7 +43,7 @@ public final class Duration implements Comparable<Duration>
 
         long value = end - start;
         double millis = value * millisPerTimeUnit(NANOSECONDS);
-        return new Duration(millis, MILLISECONDS);
+        return new Duration(millis, MILLISECONDS).convertToMostSuccinctTimeUnit();
     }
 
     private final double value;
