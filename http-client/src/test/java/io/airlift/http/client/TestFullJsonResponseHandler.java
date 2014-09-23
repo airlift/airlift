@@ -51,6 +51,7 @@ public class TestFullJsonResponseHandler
 
         assertNotSame(response.getJson(), response.getJson());
         assertNotSame(response.getJsonBytes(), response.getJsonBytes());
+        assertNull(response.getNonJsonBytes());
     }
 
     @Test
@@ -64,6 +65,8 @@ public class TestFullJsonResponseHandler
                 "Unable to create " + User.class + " from JSON response:\n" + json);
         assertTrue(response.getException().getCause() instanceof IllegalArgumentException);
         assertEquals(response.getException().getCause().getMessage(), "Invalid [simple type, class io.airlift.http.client.TestFullJsonResponseHandler$User] json bytes");
+        assertEquals(response.getJsonBytes(), json.getBytes(UTF_8));
+        assertNull(response.getNonJsonBytes());
     }
 
     @Test
@@ -79,6 +82,8 @@ public class TestFullJsonResponseHandler
         catch (IllegalStateException e) {
             assertEquals(e.getMessage(), "Response does not contain a JSON value");
             assertEquals(e.getCause(), response.getException());
+            assertEquals(response.getJsonBytes(), json.getBytes(UTF_8));
+            assertNull(response.getNonJsonBytes());
         }
     }
 
@@ -91,6 +96,7 @@ public class TestFullJsonResponseHandler
         assertNull(response.getException());
         assertNull(response.getJson());
         assertNull(response.getJsonBytes());
+        assertEquals(response.getNonJsonBytes(), "hello".getBytes(UTF_8));
     }
 
     @Test
@@ -103,6 +109,7 @@ public class TestFullJsonResponseHandler
         assertNull(response.getException());
         assertNull(response.getJson());
         assertNull(response.getJsonBytes());
+        assertEquals(response.getNonJsonBytes(), "hello".getBytes(UTF_8));
         assertTrue(response.getHeaders().isEmpty());
     }
 
@@ -115,6 +122,7 @@ public class TestFullJsonResponseHandler
         assertTrue(response.hasValue());
         assertEquals(response.getJson(), json);
         assertEquals(response.getJsonBytes(), json.getBytes(UTF_8));
+        assertNull(response.getNonJsonBytes());
         assertNull(response.getValue().getName());
         assertEquals(response.getValue().getAge(), 0);
     }
