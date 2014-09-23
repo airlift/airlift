@@ -57,16 +57,21 @@ public class FullJsonResponseHandler<T>
     @Override
     public JsonResponse<T> handle(Request request, Response response)
     {
+        byte[] bytes = readResponseBytes(response);
         String contentType = response.getHeader(CONTENT_TYPE);
         if ((contentType == null) || !MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
-            return new JsonResponse<>(response.getStatusCode(), response.getStatusMessage(), response.getHeaders());
+            return new JsonResponse<>(response.getStatusCode(), response.getStatusMessage(), response.getHeaders(), bytes);
         }
+        return new JsonResponse<>(response.getStatusCode(), response.getStatusMessage(), response.getHeaders(), jsonCodec, bytes);
+    }
+
+    private static byte[] readResponseBytes(Response response)
+    {
         try {
-            byte[] bytes = ByteStreams.toByteArray(response.getInputStream());
-            return new JsonResponse<>(response.getStatusCode(), response.getStatusMessage(), response.getHeaders(), jsonCodec, bytes);
+            return ByteStreams.toByteArray(response.getInputStream());
         }
         catch (IOException e) {
-            throw new RuntimeException("Error reading JSON response from server", e);
+            throw new RuntimeException("Error reading response from server", e);
         }
     }
 
@@ -77,10 +82,11 @@ public class FullJsonResponseHandler<T>
         private final ListMultimap<String, String> headers;
         private final boolean hasValue;
         private final byte[] jsonBytes;
+        private final byte[] nonJsonBytes;
         private final T value;
         private final IllegalArgumentException exception;
 
-        public JsonResponse(int statusCode, String statusMessage, ListMultimap<String, String> headers)
+        public JsonResponse(int statusCode, String statusMessage, ListMultimap<String, String> headers, byte[] nonJsonBytes)
         {
             this.statusCode = statusCode;
             this.statusMessage = statusMessage;
@@ -88,6 +94,7 @@ public class FullJsonResponseHandler<T>
 
             this.hasValue = false;
             this.jsonBytes = null;
+            this.nonJsonBytes = nonJsonBytes;
             this.value = null;
             this.exception = null;
         }
@@ -101,6 +108,7 @@ public class FullJsonResponseHandler<T>
             this.headers = ImmutableListMultimap.copyOf(headers);
 
             this.jsonBytes = jsonBytes;
+            this.nonJsonBytes = null;
 
             T value = null;
             IllegalArgumentException exception = null;
@@ -165,6 +173,11 @@ public class FullJsonResponseHandler<T>
         public IllegalArgumentException getException()
         {
             return exception;
+        }
+
+        public byte[] getNonJsonBytes()
+        {
+            return (nonJsonBytes == null) ? null : nonJsonBytes.clone();
         }
 
         @Override
