@@ -24,8 +24,10 @@ import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.json.JsonCodec;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.List;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -81,11 +83,11 @@ public class FullJsonResponseHandler<T>
         private final ListMultimap<String, String> headers;
         private final boolean hasValue;
         private final byte[] jsonBytes;
-        private final byte[] nonJsonBytes;
+        private final byte[] responseBytes;
         private final T value;
         private final IllegalArgumentException exception;
 
-        public JsonResponse(int statusCode, String statusMessage, ListMultimap<String, String> headers, byte[] nonJsonBytes)
+        public JsonResponse(int statusCode, String statusMessage, ListMultimap<String, String> headers, byte[] responseBytes)
         {
             this.statusCode = statusCode;
             this.statusMessage = statusMessage;
@@ -93,7 +95,7 @@ public class FullJsonResponseHandler<T>
 
             this.hasValue = false;
             this.jsonBytes = null;
-            this.nonJsonBytes = nonJsonBytes;
+            this.responseBytes = checkNotNull(responseBytes, "responseBytes is null");
             this.value = null;
             this.exception = null;
         }
@@ -105,8 +107,8 @@ public class FullJsonResponseHandler<T>
             this.statusMessage = statusMessage;
             this.headers = ImmutableListMultimap.copyOf(headers);
 
-            this.jsonBytes = jsonBytes;
-            this.nonJsonBytes = null;
+            this.jsonBytes = checkNotNull(jsonBytes, "jsonBytes is null");
+            this.responseBytes = checkNotNull(jsonBytes, "responseBytes is null");
 
             T value = null;
             IllegalArgumentException exception = null;
@@ -158,6 +160,16 @@ public class FullJsonResponseHandler<T>
             return value;
         }
 
+        public byte[] getResponseBytes()
+        {
+            return responseBytes.clone();
+        }
+
+        public String getResponseBody()
+        {
+            return new String(responseBytes, getCharset());
+        }
+
         public byte[] getJsonBytes()
         {
             return (jsonBytes == null) ? null : jsonBytes.clone();
@@ -173,11 +185,6 @@ public class FullJsonResponseHandler<T>
             return exception;
         }
 
-        public byte[] getNonJsonBytes()
-        {
-            return (nonJsonBytes == null) ? null : nonJsonBytes.clone();
-        }
-
         @Override
         public String toString()
         {
@@ -188,6 +195,19 @@ public class FullJsonResponseHandler<T>
                     .add("hasValue", hasValue)
                     .add("value", value)
                     .toString();
+        }
+
+        private Charset getCharset()
+        {
+            List<String> values = headers.get(CONTENT_TYPE);
+            if ((values != null) && !values.isEmpty()) {
+                try {
+                    return MediaType.parse(values.get(0)).charset().or(UTF_8);
+                }
+                catch (RuntimeException ignored) {
+                }
+            }
+            return UTF_8;
         }
     }
 }
