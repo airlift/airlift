@@ -61,7 +61,11 @@ public class TestFullJsonResponseHandler
 
         assertNotSame(response.getJson(), response.getJson());
         assertNotSame(response.getJsonBytes(), response.getJsonBytes());
-        assertNull(response.getNonJsonBytes());
+        assertNotSame(response.getResponseBytes(), response.getResponseBytes());
+        assertNotSame(response.getResponseBody(), response.getResponseBody());
+
+        assertEquals(response.getResponseBytes(), response.getJsonBytes());
+        assertEquals(response.getResponseBody(), response.getJson());
     }
 
     @Test
@@ -74,9 +78,12 @@ public class TestFullJsonResponseHandler
         assertEquals(response.getException().getMessage(),
                 "Unable to create " + User.class + " from JSON response:\n" + json);
         assertInstanceOf(response.getException().getCause(), IllegalArgumentException.class);
+
         assertEquals(response.getException().getCause().getMessage(), "Invalid [simple type, class com.proofpoint.http.client.TestFullJsonResponseHandler$User] json bytes");
-        assertEquals(response.getJsonBytes(), json.getBytes(UTF_8));
-        assertNull(response.getNonJsonBytes());
+        assertEquals(response.getJson(), json);
+
+        assertEquals(response.getResponseBytes(), response.getJsonBytes());
+        assertEquals(response.getResponseBody(), response.getJson());
     }
 
     @Test
@@ -92,8 +99,12 @@ public class TestFullJsonResponseHandler
         catch (IllegalStateException e) {
             assertEquals(e.getMessage(), "Response does not contain a JSON value");
             assertEquals(e.getCause(), response.getException());
+
             assertEquals(response.getJsonBytes(), json.getBytes(UTF_8));
-            assertNull(response.getNonJsonBytes());
+            assertEquals(response.getJson(), json);
+
+            assertEquals(response.getResponseBytes(), response.getJsonBytes());
+            assertEquals(response.getResponseBody(), response.getJson());
         }
     }
 
@@ -106,7 +117,9 @@ public class TestFullJsonResponseHandler
         assertNull(response.getException());
         assertNull(response.getJson());
         assertNull(response.getJsonBytes());
-        assertEquals(response.getNonJsonBytes(), "hello".getBytes(UTF_8));
+
+        assertEquals(response.getResponseBytes(), "hello".getBytes(UTF_8));
+        assertEquals(response.getResponseBody(), "hello");
     }
 
     @Test
@@ -119,7 +132,10 @@ public class TestFullJsonResponseHandler
         assertNull(response.getException());
         assertNull(response.getJson());
         assertNull(response.getJsonBytes());
-        assertEquals(response.getNonJsonBytes(), "hello".getBytes(UTF_8));
+
+        assertEquals(response.getResponseBytes(), "hello".getBytes(UTF_8));
+        assertEquals(response.getResponseBody(), "hello");
+
         assertTrue(response.getHeaders().isEmpty());
     }
 
@@ -132,9 +148,11 @@ public class TestFullJsonResponseHandler
         assertTrue(response.hasValue());
         assertEquals(response.getJson(), json);
         assertEquals(response.getJsonBytes(), json.getBytes(UTF_8));
-        assertNull(response.getNonJsonBytes());
         assertNull(response.getValue().getName());
         assertEquals(response.getValue().getAge(), 0);
+
+        assertEquals(response.getResponseBytes(), response.getJsonBytes());
+        assertEquals(response.getResponseBody(), response.getJson());
     }
 
     @Test
@@ -152,7 +170,7 @@ public class TestFullJsonResponseHandler
             fail("expected exception");
         }
         catch (RuntimeException e) {
-            assertEquals(e.getMessage(), "Error reading JSON response from server");
+            assertEquals(e.getMessage(), "Error reading response from server");
             assertSame(e.getCause(), expectedException);
         }
     }
