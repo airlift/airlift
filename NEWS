@@ -1,3 +1,11 @@
+Airlift 0.95
+
+* Discovery
+
+We have added Announcer.forceAnnounce() and ServiceSelector.refresh() which
+make synchronizing announcing with a discovery server easier.  This is
+particularly useful for testing.
+
 Airlift 0.94
 
 * SetThreadName

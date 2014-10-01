@@ -1,6 +1,12 @@
 * 0.95
 
 - Add AsyncResponseHandler utility for building async HTTP responses
+- Add Add Announcer.forceAnnounce() and ServiceSelector.refresh()
+- Add more utility methods to Closeables
+- Name and group Jetty HTTP client threads
+- Always use daemon threads in HTTP client
+- Add getResponseBytes() and getResponseBody() to FullJsonResponseHandler
+- Change Duration.nanosSince() convert to most succinct unit
 
 * 0.94
 
