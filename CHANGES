@@ -20,6 +20,20 @@ Platform 1.06
 
   We moved the rack packaging support into the platform-rack project.
 
+* We changed the Logger API to work directly against Java's built-in logging APIs.
+
+* HttpClient
+
+  - Name and group Jetty HTTP client threads
+  - Always use daemon threads in HTTP client
+  - Add getResponseBytes() and getResponseBody() to FullJsonResponseHandler
+
+* We added Announcer.forceAnnounce() to immediately send a discovery announcement.
+
+* We added more utility methods to Closeables
+
+* We changed Duration.nanosSince() to convert to the most succinct unit.
+
 Platform 1.05
 
 * Findbugs run by default
