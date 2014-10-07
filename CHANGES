@@ -1,5 +1,13 @@
 Platform 1.06
 
+* AutoValue support
+
+  The libarary pom now specifies a version and excludes for Google AutoValue.
+  Google AutoValue <https://github.com/google/auto/tree/master/value> simplifies
+  the creation of immutable value classes.
+
+  The sample server has been updated to demonstrate AutoValue.
+
 * Smile support in http-client
 
   We added SmileBodyMapper, SmileResponseHandler, and
@@ -33,6 +41,9 @@ Platform 1.06
 * We added more utility methods to Closeables
 
 * We changed Duration.nanosSince() to convert to the most succinct unit.
+
+* Library upgrades
+  - Guava to 18.0
 
 Platform 1.05
 
