@@ -1,3 +1,7 @@
+* 0.96
+
+- Add AbstractConfigurationAwareModule for accessing config at binding time
+
 * 0.95
 
 - Add AsyncResponseHandler utility for building async HTTP responses
