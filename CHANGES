@@ -1,5 +1,10 @@
 Platform 1.07
 
+* AbstractConfigurationAwareModule
+
+  Extending this module makes it easy to access configuration at binding time,
+  which allows conditionally installing modules or bindings based on config.
+
 * Library upgrades
 
   - Jetty to 9.2.3
