@@ -81,7 +81,9 @@ public class AsyncResponseHandler
         ListenableFuture<?> futureResponse = futureResponseReference.get();
         if (futureResponse != null) {
             try {
-                futureResponse.cancel(true);
+                // Do not interrupt the future if it is running. Jersey uses
+                // the calling thread to write the response to the wire.
+                futureResponse.cancel(false);
             }
             catch (Exception ignored) {
             }
