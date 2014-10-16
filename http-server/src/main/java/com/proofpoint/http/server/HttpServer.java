@@ -147,6 +147,7 @@ public class HttpServer
 
             SslContextFactory sslContextFactory = new SslContextFactory(config.getKeystorePath());
             sslContextFactory.setKeyStorePassword(config.getKeystorePassword());
+            sslContextFactory.addExcludeProtocols("SSLv3");
             SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
 
             httpsConnector = new ServerConnector(server, sslConnectionFactory, new HttpConnectionFactory(httpsConfiguration));
@@ -179,6 +180,7 @@ public class HttpServer
 
                 SslContextFactory sslContextFactory = new SslContextFactory(config.getKeystorePath());
                 sslContextFactory.setKeyStorePassword(config.getKeystorePassword());
+                sslContextFactory.addExcludeProtocols("SSLv3");
                 SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
                 adminConnector = new ServerConnector(server, adminThreadPool, null, null, 0, -1, sslConnectionFactory, new HttpConnectionFactory(adminConfiguration));
             } else {

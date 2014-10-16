@@ -1,5 +1,7 @@
 Platform 1.06
 
+* SSLv3 disabled in both http-client and http-server
+
 * AutoValue support
 
   The libarary pom now specifies a version and excludes for Google AutoValue.

@@ -138,6 +138,7 @@ public class JettyHttpClient
         created.fillInStackTrace();
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
+        sslContextFactory.addExcludeProtocols("SSLv3", "SSLv2Hello");
         if (config.getKeyStorePath() != null) {
             sslContextFactory.setKeyStorePath(config.getKeyStorePath());
             sslContextFactory.setKeyStorePassword(config.getKeyStorePassword());
