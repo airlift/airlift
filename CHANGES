@@ -1,3 +1,15 @@
+Platform 1.07
+
+* Library upgrades
+
+  - Jetty to 9.2.3
+  - slf4j to 1.7.7
+  - logback to 1.1.2
+  - Jackson to 2.4.3
+  - Jersey to 2.13
+  - Joda-time to 2.5
+  - Mockito to 1.10.8
+
 Platform 1.06
 
 * SSLv3 disabled in both http-client and http-server
