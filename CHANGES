@@ -14,6 +14,7 @@ Platform 1.07
   - Jersey to 2.13
   - Joda-time to 2.5
   - Mockito to 1.10.8
+  - cglib to 3.1
 
 Platform 1.06
 
