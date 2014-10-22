@@ -3,6 +3,7 @@
 - Add AbstractConfigurationAwareModule for accessing config at binding time
 - Upgrade to Airbase 28
 - Upgrade to Guava 18.0
+- Remove server archetype builders
 
 * 0.95
 

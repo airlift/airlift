@@ -78,10 +78,6 @@
         <!-- skeleton / sample code -->
         <module>skeleton-server</module>
         <module>sample-server</module>
-
-        <!-- archetype generators. Keep those last! -->
-        <module>skeleton-server-archetype-builder</module>
-        <module>sample-server-archetype-builder</module>
     </modules>
 
     <dependencyManagement>
