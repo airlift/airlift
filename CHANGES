@@ -4,6 +4,7 @@
 - Upgrade to Airbase 28
 - Upgrade to Guava 18.0
 - Remove server archetype builders
+- Remove deprecated AsyncHttpClient and bindAsyncHttpClient()
 
 * 0.95
 

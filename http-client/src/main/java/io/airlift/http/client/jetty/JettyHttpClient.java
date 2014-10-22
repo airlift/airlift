@@ -11,7 +11,6 @@ import com.google.common.io.CountingInputStream;
 import com.google.common.net.HostAndPort;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AbstractFuture;
-import io.airlift.http.client.AsyncHttpClient;
 import io.airlift.http.client.BodyGenerator;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
@@ -67,7 +66,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Math.min;
 
 public class JettyHttpClient
-        implements AsyncHttpClient
+        implements io.airlift.http.client.HttpClient
 {
     private final static AtomicLong nameCounter = new AtomicLong();
 

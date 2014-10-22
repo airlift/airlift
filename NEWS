@@ -7,6 +7,12 @@ which allows conditionally installing modules or bindings based on config.
 
 * Upgrade to Guava 18.0
 
+* HttpClient
+
+We have removed the deprecated interface AsyncHttpClient and binder method
+bindAsyncHttpClient(). These can be replaced with HttpClient and
+bindHttpClient(), respectively.
+
 
 Airlift 0.95
 

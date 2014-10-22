@@ -43,12 +43,12 @@ import static io.airlift.http.client.CompositeQualifierImpl.compositeQualifier;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 @Beta
-public class AsyncHttpClientModule
+public class HttpClientModule
         extends AbstractHttpClientModule
 {
-    private static final Logger log = Logger.get(AsyncHttpClientModule.class);
+    private static final Logger log = Logger.get(HttpClientModule.class);
 
-    protected AsyncHttpClientModule(String name, Class<? extends Annotation> annotation)
+    protected HttpClientModule(String name, Class<? extends Annotation> annotation)
     {
         super(name, annotation);
     }
@@ -75,28 +75,24 @@ public class AsyncHttpClientModule
         bindConfig(binder).to(JettyIoPoolConfig.class);
         binder.bind(JettyIoPoolManager.class).to(SharedJettyIoPoolManager.class).in(Scopes.SINGLETON);
 
-        // bind the async client
-        binder.bind(AsyncHttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(name, annotation)).in(Scopes.SINGLETON);
-
-        // bind the a sync client also
-        binder.bind(HttpClient.class).annotatedWith(annotation).to(Key.get(AsyncHttpClient.class, annotation));
+        // bind the client
+        binder.bind(HttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(name, annotation)).in(Scopes.SINGLETON);
 
         // kick off the binding for the filter set
         newSetBinder(binder, HttpRequestFilter.class, filterQualifier(annotation));
 
         // export stats
-        newExporter(binder).export(AsyncHttpClient.class).annotatedWith(annotation).withGeneratedName();
+        newExporter(binder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
     }
 
     @Override
     public void addAlias(Class<? extends Annotation> alias)
     {
-        binder.bind(AsyncHttpClient.class).annotatedWith(alias).to(Key.get(AsyncHttpClient.class, annotation));
-        binder.bind(HttpClient.class).annotatedWith(alias).to(Key.get(AsyncHttpClient.class, annotation));
+        binder.bind(HttpClient.class).annotatedWith(alias).to(Key.get(HttpClient.class, annotation));
     }
 
     private static class HttpClientProvider
-            implements Provider<AsyncHttpClient>
+            implements Provider<HttpClient>
     {
         private final String name;
         private final Class<? extends Annotation> annotation;
@@ -115,7 +111,7 @@ public class AsyncHttpClientModule
         }
 
         @Override
-        public AsyncHttpClient get()
+        public HttpClient get()
         {
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
             Set<HttpRequestFilter> filters = injector.getInstance(filterKey(annotation));
@@ -214,6 +210,6 @@ public class AsyncHttpClientModule
 
     private static CompositeQualifier filterQualifier(Class<? extends Annotation> annotation)
     {
-        return compositeQualifier(annotation, AsyncHttpClient.class);
+        return compositeQualifier(annotation, HttpClient.class);
     }
 }
