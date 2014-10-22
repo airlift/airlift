@@ -15,7 +15,6 @@
  */
 package io.airlift.dbpool;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.io.Resources;
 import com.google.common.primitives.Ints;
@@ -34,6 +33,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class H2EmbeddedDataSource extends ManagedDataSource
@@ -101,7 +101,7 @@ public class H2EmbeddedDataSource extends ManagedDataSource
                 }
 
                 // execute init script
-                try (Reader reader = Resources.newReaderSupplier(url, Charsets.UTF_8).getInput()) {
+                try (Reader reader = Resources.asCharSource(url, UTF_8).openStream()) {
                     ScriptReader scriptReader = new ScriptReader(reader);
                     for (String statement = scriptReader.readStatement(); statement != null; statement = scriptReader.readStatement()) {
                         executeCommand(connection, statement);

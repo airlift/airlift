@@ -1,6 +1,8 @@
 * 0.96
 
 - Add AbstractConfigurationAwareModule for accessing config at binding time
+- Upgrade to Airbase 28
+- Upgrade to Guava 18.0
 
 * 0.95
 

@@ -1,7 +1,6 @@
 package io.airlift.http.client.testing;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.CountingInputStream;
@@ -15,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class TestingResponse
@@ -77,7 +77,7 @@ public class TestingResponse
     @Override
     public String toString()
     {
-        return Objects.toStringHelper(this)
+        return toStringHelper(this)
                 .add("statusCode", getStatusCode())
                 .add("statusMessage", getStatusMessage())
                 .add("headers", getHeaders())

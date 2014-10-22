@@ -1,9 +1,10 @@
 package io.airlift.sample;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import io.airlift.event.client.EventField;
 import io.airlift.event.client.EventType;
+
+import static com.google.common.base.MoreObjects.toStringHelper;
 
 @EventType("Person")
 public class PersonEvent
@@ -101,7 +102,7 @@ public class PersonEvent
     @Override
     public String toString()
     {
-        return Objects.toStringHelper(this)
+        return toStringHelper(this)
                 .add("operation", operation)
                 .add("personId", personId)
                 .add("person", person)

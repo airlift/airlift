@@ -85,7 +85,7 @@ public class H2EmbeddedDataSourceTest
         ResultSet resultSet = null;
         try {
             URL url = Resources.getResource("io/airlift/dbpool/h2.ddl");
-            Files.copy(Resources.newReaderSupplier(url, Charsets.UTF_8), initScript, Charsets.UTF_8);
+            Resources.asByteSource(url).copyTo(Files.asByteSink(initScript));
 
             H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
                     .setFilename(file.getAbsolutePath())

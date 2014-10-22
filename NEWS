@@ -5,6 +5,8 @@ Airlift 0.96
 Extending this module makes it easy to access configuration at binding time,
 which allows conditionally installing modules or bindings based on config.
 
+* Upgrade to Guava 18.0
+
 
 Airlift 0.95
 

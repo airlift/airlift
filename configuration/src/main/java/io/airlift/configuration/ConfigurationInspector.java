@@ -15,17 +15,17 @@
  */
 package io.airlift.configuration;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Ordering;
 import com.google.inject.Key;
-
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 
 import java.lang.reflect.Method;
 import java.util.SortedSet;
+
+import static com.google.common.base.MoreObjects.toStringHelper;
 
 public class ConfigurationInspector
 {
@@ -250,7 +250,7 @@ public class ConfigurationInspector
         @Override
         public String toString()
         {
-            return Objects.toStringHelper(this)
+            return toStringHelper(this)
                     .add("attributeName", attributeName)
                     .add("propertyName", propertyName)
                     .add("defaultValue", defaultValue)

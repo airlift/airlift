@@ -15,7 +15,6 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
@@ -27,6 +26,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.List;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
@@ -188,7 +188,7 @@ public class FullJsonResponseHandler<T>
         @Override
         public String toString()
         {
-            return Objects.toStringHelper(this)
+            return toStringHelper(this)
                     .add("statusCode", statusCode)
                     .add("statusMessage", statusMessage)
                     .add("headers", headers)

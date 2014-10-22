@@ -16,11 +16,12 @@
 package io.airlift.discovery.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Set;
+
+import static com.google.common.base.MoreObjects.toStringHelper;
 
 public class Announcement
 {
@@ -103,7 +104,7 @@ public class Announcement
     @Override
     public String toString()
     {
-        return Objects.toStringHelper(this)
+        return toStringHelper(this)
                 .add("environment", environment)
                 .add("nodeId", nodeId)
                 .add("location", location)

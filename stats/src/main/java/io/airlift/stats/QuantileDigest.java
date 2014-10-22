@@ -16,6 +16,7 @@ import com.google.common.util.concurrent.AtomicDouble;
 import org.openjdk.jol.info.ClassLayout;
 
 import javax.annotation.concurrent.NotThreadSafe;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -29,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
@@ -1105,7 +1107,7 @@ public class QuantileDigest
         public Node getSingleChild()
         {
             checkState(hasSingleChild(), "Node does not have a single child");
-            return Objects.firstNonNull(left, right);
+            return firstNonNull(left, right);
         }
 
         public long getUpperBound()

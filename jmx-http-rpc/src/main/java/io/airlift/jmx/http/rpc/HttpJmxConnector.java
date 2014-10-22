@@ -15,8 +15,6 @@
  */
 package io.airlift.jmx.http.rpc;
 
-import com.google.common.base.Objects;
-
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
@@ -36,6 +34,7 @@ import javax.management.remote.JMXAddressable;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXServiceURL;
 import javax.security.auth.Subject;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -48,6 +47,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static io.airlift.jmx.http.rpc.HttpMBeanServerRpc.propagateIfInstanceOf;
 import static io.airlift.jmx.http.rpc.HttpMBeanServerRpc.propagateIfPossible;
 import static java.lang.String.format;
@@ -454,7 +454,7 @@ public class HttpJmxConnector implements JMXConnector, JMXAddressable
         @Override
         public String toString()
         {
-            return Objects.toStringHelper(this)
+            return toStringHelper(this)
                     .add("baseUri", baseUri)
                     .toString();
         }

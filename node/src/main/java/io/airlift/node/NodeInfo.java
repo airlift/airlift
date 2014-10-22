@@ -15,7 +15,6 @@
  */
 package io.airlift.node;
 
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.InetAddresses;
 import com.google.inject.Inject;
@@ -32,6 +31,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -245,7 +245,7 @@ public class NodeInfo
     @Override
     public String toString()
     {
-        return Objects.toStringHelper(this)
+        return toStringHelper(this)
                 .add("nodeId", nodeId)
                 .add("instanceId", instanceId)
                 .add("internalIp", internalIp)

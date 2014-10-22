@@ -2,7 +2,6 @@ package io.airlift.stats;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import org.weakref.jmx.Managed;
 
@@ -14,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TimeDistribution
@@ -260,7 +260,7 @@ public class TimeDistribution
         @Override
         public String toString()
         {
-            return Objects.toStringHelper(this)
+            return toStringHelper(this)
                     .add("maxError", maxError)
                     .add("count", count)
                     .add("p50", p50)

@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static org.testng.Assert.assertEquals;
 
 public class ImmutablePerson
@@ -123,7 +124,7 @@ public class ImmutablePerson
     @Override
     public String toString()
     {
-        return Objects.toStringHelper(this)
+        return toStringHelper(this)
                 .add("name", name)
                 .add("rocks", rocks)
                 .toString();
