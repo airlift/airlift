@@ -5,6 +5,7 @@
 - Upgrade to Guava 18.0
 - Remove server archetype builders
 - Remove deprecated AsyncHttpClient and bindAsyncHttpClient()
+- Un-deprecate discovery.uri config property
 
 * 0.95
 

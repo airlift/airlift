@@ -24,7 +24,6 @@ public class DiscoveryClientConfig
 {
     private URI discoveryServiceURI;
 
-    @Deprecated
     public URI getDiscoveryServiceURI()
     {
         return discoveryServiceURI;
@@ -32,7 +31,6 @@ public class DiscoveryClientConfig
 
     @Config("discovery.uri")
     @ConfigDescription("Discovery service base URI")
-    @Deprecated
     public DiscoveryClientConfig setDiscoveryServiceURI(URI uri)
     {
         this.discoveryServiceURI = uri;

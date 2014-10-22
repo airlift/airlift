@@ -82,7 +82,6 @@ public class DiscoveryModule
         newExporter(binder).export(ServiceInventory.class).withGeneratedName();
     }
 
-    @SuppressWarnings("deprecation")
     @Provides
     @ForDiscoveryClient
     public URI getDiscoveryUri(ServiceInventory serviceInventory, DiscoveryClientConfig config)
