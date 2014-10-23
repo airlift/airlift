@@ -13,6 +13,11 @@ We have removed the deprecated interface AsyncHttpClient and binder method
 bindAsyncHttpClient(). These can be replaced with HttpClient and
 bindHttpClient(), respectively.
 
+* HttpServer
+
+The HTTP server now shows stack traces in error responses by default. To
+disable this behavior, set "http-server.show-stack-trace" to "false".
+
 
 Airlift 0.95
 

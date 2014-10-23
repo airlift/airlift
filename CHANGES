@@ -6,6 +6,7 @@
 - Remove server archetype builders
 - Remove deprecated AsyncHttpClient and bindAsyncHttpClient()
 - Un-deprecate discovery.uri config property
+- Show stack traces in HTTP error responses
 
 * 0.95
 

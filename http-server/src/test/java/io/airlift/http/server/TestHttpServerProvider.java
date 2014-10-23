@@ -37,6 +37,7 @@ import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
 import javax.servlet.Filter;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletResponse;
 
 import java.io.File;
@@ -48,6 +49,7 @@ import static com.google.common.io.Resources.getResource;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static io.airlift.testing.Assertions.assertContains;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -167,6 +169,35 @@ public class TestHttpServerProvider
         }
     }
 
+    @Test
+    public void testShowStackTraceEnabled()
+            throws Exception
+    {
+        createServer(new ErrorServlet());
+        server.start();
+
+        try (HttpClient client = new JettyHttpClient()) {
+            StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
+            assertEquals(response.getStatusCode(), 500);
+            assertContains(response.getBody(), "ErrorServlet.java");
+        }
+    }
+
+    @Test
+    public void testShowStackTraceDisabled()
+            throws Exception
+    {
+        config.setShowStackTrace(false);
+        createServer(new ErrorServlet());
+        server.start();
+
+        try (HttpClient client = new JettyHttpClient()) {
+            StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
+            assertEquals(response.getStatusCode(), 500);
+            assertTrue(!response.getBody().contains("ErrorServlet.java"));
+        }
+    }
+
     @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "Insufficient max threads in ThreadPool: .*")
     public void testInsufficientThreadsHttp()
             throws Exception
@@ -206,11 +237,16 @@ public class TestHttpServerProvider
 
     private void createServer()
     {
+        createServer(new DummyServlet());
+    }
+
+    private void createServer(HttpServlet servlet)
+    {
         HashLoginServiceProvider loginServiceProvider = new HashLoginServiceProvider(config);
         HttpServerProvider serverProvider = new HttpServerProvider(httpServerInfo,
                 nodeInfo,
                 config,
-                new DummyServlet(),
+                servlet,
                 ImmutableSet.<Filter>of(new DummyFilter()),
                 ImmutableSet.<HttpResourceBinding>of(),
                 ImmutableSet.<Filter>of(),
