@@ -39,6 +39,7 @@ import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
 import javax.servlet.Filter;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
@@ -51,6 +52,7 @@ import static com.proofpoint.http.client.Request.Builder.preparePut;
 import static com.proofpoint.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static com.proofpoint.http.client.StringResponseHandler.createStringResponseHandler;
+import static com.proofpoint.testing.Assertions.assertContains;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -172,7 +174,7 @@ public class TestHttpServerProvider
                     preparePut()
                             .setUri(httpServerInfo.getHttpUri())
                             .setHeader("Content-Encoding", "gzip")
-                            .setBodyGenerator(createStaticBodyGenerator(new byte[] {
+                            .setBodyGenerator(createStaticBodyGenerator(new byte[]{
                                     31, -117, 8, 0, -123, -120, -97, 83, 0, 3, 75, -83,
                                     40, 72, 77, 46, 73, 77, 1, 0, -60, -72, 96, 80, 8, 0, 0, 0
                             }))
@@ -230,6 +232,35 @@ public class TestHttpServerProvider
         }
     }
 
+    @Test
+    public void testShowStackTraceEnabled()
+            throws Exception
+    {
+        createServer(new ErrorServlet());
+        server.start();
+
+        try (HttpClient client = new JettyHttpClient()) {
+            StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
+            assertEquals(response.getStatusCode(), 500);
+            assertContains(response.getBody(), "ErrorServlet.java");
+        }
+    }
+
+    @Test
+    public void testShowStackTraceDisabled()
+            throws Exception
+    {
+        config.setShowStackTrace(false);
+        createServer(new ErrorServlet());
+        server.start();
+
+        try (HttpClient client = new JettyHttpClient()) {
+            StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
+            assertEquals(response.getStatusCode(), 500);
+            assertTrue(!response.getBody().contains("ErrorServlet.java"));
+        }
+    }
+
     @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "Insufficient threads: .*")
     public void testInsufficientThreadsHttp()
             throws Exception
@@ -269,11 +300,16 @@ public class TestHttpServerProvider
 
     private void createServer()
     {
+        createServer(new DummyServlet());
+    }
+
+    private void createServer(HttpServlet servlet)
+    {
         HashLoginServiceProvider loginServiceProvider = new HashLoginServiceProvider(config);
         HttpServerProvider serverProvider = new HttpServerProvider(httpServerInfo,
                 nodeInfo,
                 config,
-                new DummyServlet(),
+                servlet,
                 ImmutableSet.<Filter>of(new DummyFilter()),
                 ImmutableSet.<HttpResourceBinding>of(),
                 new DummyServlet(),

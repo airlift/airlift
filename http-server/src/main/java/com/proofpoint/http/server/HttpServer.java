@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
@@ -103,6 +104,10 @@ public class HttpServer
         threadPool.setName("http-worker");
         server = new Server(threadPool);
         this.stats = stats;
+
+        if (config.isShowStackTrace()) {
+            server.addBean(new ErrorHandler());
+        }
 
         if (mbeanServer != null) {
             // export jmx mbeans if a server was provided

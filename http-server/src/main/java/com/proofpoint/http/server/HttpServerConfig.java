@@ -16,6 +16,7 @@
 package com.proofpoint.http.server;
 
 import com.proofpoint.configuration.Config;
+import com.proofpoint.configuration.ConfigDescription;
 import com.proofpoint.configuration.ConfigSecuritySensitive;
 import com.proofpoint.configuration.DefunctConfig;
 import com.proofpoint.configuration.LegacyConfig;
@@ -54,6 +55,8 @@ public class HttpServerConfig
     private int adminPort = 0;
     private int adminMinThreads = 2;
     private int adminMaxThreads = 200;
+
+    private boolean showStackTrace = true;
 
     public boolean isHttpEnabled()
     {
@@ -296,6 +299,19 @@ public class HttpServerConfig
     public HttpServerConfig setMaxRequestHeaderSize(DataSize maxRequestHeaderSize)
     {
         this.maxRequestHeaderSize = maxRequestHeaderSize;
+        return this;
+    }
+
+    public boolean isShowStackTrace()
+    {
+        return showStackTrace;
+    }
+
+    @Config("http-server.show-stack-trace")
+    @ConfigDescription("Show the stack trace when generating an error response")
+    public HttpServerConfig setShowStackTrace(boolean showStackTrace)
+    {
+        this.showStackTrace = showStackTrace;
         return this;
     }
 }
