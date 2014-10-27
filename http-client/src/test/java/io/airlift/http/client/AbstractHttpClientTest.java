@@ -33,6 +33,7 @@ import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
@@ -993,11 +994,13 @@ public abstract class AbstractHttpClientTest
     {
         private final List<Socket> clientSockets = new ArrayList<>();
         private final ServerSocket serverSocket;
+        private final SocketAddress localSocketAddress;
 
         private BackloggedServer()
                 throws IOException
         {
             this.serverSocket = new ServerSocket(0, 1);
+            localSocketAddress = serverSocket.getLocalSocketAddress();
 
             // some systems like Linux have a large minimum backlog
             int i = 0;
@@ -1030,7 +1033,7 @@ public abstract class AbstractHttpClientTest
             clientSockets.add(socket);
 
             try {
-                socket.connect(serverSocket.getLocalSocketAddress(), 5);
+                socket.connect(localSocketAddress, 5);
                 return true;
             }
             catch (IOException e) {
