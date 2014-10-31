@@ -14,6 +14,8 @@
 package com.proofpoint.http.server;
 
 import com.google.common.annotations.Beta;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -22,7 +24,6 @@ import com.proofpoint.units.Duration;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.TimeoutHandler;
 import javax.ws.rs.core.Response;
-
 import java.lang.ref.WeakReference;
 import java.util.concurrent.Executor;
 
@@ -62,12 +63,17 @@ public class AsyncResponseHandler
 
     public AsyncResponseHandler withTimeout(Duration timeout, final Response timeoutResponse)
     {
+        return withTimeout(timeout, Suppliers.ofInstance(timeoutResponse));
+    }
+
+    public AsyncResponseHandler withTimeout(Duration timeout, final Supplier<Response> timeoutResponse)
+    {
         asyncResponse.setTimeoutHandler(new TimeoutHandler()
         {
             @Override
             public void handleTimeout(AsyncResponse asyncResponse)
             {
-                asyncResponse.resume(timeoutResponse);
+                asyncResponse.resume(timeoutResponse.get());
                 cancelFuture();
             }
         });
