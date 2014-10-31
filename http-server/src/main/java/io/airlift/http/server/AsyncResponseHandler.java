@@ -75,6 +75,21 @@ public class AsyncResponseHandler
         return this;
     }
 
+    public AsyncResponseHandler withTimeout(Duration timeout, final ResponseGenerator timeoutResponse)
+    {
+        asyncResponse.setTimeoutHandler(new TimeoutHandler()
+        {
+            @Override
+            public void handleTimeout(AsyncResponse asyncResponse)
+            {
+                asyncResponse.resume(timeoutResponse.getResponse());
+                cancelFuture();
+            }
+        });
+        asyncResponse.setTimeout(timeout.toMillis(), MILLISECONDS);
+        return this;
+    }
+
     private void cancelFuture()
     {
         // Cancel the original future if it still exists
