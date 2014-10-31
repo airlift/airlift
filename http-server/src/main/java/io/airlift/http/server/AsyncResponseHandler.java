@@ -62,17 +62,12 @@ public class AsyncResponseHandler
 
     public AsyncResponseHandler withTimeout(Duration timeout, final Response timeoutResponse)
     {
-        asyncResponse.setTimeoutHandler(new TimeoutHandler()
-        {
+        return withTimeout(timeout, new ResponseGenerator() {
             @Override
-            public void handleTimeout(AsyncResponse asyncResponse)
-            {
-                asyncResponse.resume(timeoutResponse);
-                cancelFuture();
+            public Response getResponse() {
+                return timeoutResponse;
             }
         });
-        asyncResponse.setTimeout(timeout.toMillis(), MILLISECONDS);
-        return this;
     }
 
     public AsyncResponseHandler withTimeout(Duration timeout, final ResponseGenerator timeoutResponse)
