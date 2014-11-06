@@ -79,4 +79,14 @@ public class MBeanResource
         Preconditions.checkNotNull(objectName, "objectName is null");
         return new MBeanRepresentation(mbeanServer, objectName, objectMapper);
     }
+
+    @GET
+    @Path("mbean/{objectName}/{attributeName}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Object getMBean(@PathParam("objectName") ObjectName objectName, @PathParam("attributeName") String attributeName)
+            throws JMException
+    {
+        Preconditions.checkNotNull(objectName, "objectName is null");
+        return mbeanServer.getAttribute(objectName, attributeName);
+    }
 }
