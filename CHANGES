@@ -7,6 +7,14 @@ Platform 1.08
   override those in the config classes but are themselves overridden by
   Bootstrap.withApplicationDefaults().
 
+* AsyncSemaphore
+
+  AsyncSemaphore is a non-blocking concurrency throttler for asynchronous
+  tasks. It guarantees that no more than a fixed number of asynchronous tasks
+  will be outstanding at any point in time without blocking any submission
+  threads. Task completion is determined by a ListenableFuture returned by the
+  supplied submitter function.
+
 * Discovery read timeout
 
   We reduced the discovery client's default read timeout to 5 seconds. This
