@@ -1,3 +1,7 @@
+* 0.97
+
+- Add AsyncSemaphore concurrent utility
+
 * 0.96
 
 - Add AbstractConfigurationAwareModule for accessing config at binding time
