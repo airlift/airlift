@@ -1,6 +1,7 @@
 * 0.97
 
 - Add AsyncSemaphore concurrent utility
+- Add /v1/jmx/mbean/{objectName}/{attributeName} to get a single MBean attribute value
 
 * 0.96
 
