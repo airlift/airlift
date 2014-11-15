@@ -92,7 +92,7 @@ public class AsyncHttpClientModule
 
         // export stats
         if (rootBinder == binder) {
-            reportBinder(binder).export(AsyncHttpClient.class).annotatedWith(annotation).withGeneratedName();
+            reportBinder(binder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
         }
     }
 

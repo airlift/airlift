@@ -1,3 +1,8 @@
+Platform 1.08
+
+* [Bug] HttpClient metric names now start with "HttpClient" instead of
+  "AsyncHttpClient".
+
 Platform 1.07
 
 * AbstractConfigurationAwareModule
