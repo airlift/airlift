@@ -239,7 +239,7 @@ public class Bootstrap
             public void configure(Binder binder)
             {
                 binder.disableCircularProxies();
-                if(requireExplicitBindings) {
+                if (requireExplicitBindings) {
                     binder.requireExplicitBindings();
                 }
             }
