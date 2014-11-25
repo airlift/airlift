@@ -15,12 +15,13 @@
  */
 package com.proofpoint.discovery.client;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
-import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
+import com.proofpoint.configuration.ConfigurationDefaultingModule;
 import com.proofpoint.discovery.client.announce.Announcement;
 import com.proofpoint.discovery.client.announce.Announcer;
 import com.proofpoint.discovery.client.announce.DiscoveryAnnouncementClient;
@@ -34,6 +35,7 @@ import com.proofpoint.reporting.ReportCollectionFactory;
 import org.weakref.jmx.ObjectNameBuilder;
 
 import javax.annotation.PreDestroy;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
@@ -46,9 +48,15 @@ import static com.proofpoint.json.JsonCodecBinder.jsonCodecBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class DiscoveryModule
-        implements Module
+        implements ConfigurationDefaultingModule
 {
     private HttpServiceBalancerImpl discoveryBalancer = null;
+
+    @Override
+    public Map<String, String> getConfigurationDefaults()
+    {
+        return ImmutableMap.of("discovery.http-client.read-timeout", "5s");
+    }
 
     @Override
     public void configure(Binder binder)

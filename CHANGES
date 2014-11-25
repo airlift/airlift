@@ -7,6 +7,12 @@ Platform 1.08
   override those in the config classes but are themselves overridden by
   Bootstrap.withApplicationDefaults().
 
+* Discovery read timeout
+
+  We reduced the discovery client's default read timeout to 5 seconds. This
+  is to avoid announcements timing out of Discovery when one or more
+  Discovery servers hang.
+
 * [Bug] HttpClient metric names now start with "HttpClient" instead of
   "AsyncHttpClient".
 
