@@ -1,5 +1,12 @@
 Platform 1.08
 
+* Configuration module defaults
+
+  Guice modules may now override default configuration values by implementing
+  ConfigurationDefaultingModule.getConfigurationDefaults(). Such defaults
+  override those in the config classes but are themselves overridden by
+  Bootstrap.withApplicationDefaults().
+
 * [Bug] HttpClient metric names now start with "HttpClient" instead of
   "AsyncHttpClient".
 

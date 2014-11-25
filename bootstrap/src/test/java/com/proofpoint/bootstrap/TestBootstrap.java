@@ -24,11 +24,13 @@ import com.google.inject.Module;
 import com.google.inject.ProvisionException;
 import com.proofpoint.configuration.AbstractConfigurationAwareModule;
 import com.proofpoint.configuration.Config;
+import com.proofpoint.configuration.ConfigurationDefaultingModule;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.proofpoint.bootstrap.Bootstrap.bootstrapApplication;
@@ -258,6 +260,138 @@ public class TestBootstrap
     }
 
     @Test
+    public void testModuleDefaults()
+            throws Exception
+    {
+        System.setProperty("config", Resources.getResource("simple-config.properties").getFile());
+        Bootstrap bootstrap = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
+                .withModules(new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        bindConfig(binder).to(SimpleConfig.class);
+                    }
+                }, new ConfigurationDefaultingModule()
+                {
+                    @Override
+                    public Map<String, String> getConfigurationDefaults()
+                    {
+                        return ImmutableMap.of(
+                                "property", "default value",
+                                "other-property", "other default value"
+                        );
+                    }
+
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                    }
+                });
+
+        SimpleConfig simpleConfig = bootstrap.initialize().getInstance(SimpleConfig.class);
+        assertEquals(simpleConfig.getProperty(), "value");
+        assertEquals(simpleConfig.getOtherProperty(), "other default value");
+    }
+
+    @Test
+    public void testConflictingModuleDefaults()
+            throws Exception
+    {
+        Bootstrap bootstrap = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
+                .withModules(new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        bindConfig(binder).to(SimpleConfig.class);
+                    }
+                }, new ConfigurationDefaultingModule()
+                {
+                    @Override
+                    public Map<String, String> getConfigurationDefaults()
+                    {
+                        return ImmutableMap.of("property", "default value");
+                    }
+
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                    }
+
+                    @Override
+                    public String toString()
+                    {
+                        return "first test module";
+                    }
+                }, new ConfigurationDefaultingModule()
+                {
+                    @Override
+                    public Map<String, String> getConfigurationDefaults()
+                    {
+                        return ImmutableMap.of("property", "default value");
+                    }
+
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                    }
+
+                    @Override
+                    public String toString()
+                    {
+                        return "second test module";
+                    }
+                })
+                .setRequiredConfigurationProperty("other-property", "other value");
+
+        try {
+            bootstrap.initialize();
+            fail("should not allow duplicate module defaults");
+        }
+        catch (CreationException e) {
+            assertContains(e.getErrorMessages().iterator().next().getMessage(), "Configuration default for \"property\" set by both first test module and second test module");
+        }
+    }
+
+    @Test
+    public void testApplicationDefaultsOverrideBoundDefaults()
+            throws Exception
+    {
+        System.setProperty("config", Resources.getResource("empty-config.properties").getFile());
+        Bootstrap bootstrap = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
+                .withModules(new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        bindConfig(binder).to(SimpleConfig.class);
+                    }
+                }, new ConfigurationDefaultingModule()
+                {
+                    @Override
+                    public Map<String, String> getConfigurationDefaults()
+                    {
+                        return ImmutableMap.of("property", "bound default value");
+                    }
+
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                    }
+                })
+                .withApplicationDefaults(ImmutableMap.of(
+                        "property", "application default value"
+                ));
+
+        SimpleConfig simpleConfig = bootstrap.initialize().getInstance(SimpleConfig.class);
+        assertEquals(simpleConfig.getProperty(), "application default value");
+    }
+
+    @Test
     public void testConfigAwareModule()
             throws Exception
     {
@@ -306,6 +440,7 @@ public class TestBootstrap
     public static class InstanceA
     {
         @Inject
+        @SuppressWarnings("unused")
         public InstanceA(InstanceB b)
         {
         }
@@ -314,6 +449,7 @@ public class TestBootstrap
     public static class InstanceB
     {
         @Inject
+        @SuppressWarnings("unused")
         public InstanceB(InstanceA a)
         {
         }

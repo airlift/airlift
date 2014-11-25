@@ -70,6 +70,8 @@ public final class ConfigurationFactory
 
     private final Map<String, String> properties;
     private final Map<String, String> applicationDefaults;
+    private final Map<String, String> moduleDefaults;
+    private final ImmutableMap<String, ConfigurationDefaultingModule> moduleDefaultSource;
     private final Problems.Monitor monitor;
     private final Set<String> unusedProperties = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
     private final Collection<String> initialErrors;
@@ -87,14 +89,16 @@ public final class ConfigurationFactory
 
     public ConfigurationFactory(Map<String, String> properties)
     {
-        this(properties, ImmutableMap.<String, String>of(), properties.keySet(), ImmutableList.<String>of(), Problems.NULL_MONITOR);
+        this(properties, ImmutableMap.<String, String>of(), ImmutableMap.<String, String>of(), ImmutableMap.<String, ConfigurationDefaultingModule>of(), properties.keySet(), ImmutableList.<String>of(), Problems.NULL_MONITOR);
     }
 
-    ConfigurationFactory(Map<String, String> properties, Map<String, String> applicationDefaults, Set<String> expectToUse, Collection<String> errors, final Monitor monitor)
+    ConfigurationFactory(Map<String, String> properties, Map<String, String> applicationDefaults, Map<String, String> moduleDefaults, Map<String, ConfigurationDefaultingModule> moduleDefaultSource, Set<String> expectToUse, Collection<String> errors, final Monitor monitor)
     {
         this.monitor = monitor;
         this.properties = ImmutableMap.copyOf(properties);
         this.applicationDefaults = ImmutableMap.copyOf(applicationDefaults);
+        this.moduleDefaults = ImmutableMap.copyOf(moduleDefaults);
+        this.moduleDefaultSource = ImmutableMap.copyOf(moduleDefaultSource);
         unusedProperties.addAll(expectToUse);
         initialErrors = ImmutableList.copyOf(errors);
     }
@@ -252,6 +256,9 @@ public final class ConfigurationFactory
                 if (!value.isEmpty() && applicationDefaults.get(key) != null) {
                     problems.addError("Defunct property '%s' (class [%s]) cannot have an application default.", key, configClass.toString());
                 }
+                if (!value.isEmpty() && moduleDefaults.get(key) != null) {
+                    problems.addError("Defunct property '%s' (class [%s]) cannot have a module default (from %s).", key, configClass.toString(), moduleDefaultSource.get(key));
+                }
             }
         }
 
@@ -391,11 +398,24 @@ public final class ConfigurationFactory
                         problems.addError("Cannot have application default property '%s' for a configuration map '%s'", key, fullName);
                     }
                 }
+                for (String key : moduleDefaults.keySet()) {
+                    if (key.startsWith(mapPrefix)) {
+                        problems.addError("Cannot have module default property '%s' (from %s) for a configuration map '%s'", key, moduleDefaultSource.get(key), fullName);
+                    }
+                }
             }
             else {
+                if (moduleDefaults.get(fullName) != null) {
+                    if (isLegacy) {
+                        problems.addError("Module default %s", getLegacyDescription(fullName, moduleDefaultSource.get(fullName)));
+                    }
+                    else {
+                        defaultInjectionPoint = injectionPoint;
+                    }
+                }
                 if (applicationDefaults.get(fullName) != null) {
                     if (isLegacy) {
-                        defaultLegacy(fullName);
+                        problems.addError("Application default %s", getLegacyDescription(fullName, null));
                     }
                     else {
                         defaultInjectionPoint = injectionPoint;
@@ -429,21 +449,20 @@ public final class ConfigurationFactory
 
         private void warnLegacy(String fullName)
         {
-            problems.addWarning("Configuration %s", getLegacyDescription(fullName));
+            problems.addWarning("Configuration %s", getLegacyDescription(fullName, null));
         }
 
-        private void defaultLegacy(String fullName)
+        private String getLegacyDescription(String fullName, ConfigurationDefaultingModule configurationDefaultingModule)
         {
-            problems.addError("Application default %s", getLegacyDescription(fullName));
-        }
-
-        private String getLegacyDescription(String fullName)
-        {
+            String source = "";
+            if (configurationDefaultingModule != null) {
+                source = format(" (from %s)", configurationDefaultingModule);
+            }
             String replacement = "deprecated.";
             if (attribute.getInjectionPoint() != null) {
                 replacement = format("replaced. Use '%s' instead.", prefix + attribute.getInjectionPoint().getProperty());
             }
-            return format("property '%s' has been %s", fullName, replacement);
+            return format("property '%s'%s has been %s", fullName, source, replacement);
         }
     }
 
@@ -460,6 +479,9 @@ public final class ConfigurationFactory
         String value = properties.get(name);
         if (isDefault || value == null) {
             value = applicationDefaults.get(name);
+        }
+        if (value == null) {
+            value = moduleDefaults.get(name);
         }
         if (value == null) {
             return null;

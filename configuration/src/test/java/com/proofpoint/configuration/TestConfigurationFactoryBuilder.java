@@ -37,12 +37,34 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 
+import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.testing.Assertions.assertContainsAllOf;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
 public class TestConfigurationFactoryBuilder
 {
+    private static final ConfigurationDefaultingModule TEST_DEFAULTING_MODULE = new ConfigurationDefaultingModule()
+    {
+        @Override
+        public Map<String, String> getConfigurationDefaults()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void configure(Binder binder)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "testing module";
+        }
+    };
+
     private File tempDir;
 
     @BeforeMethod
@@ -157,7 +179,44 @@ public class TestConfigurationFactoryBuilder
                 @Override
                 public void configure(Binder binder)
                 {
-                    ConfigurationModule.bindConfig(binder).to(AnnotatedSetter.class);
+                    bindConfig(binder).to(AnnotatedSetter.class);
+                }
+            });
+
+            fail("Expected an exception in object creation due to unused configuration");
+        } catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(0);
+            monitor.assertMatchingErrorRecorded("Configuration property 'unused' was not used");
+            assertContainsAllOf(e.getMessage(), "Configuration property 'unused' was not used");
+        }
+    }
+
+    @Test
+    public void testUnusedConfigFromModuleDefaultsThrowsError()
+            throws IOException
+    {
+        final File file = File.createTempFile("config", ".properties", tempDir);
+
+        System.setProperty("config", file.getAbsolutePath());
+
+        TestMonitor monitor = new TestMonitor();
+        final ConfigurationFactory configurationFactory = new ConfigurationFactoryBuilder()
+                .withMonitor(monitor)
+                .withModuleDefaults(ImmutableMap.of("unused", "foo"), ImmutableMap.of("unused", TEST_DEFAULTING_MODULE))
+                .withFile(System.getProperty("config"))
+                .withSystemProperties()
+                .build();
+
+        System.getProperties().remove("config");
+
+        try {
+            createInjector(configurationFactory, new Module()
+            {
+                @Override
+                public void configure(Binder binder)
+                {
+                    bindConfig(binder).to(AnnotatedSetter.class);
                 }
             });
 
@@ -194,7 +253,7 @@ public class TestConfigurationFactoryBuilder
                 @Override
                 public void configure(Binder binder)
                 {
-                    ConfigurationModule.bindConfig(binder).to(AnnotatedSetter.class);
+                    bindConfig(binder).to(AnnotatedSetter.class);
                 }
             });
 
@@ -234,7 +293,7 @@ public class TestConfigurationFactoryBuilder
                 @Override
                 public void configure(Binder binder)
                 {
-                    ConfigurationModule.bindConfig(binder).to(AnnotatedSetter.class);
+                    bindConfig(binder).to(AnnotatedSetter.class);
                 }
             });
 

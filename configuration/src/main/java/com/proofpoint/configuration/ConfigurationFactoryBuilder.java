@@ -41,6 +41,8 @@ public final class ConfigurationFactoryBuilder
     private Monitor monitor = Problems.NULL_MONITOR;
     private final List<String> errors = new ArrayList<>();
     private Map<String,String> applicationDefaults = ImmutableMap.of();
+    private Map<String,String> moduleDefaults = ImmutableMap.of();
+    private Map<String, ConfigurationDefaultingModule> moduleDefaultSource = ImmutableMap.of();
 
     /**
      * Loads properties from the given file
@@ -97,6 +99,14 @@ public final class ConfigurationFactoryBuilder
         return this;
     }
 
+    public ConfigurationFactoryBuilder withModuleDefaults(Map<String, String> moduleDefaults, Map<String, ConfigurationDefaultingModule> moduleDefaultSource)
+    {
+        this.moduleDefaults = ImmutableMap.copyOf(moduleDefaults);
+        this.moduleDefaultSource = ImmutableMap.copyOf(moduleDefaultSource);
+        expectToUse.addAll(moduleDefaults.keySet());
+        return this;
+    }
+
     public ConfigurationFactoryBuilder withMonitor(Monitor monitor)
     {
         this.monitor = monitor;
@@ -105,7 +115,7 @@ public final class ConfigurationFactoryBuilder
 
     public ConfigurationFactory build()
     {
-        return new ConfigurationFactory(properties, applicationDefaults, expectToUse, errors, monitor);
+        return new ConfigurationFactory(properties, applicationDefaults, moduleDefaults, moduleDefaultSource, expectToUse, errors, monitor);
     }
 
     private void mergeProperties(Properties properties)

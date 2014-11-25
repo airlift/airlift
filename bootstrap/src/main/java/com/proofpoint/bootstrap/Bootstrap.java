@@ -26,6 +26,7 @@ import com.google.inject.Stage;
 import com.google.inject.spi.Message;
 import com.proofpoint.bootstrap.LoggingWriter.Type;
 import com.proofpoint.configuration.ConfigurationAwareModule;
+import com.proofpoint.configuration.ConfigurationDefaultingModule;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationFactoryBuilder;
 import com.proofpoint.configuration.ConfigurationInspector;
@@ -42,8 +43,10 @@ import com.proofpoint.node.ApplicationNameModule;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -164,8 +167,29 @@ public class Bootstrap
         checkState(!initialized, "Already initialized");
         initialized = true;
 
+        Map<String, String> moduleDefaults = new HashMap<>();
+        Map<String, ConfigurationDefaultingModule> moduleDefaultSource = new HashMap<>();
+        List<Message> moduleDefaultErrors = new ArrayList<>();
+        for (Module module : modules) {
+            if (module instanceof ConfigurationDefaultingModule) {
+                ConfigurationDefaultingModule configurationDefaultingModule = (ConfigurationDefaultingModule) module;
+                Map<String, String> defaults = configurationDefaultingModule.getConfigurationDefaults();
+                for (Entry<String, String> entry : defaults.entrySet()) {
+                    ConfigurationDefaultingModule oldModule = moduleDefaultSource.put(entry.getKey(), configurationDefaultingModule);
+                    if (oldModule != null) {
+                        moduleDefaultErrors.add(
+                                new Message(module, "Configuration default for \"" + entry.getKey() + "\" set by both " + oldModule.toString() + " and " + module.toString()));
+                    }
+                    moduleDefaults.put(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+
         // initialize configuration
         ConfigurationFactoryBuilder builder = new ConfigurationFactoryBuilder();
+        if (!moduleDefaults.isEmpty()) {
+            builder = builder.withModuleDefaults(moduleDefaults, moduleDefaultSource);
+        }
         if (applicationDefaults != null) {
             builder = builder.withApplicationDefaults(applicationDefaults);
         }
@@ -221,6 +245,9 @@ public class Bootstrap
         moduleList.add(new LifeCycleModule());
         moduleList.add(new ConfigurationModule(configurationFactory));
         moduleList.add(new ApplicationNameModule(applicationName));
+        if (!moduleDefaultErrors.isEmpty()) {
+            moduleList.add(new ValidationErrorModule(moduleDefaultErrors));
+        }
         if (!messages.isEmpty()) {
             moduleList.add(new ValidationErrorModule(messages));
         }
