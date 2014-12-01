@@ -216,6 +216,7 @@ public class NodeInfo
      * The unique id of this JavaVM instance.  This id will change every time the vm is restarted.
      */
     @Managed
+    @Deprecated
     public String getInstanceId()
     {
         return instanceId;
