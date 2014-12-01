@@ -19,6 +19,7 @@ import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.inject.Binder;
+import com.google.inject.ConfigurationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
@@ -40,6 +41,7 @@ import com.proofpoint.log.Logger;
 import com.proofpoint.log.Logging;
 import com.proofpoint.log.LoggingConfiguration;
 import com.proofpoint.node.ApplicationNameModule;
+import com.proofpoint.node.NodeInfo;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -275,6 +277,15 @@ public class Bootstrap
 
         // create the injector
         final Injector injector = Guice.createInjector(Stage.PRODUCTION, moduleList.build());
+
+        if (!quiet) {
+            try {
+                NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
+                log.info("Node ID %s", nodeInfo.getNodeId());
+            }
+            catch (ConfigurationException ignored) {
+            }
+        }
 
         // Create the life-cycle manager
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);

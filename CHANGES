@@ -13,6 +13,8 @@ Platform 1.08
   is to avoid announcements timing out of Discovery when one or more
   Discovery servers hang.
 
+* Node ID logged on startup
+
 * [Bug] HttpClient metric names now start with "HttpClient" instead of
   "AsyncHttpClient".
 
