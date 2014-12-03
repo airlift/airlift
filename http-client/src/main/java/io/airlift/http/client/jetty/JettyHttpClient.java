@@ -308,6 +308,18 @@ public class JettyHttpClient
         return stats;
     }
 
+    @Managed
+    public String dump()
+    {
+        return httpClient.dump();
+    }
+
+    @Managed
+    public void dumpStdErr()
+    {
+        httpClient.dumpStdErr();
+    }
+
     @Override
     public void close()
     {
