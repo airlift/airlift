@@ -23,6 +23,10 @@ Platform 1.08
 * [Bug] HttpClient metric names now start with "HttpClient" instead of
   "AsyncHttpClient".
 
+* Library upgrades
+
+  - Jetty to 9.2.6
+
 Platform 1.07
 
 * AbstractConfigurationAwareModule
