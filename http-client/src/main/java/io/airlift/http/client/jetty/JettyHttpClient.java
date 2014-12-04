@@ -162,7 +162,9 @@ public class JettyHttpClient
         }
 
         if (config.getConnectTimeout() != null) {
-            httpClient.setConnectTimeout(config.getConnectTimeout().toMillis());
+            long connectTimeout = config.getConnectTimeout().toMillis();
+            httpClient.setConnectTimeout(connectTimeout);
+            httpClient.setAddressResolutionTimeout(connectTimeout);
         }
 
         HostAndPort socksProxy = config.getSocksProxy();
