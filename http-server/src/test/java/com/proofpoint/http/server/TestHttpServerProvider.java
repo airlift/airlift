@@ -236,6 +236,7 @@ public class TestHttpServerProvider
     public void testShowStackTraceEnabled()
             throws Exception
     {
+        config.setShowStackTrace(true);
         createServer(new ErrorServlet());
         server.start();
 
@@ -250,7 +251,6 @@ public class TestHttpServerProvider
     public void testShowStackTraceDisabled()
             throws Exception
     {
-        config.setShowStackTrace(false);
         createServer(new ErrorServlet());
         server.start();
 

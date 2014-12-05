@@ -56,7 +56,7 @@ public class HttpServerConfig
     private int adminMinThreads = 2;
     private int adminMaxThreads = 200;
 
-    private boolean showStackTrace = true;
+    private boolean showStackTrace = false;
 
     public boolean isHttpEnabled()
     {

@@ -13,6 +13,11 @@ Platform 1.08
   is to avoid announcements timing out of Discovery when one or more
   Discovery servers hang.
 
+* Stack traces in HTTP error responses
+
+  The HTTP server now shows stack traces in error responses if
+  "http-server.show-stack-trace" is set to "true".
+
 * Node ID logged on startup
 
 * [Bug] HttpClient metric names now start with "HttpClient" instead of
