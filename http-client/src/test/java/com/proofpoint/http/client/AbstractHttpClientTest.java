@@ -253,7 +253,7 @@ public abstract class AbstractHttpClientTest
         config.setConnectTimeout(new Duration(5, MILLISECONDS));
 
         Request request = prepareGet()
-                .setUri(URI.create("http://nonexistent.example.com"))
+                .setUri(URI.create("http://nonexistent.invalid"))
                 .build();
 
         try {
