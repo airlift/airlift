@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ConnectException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -244,15 +245,18 @@ public abstract class AbstractHttpClientTest
         Assert.assertEquals(executeRequest(config, request, new DefaultOnExceptionResponseHandler(expected)), expected);
     }
 
-    @Test(expectedExceptions = {UnknownHostException.class, UnresolvedAddressException.class})
+    @Test(expectedExceptions = {UnknownHostException.class, UnresolvedAddressException.class}, timeOut = 10000)
     public void testUnresolvableHost()
             throws Exception
     {
+        String invalidHost = "nonexistent.invalid";
+        assertUnknownHost(invalidHost);
+
         HttpClientConfig config = new HttpClientConfig();
-        config.setConnectTimeout(new Duration(5, MILLISECONDS));
+        config.setConnectTimeout(new Duration(5, SECONDS));
 
         Request request = prepareGet()
-                .setUri(URI.create("http://nonexistent.invalid"))
+                .setUri(URI.create("http://" + invalidHost))
                 .build();
 
         try {
@@ -1039,6 +1043,18 @@ public abstract class AbstractHttpClientTest
                 }
                 throw propagate(e);
             }
+        }
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    private static void assertUnknownHost(String host)
+    {
+        try {
+            InetAddress.getByName(host);
+            fail("Expected UnknownHostException for host " + host);
+        }
+        catch (UnknownHostException e) {
+            // expected
         }
     }
 
