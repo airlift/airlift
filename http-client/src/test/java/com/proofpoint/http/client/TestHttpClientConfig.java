@@ -23,6 +23,7 @@ import com.proofpoint.units.DataSize.Unit;
 import com.proofpoint.units.Duration;
 import org.testng.annotations.Test;
 
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +43,7 @@ public class TestHttpClientConfig
                 .setKeepAliveInterval(null)
                 .setMaxConnections(200)
                 .setMaxConnectionsPerServer(20)
-                .setMaxRequestsQueuedPerDestination(1024)
+                .setMaxRequestsQueuedPerDestination(20)
                 .setMaxContentLength(new DataSize(16, Unit.MEGABYTE))
                 .setSocksProxy(null)
                 .setKeyStorePath(System.getProperty(JAVAX_NET_SSL_KEY_STORE))
@@ -85,5 +86,9 @@ public class TestHttpClientConfig
     {
         assertFailsValidation(new HttpClientConfig().setConnectTimeout(null), "connectTimeout", "may not be null", NotNull.class);
         assertFailsValidation(new HttpClientConfig().setReadTimeout(null), "readTimeout", "may not be null", NotNull.class);
+        assertFailsValidation(new HttpClientConfig().setMaxConnections(0), "maxConnections", "must be greater than or equal to 1", Min.class);
+        assertFailsValidation(new HttpClientConfig().setMaxConnectionsPerServer(0), "maxConnectionsPerServer", "must be greater than or equal to 1", Min.class);
+        assertFailsValidation(new HttpClientConfig().setMaxRequestsQueuedPerDestination(0), "maxRequestsQueuedPerDestination", "must be greater than or equal to 1", Min.class);
+        assertFailsValidation(new HttpClientConfig().setMaxContentLength(null), "maxContentLength", "may not be null", NotNull.class);
     }
 }

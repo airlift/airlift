@@ -161,7 +161,9 @@ public class TestHttpEventClient
         balancer = new HttpServiceBalancerImpl("test collector balancer", new TestingReportCollectionFactory().createReportCollection(HttpServiceBalancerStats.class));
 
         httpClient = new BalancingHttpClient(balancer,
-                new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS))),
+                new JettyHttpClient(new HttpClientConfig()
+                        .setConnectTimeout(new Duration(10, SECONDS))
+                        .setMaxRequestsQueuedPerDestination(100)),
                 new BalancingHttpClientConfig());
         servlet = new DummyServlet();
         server = createServer(servlet);

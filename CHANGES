@@ -21,6 +21,13 @@ Platform 1.08
   is to avoid announcements timing out of Discovery when one or more
   Discovery servers hang.
 
+* HttpClient request queue size default change
+
+  We reduced the http-client.max-requests-queued-per-destination default to
+  20. We recommend this be set to the same value as
+  http-client.max-connections-per-server as larger values can cause requests
+  to queue for inordinate amounts of time.
+
 * Stack traces in HTTP error responses
 
   The HTTP server now shows stack traces in error responses if

@@ -18,6 +18,7 @@ package com.proofpoint.http.client;
 import com.google.common.annotations.Beta;
 import com.google.common.net.HostAndPort;
 import com.proofpoint.configuration.Config;
+import com.proofpoint.configuration.ConfigDescription;
 import com.proofpoint.units.DataSize;
 import com.proofpoint.units.DataSize.Unit;
 import com.proofpoint.units.Duration;
@@ -39,7 +40,7 @@ public class HttpClientConfig
     private Duration keepAliveInterval = null;
     private int maxConnections = 200;
     private int maxConnectionsPerServer = 20;
-    private int maxRequestsQueuedPerDestination = 1024;
+    private int maxRequestsQueuedPerDestination = 20;
     private DataSize maxContentLength = new DataSize(16, Unit.MEGABYTE);
     private HostAndPort socksProxy;
     private String keyStorePath = System.getProperty(JAVAX_NET_SSL_KEY_STORE);
@@ -86,12 +87,15 @@ public class HttpClientConfig
     }
 
     @Min(1)
+    @Deprecated
     public int getMaxConnections()
     {
         return maxConnections;
     }
 
     @Config("http-client.max-connections")
+    @ConfigDescription("unused")
+    @Deprecated
     public HttpClientConfig setMaxConnections(int maxConnections)
     {
         this.maxConnections = maxConnections;
