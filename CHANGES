@@ -2,6 +2,11 @@ Platform 1.19
 
 * Java 8 is now required
 
+* JSON
+
+  We added JSON serialization support for the JDK 8 Optional and JSR 310
+  date/time classes.
+
 * Library Upgrades
   - Jackson to 2.4.4
 
