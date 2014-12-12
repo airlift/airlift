@@ -1,6 +1,7 @@
 * 0.99
 
 - Java 8 is now required
+- Support JSON serialization of Java 8 types
 
 * 0.98
 
