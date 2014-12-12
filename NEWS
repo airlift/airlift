@@ -1,3 +1,11 @@
+Airlift 0.99
+
+* Java 8 is now required
+
+Moving forward, Airlift will be written using the new Java 8 syntax and APIs, and
+releases will be compiled using Java 8. This means Java 8 is required for
+running Airlift-based servers or using using Airlift libraries.
+
 Airlift 0.98
 
 Minor maintenance release. See CHANGES.

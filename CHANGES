@@ -1,3 +1,7 @@
+* 0.99
+
+- Java 8 is now required
+
 * 0.98
 
 - Expose JettyHttpClient dump methods to JMX
