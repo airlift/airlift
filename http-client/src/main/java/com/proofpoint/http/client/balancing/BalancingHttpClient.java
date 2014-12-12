@@ -22,7 +22,9 @@ import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.ResponseHandler;
+import com.proofpoint.http.client.jetty.JettyHttpClient;
 import org.weakref.jmx.Flatten;
+import org.weakref.jmx.Managed;
 
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
@@ -160,6 +162,23 @@ public class BalancingHttpClient
     public RequestStats getStats()
     {
         return httpClient.getStats();
+    }
+
+    @Managed
+    public String dump()
+    {
+        if (httpClient instanceof JettyHttpClient) {
+            return ((JettyHttpClient) httpClient).dump();
+        }
+        return null;
+    }
+
+    @Managed
+    public void dumpStdErr()
+    {
+        if (httpClient instanceof JettyHttpClient) {
+            ((JettyHttpClient) httpClient).dumpStdErr();
+        }
     }
 
     @Override
