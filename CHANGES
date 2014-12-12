@@ -1,3 +1,8 @@
+* 0.98
+
+- Expose JettyHttpClient dump methods to JMX
+- Make HyperLogLog.addHash public
+
 * 0.97
 
 - Add AsyncSemaphore concurrent utility
