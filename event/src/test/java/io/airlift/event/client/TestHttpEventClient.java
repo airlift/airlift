@@ -129,7 +129,9 @@ public class TestHttpEventClient
     public void setup()
             throws Exception
     {
-        httpClient = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS)));
+        httpClient = new JettyHttpClient(new HttpClientConfig()
+                .setConnectTimeout(new Duration(10, SECONDS))
+                .setMaxRequestsQueuedPerDestination(100));
 
         servlet = new DummyServlet();
         server = createServer(servlet);
