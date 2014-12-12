@@ -49,7 +49,8 @@ public class AsyncResponseHandler
 
     public static AsyncResponseHandler bindAsyncResponse(AsyncResponse asyncResponse, ListenableFuture<?> futureResponse, Executor httpResponseExecutor)
     {
-        Futures.addCallback(futureResponse, toFutureCallback(asyncResponse), httpResponseExecutor);
+        FutureCallback<Object> callback = toFutureCallback(asyncResponse);
+        Futures.addCallback(futureResponse, callback, httpResponseExecutor);
         return new AsyncResponseHandler(asyncResponse, futureResponse);
     }
 
