@@ -31,6 +31,9 @@ Platform 1.08
 * [Bug] HttpClient metric names now start with "HttpClient" instead of
   "AsyncHttpClient".
 
+* [Bug] Fixed JettyHttpClient IllegalStateException when handling an exception
+  thrown from a BodyGenerator.
+
 * Library upgrades
 
   - Jetty to 9.2.6

@@ -611,6 +611,7 @@ public class JettyHttpClient
                     }
                     catch (Exception e) {
                         exception.set(e);
+                        chunks.clear();
                         chunks.add(EXCEPTION);
                     }
                 }
