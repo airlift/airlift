@@ -1,7 +1,13 @@
 Platform 1.19
 
+* Java 8 is now required
+
+* Library Upgrades
+  - Jackson to 2.4.4
+
 * Maven plugin upgrades
   - findbugs-maven-plugin to 3.0.1
+  - maven-dependency-plugin to 2.10
 
 Platform 1.18
 
