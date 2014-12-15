@@ -1,3 +1,9 @@
+Platform 1.09
+
+* Library upgrades
+
+  - slf4j to 1.7.8
+
 Platform 1.08
 
 * Configuration module defaults

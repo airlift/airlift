@@ -70,7 +70,7 @@
         <platform.check.fail-findbugs>false</platform.check.fail-findbugs>
 
         <dep.jetty.version>9.2.6.v20141205</dep.jetty.version>
-        <dep.slf4j.version>1.7.7</dep.slf4j.version>
+        <dep.slf4j.version>1.7.8</dep.slf4j.version>
         <dep.logback.version>1.1.2</dep.logback.version>
         <dep.javax-servlet.version>3.1.0</dep.javax-servlet.version>
         <dep.jackson.version>2.4.3</dep.jackson.version>
