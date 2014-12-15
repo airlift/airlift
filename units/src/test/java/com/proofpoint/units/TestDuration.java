@@ -62,7 +62,7 @@ public class TestDuration
 //    @Test(dataProvider = "conversions")
 //    public void testConversions(TimeUnit unit, TimeUnit toTimeUnit, double factor)
 //    {
-//        Duration duration = new Duration(1, unit).convertTo(toTimeUnit);
+//        Duration duration = new Duration(1, unit).getValue(toTimeUnit);
 //        assertEquals(duration.getUnit(), toTimeUnit);
 //        assertEquals(duration.getValue(), factor, factor * 0.001);
 //        assertEquals(duration.getValue(toTimeUnit), factor, factor * 0.001);
@@ -231,7 +231,7 @@ public class TestDuration
 
         Duration duration = new Duration(42, MILLISECONDS);
         try {
-            duration.convertTo(null);
+            duration.getValue(null);
             fail("Expected NullPointerException");
         }
         catch (NullPointerException e) {

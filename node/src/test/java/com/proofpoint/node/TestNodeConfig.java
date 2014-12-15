@@ -44,9 +44,7 @@ public class TestNodeConfig
                 .setNodeInternalHostname(null)
                 .setNodeBindIp((String) null)
                 .setNodeExternalAddress(null)
-                .setLocation(null)
-                .setBinarySpec(null)
-                .setConfigSpec(null));
+                .setLocation(null));
     }
 
     @Test
@@ -61,8 +59,6 @@ public class TestNodeConfig
                 .put("node.bind-ip", "10.11.12.13")
                 .put("node.external-address", "external")
                 .put("node.location", "location")
-                .put("node.binary-spec", "binary")
-                .put("node.config-spec", "config")
                 .build();
 
         NodeConfig expected = new NodeConfig()
@@ -73,9 +69,7 @@ public class TestNodeConfig
                 .setNodeInternalHostname("local.hostname")
                 .setNodeBindIp(InetAddresses.forString("10.11.12.13"))
                 .setNodeExternalAddress("external")
-                .setLocation("location")
-                .setBinarySpec("binary")
-                .setConfigSpec("config");
+                .setLocation("location");
 
         assertFullMapping(properties, expected);
     }

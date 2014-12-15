@@ -79,24 +79,6 @@ public class Bootstrap
     private boolean initialized = false;
     private final String applicationName;
 
-    /**
-     * @deprecated Use <tt>Bootstrap.bootstrapApplication(String).withModules(Module...)</tt> instead.
-     */
-    @Deprecated
-    public Bootstrap(Module... modules)
-    {
-        this(ImmutableList.copyOf(modules));
-    }
-
-    /**
-     * @deprecated Use <tt>Bootstrap.bootstrapApplication(String).withModules(Iterable &lt;? extends Module>&gt;)</tt> instead.
-     */
-    @Deprecated
-    public Bootstrap(Iterable<? extends Module> modules)
-    {
-        this("legacy-app", modules, true);
-    }
-
     public static BootstrapBeforeModules bootstrapApplication(String applicationName)
     {
         return new BootstrapBeforeModules(applicationName);

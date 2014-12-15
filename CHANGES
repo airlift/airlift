@@ -1,5 +1,15 @@
 Platform 1.09
 
+* Deprecated APIs removed
+
+  - Bootstrap public constructors
+  - ConfigAssertions.assertDefaults()
+  - ConfigAssertions.assertDeprecatedEquivalence()
+  - "node.binary-spec" and "node.config-spec" configuration options
+  - MeterStat
+  - TimedStat
+  - Duration.convertTo()
+
 * Library upgrades
 
   - slf4j to 1.7.8

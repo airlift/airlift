@@ -18,13 +18,12 @@ package com.proofpoint.node;
 import com.google.common.net.InetAddresses;
 import com.proofpoint.configuration.Config;
 import com.proofpoint.configuration.DefunctConfig;
-import com.proofpoint.configuration.LegacyConfig;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import java.net.InetAddress;
 
-@DefunctConfig({"http-server.ip", "jetty.ip"})
+@DefunctConfig({"http-server.ip", "jetty.ip", "node.binary-spec", "node.config-spec"})
 public class NodeConfig
 {
     public static final String ID_REGEXP = "[A-Za-z0-9][_A-Za-z0-9-]*";
@@ -40,8 +39,6 @@ public class NodeConfig
     private String nodeInternalHostname;
     private String nodeExternalAddress;
     private InetAddress nodeBindIp;
-    private String binarySpec;
-    private String configSpec;
 
     @NotNull
     @Pattern(regexp = ENV_REGEXP, message = "is malformed")
@@ -158,34 +155,6 @@ public class NodeConfig
         if (nodeBindIp != null) {
             this.nodeBindIp = InetAddresses.forString(nodeBindIp);
         }
-        return this;
-    }
-
-    @Deprecated
-    public String getBinarySpec()
-    {
-        return binarySpec;
-    }
-
-    @Config("node.binary-spec")
-    @Deprecated
-    public NodeConfig setBinarySpec(String binarySpec)
-    {
-        this.binarySpec = binarySpec;
-        return this;
-    }
-
-    @Deprecated
-    public String getConfigSpec()
-    {
-        return configSpec;
-    }
-
-    @Config("node.config-spec")
-    @Deprecated
-    public NodeConfig setConfigSpec(String configSpec)
-    {
-        this.configSpec = configSpec;
         return this;
     }
 }

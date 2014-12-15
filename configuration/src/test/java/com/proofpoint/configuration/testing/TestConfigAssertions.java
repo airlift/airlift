@@ -27,14 +27,13 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.proofpoint.configuration.testing.ConfigAssertions.assertDefaults;
 import static com.proofpoint.configuration.testing.ConfigAssertions.assertFullMapping;
 import static com.proofpoint.configuration.testing.ConfigAssertions.assertLegacyEquivalence;
 import static com.proofpoint.configuration.testing.ConfigAssertions.assertRecordedDefaults;
+import static com.proofpoint.configuration.testing.ConfigAssertions.recordDefaults;
 import static com.proofpoint.testing.Assertions.assertContains;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotSame;
@@ -43,27 +42,26 @@ import static org.testng.Assert.fail;
 public class TestConfigAssertions
 {
     @Test
-    public void testDefaults()
+    public void testRecordedDefaults()
+            throws Exception
     {
-        Map<String, Object> expectedAttributeValues = new HashMap<>();
-        expectedAttributeValues.put("Name", "Dain");
-        expectedAttributeValues.put("Email", "dain@proofpoint.com");
-        expectedAttributeValues.put("Phone", null);
-        expectedAttributeValues.put("HomePage", URI.create("http://iq80.com"));
-        assertDefaults(expectedAttributeValues, PersonConfig.class);
+        assertRecordedDefaults(recordDefaults(PersonConfig.class)
+                .setName("Dain")
+                .setEmail("dain@proofpoint.com")
+                .setPhone(null)
+                .setHomePage(URI.create("http://iq80.com")));
     }
 
     @Test
-    public void testDefaultsFailNotDefault()
+    public void testRecordedDefaultsFailNotDefault()
     {
         boolean pass = true;
         try {
-            Map<String, Object> expectedAttributeValues = new HashMap<>();
-            expectedAttributeValues.put("Name", "Dain");
-            expectedAttributeValues.put("Email", "dain@proofpoint.com");
-            expectedAttributeValues.put("Phone", "42");
-            expectedAttributeValues.put("HomePage", URI.create("http://iq80.com"));
-            assertDefaults(expectedAttributeValues, PersonConfig.class);
+            assertRecordedDefaults(recordDefaults(PersonConfig.class)
+                    .setName("Dain")
+                    .setEmail("dain@proofpoint.com")
+                    .setPhone("42")
+                    .setHomePage(URI.create("http://iq80.com")));
         }
         catch (AssertionError e) {
             // expected
@@ -77,16 +75,15 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testDefaultsFailNotDefaultWithNullAttribute()
+    public void testRecordedDefaultsFailNotDefaultWithNullAttribute()
     {
         boolean pass = true;
         try {
-            Map<String, Object> expectedAttributeValues = new HashMap<>();
-            expectedAttributeValues.put("Name", "Dain");
-            expectedAttributeValues.put("Email", "dain@proofpoint.com");
-            expectedAttributeValues.put("Phone", null);
-            expectedAttributeValues.put("HomePage", URI.create("http://example.com"));
-            assertDefaults(expectedAttributeValues, PersonConfig.class);
+            assertRecordedDefaults(recordDefaults(PersonConfig.class)
+                    .setName("Dain")
+                    .setEmail("dain@proofpoint.com")
+                    .setPhone(null)
+                    .setHomePage(URI.create("http://example.com")));
         }
         catch (AssertionError e) {
             // expected
@@ -100,39 +97,14 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testDefaultsFailUnsupportedAttribute()
+    public void testRecordedDefaultsFailUntestedAttribute()
     {
         boolean pass = true;
         try {
-            Map<String, Object> expectedAttributeValues = new HashMap<>();
-            expectedAttributeValues.put("Name", "Dain");
-            expectedAttributeValues.put("Email", "dain@proofpoint.com");
-            expectedAttributeValues.put("Phone", null);
-            expectedAttributeValues.put("HomePage", URI.create("http://iq80.com"));
-            expectedAttributeValues.put("UnsupportedAttribute", "value");
-            assertDefaults(expectedAttributeValues, PersonConfig.class);
-        }
-        catch (AssertionError e) {
-            // expected
-            pass = false;
-            assertContains(e.getMessage(), "UnsupportedAttribute");
-        }
-
-        if (pass) {
-            fail("Expected AssertionError");
-        }
-    }
-
-    @Test
-    public void testDefaultsFailUntestedAttribute()
-    {
-        boolean pass = true;
-        try {
-            Map<String, Object> expectedAttributeValues = new HashMap<>();
-            expectedAttributeValues.put("Name", "Dain");
-            expectedAttributeValues.put("Email", "dain@proofpoint.com");
-            expectedAttributeValues.put("Phone", null);
-            assertDefaults(expectedAttributeValues, PersonConfig.class);
+            assertRecordedDefaults(recordDefaults(PersonConfig.class)
+                    .setName("Dain")
+                    .setEmail("dain@proofpoint.com")
+                    .setPhone(null));
         }
         catch (AssertionError e) {
             // expected
@@ -147,15 +119,15 @@ public class TestConfigAssertions
 
     @Test
     public void testDefaultsFailDeprecatedAttribute()
+            throws MalformedURLException
     {
         boolean pass = true;
         try {
-            Map<String, Object> expectedAttributeValues = new HashMap<>();
-            expectedAttributeValues.put("Name", "Dain");
-            expectedAttributeValues.put("Email", "dain@proofpoint.com");
-            expectedAttributeValues.put("Phone", null);
-            expectedAttributeValues.put("HomePageUrl", URI.create("http://iq80.com"));
-            assertDefaults(expectedAttributeValues, PersonConfig.class);
+            assertRecordedDefaults(recordDefaults(PersonConfig.class)
+                    .setName("Dain")
+                    .setEmail("dain@proofpoint.com")
+                    .setPhone("42")
+                    .setHomePageUrl(URI.create("http://iq80.com").toURL()));
         }
         catch (AssertionError e) {
             // expected
@@ -428,7 +400,7 @@ public class TestConfigAssertions
     public void testRecordDefaults()
             throws Exception
     {
-        PersonConfig config = ConfigAssertions.recordDefaults(PersonConfig.class)
+        PersonConfig config = recordDefaults(PersonConfig.class)
                 .setName("Alice Apple")
                 .setEmail("alice@example.com")
                 .setPhone("1-976-alice")
@@ -457,21 +429,10 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testRecordedDefaults()
-            throws Exception
-    {
-        assertRecordedDefaults(ConfigAssertions.recordDefaults(PersonConfig.class)
-                .setName("Dain")
-                .setEmail("dain@proofpoint.com")
-                .setPhone(null)
-                .setHomePage(URI.create("http://iq80.com")));
-    }
-
-    @Test
     public void testRecordedDefaultsOneOfEverything()
             throws Exception
     {
-        assertRecordedDefaults(ConfigAssertions.recordDefaults(Config1.class)
+        assertRecordedDefaults(recordDefaults(Config1.class)
                 .setBooleanOption(false)
                 .setBoxedBooleanOption(null)
                 .setBoxedByteOption(null)
@@ -499,7 +460,7 @@ public class TestConfigAssertions
     {
         boolean pass = true;
         try {
-            assertRecordedDefaults(ConfigAssertions.recordDefaults(PersonConfig.class)
+            assertRecordedDefaults(recordDefaults(PersonConfig.class)
                     .setName("Dain")
                     .setEmail("dain@proofpoint.com")
                     .setPhone(null)
@@ -521,7 +482,7 @@ public class TestConfigAssertions
     {
         boolean pass = true;
         try {
-            PersonConfig config = ConfigAssertions.recordDefaults(PersonConfig.class)
+            PersonConfig config = recordDefaults(PersonConfig.class)
                     .setName("Dain")
                     .setEmail("dain@proofpoint.com")
                     .setPhone(null)

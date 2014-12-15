@@ -57,57 +57,6 @@ public final class ConfigAssertions
     {
     }
 
-    /**
-     * @deprecated Replaced by {@link #assertRecordedDefaults(T)}
-     */
-    @Deprecated
-    public static <T> void assertDefaults(Map<String, Object> expectedAttributeValues, Class<T> configClass)
-    {
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getValidConfigurationMetadata(configClass);
-
-        // verify all supplied attributes are supported
-        if (!metadata.getAttributes().keySet().containsAll(expectedAttributeValues.keySet())) {
-            TreeSet<String> unsupportedAttributes = new TreeSet<>(expectedAttributeValues.keySet());
-            unsupportedAttributes.removeAll(metadata.getAttributes().keySet());
-            fail("Unsupported attributes: " + unsupportedAttributes);
-        }
-
-        // verify all supplied attributes are supported not deprecated
-        Set<String> nonDeprecatedAttributes = new TreeSet<>();
-        for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-            if (attribute.getInjectionPoint().getProperty() != null) {
-                nonDeprecatedAttributes.add(attribute.getName());
-            }
-        }
-        if (!nonDeprecatedAttributes.containsAll(expectedAttributeValues.keySet())) {
-            TreeSet<String> unsupportedAttributes = new TreeSet<>(expectedAttributeValues.keySet());
-            unsupportedAttributes.removeAll(nonDeprecatedAttributes);
-            fail("Deprecated attributes: " + unsupportedAttributes);
-        }
-
-        // verify all attributes are tested
-        if (!expectedAttributeValues.keySet().containsAll(nonDeprecatedAttributes)) {
-            TreeSet<String> untestedAttributes = new TreeSet<>(nonDeprecatedAttributes);
-            untestedAttributes.removeAll(expectedAttributeValues.keySet());
-            fail("Untested attributes: " + untestedAttributes);
-        }
-
-        // create an uninitialized default instance
-        T actual = newDefaultInstance(configClass);
-
-        // verify each attribute is either the supplied default value
-        for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-            Method getter = attribute.getGetter();
-            if (getter == null) {
-                continue;
-            }
-            Object actualAttributeValue = invoke(actual, getter);
-            Object expectedAttributeValue = expectedAttributeValues.get(attribute.getName());
-
-            assertEquals(expectedAttributeValue, actualAttributeValue, "Default value for " + attribute.getName());
-        }
-    }
-
     public static <T> void assertFullMapping(Map<String, String> properties, T expected)
     {
         assertNotNull(properties, "properties");
@@ -168,17 +117,6 @@ public final class ConfigAssertions
         }
         return false;
     }
-
-    /**
-     * @deprecated Renamed to {@link #assertLegacyEquivalence(Class, java.util.Map, java.util.Map[])}
-     */
-    @SafeVarargs
-    @Deprecated
-    public static <T> void assertDeprecatedEquivalence(Class<T> configClass, Map<String, String> currentProperties, Map<String, String>... oldPropertiesList)
-    {
-        assertLegacyEquivalence(configClass, currentProperties, oldPropertiesList);
-    }
-
 
     @SafeVarargs
     public static <T> void assertLegacyEquivalence(Class<T> configClass, Map<String, String> currentProperties, Map<String, String>... oldPropertiesList)
@@ -350,7 +288,48 @@ public final class ConfigAssertions
             fail("Invoked setter without @Config: " + invalidInvocations);
 
         }
-        assertDefaults(attributeValues, configClass);
+
+        // verify all supplied attributes are supported
+        if (!metadata.getAttributes().keySet().containsAll(attributeValues.keySet())) {
+            TreeSet<String> unsupportedAttributes = new TreeSet<>(attributeValues.keySet());
+            unsupportedAttributes.removeAll(metadata.getAttributes().keySet());
+            fail("Unsupported attributes: " + unsupportedAttributes);
+        }
+
+        // verify all supplied attributes are supported not deprecated
+        Set<String> nonDeprecatedAttributes = new TreeSet<>();
+        for (AttributeMetadata attribute : metadata.getAttributes().values()) {
+            if (attribute.getInjectionPoint().getProperty() != null) {
+                nonDeprecatedAttributes.add(attribute.getName());
+            }
+        }
+        if (!nonDeprecatedAttributes.containsAll(attributeValues.keySet())) {
+            TreeSet<String> unsupportedAttributes = new TreeSet<>(attributeValues.keySet());
+            unsupportedAttributes.removeAll(nonDeprecatedAttributes);
+            fail("Deprecated attributes: " + unsupportedAttributes);
+        }
+
+        // verify all attributes are tested
+        if (!attributeValues.keySet().containsAll(nonDeprecatedAttributes)) {
+            TreeSet<String> untestedAttributes = new TreeSet<>(nonDeprecatedAttributes);
+            untestedAttributes.removeAll(attributeValues.keySet());
+            fail("Untested attributes: " + untestedAttributes);
+        }
+
+        // create an uninitialized default instance
+        T actual = newDefaultInstance(configClass);
+
+        // verify each attribute is either the supplied default value
+        for (AttributeMetadata attribute : metadata.getAttributes().values()) {
+            Method getter = attribute.getGetter();
+            if (getter == null) {
+                continue;
+            }
+            Object actualAttributeValue = invoke(actual, getter);
+            Object expectedAttributeValue = attributeValues.get(attribute.getName());
+
+            assertEquals(expectedAttributeValue, actualAttributeValue, "Default value for " + attribute.getName());
+        }
     }
 
     public static <T> T recordDefaults(Class<T> type)

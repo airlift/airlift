@@ -47,8 +47,6 @@ public class NodeInfo
     private final String pool;
     private final String nodeId;
     private final String location;
-    private final String binarySpec;
-    private final String configSpec;
     private final String instanceId = UUID.randomUUID().toString();
     private final InetAddress internalIp;
     private final String internalHostname;
@@ -72,12 +70,14 @@ public class NodeInfo
                 config.getNodeInternalHostname(),
                 config.getNodeBindIp(),
                 config.getNodeExternalAddress(),
-                config.getLocation(),
-                config.getBinarySpec(),
-                config.getConfigSpec()
+                config.getLocation()
         );
     }
 
+    /**
+     * @deprecated Replaced by {@link #NodeInfo(String, String, String, String, InetAddress, String, InetAddress, String, String)}.
+     */
+    @Deprecated
     public NodeInfo(String application,
             String environment,
             String pool,
@@ -89,6 +89,19 @@ public class NodeInfo
             String location,
             String binarySpec,
             String configSpec)
+    {
+        this(application, environment, pool, nodeId, internalIp, internalHostname, bindIp, externalAddress, location);
+    }
+
+    public NodeInfo(String application,
+            String environment,
+            String pool,
+            String nodeId,
+            InetAddress internalIp,
+            String internalHostname,
+            InetAddress bindIp,
+            String externalAddress,
+            String location)
     {
         checkNotNull(application, "application is null");
         checkNotNull(environment, "environment is null");
@@ -114,9 +127,6 @@ public class NodeInfo
         else {
             this.location = "/" + this.nodeId;
         }
-
-        this.binarySpec = binarySpec;
-        this.configSpec = configSpec;
 
         if (internalIp != null) {
             this.internalIp = internalIp;
@@ -196,20 +206,22 @@ public class NodeInfo
 
     /**
      * Binary this JavaVM is running.
+     * @deprecated Always null.
      */
-    @Managed
+    @Deprecated
     public String getBinarySpec()
     {
-        return binarySpec;
+        return null;
     }
 
     /**
      * Configuration this JavaVM is running.
+     * @deprecated Always null.
      */
-    @Managed
+    @Deprecated
     public String getConfigSpec()
     {
-        return configSpec;
+        return null;
     }
 
     /**

@@ -90,15 +90,6 @@ public final class Duration implements Comparable<Duration>
         return (long) rounded;
     }
 
-    /**
-     * @deprecated Use {@link #getValue(TimeUnit)} or {@link #roundTo(TimeUnit)} instead
-     */
-    @Deprecated
-    public double convertTo(TimeUnit timeUnit)
-    {
-        return getValue(timeUnit);
-    }
-
     public Duration convertToMostSuccinctTimeUnit()
     {
         TimeUnit unitToUse = NANOSECONDS;
