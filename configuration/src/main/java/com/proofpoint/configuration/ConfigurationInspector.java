@@ -28,8 +28,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.SortedSet;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Objects.firstNonNull;
 import static com.proofpoint.configuration.ConfigurationMetadata.isConfigClass;
 
 public class ConfigurationInspector

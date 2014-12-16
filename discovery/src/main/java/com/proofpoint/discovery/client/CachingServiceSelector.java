@@ -21,7 +21,7 @@ import com.proofpoint.node.NodeInfo;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
+import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class CachingServiceSelector

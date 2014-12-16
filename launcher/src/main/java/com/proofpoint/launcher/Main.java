@@ -46,7 +46,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
+import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @SuppressFBWarnings(value = "DM_EXIT", justification = "Need to return specific exit codes")
