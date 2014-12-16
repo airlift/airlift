@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Objects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 

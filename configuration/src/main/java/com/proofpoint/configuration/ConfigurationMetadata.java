@@ -15,6 +15,7 @@
  */
 package com.proofpoint.configuration;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableSet;
@@ -37,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.proofpoint.configuration.TypeParameterUtils.getTypeParameters;
 
 public class ConfigurationMetadata<T>
@@ -383,7 +383,7 @@ public class ConfigurationMetadata<T>
     @Override
     public String toString()
     {
-        return toStringHelper(this)
+        return Objects.toStringHelper(this)
                 .add("configClass", configClass)
                 .toString();
     }
@@ -581,7 +581,7 @@ public class ConfigurationMetadata<T>
         @Override
         public String toString()
         {
-            return toStringHelper(this)
+            return Objects.toStringHelper(this)
                     .add("name", name)
                     .toString();
         }

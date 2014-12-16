@@ -2,17 +2,17 @@ package com.proofpoint.stats;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import org.weakref.jmx.Managed;
 
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.google.common.base.MoreObjects.toStringHelper;
 
 @ThreadSafe
 public class Distribution
@@ -323,7 +323,7 @@ public class Distribution
         @Override
         public String toString()
         {
-            return toStringHelper(this)
+            return Objects.toStringHelper(this)
                     .add("maxError", maxError)
                     .add("count", count)
                     .add("total", total)

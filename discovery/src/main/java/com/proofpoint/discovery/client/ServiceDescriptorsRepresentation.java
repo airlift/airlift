@@ -17,12 +17,11 @@ package com.proofpoint.discovery.client;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;
-
-import static com.google.common.base.MoreObjects.toStringHelper;
 
 public class ServiceDescriptorsRepresentation
 {
@@ -54,7 +53,7 @@ public class ServiceDescriptorsRepresentation
     @Override
     public String toString()
     {
-        return toStringHelper(this)
+        return Objects.toStringHelper(this)
                 .add("environment", environment)
                 .add("serviceDescriptors", serviceDescriptors)
                 .toString();

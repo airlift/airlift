@@ -5,7 +5,7 @@ import com.proofpoint.event.client.EventType;
 
 import java.util.Objects;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Objects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @EventType("Person")

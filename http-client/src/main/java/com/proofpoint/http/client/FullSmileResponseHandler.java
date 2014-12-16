@@ -19,6 +19,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
+import com.google.common.base.Objects;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableListMultimap;
@@ -32,7 +33,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.proofpoint.http.client.ResponseHandlerUtils.propagate;
 
@@ -176,7 +176,7 @@ public class FullSmileResponseHandler<T>
         @Override
         public String toString()
         {
-            return toStringHelper(this)
+            return Objects.toStringHelper(this)
                     .add("statusCode", statusCode)
                     .add("statusMessage", statusMessage)
                     .add("headers", headers)

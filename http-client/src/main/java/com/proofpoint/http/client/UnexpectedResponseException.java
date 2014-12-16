@@ -16,12 +16,11 @@
 package com.proofpoint.http.client;
 
 import com.google.common.annotations.Beta;
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 
 import java.util.List;
-
-import static com.google.common.base.MoreObjects.toStringHelper;
 
 @Beta
 public class UnexpectedResponseException extends RuntimeException
@@ -85,7 +84,7 @@ public class UnexpectedResponseException extends RuntimeException
     @Override
     public String toString()
     {
-        return toStringHelper(this)
+        return Objects.toStringHelper(this)
                 .add("request", request)
                 .add("statusCode", statusCode)
                 .add("statusMessage", statusMessage)

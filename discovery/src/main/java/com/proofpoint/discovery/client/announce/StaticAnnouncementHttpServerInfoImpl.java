@@ -15,11 +15,11 @@
  */
 package com.proofpoint.discovery.client.announce;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.proofpoint.discovery.client.announce.AnnouncementHttpServerInfo;
 
 import java.net.URI;
-
-import static com.google.common.base.MoreObjects.toStringHelper;
 
 public class StaticAnnouncementHttpServerInfoImpl implements AnnouncementHttpServerInfo
 {
@@ -61,7 +61,7 @@ public class StaticAnnouncementHttpServerInfoImpl implements AnnouncementHttpSer
     @Override
     public String toString()
     {
-        return toStringHelper(this)
+        return Objects.toStringHelper(this)
                 .add("httpUri", httpUri)
                 .add("httpExternalUri", httpExternalUri)
                 .add("httpsUri", httpsUri)

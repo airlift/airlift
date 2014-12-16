@@ -17,6 +17,7 @@ package com.proofpoint.stats;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 import com.proofpoint.stats.TimeDistribution.TimeDistributionSnapshot;
 import com.proofpoint.units.Duration;
@@ -26,7 +27,6 @@ import org.weakref.jmx.Nested;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class TimeStat
@@ -198,7 +198,7 @@ public class TimeStat
         @Override
         public String toString()
         {
-            return toStringHelper(this)
+            return Objects.toStringHelper(this)
                     .add("oneMinute", oneMinute)
                     .add("fiveMinute", fiveMinute)
                     .add("fifteenMinute", fifteenMinute)

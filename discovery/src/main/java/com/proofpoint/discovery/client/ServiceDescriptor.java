@@ -17,14 +17,13 @@ package com.proofpoint.discovery.client;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.proofpoint.node.NodeInfo;
 
 import java.util.Map;
 import java.util.UUID;
-
-import static com.google.common.base.MoreObjects.toStringHelper;
 
 public class ServiceDescriptor
 {
@@ -127,7 +126,7 @@ public class ServiceDescriptor
     @Override
     public String toString()
     {
-        return toStringHelper(this)
+        return Objects.toStringHelper(this)
                 .add("id", id)
                 .add("nodeId", nodeId)
                 .add("type", type)

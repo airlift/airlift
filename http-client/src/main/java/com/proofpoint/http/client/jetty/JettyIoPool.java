@@ -1,5 +1,6 @@
 package com.proofpoint.http.client.jetty;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -16,8 +17,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-
-import static com.google.common.base.MoreObjects.toStringHelper;
 
 public class JettyIoPool
         implements Closeable
@@ -97,7 +96,7 @@ public class JettyIoPool
     @Override
     public String toString()
     {
-        return toStringHelper(this)
+        return Objects.toStringHelper(this)
                 .add("name", name)
                 .toString();
     }
