@@ -974,6 +974,7 @@
             <properties>
                 <skipTests>true</skipTests>
                 <!-- tests run in the preparation step of the release -->
+                <platform.check.skip-extended>true</platform.check.skip-extended>
             </properties>
             <build>
                 <plugins>
