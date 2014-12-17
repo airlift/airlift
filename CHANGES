@@ -10,6 +10,10 @@ Platform 1.09
   - TimedStat
   - Duration.convertTo()
 
+* Guava 17 compatibility
+
+  We reverted use of features preventing running with Guava 17.
+
 * Library upgrades
 
   - slf4j to 1.7.8
