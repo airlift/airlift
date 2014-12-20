@@ -22,9 +22,10 @@ import com.proofpoint.configuration.ConfigSecuritySensitive;
 import javax.validation.constraints.NotNull;
 
 /**
- * Configuration for (@see H2EmbeddedDataSource}.
- * </p>
- * The configuration options can be chained as follows:<br>
+ * Configuration for {@link H2EmbeddedDataSource}.
+ * <p>
+ * The configuration options can be chained as follows:
+ * <pre>
  * {@code
  *     H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
  *             .setUsername("username")
@@ -34,6 +35,7 @@ import javax.validation.constraints.NotNull;
  *             .setFilename(fileName)
  *             .setInitScript("src/test/db/h2.ddl");
  * }
+ * </pre>
  */
 public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2EmbeddedDataSourceConfig>
 {
@@ -115,7 +117,7 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2Embedd
      * and number literals are allowed in SQL statements. However, this enables
      * SQL injection if the application dynamically builds SQL statements. SQL
      * injection is not possible if user data is set using parameters ('?').
-     * <p/>
+     * <p>
      * NONE means literals of any kind are not allowed, only parameters and
      * constants are allowed. NUMBERS mean only numerical and boolean literals
      * are allowed. ALL means all literals are allowed (default).
@@ -138,7 +140,7 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2Embedd
     /**
      * Sets the compression algorithm for BLOB and CLOB data. Compression is
      * usually slower, but needs less disk space. LZF is faster but uses more space.
-     * </p>
+     * <p>
      * Allowed values are "NO", "LZF" and "DEFLATE"
      */
     public CompressLob getCompressLob()

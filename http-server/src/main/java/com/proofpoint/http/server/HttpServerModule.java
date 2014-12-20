@@ -29,23 +29,27 @@ import javax.servlet.Filter;
 import static com.proofpoint.reporting.ReportBinder.reportBinder;
 
 /**
- * Provides a fully configured instance of an http server,
- * ready to use with Guice (via {@link com.sun.jersey.guice.spi.container.servlet.GuiceContainer})
- * <p/>
+ * Provides a fully configured instance of an HTTP server,
+ * ready to use with Guice.
+ * <p>
  * Features:
- *    - HTTP/HTTPS
- *    - Basic Auth
- *    - Request logging
- *    - JMX
- *
+ * <ul>
+ * <li>HTTP/HTTPS</li>
+ * <li>Basic Auth</li>
+ * <li>Request logging</li>
+ * <li>JMX</li>
+ * </ul>
  * Configuration options are provided via {@link HttpServerConfig}
- * <p/>
+ * <p>
  * To enable JMX, an {@link javax.management.MBeanServer} must be bound elsewhere
+ * <p>
  * To enable Basic Auth, a {@link org.eclipse.jetty.security.LoginService} must be bound elsewhere
- * <p/>
- * To enable HTTPS, HttpServerConfig.isHttpsEnabled() must return true and HttpServerConfig.getKeystorePath() and
- * HttpServerConfig.getKeystorePassword() must return the path to the keystore containing the ssl cert & the password to the
- * keystore, respectively. The https port is specified via HttpServerConfig.getHttpsPort()
+ * <p>
+ * To enable HTTPS, {@link HttpServerConfig#isHttpsEnabled()} must return true
+ * and {@link HttpServerConfig#getKeystorePath()}
+ * and {@link HttpServerConfig#getKeystorePassword()} must return the path to
+ * the keystore containing the SSL cert and the password to the keystore, respectively.
+ * The HTTPS port is specified via {@link HttpServerConfig#getHttpsPort()}.
  */
 public class HttpServerModule
         implements Module

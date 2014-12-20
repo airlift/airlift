@@ -142,7 +142,7 @@ public class QuantileDigest
     }
 
     /**
-     * Adds a value to this digest. The value must be >= 0
+     * Adds a value to this digest. The value must be {@code >= 0}
      */
     public void add(long value, long count)
     {

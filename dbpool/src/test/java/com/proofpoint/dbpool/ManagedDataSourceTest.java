@@ -138,10 +138,12 @@ public class ManagedDataSourceTest
 
     /**
      * Verify adjustment of connection count limits.
-     * </p> 1) Test initial limit
-     * </p> 2) Test limit increase
-     * </p> 3) Test decrease below current checkout
-     * </p> 4) Verify handling of illegal values
+     * <ol>
+     * <li>Test initial limit</li>
+     * <li>Test limit increase</li>
+     * <li>Test decrease below current checkout</li>
+     * <li>Verify handling of illegal values</li>
+     * </ol>
      */
     @Test
     public void testMaxConnections()

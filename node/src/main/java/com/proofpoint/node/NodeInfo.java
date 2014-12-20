@@ -271,7 +271,7 @@ public class NodeInfo
     /**
      * The address to use when contacting this server from an external network.  If possible, ip address should be globally
      * routable.  The address is returned as a string because the name may not be resolvable from the local machine.
-     * <p/>
+     * <p>
      * If this is not set, the internal ip is used.
      */
     @Managed
