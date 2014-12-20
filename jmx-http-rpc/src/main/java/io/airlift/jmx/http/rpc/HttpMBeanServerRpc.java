@@ -77,7 +77,7 @@ class HttpMBeanServerRpc
     /**
      * Implements the "base64" binary encoding scheme as defined by
      * <a href="http://tools.ietf.org/html/rfc2045">RFC 2045</a>.
-     * <p/>
+     * <p>
      * Portions of code here are taken from Apache Pivot
      */
     private static final char[] lookup = new char[64];

@@ -22,20 +22,21 @@ import io.airlift.units.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Basic configuration for {@see ManagedDataSource}.
- * </p>
- * The configuration options can be chained as follows:<br>
+ * Basic configuration for {@link ManagedDataSource}.
+ * <p>
+ * The configuration options can be chained as follows:
+ * <pre>
  * {@code
  *     ManagedDataSourceConfig config = new ManagedDataSourceConfig()
  *             .setMaxConnections(20)
  *             .setMaxConnectionWait(new Duration(20, TimeUnit.MILLISECONDS));
  * }
- *
+ *</pre>
  * @param <T> The type current class or subclass, which is used for method chaining
- * <p/>
- * Implementation Note:</br>
+ * <p>
+ * Implementation Note:<br>
  * The generic type T is used for method chaining.  A sub class should declare
- * the Class as follows:</br>
+ * the Class as follows:<br>
  * {@code MyDataSourceConfig extends ManagedDataSourceConfig<MyDataSourceConfig>}
  */
 @DefunctConfig({"db.username", "db.password"})

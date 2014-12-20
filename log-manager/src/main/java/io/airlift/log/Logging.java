@@ -41,9 +41,9 @@ import java.util.logging.LogManager;
 
 /**
  * Initializes the logging subsystem.
- * <p/>
- * java.util.Logging, System.out & System.err are tunneled through the logging system.
- * <p/>
+ * <p>
+ * java.util.Logging, System.out and System.err are tunneled through the logging system.
+ * <p>
  * System.out and System.err are assigned to loggers named "stdout" and "stderr", respectively.
  */
 public class Logging
@@ -66,9 +66,11 @@ public class Logging
 
     /**
      * Sets up default logging:
-     * <p/>
+     * <p>
      * - INFO level
      * - Log entries are written to stderr
+     *
+     * @return the logging system singleton
      */
     public static synchronized Logging initialize()
     {

@@ -54,7 +54,7 @@ import static com.google.common.collect.Maps.fromProperties;
 
 /**
  * Entry point for an application built using the platform codebase.
- * <p/>
+ * <p>
  * This class will:
  * <ul>
  *  <li>load, validate and bind configurations</li>
