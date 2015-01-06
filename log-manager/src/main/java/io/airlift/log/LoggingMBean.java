@@ -15,58 +15,76 @@
  */
 package io.airlift.log;
 
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.LoggerContext;
-import org.slf4j.LoggerFactory;
 import org.weakref.jmx.Managed;
 
+import java.util.Collections;
+import java.util.Locale;
 import java.util.Map;
-
-import static ch.qos.logback.classic.Level.toLevel;
-import static com.google.common.collect.Maps.newTreeMap;
-import static org.slf4j.Logger.ROOT_LOGGER_NAME;
+import java.util.TreeMap;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
 public class LoggingMBean
 {
+    private static final String ROOT_LOGGER_NAME = "";
+
     @Managed
+    @SuppressWarnings("MethodMayBeStatic")
     public String getLevel(String loggerName)
     {
-        return getLogger(loggerName).getEffectiveLevel().toString();
+        return getEffectiveLevel(getLogger(loggerName)).toString();
     }
 
     @Managed
+    @SuppressWarnings("MethodMayBeStatic")
     public void setLevel(String loggerName, String newLevel)
     {
-        getLogger(loggerName).setLevel(toLevel(newLevel));
+        getLogger(loggerName).setLevel(Level.valueOf(newLevel.toUpperCase(Locale.US)).toJulLevel());
     }
 
     @Managed
     public String getRootLevel()
     {
-        return getLogger(ROOT_LOGGER_NAME).getEffectiveLevel().toString();
+        return getLevel(ROOT_LOGGER_NAME);
     }
 
     @Managed
     public void setRootLevel(String newLevel)
     {
-        getLogger(ROOT_LOGGER_NAME).setLevel(toLevel(newLevel));
+        setLevel(ROOT_LOGGER_NAME, newLevel);
     }
 
     @Managed
+    @SuppressWarnings("MethodMayBeStatic")
     public Map<String, String> getAllLevels()
     {
-        Map<String, String> levels = newTreeMap();
-        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        for (Logger logger : context.getLoggerList()) {
-            if (logger.getLevel() != null) {
-                levels.put(logger.getName(), logger.getLevel().toString());
+        Map<String, String> levels = new TreeMap<>();
+        for (String loggerName : Collections.list(LogManager.getLogManager().getLoggerNames())) {
+            java.util.logging.Level level = getLogger(loggerName).getLevel();
+            if (level != null) {
+                levels.put(loggerName, Level.fromJulLevel(level).toString());
             }
         }
         return levels;
     }
 
-    private static Logger getLogger(String name)
+    private static Level getEffectiveLevel(Logger logger)
     {
-        return (Logger) LoggerFactory.getLogger(name);
+        java.util.logging.Level level = logger.getLevel();
+        if (level == null) {
+            Logger parent = logger.getParent();
+            if (parent != null) {
+                return getEffectiveLevel(parent);
+            }
+        }
+        if (level == null) {
+            return Level.OFF;
+        }
+        return Level.fromJulLevel(level);
+    }
+
+    private static java.util.logging.Logger getLogger(String name)
+    {
+        return java.util.logging.Logger.getLogger(name);
     }
 }

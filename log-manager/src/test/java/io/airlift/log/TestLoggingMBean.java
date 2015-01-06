@@ -22,10 +22,11 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 public class TestLoggingMBean
 {
-    private final LoggingMBean logging = new LoggingMBean();
+    private final LoggingMBean logging = new LoggingMBean(Logging.initialize());
     private String rootLevel;
 
     @BeforeMethod
@@ -72,7 +73,12 @@ public class TestLoggingMBean
     public void testSetInvalidLevel()
     {
         assertEquals(logging.getRootLevel(), "INFO");
-        logging.setRootLevel("FOO");
-        assertEquals(logging.getRootLevel(), "DEBUG");
+        try {
+            logging.setRootLevel("FOO");
+            fail("Expected IllegalArgumentException");
+        }
+        catch (IllegalArgumentException expected) {
+        }
+        assertEquals(logging.getRootLevel(), "INFO");
     }
 }

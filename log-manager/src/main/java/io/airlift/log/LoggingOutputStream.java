@@ -29,7 +29,6 @@ class LoggingOutputStream
 
     public LoggingOutputStream(Logger logger)
     {
-        super();
         this.logger = logger;
         lineSeparator = System.getProperty("line.separator");
     }
@@ -37,12 +36,13 @@ class LoggingOutputStream
     /**
      * write the current buffer contents to the underlying logger.
      */
+    @Override
     public synchronized void flush()
             throws IOException
     {
         super.flush();
         String record = this.toString();
-        super.reset();
+        reset();
 
         if (record.isEmpty() || record.equals(lineSeparator)) {
             // avoid empty records
