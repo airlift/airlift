@@ -15,7 +15,6 @@
  */
 package com.proofpoint.log;
 
-import ch.qos.logback.classic.Level;
 import com.google.inject.Inject;
 
 import java.util.IllegalFormatException;

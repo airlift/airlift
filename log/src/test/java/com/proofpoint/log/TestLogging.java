@@ -24,6 +24,7 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 
+import static com.google.common.io.Files.createTempDir;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -49,16 +50,16 @@ public class TestLogging
     public void testRecoverTempFiles()
             throws IOException
     {
-        LoggingConfiguration    configuration = new LoggingConfiguration();
+        LoggingConfiguration configuration = new LoggingConfiguration();
         configuration.setLogPath(new File(tempDir, "launcher.log").getPath());
 
-        File                    logFile1 = new File(tempDir, "test1.log");
+        File logFile1 = new File(tempDir, "test1.log");
         Files.touch(logFile1);
-        File                    logFile2 = new File(tempDir, "test2.log");
+        File logFile2 = new File(tempDir, "test2.log");
         Files.touch(logFile2);
-        File                    tempLogFile1 = new File(tempDir, "temp1.tmp");
+        File tempLogFile1 = new File(tempDir, "temp1.tmp");
         Files.touch(tempLogFile1);
-        File                    tempLogFile2 = new File(tempDir, "temp2.tmp");
+        File tempLogFile2 = new File(tempDir, "temp2.tmp");
         Files.touch(tempLogFile2);
 
         Logging logging = Logging.initialize();
@@ -80,19 +81,19 @@ public class TestLogging
         Logging logging = Logging.initialize();
         Logger logger = Logger.get("testPropagatesLevels");
 
-        logging.setLevel("testPropagatesLevels", Logging.Level.ERROR);
+        logging.setLevel("testPropagatesLevels", Level.ERROR);
         assertFalse(logger.isDebugEnabled());
         assertFalse(logger.isInfoEnabled());
 
-        logging.setLevel("testPropagatesLevels", Logging.Level.WARN);
+        logging.setLevel("testPropagatesLevels", Level.WARN);
         assertFalse(logger.isDebugEnabled());
         assertFalse(logger.isInfoEnabled());
 
-        logging.setLevel("testPropagatesLevels", Logging.Level.INFO);
+        logging.setLevel("testPropagatesLevels", Level.INFO);
         assertFalse(logger.isDebugEnabled());
         assertTrue(logger.isInfoEnabled());
 
-        logging.setLevel("testPropagatesLevels", Logging.Level.DEBUG);
+        logging.setLevel("testPropagatesLevels", Level.DEBUG);
         assertTrue(logger.isDebugEnabled());
         assertTrue(logger.isInfoEnabled());
     }
@@ -104,19 +105,19 @@ public class TestLogging
         Logging logging = Logging.initialize();
         Logger logger = Logger.get("testPropagatesLevelsHierarchical.child");
 
-        logging.setLevel("testPropagatesLevelsHierarchical", Logging.Level.ERROR);
+        logging.setLevel("testPropagatesLevelsHierarchical", Level.ERROR);
         assertFalse(logger.isDebugEnabled());
         assertFalse(logger.isInfoEnabled());
 
-        logging.setLevel("testPropagatesLevelsHierarchical", Logging.Level.WARN);
+        logging.setLevel("testPropagatesLevelsHierarchical", Level.WARN);
         assertFalse(logger.isDebugEnabled());
         assertFalse(logger.isInfoEnabled());
 
-        logging.setLevel("testPropagatesLevelsHierarchical", Logging.Level.INFO);
+        logging.setLevel("testPropagatesLevelsHierarchical", Level.INFO);
         assertFalse(logger.isDebugEnabled());
         assertTrue(logger.isInfoEnabled());
 
-        logging.setLevel("testPropagatesLevelsHierarchical", Logging.Level.DEBUG);
+        logging.setLevel("testPropagatesLevelsHierarchical", Level.DEBUG);
         assertTrue(logger.isDebugEnabled());
         assertTrue(logger.isInfoEnabled());
     }
@@ -128,25 +129,9 @@ public class TestLogging
         Logging logging = Logging.initialize();
         Logger logger = Logger.get("testChildLevelOverridesParent.child");
 
-        logging.setLevel("testChildLevelOverridesParent", Logging.Level.DEBUG);
-        logging.setLevel("testChildLevelOverridesParent.child", Logging.Level.ERROR);
+        logging.setLevel("testChildLevelOverridesParent", Level.DEBUG);
+        logging.setLevel("testChildLevelOverridesParent.child", Level.ERROR);
         assertFalse(logger.isDebugEnabled());
         assertFalse(logger.isInfoEnabled());
-    }
-
-
-    private File createTempDir()
-            throws IOException
-    {
-        File dir = File.createTempFile("temp", "_dir");
-
-        if (!dir.delete()) {
-            throw new IOException("Could not delete temp file: " + dir.getAbsolutePath());
-        }
-        if (!dir.mkdirs()) {
-            throw new IOException("Could not create temp dir: " + dir.getAbsolutePath());
-        }
-
-        return dir;
     }
 }

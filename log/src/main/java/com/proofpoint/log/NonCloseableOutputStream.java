@@ -22,7 +22,7 @@ import java.io.OutputStream;
  * To get around the fact that logback closes all appenders, which close their underlying streams,
  * whenever context.reset() is called
  */
-public class NonCloseableOutputStream
+class NonCloseableOutputStream
     extends OutputStream
 {
     private final OutputStream delegate;

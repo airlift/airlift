@@ -15,8 +15,8 @@
  */
 package com.proofpoint.http.server;
 
-import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.core.Appender;
+import ch.qos.logback.core.ContextBase;
 import ch.qos.logback.core.encoder.EncoderBase;
 import com.proofpoint.log.Logging;
 import org.eclipse.jetty.server.Request;
@@ -52,7 +52,7 @@ class DelimitedRequestLog
     {
         this.currentTimeMillisProvider = currentTimeMillisProvider;
 
-        appender = Logging.createFileAppender(filename, maxHistory, maxSizeInBytes, new EventEncoder(), new LoggerContext());
+        appender = Logging.createFileAppender(filename, maxHistory, maxSizeInBytes, new EventEncoder(), new ContextBase());
     }
 
     @Override

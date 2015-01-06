@@ -29,7 +29,6 @@ class LoggingOutputStream
 
     public LoggingOutputStream(Logger logger)
     {
-        super();
         this.logger = logger;
         lineSeparator = System.getProperty("line.separator");
     }
@@ -43,7 +42,7 @@ class LoggingOutputStream
     {
         super.flush();
         String record = this.toString("UTF-8");
-        super.reset();
+        reset();
 
         if (record.isEmpty() || record.equals(lineSeparator)) {
             // avoid empty records
