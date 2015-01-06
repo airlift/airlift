@@ -509,9 +509,15 @@ public class JettyHttpClient
         @Override
         public boolean cancel(boolean mayInterruptIfRunning)
         {
-            state.set(JettyAsyncHttpState.CANCELED);
-            jettyRequest.abort(new CancellationException());
-            return super.cancel(mayInterruptIfRunning);
+            try {
+                state.set(JettyAsyncHttpState.CANCELED);
+                jettyRequest.abort(new CancellationException());
+                return super.cancel(mayInterruptIfRunning);
+            }
+            catch (Throwable e) {
+                setException(e);
+                return true;
+            }
         }
 
         protected void completed(Response response, InputStream content)
