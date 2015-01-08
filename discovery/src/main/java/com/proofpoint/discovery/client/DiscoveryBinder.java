@@ -38,9 +38,12 @@ import com.proofpoint.http.client.balancing.BalancingHttpClient;
 import com.proofpoint.http.client.balancing.BalancingHttpClientConfig;
 import com.proofpoint.http.client.balancing.ForBalancingHttpClient;
 import com.proofpoint.http.client.balancing.HttpServiceBalancer;
+import org.weakref.jmx.ObjectNameBuilder;
 
 import java.lang.annotation.Annotation;
 
+import static com.google.common.base.CaseFormat.LOWER_CAMEL;
+import static com.google.common.base.CaseFormat.UPPER_CAMEL;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
@@ -163,7 +166,12 @@ public class DiscoveryBinder
         bindConfig(privateBinder).prefixedWith(name).to(BalancingHttpClientConfig.class);
         privateBinder.bind(HttpClient.class).annotatedWith(serviceType).to(BalancingHttpClient.class).in(Scopes.SINGLETON);
         privateBinder.expose(HttpClient.class).annotatedWith(serviceType);
-        reportBinder(binder).export(HttpClient.class).annotatedWith(serviceType).withGeneratedName();
+        reportBinder(binder).export(HttpClient.class).annotatedWith(serviceType).as(
+                new ObjectNameBuilder(HttpClient.class.getPackage().getName())
+                        .withProperty("type", "HttpClient")
+                        .withProperty("name", LOWER_CAMEL.to(UPPER_CAMEL, serviceType.value()))
+                        .build()
+        );
 
         return new BalancingHttpClientBindingBuilder(binder, serviceType, delegateBindingBuilder);
     }

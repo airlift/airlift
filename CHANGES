@@ -1,3 +1,8 @@
+Platform 1.10
+
+* [Bug] DiscoveryBinder.bindDiscoveredHttpClient() exporting HttpClient
+  metrics with wrong name.
+
 Platform 1.09
 
 * Deprecated APIs removed
