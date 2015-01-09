@@ -16,14 +16,17 @@ import com.proofpoint.configuration.ConfigurationInspector.ConfigRecord;
 import com.proofpoint.configuration.ConfigurationMetadataTest.SetterSensitiveClass;
 import org.testng.annotations.Test;
 
+import javax.inject.Qualifier;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeMap;
 
-import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.google.common.base.Objects.firstNonNull;
+import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -85,6 +88,32 @@ public class TestConfigurationInspector
                 .component("ConfigurationFactoryTest$AnnotatedSetter")
                 .value("BooleanValue", "boolean-value", "false", "true", "")
                 .value("StringValue", "string-value", "null", "some value", "")
+                .end();
+    }
+
+    @Test
+    public void testPrefixedWithNotPrefixed()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("string-value", "some value");
+        properties.put("boolean-value", "true");
+        properties.put("prefix.string-value", "some other value");
+        properties.put("prefix.boolean-value", "false");
+        inspect(properties, null, null, null, new Module()
+        {
+            @Override
+            public void configure(Binder binder)
+            {
+                bindConfig(binder).to(AnnotatedSetter.class);
+                bindConfig(binder).annotatedWith(Prefixed.class).prefixedWith("prefix").to(AnnotatedSetter.class);
+            }
+        })
+                .component("ConfigurationFactoryTest$AnnotatedSetter")
+                .value("BooleanValue", "boolean-value", "false", "true", "")
+                .value("StringValue", "string-value", "null", "some value", "")
+                .component("@Prefixed", "ConfigurationFactoryTest$AnnotatedSetter")
+                .value("BooleanValue", "prefix.boolean-value", "false", "false", "")
+                .value("StringValue", "prefix.string-value", "null", "some other value", "")
                 .end();
     }
 
@@ -326,6 +355,17 @@ public class TestConfigurationInspector
             return this;
         }
 
+        public InspectionVerifier component(String annotation, String expectedName)
+        {
+            if (attributeIterator != null && attributeIterator.hasNext()) {
+                fail("Extra attributes: " + Iterators.toString(attributeIterator));
+            }
+            ConfigRecord<?> record = recordIterator.next();
+            assertEquals(record.getComponentName(), annotation + " " + PACKAGE_NAME + expectedName);
+            attributeIterator = record.getAttributes().iterator();
+            return this;
+        }
+
         public InspectionVerifier value(String attributeName, String propertyName, String defaultValue, String currentValue, String description)
         {
             final ConfigAttribute attribute = attributeIterator.next();
@@ -346,5 +386,11 @@ public class TestConfigurationInspector
                 fail("Extra components: " + Iterators.toString(recordIterator));
             }
         }
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Qualifier
+    private @interface Prefixed
+    {
     }
 }

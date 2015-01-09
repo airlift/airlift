@@ -19,6 +19,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.ImmutableSortedSet.Builder;
+import com.google.common.collect.Ordering;
 import com.google.inject.Key;
 import com.proofpoint.configuration.ConfigurationMetadata.AttributeMetadata;
 
@@ -236,7 +237,7 @@ public class ConfigurationInspector
         {
             return ComparisonChain.start()
                     .compare(this.configClass.getCanonicalName(), that.configClass.getCanonicalName())
-                    .compare(this.prefix, that.prefix)
+                    .compare(this.prefix, that.prefix, Ordering.natural().nullsFirst())
                     .result();
         }
     }
