@@ -22,6 +22,7 @@ import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.http.client.ResponseTooLargeException;
 import com.proofpoint.http.client.StaticBodyGenerator;
 import com.proofpoint.log.Logger;
+import com.proofpoint.tracetoken.TraceTokenScope;
 import com.proofpoint.units.DataSize;
 import com.proofpoint.units.DataSize.Unit;
 import com.proofpoint.units.Duration;
@@ -63,6 +64,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.proofpoint.tracetoken.TraceTokenManager.getCurrentRequestToken;
+import static com.proofpoint.tracetoken.TraceTokenManager.registerRequestToken;
 import static java.lang.Math.min;
 
 public class JettyHttpClient
@@ -357,7 +360,7 @@ public class JettyHttpClient
         private final Response response;
         private final CountingInputStream inputStream;
 
-        public JettyResponse(Response response, InputStream inputStream)
+        JettyResponse(Response response, InputStream inputStream)
         {
             this.response = response;
             this.inputStream = new CountingInputStream(inputStream);
@@ -441,13 +444,15 @@ public class JettyHttpClient
         private final org.eclipse.jetty.client.api.Request jettyRequest;
         private final ResponseHandler<T, E> responseHandler;
         private final RequestStats stats;
+        private final String traceToken;
 
-        public JettyResponseFuture(Request request, org.eclipse.jetty.client.api.Request jettyRequest, ResponseHandler<T, E> responseHandler, RequestStats stats)
+        JettyResponseFuture(Request request, org.eclipse.jetty.client.api.Request jettyRequest, ResponseHandler<T, E> responseHandler, RequestStats stats)
         {
             this.request = request;
             this.jettyRequest = jettyRequest;
             this.responseHandler = responseHandler;
             this.stats = stats;
+            traceToken = getCurrentRequestToken();
         }
 
         @Override
@@ -493,7 +498,7 @@ public class JettyHttpClient
             state.set(JettyAsyncHttpState.PROCESSING_RESPONSE);
             JettyResponse jettyResponse = null;
             T value;
-            try {
+            try (TraceTokenScope ignored = registerRequestToken(traceToken)) {
                 jettyResponse = new JettyResponse(response, content);
                 value = responseHandler.handle(request, jettyResponse);
             }
@@ -511,7 +516,7 @@ public class JettyHttpClient
 
             // give handler a chance to rewrite the exception or return a value instead
             if (throwable instanceof Exception) {
-                try {
+                try (TraceTokenScope ignored = registerRequestToken(traceToken)) {
                     T value = responseHandler.handleException(request, (Exception) throwable);
                     // handler returned a value, store it in the future
                     state.set(JettyAsyncHttpState.DONE);
@@ -580,11 +585,13 @@ public class JettyHttpClient
 
         private final BodyGenerator bodyGenerator;
         private final Executor executor;
+        private final String traceToken;
 
-        public BodyGeneratorContentProvider(BodyGenerator bodyGenerator, Executor executor)
+        BodyGeneratorContentProvider(BodyGenerator bodyGenerator, Executor executor)
         {
             this.bodyGenerator = bodyGenerator;
             this.executor = executor;
+            traceToken = getCurrentRequestToken();
         }
 
         @Override
@@ -605,7 +612,7 @@ public class JettyHttpClient
                 public void run()
                 {
                     BodyGeneratorOutputStream out = new BodyGeneratorOutputStream(chunks);
-                    try {
+                    try (TraceTokenScope ignored = registerRequestToken(traceToken)) {
                         bodyGenerator.write(out);
                         out.close();
                     }
@@ -704,7 +711,7 @@ public class JettyHttpClient
         @GuardedBy("this")
         private int size;
 
-        public BufferingResponseListener(JettyResponseFuture<?, ?> future, int maxLength)
+        BufferingResponseListener(JettyResponseFuture<?, ?> future, int maxLength)
         {
             this.future = checkNotNull(future, "future is null");
             Preconditions.checkArgument(maxLength > 0, "maxLength must be greater than zero");
