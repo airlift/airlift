@@ -17,6 +17,7 @@ package com.proofpoint.tracetoken;
 
 import com.proofpoint.log.Logging;
 
+import javax.annotation.Nullable;
 import java.util.UUID;
 
 public final class TraceTokenManager
@@ -31,10 +32,17 @@ public final class TraceTokenManager
     public TraceTokenManager()
     {}
 
-    public static void registerRequestToken(String token)
+    public static TraceTokenScope registerRequestToken(@Nullable String token)
     {
+        String oldToken = TraceTokenManager.token.get();
         TraceTokenManager.token.set(token);
-        Logging.putMDC(TRACE_TOKEN, token);
+        if (token == null) {
+            Logging.removeMDC(TRACE_TOKEN);
+        }
+        else {
+            Logging.putMDC(TRACE_TOKEN, token);
+        }
+        return new TraceTokenScope(oldToken);
     }
 
     public static String getCurrentRequestToken()

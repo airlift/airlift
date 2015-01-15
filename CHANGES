@@ -1,7 +1,9 @@
 Platform 1.11
 
 * Trace Token improvements
-
+  - TraceTokenManager.registerRequestToken() now returns a TraceTokenScope
+    which can be used with try-with-resources to restore the thread's previous
+    token state.
   - TraceTokenManager methods are now all static.
   - TraceTokenModule is no longer needed and has been deprecated.
 

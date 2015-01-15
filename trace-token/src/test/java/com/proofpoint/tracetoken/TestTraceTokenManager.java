@@ -17,10 +17,12 @@ package com.proofpoint.tracetoken;
 
 import org.testng.annotations.Test;
 
+import static com.proofpoint.tracetoken.TraceTokenManager.clearRequestToken;
 import static com.proofpoint.tracetoken.TraceTokenManager.createAndRegisterNewRequestToken;
 import static com.proofpoint.tracetoken.TraceTokenManager.getCurrentRequestToken;
 import static com.proofpoint.tracetoken.TraceTokenManager.registerRequestToken;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
 public class TestTraceTokenManager
 {
@@ -48,5 +50,52 @@ public class TestTraceTokenManager
 
         registerRequestToken("abc");
         assertEquals(getCurrentRequestToken(), "abc");
+    }
+
+    @Test
+    public void testClearRequestToken()
+    {
+        String oldToken = createAndRegisterNewRequestToken();
+
+        assertEquals(getCurrentRequestToken(), oldToken);
+
+        clearRequestToken();
+        assertNull(getCurrentRequestToken());
+    }
+
+    @Test
+    public void testRestoreNoToken()
+    {
+        clearRequestToken();
+
+        try (TraceTokenScope ignored = registerRequestToken("abc"))
+        {
+            assertEquals(getCurrentRequestToken(), "abc");
+        }
+        assertNull(getCurrentRequestToken());
+    }
+
+    @Test
+    public void testRestoreOldToken()
+    {
+        String token = createAndRegisterNewRequestToken();
+
+        try (TraceTokenScope ignored = registerRequestToken("abc"))
+        {
+            assertEquals(getCurrentRequestToken(), "abc");
+        }
+        assertEquals(getCurrentRequestToken(), token);
+    }
+
+    @Test
+    public void testRegisterNullToken()
+    {
+        String token = createAndRegisterNewRequestToken();
+
+        try (TraceTokenScope ignored = registerRequestToken(null))
+        {
+            assertNull(getCurrentRequestToken());
+        }
+        assertEquals(getCurrentRequestToken(), token);
     }
 }
