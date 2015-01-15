@@ -6,8 +6,8 @@
 * value bits: part of the hash used to compute the number of leading 0s
 * `p`: Number of bits needed to represent bucket indexes
 * `v`: Number of leading 0s 
-* short hash: topmost 16 bits of the original hash
 * long hash: topmost 64 bits of the original hash
+* short hash: topmost 26 bits of the original hash
 
 ## Hash function
 
@@ -26,34 +26,19 @@
 ### Notes
 
 * Unless otherwise noted, all values are little-endian.
-* The following format specification is suitable for `p <= 13` (i.e., 8192 buckets).
-`13 < p <= 16` result in too many overflows (see below), which will result in degraded
-performance and accuracy. `p > 16` cannot be represented at all. Support for `p > 13` to
-be specified at a later time.
+* The following format specification is suitable for `p <= 16` (i.e., 65536 buckets).
+* The old sparse layout (format tag = 0) is no longer supported due to unacceptable
+  error rates that compounded when building many independent sparse instances and merging them.
 
 ### Sparse layout
 
 ![Sparse](sparse.png)
 
-* short hashes are sorted in increasing order, no duplicates
-* overflow entries are sorted in increasing order by bucket index, no duplicate bucket indexes
+* entries are sorted in increasing order by bucket index, no duplicate bucket indexes
 
-#### Overflow entries
+##### Entry layout
 
-Overflow entries are needed when the number of leading zeros (`v`) in the original hash cannot be determined by inspecting the short hash. Consider the following two scenarios:
-
-* Case 1: overflow entry not needed (`v <= 16 - p`)
-
-![Sparse overflow, case 1](sparse-overflow-case-1.png)
-
-* Case 2: overflow entry needed (`v > 16 - p`)
-
-![Sparse overflow, case 2](sparse-overflow-case-2.png)
-
-##### Overflow entry layout
-
-![Sparse overflow entry](sparse-overflow-entry.png)
-
+![Sparse entry](sparse-entry.png)
 
 ### Dense layout
 

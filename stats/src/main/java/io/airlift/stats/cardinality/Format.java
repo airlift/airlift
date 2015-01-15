@@ -16,7 +16,8 @@ package io.airlift.stats.cardinality;
 enum Format
 {
     SPARSE_V1(0),
-    DENSE_V1(1);
+    DENSE_V1(1),
+    SPARSE_V2(2);
 
     private byte tag;
 

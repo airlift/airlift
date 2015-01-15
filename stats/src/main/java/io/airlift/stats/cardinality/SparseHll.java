@@ -16,7 +16,6 @@ package io.airlift.stats.cardinality;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
-import com.google.common.primitives.Shorts;
 import io.airlift.slice.BasicSliceInput;
 import io.airlift.slice.DynamicSliceOutput;
 import io.airlift.slice.SizeOf;
@@ -26,7 +25,6 @@ import org.openjdk.jol.info.ClassLayout;
 import javax.annotation.concurrent.NotThreadSafe;
 
 import java.util.Arrays;
-import java.util.Comparator;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -35,50 +33,44 @@ import static io.airlift.stats.cardinality.Utils.linearCounting;
 import static io.airlift.stats.cardinality.Utils.numberOfBuckets;
 import static io.airlift.stats.cardinality.Utils.numberOfLeadingZeros;
 
-/**
- * Suitable up to index bits <= 13
- */
 @NotThreadSafe
-class SparseHll
+final class SparseHll
         implements HllInstance
 {
     private static final int SPARSE_INSTANCE_SIZE = ClassLayout.parseClass(SparseHll.class).instanceSize();
 
+    // 6 bits to encode the number of zeros after the truncated hash
+    // and be able to fit the encoded value in an integer
+    private static final int VALUE_BITS = 6;
+    private static final int VALUE_MASK = (1 << VALUE_BITS) - 1;
+    private static final int EXTENDED_PREFIX_BITS = Integer.SIZE - VALUE_BITS;
+
     private final byte indexBitLength;
-    private short numberOfHashes;
-    private short[] shortHashes;
-    private short numberOfOverflows;
-    private short[] overflows;
+    private short numberOfEntries;
+    private int[] entries;
 
     public SparseHll(int indexBitLength)
     {
-        checkArgument(indexBitLength >= 1 && indexBitLength <= 13, "indexBitLength is out of range");
+        validatePrefixLength(indexBitLength);
 
         this.indexBitLength = (byte) indexBitLength;
-        shortHashes = new short[1];
-        overflows = new short[0];
+        entries = new int[1];
     }
 
     public SparseHll(Slice serialized)
     {
         BasicSliceInput input = serialized.getInput();
 
-        checkArgument(input.readByte() == Format.SPARSE_V1.getTag(), "invalid format tag");
+        checkArgument(input.readByte() == Format.SPARSE_V2.getTag(), "invalid format tag");
 
         indexBitLength = input.readByte();
-        checkArgument(indexBitLength >= 1 && indexBitLength <= 13, "indexBitLength is out of range");
+        validatePrefixLength(indexBitLength);
 
-        numberOfHashes = input.readShort();
-        numberOfOverflows = input.readShort();
+        numberOfEntries = input.readShort();
 
-        shortHashes = new short[numberOfHashes];
-        for (int i = 0; i < numberOfHashes; i++) {
-            shortHashes[i] = input.readShort();
-        }
-
-        overflows = new short[numberOfOverflows];
-        for (int i = 0; i < numberOfOverflows; i++) {
-            overflows[i] = input.readShort();
+        entries = new int[numberOfEntries];
+        for (int i = 0; i < numberOfEntries; i++) {
+            entries[i] = input.readInt();
         }
 
         checkArgument(!input.isReadable(), "input is too big");
@@ -86,112 +78,108 @@ class SparseHll
 
     public static boolean canDeserialize(Slice serialized)
     {
-        return serialized.getByte(0) == Format.SPARSE_V1.getTag();
+        return serialized.getByte(0) == Format.SPARSE_V2.getTag();
     }
 
     public void insertHash(long hash)
     {
-        insertShortHash(hash);
-        insertOverflowEntryIfNeeded(hash);
-    }
+        // TODO: investigate whether accumulate, sort and merge results in better performance due to avoiding the shift+insert in every call
 
-    private void insertOverflowEntryIfNeeded(long hash)
-    {
-        int zeros = numberOfLeadingZeros(hash, indexBitLength);
-        int overflowBits = Short.SIZE - indexBitLength;
-        if (zeros > overflowBits) {
-            int overflowZeros = zeros - overflowBits - 1;
+        int position = searchBucket(Utils.computeIndex(hash, EXTENDED_PREFIX_BITS));
 
-            int bucketIndex = computeIndex(hash, indexBitLength);
-
-            // truncate overflow values to fit in (Short.SIZE - indexBitLength) bits.
-            // TODO: this introduces a minor error. Document probability and impact of this happening
-            short overflowEntry = (short) ((bucketIndex << overflowBits) |
-                    (overflowZeros & valueMask(indexBitLength)));
-
-            int position = searchOverflow(bucketIndex);
-            if (position < 0) {
-                // ensure capacity
-                if (numberOfOverflows + 1 > overflows.length) {
-                    overflows = Arrays.copyOf(overflows, overflows.length + 1);
-                }
-
-                // make room to insert
-                int insertionPoint = -(position + 1);
-                if (insertionPoint < numberOfOverflows) {
-                    System.arraycopy(overflows, insertionPoint, overflows, insertionPoint + 1, numberOfOverflows - insertionPoint);
-                }
-
-                overflows[insertionPoint] = overflowEntry;
-                numberOfOverflows++;
+        // add entry if missing
+        if (position < 0) {
+            // ensure capacity
+            if (numberOfEntries + 1 > entries.length) {
+                entries = Arrays.copyOf(entries, entries.length + 10);
             }
-            else {
-                // if new value > old value, update overflow
-                int oldValue = extractValue(overflows[position]);
-                if (overflowZeros > oldValue) {
-                    overflows[position] = overflowEntry;
-                }
+
+            // shift right
+            int insertionPoint = -(position + 1);
+            if (insertionPoint < numberOfEntries) {
+                System.arraycopy(entries, insertionPoint, entries, insertionPoint + 1, numberOfEntries - insertionPoint);
+            }
+
+            entries[insertionPoint] = encode(hash);
+            numberOfEntries++;
+        }
+        else {
+            int currentEntry = entries[position];
+            int newValue = Utils.computeValue(hash, EXTENDED_PREFIX_BITS);
+
+            if (decodeBucketValue(currentEntry) > newValue) {
+                entries[position] = encode(position, newValue);
             }
         }
     }
 
+    private int encode(long hash)
+    {
+        return encode(computeIndex(hash, EXTENDED_PREFIX_BITS), numberOfLeadingZeros(hash, EXTENDED_PREFIX_BITS));
+    }
+
+    private static int encode(int bucketIndex, int value)
+    {
+        return (bucketIndex << VALUE_BITS) | value;
+    }
+
+    private static int decodeBucketIndex(int entry)
+    {
+        return decodeBucketIndex(EXTENDED_PREFIX_BITS, entry);
+    }
+
+    private static int decodeBucketValue(int entry)
+    {
+        return entry & VALUE_MASK;
+    }
+
+    private static int decodeBucketIndex(int indexBitLength, int entry)
+    {
+        return entry >>> (Integer.SIZE - indexBitLength);
+    }
+
     public void mergeWith(SparseHll other)
     {
-        shortHashes = mergeShortHashes(other);
-        numberOfHashes = (short) shortHashes.length;
-
-        overflows = mergeOverflows(other);
-        numberOfOverflows = (short) overflows.length;
+        entries = mergeEntries(other);
+        numberOfEntries = (short) entries.length;
     }
 
     public DenseHll toDense()
     {
         DenseHll result = new DenseHll(indexBitLength);
 
-        int overflowIndex = 0;
-        for (int hashIndex = 0; hashIndex < numberOfHashes; hashIndex++) {
-            short shortHash = shortHashes[hashIndex];
+        for (int i = 0; i < numberOfEntries; i++) {
+            int entry = entries[i];
 
-            int bucket = extractIndex(indexBitLength, shortHash);
-            int zeros = numberOfLeadingZeros(toLongHash(shortHash), indexBitLength);
+            // The leading EXTENDED_BITS_LENGTH are a proper subset of the original hash.
+            // Since we're guaranteed that indexBitLength is <= EXTENDED_BITS_LENGTH,
+            // the value stored in those bits corresponds to the bucket index in the dense HLL
+            int bucket = decodeBucketIndex(indexBitLength, entry);
 
-            // do we need to look at overflows?
-            int valueBits = Short.SIZE - indexBitLength;
-            if (zeros > valueBits) {
-                zeros = valueBits;
+            // compute the number of zeros between indexBitLength and EXTENDED_BITS_LENGTH
+            int zeros = Integer.numberOfLeadingZeros(entry << indexBitLength);
 
-                while (overflowIndex < numberOfOverflows) {
-                    short overflow = overflows[overflowIndex];
-                    int overflowBucket = extractIndex(indexBitLength, overflow);
-
-                    if (overflowBucket > bucket) {
-                        // don't increment index in this case since we're already past the index we're looking for
-                        break;
-                    }
-
-                    overflowIndex++;
-
-                    if (overflowBucket == bucket) {
-                        // the presence of an overflow bucket indicates a count of at least 1
-                        zeros += extractValue(overflow) + 1;
-                        break;
-                    }
-                }
+            // if zeros > EXTENDED_BITS_LENGTH - indexBits, it means all those bits were zeros,
+            // so look at the entry value, which contains the number of leading 0 *after* EXTENDED_BITS_LENGTH
+            int bits = EXTENDED_PREFIX_BITS - indexBitLength;
+            if (zeros > bits) {
+                zeros = bits + decodeBucketValue(entry);
             }
 
             result.insert(bucket, zeros + 1); // + 1 because HLL stores leading number of zeros + 1
         }
+
         return result;
     }
 
     @Override
     public long cardinality()
     {
-        // Estimate the cardinality using linear counting over the theoretical 2^Short.SIZE buckets available due
-        // to the fact that we're recording the raw 16-bit hashes. This produces much better precision while in
-        // the sparse regime.
+        // Estimate the cardinality using linear counting over the theoretical 2^EXTENDED_BITS_LENGTH buckets available due
+        // to the fact that we're recording the raw leading EXTENDED_BITS_LENGTH of the hash. This produces much better precision
+        // while in the sparse regime.
         int totalBuckets = numberOfBuckets(Short.SIZE);
-        int zeroBuckets = totalBuckets - numberOfHashes;
+        int zeroBuckets = totalBuckets - numberOfEntries;
 
         return Math.round(linearCounting(zeroBuckets, totalBuckets));
     }
@@ -199,9 +187,7 @@ class SparseHll
     @Override
     public int estimatedInMemorySize()
     {
-        return SPARSE_INSTANCE_SIZE +
-                SizeOf.SIZE_OF_SHORT * numberOfHashes +
-                SizeOf.SIZE_OF_SHORT * numberOfOverflows;
+        return SPARSE_INSTANCE_SIZE + (SizeOf.SIZE_OF_INT * numberOfEntries);
     }
 
     @Override
@@ -210,44 +196,18 @@ class SparseHll
         return indexBitLength;
     }
 
-    private void insertShortHash(long hash)
-    {
-        // TODO: investigate whether accumulate, sort and merge results in better performance due to avoiding the shift+insert in every call
-
-        short shortHash = toShortHash(hash);
-
-        int position = searchShortHash(shortHash);
-
-        // add short hash if missing
-        if (position < 0) {
-            // ensure capacity
-            if (numberOfHashes + 1 > shortHashes.length) {
-                shortHashes = Arrays.copyOf(shortHashes, shortHashes.length + 10);
-            }
-
-            // shift right
-            int insertionPoint = -(position + 1);
-            if (insertionPoint < numberOfHashes) {
-                System.arraycopy(shortHashes, insertionPoint, shortHashes, insertionPoint + 1, numberOfHashes - insertionPoint);
-            }
-
-            shortHashes[insertionPoint] = shortHash;
-            numberOfHashes++;
-        }
-    }
-
     /**
      * Returns a index of the entry if found. Otherwise, it returns -(insertionPoint + 1)
      */
-    private int searchOverflow(int bucketIndex)
+    private int searchBucket(int bucketIndex)
     {
         int low = 0;
-        int high = numberOfOverflows - 1;
+        int high = numberOfEntries - 1;
 
         while (low <= high) {
             int middle = (low + high) >>> 1;
 
-            int middleBucketIndex = extractIndex(indexBitLength, overflows[middle]);
+            int middleBucketIndex = decodeBucketIndex(entries[middle]);
 
             if (bucketIndex > middleBucketIndex) {
                 low = middle + 1;
@@ -263,175 +223,56 @@ class SparseHll
         return -(low + 1); // not found... return insertion point
     }
 
-    /**
-     * Returns a index of the entry if found. Otherwise, it returns -(insertionPoint + 1)
-     */
-    private int searchShortHash(short value)
+    private int[] mergeEntries(SparseHll other)
     {
-        int unsignedValue = value & 0xFF_FF;
-
-        int low = 0;
-        int high = numberOfHashes - 1;
-
-        while (low <= high) {
-            int middle = (low + high) >>> 1;
-
-            int middleEntry = shortHashes[middle] & 0xFF_FF;
-
-            if (unsignedValue > middleEntry) {
-                low = middle + 1;
-            }
-            else if (unsignedValue < middleEntry) {
-                high = middle - 1;
-            }
-            else {
-                return middle;
-            }
-        }
-
-        return -(low + 1); // not found... return insertion point
-    }
-
-    private short[] mergeOverflows(SparseHll other)
-    {
-        short[] result = new short[numberOfOverflows + other.numberOfOverflows];
-        int left = 0;
-        int right = 0;
-
-        int index = 0;
-        while (left < numberOfOverflows && right < other.numberOfOverflows) {
-            int leftIndex = extractIndex(indexBitLength, overflows[left]);
-            int rightIndex = extractIndex(indexBitLength, other.overflows[right]);
-
-            if (leftIndex < rightIndex) {
-                result[index++] = overflows[left++];
-            }
-            else if (leftIndex > rightIndex) {
-                result[index++] = other.overflows[right++];
-            }
-            else {
-                int leftValue = extractValue(overflows[left]);
-                int rightValue = extractValue(other.overflows[right]);
-
-                if (leftValue > rightValue) {
-                    result[index] = overflows[left];
-                }
-                else {
-                    result[index] = other.overflows[right];
-                }
-
-                index++;
-                left++;
-                right++;
-            }
-        }
-
-        while (left < numberOfOverflows) {
-            result[index++] = overflows[left++];
-        }
-
-        while (right < other.numberOfOverflows) {
-            result[index++] = other.overflows[right++];
-        }
-
-        return Arrays.copyOf(result, index);
-    }
-
-    private short[] mergeShortHashes(SparseHll other)
-    {
-        short[] result = new short[numberOfHashes + other.numberOfHashes];
+        int[] result = new int[numberOfEntries + other.numberOfEntries];
         int leftIndex = 0;
         int rightIndex = 0;
 
         int index = 0;
-        while (leftIndex < numberOfHashes && rightIndex < other.numberOfHashes) {
-            // need to do unsigned comparison
-            int left = shortHashes[leftIndex] & 0xFFFF;
-            int right = other.shortHashes[rightIndex] & 0xFFFF;
+        while (leftIndex < numberOfEntries && rightIndex < other.numberOfEntries) {
+            int left = decodeBucketIndex(entries[leftIndex]);
+            int right = decodeBucketIndex(other.entries[rightIndex]);
 
             if (left < right) {
-                result[index++] = shortHashes[leftIndex++];
+                result[index++] = entries[leftIndex++];
             }
             else if (left > right) {
-                result[index++] = other.shortHashes[rightIndex++];
+                result[index++] = other.entries[rightIndex++];
             }
             else {
-                // values are equal, so pick one arbitrarily
-                result[index++] = shortHashes[leftIndex];
+                int value = Math.max(decodeBucketValue(entries[leftIndex]), decodeBucketValue(other.entries[rightIndex]));
+                result[index++] = encode(left, value);
                 leftIndex++;
                 rightIndex++;
             }
         }
 
-        while (leftIndex < numberOfHashes) {
-            result[index++] = shortHashes[leftIndex++];
+        while (leftIndex < numberOfEntries) {
+            result[index++] = entries[leftIndex++];
         }
 
-        while (rightIndex < other.numberOfHashes) {
-            result[index++] = other.shortHashes[rightIndex++];
+        while (rightIndex < other.numberOfEntries) {
+            result[index++] = other.entries[rightIndex++];
         }
 
         return Arrays.copyOf(result, index);
     }
 
-    private short toShortHash(long hash)
-    {
-        return (short) (hash >>> (Long.SIZE - Short.SIZE));
-    }
-
-    /**
-     * Turns a short hash back into a long hash (lossy -- all lsb bits will be 0)
-     */
-    private long toLongHash(short shortHash)
-    {
-        return ((long) shortHash) << (Long.SIZE - Short.SIZE);
-    }
-
-    /**
-     * Extracts the bucket index from a 16-bit entry. The index is contained in the most significant indexBitLength bits
-     */
-    private static int extractIndex(int indexBitLength, short entry)
-    {
-        return ((entry & 0xFF_FF) >>> (Short.SIZE - indexBitLength));
-    }
-
-    /**
-     * Extracts the value from a 16-bit entry. The value is contained in the least significant 16-indexLength bits
-     */
-    private int extractValue(short entry)
-    {
-        return entry & valueMask(indexBitLength);
-    }
-
-    /**
-     * Returns the bit mask for extracting the the value from a 16-bit entry.
-     */
-    private static int valueMask(int indexBitLength)
-    {
-        return (1 << (Short.SIZE - indexBitLength)) - 1;
-    }
-
     public Slice serialize()
     {
-        int size = SizeOf.SIZE_OF_BYTE + // type + version
+        int size = SizeOf.SIZE_OF_BYTE + // format tag
                 SizeOf.SIZE_OF_BYTE + // p
-                SizeOf.SIZE_OF_SHORT + // number of short hashes
-                SizeOf.SIZE_OF_SHORT + // number of overflow entries
-                SizeOf.SIZE_OF_SHORT * numberOfHashes + //
-                SizeOf.SIZE_OF_SHORT * numberOfOverflows;
+                SizeOf.SIZE_OF_SHORT + // number of entries
+                SizeOf.SIZE_OF_INT * numberOfEntries;
 
         DynamicSliceOutput out = new DynamicSliceOutput(size)
-                .appendByte(Format.SPARSE_V1.getTag())
+                .appendByte(Format.SPARSE_V2.getTag())
                 .appendByte(indexBitLength)
-                .appendShort(numberOfHashes)
-                .appendShort(numberOfOverflows);
+                .appendShort(numberOfEntries);
 
-        for (int i = 0; i < numberOfHashes; i++) {
-            out.appendShort(shortHashes[i]);
-        }
-
-        for (int i = 0; i < numberOfOverflows; i++) {
-            out.appendShort(overflows[i]);
+        for (int i = 0; i < numberOfEntries; i++) {
+            out.appendInt(entries[i]);
         }
 
         return out.slice();
@@ -442,46 +283,24 @@ class SparseHll
     {
         return SizeOf.SIZE_OF_SHORT // type + version
                 + SizeOf.SIZE_OF_BYTE  // p
-                + SizeOf.SIZE_OF_SHORT // numberOfHashes
-                + SizeOf.SIZE_OF_SHORT // numberOfOverflows
-                + numberOfHashes * SizeOf.SIZE_OF_SHORT // hashes
-                + numberOfOverflows * SizeOf.SIZE_OF_SHORT; // overflows
+                + SizeOf.SIZE_OF_SHORT // numberOfEntries
+                + SizeOf.SIZE_OF_INT * numberOfEntries; // entries
+    }
+
+    private static void validatePrefixLength(int indexBitLength)
+    {
+        checkArgument(indexBitLength >= 1 && indexBitLength <= EXTENDED_PREFIX_BITS, "indexBitLength is out of range");
     }
 
     @VisibleForTesting
     public void verify()
     {
-        checkState(numberOfHashes <= shortHashes.length,
+        checkState(numberOfEntries <= entries.length,
                 "Expected number of hashes (%s) larger than array length (%s)",
-                numberOfHashes, shortHashes.length);
+                numberOfEntries, entries.length);
 
-        checkState(numberOfOverflows <= overflows.length,
-                "Expected number of overflows (%s) larger than array length (%s)",
-                numberOfOverflows, overflows.length);
-
-        Comparator<Short> hashComparator = new Comparator<Short>()
-        {
-            @Override
-            public int compare(Short o1, Short o2)
-            {
-                return Ints.compare(o1.intValue() & 0xFFFF, o2.intValue() & 0xFFFF);
-            }
-        };
-
-        checkState(Ordering.from(hashComparator).isOrdered(Shorts.asList(Arrays.copyOf(shortHashes, numberOfHashes))),
-                "hashes are not sorted");
-
-        Comparator<Short> overflowComparator = new Comparator<Short>()
-        {
-            @Override
-            public int compare(Short o1, Short o2)
-            {
-                return Ints.compare(extractIndex(indexBitLength, o1), extractIndex(indexBitLength, o2));
-            }
-        };
-
-        checkState(Ordering.from(overflowComparator).isOrdered(Shorts.asList(Arrays.copyOf(overflows, numberOfOverflows))),
-                "overflows are not sorted");
-
+        checkState(Ordering.from((Integer e1, Integer e2) -> Ints.compare(decodeBucketIndex(e1), decodeBucketIndex(e2)))
+                        .isOrdered(Ints.asList(Arrays.copyOf(entries, numberOfEntries))),
+                "entries are not sorted");
     }
 }

@@ -14,7 +14,6 @@
 package io.airlift.stats.cardinality;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import io.airlift.slice.Murmur3;
 import io.airlift.slice.Slice;
 
@@ -23,7 +22,7 @@ import static io.airlift.stats.cardinality.Utils.indexBitLength;
 
 public class HyperLogLog
 {
-    private static final int MAX_NUMBER_OF_BUCKETS = 8192;
+    private static final int MAX_NUMBER_OF_BUCKETS = 65536;
     private HllInstance instance;
 
     private HyperLogLog(HllInstance instance)
@@ -40,6 +39,8 @@ public class HyperLogLog
 
     public static HyperLogLog newInstance(Slice serialized)
     {
+        checkArgument(serialized.getByte(0) != Format.SPARSE_V1.getTag(), "Sparse v1 encoding no longer supported");
+
         if (SparseHll.canDeserialize(serialized)) {
             return new HyperLogLog(new SparseHll(serialized));
         }

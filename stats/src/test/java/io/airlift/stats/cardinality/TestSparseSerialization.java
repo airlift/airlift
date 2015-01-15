@@ -28,12 +28,9 @@ public class TestSparseSerialization
             throws Exception
     {
         Slice expected = new DynamicSliceOutput(1)
-                .appendByte(0)  // format tag
+                .appendByte(2)  // format tag
                 .appendByte(12) // p
-                        // number of short hashes
-                .appendByte(0)
-                .appendByte(0)
-                        // number of overflows
+                        // number of entries
                 .appendByte(0)
                 .appendByte(0)
                 .slice();
@@ -44,89 +41,25 @@ public class TestSparseSerialization
     }
 
     @Test
-    public void testSingleNoOverflow()
+    public void testSingle()
             throws Exception
     {
         Slice expected = new DynamicSliceOutput(1)
-                .appendByte(0)  // format tag
+                .appendByte(2)  // format tag
                 .appendByte(12) // p
-                        // number of short hashes
+                        // number of entries
                 .appendByte(1)
                 .appendByte(0)
-                        // number of overflows
-                .appendByte(0)
-                .appendByte(0)
-                        // hash 0
-                .appendByte(0b0001_0000)
-                .appendByte(0b0100_0110)
-                .slice();
-
-        SparseHll hll = new SparseHll(12);
-
-        hll.insertHash(Murmur3.hash64(Slices.wrappedBuffer(new byte[] {0})));
-
-        assertSlicesEqual(hll.serialize(), expected);
-    }
-
-    @Test
-    public void testSingleWithOverflow()
-            throws Exception
-    {
-        Slice expected = new DynamicSliceOutput(1)
-                .appendByte(0)  // format tag
-                .appendByte(12) // p
-                        // number of short hashes
-                .appendByte(1)
-                .appendByte(0)
-                        // number of overflows
-                .appendByte(1)
-                .appendByte(0)
-                        // short hash
+                        // entry 0
+                .appendByte(0b0100_0010)
+                .appendByte(0b0011_0100)
                 .appendByte(0b0010_0000)
-                .appendByte(0b0010_0001)
-                        // overflow entry
-                .appendByte(0b0010_0001)
                 .appendByte(0b0010_0001)
                 .slice();
 
         SparseHll hll = new SparseHll(12);
 
         hll.insertHash(Murmur3.hash64(Slices.wrappedBuffer(new byte[] {64})));
-
-        assertSlicesEqual(hll.serialize(), expected);
-    }
-
-    @Test
-    public void testMultipleWithOverflow()
-            throws Exception
-    {
-        Slice expected = new DynamicSliceOutput(1)
-                .appendByte(0)  // format tag
-                .appendByte(12) // p
-                        // number of short hashes
-                .appendByte(2)
-                .appendByte(0)
-                        // number of overflows
-                .appendByte(2)
-                .appendByte(0)
-                        // short hash 0
-                .appendByte(0b0010_0000)
-                .appendByte(0b0010_0001)
-                        // short hash 1
-                .appendByte(0b1000_0000)
-                .appendByte(0b1010_0100)
-                        // overflow 0
-                .appendByte(0b0010_0001)
-                .appendByte(0b0010_0001)
-                        // overflow 1
-                .appendByte(0b1000_0001)
-                .appendByte(0b1010_0100)
-                .slice();
-
-        SparseHll hll = new SparseHll(12);
-
-        hll.insertHash(Murmur3.hash64(Slices.wrappedBuffer(new byte[] {64})));
-        hll.insertHash(Murmur3.hash64(Slices.wrappedBuffer(new byte[] {(byte) 205})));
 
         assertSlicesEqual(hll.serialize(), expected);
     }
@@ -148,5 +81,4 @@ public class TestSparseSerialization
             assertSlicesEqual(serialized, reserialized);
         }
     }
-
 }
