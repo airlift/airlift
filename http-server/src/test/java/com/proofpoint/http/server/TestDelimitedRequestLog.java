@@ -18,7 +18,6 @@ package com.proofpoint.http.server;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
-import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -35,6 +34,8 @@ import java.io.IOException;
 import java.security.Principal;
 import java.util.Collections;
 
+import static com.proofpoint.tracetoken.TraceTokenManager.createAndRegisterNewRequestToken;
+import static com.proofpoint.tracetoken.TraceTokenManager.getCurrentRequestToken;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -89,10 +90,8 @@ public class TestDelimitedRequestLog
         final String responseContentType = "response/type";
         final HttpURI uri = new HttpURI("http://www.example.com/aaa+bbb/ccc?param=hello%20there&other=true");
 
-
-        final TraceTokenManager tokenManager = new TraceTokenManager();
         MockCurrentTimeMillisProvider currentTimeMillisProvider = new MockCurrentTimeMillisProvider(timestamp + timeToLastByte);
-        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 1_000_000_000, tokenManager, currentTimeMillisProvider);
+        DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 1_000_000_000, currentTimeMillisProvider);
 
         when(principal.getName()).thenReturn(user);
         when(request.getTimeStamp()).thenReturn(timestamp);
@@ -112,7 +111,7 @@ public class TestDelimitedRequestLog
         when(response.getContentCount()).thenReturn(responseSize);
         when(response.getHeader("Content-Type")).thenReturn(responseContentType);
 
-        tokenManager.createAndRegisterNewRequestToken();
+        createAndRegisterNewRequestToken();
         long currentTime = currentTimeMillisProvider.getCurrentTimeMillis();
         logger.log(request, response);
         logger.stop();
@@ -129,7 +128,7 @@ public class TestDelimitedRequestLog
                 requestSize,
                 responseSize,
                 currentTime - request.getTimeStamp(),
-                tokenManager.getCurrentRequestToken());
+                getCurrentRequestToken());
         Assert.assertEquals(actual, expected);
     }
 }

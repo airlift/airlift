@@ -16,13 +16,14 @@
 package com.proofpoint.http.client;
 
 import com.google.common.collect.ImmutableList;
-import com.proofpoint.tracetoken.TraceTokenManager;
 import org.testng.annotations.Test;
 
 import java.net.URI;
 
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static com.proofpoint.http.client.TraceTokenRequestFilter.TRACETOKEN_HEADER;
+import static com.proofpoint.tracetoken.TraceTokenManager.clearRequestToken;
+import static com.proofpoint.tracetoken.TraceTokenManager.registerRequestToken;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertSame;
@@ -32,9 +33,8 @@ public class TestTraceTokenRequestFilter
     @Test
     public void testBasic()
     {
-        TraceTokenManager manager = new TraceTokenManager();
-        manager.registerRequestToken("testBasic");
-        TraceTokenRequestFilter filter = new TraceTokenRequestFilter(manager);
+        registerRequestToken("testBasic");
+        TraceTokenRequestFilter filter = new TraceTokenRequestFilter();
         Request original = prepareGet().setUri(URI.create("http://example.com")).build();
 
         Request filtered = filter.filterRequest(original);
@@ -49,8 +49,8 @@ public class TestTraceTokenRequestFilter
     @Test
     public void testSameRequestReturnedWhenTraceTokenNotSet()
     {
-        TraceTokenManager manager = new TraceTokenManager();
-        TraceTokenRequestFilter filter = new TraceTokenRequestFilter(manager);
+        TraceTokenRequestFilter filter = new TraceTokenRequestFilter();
+        clearRequestToken();
         Request original =  prepareGet().setUri(URI.create("http://example.com")).build();
 
         Request request = filter.filterRequest(original);

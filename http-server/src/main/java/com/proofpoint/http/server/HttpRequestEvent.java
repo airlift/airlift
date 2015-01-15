@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.proofpoint.event.client.EventField;
 import com.proofpoint.event.client.EventType;
-import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.joda.time.DateTime;
@@ -29,12 +28,13 @@ import java.security.Principal;
 import java.util.Enumeration;
 
 import static com.proofpoint.event.client.EventField.EventFieldMapping.TIMESTAMP;
+import static com.proofpoint.tracetoken.TraceTokenManager.getCurrentRequestToken;
 import static java.lang.Math.max;
 
 @EventType("HttpRequest")
 public class HttpRequestEvent
 {
-    public static HttpRequestEvent createHttpRequestEvent(Request request, Response response, TraceTokenManager traceTokenManager, long currentTimeInMillis)
+    public static HttpRequestEvent createHttpRequestEvent(Request request, Response response, long currentTimeInMillis)
     {
         String user = null;
         Principal principal = request.getUserPrincipal();
@@ -42,10 +42,7 @@ public class HttpRequestEvent
             user = principal.getName();
         }
 
-        String token = null;
-        if (traceTokenManager != null) {
-            token = traceTokenManager.getCurrentRequestToken();
-        }
+        String token = getCurrentRequestToken();
 
         long dispatchTime = request.getTimeStamp();
         long timeToDispatch = max(dispatchTime - request.getTimeStamp(), 0);

@@ -40,7 +40,6 @@ import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.log.Logging;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.node.testing.TestingNodeModule;
-import com.proofpoint.tracetoken.TraceTokenManager;
 import com.proofpoint.units.Duration;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
@@ -305,7 +304,7 @@ public class TestTestingHttpServer
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params, ImmutableSet.<Filter>of(filter), ImmutableSet.<HttpResourceBinding>of(), new QueryStringFilter(), new TraceTokenManager());
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params, ImmutableSet.<Filter>of(filter), ImmutableSet.<HttpResourceBinding>of(), new QueryStringFilter());
     }
 
     static class DummyServlet

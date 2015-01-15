@@ -29,7 +29,6 @@ import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeModule;
 import com.proofpoint.reporting.ReportingClientModule;
 import com.proofpoint.reporting.ReportingModule;
-import com.proofpoint.tracetoken.TraceTokenModule;
 import org.weakref.jmx.guice.MBeanModule;
 
 import static com.proofpoint.bootstrap.Bootstrap.bootstrapApplication;
@@ -57,7 +56,6 @@ public class Main
                             new HttpEventModule(),
                             new ReportingModule(),
                             new ReportingClientModule(),
-                            new TraceTokenModule(),
                             new MainModule()
                     );
 

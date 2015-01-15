@@ -17,45 +17,36 @@ package com.proofpoint.tracetoken;
 
 import org.testng.annotations.Test;
 
+import static com.proofpoint.tracetoken.TraceTokenManager.createAndRegisterNewRequestToken;
+import static com.proofpoint.tracetoken.TraceTokenManager.getCurrentRequestToken;
+import static com.proofpoint.tracetoken.TraceTokenManager.registerRequestToken;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
 
 public class TestTraceTokenManager
 {
     @Test
-    public void testNoToken()
-    {
-        TraceTokenManager manager = new TraceTokenManager();
-        assertNull(manager.getCurrentRequestToken());
-    }
-
-    @Test
     public void testCreateToken()
     {
-        TraceTokenManager manager = new TraceTokenManager();
-
-        String token = manager.createAndRegisterNewRequestToken();
-        assertEquals(manager.getCurrentRequestToken(), token);
+        String token = createAndRegisterNewRequestToken();
+        assertEquals(getCurrentRequestToken(), token);
     }
 
     @Test
     public void testRegisterCustomToken()
     {
-        TraceTokenManager manager = new TraceTokenManager();
-        manager.registerRequestToken("abc");
+        registerRequestToken("abc");
 
-        assertEquals(manager.getCurrentRequestToken(), "abc");
+        assertEquals(getCurrentRequestToken(), "abc");
     }
 
     @Test
     public void testOverrideRequestToken()
     {
-        TraceTokenManager manager = new TraceTokenManager();
-        String oldToken = manager.createAndRegisterNewRequestToken();
+        String oldToken = createAndRegisterNewRequestToken();
 
-        assertEquals(manager.getCurrentRequestToken(), oldToken);
+        assertEquals(getCurrentRequestToken(), oldToken);
 
-        manager.registerRequestToken("abc");
-        assertEquals(manager.getCurrentRequestToken(), "abc");
+        registerRequestToken("abc");
+        assertEquals(getCurrentRequestToken(), "abc");
     }
 }

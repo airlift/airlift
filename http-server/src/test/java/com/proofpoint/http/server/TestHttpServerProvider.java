@@ -319,7 +319,6 @@ public class TestHttpServerProvider
                 new QueryStringFilter()
         );
         serverProvider.setLoginService(loginServiceProvider.get());
-        serverProvider.setTokenManager(new TraceTokenManager());
         server = serverProvider.get();
     }
 }

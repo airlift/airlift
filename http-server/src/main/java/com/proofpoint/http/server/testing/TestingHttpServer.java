@@ -27,7 +27,6 @@ import com.proofpoint.http.server.RequestStats;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.stats.SparseTimeStat;
-import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 
 import javax.servlet.Filter;
@@ -60,8 +59,8 @@ public class TestingHttpServer extends HttpServer
                 initParameters,
                 ImmutableSet.<Filter>of(),
                 ImmutableSet.<HttpResourceBinding>of(),
-                new QueryStringFilter(),
-                new TraceTokenManager());
+                new QueryStringFilter()
+        );
     }
 
     @Inject
@@ -72,8 +71,7 @@ public class TestingHttpServer extends HttpServer
             @TheServlet Map<String, String> initParameters,
             @TheServlet Set<Filter> filters,
             @TheServlet Set<HttpResourceBinding> resources,
-            QueryStringFilter queryStringFilter,
-            TraceTokenManager traceTokenManager)
+            QueryStringFilter queryStringFilter)
             throws IOException
     {
         super(httpServerInfo,
@@ -89,7 +87,6 @@ public class TestingHttpServer extends HttpServer
                 null,
                 null,
                 queryStringFilter,
-                traceTokenManager,
                 new RequestStats(),
                 new DetailedRequestStats()
         );
@@ -97,7 +94,7 @@ public class TestingHttpServer extends HttpServer
     }
 
     @Override
-    public RequestLogHandler createLogHandler(HttpServerConfig config, TraceTokenManager tokenManager)
+    public RequestLogHandler createLogHandler(HttpServerConfig config)
             throws IOException
     {
         return null;

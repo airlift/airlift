@@ -19,7 +19,6 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.encoder.EncoderBase;
 import com.proofpoint.log.Logging;
-import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
@@ -37,22 +36,20 @@ class DelimitedRequestLog
     // Tab-separated
     // Time, ip, method, url, user, agent, response code, request length, response length, response time
 
-    private final TraceTokenManager traceTokenManager;
     private final CurrentTimeMillisProvider currentTimeMillisProvider;
     private final Appender<HttpRequestEvent> appender;
 
-    public DelimitedRequestLog(String filename, int maxHistory, long maxSizeInBytes, TraceTokenManager traceTokenManager)
+    public DelimitedRequestLog(String filename, int maxHistory, long maxSizeInBytes)
             throws IOException
     {
-        this(filename, maxHistory, maxSizeInBytes, traceTokenManager, new SystemCurrentTimeMillisProvider());
+        this(filename, maxHistory, maxSizeInBytes, new SystemCurrentTimeMillisProvider());
     }
 
     public DelimitedRequestLog(String filename,
-            int maxHistory, long maxSizeInBytes, TraceTokenManager traceTokenManager,
+            int maxHistory, long maxSizeInBytes,
             CurrentTimeMillisProvider currentTimeMillisProvider)
             throws IOException
     {
-        this.traceTokenManager = traceTokenManager;
         this.currentTimeMillisProvider = currentTimeMillisProvider;
 
         appender = Logging.createFileAppender(filename, maxHistory, maxSizeInBytes, new EventEncoder(), new LoggerContext());
@@ -61,7 +58,7 @@ class DelimitedRequestLog
     public void log(Request request, Response response)
     {
         long currentTime = currentTimeMillisProvider.getCurrentTimeMillis();
-        HttpRequestEvent event = createHttpRequestEvent(request, response, traceTokenManager, currentTime);
+        HttpRequestEvent event = createHttpRequestEvent(request, response, currentTime);
 
         synchronized (appender) {
             appender.doAppend(event);

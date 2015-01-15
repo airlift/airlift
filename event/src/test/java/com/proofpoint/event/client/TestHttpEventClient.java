@@ -30,7 +30,6 @@ import com.proofpoint.http.client.balancing.ServiceUnavailableException;
 import com.proofpoint.http.client.jetty.JettyHttpClient;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.reporting.testing.TestingReportCollectionFactory;
-import com.proofpoint.tracetoken.TraceTokenManager;
 import com.proofpoint.units.Duration;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -63,6 +62,7 @@ import static com.google.common.collect.Lists.newArrayList;
 import static com.proofpoint.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 import static com.proofpoint.event.client.TestingUtils.getNormalizedJson;
 import static com.proofpoint.testing.Assertions.assertInstanceOf;
+import static com.proofpoint.tracetoken.TraceTokenManager.registerRequestToken;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -188,14 +188,13 @@ public class TestHttpEventClient
 
         Set<EventTypeMetadata<?>> eventTypes = getValidEventTypeMetaDataSet(FixedDummyEventClass.class);
         JsonEventWriter eventWriter = new JsonEventWriter(nodeInfo, eventTypes);
-        TraceTokenManager traceTokenManager = new TraceTokenManager();
-        traceTokenManager.registerRequestToken("sample-trace-token");
+        registerRequestToken("sample-trace-token");
 
         return new HttpEventClient(
                 eventWriter,
                 nodeInfo,
-                httpClient,
-                traceTokenManager);
+                httpClient
+        );
     }
 
     private Server createServer(final HttpServlet servlet)

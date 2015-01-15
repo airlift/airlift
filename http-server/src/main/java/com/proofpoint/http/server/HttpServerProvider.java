@@ -22,7 +22,6 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 import com.proofpoint.node.NodeInfo;
-import com.proofpoint.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.security.LoginService;
 
 import javax.annotation.Nullable;
@@ -56,7 +55,6 @@ public class HttpServerProvider
     private final Set<Filter> filters;
     private final Set<Filter> adminFilters;
     private QueryStringFilter queryStringFilter;
-    private TraceTokenManager traceTokenManager;
 
     @Inject
     public HttpServerProvider(HttpServerInfo httpServerInfo,
@@ -120,12 +118,6 @@ public class HttpServerProvider
         this.loginService = loginService;
     }
 
-    @Inject(optional = true)
-    public void setTokenManager(@Nullable TraceTokenManager tokenManager)
-    {
-        this.traceTokenManager = tokenManager;
-    }
-
     public HttpServer get()
     {
         try {
@@ -142,7 +134,6 @@ public class HttpServerProvider
                     mbeanServer,
                     loginService,
                     queryStringFilter,
-                    traceTokenManager,
                     stats,
                     detailedRequestStats
             );

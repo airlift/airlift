@@ -28,7 +28,6 @@ import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.http.client.UnexpectedResponseException;
 import com.proofpoint.log.Logger;
 import com.proofpoint.node.NodeInfo;
-import com.proofpoint.tracetoken.TraceTokenManager;
 import org.weakref.jmx.Flatten;
 
 import javax.annotation.Nullable;
@@ -42,6 +41,7 @@ import java.util.Arrays;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.http.client.Request.Builder.preparePost;
+import static com.proofpoint.tracetoken.TraceTokenManager.getCurrentRequestToken;
 import static java.lang.String.format;
 
 public class HttpEventClient
@@ -54,19 +54,16 @@ public class HttpEventClient
     private final JsonEventWriter eventWriter;
     private final HttpClient httpClient;
     private final NodeInfo nodeInfo;
-    private final TraceTokenManager traceTokenManager;
 
     @Inject
     public HttpEventClient(
             JsonEventWriter eventWriter,
             NodeInfo nodeInfo,
-            @ForEventClient HttpClient httpClient,
-            TraceTokenManager traceTokenManager)
+            @ForEventClient HttpClient httpClient)
     {
         this.eventWriter = checkNotNull(eventWriter, "eventWriter is null");
         this.nodeInfo = checkNotNull(nodeInfo, "nodeInfo is null");
         this.httpClient = checkNotNull(httpClient, "httpClient is null");
-        this.traceTokenManager = checkNotNull(traceTokenManager, "traceTokenManager is null");
     }
 
     @Flatten
@@ -106,7 +103,7 @@ public class HttpEventClient
     public <T> ListenableFuture<Void> post(EventGenerator<T> eventGenerator)
     {
         checkNotNull(eventGenerator, "eventGenerator is null");
-        String token = traceTokenManager.getCurrentRequestToken();
+        String token = getCurrentRequestToken();
 
         Request request = preparePost()
                 .setUri(URI.create("v2/event"))

@@ -17,24 +17,18 @@ package com.proofpoint.http.client;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
-import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.PrivateBinder;
-import com.proofpoint.bootstrap.Bootstrap;
 import com.proofpoint.bootstrap.LifeCycleManager;
-import com.proofpoint.configuration.ConfigurationFactory;
-import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.http.client.AsyncHttpClientModule.JettyIoPoolManager;
-import com.proofpoint.tracetoken.TraceTokenModule;
 import com.proofpoint.http.client.jetty.JettyHttpClient;
 import org.testng.annotations.Test;
 import org.weakref.jmx.Managed;
 
 import javax.inject.Qualifier;
-
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -54,8 +48,8 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
-import static org.weakref.jmx.guice.ExportBinder.newExporter;
 import static org.testng.Assert.assertTrue;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class TestHttpClientBinder
 {
@@ -80,8 +74,7 @@ public class TestHttpClientBinder
                                 builder.withFilter(TestingRequestFilter.class);
                                 builder.addFilterBinding().to(AnotherHttpRequestFilter.class);
                             }
-                        },
-                        new TraceTokenModule())
+                        })
                 .quiet()
                 .initialize();
 
@@ -112,8 +105,7 @@ public class TestHttpClientBinder
                                         .withFilter(AnotherHttpRequestFilter.class)
                                         .withTracing();
                             }
-                        },
-                        new TraceTokenModule())
+                        })
                 .quiet()
                 .initialize();
 

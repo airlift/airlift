@@ -1,5 +1,10 @@
 Platform 1.11
 
+* Trace Token improvements
+
+  - TraceTokenManager methods are now all static.
+  - TraceTokenModule is no longer needed and has been deprecated.
+
 * JAX-RS Query Parameter Parse Error Handling
 
   When a query parameter cannot be parsed (for example in Integer parameter

@@ -19,23 +19,30 @@ import com.proofpoint.log.Logging;
 
 import java.util.UUID;
 
-final public class TraceTokenManager
+public final class TraceTokenManager
 {
     private static final String TRACE_TOKEN = "TraceToken";
-    private final ThreadLocal<String> token = new ThreadLocal<>();
+    private static final ThreadLocal<String> token = new ThreadLocal<>();
 
-    public void registerRequestToken(String token)
+    /**
+     * @deprecated This is now a utility class. Instantiation is no longer required.
+     */
+    @Deprecated
+    public TraceTokenManager()
+    {}
+
+    public static void registerRequestToken(String token)
     {
-        this.token.set(token);
+        TraceTokenManager.token.set(token);
         Logging.putMDC(TRACE_TOKEN, token);
     }
 
-    public String getCurrentRequestToken()
+    public static String getCurrentRequestToken()
     {
-        return this.token.get();
+        return token.get();
     }
 
-    public String createAndRegisterNewRequestToken()
+    public static String createAndRegisterNewRequestToken()
     {
         String newToken = UUID.randomUUID().toString();
         registerRequestToken(newToken);
@@ -43,9 +50,9 @@ final public class TraceTokenManager
         return newToken;
     }
 
-    public void clearRequestToken()
+    public static void clearRequestToken()
     {
-        this.token.remove();
+        token.remove();
         Logging.removeMDC(TRACE_TOKEN);
     }
 }

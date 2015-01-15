@@ -35,7 +35,6 @@ import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.balancing.HttpServiceBalancer;
 import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.reporting.ReportingModule;
-import com.proofpoint.tracetoken.TraceTokenModule;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.weakref.jmx.testing.TestingMBeanModule;
@@ -410,7 +409,6 @@ public class TestDiscoveryBinder
                         BalancingHttpClientBindingBuilder builder = discoveryBinder(binder).bindDiscoveredHttpClient("bar", BarClient.class);
                         builder.withFilter(TestingRequestFilter.class);
                         builder.addFilterBinding().to(AnotherHttpRequestFilter.class);
-                        binder.install(new TraceTokenModule());
                     }
                 });
 
