@@ -28,7 +28,6 @@ import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
 import io.airlift.testing.FileUtils;
-import io.airlift.tracetoken.TraceTokenManager;
 import io.airlift.units.Duration;
 import org.apache.commons.codec.binary.Base64;
 import org.testng.annotations.AfterMethod;
@@ -254,7 +253,6 @@ public class TestHttpServerProvider
                 new NullEventClient());
         serverProvider.setTheAdminServlet(new DummyServlet());
         serverProvider.setLoginService(loginServiceProvider.get());
-        serverProvider.setTokenManager(new TraceTokenManager());
         server = serverProvider.get();
     }
 }

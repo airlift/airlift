@@ -19,6 +19,10 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 
+/**
+ * @deprecated No longer necessary
+ */
+@Deprecated
 public class TraceTokenModule
     implements Module
 {

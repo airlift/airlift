@@ -46,7 +46,6 @@ import io.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.NodeModule;
 import io.airlift.testing.FileUtils;
-import io.airlift.tracetoken.TraceTokenModule;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -266,7 +265,6 @@ public class TestHttpServerModule
                 new NodeModule(),
                 new ConfigurationModule(configFactory),
                 new InMemoryEventModule(),
-                new TraceTokenModule(),
                 new Module()
                 {
                     @Override

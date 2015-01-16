@@ -21,7 +21,6 @@ import com.google.common.primitives.Ints;
 import io.airlift.event.client.EventClient;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.node.NodeInfo;
-import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -87,7 +86,6 @@ public class HttpServer
             Set<Filter> adminFilters,
             MBeanServer mbeanServer,
             LoginService loginService,
-            TraceTokenManager tokenManager,
             RequestStats stats,
             EventClient eventClient)
             throws IOException
@@ -221,8 +219,8 @@ public class HttpServer
             handlers.addHandler(new ClassPathResourceHandler(resource.getBaseUri(), resource.getClassPathResourceBase(), resource.getWelcomeFiles()));
         }
 
-        handlers.addHandler(createServletContext(theServlet, parameters, filters, tokenManager, loginService, "http", "https"));
-        RequestLogHandler logHandler = createLogHandler(config, tokenManager, eventClient);
+        handlers.addHandler(createServletContext(theServlet, parameters, filters, loginService, "http", "https"));
+        RequestLogHandler logHandler = createLogHandler(config, eventClient);
         if (logHandler != null) {
             handlers.addHandler(logHandler);
         }
@@ -237,7 +235,7 @@ public class HttpServer
 
         HandlerList rootHandlers = new HandlerList();
         if (theAdminServlet != null && config.isAdminEnabled()) {
-            rootHandlers.addHandler(createServletContext(theAdminServlet, adminParameters, adminFilters, tokenManager, loginService, "admin"));
+            rootHandlers.addHandler(createServletContext(theAdminServlet, adminParameters, adminFilters, loginService, "admin"));
         }
         rootHandlers.addHandler(statsHandler);
         server.setHandler(rootHandlers);
@@ -246,16 +244,13 @@ public class HttpServer
     private static ServletContextHandler createServletContext(Servlet theServlet,
             Map<String, String> parameters,
             Set<Filter> filters,
-            TraceTokenManager tokenManager,
             LoginService loginService,
             String... connectorNames)
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
 
         context.addFilter(new FilterHolder(new TimingFilter()), "/*", null);
-        if (tokenManager != null) {
-            context.addFilter(new FilterHolder(new TraceTokenFilter(tokenManager)), "/*", null);
-        }
+        context.addFilter(new FilterHolder(new TraceTokenFilter()), "/*", null);
 
         // -- gzip response filter
         context.addFilter(GzipFilter.class, "/*", null);
@@ -301,7 +296,7 @@ public class HttpServer
         return securityHandler;
     }
 
-    protected RequestLogHandler createLogHandler(HttpServerConfig config, TraceTokenManager tokenManager, EventClient eventClient)
+    protected RequestLogHandler createLogHandler(HttpServerConfig config, EventClient eventClient)
             throws IOException
     {
         // TODO: use custom (more easily-parseable) format
@@ -318,7 +313,7 @@ public class HttpServer
             throw new IOException(format("Cannot create %s and path does not already exist", logPath.getAbsolutePath()));
         }
 
-        RequestLog requestLog = new DelimitedRequestLog(config.getLogPath(), Ints.checkedCast(config.getLogRetentionTime().roundTo(TimeUnit.DAYS)), tokenManager, eventClient);
+        RequestLog requestLog = new DelimitedRequestLog(config.getLogPath(), Ints.checkedCast(config.getLogRetentionTime().roundTo(TimeUnit.DAYS)), eventClient);
         logHandler.setRequestLog(requestLog);
 
         return logHandler;

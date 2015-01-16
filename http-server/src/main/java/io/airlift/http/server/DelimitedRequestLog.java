@@ -21,7 +21,6 @@ import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import io.airlift.event.client.EventClient;
 import io.airlift.log.Logger;
-import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
@@ -41,25 +40,22 @@ class DelimitedRequestLog
 
     // Tab-separated
     // Time, ip, method, url, user, agent, response code, request length, response length, response time
-    private final TraceTokenManager traceTokenManager;
     private final EventClient eventClient;
     private final CurrentTimeMillisProvider currentTimeMillisProvider;
     private final RollingFileAppender<HttpRequestEvent> fileAppender;
 
-    public DelimitedRequestLog(String filename, int retainDays, TraceTokenManager traceTokenManager, EventClient eventClient)
+    public DelimitedRequestLog(String filename, int retainDays, EventClient eventClient)
             throws IOException
     {
-        this(filename, retainDays, traceTokenManager, eventClient, new SystemCurrentTimeMillisProvider());
+        this(filename, retainDays, eventClient, new SystemCurrentTimeMillisProvider());
     }
 
     public DelimitedRequestLog(String filename,
             int retainDays,
-            TraceTokenManager traceTokenManager,
             EventClient eventClient,
             CurrentTimeMillisProvider currentTimeMillisProvider)
             throws IOException
     {
-        this.traceTokenManager = traceTokenManager;
         this.eventClient = eventClient;
         this.currentTimeMillisProvider = currentTimeMillisProvider;
 
@@ -95,7 +91,7 @@ class DelimitedRequestLog
     public void log(Request request, Response response)
     {
         long currentTime = currentTimeMillisProvider.getCurrentTimeMillis();
-        HttpRequestEvent event = createHttpRequestEvent(request, response, traceTokenManager, currentTime);
+        HttpRequestEvent event = createHttpRequestEvent(request, response, currentTime);
 
         fileAppender.doAppend(event);
 

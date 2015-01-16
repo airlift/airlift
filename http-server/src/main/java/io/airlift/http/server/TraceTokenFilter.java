@@ -15,9 +15,6 @@
  */
 package io.airlift.http.server;
 
-import io.airlift.tracetoken.TraceTokenManager;
-
-import javax.inject.Inject;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -28,17 +25,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+import static io.airlift.tracetoken.TraceTokenManager.createAndRegisterNewRequestToken;
+import static io.airlift.tracetoken.TraceTokenManager.registerRequestToken;
+
 class TraceTokenFilter
         implements Filter
 {
-    private final TraceTokenManager traceTokenManager;
-
-    @Inject
-    public TraceTokenFilter(TraceTokenManager traceTokenManager)
-    {
-        this.traceTokenManager = traceTokenManager;
-    }
-
     @Override
     public void init(FilterConfig filterConfig)
             throws ServletException
@@ -54,10 +46,10 @@ class TraceTokenFilter
 
         String token = request.getHeader("X-Airlift-TraceToken");
         if (token != null) {
-            traceTokenManager.registerRequestToken(token);
+            registerRequestToken(token);
         }
         else {
-            traceTokenManager.createAndRegisterNewRequestToken();
+            createAndRegisterNewRequestToken();
         }
         chain.doFilter(request, response);
     }

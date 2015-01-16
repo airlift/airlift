@@ -15,26 +15,34 @@
  */
 package io.airlift.tracetoken;
 
+import javax.annotation.Nullable;
 import java.util.UUID;
 
 public class TraceTokenManager
 {
-    private final ThreadLocal<String> token = new ThreadLocal<String>();
+    private static final ThreadLocal<String> token = new ThreadLocal<>();
 
-    public void registerRequestToken(String token)
+    /**
+     * @deprecated This is now a utility class. Instantiation is no longer required.
+     */
+    @Deprecated
+    public TraceTokenManager()
+    {}
+
+    public static void registerRequestToken(@Nullable String token)
     {
-        this.token.set(token);
+        TraceTokenManager.token.set(token);
     }
 
-    public String getCurrentRequestToken()
+    public static String getCurrentRequestToken()
     {
-        return this.token.get();
+        return token.get();
     }
 
-    public String createAndRegisterNewRequestToken()
+    public static String createAndRegisterNewRequestToken()
     {
         String newToken = UUID.randomUUID().toString();
-        this.token.set(newToken);
+        token.set(newToken);
 
         return newToken;
     }
