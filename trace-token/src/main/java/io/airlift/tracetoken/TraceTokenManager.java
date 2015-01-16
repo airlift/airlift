@@ -29,9 +29,11 @@ public class TraceTokenManager
     public TraceTokenManager()
     {}
 
-    public static void registerRequestToken(@Nullable String token)
+    public static TraceTokenScope registerRequestToken(@Nullable String token)
     {
+        String oldToken = TraceTokenManager.token.get();
         TraceTokenManager.token.set(token);
+        return new TraceTokenScope(oldToken);
     }
 
     public static String getCurrentRequestToken()

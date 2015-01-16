@@ -21,6 +21,7 @@ import static io.airlift.tracetoken.TraceTokenManager.createAndRegisterNewReques
 import static io.airlift.tracetoken.TraceTokenManager.getCurrentRequestToken;
 import static io.airlift.tracetoken.TraceTokenManager.registerRequestToken;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
 public class TestTraceTokenManager
 {
@@ -48,5 +49,52 @@ public class TestTraceTokenManager
 
         registerRequestToken("abc");
         assertEquals(getCurrentRequestToken(), "abc");
+    }
+
+    @Test
+    public void testClearRequestToken()
+    {
+        String oldToken = createAndRegisterNewRequestToken();
+
+        assertEquals(getCurrentRequestToken(), oldToken);
+
+        registerRequestToken(null);
+        assertNull(getCurrentRequestToken());
+    }
+
+    @Test
+    public void testRestoreNoToken()
+    {
+        registerRequestToken(null);
+
+        try (TraceTokenScope ignored = registerRequestToken("abc"))
+        {
+            assertEquals(getCurrentRequestToken(), "abc");
+        }
+        assertNull(getCurrentRequestToken());
+    }
+
+    @Test
+    public void testRestoreOldToken()
+    {
+        String token = createAndRegisterNewRequestToken();
+
+        try (TraceTokenScope ignored = registerRequestToken("abc"))
+        {
+            assertEquals(getCurrentRequestToken(), "abc");
+        }
+        assertEquals(getCurrentRequestToken(), token);
+    }
+
+    @Test
+    public void testRegisterNullToken()
+    {
+        String token = createAndRegisterNewRequestToken();
+
+        try (TraceTokenScope ignored = registerRequestToken(null))
+        {
+            assertNull(getCurrentRequestToken());
+        }
+        assertEquals(getCurrentRequestToken(), token);
     }
 }
