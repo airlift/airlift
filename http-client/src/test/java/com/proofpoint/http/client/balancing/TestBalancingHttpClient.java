@@ -7,6 +7,7 @@ import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
 import org.testng.annotations.Test;
 
+import java.io.OutputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -86,10 +87,10 @@ public class TestBalancingHttpClient
     class TestingHttpClient
             implements HttpClient, TestingClient
     {
-
         private String method;
         private List<URI> uris = new ArrayList<>();
         private List<Object> responses = new ArrayList<>();
+        private boolean skipBodyGenerator = false;
 
         TestingHttpClient(String method)
         {
@@ -114,6 +115,12 @@ public class TestBalancingHttpClient
             return this;
         }
 
+        public  TestingClient firstCallNoBodyGenerator()
+        {
+            skipBodyGenerator = true;
+            return this;
+        }
+
         public void assertDone()
         {
             assertEquals(uris.size(), 0, "all expected calls made");
@@ -129,10 +136,28 @@ public class TestBalancingHttpClient
         public <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
                 throws E
         {
-            assertTrue(uris.size() > 0, "call was expected");
+            assertTrue(!uris.isEmpty(), "call was expected");
             assertEquals(request.getMethod(), method, "request method");
             assertEquals(request.getUri(), uris.remove(0), "request uri");
             assertEquals(request.getBodyGenerator(), bodyGenerator, "request body generator");
+
+            if (skipBodyGenerator) {
+                skipBodyGenerator = false;
+            }
+            else {
+                try {
+                    bodyGenerator.write(new OutputStream()
+                    {
+                        @Override
+                        public void write(int b)
+                        {
+                        }
+                    });
+                }
+                catch (Exception e) {
+                    fail("BodyGenerator exception", e);
+                }
+            }
 
             Object response = responses.remove(0);
             if (response instanceof Exception) {

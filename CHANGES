@@ -1,5 +1,11 @@
 Platform 1.11
 
+* SingleUseBodyGenerator
+
+  We created SingleUseBodyGenerator, an abstract class implementing
+  BodyGenerator that enforces only being called once. The BalancingHttpClient
+  will not retry a request once a SingleUseBodyGenerator has been called.
+
 * Trace Token improvements
   - TraceTokenManager.registerRequestToken() now returns a TraceTokenScope
     which can be used with try-with-resources to restore the thread's previous

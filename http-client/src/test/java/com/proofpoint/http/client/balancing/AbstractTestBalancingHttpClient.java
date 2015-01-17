@@ -20,11 +20,13 @@ import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
+import com.proofpoint.http.client.SingleUseBodyGenerator;
 import org.mockito.ArgumentCaptor;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.URI;
 
@@ -33,6 +35,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -58,6 +61,8 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
         TestingClient expectCall(String uri, Response response);
 
         TestingClient expectCall(String uri, Exception exception);
+
+        TestingClient firstCallNoBodyGenerator();
 
         void assertDone();
     }
@@ -112,7 +117,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
         verify(serviceAttempt1, atLeastOnce()).getUri();
         verify(serviceAttempt1).markGood();
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, bodyGenerator, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, responseHandler);
     }
 
     @Test
@@ -133,7 +138,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
         verify(serviceAttempt1, atLeastOnce()).getUri();
         verify(serviceAttempt1).markGood();
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, bodyGenerator, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, responseHandler);
     }
 
     @Test
@@ -154,7 +159,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
         verify(serviceAttempt1, atLeastOnce()).getUri();
         verify(serviceAttempt1).markGood();
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, bodyGenerator, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, responseHandler);
     }
 
     @Test
@@ -180,7 +185,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
         verify(serviceAttempt1, atLeastOnce()).getUri();
         verify(serviceAttempt1).markGood();
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, bodyGenerator, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, responseHandler);
     }
 
     @Test
@@ -206,7 +211,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
         verify(serviceAttempt1, atLeastOnce()).getUri();
         verify(serviceAttempt1).markBad("204 status code");
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, bodyGenerator, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, responseHandler);
     }
 
     @Test
@@ -230,7 +235,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
         verify(serviceAttempt2, atLeastOnce()).getUri();
         verify(serviceAttempt2).markGood();
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, responseHandler);
     }
 
     @Test(dataProvider = "retryStatus")
@@ -257,7 +262,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
         verify(serviceAttempt2, atLeastOnce()).getUri();
         verify(serviceAttempt2).markGood();
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, responseHandler);
     }
 
     @DataProvider(name = "retryStatus")
@@ -293,7 +298,82 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
         verify(serviceAttempt1, atLeastOnce()).getUri();
         verify(serviceAttempt1).markBad("500 status code");
         verify(responseHandler).handle(any(Request.class), same(response500));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, bodyGenerator, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, responseHandler);
+    }
+
+    @Test
+    public void testDoesntRetryOnResponseSingleUseBodyGeneratorUsed()
+            throws Exception
+    {
+        bodyGenerator = spy(new SingleUseBodyGenerator()
+        {
+            @Override
+            protected void writeOnce(OutputStream out)
+            {
+            }
+        });
+        request = preparePut().setUri(URI.create("v1/service")).setBodyGenerator(bodyGenerator).build();
+
+        Response response503 = mock(Response.class);
+        when(response503.getStatusCode()).thenReturn(503);
+
+        httpClient.expectCall("http://s1.example.com/v1/service", new ConnectException());
+        httpClient.expectCall("http://s2.example.com/v1/service", response503);
+        httpClient.firstCallNoBodyGenerator();
+
+        ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
+        when(responseHandler.handle(any(Request.class), same(response503))).thenReturn("test response");
+
+        String returnValue = balancingHttpClient.execute(request, responseHandler);
+        assertEquals(returnValue, "test response", "return value from .execute()");
+
+        httpClient.assertDone();
+
+        verify(serviceAttempt1, atLeastOnce()).getUri();
+        verify(serviceAttempt1).markBad("ConnectException");
+        verify(serviceAttempt1).next();
+        verify(serviceAttempt2, atLeastOnce()).getUri();
+        verify(serviceAttempt2).markBad("503 status code");
+        verify(responseHandler).handle(any(Request.class), same(response503));
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, responseHandler);
+    }
+
+    @Test
+    public void testDoesntRetryOnExceptionSingleUseBodyGeneratorUsed()
+            throws Exception
+    {
+        bodyGenerator = spy(new SingleUseBodyGenerator()
+        {
+            @Override
+            protected void writeOnce(OutputStream out)
+            {
+            }
+        });
+        request = preparePut().setUri(URI.create("v1/service")).setBodyGenerator(bodyGenerator).build();
+
+        Response response503 = mock(Response.class);
+        when(response503.getStatusCode()).thenReturn(503);
+        ConnectException connectException = new ConnectException();
+
+        httpClient.expectCall("http://s1.example.com/v1/service", response503);
+        httpClient.expectCall("http://s2.example.com/v1/service", connectException);
+        httpClient.firstCallNoBodyGenerator();
+
+        ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
+        when(responseHandler.handleException(any(Request.class), same(connectException))).thenReturn("test response");
+
+        String returnValue = balancingHttpClient.execute(request, responseHandler);
+        assertEquals(returnValue, "test response", "return value from .execute()");
+
+        httpClient.assertDone();
+
+        verify(serviceAttempt1, atLeastOnce()).getUri();
+        verify(serviceAttempt1).markBad("503 status code");
+        verify(serviceAttempt1).next();
+        verify(serviceAttempt2, atLeastOnce()).getUri();
+        verify(serviceAttempt2).markBad("ConnectException");
+        verify(responseHandler).handleException(any(Request.class), same(connectException));
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, responseHandler);
     }
 
     @Test
@@ -324,7 +404,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
         verify(serviceAttempt3, atLeastOnce()).getUri();
         verify(serviceAttempt3).markGood();
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, responseHandler);
     }
 
     @Test
@@ -355,7 +435,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
         verify(serviceAttempt3, atLeastOnce()).getUri();
         verify(serviceAttempt3).markGood();
         verify(responseHandler).handle(any(Request.class), same(response));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, responseHandler);
     }
 
     @Test
@@ -393,7 +473,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
         verify(serviceAttempt3, atLeastOnce()).getUri();
         verify(serviceAttempt3).markBad("ConnectException");
         verify(responseHandler).handleException(any(Request.class), same(connectException));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, responseHandler);
     }
 
     @Test
@@ -425,7 +505,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
         verify(serviceAttempt3, atLeastOnce()).getUri();
         verify(serviceAttempt3).markBad("ConnectException");
         verify(responseHandler).handleException(any(Request.class), same(connectException));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, responseHandler);
     }
 
     @Test
@@ -458,7 +538,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
         verify(serviceAttempt3, atLeastOnce()).getUri();
         verify(serviceAttempt3).markBad("408 status code");
         verify(responseHandler).handle(any(Request.class), same(response408));
-        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, bodyGenerator, responseHandler);
+        verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, responseHandler);
     }
 
     @Test

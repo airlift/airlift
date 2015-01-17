@@ -10,6 +10,8 @@ import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.http.client.SyncToAsyncWrapperClient;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -96,10 +98,10 @@ public class TestAsyncBalancingHttpClient
     class TestingHttpClient
             implements HttpClient, TestingClient
     {
-
         private String method;
         private List<URI> uris = new ArrayList<>();
         private List<Object> responses = new ArrayList<>();
+        private boolean skipBodyGenerator = false;
 
         TestingHttpClient(String method)
         {
@@ -124,6 +126,12 @@ public class TestAsyncBalancingHttpClient
             return this;
         }
 
+        public  TestingClient firstCallNoBodyGenerator()
+        {
+            skipBodyGenerator = true;
+            return this;
+        }
+
         public void assertDone()
         {
             assertEquals(uris.size(), 0, "all expected calls made");
@@ -132,10 +140,28 @@ public class TestAsyncBalancingHttpClient
         @Override
         public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
         {
-            assertTrue(uris.size() > 0, "call was expected");
+            assertTrue(!uris.isEmpty(), "call was expected");
             assertEquals(request.getMethod(), method, "request method");
             assertEquals(request.getUri(), uris.remove(0), "request uri");
             assertEquals(request.getBodyGenerator(), bodyGenerator, "request body generator");
+
+            if (skipBodyGenerator) {
+                skipBodyGenerator = false;
+            }
+            else {
+                try {
+                    bodyGenerator.write(new OutputStream()
+                    {
+                        @Override
+                        public void write(int b)
+                        {
+                        }
+                    });
+                }
+                catch (Exception e) {
+                    fail("BodyGenerator exception", e);
+                }
+            }
 
             Object response = responses.remove(0);
             // TODO: defer availability of return values ?
@@ -147,6 +173,7 @@ public class TestAsyncBalancingHttpClient
                     return new ImmediateFailedAsyncHttpFuture<>((E) e);
                 }
             }
+
             try {
                 return new ImmediateAsyncHttpFuture<>(responseHandler.handle(request, (Response) response));
             }

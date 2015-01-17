@@ -16,9 +16,11 @@
 package com.proofpoint.http.client.balancing;
 
 import com.google.common.collect.ImmutableSet;
+import com.proofpoint.http.client.BodyGenerator;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
+import com.proofpoint.http.client.SingleUseBodyGenerator;
 import com.proofpoint.log.Logger;
 
 import java.util.Set;
@@ -46,7 +48,7 @@ final class RetryingResponseHandler<T, E extends Exception>
         log.warn(exception, "Exception querying %s",
                 request.getUri().resolve("/"));
 
-        if (finalAttempt) {
+        if (finalAttempt || singleUseBodyGeneratorUsed(request)) {
             Object result;
             try {
                 result = innerHandler.handleException(originalRequest, exception);
@@ -69,7 +71,7 @@ final class RetryingResponseHandler<T, E extends Exception>
             String retryHeader = response.getHeader("X-Proofpoint-Retry");
             log.warn("%d response querying %s",
                     response.getStatusCode(), request.getUri().resolve("/"));
-            if (!finalAttempt && !("no".equalsIgnoreCase(retryHeader))) {
+            if (!finalAttempt && !("no".equalsIgnoreCase(retryHeader)) && !singleUseBodyGeneratorUsed(request)) {
                 throw new RetryException(failureCategory);
             }
 
@@ -89,5 +91,11 @@ final class RetryingResponseHandler<T, E extends Exception>
         catch (Exception e) {
             throw new InnerHandlerException(e, failureCategory);
         }
+    }
+
+    private static boolean singleUseBodyGeneratorUsed(Request request)
+    {
+        BodyGenerator bodyGenerator = request.getBodyGenerator();
+        return bodyGenerator instanceof SingleUseBodyGenerator && ((SingleUseBodyGenerator) bodyGenerator).isUsed();
     }
 }
