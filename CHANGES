@@ -1,3 +1,11 @@
+Platform 1.11
+
+* JAX-RS Query Parameter Parse Error Handling
+
+  When a query parameter cannot be parsed (for example in Integer parameter
+  whose supplied value could not be converted to an Integer), a
+  400 BAD REQUEST will be issued instead of the Jersey default 404 NOT FOUND.
+
 Platform 1.10
 
 * [Bug] NPE if config class bound both with and without a config prefix.

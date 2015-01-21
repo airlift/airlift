@@ -74,9 +74,11 @@ public class JaxrsModule
         jaxrsBinder(binder).bind(JsonMapper.class);
         jaxrsBinder(binder).bind(SmileMapper.class);
         jaxrsBinder(binder).bind(ParsingExceptionMapper.class);
+        jaxrsBinder(binder).bind(QueryParamExceptionMapper.class);
         jaxrsBinder(binder).bind(OverrideMethodFilter.class);
         jaxrsBinder(binder).bind(TimingResourceDynamicFeature.class);
         jaxrsBinder(binder).bindAdmin(ParsingExceptionMapper.class);
+        jaxrsBinder(binder).bindAdmin(QueryParamExceptionMapper.class);
         jaxrsBinder(binder).bindAdmin(OverrideMethodFilter.class);
 
         newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
