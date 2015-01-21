@@ -6,6 +6,10 @@ Platform 1.11
   whose supplied value could not be converted to an Integer), a
   400 BAD REQUEST will be issued instead of the Jersey default 404 NOT FOUND.
 
+* Library Upgrades
+
+  - jnr-posix to 3.0.9
+
 Platform 1.10
 
 * [Bug] NPE if config class bound both with and without a config prefix.

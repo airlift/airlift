@@ -16,6 +16,7 @@
 package com.proofpoint.launcher;
 
 import com.google.common.collect.ImmutableList;
+import jnr.constants.platform.Errno;
 import jnr.posix.POSIX;
 import jnr.posix.POSIXFactory;
 import jnr.posix.POSIXHandler;
@@ -100,6 +101,12 @@ class Processes
         public void error(jnr.constants.platform.Errno error, String extraData)
         {
             throw new RuntimeException("native error " + error.description() + " " + extraData);
+        }
+
+        @Override
+        public void error(Errno errno, String extraData1, String extraData2)
+        {
+            throw new RuntimeException("native error " + errno.description() + " " + extraData1 + " "  + extraData2);
         }
 
         @Override
