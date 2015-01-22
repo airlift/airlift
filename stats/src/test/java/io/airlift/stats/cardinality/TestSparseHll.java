@@ -15,6 +15,7 @@ package io.airlift.stats.cardinality;
 
 import com.google.common.collect.ImmutableList;
 import io.airlift.slice.Murmur3;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -25,43 +26,43 @@ import static org.testng.Assert.assertEquals;
 
 public class TestSparseHll
 {
-    @Test
-    public void testMerge()
+    @Test(dataProvider = "bits")
+    public void testMerge(int prefixBitLength)
             throws Exception
     {
         // with overlap
-        verifyMerge(sequence(0, 100), sequence(50, 150));
-        verifyMerge(sequence(50, 150), sequence(0, 100));
+        verifyMerge(prefixBitLength, sequence(0, 100), sequence(50, 150));
+        verifyMerge(prefixBitLength, sequence(50, 150), sequence(0, 100));
 
         // no overlap
-        verifyMerge(sequence(0, 100), sequence(200, 300));
-        verifyMerge(sequence(200, 300), sequence(0, 100));
+        verifyMerge(prefixBitLength, sequence(0, 100), sequence(200, 300));
+        verifyMerge(prefixBitLength, sequence(200, 300), sequence(0, 100));
 
         // idempotent
-        verifyMerge(sequence(0, 100), sequence(0, 100));
+        verifyMerge(prefixBitLength, sequence(0, 100), sequence(0, 100));
 
         // multiple overflows (some with same index)
-        verifyMerge(ImmutableList.of(29678L, 54004L), ImmutableList.of(64034L, 20591L, 56987L));
-        verifyMerge(ImmutableList.of(64034L, 20591L, 56987L), ImmutableList.of(29678L, 54004L));
+        verifyMerge(prefixBitLength, ImmutableList.of(29678L, 54004L), ImmutableList.of(64034L, 20591L, 56987L));
+        verifyMerge(prefixBitLength, ImmutableList.of(64034L, 20591L, 56987L), ImmutableList.of(29678L, 54004L));
     }
 
-    @Test
-    public void testToDense()
+    @Test(dataProvider = "bits")
+    public void testToDense(int prefixBitLength)
             throws Exception
     {
-        verifyToDense(sequence(0, 10000));
+        verifyToDense(prefixBitLength, sequence(0, 10000));
 
         // special cases with overflows
-        verifyToDense(ImmutableList.of(201L, 280L));
-        verifyToDense(ImmutableList.of(224L, 271L));
+        verifyToDense(prefixBitLength, ImmutableList.of(201L, 280L));
+        verifyToDense(prefixBitLength, ImmutableList.of(224L, 271L));
     }
 
-    private static void verifyMerge(List<Long> one, List<Long> two)
+    private static void verifyMerge(int prefixBitLength, List<Long> one, List<Long> two)
     {
-        SparseHll hll1 = new SparseHll(11);
-        SparseHll hll2 = new SparseHll(11);
+        SparseHll hll1 = new SparseHll(prefixBitLength);
+        SparseHll hll2 = new SparseHll(prefixBitLength);
 
-        SparseHll expected = new SparseHll(11);
+        SparseHll expected = new SparseHll(prefixBitLength);
 
         for (long value : one) {
             long hash = Murmur3.hash64(value);
@@ -85,10 +86,10 @@ public class TestSparseHll
         assertSlicesEqual(hll1.serialize(), expected.serialize());
     }
 
-    private static void verifyToDense(List<Long> values)
+    private static void verifyToDense(int prefixBitLength, List<Long> values)
     {
-        DenseHll expected = new DenseHll(11);
-        SparseHll sparse = new SparseHll(11);
+        DenseHll expected = new DenseHll(prefixBitLength);
+        SparseHll sparse = new SparseHll(prefixBitLength);
 
         for (long value : values) {
             long hash = Murmur3.hash64(value);
@@ -100,5 +101,24 @@ public class TestSparseHll
         expected.verify();
 
         assertSlicesEqual(sparse.toDense().serialize(), expected.serialize());
+    }
+
+    @DataProvider(name = "bits")
+    private Object[][] prefixLengths()
+    {
+        return new Object[][] {
+                new Object[] { 4 },
+                new Object[] { 5 },
+                new Object[] { 6 },
+                new Object[] { 7 },
+                new Object[] { 8 },
+                new Object[] { 9 },
+                new Object[] { 10 },
+                new Object[] { 11 },
+                new Object[] { 12 },
+                new Object[] { 13 },
+                new Object[] { 14 },
+                new Object[] { 15 },
+        };
     }
 }

@@ -14,13 +14,10 @@
 package io.airlift.stats.cardinality;
 
 import io.airlift.slice.Murmur3;
-import io.airlift.slice.Slice;
-import io.airlift.slice.Slices;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.PrintWriter;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
 import static io.airlift.stats.cardinality.TestUtils.sequence;
@@ -28,51 +25,51 @@ import static org.testng.Assert.assertEquals;
 
 public class TestDenseHll
 {
-    @Test
-    public void testInsert()
+    @Test(dataProvider = "bits")
+    public void testInsert(int prefixBitLength)
             throws Exception
     {
-        DenseHll hll = new DenseHll(11);
+        DenseHll hll = new DenseHll(prefixBitLength);
         for (int i = 0; i < 20000; i++) {
             hll.insertHash(Murmur3.hash64(i));
             hll.verify();
         }
     }
 
-    @Test
-    public void testMerge()
+    @Test(dataProvider = "bits")
+    public void testMerge(int prefixBitLength)
             throws Exception
     {
         // small, non-overlapping
-        verifyMerge(sequence(0, 100), sequence(100, 200));
-        verifyMerge(sequence(100, 200), sequence(0, 100));
+        verifyMerge(prefixBitLength, sequence(0, 100), sequence(100, 200));
+        verifyMerge(prefixBitLength, sequence(100, 200), sequence(0, 100));
 
         // small, overlapping
-        verifyMerge(sequence(0, 100), sequence(50, 150));
-        verifyMerge(sequence(50, 150), sequence(0, 100));
+        verifyMerge(prefixBitLength, sequence(0, 100), sequence(50, 150));
+        verifyMerge(prefixBitLength, sequence(50, 150), sequence(0, 100));
 
         // small, same
-        verifyMerge(sequence(0, 100), sequence(0, 100));
+        verifyMerge(prefixBitLength, sequence(0, 100), sequence(0, 100));
 
 
         // large, non-overlapping
-        verifyMerge(sequence(0, 20000), sequence(20000, 40000));
-        verifyMerge(sequence(20000, 40000), sequence(0, 20000));
+        verifyMerge(prefixBitLength, sequence(0, 20000), sequence(20000, 40000));
+        verifyMerge(prefixBitLength, sequence(20000, 40000), sequence(0, 20000));
 
         // large, overlapping
-        verifyMerge(sequence(0, 20000), sequence(10000, 30000));
-        verifyMerge(sequence(10000, 30000), sequence(0, 20000));
+        verifyMerge(prefixBitLength, sequence(0, 20000), sequence(10000, 30000));
+        verifyMerge(prefixBitLength, sequence(10000, 30000), sequence(0, 20000));
 
         // large, same
-        verifyMerge(sequence(0, 20000), sequence(0, 20000));
+        verifyMerge(prefixBitLength, sequence(0, 20000), sequence(0, 20000));
     }
 
-    private static void verifyMerge(List<Long> one, List<Long> two)
+    private static void verifyMerge(int prefixBitLength, List<Long> one, List<Long> two)
     {
-        DenseHll hll1 = new DenseHll(11);
-        DenseHll hll2 = new DenseHll(11);
+        DenseHll hll1 = new DenseHll(prefixBitLength);
+        DenseHll hll2 = new DenseHll(prefixBitLength);
 
-        DenseHll expected = new DenseHll(11);
+        DenseHll expected = new DenseHll(prefixBitLength);
 
         for (long value : one) {
             long hash = Murmur3.hash64(value);
@@ -94,5 +91,24 @@ public class TestDenseHll
 
         assertEquals(hll1.cardinality(), expected.cardinality());
         assertSlicesEqual(hll1.serialize(), expected.serialize());
+    }
+
+    @DataProvider(name = "bits")
+    private Object[][] prefixLengths()
+    {
+        return new Object[][] {
+                new Object[] { 4 },
+                new Object[] { 5 },
+                new Object[] { 6 },
+                new Object[] { 7 },
+                new Object[] { 8 },
+                new Object[] { 9 },
+                new Object[] { 10 },
+                new Object[] { 11 },
+                new Object[] { 12 },
+                new Object[] { 13 },
+                new Object[] { 14 },
+                new Object[] { 15 },
+        };
     }
 }
