@@ -27,6 +27,9 @@ Platform 1.11
   - Jetty to 9.2.7
   - jnr-posix to 3.0.9
 
+* [Bug] Interrupt the BodyGenerator thread on write failure. This might have
+  been the cause of HttpClient hangs.
+
 Platform 1.10
 
 * [Bug] NPE if config class bound both with and without a config prefix.

@@ -44,6 +44,7 @@ import org.weakref.jmx.Managed;
 
 import javax.annotation.concurrent.GuardedBy;
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -586,6 +587,7 @@ public class JettyHttpClient
         private final BodyGenerator bodyGenerator;
         private final Executor executor;
         private final String traceToken;
+        private final AtomicReference<Thread> bodyGeneratorThread = new AtomicReference<>();
 
         BodyGeneratorContentProvider(BodyGenerator bodyGenerator, Executor executor)
         {
@@ -611,42 +613,26 @@ public class JettyHttpClient
                 @Override
                 public void run()
                 {
-                    BodyGeneratorOutputStream out = new BodyGeneratorOutputStream(chunks);
-                    try (TraceTokenScope ignored = registerRequestToken(traceToken)) {
-                        bodyGenerator.write(out);
-                        out.close();
+                    try {
+                        bodyGeneratorThread.set(Thread.currentThread());
+                        BodyGeneratorOutputStream out = new BodyGeneratorOutputStream(chunks);
+                        try (TraceTokenScope ignored = registerRequestToken(traceToken)) {
+                            bodyGenerator.write(out);
+                            out.close();
+                        }
+                        catch (Exception e) {
+                            exception.set(e);
+                            chunks.clear();
+                            chunks.add(EXCEPTION);
+                        }
                     }
-                    catch (Exception e) {
-                        exception.set(e);
-                        chunks.clear();
-                        chunks.add(EXCEPTION);
+                    finally {
+                        bodyGeneratorThread.set(null);
                     }
                 }
             });
 
-            return new AbstractIterator<ByteBuffer>()
-            {
-                @Override
-                protected ByteBuffer computeNext()
-                {
-                    ByteBuffer chunk;
-                    try {
-                        chunk = chunks.take();
-                    }
-                    catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException("Interrupted", e);
-                    }
-
-                    if (chunk == EXCEPTION) {
-                        throw Throwables.propagate(exception.get());
-                    }
-                    if (chunk == DONE) {
-                        return endOfData();
-                    }
-                    return chunk;
-                }
-            };
+            return new ChunksIterator(chunks, exception);
         }
 
         private static final class BodyGeneratorOutputStream
@@ -695,6 +681,51 @@ public class JettyHttpClient
                 }
                 catch (InterruptedException e) {
                     throw new InterruptedIOException();
+                }
+            }
+        }
+
+        private class ChunksIterator extends AbstractIterator<ByteBuffer>
+            implements Closeable
+        {
+            private final BlockingQueue<ByteBuffer> chunks;
+            private final AtomicReference<Exception> exception;
+
+            public ChunksIterator(BlockingQueue<ByteBuffer> chunks, AtomicReference<Exception> exception)
+            {
+                this.chunks = chunks;
+                this.exception = exception;
+            }
+
+            @Override
+            protected ByteBuffer computeNext()
+            {
+                ByteBuffer chunk;
+                try {
+                    chunk = chunks.take();
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Interrupted", e);
+                }
+
+                if (chunk == EXCEPTION) {
+                    bodyGeneratorThread.set(null);
+                    throw Throwables.propagate(exception.get());
+                }
+                if (chunk == DONE) {
+                    bodyGeneratorThread.set(null);
+                    return endOfData();
+                }
+                return chunk;
+            }
+
+            @Override
+            public void close()
+            {
+                Thread thread = bodyGeneratorThread.get();
+                if (thread != null) {
+                    thread.interrupt();
                 }
             }
         }
