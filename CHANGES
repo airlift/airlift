@@ -8,6 +8,8 @@ Platform 1.11
 
 * Library Upgrades
 
+  - AutoValue to 1.0
+  - Jetty to 9.2.7
   - jnr-posix to 3.0.9
 
 Platform 1.10
