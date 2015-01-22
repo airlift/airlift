@@ -337,6 +337,10 @@ final class DenseHll
         overflowBucket = (short) newOverflowBucket;
         overflowValue = (byte) newOverflowValue;
 
+        // all baseline values in one of the HLLs lost to the values
+        // in the other HLL, so we need to adjust the final baseline
+        adjustBaselineIfNeeded();
+
         return this;
     }
 
