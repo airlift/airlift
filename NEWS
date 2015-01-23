@@ -1,3 +1,11 @@
+Airlift 0.100
+
+The previous implementation of sparse HyperLogLog had an issue where errors
+introduced by a loss of information would compound when many instances were
+merged together. We've replaced it with a new implementation that doesn't 
+suffer from this problem, but the change in the serialization format breaks
+backward compatibility.
+
 Airlift 0.99
 
 * Java 8 is now required

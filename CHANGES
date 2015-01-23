@@ -1,3 +1,7 @@
+* 0.100
+
+- New algorithm an representation for sparse HLL
+
 * 0.99
 
 - Java 8 is now required
