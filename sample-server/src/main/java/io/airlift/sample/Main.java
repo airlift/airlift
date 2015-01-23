@@ -29,7 +29,6 @@ import io.airlift.jmx.JmxModule;
 import io.airlift.log.LogJmxModule;
 import io.airlift.log.Logger;
 import io.airlift.node.NodeModule;
-import io.airlift.tracetoken.TraceTokenModule;
 import org.weakref.jmx.guice.MBeanModule;
 
 public class Main
@@ -51,7 +50,6 @@ public class Main
                 new JmxHttpRpcModule(),
                 new LogJmxModule(),
                 new HttpEventModule(),
-                new TraceTokenModule(),
                 new MainModule());
 
         try {

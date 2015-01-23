@@ -54,7 +54,6 @@ public class HttpServerProvider
     private final RequestStats stats;
     private final Set<Filter> filters;
     private final Set<Filter> adminFilters;
-    private TraceTokenManager traceTokenManager;
     private final EventClient eventClient;
 
     @Inject
@@ -119,12 +118,6 @@ public class HttpServerProvider
         this.loginService = loginService;
     }
 
-    @Inject(optional = true)
-    public void setTokenManager(@Nullable TraceTokenManager tokenManager)
-    {
-        this.traceTokenManager = tokenManager;
-    }
-
     public HttpServer get()
     {
         try {
@@ -140,7 +133,6 @@ public class HttpServerProvider
                     adminFilters,
                     mbeanServer,
                     loginService,
-                    traceTokenManager,
                     stats,
                     eventClient);
             httpServer.start();

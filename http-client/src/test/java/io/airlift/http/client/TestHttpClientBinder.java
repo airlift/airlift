@@ -25,7 +25,6 @@ import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.HttpClientModule.JettyIoPoolManager;
 import io.airlift.http.client.HttpClientBinder.HttpClientBindingBuilder;
 import io.airlift.http.client.jetty.JettyHttpClient;
-import io.airlift.tracetoken.TraceTokenModule;
 import org.testng.annotations.Test;
 
 import javax.inject.Qualifier;
@@ -70,8 +69,7 @@ public class TestHttpClientBinder
                         builder.withFilter(TestingRequestFilter.class);
                         builder.addFilterBinding().to(AnotherHttpRequestFilter.class);
                     }
-                },
-                new TraceTokenModule())
+                })
                 .quiet()
                 .strictConfig()
                 .initialize();
@@ -101,8 +99,7 @@ public class TestHttpClientBinder
                                 .withFilter(AnotherHttpRequestFilter.class)
                                 .withTracing();
                     }
-                },
-                new TraceTokenModule())
+                })
                 .quiet()
                 .strictConfig()
                 .initialize();

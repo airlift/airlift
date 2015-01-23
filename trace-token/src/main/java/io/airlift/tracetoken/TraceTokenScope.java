@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Proofpoint, Inc.
+ * Copyright 2015 Proofpoint, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,23 @@
  */
 package io.airlift.tracetoken;
 
-import com.google.inject.Binder;
-import com.google.inject.Module;
-import com.google.inject.Scopes;
+import javax.annotation.Nullable;
 
-/**
- * @deprecated No longer necessary
- */
-@Deprecated
-public class TraceTokenModule
-    implements Module
+import static io.airlift.tracetoken.TraceTokenManager.registerRequestToken;
+
+public class TraceTokenScope
+    implements AutoCloseable
 {
-    @Override
-    public void configure(Binder binder)
+    private final String oldToken;
+
+    TraceTokenScope(@Nullable String oldToken)
     {
-        binder.bind(TraceTokenManager.class).in(Scopes.SINGLETON);
+        this.oldToken = oldToken;
+    }
+
+    @Override
+    public void close()
+    {
+        registerRequestToken(oldToken);
     }
 }

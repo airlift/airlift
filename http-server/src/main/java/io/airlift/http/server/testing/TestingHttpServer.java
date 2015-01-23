@@ -26,7 +26,6 @@ import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.RequestStats;
 import io.airlift.http.server.TheServlet;
 import io.airlift.node.NodeInfo;
-import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 
 import javax.servlet.Filter;
@@ -82,14 +81,13 @@ public class TestingHttpServer
                 ImmutableSet.<Filter>of(),
                 null,
                 null,
-                new TraceTokenManager(),
                 new RequestStats(),
                 new NullEventClient());
         this.httpServerInfo = httpServerInfo;
     }
 
     @Override
-    public RequestLogHandler createLogHandler(HttpServerConfig config, TraceTokenManager tokenManager, EventClient eventClient)
+    public RequestLogHandler createLogHandler(HttpServerConfig config, EventClient eventClient)
             throws IOException
     {
         return null;
