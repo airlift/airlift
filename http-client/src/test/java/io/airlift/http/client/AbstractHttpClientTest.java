@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Throwables.propagate;
@@ -62,6 +63,7 @@ import static io.airlift.units.Duration.nanosSince;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public abstract class AbstractHttpClientTest
@@ -481,7 +483,7 @@ public abstract class AbstractHttpClientTest
                             throws Exception
                     {
                         out.write(1);
-                        out.write(new byte[] {2, 5});
+                        out.write(new byte[]{2, 5});
                     }
                 })
                 .build();
@@ -493,7 +495,7 @@ public abstract class AbstractHttpClientTest
         Assert.assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
         Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
-        Assert.assertEquals(servlet.requestBytes, new byte[] {1, 2, 5});
+        Assert.assertEquals(servlet.requestBytes, new byte[]{1, 2, 5});
     }
 
     @Test(expectedExceptions = {SocketTimeoutException.class, TimeoutException.class, ClosedChannelException.class})
@@ -725,6 +727,51 @@ public abstract class AbstractHttpClientTest
         }
     }
 
+    @Test(expectedExceptions = IOException.class)
+    public void testConnectWriteRequestClose()
+            throws Exception
+    {
+        try (FakeServer fakeServer = new FakeServer(scheme, host, 1024, null, true)) {
+            HttpClientConfig config = new HttpClientConfig();
+            config.setConnectTimeout(new Duration(5, SECONDS));
+            config.setReadTimeout(new Duration(5, SECONDS));
+
+            // kick the fake server
+            executor.execute(fakeServer);
+
+            // timing based check to assure we don't hang
+            long start = System.nanoTime();
+            final AtomicBoolean bodyGeneratorCalled = new AtomicBoolean(false);
+            try {
+                Request request = preparePut()
+                        .setUri(fakeServer.getUri())
+                        .setBodyGenerator(new BodyGenerator()
+                        {
+                            @Override
+                            public void write(OutputStream out)
+                                    throws Exception
+                            {
+                                bodyGeneratorCalled.set(true);
+                                try {
+                                    for (int i = 0; i < 100; ++i) {
+                                        out.write(new byte[1024]);
+                                    }
+                                }
+                                catch (IOException e) {
+                                    throw e;
+                                }
+                            }
+                        })
+                        .build();
+                executeRequest(config, request, new ResponseToStringHandler());
+            }
+            finally {
+                assertTrue(bodyGeneratorCalled.get(), "BodyGenerator called");
+                assertLessThan(nanosSince(start), new Duration(1, SECONDS), "Expected request to finish quickly");
+            }
+        }
+    }
+
     @Test(expectedExceptions = CustomError.class)
     public void testHandlesUndeclaredThrowable()
             throws Exception
@@ -795,7 +842,7 @@ public abstract class AbstractHttpClientTest
                 Socket connectionSocket = serverSocket.accept();
                 this.connectionSocket.set(connectionSocket);
                 if (readBytes > 0) {
-                    connectionSocket.setSoTimeout(5);
+                    connectionSocket.setSoTimeout(500);
                     long bytesRead = 0;
                     try {
                         InputStream inputStream = connectionSocket.getInputStream();
