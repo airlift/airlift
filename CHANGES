@@ -15,12 +15,6 @@ Platform 1.11
   - HttpClient now propagates the trace token to BodyGenerator and
     ResponseHandler calls.
 
-* JAX-RS Query Parameter Parse Error Handling
-
-  When a query parameter cannot be parsed (for example in Integer parameter
-  whose supplied value could not be converted to an Integer), a
-  400 BAD REQUEST will be issued instead of the Jersey default 404 NOT FOUND.
-
 * Library Upgrades
 
   - AutoValue to 1.0
@@ -29,6 +23,12 @@ Platform 1.11
 
 * [Bug] Interrupt the BodyGenerator thread on write failure. This might have
   been the cause of HttpClient hangs.
+
+* [Bug] Fixed status code for JAX-RS query parameter parse error
+
+  When a query parameter cannot be parsed (for example in Integer parameter
+  whose supplied value could not be converted to an Integer), a
+  400 BAD REQUEST will be issued instead of the Jersey default 404 NOT FOUND.
 
 Platform 1.10
 
