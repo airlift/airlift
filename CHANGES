@@ -1,3 +1,7 @@
+Platform 1.12
+
+* We improved the previous BodyGenerator bug fix to remove a race condition.
+
 Platform 1.11
 
 * SingleUseBodyGenerator
