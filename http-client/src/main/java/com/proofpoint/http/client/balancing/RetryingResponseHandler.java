@@ -15,6 +15,7 @@
  */
 package com.proofpoint.http.client.balancing;
 
+import com.google.common.cache.Cache;
 import com.google.common.collect.ImmutableSet;
 import com.proofpoint.http.client.BodyGenerator;
 import com.proofpoint.http.client.Request;
@@ -24,6 +25,9 @@ import com.proofpoint.http.client.SingleUseBodyGenerator;
 import com.proofpoint.log.Logger;
 
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 final class RetryingResponseHandler<T, E extends Exception>
         implements ResponseHandler<T, RetryException>
@@ -33,20 +37,42 @@ final class RetryingResponseHandler<T, E extends Exception>
     private final Request originalRequest;
     private final ResponseHandler<T, E> innerHandler;
     private final boolean finalAttempt;
+    private final Cache<Class<? extends Exception>, Boolean> exceptionCache;
 
-    public RetryingResponseHandler(Request originalRequest, ResponseHandler<T, E> innerHandler, boolean finalAttempt)
+    RetryingResponseHandler(Request originalRequest, ResponseHandler<T, E> innerHandler, boolean finalAttempt, Cache<Class<? extends Exception>, Boolean> exceptionCache)
     {
         this.originalRequest = originalRequest;
         this.innerHandler = innerHandler;
         this.finalAttempt = finalAttempt;
+        this.exceptionCache = exceptionCache;
     }
 
     @Override
-    public T handleException(Request request, Exception exception)
+    public T handleException(final Request request, final Exception exception)
             throws RetryException
     {
-        log.warn(exception, "Exception querying %s",
-                request.getUri().resolve("/"));
+        final AtomicBoolean isLogged = new AtomicBoolean(false);
+        try {
+            exceptionCache.get(exception.getClass(), new Callable<Boolean>()
+            {
+                @Override
+                public Boolean call()
+                {
+                    log.warn(exception, "Exception querying %s",
+                            request.getUri().resolve("/"));
+                    isLogged.set(true);
+                    return true;
+                }
+            });
+        }
+        catch (ExecutionException ignored) {
+            // can't happen
+        }
+        if (!isLogged.get()) {
+            log.warn("Exception querying %s: %s",
+                    request.getUri().resolve("/"),
+                    exception);
+        }
 
         if (finalAttempt || singleUseBodyGeneratorUsed(request)) {
             Object result;

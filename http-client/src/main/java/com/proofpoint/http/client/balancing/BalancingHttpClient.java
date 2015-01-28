@@ -15,6 +15,7 @@
  */
 package com.proofpoint.http.client.balancing;
 
+import com.google.common.cache.Cache;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -29,9 +30,11 @@ import org.weakref.jmx.Managed;
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
 import java.net.URI;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.cache.CacheBuilder.newBuilder;
 import static java.lang.String.format;
 
 public class BalancingHttpClient
@@ -40,6 +43,9 @@ public class BalancingHttpClient
     final HttpServiceBalancer pool;
     private final HttpClient httpClient;
     final int maxAttempts;
+    private final Cache<Class<? extends Exception>, Boolean> exceptionCache = newBuilder()
+            .expireAfterWrite(30, TimeUnit.SECONDS)
+            .build();
 
     @Inject
     public BalancingHttpClient(@ForBalancingHttpClient HttpServiceBalancer pool, @ForBalancingHttpClient HttpClient httpClient, BalancingHttpClientConfig config)
@@ -68,7 +74,7 @@ public class BalancingHttpClient
         }
         int attemptsLeft = maxAttempts;
 
-        RetryingResponseHandler<T, E> retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler, false);
+        RetryingResponseHandler<T, E> retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler, false, exceptionCache);
 
         for (;;) {
             URI uri = attempt.getUri();
@@ -82,7 +88,7 @@ public class BalancingHttpClient
                     .build();
 
             if (attemptsLeft <= 1) {
-                retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler, true);
+                retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler, true, exceptionCache);
             }
 
             --attemptsLeft;
@@ -140,7 +146,7 @@ public class BalancingHttpClient
 
     private <T, E extends Exception> void attemptQuery(RetryFuture<T, E> retryFuture, Request request, ResponseHandler<T, E> responseHandler, HttpServiceAttempt attempt, int attemptsLeft)
     {
-        RetryingResponseHandler<T, E> retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler, attemptsLeft <= 1);
+        RetryingResponseHandler<T, E> retryingResponseHandler = new RetryingResponseHandler<>(request, responseHandler, attemptsLeft <= 1, exceptionCache);
 
         URI uri = attempt.getUri();
         if (!uri.toString().endsWith("/")) {

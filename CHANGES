@@ -1,3 +1,10 @@
+Platform 1.13
+
+* BalancingHttpClient logging
+
+  The RetryingResponseHandler used by BalancingHttpClient will only include an
+  exception's stack in the log once per 30 seconds per exception class.
+
 Platform 1.12
 
 * We improved the previous BodyGenerator bug fix to remove a race condition.
