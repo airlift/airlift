@@ -18,10 +18,11 @@ package io.airlift.http.server;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import io.airlift.log.Logger;
-import org.apache.commons.lang.StringUtils;
 import org.eclipse.jetty.security.HashLoginService;
 
 import java.io.IOException;
+
+import static com.google.common.base.Strings.isNullOrEmpty;
 
 public class HashLoginServiceProvider
         implements Provider<HashLoginService>
@@ -36,11 +37,12 @@ public class HashLoginServiceProvider
         this.config = config;
     }
 
+    @Override
     public HashLoginService get()
     {
         String authConfig = config.getUserAuthFile();
         try {
-            if (!StringUtils.isEmpty(authConfig)) {
+            if (!isNullOrEmpty(authConfig)) {
                 HashLoginService service = new HashLoginService(HttpServerModule.REALM_NAME, authConfig);
                 service.loadUsers();
                 return service;
