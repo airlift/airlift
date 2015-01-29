@@ -27,6 +27,9 @@ Platform 1.13
 
 * Events
 
+  - We changed the HttpEventClient to use a private IO pool. We recommend
+    that applications remove HttpEventModule from their Bootstrap invocation
+    unless they have a need to send events.
   - We deprecated EventClient.post(EventGenerator) and EventGenerator.
     This interface effectively required implementation on top of
     BodyGenerator. No replacement is currently planned.

@@ -36,7 +36,9 @@ public class HttpEventModule implements Module
         newExporter(binder).export(EventClient.class).withGeneratedName();
 
         // bind the http client
-        discoveryBinder(binder).bindDiscoveredHttpClient("event", serviceType("collector"), ForEventClient.class);
+        discoveryBinder(binder)
+                .bindDiscoveredHttpClient("event", serviceType("collector"), ForEventClient.class)
+                .withPrivateIoThreadPool();
 
         // Kick off the binding of Set<EventTypeMetadata> in case no events are bound
         Multibinder.newSetBinder(binder, new TypeLiteral<EventTypeMetadata<?>>() {});
