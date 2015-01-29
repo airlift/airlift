@@ -33,7 +33,6 @@ import com.proofpoint.node.NodeConfig;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.testing.FileUtils;
 import com.proofpoint.units.Duration;
-import org.apache.commons.codec.binary.Base64;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
@@ -44,6 +43,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.net.ConnectException;
+import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.io.Resources.getResource;
@@ -225,7 +225,7 @@ public class TestHttpServerProvider
             StringResponse response = client.execute(
                     prepareGet()
                             .setUri(httpServerInfo.getHttpUri())
-                            .addHeader("Authorization", "Basic " + Base64.encodeBase64String("user:password".getBytes()).trim())
+                            .addHeader("Authorization", "Basic " + Base64.getEncoder().encodeToString("user:password".getBytes()).trim())
                             .build(),
                     createStringResponseHandler());
 

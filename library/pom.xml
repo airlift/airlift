@@ -329,51 +329,6 @@
                                     <class>org.apache.commons.collections.FastHashMap</class>
                                 </classes>
                             </exception>
-                            <exception>
-                                <conflictingDependencies>
-                                    <dependency>
-                                        <groupId>commons-lang</groupId>
-                                        <artifactId>commons-lang</artifactId>
-                                        <version>2.6</version>
-                                    </dependency>
-                                    <dependency>
-                                        <groupId>com.google.auto.value</groupId>
-                                        <artifactId>auto-value</artifactId>
-                                        <version>1.0</version>
-                                    </dependency>
-                                </conflictingDependencies>
-                                <classes>
-                                    <class>org.apache.commons.lang.ArrayUtils</class>
-                                    <class>org.apache.commons.lang.BooleanUtils</class>
-                                    <class>org.apache.commons.lang.CharRange</class>
-                                    <class>org.apache.commons.lang.CharSet</class>
-                                    <class>org.apache.commons.lang.CharSetUtils</class>
-                                    <class>org.apache.commons.lang.CharUtils</class>
-                                    <class>org.apache.commons.lang.ClassUtils</class>
-                                    <class>org.apache.commons.lang.Entities</class>
-                                    <class>org.apache.commons.lang.IntHashMap</class>
-                                    <class>org.apache.commons.lang.NullArgumentException</class>
-                                    <class>org.apache.commons.lang.ObjectUtils</class>
-                                    <class>org.apache.commons.lang.StringEscapeUtils</class>
-                                    <class>org.apache.commons.lang.StringUtils</class>
-                                    <class>org.apache.commons.lang.SystemUtils</class>
-                                    <class>org.apache.commons.lang.UnhandledException</class>
-                                    <class>org.apache.commons.lang.WordUtils</class>
-                                    <class>org.apache.commons.lang.builder.EqualsBuilder</class>
-                                    <class>org.apache.commons.lang.builder.HashCodeBuilder</class>
-                                    <class>org.apache.commons.lang.builder.ReflectionToStringBuilder</class>
-                                    <class>org.apache.commons.lang.builder.ToStringBuilder</class>
-                                    <class>org.apache.commons.lang.builder.ToStringStyle</class>
-                                    <class>org.apache.commons.lang.exception.ExceptionUtils</class>
-                                    <class>org.apache.commons.lang.exception.Nestable</class>
-                                    <class>org.apache.commons.lang.exception.NestableDelegate</class>
-                                    <class>org.apache.commons.lang.exception.NestableRuntimeException</class>
-                                    <class>org.apache.commons.lang.math.NumberUtils</class>
-                                    <class>org.apache.commons.lang.text.StrBuilder</class>
-                                    <class>org.apache.commons.lang.text.StrMatcher</class>
-                                    <class>org.apache.commons.lang.text.StrTokenizer</class>
-                                </classes>
-                            </exception>
                         </exceptions>
 
                         <ignoredResources>

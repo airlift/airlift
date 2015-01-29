@@ -25,7 +25,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-import static org.apache.commons.lang.StringUtils.equalsIgnoreCase;
+import static com.google.common.base.Ascii.equalsIgnoreCase;
 
 public class GZipRequestFilter
         implements Filter
@@ -44,7 +44,7 @@ public class GZipRequestFilter
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 
         String contentEncoding = request.getHeader("content-encoding");
-        if (equalsIgnoreCase(contentEncoding, "gzip")) {
+        if (contentEncoding != null && equalsIgnoreCase(contentEncoding, "gzip")) {
             filterChain.doFilter(new GZipRequestWrapper(request), servletResponse);
         }
         else {

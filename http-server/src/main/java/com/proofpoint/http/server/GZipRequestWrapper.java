@@ -25,7 +25,7 @@ import java.util.Enumeration;
 import java.util.NoSuchElementException;
 import java.util.zip.GZIPInputStream;
 
-import static org.apache.commons.lang.StringUtils.equalsIgnoreCase;
+import static com.google.common.base.Ascii.equalsIgnoreCase;
 
 class GZipRequestWrapper
         extends HttpServletRequestWrapper
