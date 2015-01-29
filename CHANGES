@@ -1,5 +1,28 @@
 Platform 1.13
 
+* HttpClient
+
+  Using a BodyGenerator that is not a StaticBodyGenerator with JettyHttpClient
+  when there are more concurrent requests than half the maximum threads in the
+  thread pool can lead to deadlocks. To mitigate this, we have made the
+  following changes:
+
+  - We created a new marker interface BodySource.
+  - BodyGenerator extends BodySource.
+  - We created the interface DynamicBodySource to replace BodyGenerator.
+  - We deprecated BodyGenerator. Consumers should use BodySource instead.
+    Producers should recode to use DynamicBodySource.
+  - We deprecated StaticBodyGenerator.write(OutputStream).
+    StaticBodyGenerator is not deprecated, but after the deprecation period
+    it may extend BodySource instead of BodyGenerator.
+  - We deprecated Request.getBodyGenerator(). Use the newly created
+    Request.getBodySource() instead.
+  - We deprecated Request.Builder.setBodyGenerator(BodyGenerator). Use
+    Request.Builder.setBodySource(BodySource) instead. This change will
+    probably have a longer than usual deprecation period.
+  - We deprecated SingleUseBodyGenerator. We have not yet designed a
+    replacement.
+
 * BalancingHttpClient logging
 
   The RetryingResponseHandler used by BalancingHttpClient will only include an

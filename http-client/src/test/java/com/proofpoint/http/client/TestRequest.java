@@ -27,19 +27,19 @@ public class TestRequest
     @Test
     public void testEquivalence()
     {
-        BodyGenerator bodyGenerator = createBodyGenerator();
+        BodySource bodySource = createBodySource();
 
         EquivalenceTester.<Request>equivalenceTester()
                 .addEquivalentGroup(
                         new Request(createUri1(), "GET", createHeaders1(), null),
                         new Request(createUri1(), "GET", createHeaders1(), null, false))
                 .addEquivalentGroup(
-                        new Request(createUri1(), "GET", createHeaders1(), bodyGenerator),
-                        new Request(createUri1(), "GET", createHeaders1(), bodyGenerator, false))
+                        new Request(createUri1(), "GET", createHeaders1(), bodySource),
+                        new Request(createUri1(), "GET", createHeaders1(), bodySource, false))
                 .addEquivalentGroup(
-                        new Request(createUri1(), "GET", createHeaders2(), bodyGenerator))
+                        new Request(createUri1(), "GET", createHeaders2(), bodySource))
                 .addEquivalentGroup(
-                        new Request(createUri2(), "GET", createHeaders1(), bodyGenerator))
+                        new Request(createUri2(), "GET", createHeaders1(), bodySource))
                 .addEquivalentGroup(
                         new Request(createUri1(), "PUT", createHeaders1(), null),
                         new Request(createUri1(), "PUT", createHeaders1(), null))
@@ -48,12 +48,12 @@ public class TestRequest
                 .addEquivalentGroup(
                         new Request(createUri1(), "PUT", createHeaders2(), null))
                 .addEquivalentGroup(
-                        new Request(createUri1(), "PUT", createHeaders1(), bodyGenerator),
-                        new Request(createUri1(), "PUT", createHeaders1(), bodyGenerator))
+                        new Request(createUri1(), "PUT", createHeaders1(), bodySource),
+                        new Request(createUri1(), "PUT", createHeaders1(), bodySource))
                 .addEquivalentGroup(
-                        new Request(createUri1(), "GET", createHeaders1(), createBodyGenerator()))
+                        new Request(createUri1(), "GET", createHeaders1(), createBodySource()))
                 .addEquivalentGroup(
-                        new Request(createUri1(), "PUT", createHeaders1(), createBodyGenerator()))
+                        new Request(createUri1(), "PUT", createHeaders1(), createBodySource()))
                 .addEquivalentGroup(
                         new Request(createUri1(), "GET", createHeaders1(), null, true),
                         new Request(createUri1(), "GET", createHeaders1(), null, true)
@@ -65,7 +65,7 @@ public class TestRequest
     public void testCannotMakeRequestToIllegalPort()
             throws Exception
     {
-        new Request(URI.create("http://example.com:0/"), "GET", createHeaders1(), createBodyGenerator());
+        new Request(URI.create("http://example.com:0/"), "GET", createHeaders1(), createBodySource());
     }
 
     private URI createUri1()
@@ -88,8 +88,10 @@ public class TestRequest
         return ImmutableListMultimap.of("foo", "bar", "abc", "xyz", "qqq", "www", "foo", "zzz");
     }
 
-    public static BodyGenerator createBodyGenerator()
+    public static BodySource createBodySource()
     {
-        return StaticBodyGenerator.createStaticBodyGenerator(new byte[0]);
+        return new BodySource()
+        {
+        };
     }
 }

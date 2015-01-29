@@ -3,7 +3,6 @@ package com.proofpoint.http.client.jetty;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
@@ -14,6 +13,9 @@ import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.BodyGenerator;
+import com.proofpoint.http.client.BodySource;
+import com.proofpoint.http.client.DynamicBodySource;
+import com.proofpoint.http.client.DynamicBodySource.Writer;
 import com.proofpoint.http.client.HttpClientConfig;
 import com.proofpoint.http.client.HttpRequestFilter;
 import com.proofpoint.http.client.Request;
@@ -37,6 +39,7 @@ import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.weakref.jmx.Flatten;
@@ -54,6 +57,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -65,6 +69,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Throwables.propagate;
 import static com.proofpoint.tracetoken.TraceTokenManager.getCurrentRequestToken;
 import static com.proofpoint.tracetoken.TraceTokenManager.registerRequestToken;
 import static java.lang.Math.min;
@@ -72,7 +77,7 @@ import static java.lang.Math.min;
 public class JettyHttpClient
         implements AsyncHttpClient
 {
-    private final static AtomicLong nameCounter = new AtomicLong();
+    private static final AtomicLong nameCounter = new AtomicLong();
 
     private final HttpClient httpClient;
     private final long maxContentLength;
@@ -131,7 +136,7 @@ public class JettyHttpClient
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
-            throw Throwables.propagate(e);
+            throw propagate(e);
         }
 
         this.requestFilters = ImmutableList.copyOf(requestFilters);
@@ -289,14 +294,20 @@ public class JettyHttpClient
             jettyRequest.header(entry.getKey(), entry.getValue());
         }
 
-        BodyGenerator bodyGenerator = finalRequest.getBodyGenerator();
-        if (bodyGenerator != null) {
-            if (bodyGenerator instanceof StaticBodyGenerator) {
-                StaticBodyGenerator staticBodyGenerator = (StaticBodyGenerator) bodyGenerator;
+        BodySource bodySource = finalRequest.getBodySource();
+        if (bodySource != null) {
+            if (bodySource instanceof StaticBodyGenerator) {
+                StaticBodyGenerator staticBodyGenerator = (StaticBodyGenerator) bodySource;
                 jettyRequest.content(new BytesContentProvider(staticBodyGenerator.getBody()));
             }
+            else if (bodySource instanceof DynamicBodySource) {
+                jettyRequest.content(new DynamicBodySourceContentProvider((DynamicBodySource) bodySource));
+            }
+            else if (bodySource instanceof BodyGenerator) {
+                jettyRequest.content(new BodyGeneratorContentProvider((BodyGenerator) bodySource, httpClient.getExecutor()));
+            }
             else {
-                jettyRequest.content(new BodyGeneratorContentProvider(bodyGenerator, httpClient.getExecutor()));
+                throw new IllegalArgumentException("Request has unsupported BodySource type");
             }
         }
         jettyRequest.followRedirects(finalRequest.isFollowRedirects());
@@ -578,6 +589,123 @@ public class JettyHttpClient
                 responseProcessingTime);
     }
 
+    private static class DynamicBodySourceContentProvider
+            implements ContentProvider
+    {
+        private static final ByteBuffer DONE = ByteBuffer.allocate(0);
+
+        private final DynamicBodySource dynamicBodySource;
+        private final String traceToken;
+
+        DynamicBodySourceContentProvider(DynamicBodySource dynamicBodySource)
+        {
+            this.dynamicBodySource = dynamicBodySource;
+            traceToken = getCurrentRequestToken();
+        }
+
+        @Override
+        public long getLength()
+        {
+            return -1;
+        }
+
+        @Override
+        public Iterator<ByteBuffer> iterator()
+        {
+            final Queue<ByteBuffer> chunks = new ArrayQueue<>(4, 64);
+
+            Writer writer;
+            try (TraceTokenScope ignored = registerRequestToken(traceToken)) {
+                writer = dynamicBodySource.start(new DynamicBodySourceOutputStream(chunks));
+            }
+            catch (Exception e) {
+                throw propagate(e);
+            }
+
+            return new DynamicBodySourceIterator(chunks, writer, traceToken);
+        }
+
+        private static class DynamicBodySourceOutputStream
+                extends OutputStream
+        {
+            private final Queue<ByteBuffer> chunks;
+
+            private DynamicBodySourceOutputStream(Queue<ByteBuffer> chunks)
+            {
+                this.chunks = chunks;
+            }
+
+            @Override
+            public void write(int b)
+            {
+                // must copy array since it could be reused
+                chunks.add(ByteBuffer.wrap(new byte[]{(byte) b}));
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len)
+            {
+                // must copy array since it could be reused
+                byte[] copy = Arrays.copyOfRange(b, off, len);
+                chunks.add(ByteBuffer.wrap(copy));
+            }
+
+            @Override
+            public void close()
+            {
+                chunks.add(DONE);
+            }
+        }
+
+        private static class DynamicBodySourceIterator extends AbstractIterator<ByteBuffer>
+                implements Closeable
+        {
+            private final Queue<ByteBuffer> chunks;
+            private final Writer writer;
+            private final String traceToken;
+
+            DynamicBodySourceIterator(Queue<ByteBuffer> chunks, Writer writer, String traceToken)
+            {
+                this.chunks = chunks;
+                this.writer = writer;
+                this.traceToken = traceToken;
+            }
+
+            @Override
+            protected ByteBuffer computeNext()
+            {
+                ByteBuffer chunk = chunks.poll();
+                while (chunk == null) {
+                    try (TraceTokenScope ignored = registerRequestToken(traceToken)) {
+                        writer.write();
+                    }
+                    catch (Exception e) {
+                        throw propagate(e);
+                    }
+                    chunk = chunks.poll();
+                }
+
+                if (chunk == DONE) {
+                    return endOfData();
+                }
+                return chunk;
+            }
+
+            @Override
+            public void close()
+            {
+                if (writer instanceof AutoCloseable) {
+                    try (TraceTokenScope ignored = registerRequestToken(traceToken)) {
+                        ((AutoCloseable)writer).close();
+                    }
+                    catch (Exception e) {
+                        throw propagate(e);
+                    }
+                }
+            }
+        }
+    }
+
     private static class BodyGeneratorContentProvider
             implements ContentProvider
     {
@@ -702,7 +830,7 @@ public class JettyHttpClient
                 }
 
                 if (chunk == EXCEPTION) {
-                    throw Throwables.propagate(exception.get());
+                    throw propagate(exception.get());
                 }
                 if (chunk == DONE) {
                     return endOfData();

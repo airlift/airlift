@@ -181,7 +181,7 @@ public class TestServer
                 preparePut()
                         .setUri(uriFor("/v1/person/foo"))
                         .addHeader(CONTENT_TYPE, APPLICATION_JSON)
-                        .setBodyGenerator(createStaticBodyGenerator(json, Charsets.UTF_8))
+                        .setBodySource(createStaticBodyGenerator(json, Charsets.UTF_8))
                         .build(),
                 createStatusResponseHandler());
 
@@ -241,7 +241,7 @@ public class TestServer
                 preparePost()
                         .setUri(uriFor("/v1/person/foo"))
                         .addHeader(CONTENT_TYPE, APPLICATION_JSON)
-                        .setBodyGenerator(createStaticBodyGenerator(json, Charsets.UTF_8))
+                        .setBodySource(createStaticBodyGenerator(json, Charsets.UTF_8))
                         .build(),
                 createStatusResponseHandler());
 

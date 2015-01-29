@@ -4,6 +4,7 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
+import com.proofpoint.http.client.DynamicBodySource.Writer;
 import com.proofpoint.log.Logging;
 import com.proofpoint.testing.Assertions;
 import com.proofpoint.units.Duration;
@@ -48,6 +49,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Throwables.propagate;
@@ -57,6 +59,7 @@ import static com.proofpoint.http.client.Request.Builder.prepareDelete;
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static com.proofpoint.http.client.Request.Builder.preparePost;
 import static com.proofpoint.http.client.Request.Builder.preparePut;
+import static com.proofpoint.testing.Assertions.assertGreaterThan;
 import static com.proofpoint.testing.Assertions.assertLessThan;
 import static com.proofpoint.testing.Closeables.closeQuietly;
 import static com.proofpoint.tracetoken.TraceTokenManager.createAndRegisterNewRequestToken;
@@ -487,6 +490,133 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
+    public void testPutMethodWithDynamicBodySource()
+            throws Exception
+    {
+        URI uri = baseURI.resolve("/road/to/nowhere");
+        Request request = preparePut()
+                .setUri(uri)
+                .addHeader("foo", "bar")
+                .addHeader("dupe", "first")
+                .addHeader("dupe", "second")
+                .setBodySource(new DynamicBodySource()
+                {
+                    @Override
+                    public Writer start(final OutputStream out)
+                    {
+                        return new Writer()
+                        {
+                            AtomicInteger invocation = new AtomicInteger(0);
+
+                            @Override
+                            public void write()
+                                    throws Exception
+                            {
+                                switch (invocation.getAndIncrement()) {
+                                    case 0:
+                                        out.write(1);
+                                        break;
+
+                                    case 1:
+                                        out.write(new byte[]{2, 5});
+                                        out.close();
+                                        break;
+
+                                    default:
+                                        fail("unexpected invocation of write()");
+                                }
+                            }
+                        };
+                    }
+                })
+                .build();
+
+        int statusCode = executeRequest(request, new ResponseStatusCodeHandler());
+        assertEquals(statusCode, 200);
+        assertEquals(servlet.requestMethod, "PUT");
+        assertEquals(servlet.requestUri, uri);
+        assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
+        assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
+        assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
+        assertEquals(servlet.requestBytes, new byte[]{1, 2, 5});
+    }
+
+    @Test
+    public void testPutMethodWithDynamicBodySourceEdgeCases()
+            throws Exception
+    {
+        URI uri = baseURI.resolve("/road/to/nowhere");
+        final AtomicBoolean closed = new AtomicBoolean(false);
+        Request request = preparePut()
+                .setUri(uri)
+                .addHeader("foo", "bar")
+                .addHeader("dupe", "first")
+                .addHeader("dupe", "second")
+                .setBodySource(new DynamicBodySource()
+                {
+                    @Override
+                    public Writer start(final OutputStream out)
+                            throws IOException
+                    {
+                        out.write(1);
+                        return new EdgeCaseTestWriter(out, closed);
+                    }
+                })
+                .build();
+
+        int statusCode = executeRequest(request, new ResponseStatusCodeHandler());
+        assertEquals(statusCode, 200);
+        assertEquals(servlet.requestMethod, "PUT");
+        assertEquals(servlet.requestUri, uri);
+        assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
+        assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
+        assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
+        assertEquals(servlet.requestBytes, new byte[]{1, 2, 5});
+        assertTrue(closed.get(), "Writer was closed");
+    }
+
+    private static class EdgeCaseTestWriter
+            implements Writer, AutoCloseable
+    {
+        AtomicInteger invocation = new AtomicInteger(0);
+        private final OutputStream out;
+        private final AtomicBoolean closed;
+
+        EdgeCaseTestWriter(OutputStream out, AtomicBoolean closed)
+        {
+            this.out = out;
+            this.closed = closed;
+        }
+
+        @Override
+        public void write()
+                throws Exception
+        {
+            switch (invocation.getAndIncrement()) {
+                case 0:
+                    break;
+
+                case 1:
+                    out.write(new byte[]{2, 5});
+                    break;
+
+                case 2:
+                    out.close();
+                    break;
+
+                default:
+                    fail("unexpected invocation of write()");
+            }
+        }
+
+        @Override
+        public void close()
+        {
+            closed.set(true);
+        }
+    }
+
+    @Test
     public void testBodyGeneratorSeesTraceToken()
             throws Exception
     {
@@ -516,6 +646,71 @@ public abstract class AbstractHttpClientTest
         assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
         assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
         assertEquals(servlet.requestBytes, new byte[] {});
+    }
+
+    @Test
+    public void testDynamicBodySourceSeesTraceToken()
+            throws Exception
+    {
+        final String token = createAndRegisterNewRequestToken();
+        final AtomicReference<String> writeToken = new AtomicReference<>();
+        final AtomicReference<String> closeToken = new AtomicReference<>();
+        URI uri = baseURI.resolve("/road/to/nowhere");
+        Request request = preparePut()
+                .setUri(uri)
+                .addHeader("foo", "bar")
+                .addHeader("dupe", "first")
+                .addHeader("dupe", "second")
+                .setBodySource(new DynamicBodySource()
+                {
+                    @Override
+                    public Writer start(final OutputStream out)
+                    {
+                        assertEquals(getCurrentRequestToken(), token);
+                        return new TraceTokenTestWriter(out, writeToken, closeToken);
+                    }
+                })
+                .build();
+
+        int statusCode = executeRequest(request, new ResponseStatusCodeHandler());
+        assertEquals(statusCode, 200);
+        assertEquals(servlet.requestMethod, "PUT");
+        assertEquals(servlet.requestUri, uri);
+        assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
+        assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
+        assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
+        assertEquals(servlet.requestBytes, new byte[] {});
+        assertEquals(writeToken.get(), token);
+        assertEquals(closeToken.get(), token);
+    }
+
+    private static class TraceTokenTestWriter
+            implements Writer, AutoCloseable
+    {
+        private final OutputStream out;
+        private final AtomicReference<String> writeToken;
+        private final AtomicReference<String> closeToken;
+
+        TraceTokenTestWriter(OutputStream out, AtomicReference<String> writeToken, AtomicReference<String> closeToken)
+        {
+            this.out = out;
+            this.writeToken = writeToken;
+            this.closeToken = closeToken;
+        }
+
+        @Override
+        public void write()
+                throws Exception
+        {
+            writeToken.set(getCurrentRequestToken());
+            out.close();
+        }
+
+        @Override
+        public void close()
+        {
+            closeToken.set(getCurrentRequestToken());
+        }
     }
 
     @Test
@@ -880,7 +1075,7 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test(expectedExceptions = IOException.class)
-    public void testConnectWriteRequestClose()
+    public void testBodyGeneratorConnectWriteRequestClose()
             throws Exception
     {
         try (FakeServer fakeServer = new FakeServer(scheme, host, 1024, null, true)) {
@@ -919,6 +1114,55 @@ public abstract class AbstractHttpClientTest
             }
             finally {
                 assertTrue(bodyGeneratorCalled.get(), "BodyGenerator called");
+                assertLessThan(nanosSince(start), new Duration(1, SECONDS), "Expected request to finish quickly");
+            }
+        }
+    }
+
+    @Test(expectedExceptions = IOException.class)
+    public void testDynamicBodySourceConnectWriteRequestClose()
+            throws Exception
+    {
+        try (FakeServer fakeServer = new FakeServer(scheme, host, 1024, null, true)) {
+            HttpClientConfig config = new HttpClientConfig();
+            config.setConnectTimeout(new Duration(5, SECONDS));
+            config.setReadTimeout(new Duration(5, SECONDS));
+
+            // kick the fake server
+            executor.execute(fakeServer);
+
+            // timing based check to assure we don't hang
+            long start = System.nanoTime();
+            final AtomicInteger invocation = new AtomicInteger(0);
+            try {
+                Request request = preparePut()
+                        .setUri(fakeServer.getUri())
+                        .setBodySource(new DynamicBodySource()
+                        {
+                            @Override
+                            public Writer start(final OutputStream out)
+                            {
+                                return new Writer()
+                                {
+                                    @Override
+                                    public void write()
+                                            throws Exception
+                                    {
+                                        if (invocation.getAndIncrement() < 100) {
+                                            out.write(new byte[1024]);
+                                        }
+                                        else {
+                                            out.close();
+                                        }
+                                    }
+                                };
+                            }
+                        })
+                        .build();
+                executeRequest(config, request, new ResponseToStringHandler());
+            }
+            finally {
+                assertGreaterThan(invocation.get(), 0);
                 assertLessThan(nanosSince(start), new Duration(1, SECONDS), "Expected request to finish quickly");
             }
         }

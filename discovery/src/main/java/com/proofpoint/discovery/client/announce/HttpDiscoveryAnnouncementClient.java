@@ -81,7 +81,7 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
             Announcement announcement = new Announcement(nodeInfo.getEnvironment(), nodeInfo.getNodeId(), nodeInfo.getPool(), nodeInfo.getLocation(), services);
             builder = preparePut()
                     .setHeader("Content-Type", MEDIA_TYPE_JSON.toString())
-                    .setBodyGenerator(jsonBodyGenerator(announcementCodec, announcement));
+                    .setBodySource(jsonBodyGenerator(announcementCodec, announcement));
         }
         Request request = builder
                 .setUri(URI.create("v1/announcement/" + nodeInfo.getNodeId()))

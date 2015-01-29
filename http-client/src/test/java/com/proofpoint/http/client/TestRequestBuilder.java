@@ -31,14 +31,16 @@ import static org.testng.Assert.assertTrue;
 
 public class TestRequestBuilder
 {
-    public static final BodyGenerator NULL_BODY_GENERATOR = createStaticBodyGenerator(new byte[0]);
+    public static final BodySource NULL_BODY_SOURCE = new BodySource()
+    {
+    };
 
     @Test
     public void testRequestBuilder()
     {
         Request request = createRequest();
         assertEquals(request.getMethod(), "GET");
-        assertEquals(request.getBodyGenerator(), NULL_BODY_GENERATOR);
+        assertEquals(request.getBodySource(), NULL_BODY_SOURCE);
         assertEquals(request.getUri(), URI.create("http://example.com"));
         assertEquals(request.getHeaders(), ImmutableListMultimap.of(
                 "newheader", "withvalue", "anotherheader", "anothervalue"));
@@ -66,7 +68,7 @@ public class TestRequestBuilder
                 .setUri(URI.create("http://example.com"))
                 .build();
         assertEquals(request.getMethod(), "PUT");
-        assertNull(request.getBodyGenerator());
+        assertNull(request.getBodySource());
         assertEquals(request.getUri(), URI.create("http://example.com"));
         assertEquals(request.getHeaders(), ImmutableListMultimap.<String, String>of());
         assertFalse(request.isFollowRedirects());
@@ -78,7 +80,7 @@ public class TestRequestBuilder
                     .setUri(URI.create("http://example.com"))
                     .addHeader("newheader", "withvalue")
                     .addHeader("anotherheader", "anothervalue")
-                    .setBodyGenerator(NULL_BODY_GENERATOR)
+                    .setBodySource(NULL_BODY_SOURCE)
                     .setFollowRedirects(true)
                     .build();
     }

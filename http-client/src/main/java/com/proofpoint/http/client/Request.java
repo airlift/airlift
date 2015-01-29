@@ -20,6 +20,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 
+import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.List;
 import java.util.Map.Entry;
@@ -35,14 +36,14 @@ public class Request
     private final URI uri;
     private final String method;
     private final ListMultimap<String, String> headers;
-    private final BodyGenerator bodyGenerator;
+    private final BodySource bodySource;
     private final boolean followRedirects;
 
-    public Request(URI uri, String method, ListMultimap<String, String> headers, BodyGenerator bodyGenerator)
+    public Request(URI uri, String method, @Nullable ListMultimap<String, String> headers, @Nullable BodySource bodySource)
     {
-        this(uri, method, headers, bodyGenerator, false);
+        this(uri, method, headers, bodySource, false);
     }
-    public Request(URI uri, String method, ListMultimap<String, String> headers, BodyGenerator bodyGenerator, boolean followRedirects)
+    public Request(URI uri, String method, @Nullable ListMultimap<String, String> headers, @Nullable BodySource bodySource, boolean followRedirects)
     {
         checkNotNull(uri, "uri is null");
         checkNotNull(method, "method is null");
@@ -50,7 +51,7 @@ public class Request
         this.uri = validateUri(uri);
         this.method = method;
         this.headers = ImmutableListMultimap.copyOf(headers);
-        this.bodyGenerator = bodyGenerator;
+        this.bodySource = bodySource;
         this.followRedirects = followRedirects;
     }
 
@@ -83,9 +84,19 @@ public class Request
         return headers;
     }
 
+    public BodySource getBodySource()
+    {
+        return bodySource;
+    }
+
+    /**
+     * @deprecated Use @{link #getBodySource()}.
+     */
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public BodyGenerator getBodyGenerator()
     {
-        return bodyGenerator;
+        return (BodyGenerator) bodySource;
     }
 
     public boolean isFollowRedirects()
@@ -100,7 +111,7 @@ public class Request
                 .add("uri", uri)
                 .add("method", method)
                 .add("headers", headers)
-                .add("bodyGenerator", bodyGenerator)
+                .add("bodySource", bodySource)
                 .add("followRedirects", followRedirects)
                 .toString();
     }
@@ -108,7 +119,7 @@ public class Request
     @Override
     public int hashCode()
     {
-        return Objects.hash(uri, method, headers, bodyGenerator, followRedirects);
+        return Objects.hash(uri, method, headers, bodySource, followRedirects);
     }
 
     @Override
@@ -121,7 +132,7 @@ public class Request
         return Objects.equals(this.uri, other.uri) &&
                 Objects.equals(this.method, other.method) &&
                 Objects.equals(this.headers, other.headers) &&
-                Objects.equals(this.bodyGenerator, other.bodyGenerator) &&
+                Objects.equals(this.bodySource, other.bodySource) &&
                 Objects.equals(this.followRedirects, other.followRedirects);
     }
 
@@ -157,7 +168,7 @@ public class Request
         {
             Builder requestBuilder = new Builder();
             requestBuilder.setMethod(request.getMethod());
-            requestBuilder.setBodyGenerator(request.getBodyGenerator());
+            requestBuilder.setBodySource(request.getBodySource());
             requestBuilder.setUri(request.getUri());
             requestBuilder.setFollowRedirects(request.isFollowRedirects());
 
@@ -170,7 +181,7 @@ public class Request
         private URI uri;
         private String method;
         private final ListMultimap<String, String> headers = ArrayListMultimap.create();
-        private BodyGenerator bodyGenerator;
+        private BodySource bodySource;
         private boolean followRedirects = false;
 
         public Builder setUri(URI uri)
@@ -198,9 +209,20 @@ public class Request
             return this;
         }
 
+        public Builder setBodySource(BodySource bodySource)
+        {
+            this.bodySource = bodySource;
+            return this;
+        }
+
+        /**
+         * @deprecated Use @{link #setBodySource(BodySource)}.
+         */
+        @Deprecated
+        @SuppressWarnings("deprecation")
         public Builder setBodyGenerator(BodyGenerator bodyGenerator)
         {
-            this.bodyGenerator = bodyGenerator;
+            this.bodySource = bodyGenerator;
             return this;
         }
 
@@ -212,7 +234,7 @@ public class Request
 
         public Request build()
         {
-            return new Request(uri, method, headers, bodyGenerator, followRedirects);
+            return new Request(uri, method, headers, bodySource, followRedirects);
         }
     }
 

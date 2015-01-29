@@ -1,5 +1,6 @@
 package com.proofpoint.http.client.balancing;
 
+import com.proofpoint.http.client.BodyGenerator;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
@@ -139,20 +140,22 @@ public class TestBalancingHttpClient
             assertTrue(!uris.isEmpty(), "call was expected");
             assertEquals(request.getMethod(), method, "request method");
             assertEquals(request.getUri(), uris.remove(0), "request uri");
-            assertEquals(request.getBodyGenerator(), bodyGenerator, "request body generator");
+            assertEquals(request.getBodySource(), bodySource, "request body generator");
 
             if (skipBodyGenerator) {
                 skipBodyGenerator = false;
             }
             else {
                 try {
-                    bodyGenerator.write(new OutputStream()
-                    {
-                        @Override
-                        public void write(int b)
+                    if (bodySource instanceof BodyGenerator) {
+                        ((BodyGenerator) bodySource).write(new OutputStream()
                         {
-                        }
-                    });
+                            @Override
+                            public void write(int b)
+                            {
+                            }
+                        });
+                    }
                 }
                 catch (Exception e) {
                     fail("BodyGenerator exception", e);

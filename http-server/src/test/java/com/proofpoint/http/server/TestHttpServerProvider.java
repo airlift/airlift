@@ -174,7 +174,7 @@ public class TestHttpServerProvider
                     preparePut()
                             .setUri(httpServerInfo.getHttpUri())
                             .setHeader("Content-Encoding", "gzip")
-                            .setBodyGenerator(createStaticBodyGenerator(new byte[]{
+                            .setBodySource(createStaticBodyGenerator(new byte[]{
                                     31, -117, 8, 0, -123, -120, -97, 83, 0, 3, 75, -83,
                                     40, 72, 77, 46, 73, 77, 1, 0, -60, -72, 96, 80, 8, 0, 0, 0
                             }))

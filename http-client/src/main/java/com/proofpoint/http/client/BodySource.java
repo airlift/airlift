@@ -15,29 +15,6 @@
  */
 package com.proofpoint.http.client;
 
-import java.io.OutputStream;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static com.google.common.base.Preconditions.checkState;
-
-@Deprecated
-public abstract class SingleUseBodyGenerator
-    implements BodyGenerator
+public interface BodySource
 {
-    private final AtomicBoolean used = new AtomicBoolean(false);
-
-    protected abstract void writeOnce(OutputStream out);
-
-    @Override
-    public final void write(OutputStream out)
-    {
-        checkState(!used.get(), "SingleUseBodyGenerator used twice");
-        used.set(true);
-        writeOnce(out);
-    }
-
-    public boolean isUsed()
-    {
-        return used.get();
-    }
 }

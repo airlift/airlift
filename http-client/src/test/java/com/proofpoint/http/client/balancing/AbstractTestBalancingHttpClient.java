@@ -15,7 +15,7 @@
  */
 package com.proofpoint.http.client.balancing;
 
-import com.proofpoint.http.client.BodyGenerator;
+import com.proofpoint.http.client.BodySource;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.Response;
@@ -50,7 +50,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
     protected HttpServiceAttempt serviceAttempt2;
     protected HttpServiceAttempt serviceAttempt3;
     protected T balancingHttpClient;
-    protected BodyGenerator bodyGenerator;
+    protected BodySource bodySource;
     protected Request request;
     protected TestingClient httpClient;
     protected Response response;
@@ -94,8 +94,8 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
         when(serviceAttempt3.next()).thenThrow(new AssertionError("Unexpected call to serviceAttempt3.next()"));
         httpClient = createTestingClient();
         balancingHttpClient = createBalancingHttpClient();
-        bodyGenerator = mock(BodyGenerator.class);
-        request = preparePut().setUri(URI.create("v1/service")).setBodyGenerator(bodyGenerator).build();
+        bodySource = mock(BodySource.class);
+        request = preparePut().setUri(URI.create("v1/service")).setBodySource(bodySource).build();
         response = mock(Response.class);
         when(response.getStatusCode()).thenReturn(204);
     }
@@ -124,7 +124,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
     public void testSuccessfulQueryWithParameters()
             throws Exception
     {
-        request = preparePut().setUri(URI.create("v1%2B/service?foo=bar&baz=qu%2Bux")).setBodyGenerator(bodyGenerator).build();
+        request = preparePut().setUri(URI.create("v1%2B/service?foo=bar&baz=qu%2Bux")).setBodySource(bodySource).build();
         httpClient.expectCall("http://s1.example.com/v1%2B/service?foo=bar&baz=qu%2Bux", response);
 
         ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
@@ -150,7 +150,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
         ResponseHandler<String, Exception> responseHandler = mock(ResponseHandler.class);
         when(responseHandler.handle(any(Request.class), same(response))).thenReturn("test response");
 
-        request = preparePut().setUri(new URI(null, null, null, null)).setBodyGenerator(bodyGenerator).build();
+        request = preparePut().setUri(new URI(null, null, null, null)).setBodySource(bodySource).build();
         String returnValue = balancingHttpClient.execute(request, responseHandler);
         assertEquals(returnValue, "test response", "return value from .execute()");
 
@@ -305,14 +305,14 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
     public void testDoesntRetryOnResponseSingleUseBodyGeneratorUsed()
             throws Exception
     {
-        bodyGenerator = spy(new SingleUseBodyGenerator()
+        bodySource = spy(new SingleUseBodyGenerator()
         {
             @Override
             protected void writeOnce(OutputStream out)
             {
             }
         });
-        request = preparePut().setUri(URI.create("v1/service")).setBodyGenerator(bodyGenerator).build();
+        request = preparePut().setUri(URI.create("v1/service")).setBodySource(bodySource).build();
 
         Response response503 = mock(Response.class);
         when(response503.getStatusCode()).thenReturn(503);
@@ -342,14 +342,14 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
     public void testDoesntRetryOnExceptionSingleUseBodyGeneratorUsed()
             throws Exception
     {
-        bodyGenerator = spy(new SingleUseBodyGenerator()
+        bodySource = spy(new SingleUseBodyGenerator()
         {
             @Override
             protected void writeOnce(OutputStream out)
             {
             }
         });
-        request = preparePut().setUri(URI.create("v1/service")).setBodyGenerator(bodyGenerator).build();
+        request = preparePut().setUri(URI.create("v1/service")).setBodySource(bodySource).build();
 
         Response response503 = mock(Response.class);
         when(response503.getStatusCode()).thenReturn(503);
@@ -594,7 +594,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
     public void testUriWithScheme()
             throws Exception
     {
-        request = preparePut().setUri(new URI("http", null, "/v1/service", null)).setBodyGenerator(bodyGenerator).build();
+        request = preparePut().setUri(new URI("http", null, "/v1/service", null)).setBodySource(bodySource).build();
         issueRequest();
     }
 
@@ -602,7 +602,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
     public void testUriWithHost()
             throws Exception
     {
-        request = preparePut().setUri(new URI(null, "example.com", "v1/service", null)).setBodyGenerator(bodyGenerator).build();
+        request = preparePut().setUri(new URI(null, "example.com", "v1/service", null)).setBodySource(bodySource).build();
         issueRequest();
     }
 
@@ -610,7 +610,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
     public void testUriWithAbsolutePath()
             throws Exception
     {
-        request = preparePut().setUri(new URI(null, null, "/v1/service", null)).setBodyGenerator(bodyGenerator).build();
+        request = preparePut().setUri(new URI(null, null, "/v1/service", null)).setBodySource(bodySource).build();
         issueRequest();
     }
 
