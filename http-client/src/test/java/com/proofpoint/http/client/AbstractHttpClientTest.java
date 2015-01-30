@@ -474,7 +474,9 @@ public abstract class AbstractHttpClientTest
                             throws Exception
                     {
                         out.write(1);
-                        out.write(new byte[] {2, 5});
+                        byte[] bytes = {2, 5};
+                        out.write(bytes);
+                        bytes[0] = 9;
                     }
                 })
                 .build();
@@ -518,7 +520,9 @@ public abstract class AbstractHttpClientTest
                                         break;
 
                                     case 1:
-                                        out.write(new byte[]{2, 5});
+                                        byte[] bytes = {2, 5};
+                                        out.write(bytes);
+                                        bytes[0] = 9;
                                         out.close();
                                         break;
 
@@ -597,7 +601,9 @@ public abstract class AbstractHttpClientTest
                     break;
 
                 case 1:
-                    out.write(new byte[]{2, 5});
+                    byte[] bytes = {2, 5};
+                    out.write(bytes);
+                    bytes[0] = 9;
                     break;
 
                 case 2:
