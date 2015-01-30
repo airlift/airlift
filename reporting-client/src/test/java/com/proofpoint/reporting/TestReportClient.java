@@ -49,6 +49,7 @@ import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 import static com.google.common.base.Throwables.propagate;
+import static com.proofpoint.http.client.testing.BodySourceTester.writeBodySourceTo;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -97,7 +98,6 @@ public class TestReportClient
     @Test
     public void testReportData()
     {
-
         ReportClient client = new ReportClient(nodeInfo, httpClient, new ReportClientConfig(), objectMapper);
         client.report(TEST_TIME, collectedData);
         assertEquals(sentJson.size(), 2);
@@ -182,7 +182,7 @@ public class TestReportClient
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             try {
-                input.getBodyGenerator().write(outputStream);
+                writeBodySourceTo(input.getBodySource(), outputStream);
                 GZIPInputStream inputStream = new GZIPInputStream(new ByteArrayInputStream(outputStream.toByteArray()));
 
                 sentJson = new ObjectMapper().readValue(inputStream, new TypeReference<List<Map<String, Object>>>()
@@ -236,7 +236,6 @@ public class TestReportClient
 
                 @Override
                 public InputStream getInputStream()
-                        throws IOException
                 {
                     throw new UnsupportedOperationException();
                 }

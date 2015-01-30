@@ -23,6 +23,7 @@ Platform 1.13
   - We deprecated SingleUseBodyGenerator. We have not yet designed a
     replacement.
   - We created BodySourceTester to help test BodySource implementations.
+  - We changed the reporting client to use DynamicBodySource.
 
 * Events
 

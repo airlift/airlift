@@ -25,7 +25,7 @@ import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Table;
 import com.google.common.collect.Table.Cell;
 import com.google.inject.Inject;
-import com.proofpoint.http.client.BodyGenerator;
+import com.proofpoint.http.client.DynamicBodySource;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
@@ -35,6 +35,7 @@ import com.proofpoint.node.NodeInfo;
 import javax.management.ObjectName;
 import java.io.OutputStream;
 import java.net.URI;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
@@ -85,7 +86,7 @@ class ReportClient
         Request request = preparePost()
                 .setUri(UPLOAD_URI)
                 .setHeader("Content-Type", "application/gzip")
-                .setBodyGenerator(new CompressBodyGenerator(systemTimeMillis, collectedData))
+                .setBodySource(new CompressBodySource(systemTimeMillis, collectedData))
                 .build();
         try {
             StatusResponse response = httpClient.execute(request, createStatusResponseHandler());
@@ -114,7 +115,7 @@ class ReportClient
         @JsonProperty
         private final Map<String, String> tags;
 
-        public DataPoint(long systemTimeMillis, Cell<ObjectName, String, Object> cell, Map<String, String> instanceTags)
+        DataPoint(long systemTimeMillis, Cell<ObjectName, String, Object> cell, Map<String, String> instanceTags)
         {
             Map<String,String> propertyList = cell.getRowKey().getKeyPropertyList();
 
@@ -162,34 +163,45 @@ class ReportClient
         }
     }
 
-    private class CompressBodyGenerator implements BodyGenerator
+    private class CompressBodySource implements DynamicBodySource
     {
         private final long systemTimeMillis;
         private final Table<ObjectName,String,Object> collectedData;
 
-        public CompressBodyGenerator(long systemTimeMillis, Table<ObjectName, String, Object> collectedData)
+        CompressBodySource(long systemTimeMillis, Table<ObjectName, String, Object> collectedData)
         {
             this.systemTimeMillis = systemTimeMillis;
             this.collectedData = collectedData;
         }
 
         @Override
-        public void write(OutputStream out)
+        public Writer start(final OutputStream out)
                 throws Exception
         {
-            GZIPOutputStream gzipOutputStream = new GZIPOutputStream(out);
-            JsonGenerator generator = JSON_FACTORY.createGenerator(gzipOutputStream, JsonEncoding.UTF8)
+            final GZIPOutputStream gzipOutputStream = new GZIPOutputStream(out);
+            final JsonGenerator generator = JSON_FACTORY.createGenerator(gzipOutputStream, JsonEncoding.UTF8)
                 .setCodec(objectMapper);
+            final Iterator<Cell<ObjectName, String, Object>> iterator = collectedData.cellSet().iterator();
 
             generator.writeStartArray();
 
-            for (Cell<ObjectName, String, Object> cell : collectedData.cellSet()) {
-                generator.writeObject(new DataPoint(systemTimeMillis, cell, instanceTags));
-            }
-
-            generator.writeEndArray();
-            generator.flush();
-            gzipOutputStream.finish();
+            return new Writer()
+            {
+                @Override
+                public void write()
+                        throws Exception
+                {
+                    if (iterator.hasNext()) {
+                        generator.writeObject(new DataPoint(systemTimeMillis, iterator.next(), instanceTags));
+                    }
+                    else {
+                        generator.writeEndArray();
+                        generator.flush();
+                        gzipOutputStream.finish();
+                        out.close();
+                    }
+                }
+            };
         }
     }
 }
