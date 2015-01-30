@@ -17,6 +17,7 @@ package com.proofpoint.jaxrs;
 
 import com.proofpoint.units.Duration;
 
+import javax.annotation.Priority;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseContext;
@@ -24,6 +25,7 @@ import javax.ws.rs.container.ContainerResponseFilter;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+@Priority(100)
 class TimingFilter
         implements ContainerRequestFilter, ContainerResponseFilter
 {
