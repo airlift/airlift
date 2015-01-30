@@ -22,6 +22,7 @@ Platform 1.13
     probably have a longer than usual deprecation period.
   - We deprecated SingleUseBodyGenerator. We have not yet designed a
     replacement.
+  - We created BodySourceTester to help test BodySource implementations.
 
 * BalancingHttpClient logging
 
