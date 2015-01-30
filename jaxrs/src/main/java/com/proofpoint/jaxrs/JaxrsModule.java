@@ -16,6 +16,7 @@
 package com.proofpoint.jaxrs;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
 import com.google.inject.Binding;
@@ -23,10 +24,16 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provides;
+import com.google.inject.TypeLiteral;
 import com.proofpoint.http.server.TheAdminServlet;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.log.Logger;
+import org.glassfish.hk2.api.Factory;
+import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.server.spi.Container;
+import org.glassfish.jersey.server.spi.ContainerLifecycleListener;
 import org.glassfish.jersey.servlet.ServletContainer;
 
 import javax.servlet.Servlet;
@@ -39,8 +46,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.inject.multibindings.MapBinder.newMapBinder;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.proofpoint.jaxrs.JaxrsBinder.jaxrsBinder;
 
@@ -50,6 +59,7 @@ public class JaxrsModule
     private static final Logger log = Logger.get(JaxrsModule.class);
 
     private final boolean requireExplicitBindings;
+    private final AtomicReference<ServiceLocator> locatorReference = new AtomicReference<>();
 
     public JaxrsModule()
     {
@@ -83,6 +93,7 @@ public class JaxrsModule
 
         newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
         newSetBinder(binder, JaxrsBinding.class, JaxrsResource.class).permitDuplicates();
+        newMapBinder(binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<Supplier<?>>() {}, JaxrsInjectionProvider.class);
     }
 
     @Provides
@@ -92,9 +103,46 @@ public class JaxrsModule
     }
 
     @Provides
-    public static ResourceConfig createResourceConfig(Application application)
+    public ResourceConfig createResourceConfig(Application application, @JaxrsInjectionProvider final Map<Class<?>, Supplier<?>> supplierMap)
     {
-        return ResourceConfig.forApplication(application);
+        ResourceConfig config = ResourceConfig.forApplication(application);
+        config.register(new ContainerLifecycleListener()
+        {
+            @Override
+            public void onStartup(Container container)
+            {
+                locatorReference.set(container.getApplicationHandler().getServiceLocator());
+            }
+
+            @Override
+            public void onReload(Container container)
+            {
+            }
+
+            @Override
+            public void onShutdown(Container container)
+            {
+            }
+        });
+
+        config.register(new AbstractBinder()
+        {
+            @Override
+            protected void configure()
+            {
+                for (final Entry<Class<?>, Supplier<?>> entry : supplierMap.entrySet()) {
+                    bindSupplier(entry.getKey(), entry.getValue());
+                }
+            }
+
+            @SuppressWarnings("unchecked")
+            private <T> void bindSupplier(Class<T> type, Supplier<?> supplier)
+            {
+                bindFactory(new InjectionProviderFactory<>(type, (Supplier<T>) supplier, locatorReference)).to(type);
+            }
+        });
+
+        return config;
     }
 
     @Provides
@@ -183,7 +231,7 @@ public class JaxrsModule
     {
         private final Set<Object> jaxRsSingletons;
 
-        public JaxRsApplication(Set<Object> jaxRsSingletons)
+        JaxRsApplication(Set<Object> jaxRsSingletons)
         {
             this.jaxRsSingletons = jaxRsSingletons;
         }
@@ -192,6 +240,34 @@ public class JaxrsModule
         public Set<Object> getSingletons()
         {
             return jaxRsSingletons;
+        }
+    }
+
+    private static class InjectionProviderFactory<T> implements Factory<T>
+    {
+        private final Supplier<? extends T> supplier;
+        private final AtomicReference<ServiceLocator> locatorReference;
+
+        InjectionProviderFactory(Class<T> type, Supplier<? extends T> supplier, AtomicReference<ServiceLocator> locatorReference)
+        {
+            this.supplier = supplier;
+            this.locatorReference = locatorReference;
+        }
+
+        @Override
+        public T provide()
+        {
+            T object = supplier.get();
+            ServiceLocator locator = locatorReference.get();
+            locator.inject(object);
+            locator.postConstruct(object);
+            return object;
+        }
+
+        @Override
+        public void dispose(T o)
+        {
+            locatorReference.get().preDestroy(o);
         }
     }
 }

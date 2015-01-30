@@ -1,3 +1,13 @@
+Platform 1.14
+
+* JAX-RS
+
+  We created JaxrsBinder.bindInjectionProvider() to support JAX-RS Custom
+  Injection Providers. Use this to bind a type to a Supplier of that type.
+  The objects returned from the Supplier will be field and method injected
+  by Jersey and any PostConstruct and PreDestroy methods will be called at
+  the appropriate time.
+
 Platform 1.13
 
 * HttpClient
