@@ -40,6 +40,7 @@ public abstract class AbstractEventClient
     }
 
     @Override
+    @Deprecated
     public final <T> ListenableFuture<Void> post(EventGenerator<T> eventGenerator)
             throws IllegalArgumentException
     {

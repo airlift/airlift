@@ -17,7 +17,6 @@ package com.proofpoint.event.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
-import com.proofpoint.event.client.EventClient.EventGenerator;
 import com.proofpoint.event.client.NestedDummyEventClass.NestedPart;
 import com.proofpoint.node.NodeInfo;
 import org.joda.time.DateTime;
@@ -26,6 +25,7 @@ import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Set;
 import java.util.UUID;
 
@@ -34,9 +34,12 @@ import static com.proofpoint.event.client.ChainedCircularEventClass.ChainedPart;
 import static com.proofpoint.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 import static org.testng.Assert.assertEquals;
 
-public class TestJsonEventWriter
+public abstract class AbstractTestJsonEventWriter
 {
-    private JsonEventWriter eventWriter;
+    protected JsonEventWriter eventWriter;
+
+    abstract <T> void writeEvents(final Iterable<T> events, String token, OutputStream out)
+            throws Exception;
 
     @BeforeMethod
     public void setup()
@@ -51,7 +54,7 @@ public class TestJsonEventWriter
     public void testEventWriter()
             throws Exception
     {
-        assertEventJson(createEventGenerator(TestingUtils.getEvents()), "sample-trace-token", "events.json");
+        assertEventJson(TestingUtils.getEvents(), "sample-trace-token", "events.json");
     }
 
     @Test
@@ -61,14 +64,14 @@ public class TestJsonEventWriter
         FixedDummyEventClass event = new FixedDummyEventClass(
                 "localhost", new DateTime("2011-09-09T01:59:59.999Z"), UUID.fromString("1ea8ca34-db36-11e0-b76f-8b7d505ab1ad"), 123, null);
 
-        assertEventJson(createEventGenerator(ImmutableList.of(event)), "sample-trace-token", "nullValue.json");
+        assertEventJson(ImmutableList.of(event), "sample-trace-token", "nullValue.json");
     }
 
     @Test
     public void testNullToken()
             throws Exception
     {
-        assertEventJson(createEventGenerator(TestingUtils.getEvents()), null, "nullToken.json");
+        assertEventJson(TestingUtils.getEvents(), null, "nullToken.json");
     }
 
     @Test
@@ -82,14 +85,14 @@ public class TestJsonEventWriter
                 ImmutableList.of(new NestedPart("listFirst", new NestedPart("listSecond", null)), new NestedPart("listThird", null))
         );
 
-        assertEventJson(createEventGenerator(ImmutableList.of(nestedEvent)), "sample-trace-token", "nested.json");
+        assertEventJson(ImmutableList.of(nestedEvent), "sample-trace-token", "nested.json");
     }
 
     @Test(expectedExceptions = InvalidEventException.class, expectedExceptionsMessageRegExp = "Cycle detected in event data:.*")
     public void testCircularEvent()
             throws Exception
     {
-        eventWriter.writeEvents(createEventGenerator(ImmutableList.of(new CircularEventClass())), null, nullOutputStream());
+        writeEvents(ImmutableList.of(new CircularEventClass()), null, nullOutputStream());
     }
 
     @Test(expectedExceptions = InvalidEventException.class, expectedExceptionsMessageRegExp = "Cycle detected in event data:.*")
@@ -105,41 +108,25 @@ public class TestJsonEventWriter
 
         ChainedCircularEventClass event = new ChainedCircularEventClass(a);
 
-        eventWriter.writeEvents(createEventGenerator(ImmutableList.of(event)), null, nullOutputStream());
+        writeEvents(ImmutableList.of(event), null, nullOutputStream());
     }
-
 
     @Test(expectedExceptions = InvalidEventException.class)
     public void testUnregisteredEventClass()
             throws Exception
     {
         DummyEventClass event = new DummyEventClass(1.1, 1, "foo", false);
-        eventWriter.writeEvents(createEventGenerator(ImmutableList.of(event)), null, nullOutputStream());
+        writeEvents(ImmutableList.of(event), null, nullOutputStream());
     }
 
-    private void assertEventJson(EventGenerator<?> events, String token, String resource)
+    private <T> void assertEventJson(Iterable<T> events, String token, String resource)
             throws Exception
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-        eventWriter.writeEvents(events, token, out);
+        writeEvents(events, token, out);
 
         String json = out.toString(Charsets.UTF_8.name());
         assertEquals(json, TestingUtils.getNormalizedJson(resource));
-    }
-
-    private static <T> EventClient.EventGenerator<T> createEventGenerator(final Iterable<T> events)
-    {
-        return new EventClient.EventGenerator<T>()
-        {
-            @Override
-            public void generate(EventClient.EventPoster<T> eventPoster)
-                    throws IOException
-            {
-                for (T event : events) {
-                    eventPoster.post(event);
-                }
-            }
-        };
     }
 }

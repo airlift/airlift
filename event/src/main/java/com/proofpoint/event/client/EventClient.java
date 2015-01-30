@@ -29,9 +29,11 @@ public interface EventClient
     <T> ListenableFuture<Void> post(Iterable<T> events)
             throws IllegalArgumentException;
 
+    @Deprecated
     <T> ListenableFuture<Void> post(EventGenerator<T> eventGenerator)
             throws IllegalArgumentException;
 
+    @Deprecated
     public interface EventGenerator<T>
     {
         void generate(EventPoster<T> eventPoster)

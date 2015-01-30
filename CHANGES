@@ -24,6 +24,14 @@ Platform 1.13
     replacement.
   - We created BodySourceTester to help test BodySource implementations.
 
+* Events
+
+  - We deprecated EventClient.post(EventGenerator) and EventGenerator.
+    This interface effectively required implementation on top of
+    BodyGenerator. No replacement is currently planned.
+  - We changed the HttpEventClient.post(Iterable) and .post(T...)
+    implementations to use DynamicBodySource.
+
 * BalancingHttpClient logging
 
   The RetryingResponseHandler used by BalancingHttpClient will only include an

@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.google.common.collect.ImmutableMap;
+import com.proofpoint.http.client.DynamicBodySource.Writer;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.event.client.EventClient.EventGenerator;
 
@@ -28,6 +29,7 @@ import javax.inject.Inject;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,7 +42,7 @@ class JsonEventWriter
     private final Map<Class<?>, EventTypeMetadata<?>> metadataMap;
 
     @Inject
-    public JsonEventWriter(NodeInfo nodeInfo, Set<EventTypeMetadata<?>> eventTypes)
+    JsonEventWriter(NodeInfo nodeInfo, Set<EventTypeMetadata<?>> eventTypes)
     {
         this.nodeInfo = checkNotNull(nodeInfo, "nodeInfo is null");
         checkNotNull(eventTypes, "eventTypes is null");
@@ -53,6 +55,40 @@ class JsonEventWriter
             metadataBuilder.put(eventType.getEventClass(), eventType);
         }
         this.metadataMap = metadataBuilder.build();
+    }
+
+    public <T> Writer createEventWriter(final Iterator<T> eventIterator, final String token, final OutputStream out)
+            throws IOException
+    {
+        checkNotNull(eventIterator, "eventIterator is null");
+        checkNotNull(out, "out is null");
+
+        final JsonGenerator jsonGenerator = jsonFactory.createGenerator(out, JsonEncoding.UTF8);
+
+        jsonGenerator.writeStartArray();
+
+        return new Writer()
+        {
+            @Override
+            public void write()
+                    throws Exception
+            {
+                if (eventIterator.hasNext()) {
+                    T event = eventIterator.next();
+                    JsonSerializer<T> serializer = getSerializer(event, token);
+                    if (serializer == null) {
+                        throw new InvalidEventException("Event class [%s] has not been registered as an event", event.getClass().getName());
+                    }
+
+                    serializer.serialize(event, jsonGenerator, null);
+                }
+                else {
+                    jsonGenerator.writeEndArray();
+                    jsonGenerator.flush();
+                    out.close();
+                }
+            }
+        };
     }
 
     public <T> void writeEvents(EventGenerator<T> events, @Nullable final String token, OutputStream out)

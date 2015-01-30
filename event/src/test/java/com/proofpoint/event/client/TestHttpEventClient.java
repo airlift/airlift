@@ -19,6 +19,8 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.proofpoint.event.client.EventClient.EventGenerator;
+import com.proofpoint.event.client.EventClient.EventPoster;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
 import com.proofpoint.http.client.UnexpectedResponseException;
@@ -130,6 +132,28 @@ public class TestHttpEventClient
         client = newEventClient(ImmutableSet.of(baseUri));
 
         client.post(TestingUtils.getEvents()).get();
+
+        assertEquals(servlet.lastPath, "/v2/event");
+        assertEquals(servlet.lastBody, getNormalizedJson("events.json"));
+    }
+
+    @Test
+    public void testEventGeneratorReceivesEvent()
+            throws ExecutionException, InterruptedException, IOException
+    {
+        client = newEventClient(ImmutableSet.of(baseUri));
+
+        client.post(new EventGenerator<FixedDummyEventClass>()
+        {
+            @Override
+            public void generate(EventPoster<FixedDummyEventClass> eventPoster)
+                    throws IOException
+            {
+                for (FixedDummyEventClass event : TestingUtils.getEvents()) {
+                    eventPoster.post(event);
+                }
+            }
+        }).get();
 
         assertEquals(servlet.lastPath, "/v2/event");
         assertEquals(servlet.lastBody, getNormalizedJson("events.json"));
