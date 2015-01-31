@@ -17,10 +17,11 @@ package com.proofpoint.http.client.balancing;
 
 import com.proofpoint.http.client.BodySource;
 import com.proofpoint.http.client.HttpClient;
+import com.proofpoint.http.client.LimitedRetryable;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
-import com.proofpoint.http.client.SingleUseBodyGenerator;
+import com.proofpoint.http.client.StaticBodyGenerator;
 import org.mockito.ArgumentCaptor;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -29,6 +30,7 @@ import org.testng.annotations.Test;
 import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.URI;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.proofpoint.http.client.Request.Builder.preparePut;
 import static org.mockito.Matchers.any;
@@ -305,13 +307,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
     public void testDoesntRetryOnResponseSingleUseBodyGeneratorUsed()
             throws Exception
     {
-        bodySource = spy(new SingleUseBodyGenerator()
-        {
-            @Override
-            protected void writeOnce(OutputStream out)
-            {
-            }
-        });
+        bodySource = new TestingLimitedRetryableSource();
         request = preparePut().setUri(URI.create("v1/service")).setBodySource(bodySource).build();
 
         Response response503 = mock(Response.class);
@@ -342,13 +338,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
     public void testDoesntRetryOnExceptionSingleUseBodyGeneratorUsed()
             throws Exception
     {
-        bodySource = spy(new SingleUseBodyGenerator()
-        {
-            @Override
-            protected void writeOnce(OutputStream out)
-            {
-            }
-        });
+        bodySource = spy(new TestingLimitedRetryableSource());
         request = preparePut().setUri(URI.create("v1/service")).setBodySource(bodySource).build();
 
         Response response503 = mock(Response.class);
@@ -642,5 +632,38 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
     private static class CustomError
             extends Error
     {
+    }
+
+    private class TestingLimitedRetryableSource
+        extends StaticBodyGenerator
+        implements LimitedRetryable
+    {
+        private final AtomicBoolean used = new AtomicBoolean(false);
+
+        protected TestingLimitedRetryableSource()
+        {
+            super(new byte[0]);
+        }
+
+        @Override
+        public byte[] getBody()
+        {
+            if (used.getAndSet(true)) {
+                fail("TestingLimitedRetryableSource called twice");
+            }
+            return super.getBody();
+        }
+
+        @Override
+        public void write(OutputStream out)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isRetryable()
+        {
+            return !used.get();
+        }
     }
 }

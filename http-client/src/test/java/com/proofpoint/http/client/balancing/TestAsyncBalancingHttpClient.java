@@ -1,9 +1,9 @@
 package com.proofpoint.http.client.balancing;
 
 import com.google.common.util.concurrent.AbstractFuture;
-import com.proofpoint.http.client.BodyGenerator;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.HttpClient.HttpResponseFuture;
+import com.proofpoint.http.client.LimitedRetryable;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.Response;
@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.proofpoint.http.client.testing.BodySourceTester.writeBodySourceTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -148,17 +149,15 @@ public class TestAsyncBalancingHttpClient
             if (skipBodyGenerator) {
                 skipBodyGenerator = false;
             }
-            else {
+            else if (bodySource instanceof LimitedRetryable) {
                 try {
-                    if (bodySource instanceof BodyGenerator) {
-                        ((BodyGenerator) bodySource).write(new OutputStream()
+                    writeBodySourceTo(bodySource, new OutputStream()
+                    {
+                        @Override
+                        public void write(int b)
                         {
-                            @Override
-                            public void write(int b)
-                            {
-                            }
-                        });
-                    }
+                        }
+                    });
                 }
                 catch (Exception e) {
                     fail("BodyGenerator exception", e);

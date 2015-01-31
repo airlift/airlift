@@ -20,10 +20,17 @@ Platform 1.13
   - We deprecated Request.Builder.setBodyGenerator(BodyGenerator). Use
     Request.Builder.setBodySource(BodySource) instead. This change will
     probably have a longer than usual deprecation period.
-  - We deprecated SingleUseBodyGenerator. We have not yet designed a
-    replacement.
+  - We replaced SingleUseBodyGenerator with the LimitedRetryable interface.
   - We created BodySourceTester to help test BodySource implementations.
   - We changed the reporting client to use DynamicBodySource.
+
+* BalancingHttpClient
+
+  - The RetryingResponseHandler used by BalancingHttpClient will only include
+    an exception's stack in the log once per 30 seconds per exception class.
+  - If a Request has a BodySource that implements LimitedRetryable, the
+    BalancingHttpClient will not retry a request unless
+    LimitedRetryable.isRetryable() returns true.
 
 * Events
 
@@ -35,11 +42,6 @@ Platform 1.13
     BodyGenerator. No replacement is currently planned.
   - We changed the HttpEventClient.post(Iterable) and .post(T...)
     implementations to use DynamicBodySource.
-
-* BalancingHttpClient logging
-
-  The RetryingResponseHandler used by BalancingHttpClient will only include an
-  exception's stack in the log once per 30 seconds per exception class.
 
 Platform 1.12
 

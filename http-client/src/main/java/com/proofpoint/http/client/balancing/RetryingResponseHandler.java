@@ -18,10 +18,10 @@ package com.proofpoint.http.client.balancing;
 import com.google.common.cache.Cache;
 import com.google.common.collect.ImmutableSet;
 import com.proofpoint.http.client.BodySource;
+import com.proofpoint.http.client.LimitedRetryable;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
-import com.proofpoint.http.client.SingleUseBodyGenerator;
 import com.proofpoint.log.Logger;
 
 import java.util.Set;
@@ -74,7 +74,7 @@ final class RetryingResponseHandler<T, E extends Exception>
                     exception);
         }
 
-        if (finalAttempt || singleUseBodySourceUsed(request)) {
+        if (finalAttempt || !bodySourceRetryable(request)) {
             Object result;
             try {
                 result = innerHandler.handleException(originalRequest, exception);
@@ -97,7 +97,7 @@ final class RetryingResponseHandler<T, E extends Exception>
             String retryHeader = response.getHeader("X-Proofpoint-Retry");
             log.warn("%d response querying %s",
                     response.getStatusCode(), request.getUri().resolve("/"));
-            if (!finalAttempt && !("no".equalsIgnoreCase(retryHeader)) && !singleUseBodySourceUsed(request)) {
+            if (!finalAttempt && !("no".equalsIgnoreCase(retryHeader)) && bodySourceRetryable(request)) {
                 throw new RetryException(failureCategory);
             }
 
@@ -119,9 +119,9 @@ final class RetryingResponseHandler<T, E extends Exception>
         }
     }
 
-    private static boolean singleUseBodySourceUsed(Request request)
+    private static boolean bodySourceRetryable(Request request)
     {
-        BodySource bodyGenerator = request.getBodySource();
-        return bodyGenerator instanceof SingleUseBodyGenerator && ((SingleUseBodyGenerator) bodyGenerator).isUsed();
+        BodySource bodySource = request.getBodySource();
+        return !(bodySource instanceof LimitedRetryable) || ((LimitedRetryable) bodySource).isRetryable();
     }
 }
