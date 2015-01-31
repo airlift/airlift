@@ -178,7 +178,7 @@ final class SparseHll
         // Estimate the cardinality using linear counting over the theoretical 2^EXTENDED_BITS_LENGTH buckets available due
         // to the fact that we're recording the raw leading EXTENDED_BITS_LENGTH of the hash. This produces much better precision
         // while in the sparse regime.
-        int totalBuckets = numberOfBuckets(Short.SIZE);
+        int totalBuckets = numberOfBuckets(EXTENDED_PREFIX_BITS);
         int zeroBuckets = totalBuckets - numberOfEntries;
 
         return Math.round(linearCounting(zeroBuckets, totalBuckets));
