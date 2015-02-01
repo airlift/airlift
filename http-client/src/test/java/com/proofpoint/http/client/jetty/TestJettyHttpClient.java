@@ -19,16 +19,15 @@ public class TestJettyHttpClient
     private JettyIoPool jettyIoPool;
 
     @BeforeMethod
-    public void setUp()
+    public void setUpHttpClient()
     {
         jettyIoPool = new JettyIoPool("test-shared", new JettyIoPoolConfig());
         httpClient = new JettyHttpClient(new HttpClientConfig(), jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()));
         stats = httpClient.getStats();
     }
 
-    @Override
     @AfterMethod
-    public void tearDown()
+    public void tearDownHttpClient()
             throws Exception
     {
         closeQuietly(httpClient);

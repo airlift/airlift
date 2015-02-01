@@ -10,14 +10,7 @@ import com.proofpoint.http.client.TestingRequestFilter;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
-import java.util.concurrent.ExecutionException;
-
-import static com.google.common.base.Throwables.propagate;
-import static com.google.common.base.Throwables.propagateIfPossible;
-import static com.proofpoint.http.client.HttpClient.HttpResponseFuture;
 import static com.proofpoint.testing.Closeables.closeQuietly;
-import static java.lang.Thread.currentThread;
-import static org.testng.Assert.fail;
 
 public class TestAsyncJettyHttpClient
         extends AbstractHttpClientTest
@@ -26,16 +19,15 @@ public class TestAsyncJettyHttpClient
     private JettyIoPool jettyIoPool;
 
     @BeforeMethod
-    public void setUp()
+    public void setUpHttpClient()
     {
         jettyIoPool = new JettyIoPool("test-shared", new JettyIoPoolConfig());
         httpClient = new JettyHttpClient(new HttpClientConfig(), jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()));
         stats = httpClient.getStats();
     }
 
-    @Override
     @AfterMethod
-    public void tearDown()
+    public void tearDownHttpClient()
             throws Exception
     {
         closeQuietly(httpClient);

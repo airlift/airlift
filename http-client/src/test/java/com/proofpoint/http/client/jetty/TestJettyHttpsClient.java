@@ -33,7 +33,7 @@ public class TestJettyHttpsClient
     }
 
     @BeforeMethod
-    public void setUp()
+    public void setUpHttpClient()
     {
         jettyIoPool = new JettyIoPool("test-shared", new JettyIoPoolConfig());
 
@@ -46,7 +46,7 @@ public class TestJettyHttpsClient
     }
 
     @AfterMethod
-    public void tearDown()
+    public void tearDownHttpClient()
             throws Exception
     {
         closeQuietly(httpClient);

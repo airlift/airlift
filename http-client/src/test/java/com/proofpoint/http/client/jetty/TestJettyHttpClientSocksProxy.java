@@ -23,7 +23,7 @@ public class TestJettyHttpClientSocksProxy
     private TestingSocksProxy testingSocksProxy;
 
     @BeforeMethod
-    public void setUp()
+    public void setUpHttpClient()
             throws IOException
     {
         testingSocksProxy = new TestingSocksProxy().start();
@@ -32,7 +32,7 @@ public class TestJettyHttpClientSocksProxy
     }
 
     @AfterMethod
-    public void tearDown()
+    public void tearDownHttpClient()
     {
         closeQuietly(httpClient);
         closeQuietly(jettyIoPool);
