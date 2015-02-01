@@ -23,6 +23,6 @@ import java.io.OutputStream;
 @Deprecated
 public interface BodyGenerator extends BodySource
 {
-    public void write(OutputStream out)
+    void write(OutputStream out)
             throws Exception;
 }

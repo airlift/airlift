@@ -286,7 +286,7 @@ public class HttpUriBuilder
     /**
      * input must be an ASCII string representing a percent-encoded UTF-8 byte sequence
      */
-    private String percentDecode(String encoded)
+    private static String percentDecode(String encoded)
     {
         checkArgument(CharMatcher.ASCII.matchesAllOf(encoded), "string must be ASCII");
 

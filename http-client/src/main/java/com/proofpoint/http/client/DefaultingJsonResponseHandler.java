@@ -25,7 +25,8 @@ import java.util.Set;
 
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 
-public class DefaultingJsonResponseHandler<T> implements ResponseHandler<T, RuntimeException>
+public class DefaultingJsonResponseHandler<T>
+        implements ResponseHandler<T, RuntimeException>
 {
     private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
 

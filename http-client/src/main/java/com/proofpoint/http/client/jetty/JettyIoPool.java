@@ -13,12 +13,11 @@ import java.io.Closeable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class JettyIoPool
+public final class JettyIoPool
         implements Closeable
 {
     private final String name;
@@ -140,16 +139,11 @@ public class JettyIoPool
         protected void doStart()
                 throws Exception
         {
-            scheduler = new ScheduledThreadPoolExecutor(1, new ThreadFactory()
-            {
-                @Override
-                public Thread newThread(Runnable runnable)
-                {
-                    Thread thread = new Thread(threadGroup, runnable);
-                    thread.setName(name + "-" + thread.getId());
-                    thread.setDaemon(true);
-                    return thread;
-                }
+            scheduler = new ScheduledThreadPoolExecutor(1, runnable -> {
+                Thread thread = new Thread(threadGroup, runnable);
+                thread.setName(name + "-" + thread.getId());
+                thread.setDaemon(true);
+                return thread;
             });
             scheduler.setRemoveOnCancelPolicy(true);
             super.doStart();

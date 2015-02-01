@@ -15,7 +15,7 @@ public class TestHttpUriBuilder
     public void testCreateFromUri()
     {
         URI original = URI.create("http://www.example.com:8081/a%20/%C3%A5?k=1&k=2&%C3%A5=3");
-        assertEquals(HttpUriBuilder.uriBuilderFrom(original).build(), original);
+        assertEquals(uriBuilderFrom(original).build(), original);
     }
 
     @Test
@@ -214,7 +214,7 @@ public class TestHttpUriBuilder
     @Test
     public void testReplaceParameters()
     {
-        URI uri = HttpUriBuilder.uriBuilderFrom(URI.create("http://www.example.com:8081/?k1=1&k1=2&k2=3"))
+        URI uri = uriBuilderFrom(URI.create("http://www.example.com:8081/?k1=1&k1=2&k2=3"))
                 .replaceParameter("k1", "4")
                 .build();
 
@@ -224,7 +224,7 @@ public class TestHttpUriBuilder
     @Test
     public void testReplaceParameterMultivalued()
     {
-        URI uri = HttpUriBuilder.uriBuilderFrom(URI.create("http://www.example.com/?k1=1&k1=2&k2=3"))
+        URI uri = uriBuilderFrom(URI.create("http://www.example.com/?k1=1&k1=2&k2=3"))
                 .replaceParameter("k1", "a", "b", "c")
                 .build();
 
@@ -234,7 +234,7 @@ public class TestHttpUriBuilder
     @Test
     public void testReplaceRawQuery()
     {
-        URI uri = HttpUriBuilder.uriBuilderFrom(URI.create("http://www.example.com:8081/a%20/%C3%A5?k1=1&k1=2&k2=3"))
+        URI uri = uriBuilderFrom(URI.create("http://www.example.com:8081/a%20/%C3%A5?k1=1&k1=2&k2=3"))
                 .replaceRawQuery("k=1&k=2&%C3%A5=3")
                 .build();
 
@@ -244,7 +244,7 @@ public class TestHttpUriBuilder
     @Test
     public void testReplacePort()
     {
-        URI uri = HttpUriBuilder.uriBuilderFrom(URI.create("http://www.example.com:8081/"))
+        URI uri = uriBuilderFrom(URI.create("http://www.example.com:8081/"))
                 .port(80)
                 .build();
 
@@ -254,7 +254,7 @@ public class TestHttpUriBuilder
     @Test
     public void testDefaultPort()
     {
-        URI uri = HttpUriBuilder.uriBuilderFrom(URI.create("http://www.example.com:8081"))
+        URI uri = uriBuilderFrom(URI.create("http://www.example.com:8081"))
                 .defaultPort()
                 .build();
 
@@ -264,7 +264,7 @@ public class TestHttpUriBuilder
     @Test
     public void testHostWithIpv6()
     {
-        URI uri = HttpUriBuilder.uriBuilder()
+        URI uri = uriBuilder()
                 .scheme("http")
                 .host("FEDC:BA98:7654:3210:FEDC:BA98:7654:3210")
                 .port(8081)
@@ -277,7 +277,7 @@ public class TestHttpUriBuilder
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "host starts with a bracket")
     public void testHostWithBracketedIpv6()
     {
-        URI uri = HttpUriBuilder.uriBuilder()
+        URI uri = uriBuilder()
                 .scheme("http")
                 .host("[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]")
                 .port(8081)
@@ -290,7 +290,7 @@ public class TestHttpUriBuilder
     @Test
     public void testHostAndPortWithHostPort()
     {
-        URI uri = HttpUriBuilder.uriBuilder()
+        URI uri = uriBuilder()
                 .scheme("http")
                 .port(8888)
                 .hostAndPort(HostAndPort.fromParts("example.com", 8081))
@@ -302,7 +302,7 @@ public class TestHttpUriBuilder
     @Test
     public void testHostAndPortWithHostOnly()
     {
-        URI uri = HttpUriBuilder.uriBuilder()
+        URI uri = uriBuilder()
                 .scheme("http")
                 .port(8888)
                 .hostAndPort(HostAndPort.fromString("example.com"))
@@ -314,7 +314,7 @@ public class TestHttpUriBuilder
     @Test
     public void testHostAndPortWithBracketedIpv6()
     {
-        URI uri = HttpUriBuilder.uriBuilder()
+        URI uri = uriBuilder()
                 .scheme("http")
                 .port(8888)
                 .hostAndPort(HostAndPort.fromParts("[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]", 8081))
@@ -326,7 +326,7 @@ public class TestHttpUriBuilder
     @Test
     public void testHostAndPortWithUnbracketedIpv6()
     {
-        URI uri = HttpUriBuilder.uriBuilder()
+        URI uri = uriBuilder()
                 .scheme("http")
                 .port(8888)
                 .hostAndPort(HostAndPort.fromParts("FEDC:BA98:7654:3210:FEDC:BA98:7654:3210", 8081))
@@ -338,7 +338,7 @@ public class TestHttpUriBuilder
     @Test
     public void testHostAndPortWithUnbracketedIpv6String()
     {
-        URI uri = HttpUriBuilder.uriBuilder()
+        URI uri = uriBuilder()
                 .scheme("http")
                 .port(8888)
                 .hostAndPort(HostAndPort.fromString("FEDC:BA98:7654:3210:FEDC:BA98:7654:3210"))

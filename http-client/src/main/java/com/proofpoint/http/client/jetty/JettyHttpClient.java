@@ -189,7 +189,7 @@ public class JettyHttpClient
         });
     }
 
-    private HttpClient createHttpClient(HttpClientConfig config, Exception created)
+    private static HttpClient createHttpClient(HttpClientConfig config, Exception created)
     {
         created.fillInStackTrace();
         SslContextFactory sslContextFactory = new SslContextFactory();
@@ -904,20 +904,15 @@ public class JettyHttpClient
             final ChunksQueue chunks = new ChunksQueue();
             final AtomicReference<Exception> exception = new AtomicReference<>();
 
-            executor.execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    BodyGeneratorOutputStream out = new BodyGeneratorOutputStream(chunks);
-                    try (TraceTokenScope ignored = registerRequestToken(traceToken)) {
-                        bodyGenerator.write(out);
-                        out.close();
-                    }
-                    catch (Exception e) {
-                        exception.set(e);
-                        chunks.replaceAllWith(EXCEPTION);
-                    }
+            executor.execute(() -> {
+                BodyGeneratorOutputStream out = new BodyGeneratorOutputStream(chunks);
+                try (TraceTokenScope ignored = registerRequestToken(traceToken)) {
+                    bodyGenerator.write(out);
+                    out.close();
+                }
+                catch (Exception e) {
+                    exception.set(e);
+                    chunks.replaceAllWith(EXCEPTION);
                 }
             });
 

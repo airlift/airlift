@@ -74,7 +74,7 @@ public class TestRequestBuilder
         assertFalse(request.isFollowRedirects());
     }
 
-    private Request createRequest()
+    private static Request createRequest()
     {
         return prepareGet()
                     .setUri(URI.create("http://example.com"))

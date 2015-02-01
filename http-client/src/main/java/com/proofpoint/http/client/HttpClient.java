@@ -34,7 +34,7 @@ public interface HttpClient
     @Override
     void close();
 
-    public interface HttpResponseFuture<T>
+    interface HttpResponseFuture<T>
             extends ListenableFuture<T>
     {
         /**

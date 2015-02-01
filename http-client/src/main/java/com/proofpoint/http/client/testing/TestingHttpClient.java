@@ -66,7 +66,7 @@ public class TestingHttpClient
         checkNotNull(responseHandler, "responseHandler is null");
         checkState(!closed.get(), "client is closed");
 
-        final AtomicReference<String> state = new AtomicReference<>("SENDING_REQUEST");
+        AtomicReference<String> state = new AtomicReference<>("SENDING_REQUEST");
         ListenableFuture<T> future = executor.submit(() -> execute(request, responseHandler, state));
 
         return new TestingHttpResponseFuture<>(future, state);
