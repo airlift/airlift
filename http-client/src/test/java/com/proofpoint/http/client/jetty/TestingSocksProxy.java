@@ -16,8 +16,10 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -27,10 +29,17 @@ import static com.proofpoint.concurrent.Threads.threadsNamed;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 
 public class TestingSocksProxy
-    implements Closeable
+        implements Closeable
 {
     private static final int SOCKS_4_SUCCESS = 0x5a;
     private static final int SOCKS_4_FAILED = 0x5b;
+
+    private static final int SOCKS_5_ADDRESS_V4 = 0x01;
+    private static final int SOCKS_5_ADDRESS_DOMAIN = 0x03;
+    private static final int SOCKS_5_ADDRESS_V6 = 0x04;
+
+    private static final int SOCKS_5_STATUS_SUCCESS = 0x00;
+    private static final int SOCKS_5_STATUS_FAILED = 0x01;
 
     private final int bindPort;
 
@@ -74,6 +83,7 @@ public class TestingSocksProxy
         }
     }
 
+    @Override
     public synchronized void close()
     {
         hostAndPort = null;
@@ -219,7 +229,7 @@ public class TestingSocksProxy
             proxyData(sourceInput, sourceOutput, targetInput, targetOutput);
         }
 
-        private void responseSocks4(DataOutputStream output, int status, int port, int address)
+        private static void responseSocks4(DataOutputStream output, int status, int port, int address)
                 throws IOException
         {
             ByteArrayDataOutput sourceOutput = ByteStreams.newDataOutput();
@@ -242,9 +252,131 @@ public class TestingSocksProxy
         }
 
         private void socks5(DataInputStream sourceInput, DataOutputStream sourceOutput)
+                throws IOException
         {
-            // adding socks5 no_auth support would be trivial, but we need a client to test it
-            throw new UnsupportedOperationException();
+            // field 2: number of authentication methods supported, 1 byte
+            int authMethods = sourceInput.read();
+
+            // field 3: authentication methods, variable length, 1 byte per method supported
+            boolean supportsNoAuth = false;
+            for (int i = 0; i < authMethods; i++) {
+                // read auth methods
+                if (sourceInput.read() == 0) {
+                    supportsNoAuth = true;
+                }
+            }
+
+            if (!supportsNoAuth) {
+                // no supported auth method
+                sourceOutput.write(5);
+                sourceOutput.write(0xFF);
+                return;
+            }
+
+            sourceOutput.write(5);
+            sourceOutput.write(0);
+
+            // field 1: SOCKS version number, 1 byte (must be 0x05 for this version)
+            int version = sourceInput.read();
+            if (version != 5) {
+                return;
+            }
+
+            // field 2: command code, 1 byte:
+            int command = sourceInput.read();
+
+            // field 3: reserved, must be 0x00
+            sourceInput.read();
+
+            // field 4: address type, 1 byte:
+            int addressType = sourceInput.read();
+
+            // field 5: destination address of
+            byte[] address;
+            switch (addressType) {
+                case SOCKS_5_ADDRESS_V4:
+                    // 4 bytes for IPv4 address
+                    address = new byte[4];
+                    sourceInput.readFully(address);
+                    break;
+                case SOCKS_5_ADDRESS_DOMAIN:
+                    // 1 byte of name length followed by the name for Domain name
+                    address = new byte[sourceInput.read()];
+                    sourceInput.readFully(address);
+                    break;
+                case SOCKS_5_ADDRESS_V6:
+                    // 16 bytes for IPv6 address
+                    address = new byte[16];
+                    sourceInput.readFully(address);
+                    break;
+                default:
+                    // unknown address type, terminate connection
+                    return;
+            }
+
+            // field 6: port number in a network byte order, 2 bytes
+            int port = sourceInput.readUnsignedShort();
+
+            // we only support connect requests
+            if (command != 1) {
+                responseSocks5(sourceOutput, SOCKS_5_STATUS_FAILED, port, addressType, address);
+                return;
+            }
+
+            Socket targetSocket;
+            try {
+                switch (addressType) {
+                    case SOCKS_5_ADDRESS_V4:
+                    case SOCKS_5_ADDRESS_V6:
+                        targetSocket = new Socket(InetAddress.getByAddress(address), port);
+                        break;
+                    case SOCKS_5_ADDRESS_DOMAIN:
+                        targetSocket = new Socket(new String(address, StandardCharsets.US_ASCII), port);
+                        break;
+                    default:
+                        return;
+                }
+            }
+            catch (IOException e) {
+                // could not resolve name or open socket
+                responseSocks5(sourceOutput, SOCKS_5_STATUS_FAILED, port, addressType, address);
+                return;
+            }
+
+            InputStream targetInput = targetSocket.getInputStream();
+            OutputStream targetOutput = targetSocket.getOutputStream();
+
+            // send success message
+            responseSocks5(sourceOutput, SOCKS_5_STATUS_SUCCESS, port, addressType, address);
+            proxyData(sourceInput, sourceOutput, targetInput, targetOutput);
+        }
+
+        private static void responseSocks5(DataOutputStream output, int status, int port, int addressType, byte[] address)
+                throws IOException
+        {
+            ByteArrayDataOutput sourceOutput = ByteStreams.newDataOutput();
+
+            // field 1: SOCKS protocol version, 1 byte (0x05 for this version)
+            sourceOutput.write(5);
+
+            // field 2: status, 1 byte:
+            sourceOutput.write(status);
+
+            // field 3: reserved, must be 0x00
+            sourceOutput.write(0);
+
+            // field 4: address type, 1 byte
+            sourceOutput.write(addressType);
+
+            // field 5: destination address
+            sourceOutput.write(address);
+
+            // field 6: network byte order port number, 2 bytes
+            sourceOutput.writeShort(port);
+
+            // write all at once to avoid Jetty bug
+            // TODO: remove this when fixed in Jetty
+            output.write(sourceOutput.toByteArray());
         }
 
         private void proxyData(InputStream sourceInput, OutputStream sourceOutput, InputStream targetInput, OutputStream targetOutput)
