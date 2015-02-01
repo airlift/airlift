@@ -11,8 +11,9 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.Closeable;
 import java.io.IOException;
+
+import static com.proofpoint.testing.Closeables.closeQuietly;
 
 public class TestJettyHttpClientSocksProxy
 // Intermittently fails due to bug in the Jetty SOCKS code        extends AbstractHttpClientTest
@@ -33,9 +34,9 @@ public class TestJettyHttpClientSocksProxy
     @AfterMethod
     public void tearDown()
     {
-        closeIgnoreException(httpClient);
-        closeIgnoreException(jettyIoPool);
-        closeIgnoreException(testingSocksProxy);
+        closeQuietly(httpClient);
+        closeQuietly(jettyIoPool);
+        closeQuietly(testingSocksProxy);
     }
 
 //    @Override
@@ -98,17 +99,4 @@ public class TestJettyHttpClientSocksProxy
 //    {
 //        // Fails on Unix and we don't care about SOCKS
 //    }
-
-    private static void closeIgnoreException(Closeable closeable)
-    {
-        if (closeable == null) {
-            return;
-        }
-        try {
-            closeable.close();
-        }
-        catch (IOException ignored) {
-            // nothing we can do about this
-        }
-    }
 }
