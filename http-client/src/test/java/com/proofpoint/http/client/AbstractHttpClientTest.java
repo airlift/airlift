@@ -5,6 +5,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
 import com.proofpoint.http.client.DynamicBodySource.Writer;
+import com.proofpoint.http.client.HttpClient.HttpResponseFuture;
+import com.proofpoint.http.client.jetty.JettyHttpClient;
 import com.proofpoint.log.Logging;
 import com.proofpoint.testing.Assertions;
 import com.proofpoint.units.Duration;
@@ -45,6 +47,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
@@ -54,6 +57,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.base.Throwables.propagateIfInstanceOf;
+import static com.google.common.base.Throwables.propagateIfPossible;
 import static com.proofpoint.concurrent.Threads.threadsNamed;
 import static com.proofpoint.http.client.Request.Builder.prepareDelete;
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
@@ -66,6 +70,7 @@ import static com.proofpoint.tracetoken.TraceTokenManager.createAndRegisterNewRe
 import static com.proofpoint.tracetoken.TraceTokenManager.getCurrentRequestToken;
 import static com.proofpoint.units.Duration.nanosSince;
 import static java.lang.String.format;
+import static java.lang.Thread.currentThread;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
@@ -1562,5 +1567,36 @@ public abstract class AbstractHttpClientTest
     {
         // Linux refuses connections immediately rather than queuing them
         return (t instanceof SocketTimeoutException) || (t instanceof SocketException);
+    }
+
+    public static <T, E extends Exception> T executeAsync(JettyHttpClient client, Request request, ResponseHandler<T, E> responseHandler)
+            throws E
+    {
+        HttpResponseFuture<T> future = null;
+        try {
+            future = client.executeAsync(request, responseHandler);
+        }
+        catch (Exception e) {
+            fail("Unexpected exception", e);
+        }
+
+        try {
+            return future.get();
+        }
+        catch (InterruptedException e) {
+            currentThread().interrupt();
+            throw propagate(e);
+        }
+        catch (ExecutionException e) {
+            propagateIfPossible(e.getCause());
+
+            if (e.getCause() instanceof Exception) {
+                // the HTTP client and ResponseHandler interface enforces this
+                throw (E) e.getCause();
+            }
+
+            // e.getCause() is some direct subclass of throwable
+            throw propagate(e.getCause());
+        }
     }
 }
