@@ -20,9 +20,10 @@ public final class Threads
      */
     public static ThreadFactory threadsNamed(String nameFormat)
     {
+        GroupedThreadFactory delegate = new GroupedThreadFactory(String.format(nameFormat, "group"));
         return new ThreadFactoryBuilder()
                 .setNameFormat(nameFormat)
-                .setThreadFactory(new ContextClassLoaderThreadFactory(Thread.currentThread().getContextClassLoader()))
+                .setThreadFactory(new ContextClassLoaderThreadFactory(Thread.currentThread().getContextClassLoader(), delegate))
                 .build();
     }
 
@@ -35,10 +36,11 @@ public final class Threads
      */
     public static ThreadFactory daemonThreadsNamed(String nameFormat)
     {
+        GroupedThreadFactory delegate = new GroupedThreadFactory(String.format(nameFormat, "group"));
         return new ThreadFactoryBuilder()
                 .setNameFormat(nameFormat)
                 .setDaemon(true)
-                .setThreadFactory(new ContextClassLoaderThreadFactory(Thread.currentThread().getContextClassLoader()))
+                .setThreadFactory(new ContextClassLoaderThreadFactory(Thread.currentThread().getContextClassLoader(), delegate))
                 .build();
     }
 
@@ -46,18 +48,42 @@ public final class Threads
             implements ThreadFactory
     {
         private final ClassLoader classLoader;
+        private final ThreadFactory delegate;
 
-        public ContextClassLoaderThreadFactory(ClassLoader classLoader)
+        public ContextClassLoaderThreadFactory(ClassLoader classLoader, ThreadFactory delegate)
         {
             this.classLoader = classLoader;
+            this.delegate = delegate;
         }
 
         @Override
         public Thread newThread(Runnable runnable)
         {
-            Thread thread = new Thread(runnable);
+            Thread thread = delegate.newThread(runnable);
             thread.setContextClassLoader(classLoader);
             return thread;
+        }
+    }
+
+    private static final class GroupedThreadFactory
+            implements ThreadFactory
+    {
+        private final ThreadGroup threadGroup;
+
+        public GroupedThreadFactory(String name)
+        {
+            this(new ThreadGroup(name));
+        }
+
+        public GroupedThreadFactory(ThreadGroup threadGroup)
+        {
+            this.threadGroup = threadGroup;
+        }
+
+        @Override
+        public Thread newThread(Runnable runnable)
+        {
+            return new Thread(threadGroup, runnable);
         }
     }
 }
