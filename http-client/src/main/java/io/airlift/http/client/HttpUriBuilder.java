@@ -33,17 +33,17 @@ public class HttpUriBuilder
     private String host;
     private int port = -1;
     private String path = ""; // decoded path
-    private ListMultimap<String, String> params = LinkedListMultimap.create(); // decoded query params
+    private final ListMultimap<String, String> params = LinkedListMultimap.create(); // decoded query params
 
-    private static byte[] PCHAR = {
+    private static final byte[] PCHAR = {
             'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
             'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
             '0','1','2','3','4','5','6','7','8','9',
             '-', '.', '_', '~', '!', '$', '\'', '(', ')', '*', '+', ',', ';', '=', ':', '@',
     };
 
-    private static byte[] ALLOWED_PATH_CHARS = Bytes.concat(PCHAR, new byte[] {'/', '&'});
-    private static byte[] ALLOWED_QUERY_CHARS = Bytes.concat(PCHAR, new byte[] {'/', '?'});
+    private static final byte[] ALLOWED_PATH_CHARS = Bytes.concat(PCHAR, new byte[] {'/', '&'});
+    private static final byte[] ALLOWED_QUERY_CHARS = Bytes.concat(PCHAR, new byte[] {'/', '?'});
 
     private HttpUriBuilder()
     {
@@ -277,7 +277,7 @@ public class HttpUriBuilder
     /**
      * input must be an ASCII string representing a percent-encoded UTF-8 byte sequence
      */
-    private String percentDecode(String encoded)
+    private static String percentDecode(String encoded)
     {
         Preconditions.checkArgument(CharMatcher.ASCII.matchesAllOf(encoded), "string must be ASCII");
 

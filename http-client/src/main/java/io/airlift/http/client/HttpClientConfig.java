@@ -36,7 +36,7 @@ public class HttpClientConfig
 
     private Duration connectTimeout = new Duration(1, TimeUnit.SECONDS);
     private Duration readTimeout = new Duration(1, TimeUnit.MINUTES);
-    private Duration keepAliveInterval = null;
+    private Duration keepAliveInterval;
     private int maxConnections = 200;
     private int maxConnectionsPerServer = 20;
     private int maxRequestsQueuedPerDestination = 1024;

@@ -12,7 +12,6 @@ import io.airlift.http.client.Response;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.units.Duration;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -31,7 +30,7 @@ public class TestingHttpClient
 
     public TestingHttpClient(Function<Request, Response> processor)
     {
-        this(processor, MoreExecutors.sameThreadExecutor());
+        this(processor, MoreExecutors.newDirectExecutorService());
     }
 
     public TestingHttpClient(Function<Request, Response> processor, ExecutorService executor)
@@ -41,22 +40,14 @@ public class TestingHttpClient
     }
 
     @Override
-    public <T, E extends Exception> HttpResponseFuture<T> executeAsync(final Request request, final ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
     {
         checkNotNull(request, "request is null");
         checkNotNull(responseHandler, "responseHandler is null");
         checkState(!closed.get(), "client is closed");
 
-        final AtomicReference<String> state = new AtomicReference<>("SENDING_REQUEST");
-        ListenableFuture<T> future = executor.submit(new Callable<T>()
-        {
-            @Override
-            public T call()
-                    throws Exception
-            {
-                return execute(request, responseHandler, state);
-            }
-        });
+        AtomicReference<String> state = new AtomicReference<>("SENDING_REQUEST");
+        ListenableFuture<T> future = executor.submit(() -> execute(request, responseHandler, state));
 
         return new TestingHttpResponseFuture<>(future, state);
     }
@@ -76,7 +67,7 @@ public class TestingHttpClient
     {
         state.set("PROCESSING_REQUEST");
         Response response;
-        Duration requestProcessingTime = null;
+        Duration requestProcessingTime;
         try {
             long requestStart = System.nanoTime();
             response = processor.apply(request);
@@ -88,7 +79,7 @@ public class TestingHttpClient
                     0,
                     0,
                     0,
-                    requestProcessingTime,
+                    null,
                     null);
             if (e instanceof Exception) {
                 return responseHandler.handleException(request, (Exception) e);

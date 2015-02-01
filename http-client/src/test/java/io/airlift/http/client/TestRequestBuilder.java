@@ -54,7 +54,7 @@ public class TestRequestBuilder
         assertEquals(fromRequest(request).build(), request);
     }
 
-    private Request createRequest()
+    private static Request createRequest()
     {
         return prepareGet()
                     .setUri(URI.create("http://example.com"))

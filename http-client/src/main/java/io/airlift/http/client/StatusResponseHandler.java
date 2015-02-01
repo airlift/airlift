@@ -19,7 +19,6 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 
-import java.net.ConnectException;
 import java.util.List;
 
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;

@@ -22,6 +22,6 @@ import java.io.OutputStream;
 @Beta
 public interface BodyGenerator
 {
-    public void write(OutputStream out)
+    void write(OutputStream out)
             throws Exception;
 }

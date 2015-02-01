@@ -8,6 +8,7 @@ import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.log.Logging;
 import io.airlift.testing.Assertions;
+import io.airlift.testing.Closeables;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -30,7 +31,6 @@ import org.testng.annotations.Test;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -76,7 +76,7 @@ public abstract class AbstractHttpClientTest
     protected URI baseURI;
     private String scheme = "http";
     private String host = "127.0.0.1";
-    private String keystore = null;
+    private String keystore;
 
     protected AbstractHttpClientTest()
     {
@@ -315,7 +315,7 @@ public abstract class AbstractHttpClientTest
         Assert.assertEquals(servlet.requestUri, uri);
         Assert.assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
-        Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
+        Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("custom value"));
     }
 
     @Test
@@ -350,14 +350,14 @@ public abstract class AbstractHttpClientTest
         Assert.assertEquals(servlet.requestMethod, "GET");
         if (servlet.requestUri.toString().endsWith("=")) {
             // todo jetty client rewrites the uri string for some reason
-            Assert.assertEquals(servlet.requestUri, new URI(uri.toString() + "="));
+            Assert.assertEquals(servlet.requestUri, new URI(uri + "="));
         }
         else {
             Assert.assertEquals(servlet.requestUri, uri);
         }
         Assert.assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
-        Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
+        Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("custom value"));
     }
 
     @Test
@@ -421,7 +421,7 @@ public abstract class AbstractHttpClientTest
         Assert.assertEquals(servlet.requestUri, uri);
         Assert.assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
-        Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
+        Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("custom value"));
     }
 
     @Test
@@ -442,7 +442,7 @@ public abstract class AbstractHttpClientTest
         Assert.assertEquals(servlet.requestUri, uri);
         Assert.assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
-        Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
+        Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("custom value"));
     }
 
     @Test
@@ -465,7 +465,7 @@ public abstract class AbstractHttpClientTest
         Assert.assertEquals(servlet.requestUri, uri);
         Assert.assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
-        Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
+        Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("custom value"));
         Assert.assertEquals(servlet.requestBytes, body);
     }
 
@@ -479,15 +479,9 @@ public abstract class AbstractHttpClientTest
                 .addHeader("foo", "bar")
                 .addHeader("dupe", "first")
                 .addHeader("dupe", "second")
-                .setBodyGenerator(new BodyGenerator()
-                {
-                    @Override
-                    public void write(OutputStream out)
-                            throws Exception
-                    {
-                        out.write(1);
-                        out.write(new byte[] {2, 5});
-                    }
+                .setBodyGenerator(out -> {
+                    out.write(1);
+                    out.write(new byte[] {2, 5});
                 })
                 .build();
 
@@ -497,7 +491,7 @@ public abstract class AbstractHttpClientTest
         Assert.assertEquals(servlet.requestUri, uri);
         Assert.assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
         Assert.assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
-        Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
+        Assert.assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("custom value"));
         Assert.assertEquals(servlet.requestBytes, new byte[] {1, 2, 5});
     }
 
@@ -768,8 +762,8 @@ public abstract class AbstractHttpClientTest
         private final byte[] writeBuffer;
         private final boolean closeConnectionImmediately;
         private final AtomicReference<Socket> connectionSocket = new AtomicReference<>();
-        private String scheme;
-        private String host;
+        private final String scheme;
+        private final String host;
 
 
         private FakeServer(String scheme, String host, long readBytes, byte[] writeBuffer, boolean closeConnectionImmediately)
@@ -854,7 +848,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    static class ResponseStatusCodeHandler
+    private static class ResponseStatusCodeHandler
             implements ResponseHandler<Integer, Exception>
     {
         @Override
@@ -872,10 +866,10 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    static class UnexpectedResponseStatusCodeHandler
+    private static class UnexpectedResponseStatusCodeHandler
             implements ResponseHandler<Integer, RuntimeException>
     {
-        private int expectedStatusCode;
+        private final int expectedStatusCode;
 
         UnexpectedResponseStatusCodeHandler(int expectedStatusCode)
         {
@@ -1025,9 +1019,7 @@ public abstract class AbstractHttpClientTest
         @Override
         public void close()
         {
-            for (Socket socket : clientSockets) {
-                closeQuietly(socket);
-            }
+            clientSockets.forEach(Closeables::closeQuietly);
             closeQuietly(serverSocket);
         }
 

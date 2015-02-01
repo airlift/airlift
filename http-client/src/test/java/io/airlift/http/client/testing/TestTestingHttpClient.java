@@ -1,11 +1,9 @@
 package io.airlift.http.client.testing;
 
-import com.google.common.base.Function;
 import io.airlift.http.client.AbstractHttpClientTest.CaptureExceptionResponseHandler;
 import io.airlift.http.client.AbstractHttpClientTest.CapturedException;
 import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.Request;
-import io.airlift.http.client.Response;
 import org.testng.annotations.Test;
 
 import java.net.URI;
@@ -26,17 +24,11 @@ public class TestTestingHttpClient
                 .setUri(URI.create("http://example.org"))
                 .build();
 
-        final RuntimeException expectedException = new RuntimeException("test exception");
+        RuntimeException expectedException = new RuntimeException("test exception");
 
-        HttpResponseFuture<String> future = new TestingHttpClient(
-                new Function<Request, Response>()
-                {
-                    @Override
-                    public Response apply(Request input)
-                    {
-                        throw expectedException;
-                    }
-                }).executeAsync(request, new CaptureExceptionResponseHandler());
+        HttpResponseFuture<String> future = new TestingHttpClient(input -> {
+            throw expectedException;
+        }).executeAsync(request, new CaptureExceptionResponseHandler());
 
         try {
             future.get();
