@@ -10,14 +10,7 @@ import io.airlift.http.client.TestingRequestFilter;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
-import java.util.concurrent.ExecutionException;
-
-import static com.google.common.base.Throwables.propagate;
-import static com.google.common.base.Throwables.propagateIfPossible;
-import static io.airlift.http.client.HttpClient.HttpResponseFuture;
 import static io.airlift.testing.Closeables.closeQuietly;
-import static java.lang.Thread.currentThread;
-import static org.testng.Assert.fail;
 
 public class TestAsyncJettyHttpClient
         extends AbstractHttpClientTest
@@ -46,32 +39,7 @@ public class TestAsyncJettyHttpClient
     public <T, E extends Exception> T executeRequest(Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        HttpResponseFuture<T> future = null;
-        try {
-            future = httpClient.executeAsync(request, responseHandler);
-        }
-        catch (Exception e) {
-            fail("Unexpected exception", e);
-        }
-
-        try {
-            return future.get();
-        }
-        catch (InterruptedException e) {
-            currentThread().interrupt();
-            throw propagate(e);
-        }
-        catch (ExecutionException e) {
-            propagateIfPossible(e.getCause());
-
-            if (e.getCause() instanceof Exception) {
-                // the HTTP client and ResponseHandler interface enforces this
-                throw (E) e.getCause();
-            }
-
-            // e.getCause() is some direct subclass of throwable
-            throw propagate(e.getCause());
-        }
+        return executeAsync(httpClient, request, responseHandler);
     }
 
     @SuppressWarnings("unchecked")
@@ -83,32 +51,7 @@ public class TestAsyncJettyHttpClient
                 JettyIoPool jettyIoPool = new JettyIoPool("test-private", new JettyIoPoolConfig());
                 JettyHttpClient client = new JettyHttpClient(config, jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()))
         ) {
-            HttpResponseFuture<T> future = null;
-            try {
-                future = client.executeAsync(request, responseHandler);
-            }
-            catch (Exception e) {
-                fail("Unexpected exception", e);
-            }
-
-            try {
-                return future.get();
-            }
-            catch (InterruptedException e) {
-                currentThread().interrupt();
-                throw propagate(e);
-            }
-            catch (ExecutionException e) {
-                propagateIfPossible(e.getCause());
-
-                if (e.getCause() instanceof Exception) {
-                    // the HTTP client and ResponseHandler interface enforces this
-                    throw (E) e.getCause();
-                }
-
-                // e.getCause() is some direct subclass of throwable
-                throw propagate(e.getCause());
-            }
+            return executeAsync(client, request, responseHandler);
         }
     }
 }

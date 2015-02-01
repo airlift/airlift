@@ -4,6 +4,8 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
+import io.airlift.http.client.HttpClient.HttpResponseFuture;
+import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.log.Logging;
 import io.airlift.testing.Assertions;
 import io.airlift.units.Duration;
@@ -44,6 +46,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
@@ -51,6 +54,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.base.Throwables.propagateIfInstanceOf;
+import static com.google.common.base.Throwables.propagateIfPossible;
 import static io.airlift.concurrent.Threads.threadsNamed;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
@@ -60,6 +64,7 @@ import static io.airlift.testing.Assertions.assertLessThan;
 import static io.airlift.testing.Closeables.closeQuietly;
 import static io.airlift.units.Duration.nanosSince;
 import static java.lang.String.format;
+import static java.lang.Thread.currentThread;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.fail;
@@ -1065,5 +1070,36 @@ public abstract class AbstractHttpClientTest
     {
         // Linux refuses connections immediately rather than queuing them
         return (t instanceof SocketTimeoutException) || (t instanceof SocketException);
+    }
+
+    public static <T, E extends Exception> T executeAsync(JettyHttpClient client, Request request, ResponseHandler<T, E> responseHandler)
+            throws E
+    {
+        HttpResponseFuture<T> future = null;
+        try {
+            future = client.executeAsync(request, responseHandler);
+        }
+        catch (Exception e) {
+            fail("Unexpected exception", e);
+        }
+
+        try {
+            return future.get();
+        }
+        catch (InterruptedException e) {
+            currentThread().interrupt();
+            throw propagate(e);
+        }
+        catch (ExecutionException e) {
+            propagateIfPossible(e.getCause());
+
+            if (e.getCause() instanceof Exception) {
+                // the HTTP client and ResponseHandler interface enforces this
+                throw (E) e.getCause();
+            }
+
+            // e.getCause() is some direct subclass of throwable
+            throw propagate(e.getCause());
+        }
     }
 }
