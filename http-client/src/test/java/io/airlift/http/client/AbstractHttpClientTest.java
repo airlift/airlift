@@ -634,14 +634,14 @@ public abstract class AbstractHttpClientTest
     private ExecutorService executor;
 
     @BeforeClass
-    public void setup()
+    public final void setUp()
             throws Exception
     {
         executor = Executors.newCachedThreadPool(threadsNamed("test-%s"));
     }
 
     @AfterClass
-    public void tearDown()
+    public final void tearDown()
             throws Exception
     {
         if (executor != null) {

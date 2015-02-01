@@ -8,8 +8,8 @@ import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingRequestFilter;
 import io.airlift.http.client.TestingSocksProxy;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -23,8 +23,8 @@ public class TestJettyHttpClientSocksProxy
     private JettyIoPool jettyIoPool;
     private TestingSocksProxy testingSocksProxy;
 
-    @BeforeMethod
-    public void setUp()
+    @BeforeClass
+    public void setUpHttpClient()
             throws IOException
     {
         testingSocksProxy = new TestingSocksProxy().start();
@@ -32,8 +32,8 @@ public class TestJettyHttpClientSocksProxy
         httpClient = new JettyHttpClient(new HttpClientConfig().setSocksProxy(testingSocksProxy.getHostAndPort()), jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
 
-    @AfterMethod
-    public void tearDown()
+    @AfterClass
+    public void tearDownHttpClient()
     {
         closeQuietly(httpClient);
         closeQuietly(jettyIoPool);
