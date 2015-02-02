@@ -492,6 +492,62 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
+    public void testPutMethodWithInputStreamBodySource()
+            throws Exception
+    {
+        URI uri = baseURI.resolve("/road/to/nowhere");
+        Request request = preparePut()
+                .setUri(uri)
+                .addHeader("foo", "bar")
+                .addHeader("dupe", "first")
+                .addHeader("dupe", "second")
+                .setBodySource(new InputStreamBodySource(new InputStream()
+                {
+                    AtomicInteger invocation = new AtomicInteger(0);
+
+                    @Override
+                    public int read()
+                            throws IOException
+                    {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    public int read(byte[] b)
+                            throws IOException
+                    {
+                        switch (invocation.getAndIncrement()) {
+                            case 0:
+                                b[0] = 1;
+                                return 1;
+
+                            case 1:
+                                b[0] = 2;
+                                b[1] = 5;
+                                return 2;
+
+                            case 2:
+                                return -1;
+
+                            default:
+                                fail("unexpected invocation of write()");
+                                return -1;
+                        }
+                    }
+                }))
+                .build();
+
+        int statusCode = executeRequest(request, new ResponseStatusCodeHandler());
+        assertEquals(statusCode, 200);
+        assertEquals(servlet.requestMethod, "PUT");
+        assertEquals(servlet.requestUri, uri);
+        assertEquals(servlet.requestHeaders.get("foo"), ImmutableList.of("bar"));
+        assertEquals(servlet.requestHeaders.get("dupe"), ImmutableList.of("first", "second"));
+        assertEquals(servlet.requestHeaders.get("x-custom-filter"), ImmutableList.of("customvalue"));
+        assertEquals(servlet.requestBytes, new byte[]{1, 2, 5});
+    }
+
+    @Test
     public void testPutMethodWithDynamicBodySource()
             throws Exception
     {

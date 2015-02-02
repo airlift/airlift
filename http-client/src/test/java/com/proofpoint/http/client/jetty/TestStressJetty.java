@@ -15,9 +15,12 @@
  */
 package com.proofpoint.http.client.jetty;
 
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
+import com.proofpoint.http.client.InputStreamBodySource;
 import com.proofpoint.http.client.ResponseStatusCodeHandler;
 import com.proofpoint.http.client.BodyGenerator;
 import com.proofpoint.http.client.DynamicBodySource;
@@ -44,10 +47,12 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -131,6 +136,48 @@ public class TestStressJetty
     }
 
     @Test(enabled = false, description = "This takes about 30 seconds to run")
+    public void testSimultaneousPutsInputStreamBodySource()
+            throws Exception
+    {
+        final URI uri = baseURI.resolve("/road/to/nowhere?query");
+        Supplier<Request> requestSupplier = new Supplier<Request>()
+        {
+            @Override
+            public Request get()
+            {
+                return preparePut()
+                        .setUri(uri)
+                        .setBodySource(new InputStreamBodySource(new InputStream()
+                        {
+                            AtomicInteger invocation = new AtomicInteger(0);
+
+                            @Override
+                            public int read()
+                            {
+                                throw new UnsupportedOperationException();
+                            }
+
+                            @Override
+                            public int read(byte[] b)
+                                    throws IOException
+                            {
+                                if (invocation.getAndIncrement() < 100) {
+                                    Arrays.fill(b, 0, 1000, (byte) 0);
+                                    return 1000;
+                                }
+                                else {
+                                    return -1;
+                                }
+                            }
+                        }))
+                        .build();
+            }
+        };
+
+        assertSimultaneousRequests(requestSupplier);
+    }
+
+    @Test(enabled = false, description = "This takes about 30 seconds to run")
     public void testSimultaneousPutsDynamicBodySource()
             throws Exception
     {
@@ -193,13 +240,20 @@ public class TestStressJetty
     private static void assertSimultaneousRequests(Request request)
             throws InterruptedException
     {
+        assertSimultaneousRequests(Suppliers.ofInstance(request));
+
+    }
+
+    private static void assertSimultaneousRequests(Supplier<Request> requestSupplier)
+            throws InterruptedException
+    {
         final CountDownLatch completionLatch = new CountDownLatch(NUM_REQUESTS);
         try (
                 JettyIoPool jettyIoPool = new JettyIoPool("test-private", new JettyIoPoolConfig().setMaxThreads(10));
                 JettyHttpClient client = new JettyHttpClient(new HttpClientConfig().setMaxRequestsQueuedPerDestination(NUM_REQUESTS), jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()))
         ) {
             for (int i = 0; i < NUM_REQUESTS; i++) {
-                HttpResponseFuture<Integer> future = client.executeAsync(request, new ResponseStatusCodeHandler());
+                HttpResponseFuture<Integer> future = client.executeAsync(requestSupplier.get(), new ResponseStatusCodeHandler());
                 final int requestNumber = i;
                 Futures.addCallback(future, new FutureCallback<Integer>()
                 {

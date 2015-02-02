@@ -21,6 +21,9 @@ Platform 1.13
     Request.Builder.setBodySource(BodySource) instead. This change will
     probably have a longer than usual deprecation period.
   - We replaced SingleUseBodyGenerator with the LimitedRetryable interface.
+  - We created InputStreamBodySource for reading the body from an
+    InputStream. HttpClient implementations will not call close() on the
+    InputStream.
   - We created BodySourceTester to help test BodySource implementations.
   - We changed the reporting client to use DynamicBodySource.
 
