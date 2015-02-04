@@ -1,6 +1,11 @@
+* 0.101
+
+- New layout for dense HLL
+- Fix bug in cardinality estimates produced by sparse HLL
+
 * 0.100
 
-- New algorithm an representation for sparse HLL
+- New algorithm and representation for sparse HLL
 
 * 0.99
 

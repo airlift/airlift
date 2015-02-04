@@ -27,8 +27,9 @@
 
 * Unless otherwise noted, all values are little-endian.
 * The following format specification is suitable for `p <= 16` (i.e., 65536 buckets).
-* The old sparse layout (format tag = 0) is no longer supported due to unacceptable
-  error rates that compounded when building many independent sparse instances and merging them.
+* The old sparse (format tag = 0) and dense (format tag = 1) layouts are no longer supported
+  due to unacceptable error rates that compounded when building many independent instances and
+  merging them.
 
 ### Sparse layout
 
@@ -40,11 +41,11 @@
 
 ![Sparse entry](sparse-entry.png)
 
-### Dense layout
+### Dense layout (v2)
 
-![Dense](dense.png)
+![Dense](dense-v2.png)
 
-Bucket value are stored as deltas from a baseline value, which is computed as:
+Bucket values are stored as deltas from a baseline value, which is computed as:
 
 `baseline = min(buckets)`
 
@@ -52,7 +53,14 @@ The buckets values are encoded as a sequence of 4-bit values:
 
 ![Dense buckets](dense-buckets.png)
 
-Based on the statistical properties of the HLL algorithm, 4-bits should be sufficient to encode
-the majority of the values in a given HLL structure. In the unlikely case that a bucket overflows,
-the remainder is stored in an overflow entry. Only the highest overflow is kept around.
+Based on the statistical properties of the HLL algorithm, 4-bits is sufficient to encode
+the majority of the values in a given HLL structure. For deltas bigger than 2^4, the remainders
+are stored in a list of overflow entries.
+
+#### Dense v1
+
+The old dense format is documented here for completeness. Implementations are encouraged to accept
+this format when deserializing an HLL structure, but to operate with and serialize using version 2.
+
+![Dense](dense-v1.png)
 

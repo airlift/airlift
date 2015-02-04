@@ -28,7 +28,7 @@ public class TestDenseSerialization
             throws Exception
     {
         SliceOutput expected = new DynamicSliceOutput(1)
-                .appendByte(1)  // format tag
+                .appendByte(3)  // format tag
                 .appendByte(12) // p
                 .appendByte(0); // baseline
 
@@ -36,12 +36,9 @@ public class TestDenseSerialization
             expected.appendByte(0);
         }
 
-        // overflow bucket
-        expected.appendByte(0xff)
-                .appendByte(0xff);
-
-        // overflow value
-        expected.appendByte(0);
+        // overflows
+        expected.appendByte(0)
+                .appendByte(0);
 
         assertSlicesEqual(makeHll(12).serialize(), expected.slice());
     }
@@ -54,14 +51,12 @@ public class TestDenseSerialization
         buckets[326] = 0b0000_0001;
 
         Slice expected = new DynamicSliceOutput(1)
-                .appendByte(1)  // format tag
+                .appendByte(3)  // format tag
                 .appendByte(12) // p
                 .appendByte(0)  // baseline
                 .appendBytes(buckets) // buckets
-                        // overflow bucket
-                .appendByte(0xff)
-                .appendByte(0xff)
-                        // overflow value
+                        // overflows
+                .appendByte(0)
                 .appendByte(0)
                 .slice();
 
@@ -76,10 +71,13 @@ public class TestDenseSerialization
         buckets[1353] = (byte) 0b1111_0000;
 
         Slice expected = new DynamicSliceOutput(1)
-                .appendByte(1)  // format tag
+                .appendByte(3)  // format tag
                 .appendByte(12) // p
                 .appendByte(0)  // baseline
                 .appendBytes(buckets) // buckets
+                        // overflows
+                .appendByte(1)
+                .appendByte(0)
                         // overflow bucket
                 .appendByte(0x92)
                 .appendByte(0xA)
@@ -87,7 +85,7 @@ public class TestDenseSerialization
                 .appendByte(2)
                 .slice();
 
-        assertSlicesEqual(makeHll(12,61697).serialize(), expected);
+        assertSlicesEqual(makeHll(12, 61697).serialize(), expected);
     }
 
     @Test
@@ -99,14 +97,20 @@ public class TestDenseSerialization
         buckets[2024] = (byte) 0b1111_0000;
 
         Slice expected = new DynamicSliceOutput(1)
-                .appendByte(1)  // format tag
+                .appendByte(3)  // format tag
                 .appendByte(12) // p
                 .appendByte(0)  // baseline
                 .appendBytes(buckets) // buckets
+                        // overflows
+                .appendByte(2)
+                .appendByte(0)
                         // overflow bucket
-                .appendByte(0xD0)
-                .appendByte(0xF)
+                .appendByte(146)
+                .appendByte(10)
+                .appendByte(208)
+                .appendByte(15)
                         // overflow value
+                .appendByte(2)
                 .appendByte(4)
                 .slice();
 
@@ -139,14 +143,12 @@ public class TestDenseSerialization
         byte[] buckets = new byte[] {0x45, 0x23, 0x01, 0x31, 0x22, 0x05, 0x04, 0x01};
 
         Slice expected = new DynamicSliceOutput(1)
-                .appendByte(1) // format tag
+                .appendByte(3) // format tag
                 .appendByte(4) // p
                 .appendByte(2) // baseline
                 .appendBytes(buckets) // buckets
-                        // overflow bucket
-                .appendByte(0xff)
-                .appendByte(0xff)
-                        // overflow value
+                        // overflows
+                .appendByte(0)
                 .appendByte(0)
                 .slice();
 
@@ -166,10 +168,13 @@ public class TestDenseSerialization
         byte[] buckets = new byte[] {0x45, 0x23, 0x01, 0x31, 0x22, 0x05, 0x04, (byte) 0xF1};
 
         Slice expected = new DynamicSliceOutput(1)
-                .appendByte(1) // format tag
+                .appendByte(3) // format tag
                 .appendByte(4) // p
                 .appendByte(2) // baseline
                 .appendBytes(buckets) // buckets
+                        // overflows
+                .appendByte(1)
+                .appendByte(0)
                         // overflow bucket
                 .appendByte(14)
                 .appendByte(0)
@@ -194,10 +199,13 @@ public class TestDenseSerialization
         byte[] buckets = new byte[] {0x45, 0x23, 0x01, 0x31, 0x22, 0x05, 0x04, (byte) 0xF1};
 
         Slice expected = new DynamicSliceOutput(1)
-                .appendByte(1) // format tag
+                .appendByte(3) // format tag
                 .appendByte(4) // p
                 .appendByte(2) // baseline
                 .appendBytes(buckets) // buckets
+                        // overflows
+                .appendByte(1)
+                .appendByte(0)
                         // overflow bucket
                 .appendByte(14)
                 .appendByte(0)

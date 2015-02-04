@@ -17,7 +17,8 @@ enum Format
 {
     SPARSE_V1(0),
     DENSE_V1(1),
-    SPARSE_V2(2);
+    SPARSE_V2(2),
+    DENSE_V2(3);
 
     private byte tag;
 

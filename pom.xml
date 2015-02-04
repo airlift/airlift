@@ -25,6 +25,7 @@
 
         <dep.airlift.version>0.101-SNAPSHOT</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
+        <dep.slice.version>0.9</dep.slice.version>
     </properties>
 
     <organization>

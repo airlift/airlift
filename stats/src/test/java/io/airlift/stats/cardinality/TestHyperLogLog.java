@@ -13,16 +13,9 @@
  */
 package io.airlift.stats.cardinality;
 
-import com.google.common.io.Files;
 import io.airlift.slice.Slice;
-import io.airlift.slice.testing.SliceAssertions;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +23,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
 import static io.airlift.stats.cardinality.TestUtils.sequence;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
