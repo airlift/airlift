@@ -42,6 +42,7 @@ import org.weakref.jmx.Managed;
 import javax.annotation.concurrent.GuardedBy;
 
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -51,8 +52,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -60,6 +59,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -578,6 +579,7 @@ public class JettyHttpClient
 
         private final BodyGenerator bodyGenerator;
         private final Executor executor;
+        private final AtomicReference<Thread> bodyGeneratorThread = new AtomicReference<>();
 
         public BodyGeneratorContentProvider(BodyGenerator bodyGenerator, Executor executor)
         {
@@ -594,7 +596,7 @@ public class JettyHttpClient
         @Override
         public Iterator<ByteBuffer> iterator()
         {
-            final BlockingQueue<ByteBuffer> chunks = new ArrayBlockingQueue<>(16);
+            final ChunksQueue chunks = new ChunksQueue();
             final AtomicReference<Exception> exception = new AtomicReference<>();
 
             executor.execute(new Runnable()
@@ -602,6 +604,7 @@ public class JettyHttpClient
                 @Override
                 public void run()
                 {
+                    bodyGeneratorThread.set(Thread.currentThread());
                     BodyGeneratorOutputStream out = new BodyGeneratorOutputStream(chunks);
                     try {
                         bodyGenerator.write(out);
@@ -609,42 +612,20 @@ public class JettyHttpClient
                     }
                     catch (Exception e) {
                         exception.set(e);
-                        chunks.add(EXCEPTION);
+                        chunks.replaceAllWith(EXCEPTION);
                     }
                 }
             });
 
-            return new AbstractIterator<ByteBuffer>()
-            {
-                @Override
-                protected ByteBuffer computeNext()
-                {
-                    ByteBuffer chunk;
-                    try {
-                        chunk = chunks.take();
-                    }
-                    catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException("Interrupted", e);
-                    }
-
-                    if (chunk == EXCEPTION) {
-                        throw Throwables.propagate(exception.get());
-                    }
-                    if (chunk == DONE) {
-                        return endOfData();
-                    }
-                    return chunk;
-                }
-            };
+            return new ChunksIterator(chunks, exception);
         }
 
         private final class BodyGeneratorOutputStream
                 extends OutputStream
         {
-            private final BlockingQueue<ByteBuffer> chunks;
+            private final ChunksQueue chunks;
 
-            private BodyGeneratorOutputStream(BlockingQueue<ByteBuffer> chunks)
+            private BodyGeneratorOutputStream(ChunksQueue chunks)
             {
                 this.chunks = chunks;
             }
@@ -685,6 +666,142 @@ public class JettyHttpClient
                 }
                 catch (InterruptedException e) {
                     throw new InterruptedIOException();
+                }
+            }
+        }
+
+        private static class ChunksIterator extends AbstractIterator<ByteBuffer>
+                implements Closeable
+        {
+            private final ChunksQueue chunks;
+            private final AtomicReference<Exception> exception;
+
+            ChunksIterator(ChunksQueue chunks, AtomicReference<Exception> exception)
+            {
+                this.chunks = chunks;
+                this.exception = exception;
+            }
+
+            @Override
+            protected ByteBuffer computeNext()
+            {
+                ByteBuffer chunk;
+                try {
+                    chunk = chunks.take();
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Interrupted", e);
+                }
+
+                if (chunk == EXCEPTION) {
+                    throw Throwables.propagate(exception.get());
+                }
+                if (chunk == DONE) {
+                    return endOfData();
+                }
+                return chunk;
+            }
+
+            @Override
+            public void close()
+            {
+                chunks.markDone();
+            }
+        }
+
+        private static class ChunksQueue
+        {
+            private final ByteBuffer[] items = new ByteBuffer[16];
+            private int takeIndex = 0;
+            private int putIndex = 0;
+            private int count = 0;
+            private boolean done = false;
+            private final ReentrantLock lock = new ReentrantLock(false);
+            private final Condition notEmpty = lock.newCondition();
+            private final Condition notFull = lock.newCondition();
+
+            private int inc(int i)
+            {
+                return (++i == items.length) ? 0 : i;
+            }
+
+            public void replaceAllWith(ByteBuffer e)
+            {
+                checkNotNull(e);
+                final ByteBuffer[] items = this.items;
+                final ReentrantLock lock = this.lock;
+                lock.lock();
+                try {
+                    for (int i = takeIndex, k = count; k > 0; i = inc(i), k--) {
+                        items[i] = null;
+                    }
+                    items[0] = e;
+                    count = 1;
+                    putIndex = 1;
+                    takeIndex = 0;
+                    notEmpty.signal();
+                }
+                finally {
+                    lock.unlock();
+                }
+            }
+
+            public void put(ByteBuffer e)
+                    throws InterruptedException
+            {
+                checkNotNull(e);
+                final ReentrantLock lock = this.lock;
+                lock.lockInterruptibly();
+                try {
+                    while (!done && count == items.length) {
+                        notFull.await();
+                    }
+                    if (done) {
+                        throw new InterruptedException();
+                    }
+                    items[putIndex] = e;
+                    putIndex = inc(putIndex);
+                    ++count;
+                    notEmpty.signal();
+                }
+                finally {
+                    lock.unlock();
+                }
+            }
+
+            public ByteBuffer take()
+                    throws InterruptedException
+            {
+                final ReentrantLock lock = this.lock;
+                lock.lockInterruptibly();
+                try {
+                    while (count == 0) {
+                        notEmpty.await();
+                    }
+                    final ByteBuffer[] items = this.items;
+                    ByteBuffer x = items[takeIndex];
+                    items[takeIndex] = null;
+                    takeIndex = inc(takeIndex);
+                    --count;
+                    notFull.signal();
+                    return x;
+                }
+                finally {
+                    lock.unlock();
+                }
+            }
+
+            public void markDone()
+            {
+                final ReentrantLock lock = this.lock;
+                lock.lock();
+                try {
+                    done = true;
+                    notFull.signalAll();
+                }
+                finally {
+                    lock.unlock();
                 }
             }
         }
