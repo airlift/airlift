@@ -20,13 +20,16 @@ import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.ResponseTooLargeException;
 import io.airlift.http.client.StaticBodyGenerator;
 import io.airlift.log.Logger;
+import io.airlift.stats.Distribution;
 import io.airlift.units.DataSize;
 import io.airlift.units.DataSize.Unit;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpRequest;
+import org.eclipse.jetty.client.PoolingHttpDestination;
 import org.eclipse.jetty.client.Socks4Proxy;
 import org.eclipse.jetty.client.api.ContentProvider;
+import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
@@ -38,8 +41,10 @@ import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
+import org.weakref.jmx.Nested;
 
 import javax.annotation.concurrent.GuardedBy;
+import javax.annotation.concurrent.ThreadSafe;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -50,6 +55,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -68,11 +74,12 @@ import static java.lang.Math.min;
 public class JettyHttpClient
         implements io.airlift.http.client.HttpClient
 {
-    private final static AtomicLong nameCounter = new AtomicLong();
+    private static final AtomicLong nameCounter = new AtomicLong();
 
     private final HttpClient httpClient;
     private final long maxContentLength;
     private final RequestStats stats = new RequestStats();
+    private final QueueDistribution queuedRequestsPerDestination;
     private final List<HttpRequestFilter> requestFilters;
     private final Exception creationLocation = new Exception();
     private final String name;
@@ -131,6 +138,7 @@ public class JettyHttpClient
         }
 
         this.requestFilters = ImmutableList.copyOf(requestFilters);
+        this.queuedRequestsPerDestination = new QueueDistribution(httpClient);
     }
 
     private HttpClient createHttpClient(HttpClientConfig config, Exception created)
@@ -308,6 +316,13 @@ public class JettyHttpClient
     public RequestStats getStats()
     {
         return stats;
+    }
+
+    @Managed
+    @Nested
+    public QueueDistribution getQueuedRequestsPerDestination()
+    {
+        return queuedRequestsPerDestination;
     }
 
     @Managed
@@ -751,6 +766,130 @@ public class JettyHttpClient
             else {
                 future.completed(result.getResponse(), new ByteArrayInputStream(buffer, 0, size));
             }
+        }
+    }
+
+    /*
+     * This class is needed because jmxutils only fetches a nested instance object once and holds on to it forever.
+     * todo remove this when https://github.com/martint/jmxutils/issues/26 is implemented
+     */
+    @ThreadSafe
+    public static class QueueDistribution
+    {
+        private final HttpClient httpClient;
+
+        @GuardedBy("this")
+        private Distribution distribution;
+        @GuardedBy("this")
+        private long lastUpdate = System.nanoTime();
+
+        public QueueDistribution(HttpClient httpClient)
+        {
+            this.httpClient = httpClient;
+        }
+
+        public synchronized Distribution getDistribution()
+        {
+            // refresh stats only once a second
+            if (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastUpdate) > 1000) {
+                distribution = new Distribution();
+                for (Destination destination : httpClient.getDestinations()) {
+                    PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
+                    distribution.add(poolingHttpDestination.getHttpExchanges().size());
+                }
+                this.lastUpdate = System.nanoTime();
+            }
+            return distribution;
+        }
+
+        @Managed
+        public double getMaxError()
+        {
+            return getDistribution().getMaxError();
+        }
+
+        @Managed
+        public double getCount()
+        {
+            return getDistribution().getCount();
+        }
+
+        @Managed
+        public double getTotal()
+        {
+            return getDistribution().getTotal();
+        }
+
+        @Managed
+        public long getP01()
+        {
+            return getDistribution().getP01();
+        }
+
+        @Managed
+        public long getP05()
+        {
+            return getDistribution().getP05();
+        }
+
+        @Managed
+        public long getP10()
+        {
+            return getDistribution().getP10();
+        }
+
+        @Managed
+        public long getP25()
+        {
+            return getDistribution().getP25();
+        }
+
+        @Managed
+        public long getP50()
+        {
+            return getDistribution().getP50();
+        }
+
+        @Managed
+        public long getP75()
+        {
+            return getDistribution().getP75();
+        }
+
+        @Managed
+        public long getP90()
+        {
+            return getDistribution().getP90();
+        }
+
+        @Managed
+        public long getP95()
+        {
+            return getDistribution().getP95();
+        }
+
+        @Managed
+        public long getP99()
+        {
+            return getDistribution().getP99();
+        }
+
+        @Managed
+        public long getMin()
+        {
+            return getDistribution().getMin();
+        }
+
+        @Managed
+        public long getMax()
+        {
+            return getDistribution().getMax();
+        }
+
+        @Managed
+        public Map<Double, Long> getPercentiles()
+        {
+            return getDistribution().getPercentiles();
         }
     }
 }
