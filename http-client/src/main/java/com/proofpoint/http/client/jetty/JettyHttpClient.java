@@ -594,7 +594,7 @@ public class JettyHttpClient
                 responseProcessingTime);
     }
 
-    private class BodySourceInputStream extends InputStream
+    private static class BodySourceInputStream extends InputStream
     {
         private final InputStream delegate;
 

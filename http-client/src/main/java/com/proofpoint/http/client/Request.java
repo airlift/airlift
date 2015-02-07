@@ -39,11 +39,11 @@ public class Request
     private final BodySource bodySource;
     private final boolean followRedirects;
 
-    public Request(URI uri, String method, @Nullable ListMultimap<String, String> headers, @Nullable BodySource bodySource)
+    public Request(URI uri, String method, ListMultimap<String, String> headers, @Nullable BodySource bodySource)
     {
         this(uri, method, headers, bodySource, false);
     }
-    public Request(URI uri, String method, @Nullable ListMultimap<String, String> headers, @Nullable BodySource bodySource, boolean followRedirects)
+    public Request(URI uri, String method, ListMultimap<String, String> headers, @Nullable BodySource bodySource, boolean followRedirects)
     {
         checkNotNull(uri, "uri is null");
         checkNotNull(method, "method is null");
