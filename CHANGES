@@ -2,6 +2,7 @@
 
 - New layout for dense HLL
 - Fix bug in cardinality estimates produced by sparse HLL
+- Expose request queue depth stats in HttpClient
 
 * 0.100
 
