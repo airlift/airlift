@@ -19,6 +19,7 @@ import com.google.common.annotations.Beta;
 import com.google.common.net.HostAndPort;
 import com.proofpoint.configuration.Config;
 import com.proofpoint.configuration.ConfigDescription;
+import com.proofpoint.configuration.LegacyConfig;
 import com.proofpoint.units.DataSize;
 import com.proofpoint.units.DataSize.Unit;
 import com.proofpoint.units.Duration;
@@ -36,7 +37,8 @@ public class HttpClientConfig
     public static final String JAVAX_NET_SSL_KEY_STORE_PASSWORD = "javax.net.ssl.keyStorePassword";
 
     private Duration connectTimeout = new Duration(1, TimeUnit.SECONDS);
-    private Duration readTimeout = new Duration(1, TimeUnit.MINUTES);
+    private Duration requestTimeout = new Duration(5, TimeUnit.MINUTES);
+    private Duration idleTimeout = new Duration(1, TimeUnit.MINUTES);
     private Duration keepAliveInterval = null;
     private int maxConnections = 200;
     private int maxConnectionsPerServer = 20;
@@ -62,23 +64,40 @@ public class HttpClientConfig
 
     @NotNull
     @MinDuration("0ms")
-    public Duration getReadTimeout()
+    public Duration getRequestTimeout()
     {
-        return readTimeout;
+        return requestTimeout;
     }
 
-    @Config("http-client.read-timeout")
-    public HttpClientConfig setReadTimeout(Duration readTimeout)
+    @Config("http-client.request-timeout")
+    public HttpClientConfig setRequestTimeout(Duration requestTimeout)
     {
-        this.readTimeout = readTimeout;
+        this.requestTimeout = requestTimeout;
         return this;
     }
 
+    @NotNull
+    @MinDuration("0ms")
+    public Duration getIdleTimeout()
+    {
+        return idleTimeout;
+    }
+
+    @Config("http-client.idle-timeout")
+    @LegacyConfig("http-client.read-timeout")
+    public HttpClientConfig setIdleTimeout(Duration idleTimeout)
+    {
+        this.idleTimeout = idleTimeout;
+        return this;
+    }
+
+    @Deprecated
     public Duration getKeepAliveInterval()
     {
         return keepAliveInterval;
     }
 
+    @Deprecated
     @Config("http-client.keep-alive-interval")
     public HttpClientConfig setKeepAliveInterval(Duration keepAliveInterval)
     {

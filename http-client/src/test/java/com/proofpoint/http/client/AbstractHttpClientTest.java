@@ -200,7 +200,7 @@ public abstract class AbstractHttpClientTest
         try (BackloggedServer server = new BackloggedServer()) {
             HttpClientConfig config = new HttpClientConfig();
             config.setConnectTimeout(new Duration(5, MILLISECONDS));
-            config.setReadTimeout(new Duration(2, SECONDS));
+            config.setIdleTimeout(new Duration(2, SECONDS));
 
             Request request = prepareGet()
                     .setUri(new URI(scheme, null, host, server.getPort(), "/", null, null))
@@ -894,7 +894,7 @@ public abstract class AbstractHttpClientTest
             throws Exception
     {
         HttpClientConfig config = new HttpClientConfig()
-                .setReadTimeout(new Duration(500, MILLISECONDS));
+                .setIdleTimeout(new Duration(500, MILLISECONDS));
 
         URI uri = URI.create(baseURI.toASCIIString() + "/?sleep=1000");
         Request request = prepareGet()
@@ -1044,7 +1044,7 @@ public abstract class AbstractHttpClientTest
         try (FakeServer fakeServer = new FakeServer(scheme, host, 0, null, false)) {
             HttpClientConfig config = new HttpClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
-            config.setReadTimeout(new Duration(10, MILLISECONDS));
+            config.setIdleTimeout(new Duration(10, MILLISECONDS));
 
             executeRequest(fakeServer, config);
         }
@@ -1058,7 +1058,7 @@ public abstract class AbstractHttpClientTest
 
             HttpClientConfig config = new HttpClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
-            config.setReadTimeout(new Duration(5, SECONDS));
+            config.setIdleTimeout(new Duration(5, SECONDS));
 
             executeRequest(fakeServer, config);
         }
@@ -1072,7 +1072,7 @@ public abstract class AbstractHttpClientTest
         try (FakeServer fakeServer = new FakeServer(scheme, host, 10, null, false)) {
             HttpClientConfig config = new HttpClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
-            config.setReadTimeout(new Duration(10, MILLISECONDS));
+            config.setIdleTimeout(new Duration(10, MILLISECONDS));
 
             executeRequest(fakeServer, config);
         }
@@ -1086,7 +1086,7 @@ public abstract class AbstractHttpClientTest
         try (FakeServer fakeServer = new FakeServer(scheme, host, 10, null, true)) {
             HttpClientConfig config = new HttpClientConfig();
             config.setConnectTimeout(new Duration(500, MILLISECONDS));
-            config.setReadTimeout(new Duration(500, MILLISECONDS));
+            config.setIdleTimeout(new Duration(500, MILLISECONDS));
 
             executeRequest(fakeServer, config);
         }
@@ -1099,7 +1099,7 @@ public abstract class AbstractHttpClientTest
         try (FakeServer fakeServer = new FakeServer(scheme, host, Long.MAX_VALUE, null, true)) {
             HttpClientConfig config = new HttpClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
-            config.setReadTimeout(new Duration(5, SECONDS));
+            config.setIdleTimeout(new Duration(5, SECONDS));
 
             executeRequest(fakeServer, config);
         }
@@ -1112,7 +1112,7 @@ public abstract class AbstractHttpClientTest
         try (FakeServer fakeServer = new FakeServer(scheme, host, 10, "THIS\nIS\nJUNK\n\n".getBytes(), false)) {
             HttpClientConfig config = new HttpClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
-            config.setReadTimeout(new Duration(5, SECONDS));
+            config.setIdleTimeout(new Duration(5, SECONDS));
 
             executeRequest(fakeServer, config);
         }
@@ -1125,7 +1125,7 @@ public abstract class AbstractHttpClientTest
         try (FakeServer fakeServer = new FakeServer(scheme, host, 1024, null, true)) {
             HttpClientConfig config = new HttpClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
-            config.setReadTimeout(new Duration(5, SECONDS));
+            config.setIdleTimeout(new Duration(5, SECONDS));
 
             // kick the fake server
             executor.execute(fakeServer);
@@ -1164,7 +1164,7 @@ public abstract class AbstractHttpClientTest
         try (FakeServer fakeServer = new FakeServer(scheme, host, 1024, null, true)) {
             HttpClientConfig config = new HttpClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
-            config.setReadTimeout(new Duration(5, SECONDS));
+            config.setIdleTimeout(new Duration(5, SECONDS));
 
             // kick the fake server
             executor.execute(fakeServer);
