@@ -40,7 +40,8 @@ class Problems
 
     public static final Problems.Monitor NULL_MONITOR = new NullMonitor();
 
-    private static final class NullMonitor implements Problems.Monitor
+    private static final class NullMonitor
+            implements Problems.Monitor
     {
         @Override
         public void onError(Message unused)
@@ -63,7 +64,8 @@ class Problems
         this.monitor = monitor;
     }
 
-    public void throwIfHasErrors() throws ConfigurationException
+    public void throwIfHasErrors()
+            throws ConfigurationException
     {
         if (!errors.isEmpty()) {
             throw getException();

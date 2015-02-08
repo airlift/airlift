@@ -57,27 +57,27 @@ public final class ConfigAssertions
 
         // verify all supplied attributes are supported
         if (!metadata.getAttributes().keySet().containsAll(expectedAttributeValues.keySet())) {
-            TreeSet<String> unsupportedAttributes = new TreeSet<String>(expectedAttributeValues.keySet());
+            TreeSet<String> unsupportedAttributes = new TreeSet<>(expectedAttributeValues.keySet());
             unsupportedAttributes.removeAll(metadata.getAttributes().keySet());
             Assert.fail("Unsupported attributes: " + unsupportedAttributes);
         }
 
         // verify all supplied attributes are supported not deprecated
-        Set<String> nonDeprecatedAttributes = new TreeSet<String>();
+        Set<String> nonDeprecatedAttributes = new TreeSet<>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
             if (attribute.getInjectionPoint().getProperty() != null) {
                 nonDeprecatedAttributes.add(attribute.getName());
             }
         }
         if (!nonDeprecatedAttributes.containsAll(expectedAttributeValues.keySet())) {
-            TreeSet<String> unsupportedAttributes = new TreeSet<String>(expectedAttributeValues.keySet());
+            TreeSet<String> unsupportedAttributes = new TreeSet<>(expectedAttributeValues.keySet());
             unsupportedAttributes.removeAll(nonDeprecatedAttributes);
             Assert.fail("Deprecated attributes: " + unsupportedAttributes);
         }
 
         // verify all attributes are tested
         if (!expectedAttributeValues.keySet().containsAll(nonDeprecatedAttributes)) {
-            TreeSet<String> untestedAttributes = new TreeSet<String>(nonDeprecatedAttributes);
+            TreeSet<String> untestedAttributes = new TreeSet<>(nonDeprecatedAttributes);
             untestedAttributes.removeAll(expectedAttributeValues.keySet());
             Assert.fail("Untested attributes: " + untestedAttributes);
         }
@@ -110,14 +110,14 @@ public final class ConfigAssertions
         assertPropertiesSupported(metadata, properties.keySet(), false);
 
         // verify that every (non-deprecated) property is tested
-        Set<String> nonDeprecatedProperties = new TreeSet<String>();
+        Set<String> nonDeprecatedProperties = new TreeSet<>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
             if (attribute.getInjectionPoint().getProperty() != null) {
                 nonDeprecatedProperties.add(attribute.getInjectionPoint().getProperty());
             }
         }
         if (!properties.keySet().equals(nonDeprecatedProperties)) {
-            TreeSet<String> untestedProperties = new TreeSet<String>(nonDeprecatedProperties);
+            TreeSet<String> untestedProperties = new TreeSet<>(nonDeprecatedProperties);
             untestedProperties.removeAll(properties.keySet());
             Assert.fail("Untested properties " + untestedProperties);
         }
@@ -149,18 +149,18 @@ public final class ConfigAssertions
         }
 
         // verify that all deprecated properties are tested
-        Set<String> knownDeprecatedProperties = new TreeSet<String>();
+        Set<String> knownDeprecatedProperties = new TreeSet<>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
             for (ConfigurationMetadata.InjectionPointMetaData deprecated : attribute.getLegacyInjectionPoints()) {
                 knownDeprecatedProperties.add(deprecated.getProperty());
             }
         }
-        Set<String> suppliedDeprecatedProperties = new TreeSet<String>();
+        Set<String> suppliedDeprecatedProperties = new TreeSet<>();
         for (Map<String, String> evenOlderProperties : oldPropertiesList) {
             suppliedDeprecatedProperties.addAll(evenOlderProperties.keySet());
         }
         if (!suppliedDeprecatedProperties.containsAll(knownDeprecatedProperties)) {
-            TreeSet<String> untestedDeprecatedProperties = new TreeSet<String>(knownDeprecatedProperties);
+            TreeSet<String> untestedDeprecatedProperties = new TreeSet<>(knownDeprecatedProperties);
             untestedDeprecatedProperties.removeAll(suppliedDeprecatedProperties);
             Assert.fail("Untested deprecated properties: " + untestedDeprecatedProperties);
         }
@@ -175,8 +175,8 @@ public final class ConfigAssertions
 
     private static void assertPropertiesSupported(ConfigurationMetadata<?> metadata, Set<String> propertyNames, boolean allowDeprecatedProperties)
     {
-        Set<String> supportedProperties = new TreeSet<String>();
-        Set<String> nonDeprecatedProperties = new TreeSet<String>();
+        Set<String> supportedProperties = new TreeSet<>();
+        Set<String> nonDeprecatedProperties = new TreeSet<>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
             if (attribute.getInjectionPoint().getProperty() != null) {
                 nonDeprecatedProperties.add(attribute.getInjectionPoint().getProperty());
@@ -187,14 +187,14 @@ public final class ConfigAssertions
             }
         }
         if (!supportedProperties.containsAll(propertyNames)) {
-            TreeSet<String> unsupportedProperties = new TreeSet<String>(propertyNames);
+            TreeSet<String> unsupportedProperties = new TreeSet<>(propertyNames);
             unsupportedProperties.removeAll(supportedProperties);
             Assert.fail("Unsupported properties: " + unsupportedProperties);
         }
 
         // check for usage of deprecated properties
         if (!allowDeprecatedProperties && !nonDeprecatedProperties.containsAll(propertyNames)) {
-            TreeSet<String> deprecatedProperties = new TreeSet<String>(propertyNames);
+            TreeSet<String> deprecatedProperties = new TreeSet<>(propertyNames);
             deprecatedProperties.removeAll(nonDeprecatedProperties);
             Assert.fail("Deprecated properties: " + deprecatedProperties);
         }
@@ -237,9 +237,9 @@ public final class ConfigAssertions
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getValidConfigurationMetadata(configClass);
 
         // collect information about the attributes that have been set
-        Map<String, Object> attributeValues = new TreeMap<String, Object>();
-        Set<String> setDeprecatedAttributes = new TreeSet<String>();
-        Set<Method> validSetterMethods = new HashSet<Method>();
+        Map<String, Object> attributeValues = new TreeMap<>();
+        Set<String> setDeprecatedAttributes = new TreeSet<>();
+        Set<Method> validSetterMethods = new HashSet<>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
             if (attribute.getInjectionPoint().getProperty() != null) {
                 validSetterMethods.add(attribute.getInjectionPoint().getSetter());
@@ -249,7 +249,8 @@ public final class ConfigAssertions
                 if (attribute.getInjectionPoint().getProperty() != null) {
                     Object value = invoke(config, attribute.getGetter());
                     attributeValues.put(attribute.getName(), value);
-                } else {
+                }
+                else {
                     setDeprecatedAttributes.add(attribute.getName());
                 }
             }
@@ -262,7 +263,7 @@ public final class ConfigAssertions
 
         // verify no other methods have been set
         if (!validSetterMethods.containsAll(invokedMethods)) {
-            Set<Method> invalidInvocations = new HashSet<Method>(invokedMethods);
+            Set<Method> invalidInvocations = new HashSet<>(invokedMethods);
             invalidInvocations.removeAll(validSetterMethods);
             Assert.fail("Invoked non-attribute setter methods: " + invalidInvocations);
 
@@ -273,7 +274,7 @@ public final class ConfigAssertions
     public static <T> T recordDefaults(Class<T> type)
     {
         final T instance = newDefaultInstance(type);
-        T proxy = (T) Enhancer.create(type, new Class[]{$$RecordingConfigProxy.class}, new MethodInterceptor()
+        T proxy = (T) Enhancer.create(type, new Class<?>[] {$$RecordingConfigProxy.class}, new MethodInterceptor()
         {
             private final ConcurrentMap<Method, Object> invokedMethods = new MapMaker().makeMap();
 
@@ -282,7 +283,7 @@ public final class ConfigAssertions
                     throws Throwable
             {
                 if (GET_RECORDING_CONFIG_METHOD.equals(method)) {
-                    return new $$RecordedConfigData<T>(instance, ImmutableSet.copyOf(invokedMethods.keySet()));
+                    return new $$RecordedConfigData<>(instance, ImmutableSet.copyOf(invokedMethods.keySet()));
                 }
 
                 invokedMethods.put(method, Boolean.TRUE);
@@ -330,7 +331,7 @@ public final class ConfigAssertions
         }
     }
 
-    public static interface $$RecordingConfigProxy<T>
+    public interface $$RecordingConfigProxy<T>
     {
         $$RecordedConfigData<T> $$getRecordedConfig();
     }
@@ -346,7 +347,8 @@ public final class ConfigAssertions
     {
         try {
             return configClass.newInstance();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             AssertionError error = new AssertionError(String.format("Exception creating default instance of %s", configClass.getName()));
             error.initCause(e);
             throw error;
@@ -357,7 +359,8 @@ public final class ConfigAssertions
     {
         try {
             return getter.invoke(actual);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             AssertionError error = new AssertionError(String.format("Exception invoking %s", getter.toGenericString()));
             error.initCause(e);
             throw error;

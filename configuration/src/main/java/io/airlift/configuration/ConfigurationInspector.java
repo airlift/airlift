@@ -67,7 +67,8 @@ public class ConfigurationInspector
         }
     }
 
-    public static class ConfigRecord<T> implements Comparable<ConfigRecord<?>>
+    public static class ConfigRecord<T>
+            implements Comparable<ConfigRecord<?>>
     {
         private final Key<T> key;
         private final Class<T> configClass;
@@ -76,7 +77,7 @@ public class ConfigurationInspector
 
         public static <T> ConfigRecord<T> createConfigRecord(ConfigurationProvider<T> configurationProvider)
         {
-            return new ConfigRecord<T>(configurationProvider);
+            return new ConfigRecord<>(configurationProvider);
         }
 
         private ConfigRecord(ConfigurationProvider<T> configurationProvider)
@@ -170,7 +171,8 @@ public class ConfigurationInspector
         }
     }
 
-    public static class ConfigAttribute implements Comparable<ConfigAttribute>
+    public static class ConfigAttribute
+            implements Comparable<ConfigAttribute>
     {
         private final String attributeName;
         private final String propertyName;

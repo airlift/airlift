@@ -49,7 +49,8 @@ public class ConfigurationModule
                 if (element.getClassName().equals(ConfigurationModule.class.getName())) {
                     foundThisClass = true;
                 }
-            } else {
+            }
+            else {
                 if (!element.getClassName().equals(ConfigurationModule.class.getName())) {
                     return element;
                 }
@@ -64,7 +65,8 @@ public class ConfigurationModule
         return new AnnotatedBindingBuilder(binder.withSource(getCaller()));
     }
 
-    public static class AnnotatedBindingBuilder extends PrefixBindingBuilder
+    public static class AnnotatedBindingBuilder
+            extends PrefixBindingBuilder
     {
         public AnnotatedBindingBuilder(Binder binder)
         {
@@ -82,7 +84,8 @@ public class ConfigurationModule
         }
     }
 
-    public static class PrefixBindingBuilder extends ConfigBindingBuilder
+    public static class PrefixBindingBuilder
+            extends ConfigBindingBuilder
     {
         public PrefixBindingBuilder(Binder binder, Class<? extends Annotation> annotationType, Annotation annotation)
         {
@@ -110,17 +113,20 @@ public class ConfigurationModule
             this.prefix = prefix;
         }
 
-        public <T> void to(Class<T> configClass) {
+        public <T> void to(Class<T> configClass)
+        {
             Key<T> key;
             if (annotationType != null) {
                 key = Key.get(configClass, annotationType);
-            } else if(annotation != null) {
+            }
+            else if (annotation != null) {
                 key = Key.get(configClass, annotation);
-            } else {
+            }
+            else {
                 key = Key.get(configClass);
             }
 
-            ConfigurationProvider<T> configurationProvider = new ConfigurationProvider<T>(key, configClass, prefix);
+            ConfigurationProvider<T> configurationProvider = new ConfigurationProvider<>(key, configClass, prefix);
             binder.bind(key).toProvider(configurationProvider);
         }
     }

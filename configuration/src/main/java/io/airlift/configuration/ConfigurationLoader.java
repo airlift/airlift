@@ -15,8 +15,6 @@
  */
 package io.airlift.configuration;
 
-import static com.google.common.collect.Maps.fromProperties;
-
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Maps;
 
@@ -26,6 +24,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Map;
 import java.util.Properties;
+
+import static com.google.common.collect.Maps.fromProperties;
 
 public class ConfigurationLoader
 {
@@ -53,12 +53,9 @@ public class ConfigurationLoader
     public Map<String, String> loadPropertiesFrom(String path)
             throws IOException
     {
-        Reader reader = new FileReader(new File(path));
         Properties properties = new Properties();
-        try {
+        try (Reader reader = new FileReader(new File(path))) {
             properties.load(reader);
-        } finally {
-            reader.close();
         }
 
         return fromProperties(properties);

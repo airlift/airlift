@@ -51,9 +51,10 @@ public class ConfigurationValidator
         final List<Message> messages = Lists.newArrayList();
 
         ElementsIterator elementsIterator = new ElementsIterator(modules);
-        for (final Element element : elementsIterator) {
+        for (Element element : elementsIterator) {
             element.acceptVisitor(new DefaultElementVisitor<Void>()
             {
+                @Override
                 public <T> Void visit(Binding<T> binding)
                 {
                     // look for ConfigurationProviders...
@@ -68,7 +69,8 @@ public class ConfigurationValidator
                             try {
                                 // call the getter which will cause object creation
                                 configurationProvider.get();
-                            } catch (ConfigurationException e) {
+                            }
+                            catch (ConfigurationException e) {
                                 // if we got errors, add them to the errors list
                                 for (Message message : e.getErrorMessages()) {
                                     messages.add(new Message(singletonList(binding.getSource()), message.getMessage(), message.getCause()));

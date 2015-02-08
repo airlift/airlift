@@ -15,7 +15,8 @@
  */
 package io.airlift.configuration;
 
-public class InvalidConfigurationException extends Exception
+public class InvalidConfigurationException
+        extends Exception
 {
     public InvalidConfigurationException(String message, Object... args)
     {

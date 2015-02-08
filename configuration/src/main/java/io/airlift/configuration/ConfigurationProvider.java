@@ -19,7 +19,8 @@ import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.google.inject.Key;
 
-public class ConfigurationProvider<T> implements ConfigurationAwareProvider<T>
+public class ConfigurationProvider<T>
+        implements ConfigurationAwareProvider<T>
 {
     private final Key<T> key;
     private final Class<T> configClass;
@@ -37,12 +38,14 @@ public class ConfigurationProvider<T> implements ConfigurationAwareProvider<T>
         this.prefix = prefix;
     }
 
+    @Override
     @Inject
     public void setConfigurationFactory(ConfigurationFactory configurationFactory)
     {
         this.configurationFactory = configurationFactory;
     }
 
+    @Override
     @Inject(optional = true)
     public void setWarningsMonitor(WarningsMonitor warningsMonitor)
     {
@@ -64,7 +67,8 @@ public class ConfigurationProvider<T> implements ConfigurationAwareProvider<T>
         return prefix;
     }
 
-    public ConfigurationMetadata<T> getConfigurationMetadata() {
+    public ConfigurationMetadata<T> getConfigurationMetadata()
+    {
         return ConfigurationMetadata.getConfigurationMetadata(configClass);
     }
 

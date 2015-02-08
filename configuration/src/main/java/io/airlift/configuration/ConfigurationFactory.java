@@ -79,7 +79,7 @@ public class ConfigurationFactory
         this(properties, Problems.NULL_MONITOR);
     }
 
-    ConfigurationFactory(Map<String, String> properties, final Problems.Monitor monitor)
+    ConfigurationFactory(Map<String, String> properties, Problems.Monitor monitor)
     {
         this.monitor = monitor;
         this.properties = ImmutableMap.copyOf(properties);
@@ -121,7 +121,7 @@ public class ConfigurationFactory
 
     public <T> T build(Class<T> configClass)
     {
-        return build(configClass, null).instance;
+        return build(configClass, null).getInstance();
     }
 
     /**
@@ -139,11 +139,11 @@ public class ConfigurationFactory
         }
 
         ConfigurationHolder<T> holder = build(configurationProvider.getConfigClass(), configurationProvider.getPrefix());
-        instance = holder.instance;
+        instance = holder.getInstance();
 
         // inform caller about warnings
         if (warningsMonitor != null) {
-            for (Message message : holder.problems.getWarnings()) {
+            for (Message message : holder.getProblems().getWarnings()) {
                 warningsMonitor.onWarning(message.toString());
             }
         }
@@ -415,16 +415,27 @@ public class ConfigurationFactory
             this.instance = instance;
             this.problems = problems;
         }
+
+        public T getInstance()
+        {
+            return instance;
+        }
+
+        public Problems getProblems()
+        {
+            return problems;
+        }
     }
 
-    private List<ConfigurationProvider<?>> getAllProviders(Module... modules)
+    private static List<ConfigurationProvider<?>> getAllProviders(Module... modules)
     {
-        final List<ConfigurationProvider<?>> providers = Lists.newArrayList();
+        List<ConfigurationProvider<?>> providers = Lists.newArrayList();
 
         ElementsIterator elementsIterator = new ElementsIterator(modules);
-        for (final Element element : elementsIterator) {
+        for (Element element : elementsIterator) {
             element.acceptVisitor(new DefaultElementVisitor<Void>()
             {
+                @Override
                 public <T> Void visit(Binding<T> binding)
                 {
                     // look for ConfigurationProviders...

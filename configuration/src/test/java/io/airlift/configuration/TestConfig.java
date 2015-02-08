@@ -17,7 +17,6 @@ package io.airlift.configuration;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
-import com.google.inject.Binder;
 import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -34,9 +33,9 @@ import java.util.Map.Entry;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
- public class TestConfig
+public class TestConfig
 {
-    private ImmutableMap<String,String> properties;
+    private ImmutableMap<String, String> properties;
 
     @Test
     public void testConfig()
@@ -52,7 +51,7 @@ import static org.testng.Assert.fail;
         verifyConfig(injector.getInstance(Config1.class));
     }
 
-    private void verifyConfig(Config1 config)
+    private static void verifyConfig(Config1 config)
     {
         assertEquals("a string", config.getStringOption());
         assertEquals(true, config.getBooleanOption());
@@ -86,22 +85,16 @@ import static org.testng.Assert.fail;
         }
     }
 
-    private Injector createInjector(Map<String, String> properties, Module module)
+    private static Injector createInjector(Map<String, String> properties, Module module)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
         List<Message> messages = new ConfigurationValidator(configurationFactory, null).validate(module);
         return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
     }
 
-    private <T> Module createModule(final Class<T> configClass, final String prefix)
+    private static <T> Module createModule(Class<T> configClass, String prefix)
     {
-        Module module = new Module() {
-            @Override
-            public void configure(Binder binder)
-            {
-                ConfigurationModule.bindConfig(binder).prefixedWith(prefix).to(configClass);
-            }
-        };
+        Module module = binder -> ConfigurationModule.bindConfig(binder).prefixedWith(prefix).to(configClass);
         return module;
     }
 
@@ -110,27 +103,27 @@ import static org.testng.Assert.fail;
             throws Exception
     {
         properties = ImmutableMap.<String, String>builder()
-            .put("stringOption", "a string")
-            .put("booleanOption", "true")
-            .put("boxedBooleanOption", "true")
-            .put("byteOption", Byte.toString(Byte.MAX_VALUE))
-            .put("boxedByteOption", Byte.toString(Byte.MAX_VALUE))
-            .put("shortOption", Short.toString(Short.MAX_VALUE))
-            .put("boxedShortOption", Short.toString(Short.MAX_VALUE))
-            .put("integerOption", Integer.toString(Integer.MAX_VALUE))
-            .put("boxedIntegerOption", Integer.toString(Integer.MAX_VALUE))
-            .put("longOption", Long.toString(Long.MAX_VALUE))
-            .put("boxedLongOption", Long.toString(Long.MAX_VALUE))
-            .put("floatOption", Float.toString(Float.MAX_VALUE))
-            .put("boxedFloatOption", Float.toString(Float.MAX_VALUE))
-            .put("doubleOption", Double.toString(Double.MAX_VALUE))
-            .put("boxedDoubleOption", Double.toString(Double.MAX_VALUE))
-            .put("myEnumOption", MyEnum.FOO.toString())
-            .put("valueClassOption", "a value class")
-            .build();
+                .put("stringOption", "a string")
+                .put("booleanOption", "true")
+                .put("boxedBooleanOption", "true")
+                .put("byteOption", Byte.toString(Byte.MAX_VALUE))
+                .put("boxedByteOption", Byte.toString(Byte.MAX_VALUE))
+                .put("shortOption", Short.toString(Short.MAX_VALUE))
+                .put("boxedShortOption", Short.toString(Short.MAX_VALUE))
+                .put("integerOption", Integer.toString(Integer.MAX_VALUE))
+                .put("boxedIntegerOption", Integer.toString(Integer.MAX_VALUE))
+                .put("longOption", Long.toString(Long.MAX_VALUE))
+                .put("boxedLongOption", Long.toString(Long.MAX_VALUE))
+                .put("floatOption", Float.toString(Float.MAX_VALUE))
+                .put("boxedFloatOption", Float.toString(Float.MAX_VALUE))
+                .put("doubleOption", Double.toString(Double.MAX_VALUE))
+                .put("boxedDoubleOption", Double.toString(Double.MAX_VALUE))
+                .put("myEnumOption", MyEnum.FOO.toString())
+                .put("valueClassOption", "a value class")
+                .build();
     }
 
-    private Map<String, String> prefix(String prefix, Map<String, String> properties)
+    private static Map<String, String> prefix(String prefix, Map<String, String> properties)
     {
         Builder<String, String> builder = ImmutableMap.builder();
         for (Entry<String, String> entry : properties.entrySet()) {

@@ -4,14 +4,15 @@ import com.google.inject.Provider;
 
 /**
  * A provider with access to the airlift {@link ConfigurationFactory}.
- *
+ * <p>
  * Implementing this interface ensures that the provider gets access to the
  * {@link ConfigurationFactory} and {@link WarningsMonitor} before the first
  * call to {@link Provider#get()}.
  *
  * @param <T> Element type that is returned by this provider.
  */
-public interface ConfigurationAwareProvider<T> extends Provider<T>
+public interface ConfigurationAwareProvider<T>
+        extends Provider<T>
 {
     /**
      * Called by the airlift framework before the first call to get.

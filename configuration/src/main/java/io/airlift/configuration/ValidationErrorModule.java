@@ -22,7 +22,8 @@ import com.google.inject.spi.Message;
 
 import java.util.List;
 
-public class ValidationErrorModule implements Module
+public class ValidationErrorModule
+        implements Module
 {
     private final List<Message> messages;
 
@@ -34,8 +35,6 @@ public class ValidationErrorModule implements Module
     @Override
     public void configure(Binder binder)
     {
-        for (Message message : messages) {
-            binder.addError(message);
-        }
+        messages.forEach(binder::addError);
     }
 }
