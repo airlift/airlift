@@ -114,7 +114,44 @@ public class JettyHttpClient
         checkNotNull(requestFilters, "requestFilters is null");
 
         maxContentLength = config.getMaxContentLength().toBytes();
-        httpClient = createHttpClient(config, creationLocation);
+
+        creationLocation.fillInStackTrace();
+
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
+        if (config.getKeyStorePath() != null) {
+            sslContextFactory.setKeyStorePath(config.getKeyStorePath());
+            sslContextFactory.setKeyStorePassword(config.getKeyStorePassword());
+        }
+
+        httpClient = new HttpClient(sslContextFactory);
+        httpClient.setMaxConnectionsPerDestination(config.getMaxConnectionsPerServer());
+        httpClient.setMaxRequestsQueuedPerDestination(config.getMaxRequestsQueuedPerDestination());
+
+        // disable cookies
+        httpClient.setCookieStore(new HttpCookieStore.Empty());
+
+        long idleTimeout = Long.MAX_VALUE;
+        if (config.getKeepAliveInterval() != null) {
+            idleTimeout = min(idleTimeout, config.getKeepAliveInterval().toMillis());
+        }
+        if (config.getReadTimeout() != null) {
+            idleTimeout = min(idleTimeout, config.getReadTimeout().toMillis());
+        }
+        if (idleTimeout != Long.MAX_VALUE) {
+            httpClient.setIdleTimeout(idleTimeout);
+        }
+
+        if (config.getConnectTimeout() != null) {
+            long connectTimeout = config.getConnectTimeout().toMillis();
+            httpClient.setConnectTimeout(connectTimeout);
+            httpClient.setAddressResolutionTimeout(connectTimeout);
+        }
+
+        HostAndPort socksProxy = config.getSocksProxy();
+        if (socksProxy != null) {
+            httpClient.getProxyConfiguration().getProxies().add(new Socks4Proxy(socksProxy.getHostText(), socksProxy.getPortOrDefault(1080)));
+        }
 
         JettyIoPool pool = jettyIoPool.orNull();
         if (pool == null) {
@@ -168,47 +205,6 @@ public class JettyHttpClient
             }
             return distribution;
         });
-    }
-
-    private static HttpClient createHttpClient(HttpClientConfig config, Exception created)
-    {
-        created.fillInStackTrace();
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
-        if (config.getKeyStorePath() != null) {
-            sslContextFactory.setKeyStorePath(config.getKeyStorePath());
-            sslContextFactory.setKeyStorePassword(config.getKeyStorePassword());
-        }
-
-        HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.setMaxConnectionsPerDestination(config.getMaxConnectionsPerServer());
-        httpClient.setMaxRequestsQueuedPerDestination(config.getMaxRequestsQueuedPerDestination());
-
-        // disable cookies
-        httpClient.setCookieStore(new HttpCookieStore.Empty());
-
-        long idleTimeout = Long.MAX_VALUE;
-        if (config.getKeepAliveInterval() != null) {
-            idleTimeout = min(idleTimeout, config.getKeepAliveInterval().toMillis());
-        }
-        if (config.getReadTimeout() != null) {
-            idleTimeout = min(idleTimeout, config.getReadTimeout().toMillis());
-        }
-        if (idleTimeout != Long.MAX_VALUE) {
-            httpClient.setIdleTimeout(idleTimeout);
-        }
-
-        if (config.getConnectTimeout() != null) {
-            long connectTimeout = config.getConnectTimeout().toMillis();
-            httpClient.setConnectTimeout(connectTimeout);
-            httpClient.setAddressResolutionTimeout(connectTimeout);
-        }
-
-        HostAndPort socksProxy = config.getSocksProxy();
-        if (socksProxy != null) {
-            httpClient.getProxyConfiguration().getProxies().add(new Socks4Proxy(socksProxy.getHostText(), socksProxy.getPortOrDefault(1080)));
-        }
-        return httpClient;
     }
 
     @Override
