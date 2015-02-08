@@ -74,6 +74,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
@@ -98,7 +99,9 @@ public class JettyHttpClient
     private final HttpClient httpClient;
     private final long maxContentLength;
     private final RequestStats stats = new RequestStats();
-    private final QueueDistribution queuedRequestsPerDestination;
+    private final CachedDistribution queuedRequestsPerDestination;
+    private final CachedDistribution activeConnectionsPerDestination;
+    private final CachedDistribution idleConnectionsPerDestination;
     private final List<HttpRequestFilter> requestFilters;
     private final Exception creationLocation = new Exception();
     private final String name;
@@ -157,7 +160,33 @@ public class JettyHttpClient
         }
 
         this.requestFilters = ImmutableList.copyOf(requestFilters);
-        this.queuedRequestsPerDestination = new QueueDistribution(httpClient);
+
+        this.activeConnectionsPerDestination = new CachedDistribution(() -> {
+            Distribution distribution = new Distribution();
+            for (Destination destination : httpClient.getDestinations()) {
+                PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
+                distribution.add(poolingHttpDestination.getConnectionPool().getActiveConnections().size());
+            }
+            return distribution;
+        });
+
+        this.idleConnectionsPerDestination = new CachedDistribution(() -> {
+            Distribution distribution = new Distribution();
+            for (Destination destination : httpClient.getDestinations()) {
+                PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
+                distribution.add(poolingHttpDestination.getConnectionPool().getIdleConnections().size());
+            }
+            return distribution;
+        });
+
+        this.queuedRequestsPerDestination = new CachedDistribution(() -> {
+            Distribution distribution = new Distribution();
+            for (Destination destination : httpClient.getDestinations()) {
+                PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
+                distribution.add(poolingHttpDestination.getHttpExchanges().size());
+            }
+            return distribution;
+        });
     }
 
     private HttpClient createHttpClient(HttpClientConfig config, Exception created)
@@ -354,7 +383,21 @@ public class JettyHttpClient
 
     @Managed
     @Nested
-    public QueueDistribution getQueuedRequestsPerDestination()
+    public CachedDistribution getActiveConnectionsPerDestination()
+    {
+        return activeConnectionsPerDestination;
+    }
+
+    @Managed
+    @Nested
+    public CachedDistribution getIdleConnectionsPerDestination()
+    {
+        return idleConnectionsPerDestination;
+    }
+
+    @Managed
+    @Nested
+    public CachedDistribution getQueuedRequestsPerDestination()
     {
         return queuedRequestsPerDestination;
     }
@@ -1140,29 +1183,25 @@ public class JettyHttpClient
      * todo remove this when https://github.com/martint/jmxutils/issues/26 is implemented
      */
     @ThreadSafe
-    public static class QueueDistribution
+    public static class CachedDistribution
     {
-        private final HttpClient httpClient;
+        private final Supplier<Distribution> distributionSupplier;
 
         @GuardedBy("this")
         private Distribution distribution;
         @GuardedBy("this")
         private long lastUpdate = System.nanoTime();
 
-        public QueueDistribution(HttpClient httpClient)
+        public CachedDistribution(Supplier<Distribution> distributionSupplier)
         {
-            this.httpClient = httpClient;
+            this.distributionSupplier = distributionSupplier;
         }
 
         public synchronized Distribution getDistribution()
         {
             // refresh stats only once a second
             if (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastUpdate) > 1000) {
-                distribution = new Distribution();
-                for (Destination destination : httpClient.getDestinations()) {
-                    PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
-                    distribution.add(poolingHttpDestination.getHttpExchanges().size());
-                }
+                this.distribution = distributionSupplier.get();
                 this.lastUpdate = System.nanoTime();
             }
             return distribution;
