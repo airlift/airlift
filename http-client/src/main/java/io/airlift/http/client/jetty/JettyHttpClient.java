@@ -71,6 +71,7 @@ import java.util.function.Supplier;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Math.min;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class JettyHttpClient
         implements io.airlift.http.client.HttpClient
@@ -79,6 +80,8 @@ public class JettyHttpClient
 
     private final HttpClient httpClient;
     private final long maxContentLength;
+    private final long requestTimeoutMillis;
+    private final long idleTimeoutMillis;
     private final RequestStats stats = new RequestStats();
     private final CachedDistribution queuedRequestsPerDestination;
     private final CachedDistribution activeConnectionsPerDestination;
@@ -114,6 +117,8 @@ public class JettyHttpClient
         checkNotNull(requestFilters, "requestFilters is null");
 
         maxContentLength = config.getMaxContentLength().toBytes();
+        requestTimeoutMillis = config.getRequestTimeout().toMillis();
+        idleTimeoutMillis = config.getIdleTimeout().toMillis();
 
         creationLocation.fillInStackTrace();
 
@@ -131,22 +136,10 @@ public class JettyHttpClient
         // disable cookies
         httpClient.setCookieStore(new HttpCookieStore.Empty());
 
-        long idleTimeout = Long.MAX_VALUE;
-        if (config.getKeepAliveInterval() != null) {
-            idleTimeout = min(idleTimeout, config.getKeepAliveInterval().toMillis());
-        }
-        if (config.getReadTimeout() != null) {
-            idleTimeout = min(idleTimeout, config.getReadTimeout().toMillis());
-        }
-        if (idleTimeout != Long.MAX_VALUE) {
-            httpClient.setIdleTimeout(idleTimeout);
-        }
-
-        if (config.getConnectTimeout() != null) {
-            long connectTimeout = config.getConnectTimeout().toMillis();
-            httpClient.setConnectTimeout(connectTimeout);
-            httpClient.setAddressResolutionTimeout(connectTimeout);
-        }
+        // timeouts
+        httpClient.setIdleTimeout(idleTimeoutMillis);
+        httpClient.setConnectTimeout(config.getConnectTimeout().toMillis());
+        httpClient.setAddressResolutionTimeout(config.getConnectTimeout().toMillis());
 
         HostAndPort socksProxy = config.getSocksProxy();
         if (socksProxy != null) {
@@ -237,7 +230,7 @@ public class JettyHttpClient
         // wait for response to begin
         Response response;
         try {
-            response = listener.get(httpClient.getIdleTimeout(), TimeUnit.MILLISECONDS);
+            response = listener.get(httpClient.getIdleTimeout(), MILLISECONDS);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -327,6 +320,11 @@ public class JettyHttpClient
                 jettyRequest.content(new BodyGeneratorContentProvider(bodyGenerator, httpClient.getExecutor()));
             }
         }
+
+        // timeouts
+        jettyRequest.timeout(requestTimeoutMillis, MILLISECONDS);
+        jettyRequest.idleTimeout(idleTimeoutMillis, MILLISECONDS);
+
         return jettyRequest;
     }
 

@@ -39,7 +39,8 @@ public class TestHttpClientConfig
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(HttpClientConfig.class)
                 .setConnectTimeout(new Duration(1, TimeUnit.SECONDS))
-                .setReadTimeout(new Duration(1, TimeUnit.MINUTES))
+                .setRequestTimeout(new Duration(5, TimeUnit.MINUTES))
+                .setIdleTimeout(new Duration(1, TimeUnit.MINUTES))
                 .setKeepAliveInterval(null)
                 .setMaxConnections(200)
                 .setMaxConnectionsPerServer(20)
@@ -55,7 +56,8 @@ public class TestHttpClientConfig
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("http-client.connect-timeout", "4s")
-                .put("http-client.read-timeout", "5s")
+                .put("http-client.request-timeout", "15s")
+                .put("http-client.idle-timeout", "5s")
                 .put("http-client.keep-alive-interval", "6s")
                 .put("http-client.max-connections", "12")
                 .put("http-client.max-connections-per-server", "3")
@@ -68,7 +70,8 @@ public class TestHttpClientConfig
 
         HttpClientConfig expected = new HttpClientConfig()
                 .setConnectTimeout(new Duration(4, TimeUnit.SECONDS))
-                .setReadTimeout(new Duration(5, TimeUnit.SECONDS))
+                .setRequestTimeout(new Duration(15, TimeUnit.SECONDS))
+                .setIdleTimeout(new Duration(5, TimeUnit.SECONDS))
                 .setKeepAliveInterval(new Duration(6, TimeUnit.SECONDS))
                 .setMaxConnections(12)
                 .setMaxConnectionsPerServer(3)
@@ -82,9 +85,24 @@ public class TestHttpClientConfig
     }
 
     @Test
+    public void testDeprecatedProperties()
+    {
+        Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
+                .put("http-client.idle-timeout", "111m")
+                .build();
+
+        Map<String, String> oldProperties = new ImmutableMap.Builder<String, String>()
+                .put("http-client.read-timeout", "111m")
+                .build();
+
+        ConfigAssertions.assertDeprecatedEquivalence(HttpClientConfig.class, currentProperties, oldProperties);
+    }
+
+    @Test
     public void testValidations()
     {
         assertFailsValidation(new HttpClientConfig().setConnectTimeout(null), "connectTimeout", "may not be null", NotNull.class);
-        assertFailsValidation(new HttpClientConfig().setReadTimeout(null), "readTimeout", "may not be null", NotNull.class);
+        assertFailsValidation(new HttpClientConfig().setRequestTimeout(null), "requestTimeout", "may not be null", NotNull.class);
+        assertFailsValidation(new HttpClientConfig().setIdleTimeout(null), "idleTimeout", "may not be null", NotNull.class);
     }
 }
