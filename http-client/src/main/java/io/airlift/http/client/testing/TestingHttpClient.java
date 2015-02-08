@@ -12,8 +12,10 @@ import io.airlift.http.client.Response;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.units.Duration;
 
+import javax.validation.constraints.NotNull;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -23,7 +25,7 @@ import static com.google.common.base.Preconditions.checkState;
 public class TestingHttpClient
         implements HttpClient
 {
-    private final Function<Request, Response> processor;
+    private final Processor processor;
     private final ListeningExecutorService executor;
 
     private final RequestStats stats = new RequestStats();
@@ -34,7 +36,24 @@ public class TestingHttpClient
         this(processor, MoreExecutors.sameThreadExecutor());
     }
 
-    public TestingHttpClient(Function<Request, Response> processor, ExecutorService executor)
+    public TestingHttpClient(Processor processor)
+    {
+        this(processor, MoreExecutors.sameThreadExecutor());
+    }
+
+    public TestingHttpClient(final Function<Request, Response> processor, ExecutorService executor)
+    {
+        this(new Processor()
+        {
+            @Override
+            public Response handle(Request request)
+            {
+                return processor.apply(request);
+            }
+        }, executor);
+    }
+
+    public TestingHttpClient(Processor processor, ExecutorService executor)
     {
         this.processor = processor;
         this.executor = MoreExecutors.listeningDecorator(executor);
@@ -75,26 +94,36 @@ public class TestingHttpClient
             throws E
     {
         state.set("PROCESSING_REQUEST");
+        long requestStart = System.nanoTime();
         Response response;
-        Duration requestProcessingTime = null;
         try {
-            long requestStart = System.nanoTime();
-            response = processor.apply(request);
-            requestProcessingTime = Duration.nanosSince(requestStart);
+            response = processor.handle(request);
         }
         catch (Throwable e) {
             state.set("FAILED");
-            stats.record(request.getMethod(),
-                    0,
-                    0,
-                    0,
-                    requestProcessingTime,
-                    null);
+            long responseStart = System.nanoTime();
+            Duration requestProcessingTime = new Duration(responseStart - requestStart, TimeUnit.NANOSECONDS);
             if (e instanceof Exception) {
-                return responseHandler.handleException(request, (Exception) e);
+                try {
+                    return responseHandler.handleException(request, (Exception) e);
+                }
+                finally {
+                    stats.record(request.getMethod(),
+                            0,
+                            0,
+                            0,
+                            requestProcessingTime,
+                            Duration.nanosSince(responseStart));
+                }
             }
             else {
-                throw e;
+                stats.record(request.getMethod(),
+                        0,
+                        0,
+                        0,
+                        requestProcessingTime,
+                        new Duration(0, TimeUnit.NANOSECONDS));
+                throw (Error) e;
             }
         }
         checkState(response != null, "response is null");
@@ -102,18 +131,18 @@ public class TestingHttpClient
         // notify handler
         state.set("PROCESSING_RESPONSE");
         long responseStart = System.nanoTime();
+        Duration requestProcessingTime = new Duration(responseStart - requestStart, TimeUnit.NANOSECONDS);
         try {
             return responseHandler.handle(request, response);
         }
         finally {
             state.set("DONE");
-            Duration responseProcessingTime = Duration.nanosSince(responseStart);
             stats.record(request.getMethod(),
                     response.getStatusCode(),
                     response.getBytesRead(),
                     response.getBytesRead(),
                     requestProcessingTime,
-                    responseProcessingTime);
+                    Duration.nanosSince(responseStart));
         }
     }
 
@@ -127,6 +156,13 @@ public class TestingHttpClient
     public void close()
     {
         closed.set(true);
+    }
+
+    public interface Processor
+    {
+        @NotNull
+        Response handle(Request request)
+                throws Exception;
     }
 
     private class TestingHttpResponseFuture<T>
