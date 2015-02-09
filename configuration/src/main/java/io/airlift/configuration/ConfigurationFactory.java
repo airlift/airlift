@@ -21,13 +21,16 @@ import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.inject.Binding;
 import com.google.inject.ConfigurationException;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.spi.DefaultElementVisitor;
@@ -44,11 +47,13 @@ import javax.validation.Validator;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 import static com.google.common.collect.Sets.newConcurrentHashSet;
 import static io.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
@@ -64,6 +69,7 @@ public class ConfigurationFactory
     private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
     private final Set<String> usedProperties = newConcurrentHashSet();
     private final Set<ConfigurationProvider<?>> registeredProviders = newConcurrentHashSet();
+    private final ListMultimap<Key<?>, ConfigDefaultsHolder<?>> registeredDefaultConfigs = ArrayListMultimap.create();
     private final LoadingCache<Class<?>, ConfigurationMetadata<?>> metadataCache = CacheBuilder.newBuilder()
             .build(new CacheLoader<Class<?>, ConfigurationMetadata<?>>()
             {
@@ -119,9 +125,42 @@ public class ConfigurationFactory
         return ImmutableList.copyOf(registeredProviders);
     }
 
+    <T> void registerConfigDefaults(ConfigDefaultsHolder<T> configDefaultsHolder)
+    {
+        registeredDefaultConfigs.put(configDefaultsHolder.getConfigKey(), configDefaultsHolder);
+    }
+
+    private <T> ConfigDefaults<T> getConfigDefaults(Key<T> key)
+    {
+        List<ConfigDefaultsHolder<T>> holders = registeredDefaultConfigs.get(key).stream()
+                .map(holder -> (ConfigDefaultsHolder<T>) holder)
+                .collect(Collectors.toList());
+
+        Collections.sort(holders);
+
+        List<ConfigDefaults<T>> defaults = holders.stream()
+                .map(ConfigDefaultsHolder::getConfigDefaults)
+                .collect(Collectors.toList());
+
+        return ConfigDefaults.configDefaults(defaults);
+    }
+
+    <T> T getDefaultConfig(Key<T> key)
+    {
+        ConfigurationMetadata<T> configurationMetadata = getMetadata((Class<T>) key.getTypeLiteral().getRawType());
+        configurationMetadata.getProblems().throwIfHasErrors();
+
+        T instance = newInstance(configurationMetadata);
+
+        ConfigDefaults<T> configDefaults = getConfigDefaults(key);
+        configDefaults.setDefaults(instance);
+
+        return instance;
+    }
+
     public <T> T build(Class<T> configClass)
     {
-        return build(configClass, null).getInstance();
+        return build(configClass, null, ConfigDefaults.noDefaults()).getInstance();
     }
 
     /**
@@ -138,7 +177,7 @@ public class ConfigurationFactory
             return instance;
         }
 
-        ConfigurationHolder<T> holder = build(configurationProvider.getConfigClass(), configurationProvider.getPrefix());
+        ConfigurationHolder<T> holder = build(configurationProvider.getConfigClass(), configurationProvider.getPrefix(), getConfigDefaults(configurationProvider.getKey()));
         instance = holder.getInstance();
 
         // inform caller about warnings
@@ -170,7 +209,7 @@ public class ConfigurationFactory
         return (T) instanceCache.putIfAbsent(configurationProvider, instance);
     }
 
-    private <T> ConfigurationHolder<T> build(Class<T> configClass, String prefix)
+    private <T> ConfigurationHolder<T> build(Class<T> configClass, String prefix, ConfigDefaults<T> configDefaults)
     {
         if (configClass == null) {
             throw new NullPointerException("configClass is null");
@@ -187,6 +226,8 @@ public class ConfigurationFactory
         configurationMetadata.getProblems().throwIfHasErrors();
 
         T instance = newInstance(configurationMetadata);
+
+        configDefaults.setDefaults(instance);
 
         Problems problems = new Problems(monitor);
 

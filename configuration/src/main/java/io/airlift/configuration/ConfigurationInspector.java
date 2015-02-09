@@ -39,16 +39,6 @@ public class ConfigurationInspector
         return builder.build();
     }
 
-    private static <T> T newDefaultInstance(ConfigurationMetadata<T> configurationMetadata)
-    {
-        try {
-            return configurationMetadata.getConstructor().newInstance();
-        }
-        catch (Throwable ignored) {
-            return null;
-        }
-    }
-
     private static String getValue(Method getter, Object instance, String defaultValue)
     {
         if (getter == null || instance == null) {
@@ -90,6 +80,8 @@ public class ConfigurationInspector
 
             ConfigurationMetadata<T> metadata = configurationProvider.getConfigurationMetadata();
 
+            T defaults = configurationProvider.getDefaultConfig();
+
             T instance = null;
             try {
                 instance = configurationProvider.get();
@@ -98,7 +90,6 @@ public class ConfigurationInspector
                 // provider could blow up for any reason, which is fine for this code
                 // this is catch throwable because we may get an AssertionError
             }
-            T defaults = newDefaultInstance(metadata);
 
             String prefix = configurationProvider.getPrefix();
             prefix = prefix == null ? "" : (prefix + ".");

@@ -72,6 +72,11 @@ public class ConfigurationProvider<T>
         return ConfigurationMetadata.getConfigurationMetadata(configClass);
     }
 
+    public T getDefaultConfig()
+    {
+        return configurationFactory.getDefaultConfig(key);
+    }
+
     @Override
     public T get()
     {

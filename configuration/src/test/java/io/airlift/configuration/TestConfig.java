@@ -51,6 +51,44 @@ public class TestConfig
         verifyConfig(injector.getInstance(Config1.class));
     }
 
+    @Test
+    public void testConfigDefaults()
+    {
+        Injector injector = createInjector(ImmutableMap.of(), createModule(
+                Config1.class,
+                null,
+                new StringOptionDefaults("default string")));
+
+        Config1 config = injector.getInstance(Config1.class);
+        assertEquals("default string", config.getStringOption());
+    }
+
+    @Test
+    public void testConfigDefaultsOverride()
+    {
+        Injector injector = createInjector(ImmutableMap.of(), createModule(
+                Config1.class,
+                null,
+                new StringOptionDefaults("default string"),
+                new StringOptionDefaults("another default string"),
+                new StringOptionDefaults("final default string")));
+
+        Config1 config = injector.getInstance(Config1.class);
+        assertEquals("final default string", config.getStringOption());
+    }
+
+    @Test
+    public void testPropertiesOverrideDefaults()
+    {
+        Injector injector = createInjector(properties, createModule(
+                Config1.class,
+                null,
+                new StringOptionDefaults("default string"),
+                new StringOptionDefaults("another default string"),
+                new StringOptionDefaults("final default string")));
+        verifyConfig(injector.getInstance(Config1.class));
+    }
+
     private static void verifyConfig(Config1 config)
     {
         assertEquals("a string", config.getStringOption());
@@ -92,9 +130,18 @@ public class TestConfig
         return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
     }
 
-    private static <T> Module createModule(Class<T> configClass, String prefix)
+    @SafeVarargs
+    private static <T> Module createModule(Class<T> configClass, String prefix, ConfigDefaults<T>... configDefaults)
     {
-        Module module = binder -> ConfigurationModule.bindConfig(binder).prefixedWith(prefix).to(configClass);
+        Module module = binder -> {
+            ConfigurationModule.bindConfig(binder).prefixedWith(prefix).to(configClass);
+
+            ConfigBinder configBinder = ConfigBinder.configBinder(binder);
+            for (ConfigDefaults<T> configDefault : configDefaults) {
+                configBinder.bindConfigDefaults(configClass, configDefault);
+            }
+        };
+
         return module;
     }
 
@@ -130,5 +177,22 @@ public class TestConfig
             builder.put(prefix + "." + entry.getKey(), entry.getValue());
         }
         return builder.build();
+    }
+
+    private static class StringOptionDefaults
+            implements ConfigDefaults<Config1>
+    {
+        private final String stringOptionDefault;
+
+        private StringOptionDefaults(String stringOptionDefault)
+        {
+            this.stringOptionDefault = stringOptionDefault;
+        }
+
+        @Override
+        public void setDefaults(Config1 config)
+        {
+            config.setStringOption(stringOptionDefault);
+        }
     }
 }

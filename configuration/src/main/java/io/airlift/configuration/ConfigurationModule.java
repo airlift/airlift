@@ -16,10 +16,11 @@
 package io.airlift.configuration;
 
 import com.google.inject.Binder;
-import com.google.inject.Key;
 import com.google.inject.Module;
 
 import java.lang.annotation.Annotation;
+
+import static io.airlift.configuration.ConfigBinder.configBinder;
 
 public class ConfigurationModule
         implements Module
@@ -115,19 +116,15 @@ public class ConfigurationModule
 
         public <T> void to(Class<T> configClass)
         {
-            Key<T> key;
             if (annotationType != null) {
-                key = Key.get(configClass, annotationType);
+                configBinder(binder).bindConfig(configClass, annotationType, prefix);
             }
             else if (annotation != null) {
-                key = Key.get(configClass, annotation);
+                configBinder(binder).bindConfig(configClass, annotation, prefix);
             }
             else {
-                key = Key.get(configClass);
+                configBinder(binder).bindConfig(configClass, prefix);
             }
-
-            ConfigurationProvider<T> configurationProvider = new ConfigurationProvider<>(key, configClass, prefix);
-            binder.bind(key).toProvider(configurationProvider);
         }
     }
 }
