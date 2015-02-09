@@ -24,6 +24,8 @@ import com.google.inject.Key;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
+import io.airlift.configuration.ConfigBinder;
+import io.airlift.configuration.ConfigDefaults;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.client.jetty.JettyIoPool;
 import io.airlift.http.client.jetty.JettyIoPoolConfig;
@@ -48,6 +50,8 @@ public class HttpClientModule
 {
     private static final Logger log = Logger.get(HttpClientModule.class);
 
+    private ConfigDefaults<HttpClientConfig> configDefaults;
+
     protected HttpClientModule(String name, Class<? extends Annotation> annotation)
     {
         super(name, annotation);
@@ -57,6 +61,11 @@ public class HttpClientModule
     public Annotation getFilterQualifier()
     {
         return filterQualifier(annotation);
+    }
+
+    void withConfigDefaults(ConfigDefaults<HttpClientConfig> configDefaults)
+    {
+        this.configDefaults = configDefaults;
     }
 
     void withPrivateIoThreadPool()
@@ -70,6 +79,9 @@ public class HttpClientModule
     {
         // bind the configuration
         bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(HttpClientConfig.class);
+        if (configDefaults != null) {
+            ConfigBinder.configBinder(binder).bindConfigDefaults(HttpClientConfig.class, configDefaults);
+        }
 
         // Shared thread pool
         bindConfig(binder).to(JettyIoPoolConfig.class);

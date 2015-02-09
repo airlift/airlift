@@ -1,10 +1,12 @@
 package io.airlift.configuration;
 
-import com.google.common.base.MoreObjects;
 import com.google.inject.Key;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.util.Objects.requireNonNull;
 
 class ConfigDefaultsHolder<T>
         implements Comparable<ConfigDefaultsHolder<T>>
@@ -13,12 +15,12 @@ class ConfigDefaultsHolder<T>
 
     private final Key<T> configKey;
     private final ConfigDefaults<T> configDefaults;
-    private final long priority = NEXT_PRIORITY.incrementAndGet();
+    private final long priority = NEXT_PRIORITY.getAndIncrement();
 
     ConfigDefaultsHolder(Key<T> configKey, ConfigDefaults<T> configDefaults)
     {
-        this.configKey = configKey;
-        this.configDefaults = configDefaults;
+        this.configKey = requireNonNull(configKey, "configKey is null");
+        this.configDefaults = requireNonNull(configDefaults, "configDefaults is null");
     }
 
     public Key<T> getConfigKey()
@@ -60,7 +62,7 @@ class ConfigDefaultsHolder<T>
     @Override
     public String toString()
     {
-        return MoreObjects.toStringHelper(this)
+        return toStringHelper(this)
                 .add("configKey", configKey)
                 .add("configDefaults", configDefaults)
                 .add("priority", priority)

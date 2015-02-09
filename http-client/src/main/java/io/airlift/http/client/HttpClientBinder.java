@@ -19,6 +19,7 @@ import com.google.common.annotations.Beta;
 import com.google.inject.Binder;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.Multibinder;
+import io.airlift.configuration.ConfigDefaults;
 
 import java.lang.annotation.Annotation;
 import java.util.Collection;
@@ -77,6 +78,12 @@ public class HttpClientBinder
             for (Class<? extends Annotation> annotation : aliases) {
                 module.addAlias(annotation);
             }
+            return this;
+        }
+
+        public HttpClientBindingBuilder withConfigDefaults(ConfigDefaults<HttpClientConfig> configDefaults)
+        {
+            module.withConfigDefaults(configDefaults);
             return this;
         }
 

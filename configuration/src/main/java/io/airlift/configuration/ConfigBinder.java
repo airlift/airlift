@@ -10,6 +10,7 @@ import com.google.inject.multibindings.Multibinder;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static java.util.Objects.requireNonNull;
 
 public class ConfigBinder
@@ -75,7 +76,7 @@ public class ConfigBinder
     private <T> void bindConfig(Key<T> key, Class<T> configClass, String prefix)
     {
         binder.bind(key).toProvider(new ConfigurationProvider<>(key, configClass, prefix));
-        getConfigDefaultsBinder(key);
+        createConfigDefaultsBinder(key);
     }
 
     public <T> void bindConfigDefaults(Class<T> configClass, ConfigDefaults<T> configDefaults)
@@ -106,10 +107,10 @@ public class ConfigBinder
 
     private <T> void bindConfigDefaults(Key<T> key, ConfigDefaults<T> configDefaults)
     {
-        getConfigDefaultsBinder(key).addBinding().toInstance(new ConfigDefaultsHolder<>(key, configDefaults));
+        createConfigDefaultsBinder(key).addBinding().toInstance(new ConfigDefaultsHolder<>(key, configDefaults));
     }
 
-    private <T> Multibinder<ConfigDefaultsHolder<T>> getConfigDefaultsBinder(Key<T> key)
+    private <T> Multibinder<ConfigDefaultsHolder<T>> createConfigDefaultsBinder(Key<T> key)
     {
         @SuppressWarnings("SerializableInnerClassWithNonSerializableOuterClass")
         Type type = new TypeToken<ConfigDefaultsHolder<T>>() {}
@@ -119,11 +120,11 @@ public class ConfigBinder
         TypeLiteral<ConfigDefaultsHolder<T>> typeLiteral = (TypeLiteral<ConfigDefaultsHolder<T>>) TypeLiteral.get(type);
 
         if (key.getAnnotation() == null) {
-            return Multibinder.newSetBinder(binder, typeLiteral);
+            return newSetBinder(binder, typeLiteral);
         }
         if (key.hasAttributes()) {
-            return Multibinder.newSetBinder(binder, typeLiteral, key.getAnnotation());
+            return newSetBinder(binder, typeLiteral, key.getAnnotation());
         }
-        return Multibinder.newSetBinder(binder, typeLiteral, key.getAnnotationType());
+        return newSetBinder(binder, typeLiteral, key.getAnnotationType());
     }
 }

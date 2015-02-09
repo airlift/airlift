@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimaps;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.inject.Binding;
 import com.google.inject.ConfigurationException;
@@ -47,18 +48,17 @@ import javax.validation.Validator;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
 
 import static com.google.common.collect.Sets.newConcurrentHashSet;
 import static io.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
 import static io.airlift.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
+import static java.util.stream.Collectors.toList;
 
 public class ConfigurationFactory
 {
@@ -69,7 +69,7 @@ public class ConfigurationFactory
     private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
     private final Set<String> usedProperties = newConcurrentHashSet();
     private final Set<ConfigurationProvider<?>> registeredProviders = newConcurrentHashSet();
-    private final ListMultimap<Key<?>, ConfigDefaultsHolder<?>> registeredDefaultConfigs = ArrayListMultimap.create();
+    private final ListMultimap<Key<?>, ConfigDefaultsHolder<?>> registeredDefaultConfigs = Multimaps.synchronizedListMultimap(ArrayListMultimap.create());
     private final LoadingCache<Class<?>, ConfigurationMetadata<?>> metadataCache = CacheBuilder.newBuilder()
             .build(new CacheLoader<Class<?>, ConfigurationMetadata<?>>()
             {
@@ -125,22 +125,18 @@ public class ConfigurationFactory
         return ImmutableList.copyOf(registeredProviders);
     }
 
-    <T> void registerConfigDefaults(ConfigDefaultsHolder<T> configDefaultsHolder)
+    <T> void registerConfigDefaults(ConfigDefaultsHolder<T> holder)
     {
-        registeredDefaultConfigs.put(configDefaultsHolder.getConfigKey(), configDefaultsHolder);
+        registeredDefaultConfigs.put(holder.getConfigKey(), holder);
     }
 
     private <T> ConfigDefaults<T> getConfigDefaults(Key<T> key)
     {
-        List<ConfigDefaultsHolder<T>> holders = registeredDefaultConfigs.get(key).stream()
+        List<ConfigDefaults<T>> defaults = registeredDefaultConfigs.get(key).stream()
                 .map(holder -> (ConfigDefaultsHolder<T>) holder)
-                .collect(Collectors.toList());
-
-        Collections.sort(holders);
-
-        List<ConfigDefaults<T>> defaults = holders.stream()
+                .sorted()
                 .map(ConfigDefaultsHolder::getConfigDefaults)
-                .collect(Collectors.toList());
+                .collect(toList());
 
         return ConfigDefaults.configDefaults(defaults);
     }
