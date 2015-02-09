@@ -20,6 +20,8 @@ import io.airlift.slice.SliceOutput;
 import org.testng.annotations.Test;
 
 import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
+import static io.airlift.stats.cardinality.Utils.numberOfBuckets;
+import static org.testng.Assert.assertEquals;
 
 public class TestDenseSerialization
 {
@@ -236,6 +238,61 @@ public class TestDenseSerialization
             Slice reserialized = new DenseHll(serialized).serialize();
 
             assertSlicesEqual(serialized, reserialized);
+        }
+    }
+
+    @Test
+    public void testDeserializeDenseV1NoOverflows()
+            throws Exception
+    {
+        int indexBitLength = 4;
+        int numberOfBuckets = numberOfBuckets(indexBitLength);
+        Slice serialized = new DynamicSliceOutput(1)
+                .appendByte(Format.DENSE_V1.getTag()) // format tag
+                .appendByte(indexBitLength) // p
+                .appendByte(10) // baseline
+                .appendBytes(new byte[numberOfBuckets / 2]) // buckets
+                        // overflow bucket
+                .appendByte(0xFF)
+                .appendByte(0xFF)
+                        // overflow value
+                .appendByte(0)
+                .slice();
+
+        DenseHll deserialized = new DenseHll(serialized);
+        for (int i = 0; i < numberOfBuckets; i++) {
+            assertEquals(deserialized.getValue(i), 10);
+        }
+    }
+
+    @Test
+    public void testDeserializeDenseV1Overflow()
+            throws Exception
+    {
+        // bucket 1 has a value of 20 (i.e., baseline = 2, delta == 15, overflow == 3)
+
+        int indexBitLength = 4;
+        int numberOfBuckets = numberOfBuckets(indexBitLength);
+        Slice serialized = new DynamicSliceOutput(1)
+                .appendByte(Format.DENSE_V1.getTag()) // format tag
+                .appendByte(indexBitLength) // p
+                .appendByte(2) // baseline
+                .appendBytes(new byte[] { 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) // buckets
+                        // overflow bucket
+                .appendByte(0x01)
+                .appendByte(0x00)
+                        // overflow value
+                .appendByte(3)
+                .slice();
+
+        DenseHll deserialized = new DenseHll(serialized);
+        for (int i = 0; i < numberOfBuckets; i++) {
+            if (i == 1) {
+                assertEquals(deserialized.getValue(i), 20);
+            }
+            else {
+                assertEquals(deserialized.getValue(i), 2);
+            }
         }
     }
 

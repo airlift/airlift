@@ -54,8 +54,8 @@ final class DenseHll
     private int baselineCount;
     private final byte[] deltas;
 
-    public int overflows;
-    private int[] overflowBuckets; // TODO: short? need to support b = 16
+    private int overflows;
+    private int[] overflowBuckets;
     private byte[] overflowValues;
 
     public DenseHll(int indexBitLength)
@@ -88,9 +88,19 @@ final class DenseHll
 
         if (formatTag == Format.DENSE_V1.getTag()) {
             // for backward compatibility
-            overflows = 1;
-            overflowBuckets = new int[] {input.readShort()};
-            overflowValues = new byte[] {input.readByte()};
+            int bucket = input.readShort();
+            byte value = input.readByte();
+            if (bucket >= 0) {
+                checkArgument(bucket <= numberOfBuckets, "Overflow bucket index is out of range");
+                overflows = 1;
+                overflowBuckets = new int[] { bucket };
+                overflowValues = new byte[] { value };
+            }
+            else {
+                overflows = 0;
+                overflowBuckets = new int[0];
+                overflowValues = new byte[0];
+            }
         }
         else if (formatTag == Format.DENSE_V2.getTag()) {
             overflows = input.readUnsignedShort();
@@ -101,7 +111,7 @@ final class DenseHll
 
             for (int i = 0; i < overflows; i++) {
                 overflowBuckets[i] = input.readUnsignedShort();
-                checkArgument(overflowBuckets[i] <= numberOfBuckets, "Overflow bucket index it out of range");
+                checkArgument(overflowBuckets[i] <= numberOfBuckets, "Overflow bucket index is out of range");
             }
 
             for (int i = 0; i < overflows; i++) {
