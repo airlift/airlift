@@ -48,7 +48,8 @@ public class TestServer
                         new ReportingModule(),
                         new TestingMBeanModule(),
                         new MainModule()
-                );
+                )
+                .quiet();
 
         Injector injector = app
                 .initialize();
