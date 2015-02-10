@@ -1,3 +1,17 @@
+Airlift 0.102
+
+* Threads
+
+Thread factories provided by the Threads utility class now add threads to a
+ThreadGroup.  Some tools organize threads by ThreadGroup which makes it easier
+to work with servers with lots of threads.  The ThreadGroup is named using:
+
+    String.format(nameFormat, "group")
+
+This means the nameFormat must expect a String argument instead of an int.  To
+ease migration, the code adapts formats with a single %d, but this will be
+removed in a future release.
+
 Airlift 0.101
 
 The previous implementation of dense HyperLogLog had an issue where errors

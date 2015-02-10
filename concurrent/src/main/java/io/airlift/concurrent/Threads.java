@@ -1,11 +1,14 @@
 package io.airlift.concurrent;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.airlift.log.Logger;
 
 import java.util.concurrent.ThreadFactory;
 
 public final class Threads
 {
+    private static final Logger log = Logger.get(Threads.class);
+
     private Threads() {}
 
     /**
@@ -13,14 +16,14 @@ public final class Threads
      * using the specified naming format.
      *
      * @param nameFormat a {@link String#format(String, Object...)}-compatible
-     * format string, to which a unique integer will be supplied as the single
-     * parameter. This integer will be unique to this instance of the
+     * format string, to which a string will be supplied as the single
+     * parameter. This string will be unique to this instance of the
      * ThreadFactory and will be assigned sequentially.
      * @return the created ThreadFactory
      */
     public static ThreadFactory threadsNamed(String nameFormat)
     {
-        GroupedThreadFactory delegate = new GroupedThreadFactory(String.format(nameFormat, "group"));
+        GroupedThreadFactory delegate = new GroupedThreadFactory(threadGroupName(nameFormat));
         return new ThreadFactoryBuilder()
                 .setNameFormat(nameFormat)
                 .setThreadFactory(new ContextClassLoaderThreadFactory(Thread.currentThread().getContextClassLoader(), delegate))
@@ -36,12 +39,21 @@ public final class Threads
      */
     public static ThreadFactory daemonThreadsNamed(String nameFormat)
     {
-        GroupedThreadFactory delegate = new GroupedThreadFactory(String.format(nameFormat, "group"));
+        GroupedThreadFactory delegate = new GroupedThreadFactory(threadGroupName(nameFormat));
         return new ThreadFactoryBuilder()
                 .setNameFormat(nameFormat)
                 .setDaemon(true)
                 .setThreadFactory(new ContextClassLoaderThreadFactory(Thread.currentThread().getContextClassLoader(), delegate))
                 .build();
+    }
+
+    private static String threadGroupName(String nameFormat)
+    {
+        String groupFormat = nameFormat.replace("%d", "%s");
+        if (!nameFormat.equals(groupFormat)) {
+            log.warn("Invalid thread group nameFormat: %s", nameFormat);
+        }
+        return String.format(groupFormat, "group");
     }
 
     private static class ContextClassLoaderThreadFactory
