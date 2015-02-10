@@ -116,7 +116,7 @@ final class DenseHll
 
             for (int i = 0; i < overflows; i++) {
                 overflowValues[i] = input.readByte();
-                checkArgument(overflowValues[i] > 0, "Overflow bucket value must be >= 0");
+                checkArgument(overflowValues[i] >= 0, "Overflow bucket value must be >= 0");
             }
         }
         else {
