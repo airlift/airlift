@@ -440,6 +440,13 @@ final class DenseHll
      */
     public DenseHll mergeWith(DenseHll other)
     {
+        if (indexBitLength != other.indexBitLength) {
+            throw new IllegalArgumentException(String.format(
+                    "Cannot merge HLLs with different number of buckets: %s vs %s",
+                    numberOfBuckets(indexBitLength),
+                    numberOfBuckets(other.indexBitLength)));
+        }
+
         int baseline = Math.max(this.baseline, other.baseline);
         int baselineCount = 0;
 
