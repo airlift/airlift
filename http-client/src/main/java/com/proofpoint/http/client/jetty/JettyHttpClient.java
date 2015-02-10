@@ -29,15 +29,20 @@ import com.proofpoint.tracetoken.TraceTokenScope;
 import com.proofpoint.units.DataSize;
 import com.proofpoint.units.DataSize.Unit;
 import com.proofpoint.units.Duration;
+import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.PoolingHttpDestination;
 import org.eclipse.jetty.client.Socks4Proxy;
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.http.HttpChannelOverHTTP;
+import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -58,6 +63,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -68,13 +74,13 @@ import java.util.Queue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
@@ -82,6 +88,7 @@ import static com.proofpoint.tracetoken.TraceTokenManager.getCurrentRequestToken
 import static com.proofpoint.tracetoken.TraceTokenManager.registerRequestToken;
 import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class JettyHttpClient
         implements com.proofpoint.http.client.HttpClient
@@ -96,6 +103,7 @@ public class JettyHttpClient
     };
 
     private static final AtomicLong nameCounter = new AtomicLong();
+    private static final String PLATFORM_STATS_KEY = "platform_stats";
 
     private final HttpClient httpClient;
     private final long maxContentLength;
@@ -105,6 +113,13 @@ public class JettyHttpClient
     private final CachedDistribution queuedRequestsPerDestination;
     private final CachedDistribution activeConnectionsPerDestination;
     private final CachedDistribution idleConnectionsPerDestination;
+
+    private final CachedDistribution currentQueuedTime;
+    private final CachedDistribution currentRequestTime;
+    private final CachedDistribution currentRequestSendTime;
+    private final CachedDistribution currentResponseWaitTime;
+    private final CachedDistribution currentResponseProcessTime;
+
     private final List<HttpRequestFilter> requestFilters;
     private final Exception creationLocation = new Exception();
     private final String name;
@@ -205,32 +220,70 @@ public class JettyHttpClient
 
         this.requestFilters = ImmutableList.copyOf(requestFilters);
 
-        this.activeConnectionsPerDestination = new CachedDistribution(() -> {
-            Distribution distribution = new Distribution();
-            for (Destination destination : this.httpClient.getDestinations()) {
-                PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
-                distribution.add(poolingHttpDestination.getConnectionPool().getActiveConnections().size());
-            }
-            return distribution;
-        });
+        this.activeConnectionsPerDestination = new ConnectionPoolDistribution(httpClient,
+                 (distribution, connectionPool) -> distribution.add(connectionPool.getActiveConnections().size()));
 
-        this.idleConnectionsPerDestination = new CachedDistribution(() -> {
-            Distribution distribution = new Distribution();
-            for (Destination destination : this.httpClient.getDestinations()) {
-                PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
-                distribution.add(poolingHttpDestination.getConnectionPool().getIdleConnections().size());
-            }
-            return distribution;
-        });
+         this.idleConnectionsPerDestination = new ConnectionPoolDistribution(httpClient,
+                 (distribution, connectionPool) -> distribution.add(connectionPool.getIdleConnections().size()));
 
-        this.queuedRequestsPerDestination = new CachedDistribution(() -> {
-            Distribution distribution = new Distribution();
-            for (Destination destination : this.httpClient.getDestinations()) {
-                PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
-                distribution.add(poolingHttpDestination.getHttpExchanges().size());
-            }
-            return distribution;
-        });
+         this.queuedRequestsPerDestination = new DestinationDistribution(httpClient,
+                 (distribution, destination) -> distribution.add(destination.getHttpExchanges().size()));
+
+         this.currentQueuedTime = new RequestDistribution(httpClient, (distribution, listener, now) -> {
+             long started = listener.getRequestStarted();
+             if (started == 0) {
+                 started = now;
+             }
+             distribution.add(NANOSECONDS.toMillis(started - listener.getCreated()));
+         });
+
+         this.currentRequestTime = new RequestDistribution(httpClient, (distribution, listener, now) -> {
+             long started = listener.getRequestStarted();
+             if (started == 0) {
+                 return;
+             }
+             long finished = listener.getResponseFinished();
+             if (finished == 0) {
+                 finished = now;
+             }
+             distribution.add(NANOSECONDS.toMillis(finished - started));
+         });
+
+         this.currentRequestSendTime = new RequestDistribution(httpClient, (distribution, listener, now) -> {
+             long started = listener.getRequestStarted();
+             if (started == 0) {
+                 return;
+             }
+             long requestSent = listener.getRequestFinished();
+             if (requestSent == 0) {
+                 requestSent = now;
+             }
+             distribution.add(NANOSECONDS.toMillis(requestSent - started));
+         });
+
+         this.currentResponseWaitTime = new RequestDistribution(httpClient, (distribution, listener, now) -> {
+             long requestSent = listener.getRequestFinished();
+             if (requestSent == 0) {
+                 return;
+             }
+             long responseStarted = listener.getResponseStarted();
+             if (responseStarted == 0) {
+                 responseStarted = now;
+             }
+             distribution.add(NANOSECONDS.toMillis(responseStarted - requestSent));
+         });
+
+         this.currentResponseProcessTime = new RequestDistribution(httpClient, (distribution, listener, now) -> {
+             long responseStarted = listener.getResponseStarted();
+             if (responseStarted == 0) {
+                 return;
+             }
+             long finished = listener.getResponseFinished();
+             if (finished == 0) {
+                 finished = now;
+             }
+             distribution.add(NANOSECONDS.toMillis(finished - responseStarted));
+         });
     }
 
     @Override
@@ -335,6 +388,13 @@ public class JettyHttpClient
     {
         HttpRequest jettyRequest = (HttpRequest) httpClient.newRequest(finalRequest.getUri());
 
+        JettyRequestListener listener = new JettyRequestListener(finalRequest.getUri());
+        jettyRequest.onRequestBegin(request -> listener.onRequestBegin());
+        jettyRequest.onRequestSuccess(request -> listener.onRequestEnd());
+        jettyRequest.onResponseBegin(response -> listener.onResponseBegin());
+        jettyRequest.onComplete(result -> listener.onFinish());
+        jettyRequest.attribute(PLATFORM_STATS_KEY, listener);
+
         // jetty client always adds the user agent header
         // todo should there be a default?
         jettyRequest.getHeaders().remove(HttpHeader.USER_AGENT);
@@ -411,6 +471,41 @@ public class JettyHttpClient
     }
 
     @Managed
+    @Nested
+    public CachedDistribution getCurrentQueuedTime()
+    {
+        return currentQueuedTime;
+    }
+
+    @Managed
+    @Nested
+    public CachedDistribution getCurrentRequestTime()
+    {
+        return currentRequestTime;
+    }
+
+    @Managed
+    @Nested
+    public CachedDistribution getCurrentRequestSendTime()
+    {
+        return currentRequestSendTime;
+    }
+
+    @Managed
+    @Nested
+    public CachedDistribution getCurrentResponseWaitTime()
+    {
+        return currentResponseWaitTime;
+    }
+
+    @Managed
+    @Nested
+    public CachedDistribution getCurrentResponseProcessTime()
+    {
+        return currentResponseProcessTime;
+    }
+
+    @Managed
     public String dump()
     {
         return httpClient.dump();
@@ -420,6 +515,93 @@ public class JettyHttpClient
     public void dumpStdErr()
     {
         httpClient.dumpStdErr();
+    }
+
+    @Managed
+    public String dumpAllDestinations()
+    {
+        return String.format("%s\t%s\t%s\t%s\t%s\n", "URI", "queued", "request", "wait", "response") +
+                httpClient.getDestinations().stream()
+                        .map(JettyHttpClient::dumpDestination)
+                        .collect(Collectors.joining("\n"));
+    }
+
+    // todo this should be @Managed but operations with parameters are broken in jmx utils https://github.com/martint/jmxutils/issues/27
+    @SuppressWarnings("UnusedDeclaration")
+    public String dumpDestination(URI uri)
+    {
+        Destination destination = httpClient.getDestination(uri.getScheme(), uri.getHost(), uri.getPort());
+        if (destination == null) {
+            return null;
+        }
+
+        return dumpDestination(destination);
+    }
+
+    private static String dumpDestination(Destination destination)
+    {
+        long now = System.nanoTime();
+        return getRequestListenersForDestination(destination).stream()
+                .map(request -> dumpRequest(now, request))
+                .sorted()
+                .collect(Collectors.joining("\n"));
+    }
+
+    private static List<JettyRequestListener> getRequestListenersForDestination(Destination destination)
+    {
+        return getRequestForDestination(destination).stream()
+                .map(request -> (JettyRequestListener) request.getAttributes().get(PLATFORM_STATS_KEY))
+                .filter(listener -> listener != null)
+                .collect(Collectors.toList());
+    }
+
+    private static List<org.eclipse.jetty.client.api.Request> getRequestForDestination(Destination destination)
+    {
+        PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
+        Queue<HttpExchange> httpExchanges = poolingHttpDestination.getHttpExchanges();
+
+        List<org.eclipse.jetty.client.api.Request> requests = httpExchanges.stream()
+                .map(HttpExchange::getRequest)
+                .collect(Collectors.toList());
+
+        for (Connection connection : poolingHttpDestination.getConnectionPool().getActiveConnections()) {
+            HttpConnectionOverHTTP httpConnectionOverHTTP = (HttpConnectionOverHTTP) connection;
+            HttpChannelOverHTTP httpChannel = httpConnectionOverHTTP.getHttpChannel();
+            requests.add(httpChannel.getHttpExchange().getRequest());
+        }
+        return requests.stream().filter(request -> request != null).collect(Collectors.toList());
+    }
+
+    private static String dumpRequest(long now, JettyRequestListener listener)
+    {
+        long created = listener.getCreated();
+        long requestStarted = listener.getRequestStarted();
+        if (requestStarted == 0) {
+            requestStarted = now;
+        }
+        long requestFinished = listener.getRequestFinished();
+        if (requestFinished == 0) {
+            requestFinished = now;
+        }
+        long responseStarted = listener.getResponseStarted();
+        if (responseStarted == 0) {
+            responseStarted = now;
+        }
+        long finished = listener.getResponseFinished();
+        if (finished == 0) {
+            finished = now;
+        }
+        return String.format("%s\t%.1f\t%.1f\t%.1f\t%.1f",
+                listener.getUri(),
+                nanosToMillis(requestStarted - created),
+                nanosToMillis(requestFinished - requestStarted),
+                nanosToMillis(responseStarted - requestFinished),
+                nanosToMillis(finished - responseStarted));
+    }
+
+    private static double nanosToMillis(long nanos)
+    {
+        return new Duration(nanos, NANOSECONDS).getValue(MILLISECONDS);
     }
 
     @Override
@@ -670,7 +852,7 @@ public class JettyHttpClient
         }
 
         Duration responseProcessingTime = Duration.nanosSince(responseStart);
-        Duration requestProcessingTime = new Duration(responseStart - requestStart, TimeUnit.NANOSECONDS);
+        Duration requestProcessingTime = new Duration(responseStart - requestStart, NANOSECONDS);
 
         requestStats.record(request.getMethod(),
                 response.getStatusCode(),
@@ -1209,7 +1391,7 @@ public class JettyHttpClient
         public synchronized Distribution getDistribution()
         {
             // refresh stats only once a second
-            if (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastUpdate) > 1000) {
+            if (NANOSECONDS.toMillis(System.nanoTime() - lastUpdate) > 1000) {
                 this.distribution = distributionSupplier.get();
                 this.lastUpdate = System.nanoTime();
             }
@@ -1306,4 +1488,170 @@ public class JettyHttpClient
             return getDistribution().getPercentiles();
         }
     }
-}
+
+    private static class JettyRequestListener
+    {
+        enum State
+        {
+            CREATED, SENDING_REQUEST, AWAITING_RESPONSE, READING_RESPONSE, FINISHED
+        }
+
+        private final AtomicReference<State> state = new AtomicReference<>(State.CREATED);
+
+        private final URI uri;
+        private final long created = System.nanoTime();
+        private final AtomicLong requestStarted = new AtomicLong();
+        private final AtomicLong requestFinished = new AtomicLong();
+        private final AtomicLong responseStarted = new AtomicLong();
+        private final AtomicLong responseFinished = new AtomicLong();
+
+        public JettyRequestListener(URI uri)
+        {
+            this.uri = uri;
+        }
+
+        public URI getUri()
+        {
+            return uri;
+        }
+
+        public State getState()
+        {
+            return state.get();
+        }
+
+        public long getCreated()
+        {
+            return created;
+        }
+
+        public long getRequestStarted()
+        {
+            return requestStarted.get();
+        }
+
+        public long getRequestFinished()
+        {
+            return requestFinished.get();
+        }
+
+        public long getResponseStarted()
+        {
+            return responseStarted.get();
+        }
+
+        public long getResponseFinished()
+        {
+            return responseFinished.get();
+        }
+
+        public void onRequestBegin()
+        {
+            changeState(State.SENDING_REQUEST);
+
+            long now = System.nanoTime();
+            requestStarted.compareAndSet(0, now);
+        }
+
+        public void onRequestEnd()
+        {
+            changeState(State.AWAITING_RESPONSE);
+
+            long now = System.nanoTime();
+            requestStarted.compareAndSet(0, now);
+            requestFinished.compareAndSet(0, now);
+        }
+
+        private void onResponseBegin()
+        {
+            changeState(State.READING_RESPONSE);
+
+            long now = System.nanoTime();
+            requestStarted.compareAndSet(0, now);
+            requestFinished.compareAndSet(0, now);
+            responseStarted.compareAndSet(0, now);
+        }
+
+        private void onFinish()
+        {
+            changeState(State.FINISHED);
+
+            long now = System.nanoTime();
+            requestStarted.compareAndSet(0, now);
+            requestFinished.compareAndSet(0, now);
+            responseStarted.compareAndSet(0, now);
+            responseFinished.compareAndSet(0, now);
+        }
+
+        private synchronized void changeState(State newState)
+        {
+            if (state.get().ordinal() < newState.ordinal()) {
+                state.set(newState);
+            }
+        }
+    }
+
+    private static class ConnectionPoolDistribution
+            extends CachedDistribution
+    {
+        interface Processor
+        {
+            void process(Distribution distribution, ConnectionPool pool);
+        }
+
+        public ConnectionPoolDistribution(HttpClient httpClient, Processor processor)
+        {
+            super(() -> {
+                Distribution distribution = new Distribution();
+                for (Destination destination : httpClient.getDestinations()) {
+                    PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
+                    processor.process(distribution, poolingHttpDestination.getConnectionPool());
+                }
+                return distribution;
+            });
+        }
+    }
+
+    private static class DestinationDistribution
+            extends CachedDistribution
+    {
+        interface Processor
+        {
+            void process(Distribution distribution, PoolingHttpDestination<?> destination);
+        }
+
+        public DestinationDistribution(HttpClient httpClient, Processor processor)
+        {
+            super(() -> {
+                Distribution distribution = new Distribution();
+                for (Destination destination : httpClient.getDestinations()) {
+                    PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
+                    processor.process(distribution, poolingHttpDestination);
+                }
+                return distribution;
+            });
+        }
+    }
+
+    private static class RequestDistribution
+            extends CachedDistribution
+    {
+        interface Processor
+        {
+            void process(Distribution distribution, JettyRequestListener listener, long now);
+        }
+
+        public RequestDistribution(HttpClient httpClient, Processor processor)
+        {
+            super(() -> {
+                long now = System.nanoTime();
+                Distribution distribution = new Distribution();
+                for (Destination destination : httpClient.getDestinations()) {
+                    for (JettyRequestListener listener : getRequestListenersForDestination(destination)) {
+                        processor.process(distribution, listener, now);
+                    }
+                }
+                return distribution;
+            });
+        }
+    }}
