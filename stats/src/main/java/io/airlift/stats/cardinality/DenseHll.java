@@ -90,7 +90,7 @@ final class DenseHll
             // for backward compatibility
             int bucket = input.readShort();
             byte value = input.readByte();
-            if (bucket >= 0) {
+            if (bucket >= 0 && value > 0) {
                 checkArgument(bucket <= numberOfBuckets, "Overflow bucket index is out of range");
                 overflows = 1;
                 overflowBuckets = new int[] { bucket };
@@ -116,7 +116,7 @@ final class DenseHll
 
             for (int i = 0; i < overflows; i++) {
                 overflowValues[i] = input.readByte();
-                checkArgument(overflowValues[i] > 0, "Overflow bucket value must be >= 0");
+                checkArgument(overflowValues[i] > 0, "Overflow bucket value must be > 0");
             }
         }
         else {
@@ -530,6 +530,8 @@ final class DenseHll
         for (int i = 0; i < this.overflows; i++) {
             int bucket = overflowBuckets[i];
             overflows.add(bucket);
+
+            checkState(overflowValues[i] > 0, "Overflow at %s for bucket %s is 0", i, bucket);
             checkState(getDelta(bucket) == MAX_DELTA,
                     "delta in bucket %s is less than MAX_DELTA (%s < %s) even though there's an associated overflow entry",
                     bucket, getDelta(bucket), MAX_DELTA);

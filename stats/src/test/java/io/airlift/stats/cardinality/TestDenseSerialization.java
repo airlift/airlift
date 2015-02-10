@@ -263,6 +263,39 @@ public class TestDenseSerialization
         for (int i = 0; i < numberOfBuckets; i++) {
             assertEquals(deserialized.getValue(i), 10);
         }
+        deserialized.verify();
+    }
+
+    @Test
+    public void testDeserializeDenseV1EmptyOverflow()
+            throws Exception
+    {
+        // bucket 1 has a value of 17 (i.e., baseline = 2, delta == 15 and overflow is present with a value of 0)
+
+        int indexBitLength = 4;
+        int numberOfBuckets = numberOfBuckets(indexBitLength);
+        Slice serialized = new DynamicSliceOutput(1)
+                .appendByte(Format.DENSE_V1.getTag()) // format tag
+                .appendByte(indexBitLength) // p
+                .appendByte(2) // baseline
+                .appendBytes(new byte[] { 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) // buckets
+                        // overflow bucket
+                .appendByte(0x01)
+                .appendByte(0x00)
+                        // overflow value
+                .appendByte(0)
+                .slice();
+
+        DenseHll deserialized = new DenseHll(serialized);
+        for (int i = 0; i < numberOfBuckets; i++) {
+            if (i == 1) {
+                assertEquals(deserialized.getValue(i), 17);
+            }
+            else {
+                assertEquals(deserialized.getValue(i), 2);
+            }
+        }
+        deserialized.verify();
     }
 
     @Test
@@ -294,6 +327,7 @@ public class TestDenseSerialization
                 assertEquals(deserialized.getValue(i), 2);
             }
         }
+        deserialized.verify();
     }
 
     private static DenseHll makeHll(int indexBits, long... values)
