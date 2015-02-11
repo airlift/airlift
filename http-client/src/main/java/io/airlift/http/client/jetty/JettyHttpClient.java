@@ -35,6 +35,7 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -146,7 +147,7 @@ public class JettyHttpClient
             sslContextFactory.setKeyStorePassword(config.getKeyStorePassword());
         }
 
-        httpClient = new HttpClient(sslContextFactory);
+        httpClient = new HttpClient(new HttpClientTransportOverHTTP(2), sslContextFactory);
         httpClient.setMaxConnectionsPerDestination(config.getMaxConnectionsPerServer());
         httpClient.setMaxRequestsQueuedPerDestination(config.getMaxRequestsQueuedPerDestination());
 
