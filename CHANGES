@@ -8,6 +8,8 @@ Platform 1.14
   by Jersey and any PostConstruct and PreDestroy methods will be called at
   the appropriate time.
 
+  We now enable the JAX-RS MIME Multipart support.
+
 Platform 1.13
 
 * HttpClient
