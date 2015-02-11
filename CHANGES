@@ -1,3 +1,8 @@
+* 0.102
+
+- Fix bug when deserializing dense HLL v1 with no overflow bucket
+- Verify HLLs have the same bucket count before merging them
+
 * 0.101
 
 - New layout for dense HLL
