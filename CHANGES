@@ -2,6 +2,8 @@
 
 - Fix bug when deserializing dense HLL v1 with no overflow bucket
 - Verify HLLs have the same bucket count before merging them
+- Add thread factory threads to a ThreadGroup
+- Add more JettyHttpClient stats and debug operations
 
 * 0.101
 
