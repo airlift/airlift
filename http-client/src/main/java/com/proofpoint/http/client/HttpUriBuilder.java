@@ -4,7 +4,6 @@ import com.google.common.annotations.Beta;
 import com.google.common.base.Ascii;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Charsets;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.LinkedListMultimap;
@@ -20,6 +19,9 @@ import java.nio.charset.CodingErrorAction;
 import java.util.Iterator;
 import java.util.Map;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static java.lang.Character.forDigit;
 import static java.util.Arrays.asList;
 
@@ -35,15 +37,15 @@ public class HttpUriBuilder
     private String path = ""; // decoded path
     private ListMultimap<String, String> params = LinkedListMultimap.create(); // decoded query params
 
-    private final static byte[] PCHAR = {
+    private static final byte[] PCHAR = {
             'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
             'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
             '0','1','2','3','4','5','6','7','8','9',
             '-', '.', '_', '~', '!', '$', '\'', '(', ')', '*', ',', ';', '=', ':', '@',
     };
 
-    private final static byte[] ALLOWED_PATH_CHARS = Bytes.concat(PCHAR, new byte[] {'/', '&'});
-    private final static byte[] ALLOWED_QUERY_CHARS = Bytes.concat(PCHAR, new byte[] {'/', '?'});
+    private static final byte[] ALLOWED_PATH_CHARS = Bytes.concat(PCHAR, new byte[] {'/', '&'});
+    private static final byte[] ALLOWED_QUERY_CHARS = Bytes.concat(PCHAR, new byte[] {'/', '?'});
 
     private HttpUriBuilder()
     {
@@ -65,14 +67,14 @@ public class HttpUriBuilder
 
     public static HttpUriBuilder uriBuilderFrom(URI uri)
     {
-        Preconditions.checkNotNull(uri, "uri is null");
+        checkNotNull(uri, "uri is null");
 
         return new HttpUriBuilder(uri);
     }
 
     public HttpUriBuilder scheme(String scheme)
     {
-        Preconditions.checkNotNull(scheme, "scheme is null");
+        checkNotNull(scheme, "scheme is null");
 
         this.scheme = scheme;
         return this;
@@ -80,9 +82,9 @@ public class HttpUriBuilder
 
     public HttpUriBuilder host(String host)
     {
-        Preconditions.checkNotNull(host, "host is null");
-        Preconditions.checkArgument(!host.startsWith("["), "host starts with a bracket");
-        Preconditions.checkArgument(!host.endsWith("]"), "host ends with a bracket");
+        checkNotNull(host, "host is null");
+        checkArgument(!host.startsWith("["), "host starts with a bracket");
+        checkArgument(!host.endsWith("]"), "host ends with a bracket");
         if (host.contains(":")) {
             host = "[" + host + "]";
         }
@@ -92,7 +94,7 @@ public class HttpUriBuilder
 
     public HttpUriBuilder port(int port)
     {
-        Preconditions.checkArgument(port >= 1 && port <= 65535, "port must be in the range 1-65535");
+        checkArgument(port >= 1 && port <= 65535, "port must be in the range 1-65535");
         this.port = port;
         return this;
     }
@@ -105,7 +107,7 @@ public class HttpUriBuilder
 
     public HttpUriBuilder hostAndPort(HostAndPort hostAndPort)
     {
-        Preconditions.checkNotNull(hostAndPort, "hostAndPort is null");
+        checkNotNull(hostAndPort, "hostAndPort is null");
         this.host = bracketedHostString(hostAndPort);
         this.port = hostAndPort.hasPort() ? hostAndPort.getPort() : -1;
         return this;
@@ -116,7 +118,7 @@ public class HttpUriBuilder
      */
     public HttpUriBuilder replacePath(String path)
     {
-        Preconditions.checkNotNull(path, "path is null");
+        checkNotNull(path, "path is null");
 
         if (!path.equals("") && !path.startsWith("/")) {
             path = "/" + path;
@@ -134,7 +136,7 @@ public class HttpUriBuilder
      */
     public HttpUriBuilder appendPath(String path)
     {
-        Preconditions.checkNotNull(path, "path is null");
+        checkNotNull(path, "path is null");
 
         StringBuilder builder = new StringBuilder(this.path);
         if (!this.path.endsWith("/")) {
@@ -159,7 +161,7 @@ public class HttpUriBuilder
 
     public HttpUriBuilder replaceParameter(String name, Iterable<String> values)
     {
-        Preconditions.checkNotNull(name, "name is null");
+        checkNotNull(name, "name is null");
 
         params.removeAll(name);
         addParameter(name, values);
@@ -174,7 +176,7 @@ public class HttpUriBuilder
 
     public HttpUriBuilder addParameter(String name, Iterable<String> values)
     {
-        Preconditions.checkNotNull(name, "name is null");
+        checkNotNull(name, "name is null");
 
         if (Iterables.isEmpty(values)) {
             params.put(name, null);
@@ -238,7 +240,7 @@ public class HttpUriBuilder
 
     public URI build()
     {
-        Preconditions.checkState(scheme != null, "scheme has not been set");
+        checkState(scheme != null, "scheme has not been set");
         return URI.create(toString());
     }
 
@@ -286,19 +288,19 @@ public class HttpUriBuilder
      */
     private String percentDecode(String encoded)
     {
-        Preconditions.checkArgument(CharMatcher.ASCII.matchesAllOf(encoded), "string must be ASCII");
+        checkArgument(CharMatcher.ASCII.matchesAllOf(encoded), "string must be ASCII");
 
         ByteArrayOutputStream out = new ByteArrayOutputStream(encoded.length());
         for (int i = 0; i < encoded.length(); i++) {
             char c = encoded.charAt(i);
 
             if (c == '%') {
-                Preconditions.checkArgument(i + 2 < encoded.length(), "percent encoded value is truncated");
+                checkArgument(i + 2 < encoded.length(), "percent encoded value is truncated");
 
                 int high = Character.digit(encoded.charAt(i + 1), 16);
                 int low = Character.digit(encoded.charAt(i + 2), 16);
 
-                Preconditions.checkArgument(high != -1 && low != -1, "percent encoded value is not a valid hex string: ", encoded.substring(i, i + 2));
+                checkArgument(high != -1 && low != -1, "percent encoded value is not a valid hex string: ", encoded.substring(i, i + 2));
 
                 int value = (high << 4) | (low);
                 out.write(value);

@@ -1,3 +1,10 @@
+Platform 1.15
+
+* RelativeUriBuilder
+
+  We created RelativeUriBuilder for building the relative URIs needed by
+  BalancingHttpClient.
+
 Platform 1.14
 
 * JAX-RS
