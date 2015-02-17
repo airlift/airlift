@@ -30,13 +30,11 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.PoolingHttpDestination;
 import org.eclipse.jetty.client.Socks4Proxy;
-import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.http.HttpChannelOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -517,11 +515,12 @@ public class JettyHttpClient
                 .map(HttpExchange::getRequest)
                 .collect(Collectors.toList());
 
-        for (Connection connection : poolingHttpDestination.getConnectionPool().getActiveConnections()) {
-            HttpConnectionOverHTTP httpConnectionOverHTTP = (HttpConnectionOverHTTP) connection;
-            HttpChannelOverHTTP httpChannel = httpConnectionOverHTTP.getHttpChannel();
-            requests.add(httpChannel.getHttpExchange().getRequest());
-        }
+        poolingHttpDestination.getConnectionPool().getActiveConnections().stream()
+                .filter(HttpConnectionOverHTTP.class::isInstance)
+                .map(connection -> ((HttpConnectionOverHTTP) connection).getHttpChannel().getHttpExchange())
+                .filter(exchange -> exchange != null)
+                .forEach(exchange -> requests.add(exchange.getRequest()));
+
         return requests.stream().filter(request -> request != null).collect(Collectors.toList());
     }
 
@@ -1224,10 +1223,12 @@ public class JettyHttpClient
         {
             super(() -> {
                 Distribution distribution = new Distribution();
-                for (Destination destination : httpClient.getDestinations()) {
-                    PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
-                    processor.process(distribution, poolingHttpDestination.getConnectionPool());
-                }
+                httpClient.getDestinations().stream()
+                        .filter(PoolingHttpDestination.class::isInstance)
+                        .map(destination -> (PoolingHttpDestination<?>) destination)
+                        .map(PoolingHttpDestination::getConnectionPool)
+                        .filter(pool -> pool != null)
+                        .forEach(pool -> processor.process(distribution, pool));
                 return distribution;
             });
         }
@@ -1245,10 +1246,10 @@ public class JettyHttpClient
         {
             super(() -> {
                 Distribution distribution = new Distribution();
-                for (Destination destination : httpClient.getDestinations()) {
-                    PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
-                    processor.process(distribution, poolingHttpDestination);
-                }
+                httpClient.getDestinations().stream()
+                        .filter(PoolingHttpDestination.class::isInstance)
+                        .map(destination -> (PoolingHttpDestination<?>) destination)
+                        .forEach(destination -> processor.process(distribution, destination));
                 return distribution;
             });
         }
@@ -1267,11 +1268,12 @@ public class JettyHttpClient
             super(() -> {
                 long now = System.nanoTime();
                 Distribution distribution = new Distribution();
-                for (Destination destination : httpClient.getDestinations()) {
-                    for (JettyRequestListener listener : getRequestListenersForDestination(destination)) {
-                        processor.process(distribution, listener, now);
-                    }
-                }
+                httpClient.getDestinations().stream()
+                        .filter(PoolingHttpDestination.class::isInstance)
+                        .map(destination -> (PoolingHttpDestination<?>) destination)
+                        .map(JettyHttpClient::getRequestListenersForDestination)
+                        .flatMap(List::stream)
+                        .forEach(listener -> processor.process(distribution, listener, now));
                 return distribution;
             });
         }
