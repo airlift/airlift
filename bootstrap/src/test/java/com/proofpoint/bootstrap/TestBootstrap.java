@@ -15,6 +15,7 @@
  */
 package com.proofpoint.bootstrap;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 import com.google.inject.Binder;
@@ -25,6 +26,8 @@ import com.google.inject.ProvisionException;
 import com.proofpoint.configuration.AbstractConfigurationAwareModule;
 import com.proofpoint.configuration.Config;
 import com.proofpoint.configuration.ConfigurationDefaultingModule;
+import com.proofpoint.node.NodeInfo;
+import com.proofpoint.node.NodeModule;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -431,6 +434,56 @@ public class TestBootstrap
 
         LifecycleInstance lifecycleInstance = bootstrap.initialize().getInstance(LifecycleInstance.class);
         assertTrue(lifecycleInstance.isInitialized());
+    }
+
+    @Test
+    public void testApplicationName()
+            throws Exception
+    {
+        Bootstrap bootstrap = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
+                .withModules(new NodeModule())
+                .quiet()
+                .setRequiredConfigurationProperties(ImmutableMap.of(
+                        "node.environment", "test"
+                ));
+
+        NodeInfo nodeInfo = bootstrap.initialize().getInstance(NodeInfo.class);
+        assertEquals(nodeInfo.getApplication(), "test-application");
+    }
+
+    @Test
+    public void testDynamicApplicationName()
+            throws Exception
+    {
+        Bootstrap bootstrap = bootstrapApplication(
+                SimpleConfig.class,
+                new Function<SimpleConfig, String>()
+                {
+                    @Override
+                    public String apply(SimpleConfig input)
+                    {
+                        return input.getProperty();
+                    }
+                })
+                .doNotInitializeLogging()
+                .withModules(new NodeModule(),
+                        new Module()
+                        {
+                            @Override
+                            public void configure(Binder binder)
+                            {
+                                bindConfig(binder).to(SimpleConfig.class);
+                            }
+                        })
+                .quiet()
+                .setRequiredConfigurationProperties(ImmutableMap.of(
+                        "node.environment", "test",
+                        "property", "test-application"
+                ));
+
+        NodeInfo nodeInfo = bootstrap.initialize().getInstance(NodeInfo.class);
+        assertEquals(nodeInfo.getApplication(), "test-application");
     }
 
     public static class Instance

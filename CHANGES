@@ -5,6 +5,11 @@ Platform 1.15
   We created RelativeUriBuilder for building the relative URIs needed by
   BalancingHttpClient.
 
+* Bootstrap
+
+  We created Bootstrap.bootstrapApplication(Class<T>, Function<T, String>)
+  for setting the application name based on configuration.
+
 Platform 1.14
 
 * JAX-RS

@@ -16,6 +16,7 @@
 package com.proofpoint.bootstrap;
 
 import com.google.common.annotations.Beta;
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.inject.Binder;
@@ -77,14 +78,18 @@ public class Bootstrap
     private boolean requireExplicitBindings = true;
 
     private boolean initialized = false;
-    private final String applicationName;
 
     public static BootstrapBeforeModules bootstrapApplication(String applicationName)
     {
-        return new BootstrapBeforeModules(applicationName);
+        return new StaticBootstrapBeforeModules(applicationName);
     }
 
-    private Bootstrap(String applicationName, Iterable<? extends Module> modules, boolean initializeLogging)
+    public static <T> BootstrapBeforeModules bootstrapApplication(Class<T> configClass, Function<T, String> applicationNameFunction)
+    {
+        return new DynamicBootstrapBeforeModules<>(configClass, applicationNameFunction);
+    }
+
+    private Bootstrap(Module applicationNameModule, Iterable<? extends Module> modules, boolean initializeLogging)
     {
         if (initializeLogging) {
             logging = Logging.initialize();
@@ -102,8 +107,10 @@ public class Bootstrap
             }
         });
 
-        this.applicationName = checkNotNull(applicationName, "applicationName is null");
-        this.modules = ImmutableList.copyOf(modules);
+        this.modules = ImmutableList.<Module>builder()
+                .add(checkNotNull(applicationNameModule, "applicationNameModule is null"))
+                .addAll(modules)
+                .build();
     }
 
     @Beta
@@ -228,7 +235,6 @@ public class Bootstrap
         Builder<Module> moduleList = ImmutableList.builder();
         moduleList.add(new LifeCycleModule());
         moduleList.add(new ConfigurationModule(configurationFactory));
-        moduleList.add(new ApplicationNameModule(applicationName));
         if (!moduleDefaultErrors.isEmpty()) {
             moduleList.add(new ValidationErrorModule(moduleDefaultErrors));
         }
@@ -316,15 +322,9 @@ public class Bootstrap
         return columnPrinter;
     }
 
-    public static class BootstrapBeforeModules
+    public abstract static class BootstrapBeforeModules
     {
-        private final String applicationName;
-        private boolean initializeLogging = true;
-
-        private BootstrapBeforeModules(String applicationName)
-        {
-            this.applicationName = checkNotNull(applicationName, "applicationName is null");
-        }
+        protected boolean initializeLogging = true;
 
         @Beta
         public BootstrapBeforeModules doNotInitializeLogging()
@@ -338,9 +338,40 @@ public class Bootstrap
             return withModules(ImmutableList.copyOf(modules));
         }
 
+        public abstract Bootstrap withModules(Iterable<? extends Module> modules);
+    }
+
+    private static class StaticBootstrapBeforeModules extends BootstrapBeforeModules
+    {
+        private final String applicationName;
+
+        private StaticBootstrapBeforeModules(String applicationName)
+        {
+            this.applicationName = checkNotNull(applicationName, "applicationName is null");
+        }
+
+        @Override
         public Bootstrap withModules(Iterable<? extends Module> modules)
         {
-            return new Bootstrap(applicationName, modules, initializeLogging);
+            return new Bootstrap(new ApplicationNameModule(applicationName), modules, initializeLogging);
+        }
+    }
+
+    private static class DynamicBootstrapBeforeModules<T> extends BootstrapBeforeModules
+    {
+        private final Class<T> configClass;
+        private final Function<T, String> applicationNameFunction;
+
+        private DynamicBootstrapBeforeModules(Class<T> configClass, Function<T, String> applicationNameFunction)
+        {
+            this.configClass = checkNotNull(configClass, "configClass is null");
+            this.applicationNameFunction = checkNotNull(applicationNameFunction, "applicationNameFunction is null");
+        }
+
+        @Override
+        public Bootstrap withModules(Iterable<? extends Module> modules)
+        {
+            return new Bootstrap(new DynamicApplicationNameModule<>(configClass, applicationNameFunction), modules, initializeLogging);
         }
     }
 }
