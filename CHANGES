@@ -1,3 +1,8 @@
+* 0.103
+
+- Upgrade to Airbase 32
+- Upgrade to Slice 0.10
+
 * 0.102
 
 - Fix bug when deserializing dense HLL v1 with no overflow bucket

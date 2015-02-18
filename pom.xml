@@ -13,7 +13,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airbase</artifactId>
-        <version>30</version>
+        <version>32</version>
     </parent>
 
     <inceptionYear>2010</inceptionYear>
@@ -25,7 +25,6 @@
 
         <dep.airlift.version>0.103-SNAPSHOT</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
-        <dep.slice.version>0.9</dep.slice.version>
     </properties>
 
     <organization>
