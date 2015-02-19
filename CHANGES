@@ -12,6 +12,10 @@ Platform 1.15
 
 * We reimplemented SmileBodyGenerator to be a StaticBodyGenerator.
 
+* Library Upgrades
+
+  - Jetty to 9.2.9
+
 Platform 1.14
 
 * JAX-RS
