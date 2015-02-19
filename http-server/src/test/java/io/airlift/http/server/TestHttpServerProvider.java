@@ -198,7 +198,7 @@ public class TestHttpServerProvider
         }
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "Insufficient max threads in ThreadPool: .*")
+    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "Insufficient threads: .*")
     public void testInsufficientThreadsHttp()
             throws Exception
     {
@@ -206,7 +206,7 @@ public class TestHttpServerProvider
         createAndStartServer();
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "Insufficient max threads in ThreadPool: .*")
+    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "Insufficient threads: .*")
     public void testInsufficientThreadsHttps()
             throws Exception
     {
