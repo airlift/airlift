@@ -25,14 +25,15 @@ import com.google.common.base.Suppliers;
 import com.proofpoint.json.JsonCodec;
 import com.proofpoint.json.ObjectMapperProvider;
 
-import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Type;
 
-import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
+import static com.google.common.base.Throwables.propagate;
 
 @Beta
 public class SmileBodyGenerator<T>
-        implements BodyGenerator
+        extends StaticBodyGenerator
 {
     private static final Supplier<ObjectMapper> OBJECT_MAPPER_SUPPLIER = Suppliers.memoize(new Supplier<ObjectMapper>()
     {
@@ -43,31 +44,19 @@ public class SmileBodyGenerator<T>
         }
     });
 
-    private final Type genericType;
-    private final T instance;
-
     public static <T> SmileBodyGenerator<T> smileBodyGenerator(JsonCodec<T> jsonCodec, T instance)
     {
-        return new SmileBodyGenerator<>(jsonCodec.getType(), instance);
-    }
-
-    private SmileBodyGenerator(Type genericType, T instance)
-    {
-        this.genericType = genericType;
-        this.instance = instance;
-    }
-
-    @Override
-    public void write(OutputStream out)
-            throws Exception
-    {
         ObjectMapper objectMapper = OBJECT_MAPPER_SUPPLIER.get();
-        JsonGenerator jsonGenerator = new SmileFactory().createGenerator(out);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        JsonGenerator jsonGenerator;
+        try {
+            jsonGenerator = new SmileFactory().createGenerator(out);
+        }
+        catch (IOException e) {
+            throw propagate(e);
+        }
 
-        // Important: we are NOT to close the underlying stream after
-        // mapping, so we need to instruct generator:
-        jsonGenerator.disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
-
+        Type genericType = jsonCodec.getType();
         // 04-Mar-2010, tatu: How about type we were given? (if any)
         JavaType rootType = null;
         if (genericType != null && instance != null) {
@@ -90,11 +79,23 @@ public class SmileBodyGenerator<T>
             }
         }
 
-        if (rootType != null) {
-            objectMapper.writerWithType(rootType).writeValue(jsonGenerator, instance);
+        try {
+            if (rootType != null) {
+                objectMapper.writerWithType(rootType).writeValue(jsonGenerator, instance);
+            }
+            else {
+                objectMapper.writeValue(jsonGenerator, instance);
+            }
         }
-        else {
-            objectMapper.writeValue(jsonGenerator, instance);
+        catch (IOException e) {
+            throw new IllegalArgumentException(String.format("%s could not be converted to SMILE", instance.getClass().getName()), e);
         }
+
+        return new SmileBodyGenerator<>(out.toByteArray());
+    }
+
+    private SmileBodyGenerator(byte[] body)
+    {
+        super(body);
     }
 }
