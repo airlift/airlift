@@ -29,7 +29,7 @@ class NestedReportedBeanAttribute implements ReportedBeanAttribute
     private final ReportedBeanAttribute delegate;
     private final MBeanAttributeInfo info;
 
-    public NestedReportedBeanAttribute(String prefix, Method nestedGetter, ReportedBeanAttribute delegate)
+    NestedReportedBeanAttribute(String prefix, Method nestedGetter, ReportedBeanAttribute delegate)
     {
         this.nestedGetter = nestedGetter;
         this.delegate = delegate;
@@ -44,16 +44,19 @@ class NestedReportedBeanAttribute implements ReportedBeanAttribute
                 delegateInfo.getDescriptor());
     }
 
+    @Override
     public MBeanAttributeInfo getInfo()
     {
         return info;
     }
 
+    @Override
     public String getName()
     {
         return info.getName();
     }
 
+    @Override
     public Object getValue(Object target)
             throws AttributeNotFoundException, MBeanException, ReflectionException
     {

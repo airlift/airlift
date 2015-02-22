@@ -76,11 +76,13 @@ public class StaticHttpServiceSelector implements HttpServiceSelector
         this.uris = ImmutableList.copyOf(uris);
     }
 
+    @Override
     public String getType()
     {
         return type;
     }
 
+    @Override
     public String getPool()
     {
         return pool;

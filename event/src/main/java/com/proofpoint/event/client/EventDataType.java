@@ -35,6 +35,7 @@ enum EventDataType
 {
     STRING(String.class)
             {
+                @Override
                 public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                         throws IOException
                 {
@@ -45,6 +46,7 @@ enum EventDataType
 
     BOOLEAN(Boolean.class)
             {
+                @Override
                 public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                         throws IOException
                 {
@@ -55,6 +57,7 @@ enum EventDataType
 
     BYTE(Byte.class)
             {
+                @Override
                 public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                         throws IOException
                 {
@@ -65,6 +68,7 @@ enum EventDataType
 
     SHORT(Short.class)
             {
+                @Override
                 public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                         throws IOException
                 {
@@ -75,6 +79,7 @@ enum EventDataType
 
     INTEGER(Integer.class)
             {
+                @Override
                 public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                         throws IOException
                 {
@@ -85,6 +90,7 @@ enum EventDataType
 
     LONG(Long.class)
             {
+                @Override
                 public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                         throws IOException
                 {
@@ -95,6 +101,7 @@ enum EventDataType
 
     FLOAT(Float.class)
             {
+                @Override
                 public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                         throws IOException
                 {
@@ -105,6 +112,7 @@ enum EventDataType
 
     DOUBLE(Double.class)
             {
+                @Override
                 public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                         throws IOException
                 {
@@ -115,6 +123,7 @@ enum EventDataType
 
     BIG_DECIMAL(BigDecimal.class)
             {
+                @Override
                 public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                         throws IOException
                 {
@@ -125,6 +134,7 @@ enum EventDataType
 
     BIG_INTEGER(BigInteger.class)
             {
+                @Override
                 public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                         throws IOException
                 {
@@ -135,6 +145,7 @@ enum EventDataType
 
     DATETIME(DateTime.class)
             {
+                @Override
                 public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                         throws IOException
                 {
@@ -145,6 +156,7 @@ enum EventDataType
 
     ENUM(Enum.class)
             {
+                @Override
                 public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                         throws IOException
                 {
@@ -155,6 +167,7 @@ enum EventDataType
 
     INET_ADDRESS(InetAddress.class)
             {
+                @Override
                 public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                         throws IOException
                 {
@@ -165,6 +178,7 @@ enum EventDataType
 
     UUID(java.util.UUID.class)
             {
+                @Override
                 public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                         throws IOException
                 {

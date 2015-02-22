@@ -203,6 +203,7 @@ public class QuantileDigest
         {
             private double sum = 0;
 
+            @Override
             public boolean process(Node node)
             {
                 sum += node.weightedCount;
@@ -272,6 +273,7 @@ public class QuantileDigest
 
         postOrderTraversal(root, new Callback()
         {
+            @Override
             public boolean process(Node node)
             {
 
@@ -309,6 +311,7 @@ public class QuantileDigest
         final AtomicLong chosen = new AtomicLong(min);
         postOrderTraversal(root, new Callback()
         {
+            @Override
             public boolean process(Node node)
             {
                 if (node.weightedCount >= ZERO_WEIGHT_THRESHOLD) {
@@ -327,6 +330,7 @@ public class QuantileDigest
         final AtomicLong chosen = new AtomicLong(max);
         postOrderTraversal(root, new Callback()
         {
+            @Override
             public boolean process(Node node)
             {
                 if (node.weightedCount >= ZERO_WEIGHT_THRESHOLD) {
@@ -492,6 +496,7 @@ public class QuantileDigest
 
         postOrderTraversal(root, new Callback()
         {
+            @Override
             public boolean process(Node node)
             {
                 if (node.isLeaf()) {
@@ -555,6 +560,7 @@ public class QuantileDigest
 
         postOrderTraversal(root, new Callback()
         {
+            @Override
             public boolean process(Node node)
             {
                 double oldWeight = node.weightedCount;

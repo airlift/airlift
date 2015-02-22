@@ -38,6 +38,7 @@ public class MySqlDataSource extends ManagedDataSource
         this.defaultFetchSize = config.getDefaultFetchSize();
     }
 
+    @Override
     protected PooledConnection createConnectionInternal()
             throws SQLException
     {

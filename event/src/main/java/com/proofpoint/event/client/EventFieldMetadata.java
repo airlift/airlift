@@ -36,6 +36,7 @@ class EventFieldMetadata
 {
     public static final Comparator<EventFieldMetadata> NAME_COMPARATOR = new Comparator<EventFieldMetadata>()
     {
+        @Override
         public int compare(EventFieldMetadata a, EventFieldMetadata b)
         {
             return a.name.compareTo(b.name);

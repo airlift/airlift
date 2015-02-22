@@ -24,12 +24,13 @@ class ServiceTypeImpl
 {
     private final String value;
 
-    public ServiceTypeImpl(String value)
+    ServiceTypeImpl(String value)
     {
         Preconditions.checkNotNull(value, "value is null");
         this.value = value;
     }
 
+    @Override
     public String value()
     {
         return value;
@@ -68,6 +69,7 @@ class ServiceTypeImpl
         return result;
     }
 
+    @Override
     public Class<? extends Annotation> annotationType()
     {
         return ServiceType.class;

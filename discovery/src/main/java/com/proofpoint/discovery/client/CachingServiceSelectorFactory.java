@@ -40,6 +40,7 @@ public class CachingServiceSelectorFactory implements ServiceSelectorFactory
         this.nodeInfo = nodeInfo;
     }
 
+    @Override
     public ServiceSelector createServiceSelector(String type, ServiceSelectorConfig selectorConfig)
     {
         checkNotNull(type, "type is null");

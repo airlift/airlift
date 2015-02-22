@@ -37,6 +37,7 @@ class LoggingOutputStream
     /**
      * write the current buffer contents to the underlying logger.
      */
+    @Override
     public synchronized void flush()
             throws IOException
     {

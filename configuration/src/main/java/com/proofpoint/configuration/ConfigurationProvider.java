@@ -39,12 +39,14 @@ public class ConfigurationProvider<T> implements ConfigurationAwareProvider<T>
         this.prefix = prefix;
     }
 
+    @Override
     @Inject
     public void setConfigurationFactory(ConfigurationFactory configurationFactory)
     {
         this.configurationFactory = configurationFactory;
     }
 
+    @Override
     @Inject(optional = true)
     public void setWarningsMonitor(WarningsMonitor warningsMonitor)
     {

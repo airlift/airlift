@@ -28,6 +28,7 @@ import static com.proofpoint.reporting.ReportBinder.reportBinder;
 public class MainModule
         implements Module
 {
+    @Override
     public void configure(Binder binder)
     {
         binder.disableCircularProxies();

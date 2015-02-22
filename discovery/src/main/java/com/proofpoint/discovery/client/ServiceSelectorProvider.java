@@ -50,6 +50,7 @@ public class ServiceSelectorProvider
         this.serviceSelectorFactory = serviceSelectorFactory;
     }
 
+    @Override
     public ServiceSelector get()
     {
         Preconditions.checkNotNull(serviceSelectorFactory, "serviceSelectorFactory is null");

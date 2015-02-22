@@ -33,7 +33,7 @@ class BooleanReportedBeanAttribute implements ReportedBeanAttribute
     private final String name;
     private final Method getter;
 
-    public BooleanReportedBeanAttribute(MBeanAttributeInfo info, Object target, Method getter)
+    BooleanReportedBeanAttribute(MBeanAttributeInfo info, Object target, Method getter)
     {
         this.info = checkNotNull(info, "info is null");
         this.target = checkNotNull(target, "target is null");
@@ -41,16 +41,19 @@ class BooleanReportedBeanAttribute implements ReportedBeanAttribute
         this.getter = checkNotNull(getter, "getter is null");
     }
 
+    @Override
     public MBeanAttributeInfo getInfo()
     {
         return info;
     }
 
+    @Override
     public String getName()
     {
         return name;
     }
 
+    @Override
     public Object getValue(@Nullable Object target)
             throws AttributeNotFoundException, MBeanException, ReflectionException
     {

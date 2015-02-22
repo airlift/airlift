@@ -39,13 +39,13 @@ class DelimitedRequestLog
     private final CurrentTimeMillisProvider currentTimeMillisProvider;
     private final Appender<HttpRequestEvent> appender;
 
-    public DelimitedRequestLog(String filename, int maxHistory, long maxSizeInBytes)
+    DelimitedRequestLog(String filename, int maxHistory, long maxSizeInBytes)
             throws IOException
     {
         this(filename, maxHistory, maxSizeInBytes, new SystemCurrentTimeMillisProvider());
     }
 
-    public DelimitedRequestLog(String filename,
+    DelimitedRequestLog(String filename,
             int maxHistory, long maxSizeInBytes,
             CurrentTimeMillisProvider currentTimeMillisProvider)
             throws IOException
@@ -55,6 +55,7 @@ class DelimitedRequestLog
         appender = Logging.createFileAppender(filename, maxHistory, maxSizeInBytes, new EventEncoder(), new LoggerContext());
     }
 
+    @Override
     public void log(Request request, Response response)
     {
         long currentTime = currentTimeMillisProvider.getCurrentTimeMillis();
@@ -65,51 +66,61 @@ class DelimitedRequestLog
         }
     }
 
+    @Override
     public void start()
             throws Exception
     {
     }
 
+    @Override
     public void stop()
             throws Exception
     {
         appender.stop();
     }
 
+    @Override
     public boolean isRunning()
     {
         return true;
     }
 
+    @Override
     public boolean isStarted()
     {
         return true;
     }
 
+    @Override
     public boolean isStarting()
     {
         return false;
     }
 
+    @Override
     public boolean isStopping()
     {
         return false;
     }
 
+    @Override
     public boolean isStopped()
     {
         return false;
     }
 
+    @Override
     public boolean isFailed()
     {
         return false;
     }
 
+    @Override
     public void addLifeCycleListener(Listener listener)
     {
     }
 
+    @Override
     public void removeLifeCycleListener(Listener listener)
     {
     }

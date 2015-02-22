@@ -31,7 +31,7 @@ class BucketedReportedBeanAttribute implements ReportedBeanAttribute
     private final MBeanAttributeInfo info;
     private final Object holder;
 
-    public BucketedReportedBeanAttribute(Object holder, ReportedBeanAttribute delegate)
+    BucketedReportedBeanAttribute(Object holder, ReportedBeanAttribute delegate)
     {
         this.holder = checkNotNull(holder, "holder is null");
         this.delegate = delegate;
@@ -46,16 +46,19 @@ class BucketedReportedBeanAttribute implements ReportedBeanAttribute
                 delegateInfo.getDescriptor());
     }
 
+    @Override
     public MBeanAttributeInfo getInfo()
     {
         return info;
     }
 
+    @Override
     public String getName()
     {
         return info.getName();
     }
 
+    @Override
     public Object getValue(Object target)
             throws AttributeNotFoundException, MBeanException, ReflectionException
     {

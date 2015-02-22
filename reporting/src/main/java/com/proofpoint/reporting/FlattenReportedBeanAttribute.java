@@ -36,16 +36,19 @@ class FlattenReportedBeanAttribute implements ReportedBeanAttribute
         this.info = delegate.getInfo();
     }
 
+    @Override
     public MBeanAttributeInfo getInfo()
     {
         return info;
     }
 
+    @Override
     public String getName()
     {
         return info.getName();
     }
 
+    @Override
     public Object getValue(Object target)
             throws AttributeNotFoundException, MBeanException, ReflectionException
     {

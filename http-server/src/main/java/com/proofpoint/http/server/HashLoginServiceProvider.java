@@ -36,6 +36,7 @@ public class HashLoginServiceProvider
         this.config = config;
     }
 
+    @Override
     public HashLoginService get()
     {
         String authConfig = config.getUserAuthFile();

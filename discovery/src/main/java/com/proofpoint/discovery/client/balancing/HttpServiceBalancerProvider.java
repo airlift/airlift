@@ -63,6 +63,7 @@ public final class HttpServiceBalancerProvider
         this.nodeInfo = nodeInfo;
     }
 
+    @Override
     public HttpServiceBalancer get()
     {
         checkNotNull(serviceBalancerFactory, "serviceBalancerFactory is null");

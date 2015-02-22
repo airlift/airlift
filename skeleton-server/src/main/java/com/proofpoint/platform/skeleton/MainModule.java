@@ -22,6 +22,7 @@ import com.proofpoint.discovery.client.DiscoveryBinder;
 public class MainModule
         implements Module
 {
+    @Override
     public void configure(Binder binder)
     {
         binder.requireExplicitBindings();
