@@ -77,7 +77,7 @@ public class TestingHttpClient
             }
         });
 
-        return new TestingHttpResponseFuture(future, state);
+        return new TestingHttpResponseFuture<>(future, state);
     }
 
     @Override

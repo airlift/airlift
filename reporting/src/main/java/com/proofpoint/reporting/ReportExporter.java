@@ -106,7 +106,7 @@ public class ReportExporter
     static void notifyBucketIdProvider(Object object, BucketIdProvider bucketIdProvider, Method annotatedGetter)
     {
         if (object instanceof Bucketed) {
-            ((Bucketed) object).setBucketIdProvider(bucketIdProvider);
+            ((Bucketed<?>) object).setBucketIdProvider(bucketIdProvider);
         }
         else if (annotatedGetter != null && !isNested(annotatedGetter) && !isFlatten(annotatedGetter)) {
             return;
