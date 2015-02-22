@@ -106,7 +106,7 @@ public class HttpServiceBalancerImpl
                 concurrentAttempts.put(uri, leastConcurrent + 1);
             }
 
-            this.attempted = attempted;
+            this.attempted = ImmutableSet.copyOf(attempted);
             startTick = ticker.read();
         }
 

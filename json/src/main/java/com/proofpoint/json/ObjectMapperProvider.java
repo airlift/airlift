@@ -70,13 +70,13 @@ public class ObjectMapperProvider
     @Inject(optional = true)
     public void setKeySerializers(@JsonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers)
     {
-        this.keySerializers = keySerializers;
+        this.keySerializers = ImmutableMap.copyOf(keySerializers);
     }
 
     @Inject(optional = true)
     public void setKeyDeserializers(@JsonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
     {
-        this.keyDeserializers = keyDeserializers;
+        this.keyDeserializers = ImmutableMap.copyOf(keyDeserializers);
     }
 
     @Inject(optional = true)

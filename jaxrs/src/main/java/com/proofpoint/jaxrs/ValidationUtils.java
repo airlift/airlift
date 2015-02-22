@@ -60,6 +60,7 @@ public class ValidationUtils
         @Valid
         final private List<?> list;
 
+        @SuppressWarnings("AssignmentToCollectionOrArrayFieldFromParameter")
         ValidatableList(List<?> list)
         {
             this.list = list;
@@ -71,6 +72,7 @@ public class ValidationUtils
         @Valid
         final private Collection<?> collection;
 
+        @SuppressWarnings("AssignmentToCollectionOrArrayFieldFromParameter")
         ValidatableCollection(Collection<?> collection)
         {
             this.collection = collection;
@@ -82,6 +84,7 @@ public class ValidationUtils
         @Valid
         final private Map<?, ?> map;
 
+        @SuppressWarnings("AssignmentToCollectionOrArrayFieldFromParameter")
         ValidatableMap(Map<?, ?> map)
         {
             this.map = map;

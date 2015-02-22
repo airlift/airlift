@@ -743,6 +743,7 @@ public class JettyHttpClient
             private final Writer writer;
             private final String traceToken;
 
+            @SuppressWarnings("AssignmentToCollectionOrArrayFieldFromParameter")
             DynamicBodySourceIterator(Queue<ByteBuffer> chunks, Writer writer, String traceToken)
             {
                 this.chunks = chunks;
