@@ -219,7 +219,9 @@ final class AnnotationUtils
     {
         try {
             Method method = clazz.getDeclaredMethod(methodName, parameterTypes);
-            if (isReportedMethod(method)) return method;
+            if (isReportedMethod(method)) {
+                return method;
+            }
         }
         catch (NoSuchMethodException ignored) {
         }
