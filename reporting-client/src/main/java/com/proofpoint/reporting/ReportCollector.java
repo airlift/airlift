@@ -40,11 +40,11 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 class ReportCollector
 {
-    private ScheduledExecutorService collectionExecutorService = newSingleThreadScheduledExecutor(daemonThreadsNamed("reporting-collector-%s"));
-    private MinuteBucketIdProvider bucketIdProvider;
-    private ReportedBeanRegistry reportedBeanRegistry;
-    private ExecutorService clientExecutorService;
-    private ReportClient reportClient;
+    private final ScheduledExecutorService collectionExecutorService = newSingleThreadScheduledExecutor(daemonThreadsNamed("reporting-collector-%s"));
+    private final MinuteBucketIdProvider bucketIdProvider;
+    private final ReportedBeanRegistry reportedBeanRegistry;
+    private final ExecutorService clientExecutorService;
+    private final ReportClient reportClient;
     private static ObjectName REPORT_COLLECTOR_OBJECT_NAME;
 
     static {

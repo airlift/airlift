@@ -1021,8 +1021,8 @@ public class QuantileDigest
 
     public static class Bucket
     {
-        private double count;
-        private double mean;
+        private final double count;
+        private final double mean;
 
         public Bucket(double count, double mean)
         {
@@ -1083,8 +1083,8 @@ public class QuantileDigest
     private static class Node
     {
         private double weightedCount;
-        private int level;
-        private long bits;
+        private final int level;
+        private final long bits;
         private Node left;
         private Node right;
 

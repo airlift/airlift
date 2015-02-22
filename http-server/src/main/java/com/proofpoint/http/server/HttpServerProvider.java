@@ -54,7 +54,7 @@ public class HttpServerProvider
     private final DetailedRequestStats detailedRequestStats;
     private final Set<Filter> filters;
     private final Set<Filter> adminFilters;
-    private QueryStringFilter queryStringFilter;
+    private final QueryStringFilter queryStringFilter;
 
     @Inject
     public HttpServerProvider(HttpServerInfo httpServerInfo,

@@ -35,7 +35,7 @@ public class HttpUriBuilder
     private String host;
     private int port = -1;
     private String path = ""; // decoded path
-    private ListMultimap<String, String> params = LinkedListMultimap.create(); // decoded query params
+    private final ListMultimap<String, String> params = LinkedListMultimap.create(); // decoded query params
 
     private static final byte[] PCHAR = {
             'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',

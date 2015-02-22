@@ -149,7 +149,7 @@ public class TestingReportCollectionFactory
 
     private static class NamedInstanceMap
     {
-        private Map<Optional<String>, ClassToInstanceMap<Object>> nameMap = new HashMap<>();
+        private final Map<Optional<String>, ClassToInstanceMap<Object>> nameMap = new HashMap<>();
 
         public synchronized <T> void put(@Nullable String name, Class<T> aClass, T value)
         {

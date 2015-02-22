@@ -27,7 +27,7 @@ import java.util.Set;
  */
 public class BeanValidationException extends ParsingException
 {
-    private ImmutableSet<ConstraintViolation<Object>> violations;
+    private final ImmutableSet<ConstraintViolation<Object>> violations;
 
     public BeanValidationException(Set<ConstraintViolation<Object>> violations)
     {

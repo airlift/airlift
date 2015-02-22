@@ -117,7 +117,7 @@ class DelimitedRequestLog
     private static class EventEncoder extends EncoderBase<HttpRequestEvent>
     {
 
-        private DateTimeFormatter isoFormatter = new DateTimeFormatterBuilder()
+        private final DateTimeFormatter isoFormatter = new DateTimeFormatterBuilder()
                         .append(ISODateTimeFormat.dateHourMinuteSecondFraction())
                         .appendTimeZoneOffset("Z", true, 2, 2)
                         .toFormatter();

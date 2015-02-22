@@ -27,7 +27,7 @@ import static com.google.common.collect.Maps.newConcurrentMap;
 
 class ReportedBeanRegistry
 {
-    private ConcurrentMap<ObjectName, ReportedBean> reportedBeans = newConcurrentMap();
+    private final ConcurrentMap<ObjectName, ReportedBean> reportedBeans = newConcurrentMap();
 
     Map<ObjectName, ReportedBean> getReportedBeans()
     {

@@ -20,7 +20,7 @@ package com.proofpoint.jaxrs;
  */
 public class JsonMapperParsingException extends ParsingException
 {
-    private Class<?> type;
+    private final Class<?> type;
 
     public JsonMapperParsingException(Class<?> type, Throwable cause)
     {

@@ -29,7 +29,7 @@ abstract class AbstractHttpClientModule
     protected final String name;
     protected final Class<? extends Annotation> annotation;
     protected Binder binder;
-    protected Binder rootBinder;
+    protected final Binder rootBinder;
 
     protected AbstractHttpClientModule(String name, Class<? extends Annotation> annotation, @Nullable Binder rootBinder)
     {

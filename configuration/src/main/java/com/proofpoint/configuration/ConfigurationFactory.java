@@ -354,9 +354,9 @@ public final class ConfigurationFactory
 
     private class OperativeInjectionData
     {
-        private AttributeMetadata attribute;
-        private String prefix;
-        private Problems problems;
+        private final AttributeMetadata attribute;
+        private final String prefix;
+        private final Problems problems;
 
         private String operativeDescription = null;
         InjectionPointMetaData operativeInjectionPoint = null;
