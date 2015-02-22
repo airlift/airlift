@@ -24,6 +24,10 @@ import static com.google.common.collect.Lists.newArrayList;
 
 class AnnotationUtils
 {
+    private AnnotationUtils()
+    {
+    }
+
     /**
      * Find methods that are tagged with the given annotation somewhere in the hierarchy.
      *

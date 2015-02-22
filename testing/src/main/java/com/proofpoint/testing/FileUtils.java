@@ -30,6 +30,10 @@ public class FileUtils
 {
     private static final int TEMP_DIR_ATTEMPTS = 10000;
 
+    private FileUtils()
+    {
+    }
+
     public static boolean isSymbolicLink(File file)
     {
         try {

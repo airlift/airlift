@@ -23,6 +23,10 @@ import java.lang.reflect.TypeVariable;
 
 public class TypeParameterUtils
 {
+    private TypeParameterUtils()
+    {
+    }
+
     public static Type[] getTypeParameters(Class<?> desiredType, Type type)
     {
         if (type instanceof Class) {

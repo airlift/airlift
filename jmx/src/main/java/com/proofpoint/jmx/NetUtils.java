@@ -21,6 +21,10 @@ import java.net.ServerSocket;
 
 final class NetUtils
 {
+    private NetUtils()
+    {
+    }
+
     public static int findUnusedPort()
             throws IOException
     {

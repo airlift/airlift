@@ -32,6 +32,10 @@ public class ValidationAssertions
 {
     private static final Validator VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
 
+    private ValidationAssertions()
+    {
+    }
+
     public static <T> T assertValidates(T object)
     {
         return assertValidates(object, null);
