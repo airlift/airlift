@@ -15,13 +15,14 @@
  */
 package com.proofpoint.platform.sample;
 
-import com.google.common.base.Preconditions;
 import com.proofpoint.configuration.Config;
 import com.proofpoint.configuration.LegacyConfig;
 import com.proofpoint.units.Duration;
 import com.proofpoint.units.MinDuration;
 
 import java.util.concurrent.TimeUnit;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class StoreConfig
 {
@@ -37,9 +38,7 @@ public class StoreConfig
     @Config("store.ttl")
     StoreConfig setTtl(Duration ttl)
     {
-        Preconditions.checkNotNull(ttl, "ttl must not be null");
-        Preconditions.checkArgument(ttl.toMillis() > 0, "ttl must be > 0");
-
+        checkNotNull(ttl, "ttl must not be null");
         this.ttl = ttl;
         return this;
     }
