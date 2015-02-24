@@ -1,5 +1,10 @@
 Platform 1.15
 
+* Jetty security vulnerability fix
+
+  Platform versions 1.07 through 1.14 have a critical information bleed
+  vulnerability in the Jetty server.
+
 * RelativeUriBuilder
 
   We created RelativeUriBuilder for building the relative URIs needed by
