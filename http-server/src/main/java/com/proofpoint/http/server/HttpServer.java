@@ -66,6 +66,15 @@ import static java.lang.String.format;
 
 public class HttpServer
 {
+    private static final String[] DISABLED_CIPHERS = new String[] {
+            "TLS_ECDHE_ECDSA_WITH_RC4_128_SHA",
+            "TLS_ECDHE_RSA_WITH_RC4_128_SHA",
+            "SSL_RSA_WITH_RC4_128_SHA",
+            "TLS_ECDH_ECDSA_WITH_RC4_128_SHA",
+            "TLS_ECDH_RSA_WITH_RC4_128_SHA",
+            "SSL_RSA_WITH_RC4_128_MD5"
+    };
+
     private final Server server;
     private final ServerConnector httpConnector;
     private final ServerConnector httpsConnector;
@@ -151,6 +160,7 @@ public class HttpServer
             SslContextFactory sslContextFactory = new SslContextFactory(config.getKeystorePath());
             sslContextFactory.setKeyStorePassword(config.getKeystorePassword());
             sslContextFactory.addExcludeProtocols("SSLv3");
+            sslContextFactory.addExcludeCipherSuites(DISABLED_CIPHERS);
             SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
 
             httpsConnector = new ServerConnector(server, sslConnectionFactory, new HttpConnectionFactory(httpsConfiguration));
@@ -184,6 +194,7 @@ public class HttpServer
                 SslContextFactory sslContextFactory = new SslContextFactory(config.getKeystorePath());
                 sslContextFactory.setKeyStorePassword(config.getKeystorePassword());
                 sslContextFactory.addExcludeProtocols("SSLv3");
+                sslContextFactory.addExcludeCipherSuites(DISABLED_CIPHERS);
                 SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
                 adminConnector = new ServerConnector(server, adminThreadPool, null, null, 0, -1, sslConnectionFactory, new HttpConnectionFactory(adminConfiguration));
             } else {

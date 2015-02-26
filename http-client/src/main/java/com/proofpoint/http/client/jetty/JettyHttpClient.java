@@ -79,6 +79,15 @@ import static java.lang.Math.min;
 public class JettyHttpClient
         implements AsyncHttpClient
 {
+    private static final String[] DISABLED_CIPHERS = new String[] {
+            "TLS_ECDHE_ECDSA_WITH_RC4_128_SHA",
+            "TLS_ECDHE_RSA_WITH_RC4_128_SHA",
+            "SSL_RSA_WITH_RC4_128_SHA",
+            "TLS_ECDH_ECDSA_WITH_RC4_128_SHA",
+            "TLS_ECDH_RSA_WITH_RC4_128_SHA",
+            "SSL_RSA_WITH_RC4_128_MD5"
+    };
+
     private static final AtomicLong nameCounter = new AtomicLong();
 
     private final HttpClient httpClient;
@@ -150,6 +159,7 @@ public class JettyHttpClient
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
         sslContextFactory.addExcludeProtocols("SSLv3", "SSLv2Hello");
+        sslContextFactory.addExcludeCipherSuites(DISABLED_CIPHERS);
         if (config.getKeyStorePath() != null) {
             sslContextFactory.setKeyStorePath(config.getKeyStorePath());
             sslContextFactory.setKeyStorePassword(config.getKeyStorePassword());
