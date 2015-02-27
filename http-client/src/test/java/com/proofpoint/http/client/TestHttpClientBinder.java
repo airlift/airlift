@@ -23,7 +23,7 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.PrivateBinder;
 import com.proofpoint.bootstrap.LifeCycleManager;
-import com.proofpoint.http.client.AsyncHttpClientModule.JettyIoPoolManager;
+import com.proofpoint.http.client.HttpClientModule.JettyIoPoolManager;
 import com.proofpoint.http.client.jetty.JettyHttpClient;
 import org.testng.annotations.Test;
 import org.weakref.jmx.Managed;
@@ -89,7 +89,7 @@ public class TestHttpClientBinder
     }
 
     @Test
-    public void testBindAsyncClientWithFilter()
+    public void testBindClientWithFilter()
             throws Exception
     {
         Injector injector = bootstrapApplication("test-application")
@@ -100,7 +100,7 @@ public class TestHttpClientBinder
                             @Override
                             public void configure(Binder binder)
                             {
-                                httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class)
+                                httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
                                         .withFilter(TestingRequestFilter.class)
                                         .withFilter(AnotherHttpRequestFilter.class)
                                         .withTracing();
@@ -111,10 +111,7 @@ public class TestHttpClientBinder
 
 
         HttpClient httpClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
-        AsyncHttpClient asyncHttpClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
-        assertSame(httpClient, asyncHttpClient);
         assertFilterCount(httpClient, 3);
-        assertFilterCount(asyncHttpClient, 3);
 
         // a pool should not be registered for this Foo
         assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
@@ -184,7 +181,7 @@ public class TestHttpClientBinder
     }
 
     @Test
-    public void testBindAsyncClientWithAliases()
+    public void testMultipleClients()
             throws Exception
     {
         Injector injector = bootstrapApplication("test-application")
@@ -195,52 +192,15 @@ public class TestHttpClientBinder
                             @Override
                             public void configure(Binder binder)
                             {
-                                httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class)
-                                        .withAlias(FooAlias1.class)
-                                        .withAlias(FooAlias2.class);
+                                httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
+                                httpClientBinder(binder).bindHttpClient("bar", BarClient.class);
                             }
                         })
                 .quiet()
                 .initialize();
 
-        AsyncHttpClient client = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
-        assertSame(injector.getInstance(Key.get(AsyncHttpClient.class, FooAlias1.class)), client);
-        assertSame(injector.getInstance(Key.get(AsyncHttpClient.class, FooAlias2.class)), client);
-
-        assertSame(injector.getInstance(Key.get(HttpClient.class, FooClient.class)), client);
-        assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias1.class)), client);
-        assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias2.class)), client);
-
-        // a private pool should not be registered for these clients
-        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
-        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooAlias1.class)));
-        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooAlias2.class)));
-        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooAlias3.class)));
-
-        assertPoolsDestroyProperly(injector);
-    }
-
-    @Test
-    public void testMultipleAsyncClients()
-            throws Exception
-    {
-        Injector injector = bootstrapApplication("test-application")
-                .doNotInitializeLogging()
-                .withModules(
-                        new Module()
-                        {
-                            @Override
-                            public void configure(Binder binder)
-                            {
-                                httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class);
-                                httpClientBinder(binder).bindAsyncHttpClient("bar", BarClient.class);
-                            }
-                        })
-                .quiet()
-                .initialize();
-
-        AsyncHttpClient fooClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
-        AsyncHttpClient barClient = injector.getInstance(Key.get(AsyncHttpClient.class, BarClient.class));
+        HttpClient fooClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
+        HttpClient barClient = injector.getInstance(Key.get(HttpClient.class, BarClient.class));
         assertNotSame(fooClient, barClient);
 
         assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
@@ -268,13 +228,13 @@ public class TestHttpClientBinder
                             {
                                 binder.requireExplicitBindings();
                                 binder.disableCircularProxies();
-                                httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class).withPrivateIoThreadPool();
+                                httpClientBinder(binder).bindHttpClient("foo", FooClient.class).withPrivateIoThreadPool();
                             }
                         })
                 .quiet()
                 .initialize();
 
-        AsyncHttpClient fooClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
+        HttpClient fooClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
         assertNotNull(fooClient);
 
         assertPrivatePools(injector, FooClient.class);
@@ -294,15 +254,15 @@ public class TestHttpClientBinder
                             @Override
                             public void configure(Binder binder)
                             {
-                                httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class).withPrivateIoThreadPool();
-                                httpClientBinder(binder).bindAsyncHttpClient("bar", BarClient.class).withPrivateIoThreadPool();
+                                httpClientBinder(binder).bindHttpClient("foo", FooClient.class).withPrivateIoThreadPool();
+                                httpClientBinder(binder).bindHttpClient("bar", BarClient.class).withPrivateIoThreadPool();
                             }
                         })
                 .quiet()
                 .initialize();
 
-        AsyncHttpClient fooClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
-        AsyncHttpClient barClient = injector.getInstance(Key.get(AsyncHttpClient.class, BarClient.class));
+        HttpClient fooClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
+        HttpClient barClient = injector.getInstance(Key.get(HttpClient.class, BarClient.class));
         assertNotSame(fooClient, barClient);
 
         assertPrivatePools(injector, FooClient.class, BarClient.class);
@@ -322,15 +282,15 @@ public class TestHttpClientBinder
                             @Override
                             public void configure(Binder binder)
                             {
-                                httpClientBinder(binder).bindAsyncHttpClient("foo", FooClient.class);
-                                httpClientBinder(binder).bindAsyncHttpClient("bar", BarClient.class).withPrivateIoThreadPool();
+                                httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
+                                httpClientBinder(binder).bindHttpClient("bar", BarClient.class).withPrivateIoThreadPool();
                             }
                         })
                 .quiet()
                 .initialize();
 
-        AsyncHttpClient fooClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
-        AsyncHttpClient barClient = injector.getInstance(Key.get(AsyncHttpClient.class, BarClient.class));
+        HttpClient fooClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
+        HttpClient barClient = injector.getInstance(Key.get(HttpClient.class, BarClient.class));
         assertNotSame(fooClient, barClient);
 
         // a pool should not be registered for this Foo
@@ -389,7 +349,7 @@ public class TestHttpClientBinder
     }
 
     @Test
-    public void testPrivateBindAsyncClient()
+    public void testNormalAndPrivateBindClients()
             throws Exception
     {
         Injector injector = bootstrapApplication("test-application")
@@ -402,44 +362,17 @@ public class TestHttpClientBinder
                             {
                                 newExporter(binder).export(ManagedClass.class);
                                 PrivateBinder privateBinder = binder.newPrivateBinder();
-                                HttpClientBinder.httpClientPrivateBinder(privateBinder, binder).bindAsyncHttpClient("foo", FooClient.class);
+                                HttpClientBinder.httpClientPrivateBinder(privateBinder, binder).bindHttpClient("foo", FooClient.class);
                                 privateBinder.bind(ExposeHttpClient.class);
                                 privateBinder.expose(ExposeHttpClient.class);
+                                HttpClientBinder.httpClientBinder(binder).bindHttpClient("bar", BarClient.class);
                             }
                         })
                 .quiet()
                 .initialize();
 
         assertNotNull(injector.getInstance(ExposeHttpClient.class).httpClient);
-
-        assertPoolsDestroyProperly(injector);
-    }
-
-    @Test
-    public void testNormalAndPrivateBindAsyncClients()
-            throws Exception
-    {
-        Injector injector = bootstrapApplication("test-application")
-                .doNotInitializeLogging()
-                .withModules(
-                        new Module()
-                        {
-                            @Override
-                            public void configure(Binder binder)
-                            {
-                                newExporter(binder).export(ManagedClass.class);
-                                PrivateBinder privateBinder = binder.newPrivateBinder();
-                                HttpClientBinder.httpClientPrivateBinder(privateBinder, binder).bindAsyncHttpClient("foo", FooClient.class);
-                                privateBinder.bind(ExposeHttpClient.class);
-                                privateBinder.expose(ExposeHttpClient.class);
-                                HttpClientBinder.httpClientBinder(binder).bindAsyncHttpClient("bar", BarClient.class);
-                            }
-                        })
-                .quiet()
-                .initialize();
-
-        assertNotNull(injector.getInstance(ExposeHttpClient.class).httpClient);
-        assertNotNull(injector.getInstance(Key.get(AsyncHttpClient.class, BarClient.class)));
+        assertNotNull(injector.getInstance(Key.get(HttpClient.class, BarClient.class)));
 
         assertPoolsDestroyProperly(injector);
     }

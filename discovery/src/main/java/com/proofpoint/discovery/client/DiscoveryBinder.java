@@ -15,7 +15,6 @@
  */
 package com.proofpoint.discovery.client;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
 import com.google.inject.Inject;
 import com.google.inject.Key;
@@ -28,12 +27,9 @@ import com.proofpoint.discovery.client.announce.AnnouncementHttpServerInfo;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement.ServiceAnnouncementBuilder;
 import com.proofpoint.discovery.client.balancing.HttpServiceBalancerProvider;
-import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.HttpClient;
-import com.proofpoint.http.client.HttpClientBinder.HttpClientAsyncBindingBuilder;
 import com.proofpoint.http.client.HttpClientBinder.HttpClientBindingBuilder;
 import com.proofpoint.http.client.HttpRequestFilter;
-import com.proofpoint.http.client.balancing.BalancingAsyncHttpClient;
 import com.proofpoint.http.client.balancing.BalancingHttpClient;
 import com.proofpoint.http.client.balancing.BalancingHttpClientConfig;
 import com.proofpoint.http.client.balancing.ForBalancingHttpClient;
@@ -41,6 +37,7 @@ import com.proofpoint.http.client.balancing.HttpServiceBalancer;
 import org.weakref.jmx.ObjectNameBuilder;
 
 import java.lang.annotation.Annotation;
+import java.util.Collection;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
@@ -209,38 +206,6 @@ public class DiscoveryBinder
         return new BalancingHttpClientBindingBuilder(binder, annotation, delegateBindingBuilder);
     }
 
-    /**
-     * @deprecated Use {@link #bindDiscoveredHttpClient(String, Class)}
-     */
-    @SuppressWarnings("deprecation")
-    @Deprecated
-    public BalancingHttpClientAsyncBindingBuilder bindDiscoveredAsyncHttpClient(String type, Class<? extends Annotation> annotation)
-    {
-        return bindDiscoveredAsyncHttpClient(serviceType(checkNotNull(type, "type is null")), annotation);
-    }
-
-    /**
-     * @deprecated Use {@link #bindDiscoveredHttpClient(ServiceType, Class)}
-     */
-    @SuppressWarnings("deprecation")
-    @Deprecated
-    public BalancingHttpClientAsyncBindingBuilder bindDiscoveredAsyncHttpClient(ServiceType serviceType, Class<? extends Annotation> annotation)
-    {
-        checkNotNull(serviceType, "serviceType is null");
-        checkNotNull(annotation, "annotation is null");
-
-        bindHttpBalancer(serviceType);
-        PrivateBinder privateBinder = binder.newPrivateBinder();
-        privateBinder.bind(HttpServiceBalancer.class).annotatedWith(ForBalancingHttpClient.class).to(Key.get(HttpServiceBalancer.class, serviceType));
-        HttpClientAsyncBindingBuilder delegateBindingBuilder = httpClientPrivateBinder(privateBinder, binder).bindAsyncHttpClient(serviceType.value(), ForBalancingHttpClient.class);
-        bindConfig(privateBinder).prefixedWith(serviceType.value()).to(BalancingHttpClientConfig.class);
-        privateBinder.bind(AsyncHttpClient.class).annotatedWith(annotation).to(BalancingAsyncHttpClient.class).in(Scopes.SINGLETON);
-        privateBinder.expose(AsyncHttpClient.class).annotatedWith(annotation);
-        reportBinder(binder).export(AsyncHttpClient.class).annotatedWith(annotation).withGeneratedName();
-
-        return new BalancingHttpClientAsyncBindingBuilder(binder, annotation, delegateBindingBuilder);
-    }
-
     static class HttpAnnouncementProvider implements Provider<ServiceAnnouncement>
     {
         private final ServiceAnnouncementBuilder builder;
@@ -272,58 +237,40 @@ public class DiscoveryBinder
     }
 
     public static class BalancingHttpClientBindingBuilder
-            extends AbstractBalancingHttpClientBindingBuilder<HttpClient, BalancingHttpClientBindingBuilder, HttpClientAsyncBindingBuilder>
     {
+        private final Binder binder;
+        private final Key<HttpClient> key;
+        private final HttpClientBindingBuilder delegateBindingBuilder;
+
         public BalancingHttpClientBindingBuilder(Binder binder, Class<? extends Annotation> annotationType, HttpClientBindingBuilder delegateBindingBuilder)
         {
-            super(binder, HttpClient.class, Key.get(HttpClient.class, annotationType), delegateBindingBuilder);
+            this(binder, Key.get(HttpClient.class, annotationType), delegateBindingBuilder);
         }
 
         public BalancingHttpClientBindingBuilder(Binder binder, Annotation annotation, HttpClientBindingBuilder delegateBindingBuilder)
         {
-            super(binder, HttpClient.class, Key.get(HttpClient.class, annotation), delegateBindingBuilder);
+            this(binder, Key.get(HttpClient.class, annotation), delegateBindingBuilder);
         }
-    }
 
-    @SuppressWarnings("deprecation")
-    public static class BalancingHttpClientAsyncBindingBuilder
-            extends AbstractBalancingHttpClientBindingBuilder<AsyncHttpClient, BalancingHttpClientAsyncBindingBuilder, HttpClientAsyncBindingBuilder>
-    {
-        public BalancingHttpClientAsyncBindingBuilder(Binder binder, Class<? extends Annotation> annotationType, HttpClientAsyncBindingBuilder delegateBindingBuilder)
-        {
-            super(binder, AsyncHttpClient.class, Key.get(AsyncHttpClient.class, annotationType), delegateBindingBuilder);
-        }
-    }
-
-    protected abstract static class AbstractBalancingHttpClientBindingBuilder<T, B extends AbstractBalancingHttpClientBindingBuilder<T, B, D>, D extends HttpClientAsyncBindingBuilder>
-    {
-        private final Binder binder;
-        private final Class<T> aClass;
-        private final Key<T> key;
-        protected final D delegateBindingBuilder;
-
-        protected AbstractBalancingHttpClientBindingBuilder(Binder binder, Class<T> aClass, Key<T> key, D delegateBindingBuilder)
+        private BalancingHttpClientBindingBuilder(Binder binder, Key<HttpClient> key, HttpClientBindingBuilder delegateBindingBuilder)
         {
             this.binder = binder;
-            this.aClass = aClass;
             this.key = key;
             this.delegateBindingBuilder = delegateBindingBuilder;
         }
 
-        @SuppressWarnings("unchecked")
-        public B withAlias(Class<? extends Annotation> alias)
+        public BalancingHttpClientBindingBuilder withAlias(Class<? extends Annotation> alias)
         {
-            binder.bind(aClass).annotatedWith(alias).to(key);
-            return (B) this;
+            binder.bind(HttpClient.class).annotatedWith(alias).to(key);
+            return this;
         }
 
-        @SuppressWarnings("unchecked")
-        public B withAliases(ImmutableList<Class<? extends Annotation>> aliases)
+        public BalancingHttpClientBindingBuilder withAliases(Collection<Class<? extends Annotation>> aliases)
         {
             for (Class<? extends Annotation> alias : aliases) {
-                binder.bind(aClass).annotatedWith(alias).to(key);
+                binder.bind(HttpClient.class).annotatedWith(alias).to(key);
             }
-            return (B) this;
+            return this;
         }
 
         public LinkedBindingBuilder<HttpRequestFilter> addFilterBinding()
@@ -331,25 +278,22 @@ public class DiscoveryBinder
             return delegateBindingBuilder.addFilterBinding();
         }
 
-        @SuppressWarnings("unchecked")
-        public B withFilter(Class<? extends HttpRequestFilter> filterClass)
+        public BalancingHttpClientBindingBuilder withFilter(Class<? extends HttpRequestFilter> filterClass)
         {
             delegateBindingBuilder.withFilter(filterClass);
-            return (B) this;
+            return this;
         }
 
-        @SuppressWarnings("unchecked")
-        public B withTracing()
+        public BalancingHttpClientBindingBuilder withTracing()
         {
             delegateBindingBuilder.withTracing();
-            return (B) this;
+            return this;
         }
 
-        @SuppressWarnings("unchecked")
-        public B withPrivateIoThreadPool()
+        public BalancingHttpClientBindingBuilder withPrivateIoThreadPool()
         {
             delegateBindingBuilder.withPrivateIoThreadPool();
-            return (B) this;
+            return this;
         }
     }
 }

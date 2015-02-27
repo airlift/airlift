@@ -5,7 +5,7 @@ import com.google.common.util.concurrent.ForwardingListenableFuture;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.proofpoint.http.client.AsyncHttpClient;
+import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.RequestStats;
 import com.proofpoint.http.client.Response;
@@ -23,7 +23,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 public class TestingHttpClient
-        implements AsyncHttpClient
+        implements HttpClient
 {
     private final Processor processor;
     private final ListeningExecutorService executor;

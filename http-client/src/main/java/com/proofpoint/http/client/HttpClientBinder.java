@@ -52,68 +52,54 @@ public class HttpClientBinder
     {
         checkNotNull(name, "name is null");
         checkNotNull(annotation, "annotation is null");
-        return createBindingBuilder(new AsyncHttpClientModule(name, annotation, rootBinder));
+        return createBindingBuilder(new HttpClientModule(name, annotation, rootBinder));
     }
 
-    private HttpClientBindingBuilder createBindingBuilder(AsyncHttpClientModule module)
-    {
-        binder.install(module);
-        return new HttpClientBindingBuilder(module,
-                newSetBinder(binder, HttpRequestFilter.class, module.getFilterQualifier()));
-    }
-
-    /**
-     * @deprecated Use {@link #bindHttpClient(String, Class)}
-     */
-    @Deprecated
-    public HttpClientAsyncBindingBuilder bindAsyncHttpClient(String name, Class<? extends Annotation> annotation)
-    {
-        checkNotNull(name, "name is null");
-        checkNotNull(annotation, "annotation is null");
-        return createAsyncBindingBuilder(new AsyncHttpClientModule(name, annotation, rootBinder));
-    }
-
-    private HttpClientAsyncBindingBuilder createAsyncBindingBuilder(AsyncHttpClientModule module)
+    @SuppressWarnings("deprecation")
+    private HttpClientBindingBuilder createBindingBuilder(HttpClientModule module)
     {
         binder.install(module);
         return new HttpClientAsyncBindingBuilder(module,
                 newSetBinder(binder, HttpRequestFilter.class, module.getFilterQualifier()));
     }
 
-    public static class HttpClientBindingBuilder
-        extends HttpClientAsyncBindingBuilder
+    /**
+     * @deprecated use {@link HttpClientBindingBuilder}
+     */
+    @Deprecated
+    public static class HttpClientAsyncBindingBuilder
+        extends HttpClientBindingBuilder
     {
-        public HttpClientBindingBuilder(AsyncHttpClientModule module, Multibinder<HttpRequestFilter> multibinder)
+        private HttpClientAsyncBindingBuilder(HttpClientModule module, Multibinder<HttpRequestFilter> multibinder)
         {
             super(module, multibinder);
         }
     }
 
-    public static class HttpClientAsyncBindingBuilder
+    @SuppressWarnings("deprecation")
+    public static class HttpClientBindingBuilder
     {
-        private final AsyncHttpClientModule module;
+        private final HttpClientModule module;
         private final Multibinder<HttpRequestFilter> multibinder;
 
-        private HttpClientAsyncBindingBuilder(AsyncHttpClientModule module, Multibinder<HttpRequestFilter> multibinder)
+        private HttpClientBindingBuilder(HttpClientModule module, Multibinder<HttpRequestFilter> multibinder)
         {
             this.module = module;
             this.multibinder = multibinder;
         }
 
-        @SuppressWarnings("unchecked")
         public HttpClientAsyncBindingBuilder withAlias(Class<? extends Annotation> alias)
         {
             module.addAlias(alias);
-            return this;
+            return (HttpClientAsyncBindingBuilder) this;
         }
 
-        @SuppressWarnings("unchecked")
         public HttpClientAsyncBindingBuilder withAliases(Collection<Class<? extends Annotation>> aliases)
         {
             for (Class<? extends Annotation> annotation : aliases) {
                 module.addAlias(annotation);
             }
-            return this;
+            return (HttpClientAsyncBindingBuilder) this;
         }
 
         public LinkedBindingBuilder<HttpRequestFilter> addFilterBinding()
@@ -121,11 +107,10 @@ public class HttpClientBinder
             return multibinder.addBinding();
         }
 
-        @SuppressWarnings("unchecked")
         public HttpClientAsyncBindingBuilder withFilter(Class<? extends HttpRequestFilter> filterClass)
         {
             multibinder.addBinding().to(filterClass);
-            return this;
+            return (HttpClientAsyncBindingBuilder) this;
         }
 
         public HttpClientAsyncBindingBuilder withTracing()
@@ -136,7 +121,7 @@ public class HttpClientBinder
         public HttpClientAsyncBindingBuilder withPrivateIoThreadPool()
         {
             module.withPrivateIoThreadPool();
-            return this;
+            return (HttpClientAsyncBindingBuilder) this;
         }
     }
 }

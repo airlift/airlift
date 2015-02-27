@@ -11,7 +11,6 @@ import com.google.common.io.CountingInputStream;
 import com.google.common.net.HostAndPort;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AbstractFuture;
-import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.BodyGenerator;
 import com.proofpoint.http.client.BodySource;
 import com.proofpoint.http.client.DynamicBodySource;
@@ -77,7 +76,7 @@ import static com.proofpoint.tracetoken.TraceTokenManager.registerRequestToken;
 import static java.lang.Math.min;
 
 public class JettyHttpClient
-        implements AsyncHttpClient
+        implements com.proofpoint.http.client.HttpClient
 {
     private static final String[] DISABLED_CIPHERS = new String[] {
             "TLS_ECDHE_ECDSA_WITH_RC4_128_SHA",

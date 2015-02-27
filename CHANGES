@@ -1,3 +1,16 @@
+Platform 1.17
+
+* Deprecated APIs removed
+
+  - AsyncHttpClient
+  - BalancingAsyncHttpClient
+
+* Deprecations
+
+  - HttpClientAsyncBindingBuilder has been deprecated. Use
+    HttpClientBindingBuilder instead.
+  - AsyncHttpClientModule has been deprecated. Use HttpClientModule instead.
+
 Platform 1.16
 
 * RC4 disabled

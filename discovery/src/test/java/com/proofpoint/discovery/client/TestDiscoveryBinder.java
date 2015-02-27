@@ -28,7 +28,6 @@ import com.proofpoint.bootstrap.Bootstrap;
 import com.proofpoint.discovery.client.DiscoveryBinder.BalancingHttpClientBindingBuilder;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
 import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
-import com.proofpoint.http.client.AsyncHttpClient;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.HttpRequestFilter;
 import com.proofpoint.http.client.Request;
@@ -362,32 +361,6 @@ public class TestDiscoveryBinder
 
     }
 
-    @SuppressWarnings("deprecation")
-    @Test
-    public void testBindAsyncHttpClientWithAliases()
-            throws Exception
-    {
-        Injector injector = createInjector(
-                ImmutableMap.of("discovery.foo.pool", "foo-pool"),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        discoveryBinder(binder).bindDiscoveredAsyncHttpClient("foo", FooClient.class)
-                                .withAlias(FooAlias1.class)
-                                .withAliases(ImmutableList.of(FooAlias2.class, FooAlias3.class));
-                    }
-                }
-        );
-
-        HttpClient client = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
-        assertSame(injector.getInstance(Key.get(AsyncHttpClient.class, FooAlias1.class)), client);
-        assertSame(injector.getInstance(Key.get(AsyncHttpClient.class, FooAlias2.class)), client);
-        assertSame(injector.getInstance(Key.get(AsyncHttpClient.class, FooAlias3.class)), client);
-
-    }
-
     @Test
     public void testBindingMultipleFiltersAndClients()
             throws Exception
@@ -416,7 +389,6 @@ public class TestDiscoveryBinder
         assertNotNull(injector.getInstance(Key.get(HttpClient.class, BarClient.class)));
     }
 
-    @SuppressWarnings("deprecation")
     @Test
     public void testPrivateThreadPool()
             throws Exception
@@ -428,13 +400,13 @@ public class TestDiscoveryBinder
                     @Override
                     public void configure(Binder binder)
                     {
-                        discoveryBinder(binder).bindDiscoveredAsyncHttpClient("foo", FooClient.class)
+                        discoveryBinder(binder).bindDiscoveredHttpClient("foo", FooClient.class)
                                 .withPrivateIoThreadPool();
                     }
                 }
         );
 
-        AsyncHttpClient fooClient = injector.getInstance(Key.get(AsyncHttpClient.class, FooClient.class));
+        HttpClient fooClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
         assertNotNull(fooClient);
     }
 

@@ -55,7 +55,7 @@ public class TestAsyncBalancingHttpClient
             fail("Exception not thrown");
         }
         catch (ExecutionException e) {
-            assertSame(e.getCause(), handlerException, "Exception thrown by BalancingAsyncHttpClient");
+            assertSame(e.getCause(), handlerException, "Exception thrown by BalancingHttpClient");
         }
     }
 
@@ -206,7 +206,7 @@ public class TestAsyncBalancingHttpClient
                 extends AbstractFuture<T>
                 implements HttpResponseFuture<T>
         {
-            public ImmediateAsyncHttpFuture(T value)
+            ImmediateAsyncHttpFuture(T value)
             {
                 set(value);
             }
@@ -224,7 +224,7 @@ public class TestAsyncBalancingHttpClient
         {
             private final E exception;
 
-            public ImmediateFailedAsyncHttpFuture(E exception)
+            ImmediateFailedAsyncHttpFuture(E exception)
             {
                 this.exception = exception;
                 setException(exception);
