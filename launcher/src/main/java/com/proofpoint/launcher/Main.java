@@ -145,6 +145,7 @@ public class Main
         {
             if (verbose) {
                 launcherArgs.add("-v");
+                Processes.setVerbose(true);
             }
             if (nodePropertiesPath == null) {
                 nodePropertiesPath = installPath + "/etc/node.properties";
