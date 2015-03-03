@@ -11,8 +11,113 @@
         <version>1.16-SNAPSHOT</version>
     </parent>
 
+    <properties>
+        <shadeBase>com.proofpoint.launcher.internal</shadeBase>
+    </properties>
+
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.3</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createSourcesJar>true</createSourcesJar>
+                            <shadeSourcesContent>true</shadeSourcesContent>
+                            <artifactSet>
+                                <includes>
+                                    <include>com.github.jnr:jnr-posix</include>
+                                    <include>com.github.jnr:jnr-constants</include>
+                                    <include>com.github.jnr:jnr-ffi</include>
+                                    <include>com.github.jnr:jnr-x86asm</include>
+                                    <include>com.github.jnr:jffi</include>
+                                    <include>org.ow2.asm:asm</include>
+                                    <include>org.ow2.asm:asm-commons</include>
+                                    <include>org.ow2.asm:asm-analysis</include>
+                                    <include>org.ow2.asm:asm-tree</include>
+                                    <include>org.ow2.asm:asm-util</include>
+                                </includes>
+                            </artifactSet>
+                            <relocations>
+                                <relocation>
+                                    <pattern>jnr</pattern>
+                                    <shadedPattern>${shadeBase}.jnr</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>jni</pattern>
+                                    <shadedPattern>${shadeBase}.jni</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.kenai</pattern>
+                                    <shadedPattern>${shadeBase}.kenai</shadedPattern>
+                                    <!--Can't relocate jffi-->
+                                    <excludes>
+                                        <exclude>com.kenai.jffi.**</exclude>
+                                    </excludes>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.objectweb.asm</pattern>
+                                    <shadedPattern>${shadeBase}.asm</shadedPattern>
+                                </relocation>
+                            </relocations>
+                            <filters>
+                                <filter>
+                                    <artifact>com.github.jnr:jnr-posix</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/maven/**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>com.github.jnr:jnr-constants</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/maven/**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>com.github.jnr:jnr-ffi</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/maven/**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>com.github.jnr:jnr-x86asm</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/maven/**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>com.github.jnr:jffi</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/maven/**</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>${basedir}</directory>
+                            <includes>
+                                <include>dependency-reduced-pom.xml</include>
+                            </includes>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -67,7 +172,6 @@
             <version>3.0.9</version>
         </dependency>
     </dependencies>
-
 
 </project>
 

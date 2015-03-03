@@ -9,3 +9,4 @@ test-output/
 .idea
 .*.swp
 .*.swo
+dependency-reduced-pom.xml

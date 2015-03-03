@@ -4,6 +4,10 @@ Platform 1.16
 
   We disabled all RC4 ciphers in both HttpServer and JettyHttpClient.
 
+* Launcher
+
+  The launcher jar now shades its jnr-posix and asm dependencies.
+
 * Maven plugin upgrades
   - maven-assembly-plugin to 2.5.3
 
