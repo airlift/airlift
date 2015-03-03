@@ -4,6 +4,9 @@ Platform 1.16
 
   We disabled all RC4 ciphers in both HttpServer and JettyHttpClient.
 
+* Maven plugin upgrades
+  - maven-assembly-plugin to 2.5.3
+
 Platform 1.15
 
 * Jetty security vulnerability fix
