@@ -37,11 +37,14 @@ import javax.management.ObjectName;
 import java.util.concurrent.TimeUnit;
 
 import static com.proofpoint.reporting.ReportCollector.REPORT_COLLECTOR_OBJECT_NAME;
+import static com.proofpoint.testing.Assertions.assertBetweenInclusive;
 import static com.proofpoint.testing.Assertions.assertEqualsIgnoreOrder;
+import static java.lang.System.currentTimeMillis;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -70,7 +73,6 @@ public class TestReportCollector
         collectorExecutor = new SerialScheduledExecutorService();
         clientExecutor = spy(new SerialScheduledExecutorService());
         reportCollector = new ReportCollector(bucketIdProvider, reportedBeanRegistry, reportClient, collectorExecutor, clientExecutor);
-        reportCollector.start();
     }
 
     @Test
@@ -89,12 +91,36 @@ public class TestReportCollector
     }
 
     @Test
+    public void testReportsStartup()
+    {
+        ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
+
+        long lowerBound = currentTimeMillis();
+        reportCollector.start();
+        long upperBound = currentTimeMillis();
+
+        verify(reportClient).report(longCaptor.capture(), tableCaptor.capture());
+        verifyNoMoreInteractions(reportClient);
+        // We don't actually care which submit method variant got called, just that it got called on the client executor
+        verify(clientExecutor).submit(any(Runnable.class));
+
+        assertBetweenInclusive(longCaptor.getValue(), lowerBound, upperBound);
+
+        Table<ObjectName, String, Object> table = tableCaptor.getValue();
+        assertEquals(table.cellSet(), ImmutableTable.<ObjectName, String, Object>builder()
+                .put(REPORT_COLLECTOR_OBJECT_NAME, "ServerStart", 1)
+                .build()
+                .cellSet());
+    }
+
+    @Test
     public void testCollection()
             throws Exception
     {
+        testReportsStartup();
+
         collectorExecutor.elapseTime(59, TimeUnit.SECONDS);
         verifyNoMoreInteractions(reportClient);
-        verifyNoMoreInteractions(clientExecutor);
 
         when(bucketIdProvider.getLastSystemTimeMillis()).thenReturn(12345L);
         ObjectName objectName = ObjectName.getInstance("com.proofpoint.reporting.test", "name", "TestObject");
@@ -114,12 +140,12 @@ public class TestReportCollector
         verify(reportClient).report(eq(12345L), tableCaptor.capture());
         verifyNoMoreInteractions(reportClient);
         // We don't actually care which submit method variant got called, just that it got called on the client executor
-        verify(clientExecutor).submit(any(Runnable.class));
+        verify(clientExecutor, times(2)).submit(any(Runnable.class));
 
         Table<ObjectName, String, Object> table = tableCaptor.getValue();
         assertEquals(table.cellSet(), ImmutableTable.<ObjectName, String, Object>builder()
                 .put(objectName, "Metric", 1)
-                .put(ObjectName.getInstance("com.proofpoint.reporting", "name", "ReportCollector"), "NumMetrics", 1)
+                .put(REPORT_COLLECTOR_OBJECT_NAME, "NumMetrics", 1)
                 .build()
                 .cellSet());
 
@@ -132,7 +158,7 @@ public class TestReportCollector
         table = tableCaptor.getValue();
         assertEquals(table.cellSet(), ImmutableTable.<ObjectName, String, Object>builder()
                 .put(objectName, "Metric", 2)
-                .put(ObjectName.getInstance("com.proofpoint.reporting", "name", "ReportCollector"), "NumMetrics", 1)
+                .put(REPORT_COLLECTOR_OBJECT_NAME, "NumMetrics", 1)
                 .build()
                 .cellSet());
     }
@@ -141,6 +167,8 @@ public class TestReportCollector
     public void testUnreportedValues()
             throws Exception
     {
+        testReportsStartup();
+
         when(bucketIdProvider.getLastSystemTimeMillis()).thenReturn(12345L);
         ObjectName objectName = ObjectName.getInstance("com.proofpoint.reporting.test", "name", "TestObject");
         reportedBeanRegistry.register(ReportedBean.forTarget(new Object()

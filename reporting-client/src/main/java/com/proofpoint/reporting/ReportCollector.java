@@ -32,6 +32,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.System.currentTimeMillis;
 
 class ReportCollector
 {
@@ -80,13 +81,22 @@ class ReportCollector
                 collectData();
             }
         }, 1, 1, TimeUnit.MINUTES);
+
+        clientExecutorService.submit(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                reportClient.report(currentTimeMillis(), ImmutableTable.of(REPORT_COLLECTOR_OBJECT_NAME, "ServerStart", (Object) 1));
+            }
+        });
     }
 
     private void collectData()
     {
         final long lastSystemTimeMillis = bucketIdProvider.getLastSystemTimeMillis();
         ImmutableTable.Builder<ObjectName, String, Object> builder = ImmutableTable.builder();
-        int numAtributes = 0;
+        int numAttributes = 0;
         for (Entry<ObjectName, ReportedBean> reportedBeanEntry : reportedBeanRegistry.getReportedBeans().entrySet()) {
             for (ReportedBeanAttribute attribute : reportedBeanEntry.getValue().getAttributes()) {
                 Object value = null;
@@ -102,12 +112,12 @@ class ReportCollector
                         value = value.toString();
                     }
 
-                    ++numAtributes;
+                    ++numAttributes;
                     builder.put(reportedBeanEntry.getKey(), attribute.getName(), value);
                 }
             }
         }
-        builder.put(REPORT_COLLECTOR_OBJECT_NAME, "NumMetrics", numAtributes);
+        builder.put(REPORT_COLLECTOR_OBJECT_NAME, "NumMetrics", numAttributes);
         final Table<ObjectName, String, Object> collectedData = builder.build();
         clientExecutorService.submit(new Runnable()
         {
