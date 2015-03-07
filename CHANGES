@@ -1,5 +1,9 @@
 Platform 1.17
 
+* Maven 3.2.3 required
+
+  We increased the minimum version of Maven to 3.2.3.
+
 * Deprecated APIs removed
 
   - AsyncHttpClient

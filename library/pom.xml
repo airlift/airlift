@@ -85,7 +85,7 @@
   </scm>
 
     <prerequisites>
-        <maven>3.2.2</maven>
+        <maven>3.2.3</maven>
     </prerequisites>
 
     <build>
@@ -173,7 +173,7 @@
                                     <include>junit:junit:[4.11,)</include>                                </includes>
                             </bannedDependencies>
                             <requireMavenVersion>
-                                <version>3.2.2</version>
+                                <version>3.2.3</version>
                             </requireMavenVersion>
                             <requireJavaVersion>
                                 <version>${project.build.targetJdk}</version>
