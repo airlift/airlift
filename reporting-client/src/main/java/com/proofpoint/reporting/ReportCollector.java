@@ -15,9 +15,9 @@
  */
 package com.proofpoint.reporting;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Table;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 
 import javax.annotation.PostConstruct;
@@ -28,43 +28,45 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor.DiscardOldestPolicy;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.proofpoint.concurrent.Threads.daemonThreadsNamed;
-import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 class ReportCollector
 {
-    private final ScheduledExecutorService collectionExecutorService = newSingleThreadScheduledExecutor(daemonThreadsNamed("reporting-collector-%s"));
+    @VisibleForTesting
+    static final ObjectName REPORT_COLLECTOR_OBJECT_NAME;
+
+    private final ScheduledExecutorService collectionExecutorService;
     private final MinuteBucketIdProvider bucketIdProvider;
     private final ReportedBeanRegistry reportedBeanRegistry;
     private final ExecutorService clientExecutorService;
     private final ReportClient reportClient;
-    private static ObjectName REPORT_COLLECTOR_OBJECT_NAME;
 
     static {
+        ObjectName objectName = null;
         try {
-            REPORT_COLLECTOR_OBJECT_NAME = ObjectName.getInstance("com.proofpoint.reporting", "name", "ReportCollector");
+            objectName = ObjectName.getInstance("com.proofpoint.reporting", "name", "ReportCollector");
         }
-        catch (MalformedObjectNameException e) {
-            REPORT_COLLECTOR_OBJECT_NAME = null;
+        catch (MalformedObjectNameException ignored) {
         }
+        REPORT_COLLECTOR_OBJECT_NAME = objectName;
     }
 
     @Inject
-    ReportCollector(MinuteBucketIdProvider bucketIdProvider, ReportedBeanRegistry reportedBeanRegistry, ReportClient reportClient)
+    ReportCollector(
+            MinuteBucketIdProvider bucketIdProvider,
+            ReportedBeanRegistry reportedBeanRegistry,
+            ReportClient reportClient,
+            @ForReportCollector ScheduledExecutorService collectionExecutorService,
+            @ForReportClient ExecutorService clientExecutorService)
     {
         this.bucketIdProvider = checkNotNull(bucketIdProvider, "bucketIdProvider is null");
         this.reportedBeanRegistry = checkNotNull(reportedBeanRegistry, "reportedBeanRegistry is null");
         this.reportClient = checkNotNull(reportClient, "reportClient is null");
-        clientExecutorService = new ThreadPoolExecutor(1, 1, 0, TimeUnit.NANOSECONDS, new LinkedBlockingQueue<Runnable>(5),
-                daemonThreadsNamed("reporting-client-%s"),
-                new DiscardOldestPolicy());
+        this.collectionExecutorService = checkNotNull(collectionExecutorService, "collectionExecutorService is null");
+        this.clientExecutorService = checkNotNull(clientExecutorService, "clientExecutorService is null");
     }
 
     @PostConstruct

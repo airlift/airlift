@@ -17,10 +17,20 @@ package com.proofpoint.reporting;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ThreadPoolExecutor.DiscardOldestPolicy;
+import java.util.concurrent.TimeUnit;
+
+import static com.proofpoint.concurrent.Threads.daemonThreadsNamed;
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
+import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 public class ReportingClientModule
     implements Module
@@ -33,5 +43,21 @@ public class ReportingClientModule
 
         discoveryBinder(binder).bindDiscoveredHttpClient("reporting", ForReportClient.class);
         bindConfig(binder).to(ReportClientConfig.class);
+    }
+
+    @Provides
+    @ForReportCollector
+    private static ScheduledExecutorService createCollectionExecutorService()
+    {
+        return newSingleThreadScheduledExecutor(daemonThreadsNamed("reporting-collector-%s"));
+    }
+
+    @Provides
+    @ForReportClient
+    private static ExecutorService createClientExecutorService()
+    {
+        return new ThreadPoolExecutor(1, 1, 0, TimeUnit.NANOSECONDS, new LinkedBlockingQueue<Runnable>(5),
+                        daemonThreadsNamed("reporting-client-%s"),
+                        new DiscardOldestPolicy());
     }
 }
