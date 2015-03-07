@@ -49,7 +49,7 @@ class ReportedBeanRegistry
             throws InstanceNotFoundException
     {
         if (reportedBeans.remove(name) == null) {
-            throw new InstanceNotFoundException(name.getCanonicalName() + "not found");
+            throw new InstanceNotFoundException(name.getCanonicalName() + " not found");
         }
     }
 }
