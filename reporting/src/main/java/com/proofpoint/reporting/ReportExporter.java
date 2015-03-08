@@ -42,7 +42,6 @@ public class ReportExporter
 
     @Inject
     ReportExporter(ReportedBeanRegistry registry, BucketIdProvider bucketIdProvider, MBeanExporter mBeanExporter)
-            throws MalformedObjectNameException, InstanceAlreadyExistsException
     {
         this.registry = checkNotNull(registry, "registry is null");
         this.bucketIdProvider = checkNotNull(bucketIdProvider, "bucketIdProvider is null");
