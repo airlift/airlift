@@ -74,6 +74,7 @@ import java.util.Queue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -370,6 +371,9 @@ public class JettyHttpClient
             jettyRequest.send(listener);
         }
         catch (RuntimeException e) {
+            if (!(e instanceof RejectedExecutionException)) {
+                e = new RejectedExecutionException(e);
+            }
             // normally this is a rejected execution exception because the client has been closed
             future.failed(e);
         }
