@@ -32,6 +32,7 @@ public class HttpServerConfig
 {
     private boolean httpEnabled = true;
     private int httpPort = 8080;
+    private int httpAcceptQueueSize = 0;
 
     private boolean httpsEnabled = false;
     private int httpsPort = 8443;
@@ -73,6 +74,18 @@ public class HttpServerConfig
     public int getHttpPort()
     {
         return httpPort;
+    }
+
+    @Config("http-server.accept-queue-size")
+    public HttpServerConfig setHttpAcceptQueueSize(int httpAcceptQueueSize)
+    {
+        this.httpAcceptQueueSize = httpAcceptQueueSize;
+        return this;
+    }
+
+    public int getHttpAcceptQueueSize()
+    {
+        return httpAcceptQueueSize;
     }
 
     @Config("http-server.http.port")
