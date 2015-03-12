@@ -133,6 +133,8 @@ public class HttpServer
             httpConnector.setPort(httpServerInfo.getHttpUri().getPort());
             httpConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());
             httpConnector.setHost(nodeInfo.getBindIp().getHostAddress());
+            httpConnector.setAcceptQueueSize(config.getHttpAcceptQueueSize());
+
             server.addConnector(httpConnector);
         } else {
             httpConnector = null;
@@ -157,6 +159,7 @@ public class HttpServer
             httpsConnector.setPort(httpServerInfo.getHttpsUri().getPort());
             httpsConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());
             httpsConnector.setHost(nodeInfo.getBindIp().getHostAddress());
+            httpsConnector.setAcceptQueueSize(config.getHttpAcceptQueueSize());
 
             server.addConnector(httpsConnector);
         } else {
@@ -192,6 +195,7 @@ public class HttpServer
             adminConnector.setPort(httpServerInfo.getAdminUri().getPort());
             adminConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());
             adminConnector.setHost(nodeInfo.getBindIp().getHostAddress());
+            adminConnector.setAcceptQueueSize(config.getHttpAcceptQueueSize());
 
             server.addConnector(adminConnector);
         } else {
