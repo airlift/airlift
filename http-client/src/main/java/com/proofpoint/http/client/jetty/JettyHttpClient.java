@@ -29,6 +29,7 @@ import com.proofpoint.stats.Distribution;
 import com.proofpoint.tracetoken.TraceTokenScope;
 import com.proofpoint.units.Duration;
 import org.eclipse.jetty.client.ConnectionPool;
+import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
@@ -690,7 +691,7 @@ public class JettyHttpClient
         @Override
         public String getHeader(String name)
         {
-            return response.getHeaders().getStringField(name);
+            return response.getHeaders().get(name);
         }
 
         @Override
@@ -1540,7 +1541,7 @@ public class JettyHttpClient
         private final AtomicLong responseStarted = new AtomicLong();
         private final AtomicLong responseFinished = new AtomicLong();
 
-        public JettyRequestListener(URI uri)
+        JettyRequestListener(URI uri)
         {
             this.uri = uri;
         }
@@ -1631,10 +1632,10 @@ public class JettyHttpClient
     {
         interface Processor
         {
-            void process(Distribution distribution, ConnectionPool pool);
+            void process(Distribution distribution, DuplexConnectionPool pool);
         }
 
-        public ConnectionPoolDistribution(HttpClient httpClient, Processor processor)
+        ConnectionPoolDistribution(HttpClient httpClient, Processor processor)
         {
             super(() -> {
                 Distribution distribution = new Distribution();
@@ -1657,7 +1658,7 @@ public class JettyHttpClient
             void process(Distribution distribution, PoolingHttpDestination<?> destination);
         }
 
-        public DestinationDistribution(HttpClient httpClient, Processor processor)
+        DestinationDistribution(HttpClient httpClient, Processor processor)
         {
             super(() -> {
                 Distribution distribution = new Distribution();
@@ -1678,7 +1679,7 @@ public class JettyHttpClient
             void process(Distribution distribution, JettyRequestListener listener, long now);
         }
 
-        public RequestDistribution(HttpClient httpClient, Processor processor)
+        RequestDistribution(HttpClient httpClient, Processor processor)
         {
             super(() -> {
                 long now = System.nanoTime();

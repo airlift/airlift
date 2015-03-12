@@ -22,6 +22,7 @@ import com.proofpoint.log.Logging;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
 import org.joda.time.format.ISODateTimeFormat;
@@ -31,7 +32,7 @@ import java.io.IOException;
 import static com.proofpoint.http.server.HttpRequestEvent.createHttpRequestEvent;
 
 class DelimitedRequestLog
-        implements RequestLog
+        implements RequestLog, LifeCycle
 {
     // Tab-separated
     // Time, ip, method, url, user, agent, response code, request length, response length, response time

@@ -1,3 +1,9 @@
+Platform 1.29
+
+* Library Upgrades
+
+  - Jetty to 9.3.6
+
 Platform 1.28
 
 * JAX-RS
