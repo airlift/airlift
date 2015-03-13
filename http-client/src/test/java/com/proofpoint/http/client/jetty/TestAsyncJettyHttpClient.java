@@ -42,16 +42,26 @@ public class TestAsyncJettyHttpClient
         return executeAsync(httpClient, request, responseHandler);
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
-            throws Exception
+    public ClientTester clientTester(final HttpClientConfig config)
     {
-        try (
-                JettyIoPool jettyIoPool = new JettyIoPool("test-private", new JettyIoPoolConfig());
-                JettyHttpClient client = new JettyHttpClient(config, jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()))
-        ) {
-            return executeAsync(client, request, responseHandler);
-        }
+        return new ClientTester()
+        {
+            JettyIoPool jettyIoPool = new JettyIoPool("test-private", new JettyIoPoolConfig());
+            JettyHttpClient client = new JettyHttpClient(config, jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()));
+
+            @Override
+            public <T, E extends Exception> T executeRequest(Request request, ResponseHandler<T, E> responseHandler)
+                    throws Exception
+            {
+                return executeAsync(client, request, responseHandler);
+            }
+
+            @Override
+            public void close()
+            {
+                client.close();
+                jettyIoPool.close();
+            }
+        };
     }
 }

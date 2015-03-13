@@ -56,6 +56,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -65,10 +66,12 @@ import static com.google.common.base.Throwables.propagate;
 import static com.google.common.base.Throwables.propagateIfInstanceOf;
 import static com.google.common.base.Throwables.propagateIfPossible;
 import static com.proofpoint.concurrent.Threads.threadsNamed;
+import static com.proofpoint.http.client.HttpUriBuilder.uriBuilderFrom;
 import static com.proofpoint.http.client.Request.Builder.prepareDelete;
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static com.proofpoint.http.client.Request.Builder.preparePost;
 import static com.proofpoint.http.client.Request.Builder.preparePut;
+import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static com.proofpoint.testing.Assertions.assertGreaterThan;
 import static com.proofpoint.testing.Assertions.assertLessThan;
 import static com.proofpoint.testing.Closeables.closeQuietly;
@@ -77,6 +80,7 @@ import static com.proofpoint.tracetoken.TraceTokenManager.getCurrentRequestToken
 import static com.proofpoint.units.Duration.nanosSince;
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
+import static java.util.concurrent.Executors.newFixedThreadPool;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
@@ -108,8 +112,22 @@ public abstract class AbstractHttpClientTest
     public abstract <T, E extends Exception> T executeRequest(Request request, ResponseHandler<T, E> responseHandler)
             throws Exception;
 
-    public abstract <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
-            throws Exception;
+    public final <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
+            throws Exception
+    {
+        try (ClientTester clientTester = clientTester(config)) {
+            return clientTester.executeRequest(request, responseHandler);
+        }
+    }
+
+    public abstract ClientTester clientTester(HttpClientConfig config);
+
+    public interface ClientTester
+            extends Closeable
+    {
+        <T, E extends Exception> T executeRequest(Request request, ResponseHandler<T, E> responseHandler)
+                throws Exception;
+    }
 
     @BeforeSuite
     public void setupSuite()
@@ -1252,6 +1270,43 @@ public abstract class AbstractHttpClientTest
 
             largeResponseServer.assertCompleted();
         }
+    }
+
+
+    @Test
+    public void testAllConnectionsUsed()
+            throws Exception
+    {
+        final Request request = prepareGet()
+                .setUri(uriBuilderFrom(baseURI).addParameter("latch").build())
+                .build();
+        final ClientTester clientTester = clientTester(new HttpClientConfig()
+                .setMaxConnectionsPerServer(2)
+                .setMaxRequestsQueuedPerDestination(0));
+
+        ExecutorService executor = newFixedThreadPool(3, threadsNamed("test-use-connections"));
+        final CountDownLatch countDownLatch = new CountDownLatch(2);
+
+        for (int i = 0; i < 2; ++i) {
+            executor.submit(() -> {
+                clientTester.executeRequest(request, createStatusResponseHandler());
+                countDownLatch.countDown();
+                return null;
+            });
+        }
+
+        Thread.sleep(100);
+        try {
+            clientTester.executeRequest(request, createStatusResponseHandler());
+            fail("expected RejectedExecutionException");
+        }
+        catch (RejectedExecutionException ignored) {
+        }
+
+        servlet.countDownLatch.countDown();
+        countDownLatch.await();
+        Thread.sleep(100);
+        clientTester.executeRequest(request, createStatusResponseHandler());
     }
 
     private void executeRequest(FakeServer fakeServer, HttpClientConfig config)

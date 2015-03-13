@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 public final class EchoServlet
         extends HttpServlet
@@ -42,6 +43,7 @@ public final class EchoServlet
     String responseStatusMessage;
     final ListMultimap<String, String> responseHeaders = ArrayListMultimap.create();
     String responseBody;
+    final CountDownLatch countDownLatch = new CountDownLatch(1);
 
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response)
@@ -73,6 +75,9 @@ public final class EchoServlet
         try {
             if (request.getParameter("sleep") != null) {
                 Thread.sleep(Long.parseLong(request.getParameter("sleep")));
+            }
+            if (request.getParameter("latch") != null) {
+                countDownLatch.await();
             }
         }
         catch (InterruptedException e) {

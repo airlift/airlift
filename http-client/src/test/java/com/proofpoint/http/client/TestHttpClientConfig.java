@@ -17,7 +17,6 @@ package com.proofpoint.http.client;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HostAndPort;
-import com.proofpoint.configuration.testing.ConfigAssertions;
 import com.proofpoint.units.DataSize;
 import com.proofpoint.units.DataSize.Unit;
 import com.proofpoint.units.Duration;
@@ -28,6 +27,10 @@ import javax.validation.constraints.NotNull;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static com.proofpoint.configuration.testing.ConfigAssertions.assertFullMapping;
+import static com.proofpoint.configuration.testing.ConfigAssertions.assertLegacyEquivalence;
+import static com.proofpoint.configuration.testing.ConfigAssertions.assertRecordedDefaults;
+import static com.proofpoint.configuration.testing.ConfigAssertions.recordDefaults;
 import static com.proofpoint.http.client.HttpClientConfig.JAVAX_NET_SSL_KEY_STORE;
 import static com.proofpoint.http.client.HttpClientConfig.JAVAX_NET_SSL_KEY_STORE_PASSWORD;
 import static com.proofpoint.testing.ValidationAssertions.assertFailsValidation;
@@ -37,7 +40,7 @@ public class TestHttpClientConfig
     @Test
     public void testDefaults()
     {
-        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(HttpClientConfig.class)
+        assertRecordedDefaults(recordDefaults(HttpClientConfig.class)
                 .setConnectTimeout(new Duration(1, TimeUnit.SECONDS))
                 .setRequestTimeout(null)
                 .setIdleTimeout(new Duration(1, TimeUnit.MINUTES))
@@ -81,7 +84,7 @@ public class TestHttpClientConfig
                 .setKeyStorePath("key-store")
                 .setKeyStorePassword("key-store-password");
 
-        ConfigAssertions.assertFullMapping(properties, expected);
+        assertFullMapping(properties, expected);
     }
 
     @Test
@@ -95,7 +98,7 @@ public class TestHttpClientConfig
                 .put("http-client.read-timeout", "111m")
                 .build();
 
-        ConfigAssertions.assertLegacyEquivalence(HttpClientConfig.class, currentProperties, oldProperties);
+        assertLegacyEquivalence(HttpClientConfig.class, currentProperties, oldProperties);
     }
 
     @Test
@@ -105,7 +108,7 @@ public class TestHttpClientConfig
         assertFailsValidation(new HttpClientConfig().setIdleTimeout(null), "idleTimeout", "may not be null", NotNull.class);
         assertFailsValidation(new HttpClientConfig().setMaxConnections(0), "maxConnections", "must be greater than or equal to 1", Min.class);
         assertFailsValidation(new HttpClientConfig().setMaxConnectionsPerServer(0), "maxConnectionsPerServer", "must be greater than or equal to 1", Min.class);
-        assertFailsValidation(new HttpClientConfig().setMaxRequestsQueuedPerDestination(0), "maxRequestsQueuedPerDestination", "must be greater than or equal to 1", Min.class);
+        assertFailsValidation(new HttpClientConfig().setMaxRequestsQueuedPerDestination(-1), "maxRequestsQueuedPerDestination", "must be greater than or equal to 0", Min.class);
         assertFailsValidation(new HttpClientConfig().setMaxContentLength(null), "maxContentLength", "may not be null", NotNull.class);
     }
 }

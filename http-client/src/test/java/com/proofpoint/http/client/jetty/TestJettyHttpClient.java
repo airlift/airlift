@@ -41,15 +41,26 @@ public class TestJettyHttpClient
         return httpClient.execute(request, responseHandler);
     }
 
-    @Override
-    public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
-            throws Exception
+    public ClientTester clientTester(final HttpClientConfig config)
     {
-        try (
-                JettyIoPool jettyIoPool = new JettyIoPool("test-private", new JettyIoPoolConfig());
-                JettyHttpClient client = new JettyHttpClient(config, jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()))
-        ) {
-            return client.execute(request, responseHandler);
-        }
+        return new ClientTester()
+        {
+            JettyIoPool jettyIoPool = new JettyIoPool("test-private", new JettyIoPoolConfig());
+            JettyHttpClient client = new JettyHttpClient(config, jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()));
+
+            @Override
+            public <T, E extends Exception> T executeRequest(Request request, ResponseHandler<T, E> responseHandler)
+                    throws Exception
+            {
+                return client.execute(request, responseHandler);
+            }
+
+            @Override
+            public void close()
+            {
+                client.close();
+                jettyIoPool.close();
+            }
+        };
     }
 }
