@@ -15,6 +15,11 @@ Platform 1.17
     HttpClientBindingBuilder instead.
   - AsyncHttpClientModule has been deprecated. Use HttpClientModule instead.
 
+* Packaging
+
+  maven-assembly-plugin is now configured to generate Posix tar files instead
+  of Gnu tar files.
+
 Platform 1.16
 
 * RC4 disabled

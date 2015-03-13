@@ -214,8 +214,8 @@
                     <configuration>
                         <!-- must be true for jar-with-dependencies builds -->
                         <appendAssemblyId>true</appendAssemblyId>
-                        <!-- Always use GNU tar mode. -->
-                        <tarLongFileMode>gnu</tarLongFileMode>
+                        <!-- Always use Posix tar mode. -->
+                        <tarLongFileMode>posix</tarLongFileMode>
                     </configuration>
                 </plugin>
 
