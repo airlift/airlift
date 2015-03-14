@@ -42,6 +42,7 @@ public class TestJettyHttpsClient
                 .setKeyStorePassword("changeit");
 
         httpClient = new JettyHttpClient(config, jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()));
+        stats = httpClient.getStats();
     }
 
     @AfterMethod

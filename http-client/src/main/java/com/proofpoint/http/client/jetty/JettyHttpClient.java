@@ -200,12 +200,13 @@ public class JettyHttpClient
             throws E
     {
         long requestStart = System.nanoTime();
+        AtomicLong bytesWritten = new AtomicLong(0);
 
         // apply filters
         request = applyRequestFilters(request);
 
         // create jetty request and response listener
-        HttpRequest jettyRequest = buildJettyRequest(request);
+        HttpRequest jettyRequest = buildJettyRequest(request, bytesWritten);
         InputStreamResponseListener listener = new InputStreamResponseListener(maxContentLength)
         {
             @Override
@@ -254,7 +255,7 @@ public class JettyHttpClient
             value = responseHandler.handle(request, jettyResponse);
         }
         finally {
-            recordRequestComplete(stats, request, requestStart, jettyResponse, responseStart);
+            recordRequestComplete(stats, request, requestStart, bytesWritten.get(), jettyResponse, responseStart);
         }
         return value;
     }
@@ -264,12 +265,13 @@ public class JettyHttpClient
     {
         checkNotNull(request, "request is null");
         checkNotNull(responseHandler, "responseHandler is null");
+        AtomicLong bytesWritten = new AtomicLong(0);
 
         request = applyRequestFilters(request);
 
-        HttpRequest jettyRequest = buildJettyRequest(request);
+        HttpRequest jettyRequest = buildJettyRequest(request, bytesWritten);
 
-        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest, responseHandler, stats);
+        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest, responseHandler, bytesWritten, stats);
 
         BufferingResponseListener listener = new BufferingResponseListener(future, Ints.saturatedCast(maxContentLength));
 
@@ -291,7 +293,7 @@ public class JettyHttpClient
         return request;
     }
 
-    private HttpRequest buildJettyRequest(Request finalRequest)
+    private HttpRequest buildJettyRequest(Request finalRequest, AtomicLong bytesWritten)
     {
         HttpRequest jettyRequest = (HttpRequest) httpClient.newRequest(finalRequest.getUri());
 
@@ -310,15 +312,16 @@ public class JettyHttpClient
             if (bodySource instanceof StaticBodyGenerator) {
                 StaticBodyGenerator staticBodyGenerator = (StaticBodyGenerator) bodySource;
                 jettyRequest.content(new BytesContentProvider(staticBodyGenerator.getBody()));
+                bytesWritten.addAndGet(staticBodyGenerator.getBody().length);
             }
             else if (bodySource instanceof InputStreamBodySource) {
-                jettyRequest.content(new InputStreamContentProvider(new BodySourceInputStream((InputStreamBodySource) bodySource), 4096, false));
+                jettyRequest.content(new InputStreamContentProvider(new BodySourceInputStream((InputStreamBodySource) bodySource, bytesWritten), 4096, false));
             }
             else if (bodySource instanceof DynamicBodySource) {
-                jettyRequest.content(new DynamicBodySourceContentProvider((DynamicBodySource) bodySource));
+                jettyRequest.content(new DynamicBodySourceContentProvider((DynamicBodySource) bodySource, bytesWritten));
             }
             else if (bodySource instanceof BodyGenerator) {
-                jettyRequest.content(new BodyGeneratorContentProvider((BodyGenerator) bodySource, httpClient.getExecutor()));
+                jettyRequest.content(new BodyGeneratorContentProvider((BodyGenerator) bodySource, bytesWritten, httpClient.getExecutor()));
             }
             else {
                 throw new IllegalArgumentException("Request has unsupported BodySource type");
@@ -469,14 +472,16 @@ public class JettyHttpClient
         private final Request request;
         private final org.eclipse.jetty.client.api.Request jettyRequest;
         private final ResponseHandler<T, E> responseHandler;
+        private final AtomicLong bytesWritten;
         private final RequestStats stats;
         private final String traceToken;
 
-        JettyResponseFuture(Request request, org.eclipse.jetty.client.api.Request jettyRequest, ResponseHandler<T, E> responseHandler, RequestStats stats)
+        JettyResponseFuture(Request request, org.eclipse.jetty.client.api.Request jettyRequest, ResponseHandler<T, E> responseHandler, AtomicLong bytesWritten, RequestStats stats)
         {
             this.request = request;
             this.jettyRequest = jettyRequest;
             this.responseHandler = responseHandler;
+            this.bytesWritten = bytesWritten;
             this.stats = stats;
             traceToken = getCurrentRequestToken();
         }
@@ -529,7 +534,7 @@ public class JettyHttpClient
                 value = responseHandler.handle(request, jettyResponse);
             }
             finally {
-                recordRequestComplete(stats, request, requestStart, jettyResponse, responseStart);
+                recordRequestComplete(stats, request, requestStart, bytesWritten.get(), jettyResponse, responseStart);
             }
             return value;
         }
@@ -586,7 +591,7 @@ public class JettyHttpClient
         }
     }
 
-    private static void recordRequestComplete(RequestStats requestStats, Request request, long requestStart, JettyResponse response, long responseStart)
+    private static void recordRequestComplete(RequestStats requestStats, Request request, long requestStart, long bytesWritten, JettyResponse response, long responseStart)
     {
         if (response == null) {
             return;
@@ -597,7 +602,7 @@ public class JettyHttpClient
 
         requestStats.record(request.getMethod(),
                 response.getStatusCode(),
-                response.getBytesRead(),
+                bytesWritten,
                 response.getBytesRead(),
                 requestProcessingTime,
                 responseProcessingTime);
@@ -606,10 +611,12 @@ public class JettyHttpClient
     private static class BodySourceInputStream extends InputStream
     {
         private final InputStream delegate;
+        private final AtomicLong bytesWritten;
 
-        BodySourceInputStream(InputStreamBodySource bodySource)
+        BodySourceInputStream(InputStreamBodySource bodySource, AtomicLong bytesWritten)
         {
             delegate = bodySource.getInputStream();
+            this.bytesWritten = bytesWritten;
         }
 
         @Override
@@ -624,14 +631,22 @@ public class JettyHttpClient
         public int read(byte[] b)
                 throws IOException
         {
-            return delegate.read(b);
+            int read = delegate.read(b);
+            if (read > 0) {
+                bytesWritten.addAndGet(read);
+            }
+            return read;
         }
 
         @Override
         public int read(byte[] b, int off, int len)
                 throws IOException
         {
-            return delegate.read(b, off, len);
+            int read = delegate.read(b, off, len);
+            if (read > 0) {
+                bytesWritten.addAndGet(read);
+            }
+            return read;
         }
 
         @Override
@@ -683,11 +698,13 @@ public class JettyHttpClient
         private static final ByteBuffer DONE = ByteBuffer.allocate(0);
 
         private final DynamicBodySource dynamicBodySource;
+        private final AtomicLong bytesWritten;
         private final String traceToken;
 
-        DynamicBodySourceContentProvider(DynamicBodySource dynamicBodySource)
+        DynamicBodySourceContentProvider(DynamicBodySource dynamicBodySource, AtomicLong bytesWritten)
         {
             this.dynamicBodySource = dynamicBodySource;
+            this.bytesWritten = bytesWritten;
             traceToken = getCurrentRequestToken();
         }
 
@@ -710,7 +727,7 @@ public class JettyHttpClient
                 throw propagate(e);
             }
 
-            return new DynamicBodySourceIterator(chunks, writer, traceToken);
+            return new DynamicBodySourceIterator(chunks, writer, bytesWritten, traceToken);
         }
 
         private static class DynamicBodySourceOutputStream
@@ -750,13 +767,15 @@ public class JettyHttpClient
         {
             private final Queue<ByteBuffer> chunks;
             private final Writer writer;
+            private final AtomicLong bytesWritten;
             private final String traceToken;
 
             @SuppressWarnings("AssignmentToCollectionOrArrayFieldFromParameter")
-            DynamicBodySourceIterator(Queue<ByteBuffer> chunks, Writer writer, String traceToken)
+            DynamicBodySourceIterator(Queue<ByteBuffer> chunks, Writer writer, AtomicLong bytesWritten, String traceToken)
             {
                 this.chunks = chunks;
                 this.writer = writer;
+                this.bytesWritten = bytesWritten;
                 this.traceToken = traceToken;
             }
 
@@ -777,6 +796,7 @@ public class JettyHttpClient
                 if (chunk == DONE) {
                     return endOfData();
                 }
+                bytesWritten.addAndGet(chunk.array().length);
                 return chunk;
             }
 
@@ -802,12 +822,14 @@ public class JettyHttpClient
         private static final ByteBuffer EXCEPTION = ByteBuffer.allocate(0);
 
         private final BodyGenerator bodyGenerator;
+        private final AtomicLong bytesWritten;
         private final Executor executor;
         private final String traceToken;
 
-        BodyGeneratorContentProvider(BodyGenerator bodyGenerator, Executor executor)
+        BodyGeneratorContentProvider(BodyGenerator bodyGenerator, AtomicLong bytesWritten, Executor executor)
         {
             this.bodyGenerator = bodyGenerator;
+            this.bytesWritten = bytesWritten;
             this.executor = executor;
             traceToken = getCurrentRequestToken();
         }
@@ -841,7 +863,7 @@ public class JettyHttpClient
                 }
             });
 
-            return new ChunksIterator(chunks, exception);
+            return new ChunksIterator(chunks, exception, bytesWritten);
         }
 
         private static final class BodyGeneratorOutputStream
@@ -899,11 +921,13 @@ public class JettyHttpClient
         {
             private final ChunksQueue chunks;
             private final AtomicReference<Exception> exception;
+            private final AtomicLong bytesWritten;
 
-            ChunksIterator(ChunksQueue chunks, AtomicReference<Exception> exception)
+            ChunksIterator(ChunksQueue chunks, AtomicReference<Exception> exception, AtomicLong bytesWritten)
             {
                 this.chunks = chunks;
                 this.exception = exception;
+                this.bytesWritten = bytesWritten;
             }
 
             @Override
@@ -924,6 +948,7 @@ public class JettyHttpClient
                 if (chunk == DONE) {
                     return endOfData();
                 }
+                bytesWritten.addAndGet(chunk.array().length);
                 return chunk;
             }
 

@@ -20,6 +20,8 @@ Platform 1.17
   maven-assembly-plugin is now configured to generate Posix tar files instead
   of Gnu tar files.
 
+* [Bug] Report correct values for the HttpClient WrittenBytes metrics.
+
 Platform 1.16
 
 * RC4 disabled

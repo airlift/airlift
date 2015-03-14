@@ -30,6 +30,7 @@ public class TestAsyncJettyHttpClient
     {
         jettyIoPool = new JettyIoPool("test-shared", new JettyIoPoolConfig());
         httpClient = new JettyHttpClient(new HttpClientConfig(), jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()));
+        stats = httpClient.getStats();
     }
 
     @Override
