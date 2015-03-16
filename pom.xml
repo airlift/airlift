@@ -74,6 +74,7 @@
         <module>testing</module>
         <module>trace-token</module>
         <module>units</module>
+        <module>security</module>
 
         <!-- skeleton / sample code -->
         <module>skeleton-server</module>
@@ -213,6 +214,12 @@
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>units</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>security</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
 

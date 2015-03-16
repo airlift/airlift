@@ -20,14 +20,19 @@ import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.ResponseTooLargeException;
 import io.airlift.http.client.StaticBodyGenerator;
 import io.airlift.log.Logger;
+import io.airlift.security.client.AuthenticationProvider;
+import io.airlift.security.client.ClientSecurityConfig;
+import io.airlift.security.client.JettyAuthenticationStore;
 import io.airlift.stats.Distribution;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.PoolingHttpDestination;
 import org.eclipse.jetty.client.Socks4Proxy;
+import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
@@ -105,6 +110,8 @@ public class JettyHttpClient
     private final List<HttpRequestFilter> requestFilters;
     private final Exception creationLocation = new Exception();
     private final String name;
+    private final ClientSecurityConfig securityConfig;
+    private final AuthenticationProvider authenticationProvider;
 
     public JettyHttpClient()
     {
@@ -118,15 +125,30 @@ public class JettyHttpClient
 
     public JettyHttpClient(HttpClientConfig config, Iterable<? extends HttpRequestFilter> requestFilters)
     {
-        this(config, Optional.<JettyIoPool>absent(), requestFilters);
+        this(config, null, Optional.<JettyIoPool>absent(), requestFilters);
     }
 
     public JettyHttpClient(HttpClientConfig config, JettyIoPool jettyIoPool, Iterable<? extends HttpRequestFilter> requestFilters)
     {
-        this(config, Optional.of(jettyIoPool), requestFilters);
+        this(config, null, Optional.of(jettyIoPool), requestFilters);
     }
 
-    private JettyHttpClient(HttpClientConfig config, Optional<JettyIoPool> jettyIoPool, Iterable<? extends HttpRequestFilter> requestFilters)
+    public JettyHttpClient(HttpClientConfig config, ClientSecurityConfig securityConfig)
+    {
+        this(config, securityConfig, ImmutableList.<HttpRequestFilter>of());
+    }
+
+    public JettyHttpClient(HttpClientConfig config, ClientSecurityConfig securityConfig, Iterable<? extends HttpRequestFilter> requestFilters)
+    {
+        this(config, securityConfig, Optional.<JettyIoPool>absent(), requestFilters);
+    }
+
+    public JettyHttpClient(HttpClientConfig config, ClientSecurityConfig securityConfig, JettyIoPool jettyIoPool, Iterable<? extends HttpRequestFilter> requestFilters)
+    {
+        this(config, securityConfig, Optional.of(jettyIoPool), requestFilters);
+    }
+
+    private JettyHttpClient(HttpClientConfig config, ClientSecurityConfig securityConfig, Optional<JettyIoPool> jettyIoPool, Iterable<? extends HttpRequestFilter> requestFilters)
     {
         checkNotNull(config, "config is null");
         checkNotNull(jettyIoPool, "jettyIoPool is null");
@@ -135,6 +157,9 @@ public class JettyHttpClient
         maxContentLength = config.getMaxContentLength().toBytes();
         requestTimeoutMillis = config.getRequestTimeout().toMillis();
         idleTimeoutMillis = config.getIdleTimeout().toMillis();
+        this.securityConfig = securityConfig;
+        authenticationProvider = securityConfig != null && securityConfig.enabled() ?
+                new AuthenticationProvider(securityConfig) : null;
 
         creationLocation.fillInStackTrace();
 
@@ -145,7 +170,7 @@ public class JettyHttpClient
             sslContextFactory.setKeyStorePassword(config.getKeyStorePassword());
         }
 
-        httpClient = new HttpClient(new HttpClientTransportOverHTTP(2), sslContextFactory);
+        httpClient = new SecureHttpClient(new HttpClientTransportOverHTTP(2), sslContextFactory);
         httpClient.setMaxConnectionsPerDestination(config.getMaxConnectionsPerServer());
         httpClient.setMaxRequestsQueuedPerDestination(config.getMaxRequestsQueuedPerDestination());
 
@@ -268,7 +293,7 @@ public class JettyHttpClient
 
         // apply filters
         request = applyRequestFilters(request);
-
+        
         // create jetty request and response listener
         HttpRequest jettyRequest = buildJettyRequest(request);
         InputStreamResponseListener listener = new InputStreamResponseListener(maxContentLength)
@@ -395,6 +420,18 @@ public class JettyHttpClient
         jettyRequest.timeout(requestTimeoutMillis, MILLISECONDS);
         jettyRequest.idleTimeout(idleTimeoutMillis, MILLISECONDS);
 
+        // client authentications
+        if (jettyRequest.getURI().getScheme().equalsIgnoreCase("https")) {
+            jettyRequest.header(io.airlift.security.utils.SecurityUtil.REALM_IN_CHALLENGE, "true");
+            AuthenticationStore authStore = httpClient.getAuthenticationStore();
+            if (securityConfig != null && securityConfig.enabled()) {
+                String authScheme = securityConfig.getAuthScheme().toString();
+                if (authStore.findAuthentication(authScheme, jettyRequest.getURI(), null) == null) {
+                        httpClient.getAuthenticationStore().addAuthentication(
+                                authenticationProvider.createAuthentication(jettyRequest.getURI()));
+                }
+            }
+        }
         return jettyRequest;
     }
 
@@ -1290,6 +1327,32 @@ public class JettyHttpClient
                         .forEach(listener -> processor.process(distribution, listener, now));
                 return distribution;
             });
+        }
+    }
+
+    private static class SecureHttpClient
+            extends HttpClient
+    {
+        private final JettyAuthenticationStore jettyAuthenticationStore;
+
+        public SecureHttpClient(HttpClientTransport transport, SslContextFactory sslContextFactory)
+        {
+            super(transport, sslContextFactory);
+            jettyAuthenticationStore = new JettyAuthenticationStore();
+        }
+
+        @Override
+        public AuthenticationStore getAuthenticationStore() {
+            return jettyAuthenticationStore;
+        }
+
+        @Override
+        protected void doStop() throws Exception
+        {
+            jettyAuthenticationStore.clearAuthentications();
+            jettyAuthenticationStore.clearAuthenticationResults();
+
+            super.doStop();
         }
     }
 }

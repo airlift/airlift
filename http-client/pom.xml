@@ -67,6 +67,11 @@
 
         <dependency>
             <groupId>io.airlift</groupId>
+            <artifactId>security</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
             <artifactId>trace-token</artifactId>
         </dependency>
 
