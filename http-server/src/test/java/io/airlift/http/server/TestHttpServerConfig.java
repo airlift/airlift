@@ -59,7 +59,7 @@ public class TestHttpServerConfig
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("http-server.http.enabled", "false")
                 .put("http-server.http.port", "1")
-                .put("http-server.http.accept-queue-size", "1024")
+                .put("http-server.accept-queue-size", "1024")
                 .put("http-server.https.enabled", "true")
                 .put("http-server.https.port", "2")
                 .put("http-server.https.keystore.path", "/keystore")

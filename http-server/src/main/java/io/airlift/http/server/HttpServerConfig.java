@@ -87,7 +87,7 @@ public class HttpServerConfig
         return httpPort;
     }
 
-    @Config("http-server.http.accept-queue-size")
+    @Config("http-server.accept-queue-size")
     public HttpServerConfig setHttpAcceptQueueSize(int httpAcceptQueueSize)
     {
         this.httpAcceptQueueSize = httpAcceptQueueSize;
