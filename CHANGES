@@ -1,3 +1,8 @@
+* 0.105
+
+- Upgrade to Airbase 35
+- Upgrade to Jetty 9.2.10.v20150310
+
 * 0.104
 
 - Upgrade to Airbase 34
