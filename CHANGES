@@ -22,6 +22,10 @@ Platform 1.17
 
 * [Bug] Report correct values for the HttpClient WrittenBytes metrics.
 
+* Library Upgrades
+
+  - Jetty to 9.2.10
+
 Platform 1.16
 
 * RC4 disabled
