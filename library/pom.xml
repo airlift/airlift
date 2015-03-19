@@ -74,7 +74,7 @@
         <dep.logback.version>1.1.2</dep.logback.version>
         <dep.javax-servlet.version>3.1.0</dep.javax-servlet.version>
         <dep.jackson.version>2.4.3</dep.jackson.version>
-        <dep.jersey.version>2.13</dep.jersey.version>
+        <dep.jersey.version>2.17</dep.jersey.version>
     </properties>
 
     <scm>
