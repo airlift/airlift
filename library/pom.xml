@@ -71,7 +71,7 @@
 
         <dep.jetty.version>9.2.10.v20150310</dep.jetty.version>
         <dep.slf4j.version>1.7.8</dep.slf4j.version>
-        <dep.logback.version>1.1.2</dep.logback.version>
+        <dep.logback.version>1.1.3</dep.logback.version>
         <dep.javax-servlet.version>3.1.0</dep.javax-servlet.version>
         <dep.jackson.version>2.4.3</dep.jackson.version>
         <dep.jersey.version>2.17</dep.jersey.version>
