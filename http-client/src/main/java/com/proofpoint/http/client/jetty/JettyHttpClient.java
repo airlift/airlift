@@ -35,13 +35,11 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.PoolingHttpDestination;
 import org.eclipse.jetty.client.Socks4Proxy;
-import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.http.HttpChannelOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
@@ -202,8 +200,8 @@ public class JettyHttpClient
 
         name = pool.getName();
         this.httpClient.setExecutor(pool.getExecutor());
-        this.httpClient.setByteBufferPool(pool.setByteBufferPool());
-        this.httpClient.setScheduler(pool.setScheduler());
+        this.httpClient.setByteBufferPool(pool.getByteBufferPool());
+        this.httpClient.setScheduler(pool.getScheduler());
 
         try {
             this.httpClient.start();
