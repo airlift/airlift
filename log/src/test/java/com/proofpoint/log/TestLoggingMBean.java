@@ -26,7 +26,7 @@ import static org.testng.Assert.fail;
 
 public class TestLoggingMBean
 {
-    private final LoggingMBean logging = new LoggingMBean();
+    private final LoggingMBean logging = new LoggingMBean(Logging.initialize());
     private String rootLevel;
 
     @BeforeMethod

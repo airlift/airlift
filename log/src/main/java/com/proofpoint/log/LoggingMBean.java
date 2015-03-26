@@ -15,75 +15,54 @@
  */
 package com.proofpoint.log;
 
+import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.Maps;
 import org.weakref.jmx.Managed;
 
-import java.util.Collections;
+import javax.inject.Inject;
 import java.util.Locale;
 import java.util.Map;
-import java.util.TreeMap;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
 
 public class LoggingMBean
 {
-    private static final String ROOT_LOGGER_NAME = "";
+    private final Logging logging;
+
+    @Inject
+    public LoggingMBean(Logging logging)
+    {
+        this.logging = logging;
+    }
 
     @Managed
     @SuppressWarnings("MethodMayBeStatic")
     public String getLevel(String loggerName)
     {
-        return getEffectiveLevel(getLogger(loggerName)).toString();
+        return logging.getLevel(loggerName).toString();
     }
 
     @Managed
     @SuppressWarnings("MethodMayBeStatic")
     public void setLevel(String loggerName, String newLevel)
     {
-        getLogger(loggerName).setLevel(Level.valueOf(newLevel.toUpperCase(Locale.US)).toJulLevel());
+        logging.setLevel(loggerName, Level.valueOf(newLevel.toUpperCase(Locale.US)));
     }
 
     @Managed
     public String getRootLevel()
     {
-        return getLevel(ROOT_LOGGER_NAME);
+        return logging.getRootLevel().toString();
     }
 
     @Managed
     public void setRootLevel(String newLevel)
     {
-        setLevel(ROOT_LOGGER_NAME, newLevel);
+        logging.setRootLevel(Level.valueOf(newLevel.toUpperCase(Locale.US)));
     }
 
     @Managed
     @SuppressWarnings("MethodMayBeStatic")
     public Map<String, String> getAllLevels()
     {
-        Map<String, String> levels = new TreeMap<>();
-        for (String loggerName : Collections.list(LogManager.getLogManager().getLoggerNames())) {
-            java.util.logging.Level level = getLogger(loggerName).getLevel();
-            if (level != null) {
-                levels.put(loggerName, Level.fromJulLevel(level).toString());
-            }
-        }
-        return levels;
-    }
-    private static Level getEffectiveLevel(Logger logger)
-    {
-        java.util.logging.Level level = logger.getLevel();
-        if (level == null) {
-            Logger parent = logger.getParent();
-            if (parent != null) {
-                return getEffectiveLevel(parent);
-            }
-        }
-        if (level == null) {
-            return Level.OFF;
-        }
-        return Level.fromJulLevel(level);
-    }
-
-    private static java.util.logging.Logger getLogger(String name)
-    {
-        return java.util.logging.Logger.getLogger(name);
+        return ImmutableSortedMap.copyOf(Maps.transformValues(logging.getAllLevels(), Object::toString));
     }
 }
