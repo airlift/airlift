@@ -42,6 +42,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.Sweeper;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
@@ -85,6 +86,7 @@ public class JettyHttpClient
 {
     private static final AtomicLong nameCounter = new AtomicLong();
     private static final String PRESTO_STATS_KEY = "presto_stats";
+    private static final long SWEEP_PERIOD_MILLIS = 5000;
 
     private final HttpClient httpClient;
     private final long maxContentLength;
@@ -170,6 +172,12 @@ public class JettyHttpClient
         httpClient.setExecutor(pool.getExecutor());
         httpClient.setByteBufferPool(pool.getByteBufferPool());
         httpClient.setScheduler(pool.getScheduler());
+
+        // Jetty client connections can sometimes get stuck while closing which reduces
+        // the available connections.  The Jetty Sweeper periodically scans the active
+        // connection pool looking for connections in the closed state, and if a connection
+        // is observed in the closed state multiple times, it logs, and destroys the connection.
+        httpClient.addBean(new Sweeper(pool.getScheduler(), SWEEP_PERIOD_MILLIS), true);
 
         try {
             httpClient.start();
