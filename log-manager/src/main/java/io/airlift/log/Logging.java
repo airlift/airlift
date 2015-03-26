@@ -15,6 +15,8 @@
  */
 package io.airlift.log;
 
+import com.google.common.collect.ImmutableSortedMap;
+
 import javax.annotation.concurrent.GuardedBy;
 
 import java.io.File;
@@ -23,10 +25,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Handler;
+import java.util.logging.LogManager;
 
 /**
  * Initializes the logging subsystem.
@@ -38,6 +42,7 @@ import java.util.logging.Handler;
 public class Logging
 {
     private static final Logger log = Logger.get(Logging.class);
+    private static final String ROOT_LOGGER_NAME = "";
     private static final java.util.logging.Logger ROOT = java.util.logging.Logger.getLogger("");
     private static Logging instance;
 
@@ -109,6 +114,16 @@ public class Logging
         ROOT.addHandler(rollingFileHandler);
     }
 
+    public Level getRootLevel()
+    {
+        return getLevel(ROOT_LOGGER_NAME);
+    }
+
+    public void setRootLevel(Level newLevel)
+    {
+        setLevel(ROOT_LOGGER_NAME, newLevel);
+    }
+
     public void setLevels(File file)
             throws IOException
     {
@@ -121,9 +136,43 @@ public class Logging
     }
 
     @SuppressWarnings("MethodMayBeStatic")
+    public Level getLevel(String loggerName)
+    {
+        return getEffectiveLevel(java.util.logging.Logger.getLogger(loggerName));
+    }
+
+    private static Level getEffectiveLevel(java.util.logging.Logger logger)
+    {
+        java.util.logging.Level level = logger.getLevel();
+        if (level == null) {
+            java.util.logging.Logger parent = logger.getParent();
+            if (parent != null) {
+                return getEffectiveLevel(parent);
+            }
+        }
+        if (level == null) {
+            return Level.OFF;
+        }
+        return Level.fromJulLevel(level);
+    }
+
+    @SuppressWarnings("MethodMayBeStatic")
     public void setLevel(String loggerName, Level level)
     {
         java.util.logging.Logger.getLogger(loggerName).setLevel(level.toJulLevel());
+    }
+
+    @SuppressWarnings("MethodMayBeStatic")
+    public Map<String, Level> getAllLevels()
+    {
+        ImmutableSortedMap.Builder<String, Level> levels = ImmutableSortedMap.naturalOrder();
+        for (String loggerName : Collections.list(LogManager.getLogManager().getLoggerNames())) {
+            java.util.logging.Level level = java.util.logging.Logger.getLogger(loggerName).getLevel();
+            if (level != null) {
+                levels.put(loggerName, Level.fromJulLevel(level));
+            }
+        }
+        return levels.build();
     }
 
     private void processLevels(Properties properties)
