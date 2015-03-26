@@ -168,8 +168,8 @@ public class JettyHttpClient
 
         name = pool.getName();
         httpClient.setExecutor(pool.getExecutor());
-        httpClient.setByteBufferPool(pool.setByteBufferPool());
-        httpClient.setScheduler(pool.setScheduler());
+        httpClient.setByteBufferPool(pool.getByteBufferPool());
+        httpClient.setScheduler(pool.getScheduler());
 
         try {
             httpClient.start();

@@ -82,12 +82,12 @@ public final class JettyIoPool
         return executor;
     }
 
-    public ByteBufferPool setByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
         return byteBufferPool;
     }
 
-    public Scheduler setScheduler()
+    public Scheduler getScheduler()
     {
         return scheduler;
     }
