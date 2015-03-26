@@ -3,6 +3,7 @@
 - Upgrade to Airbase 36
 - Upgrade to Jetty 9.2.11.M0
 - Enable Jetty Client connection sweeper
+- Reduce JettyHttpClient selectors to 2
 
 * 0.105
 
