@@ -15,8 +15,10 @@
  */
 package com.proofpoint.platform.sample;
 
+import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.Test;
 
+import static com.proofpoint.json.testing.JsonTester.assertJsonEncode;
 import static com.proofpoint.platform.sample.Person.createPerson;
 import static com.proofpoint.testing.EquivalenceTester.equivalenceTester;
 
@@ -31,5 +33,15 @@ public class TestPerson
                 .addEquivalentGroup(createPerson("foo@example.com", "Mr Bar"), createPerson("foo@example.com", "Mr Bar"))
                 .addEquivalentGroup(createPerson("bar@example.com", "Mr Foo"), createPerson("bar@example.com", "Mr Foo"))
                 .check();
+    }
+
+    @Test
+    public void testJsonEncode()
+    {
+        assertJsonEncode(createPerson("alice@example.com", "Alice"),
+                ImmutableMap.of(
+                        "name", "Alice",
+                        "email", "alice@example.com"
+                ));
     }
 }

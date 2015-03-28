@@ -15,6 +15,7 @@
  */
 package com.proofpoint.platform.sample;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.concurrent.Immutable;
@@ -28,7 +29,9 @@ public abstract class Person
         return new AutoValue_Person(email, name);
     }
 
+    @JsonProperty
     public abstract String getEmail();
 
+    @JsonProperty
     public abstract String getName();
 }

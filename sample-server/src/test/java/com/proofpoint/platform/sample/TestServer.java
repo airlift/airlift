@@ -78,7 +78,6 @@ public class TestServer
     private PersonStore store;
 
     private final JsonCodec<Map<String, Object>> mapCodec = mapJsonCodec(String.class, Object.class);
-    private final JsonCodec<List<Object>> listCodec = listJsonCodec(Object.class);
     private InMemoryEventClient eventClient;
     private LifeCycleManager lifeCycleManager;
 
@@ -130,11 +129,11 @@ public class TestServer
     public void testEmpty()
             throws Exception
     {
-        List<Object> response = client.execute(
+        Map<String, Object> response = client.execute(
                 prepareGet().setUri(uriFor("/v1/person")).build(),
-                createJsonResponseHandler(listCodec));
+                createJsonResponseHandler(mapCodec));
 
-        assertEquals(response, Collections.emptyList());
+        assertEquals(response, ImmutableMap.of());
     }
 
     @Test
@@ -144,14 +143,15 @@ public class TestServer
         store.put("bar", createPerson("bar@example.com", "Mr Bar"));
         store.put("foo", createPerson("foo@example.com", "Mr Foo"));
 
-        List<Object> expected = new ArrayList<>();
-        expected.add(ImmutableMap.of("self", uriFor("/v1/person/foo").toString(), "name", "Mr Foo", "email", "foo@example.com"));
-        expected.add(ImmutableMap.of("self", uriFor("/v1/person/bar").toString(), "name", "Mr Bar", "email", "bar@example.com"));
+        Object expected = ImmutableMap.of(
+                "foo", ImmutableMap.of("name", "Mr Foo", "email", "foo@example.com"),
+                "bar", ImmutableMap.of("name", "Mr Bar", "email", "bar@example.com")
+        );
 
-        List<Object> actual = client.execute(
+        Object actual = client.execute(
                 prepareGet().setUri(uriFor("/v1/person")).build(),
-                createJsonResponseHandler(listCodec));
-        assertEqualsIgnoreOrder(actual, expected);
+                createJsonResponseHandler(mapCodec));
+        assertEquals(actual, expected);
     }
 
     @Test
@@ -162,8 +162,7 @@ public class TestServer
 
         URI requestUri = uriFor("/v1/person/foo");
 
-        Map<String, Object> expected = mapCodec.fromJson(Resources.toString(Resources.getResource("single.json"), Charsets.UTF_8));
-        expected.put("self", requestUri.toString());
+        Map<String, String> expected = ImmutableMap.of("name", "Mr Foo", "email", "foo@example.com");
 
         Map<String, Object> actual = client.execute(
                 prepareGet().setUri(requestUri).build(),

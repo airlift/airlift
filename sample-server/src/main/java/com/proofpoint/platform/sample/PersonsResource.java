@@ -15,23 +15,17 @@
  */
 package com.proofpoint.platform.sample;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableList.Builder;
+import autovalue.shaded.com.google.common.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.proofpoint.platform.sample.PersonStore.StoreEntry;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.core.UriInfo;
-import java.net.URI;
+import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.proofpoint.platform.sample.PersonWithSelf.createPersonWithSelf;
 
 @Path("/v1/person")
 public class PersonsResource
@@ -48,13 +42,12 @@ public class PersonsResource
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response listAll(@Context UriInfo uriInfo)
+    public Map<String, Person> listAll()
     {
-        Builder<PersonWithSelf> builder = ImmutableList.builder();
+        ImmutableMap.Builder<String, Person> builder = ImmutableMap.builder();
         for (StoreEntry entry : store.getAll()) {
-            URI self = UriBuilder.fromUri(uriInfo.getRequestUri()).path(entry.getId()).build();
-            builder.add(createPersonWithSelf(entry.getPerson(), self));
+            builder.put(entry.getId(), entry.getPerson());
         }
-        return Response.ok(builder.build()).build();
+        return builder.build();
     }
 }

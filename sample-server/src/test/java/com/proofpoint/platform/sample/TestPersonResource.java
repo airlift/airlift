@@ -29,7 +29,6 @@ import static com.proofpoint.platform.sample.PersonEvent.personAdded;
 import static com.proofpoint.platform.sample.PersonEvent.personRemoved;
 import static com.proofpoint.platform.sample.PersonEvent.personUpdated;
 import static com.proofpoint.platform.sample.PersonRepresentation.createPersonRepresentation;
-import static com.proofpoint.platform.sample.PersonWithSelf.createPersonWithSelf;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -61,7 +60,7 @@ public class TestPersonResource
 
         Response response = resource.get("foo", MockUriInfo.from(URI.create("http://localhost/v1/person/1")));
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
-        assertEquals(response.getEntity(), createPersonWithSelf(createPerson("foo@example.com", "Mr Foo"), URI.create("http://localhost/v1/person/1")));
+        assertEquals(response.getEntity(), createPerson("foo@example.com", "Mr Foo"));
         assertNull(response.getMetadata().get("Content-Type")); // content type is set by jersey based on @Produces
     }
 

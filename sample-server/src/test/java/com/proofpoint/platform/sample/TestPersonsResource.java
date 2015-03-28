@@ -15,19 +15,13 @@
  */
 package com.proofpoint.platform.sample;
 
+import com.google.common.collect.ImmutableMap;
 import com.proofpoint.event.client.NullEventClient;
-import com.proofpoint.jaxrs.testing.MockUriInfo;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import javax.ws.rs.core.Response;
-import java.net.URI;
-import java.util.Collection;
-
 import static com.google.common.collect.Lists.newArrayList;
 import static com.proofpoint.platform.sample.Person.createPerson;
-import static com.proofpoint.platform.sample.PersonWithSelf.createPersonWithSelf;
-import static com.proofpoint.testing.Assertions.assertInstanceOf;
 import static org.testng.Assert.assertEquals;
 
 public class TestPersonsResource
@@ -45,10 +39,7 @@ public class TestPersonsResource
     @Test
     public void testEmpty()
     {
-        Response response = resource.listAll(MockUriInfo.from(URI.create("http://localhost/v1/person")));
-        assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
-        assertInstanceOf(response.getEntity(), Collection.class);
-        assertEquals((Collection<?>) response.getEntity(), newArrayList());
+        assertEquals(resource.listAll(), ImmutableMap.of());
     }
 
     @Test
@@ -57,12 +48,9 @@ public class TestPersonsResource
         store.put("foo", createPerson("foo@example.com", "Mr Foo"));
         store.put("bar", createPerson("bar@example.com", "Mr Bar"));
 
-        Response response = resource.listAll(MockUriInfo.from(URI.create("http://localhost/v1/person")));
-        assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
-        assertInstanceOf(response.getEntity(), Collection.class);
-        assertEquals((Collection<?>) response.getEntity(), newArrayList(
-                createPersonWithSelf(createPerson("foo@example.com", "Mr Foo"), URI.create("http://localhost/v1/person/foo")),
-                createPersonWithSelf(createPerson("bar@example.com", "Mr Bar"), URI.create("http://localhost/v1/person/bar"))
+        assertEquals(resource.listAll(), ImmutableMap.of(
+                "foo", createPerson("foo@example.com", "Mr Foo"),
+                "bar", createPerson("bar@example.com", "Mr Bar")
         ));
     }
 }

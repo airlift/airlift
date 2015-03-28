@@ -31,7 +31,6 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.proofpoint.platform.sample.PersonWithSelf.createPersonWithSelf;
 
 @Path("/v1/person/{id: \\w+}")
 public class PersonResource
@@ -58,7 +57,7 @@ public class PersonResource
             return Response.status(Response.Status.NOT_FOUND).entity("[" + id + "]").build();
         }
 
-        return Response.ok(createPersonWithSelf(person, uriInfo.getRequestUri())).build();
+        return Response.ok(person).build();
     }
 
     @PUT
