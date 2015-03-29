@@ -15,8 +15,10 @@
  */
 package com.proofpoint.json.testing;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTime;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -25,7 +27,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.proofpoint.json.JsonCodec.listJsonCodec;
 import static com.proofpoint.json.testing.JsonTester.assertJsonEncode;
+import static com.proofpoint.json.testing.JsonTester.decodeJson;
+import static org.testng.Assert.assertEquals;
 
 public class TestJsonTester
 {
@@ -60,18 +65,26 @@ public class TestJsonTester
         assertJsonEncode(new DateTime(1376344694123L), "2013-08-12T21:58:14.123Z");
     }
 
-    @Test(expectedExceptions = AssertionError.class)
+    @Test(expectedExceptions = AssertionError.class, expectedExceptionsMessageRegExp = "JSON encoding \\{\n" +
+            "  \"s\" : \"fred\",\n" +
+            "  \"i\" : 3,\n" +
+            "  \"b\" : true\n" +
+            "} expected \\[\\{b=true, s=fred, extra=field, i=3}] but found \\[\\{s=fred, i=3, b=true}]")
     public void testMissingField()
     {
        simpleExpected.put("extra", "field");
        assertJsonEncode(simpleEncoder, simpleExpected);
     }
 
-    @Test(expectedExceptions = AssertionError.class)
+    @Test(expectedExceptions = AssertionError.class, expectedExceptionsMessageRegExp = "testing message JSON encoding \\{\n" +
+            "  \"s\" : \"fred\",\n" +
+            "  \"i\" : 3,\n" +
+            "  \"b\" : true\n" +
+            "} expected \\[\\{s=fred, i=3}] but found \\[\\{s=fred, i=3, b=true}]")
     public void testExtraField()
     {
        simpleExpected.remove("b");
-       assertJsonEncode(simpleEncoder, simpleExpected);
+       assertJsonEncode(simpleEncoder, simpleExpected, "testing message");
     }
 
     @Test(expectedExceptions = AssertionError.class)
@@ -129,6 +142,33 @@ public class TestJsonTester
         assertJsonEncode(complexEncoder, complexExpected);
     }
 
+    @Test
+    public void testDecodeClass()
+    {
+        SimpleDecoder simpleDecoder = decodeJson(SimpleDecoder.class, ImmutableMap.of("intValue", 3, "extra", "value"));
+        assertEquals(simpleDecoder.intValue, 3);
+    }
+
+    @Test
+    public void testDecodeCodec()
+    {
+        List<SimpleDecoder> simpleDecoder = decodeJson(listJsonCodec(SimpleDecoder.class), ImmutableList.of(ImmutableMap.of("intValue", 3, "extra", "value")));
+        assertEquals(simpleDecoder.size(), 1);
+        assertEquals(simpleDecoder.get(0).intValue, 3);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Invalid \\[simple type, class com\\.proofpoint\\.json\\.testing\\.TestJsonTester\\$SimpleDecoder\\] json string")
+    public void testDecodeConstructionException()
+    {
+        decodeJson(SimpleDecoder.class, ImmutableMap.of());
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Invalid \\[collection type; class java\\.util\\.List, contains \\[simple type, class com\\.proofpoint\\.json\\.testing\\.TestJsonTester\\$SimpleDecoder\\]\\] json string")
+    public void testDecodeWrongType()
+    {
+        decodeJson(listJsonCodec(SimpleDecoder.class), ImmutableMap.of("intValue", 3));
+    }
+
     private static class SimpleEncoder
     {
         @JsonProperty
@@ -147,5 +187,20 @@ public class TestJsonTester
         private final List<String> list = ImmutableList.of("a", "b", "a");
         @JsonProperty
         private final SimpleEncoder obj = new SimpleEncoder();
+    }
+
+    private static class SimpleDecoder
+    {
+        final int intValue;
+
+        private SimpleDecoder(int intValue)
+        {
+            this.intValue = intValue;
+        }
+
+        @JsonCreator
+        private static SimpleDecoder simpleDecoder(@JsonProperty("intValue") Integer intValue){
+            return new SimpleDecoder(intValue);
+        }
     }
 }
