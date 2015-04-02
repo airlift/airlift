@@ -1,5 +1,10 @@
 Platform 1.18
 
+* Reporting
+
+  We now report upon startup a ReportCollector.ServerStart metric with a value
+  of 1. This may be used to track server restarts.
+
 * Library Upgrades
 
   - Jersey to 2.17
