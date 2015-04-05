@@ -60,6 +60,7 @@ class LifeCycleMethods
             }
 
             processMethod(method, PostConstruct.class, usedConstructNames);
+            processMethod(method, AcceptRequests.class, usedConstructNames);
             processMethod(method, PreDestroy.class, usedDestroyNames);
         }
 

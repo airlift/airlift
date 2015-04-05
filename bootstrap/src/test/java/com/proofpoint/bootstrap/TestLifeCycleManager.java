@@ -15,6 +15,7 @@
  */
 package com.proofpoint.bootstrap;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.inject.Binder;
 import com.google.inject.CreationException;
@@ -28,14 +29,13 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class TestLifeCycleManager
 {
-    private final static List<String> stateLog = new CopyOnWriteArrayList<String>();
+    private final static List<String> stateLog = new CopyOnWriteArrayList<>();
 
     @BeforeMethod
     public void setup()
@@ -72,7 +72,7 @@ public class TestLifeCycleManager
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         lifeCycleManager.start();
 
-        Assert.assertEquals(stateLog, Arrays.asList("InstanceThatUsesInstanceThatRequiresStart:OK"));
+        Assert.assertEquals(stateLog, ImmutableList.of("InstanceThatUsesInstanceThatRequiresStart:OK"));
     }
 
     @Test
@@ -104,10 +104,10 @@ public class TestLifeCycleManager
         );
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         lifeCycleManager.start();
-        Assert.assertEquals(stateLog, Arrays.asList("postSimpleBaseImpl"));
+        Assert.assertEquals(stateLog, ImmutableList.of("postSimpleBaseImpl"));
 
         lifeCycleManager.stop();
-        Assert.assertEquals(stateLog, Arrays.asList("postSimpleBaseImpl", "preSimpleBaseImpl"));
+        Assert.assertEquals(stateLog, ImmutableList.of("postSimpleBaseImpl", "preSimpleBaseImpl"));
     }
 
     @Test
@@ -129,11 +129,11 @@ public class TestLifeCycleManager
         );
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         lifeCycleManager.start();
-        Assert.assertEquals(stateLog, Arrays.asList("postSimpleBaseImpl"));
+        Assert.assertEquals(stateLog, ImmutableList.of("postSimpleBaseImpl"));
 
         lifeCycleManager.stop();
 
-        Assert.assertEquals(stateLog, Arrays.asList("postSimpleBaseImpl", "preSimpleBaseImpl"));
+        Assert.assertEquals(stateLog, ImmutableList.of("postSimpleBaseImpl", "preSimpleBaseImpl"));
     }
 
     @Test
@@ -157,12 +157,12 @@ public class TestLifeCycleManager
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         lifeCycleManager.start();
         instance.waitForStart();
-        Assert.assertEquals(stateLog, Arrays.asList("Starting"));
+        Assert.assertEquals(stateLog, ImmutableList.of("Starting"));
 
         lifeCycleManager.stop();
         instance.waitForEnd();
 
-        Assert.assertEquals(stateLog, Arrays.asList("Starting", "Done"));
+        Assert.assertEquals(stateLog, ImmutableList.of("Starting", "Done"));
     }
 
     @Test
@@ -189,10 +189,68 @@ public class TestLifeCycleManager
 
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         lifeCycleManager.start();
-        Assert.assertEquals(stateLog, Arrays.asList("postDependentInstance"));
+        Assert.assertEquals(stateLog, ImmutableList.of("postDependentInstance"));
 
         lifeCycleManager.stop();
-        Assert.assertEquals(stateLog, Arrays.asList("postDependentInstance", "preDependentInstance"));
+        Assert.assertEquals(stateLog, ImmutableList.of("postDependentInstance", "preDependentInstance"));
+    }
+
+    @Test
+    public void testDependencyStartedFirst()
+            throws Exception
+    {
+        Module module = new Module()
+        {
+            @Override
+            public void configure(Binder binder)
+            {
+                binder.bind(DependingInstance.class).in(Scopes.SINGLETON);
+                binder.bind(DependentInstance.class).in(Scopes.SINGLETON);
+            }
+        };
+        Injector injector = Guice.createInjector(
+                Stage.PRODUCTION,
+                new LifeCycleModule(),
+                module
+        );
+
+        injector.getInstance(AnotherInstance.class);
+
+        LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+        lifeCycleManager.start();
+        Assert.assertEquals(stateLog, ImmutableList.of("postDependentInstance", "postDependingInstance"));
+
+        lifeCycleManager.stop();
+        Assert.assertEquals(stateLog, ImmutableList.of("postDependentInstance", "postDependingInstance", "preDependingInstance", "preDependentInstance"));
+    }
+
+    @Test
+    public void testAcceptRequests()
+            throws Exception
+    {
+        Module module = new Module()
+        {
+            @Override
+            public void configure(Binder binder)
+            {
+                binder.bind(AcceptDependingInstance.class).in(Scopes.SINGLETON);
+                binder.bind(AcceptRequestsInstance.class).in(Scopes.SINGLETON);
+            }
+        };
+        Injector injector = Guice.createInjector(
+                Stage.PRODUCTION,
+                new LifeCycleModule(),
+                module
+        );
+
+        injector.getInstance(AnotherInstance.class);
+
+        LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+        lifeCycleManager.start();
+        Assert.assertEquals(stateLog, ImmutableList.of("postDependingInstance", "postDependentInstance", "acceptRequestsInstance"));
+
+        lifeCycleManager.stop();
+        Assert.assertEquals(stateLog, ImmutableList.of("postDependingInstance", "postDependentInstance", "acceptRequestsInstance", "preAcceptRequestsInstance", "preDependentInstance", "preDependingInstance"));
     }
 
     @Test
@@ -240,7 +298,7 @@ public class TestLifeCycleManager
         lifeCycleManager.start();
         lifeCycleManager.stop();
 
-        Assert.assertEquals(stateLog, Arrays.asList("foo"));
+        Assert.assertEquals(stateLog, ImmutableList.of("foo"));
     }
 
     @Test
@@ -266,7 +324,7 @@ public class TestLifeCycleManager
         lifeCycleManager.start();
         lifeCycleManager.stop();
 
-        Assert.assertEquals(stateLog, Arrays.asList("postDependentInstance", "preDependentInstance"));
+        Assert.assertEquals(stateLog, ImmutableList.of("postDependentInstance", "preDependentInstance"));
     }
 
     @Test
@@ -290,10 +348,10 @@ public class TestLifeCycleManager
 
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         lifeCycleManager.start();
-        Assert.assertEquals(stateLog, Arrays.asList("makeMe"));
+        Assert.assertEquals(stateLog, ImmutableList.of("makeMe"));
 
         lifeCycleManager.stop();
-        Assert.assertEquals(stateLog, Arrays.asList("makeMe", "unmakeMe"));
+        Assert.assertEquals(stateLog, ImmutableList.of("makeMe", "unmakeMe"));
     }
 
     @Test

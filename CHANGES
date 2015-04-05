@@ -1,5 +1,13 @@
 Platform 1.18
 
+* Bootstrap
+
+  We added a new @AcceptRequests annotation for methods that start accepting
+  requests into the application. The methods will be invoked after all
+  @PostConstruct methods have been invoked. Upon shutdown, any @PreDestroy
+  methods in the class will be invoked before those in non-@AcceptRequests
+  classes.
+
 * Reporting
 
   We now report upon startup a ReportCollector.ServerStart metric with a value

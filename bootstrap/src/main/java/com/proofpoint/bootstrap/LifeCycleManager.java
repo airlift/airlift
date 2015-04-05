@@ -22,6 +22,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
@@ -34,8 +35,9 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class LifeCycleManager
 {
     private final Logger log = Logger.get(getClass());
-    private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
-    private final Queue<Object> managedInstances = new ConcurrentLinkedQueue<Object>();
+    private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
+    private final Queue<Object> managedInstances = new ConcurrentLinkedQueue<>();
+    private final Queue<Object> acceptRequestInstances = new ConcurrentLinkedQueue<>();
     private final LifeCycleMethodsMap methodsMap;
 
     private enum State
@@ -68,7 +70,7 @@ public final class LifeCycleManager
      */
     public int size()
     {
-        return managedInstances.size();
+        return managedInstances.size() + acceptRequestInstances.size();
     }
 
     /**
@@ -84,6 +86,13 @@ public final class LifeCycleManager
         }
         log.info("Life cycle starting...");
 
+        for (Object obj : acceptRequestInstances) {
+            LifeCycleMethods methods = methodsMap.get(obj.getClass());
+            startInstance(obj, methods.methodsFor(AcceptRequests.class));
+            if (!methods.hasFor(PreDestroy.class)) {
+                acceptRequestInstances.remove(obj);   // remove reference to instances that aren't needed anymore
+            }
+        }
         for (Object obj : managedInstances) {
             LifeCycleMethods methods = methodsMap.get(obj.getClass());
             if (!methods.hasFor(PreDestroy.class)) {
@@ -123,7 +132,17 @@ public final class LifeCycleManager
 
         log.info("Life cycle stopping...");
 
-        List<Object> reversedInstances = Lists.newArrayList(managedInstances);
+        stopList(acceptRequestInstances);
+        stopList(managedInstances);
+
+        state.set(State.STOPPED);
+        log.info("Life cycle stopped.");
+    }
+
+    private void stopList(Queue<Object> instances)
+            throws IllegalAccessException, InvocationTargetException
+    {
+        List<Object> reversedInstances = Lists.newArrayList(instances);
         Collections.reverse(reversedInstances);
 
         for (Object obj : reversedInstances) {
@@ -134,9 +153,6 @@ public final class LifeCycleManager
                 preDestroy.invoke(obj);
             }
         }
-
-        state.set(State.STOPPED);
-        log.info("Life cycle stopped.");
     }
 
     /**
@@ -153,21 +169,24 @@ public final class LifeCycleManager
             throw new IllegalStateException();
         }
         else {
-            startInstance(instance);
-            if (methodsMap.get(instance.getClass()).hasFor(PreDestroy.class)) {
+            LifeCycleMethods methods = methodsMap.get(instance.getClass());
+            startInstance(instance, methods.methodsFor(PostConstruct.class));
+            if (methods.hasFor(AcceptRequests.class)) {
+                acceptRequestInstances.add(instance);
+            }
+            else if (methods.hasFor(PreDestroy.class)) {
                 managedInstances.add(instance);
             }
         }
     }
 
-    private void startInstance(Object obj)
+    private void startInstance(Object obj, Collection<Method> methods)
             throws IllegalAccessException, InvocationTargetException
     {
         log.debug("Starting %s", obj.getClass().getName());
-        LifeCycleMethods methods = methodsMap.get(obj.getClass());
-        for (Method postConstruct : methods.methodsFor(PostConstruct.class)) {
-            log.debug("\t%s()", postConstruct.getName());
-            postConstruct.invoke(obj);
+        for (Method method : methods) {
+            log.debug("\t%s()", method.getName());
+            method.invoke(obj);
         }
     }
 }
