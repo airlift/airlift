@@ -166,7 +166,8 @@ public class TestTestingHttpServer
                                 {
                                 }).annotatedWith(TheServlet.class).toInstance(ImmutableMap.<String, String>of());
                             }
-                        });
+                        })
+                .quiet();
 
         Injector injector = app.initialize();
 
@@ -206,7 +207,8 @@ public class TestTestingHttpServer
                                 }).annotatedWith(TheServlet.class).toInstance(ImmutableMap.<String, String>of());
                                 newSetBinder(binder, Filter.class, TheServlet.class).addBinding().toInstance(filter);
                             }
-                        });
+                        })
+                .quiet();
 
         Injector injector = app.initialize();
 
@@ -251,7 +253,8 @@ public class TestTestingHttpServer
                                 httpServerBinder(binder).bindResource("path", "webapp/user").withWelcomeFile("user-welcome.txt");
                                 httpServerBinder(binder).bindResource("path", "webapp/user2");
                             }
-                        });
+                        })
+                .quiet();
 
         Injector injector = app.initialize();
 

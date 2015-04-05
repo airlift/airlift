@@ -29,6 +29,8 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
+import com.proofpoint.bootstrap.LifeCycleManager;
+import com.proofpoint.bootstrap.LifeCycleModule;
 import com.proofpoint.configuration.ConfigurationFactory;
 import com.proofpoint.configuration.ConfigurationModule;
 import com.proofpoint.event.client.NullEventModule;
@@ -109,6 +111,7 @@ public class TestHttpServerModule
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
         Injector injector = Guice.createInjector(new HttpServerModule(),
                 new ApplicationNameModule("test-application"),
+                new LifeCycleModule(),
                 new TestingNodeModule(),
                 new ConfigurationModule(configFactory),
                 new NullEventModule(),
@@ -140,6 +143,7 @@ public class TestHttpServerModule
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
         Injector injector = Guice.createInjector(new HttpServerModule(),
                 new ApplicationNameModule("test-application"),
+                new LifeCycleModule(),
                 new TestingNodeModule(),
                 new ConfigurationModule(configFactory),
                 new NullEventModule(),
@@ -184,6 +188,7 @@ public class TestHttpServerModule
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
         Injector injector = Guice.createInjector(new HttpServerModule(),
                 new ApplicationNameModule("test-application"),
+                new LifeCycleModule(),
                 new TestingNodeModule(),
                 new ConfigurationModule(configFactory),
                 new NullEventModule(),
@@ -206,8 +211,8 @@ public class TestHttpServerModule
 
         HttpServerInfo httpServerInfo = injector.getInstance(HttpServerInfo.class);
 
-        HttpServer server = injector.getInstance(HttpServer.class);
-        server.start();
+        LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+        lifeCycleManager.start();
 
         try (HttpClient client = new JettyHttpClient()) {
 
@@ -235,7 +240,7 @@ public class TestHttpServerModule
             assertResource(httpUri, client, "path/user2.txt", "user2");
         }
         finally {
-            server.stop();
+            lifeCycleManager.stop();
         }
     }
 

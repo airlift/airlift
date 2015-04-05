@@ -16,9 +16,11 @@
 package com.proofpoint.http.server;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import com.google.common.net.InetAddresses;
+import com.proofpoint.bootstrap.LifeCycleManager;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.HttpClientConfig;
 import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
@@ -30,7 +32,6 @@ import com.proofpoint.log.Logging;
 import com.proofpoint.node.NodeConfig;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.testing.FileUtils;
-import com.proofpoint.tracetoken.TraceTokenManager;
 import com.proofpoint.units.Duration;
 import org.apache.commons.codec.binary.Base64;
 import org.testng.annotations.AfterMethod;
@@ -42,7 +43,6 @@ import javax.servlet.Filter;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
-import java.io.IOException;
 import java.net.ConnectException;
 import java.util.concurrent.TimeUnit;
 
@@ -66,6 +66,7 @@ public class TestHttpServerProvider
     private NodeInfo nodeInfo;
     private HttpServerConfig config;
     private HttpServerInfo httpServerInfo;
+    private LifeCycleManager lifeCycleManager;
 
     @BeforeSuite
     public void setupSuite()
@@ -75,7 +76,7 @@ public class TestHttpServerProvider
 
     @BeforeMethod
     public void setup()
-            throws IOException
+            throws Exception
     {
         originalTrustStore = System.getProperty(JAVAX_NET_SSL_TRUST_STORE);
         System.setProperty(JAVAX_NET_SSL_TRUST_STORE, getResource("localhost.keystore").getPath());
@@ -91,6 +92,7 @@ public class TestHttpServerProvider
                 .setNodeInternalHostname("localhost")
         );
         httpServerInfo = new HttpServerInfo(config, nodeInfo);
+        lifeCycleManager = new LifeCycleManager(ImmutableList.of(), null);
     }
 
     @AfterMethod
@@ -119,7 +121,7 @@ public class TestHttpServerProvider
             throws Exception
     {
         createServer();
-        server.start();
+        lifeCycleManager.start();
 
         try (JettyHttpClient httpClient = new JettyHttpClient()) {
             StatusResponse response = httpClient.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
@@ -140,7 +142,7 @@ public class TestHttpServerProvider
         httpServerInfo = new HttpServerInfo(config, nodeInfo);
 
         createServer();
-        server.start();
+        lifeCycleManager.start();
 
         HttpClient client = new JettyHttpClient();
         StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpsUri()).build(), createStatusResponseHandler());
@@ -153,7 +155,7 @@ public class TestHttpServerProvider
             throws Exception
     {
         createServer();
-        server.start();
+        lifeCycleManager.start();
 
         try (JettyHttpClient client = new JettyHttpClient()) {
             StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri().resolve("/filter")).build(), createStatusResponseHandler());
@@ -193,7 +195,7 @@ public class TestHttpServerProvider
         config.setHttpEnabled(false);
 
         createServer();
-        server.start();
+        lifeCycleManager.start();
 
         try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(2.0, TimeUnit.SECONDS)))) {
             StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri().resolve("/")).build(), createStatusResponseHandler());
@@ -217,7 +219,7 @@ public class TestHttpServerProvider
         config.setUserAuthFile(file.getAbsolutePath());
 
         createServer();
-        server.start();
+        lifeCycleManager.start();
 
         try (HttpClient client = new JettyHttpClient()) {
             StringResponse response = client.execute(
@@ -238,7 +240,7 @@ public class TestHttpServerProvider
     {
         config.setShowStackTrace(true);
         createServer(new ErrorServlet());
-        server.start();
+        lifeCycleManager.start();
 
         try (HttpClient client = new JettyHttpClient()) {
             StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
@@ -252,7 +254,7 @@ public class TestHttpServerProvider
             throws Exception
     {
         createServer(new ErrorServlet());
-        server.start();
+        lifeCycleManager.start();
 
         try (HttpClient client = new JettyHttpClient()) {
             StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
@@ -316,8 +318,8 @@ public class TestHttpServerProvider
                 ImmutableSet.<Filter>of(),
                 new RequestStats(),
                 new TestingHttpServer.DetailedRequestStats(),
-                new QueryStringFilter()
-        );
+                new QueryStringFilter(),
+                lifeCycleManager);
         serverProvider.setLoginService(loginServiceProvider.get());
         server = serverProvider.get();
     }

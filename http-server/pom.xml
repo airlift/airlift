@@ -19,6 +19,11 @@
 
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
+            <artifactId>bootstrap</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
             <artifactId>configuration</artifactId>
         </dependency>
 
@@ -159,12 +164,6 @@
         </dependency>
 
         <!-- for testing -->
-        <dependency>
-            <groupId>com.proofpoint.platform</groupId>
-            <artifactId>bootstrap</artifactId>
-            <scope>test</scope>
-        </dependency>
-
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>http-client</artifactId>

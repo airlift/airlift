@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.proofpoint.bootstrap.LifeCycleManager;
 import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 import com.proofpoint.node.NodeInfo;
 import org.eclipse.jetty.security.LoginService;
@@ -55,6 +56,7 @@ public class HttpServerProvider
     private final Set<Filter> filters;
     private final Set<Filter> adminFilters;
     private final QueryStringFilter queryStringFilter;
+    private final LifeCycleManager lifeCycleManager;
 
     @Inject
     public HttpServerProvider(HttpServerInfo httpServerInfo,
@@ -67,7 +69,8 @@ public class HttpServerProvider
             @TheAdminServlet Set<Filter> adminFilters,
             RequestStats stats,
             DetailedRequestStats detailedRequestStats,
-            QueryStringFilter queryStringFilter)
+            QueryStringFilter queryStringFilter,
+            LifeCycleManager lifeCycleManager)
     {
         checkNotNull(httpServerInfo, "httpServerInfo is null");
         checkNotNull(nodeInfo, "nodeInfo is null");
@@ -92,6 +95,7 @@ public class HttpServerProvider
         this.stats = stats;
         this.detailedRequestStats = detailedRequestStats;
         this.queryStringFilter = queryStringFilter;
+        this.lifeCycleManager = checkNotNull(lifeCycleManager, "lifeCycleManager is null");
     }
 
     @Inject(optional = true)
@@ -138,7 +142,7 @@ public class HttpServerProvider
                     stats,
                     detailedRequestStats
             );
-            httpServer.start();
+            lifeCycleManager.addInstance(httpServer);
             return httpServer;
         }
         catch (Exception e) {

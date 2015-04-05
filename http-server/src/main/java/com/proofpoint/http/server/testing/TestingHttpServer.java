@@ -29,6 +29,7 @@ import com.proofpoint.node.NodeInfo;
 import com.proofpoint.stats.SparseTimeStat;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import java.io.IOException;

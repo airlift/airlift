@@ -15,8 +15,10 @@
  */
 package com.proofpoint.http.server;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
+import com.proofpoint.bootstrap.AcceptRequests;
 import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 import com.proofpoint.node.NodeInfo;
 import org.eclipse.jetty.jmx.MBeanContainer;
@@ -48,14 +50,12 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.weakref.jmx.Flatten;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.management.MBeanServer;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -327,7 +327,7 @@ public class HttpServer
 
         // TODO: support for other auth schemes (digest, etc)
         securityHandler.setAuthenticator(new BasicAuthenticator());
-        securityHandler.setConstraintMappings(Arrays.asList(constraintMapping));
+        securityHandler.setConstraintMappings(ImmutableList.of(constraintMapping));
         return securityHandler;
     }
 
@@ -353,7 +353,7 @@ public class HttpServer
         return logHandler;
     }
 
-    @PostConstruct
+    @AcceptRequests
     public void start()
             throws Exception
     {

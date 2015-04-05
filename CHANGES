@@ -8,6 +8,15 @@ Platform 1.18
   methods in the class will be invoked before those in non-@AcceptRequests
   classes.
 
+* HttpServer
+
+  We changed HttpServer.start() to be an @AcceptRequests method in order to
+  ensure all dependencies are initialized before accepting client requests.
+
+  This adds a dependency from HttpServerModule to Bootstrap, which might break
+  unit tests that use HttpServerModule without Bootstrap. Such unit tests
+  should be modified to use Bootstrap--see the sample server's TestServer.
+
 * Reporting
 
   We now report upon startup a ReportCollector.ServerStart metric with a value
