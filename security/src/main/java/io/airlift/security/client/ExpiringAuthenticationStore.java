@@ -1,5 +1,6 @@
 package io.airlift.security.client;
 
+import com.google.common.base.Joiner;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.eclipse.jetty.client.api.Authentication;
@@ -7,35 +8,35 @@ import org.eclipse.jetty.client.api.AuthenticationStore;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
-public class JettyAuthenticationStore implements AuthenticationStore
+public class ExpiringAuthenticationStore implements AuthenticationStore
 {
     private static final int DEFAULT_CACHE_SIZE = 10000;
-    private static final int DEFAULT_CACHE_EXPIRE_TIME_IN_SECOND = 60 * 5;
-    private static final int DEFAULT_CURRENCY_LEVEL = 16;
-    private static final String DELIMITER = ":";
+    private static final Duration DEFAULT_CACHE_EXPIRE_TIME = Duration.ofMinutes(5);
+    private static final int DEFAULT_CONCURRENCY_LEVEL = 16;
     private final Cache<URI, Authentication.Result> results;
     private final Cache<String, Authentication> authentications;
 
-    public JettyAuthenticationStore()
+    public ExpiringAuthenticationStore()
     {
-        this(DEFAULT_CACHE_SIZE, DEFAULT_CACHE_EXPIRE_TIME_IN_SECOND);
+        this(DEFAULT_CACHE_SIZE, DEFAULT_CACHE_EXPIRE_TIME);
     }
 
-    public JettyAuthenticationStore(int cacheSize, int cacheExpireTime)
+    public ExpiringAuthenticationStore(int cacheSize, Duration cacheExpireTime)
     {
         authentications = CacheBuilder.newBuilder()
-                .concurrencyLevel(DEFAULT_CURRENCY_LEVEL)
+                .concurrencyLevel(DEFAULT_CONCURRENCY_LEVEL)
                 .maximumSize(cacheSize)
-                .expireAfterAccess(cacheExpireTime, TimeUnit.SECONDS).build();
+                .expireAfterAccess(cacheExpireTime.getSeconds(), TimeUnit.SECONDS).build();
         results = CacheBuilder.newBuilder()
-                .concurrencyLevel(DEFAULT_CURRENCY_LEVEL)
+                .concurrencyLevel(DEFAULT_CONCURRENCY_LEVEL)
                 .maximumSize(cacheSize)
-                .expireAfterWrite(cacheExpireTime, TimeUnit.SECONDS).build();
+                .expireAfterWrite(cacheExpireTime.getSeconds(), TimeUnit.SECONDS).build();
     }
 
     @Override
@@ -50,9 +51,11 @@ public class JettyAuthenticationStore implements AuthenticationStore
     @Override
     public void removeAuthentication(Authentication authentication)
     {
-        checkArgument(authentication instanceof JettyAuthentication, "authentication is not instance of JettyAuthentication");
+        checkArgument(authentication instanceof JettyAuthentication,
+                "authentication is not instance of JettyAuthentication");
         JettyAuthentication jettyAuthentication = (JettyAuthentication)authentication;
-        String key = getKey(jettyAuthentication.getAuthScheme().toString(), jettyAuthentication.getServiceUri());
+        String key = getKey(jettyAuthentication.getAuthScheme().toString(),
+                jettyAuthentication.getServiceUri());
         authentications.invalidate(key);
     }
 
@@ -91,9 +94,9 @@ public class JettyAuthenticationStore implements AuthenticationStore
 
     private String getKey(String type, URI uri)
     {
-        String s = type + DELIMITER + uri.getScheme() + DELIMITER + uri.getHost();
-        return s.toLowerCase();
+        return Joiner.on(":").join(type, uri.getScheme(), uri.getHost()).toLowerCase();
     }
+
     @Override
     public void clearAuthenticationResults()
     {
@@ -103,7 +106,7 @@ public class JettyAuthenticationStore implements AuthenticationStore
     @Override
     public Authentication.Result findAuthenticationResult(URI uri)
     {
-        checkNotNull(uri, "uri is null");
+        requireNonNull(uri, "uri is null");
         if (uri.getScheme().equalsIgnoreCase("https")) {
             try {
                 // TODO: match the longest URI based on Trie for fine grained control

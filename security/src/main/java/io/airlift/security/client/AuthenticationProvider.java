@@ -9,28 +9,27 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 public class AuthenticationProvider
 {
-    private final ClientSecurityConfig clientSecurityConfig;
+    private final ClientSecurityConfig config;
 
-    public AuthenticationProvider(ClientSecurityConfig clientSecurityConfig)
+    public AuthenticationProvider(ClientSecurityConfig config)
     {
-        checkArgument(clientSecurityConfig != null && clientSecurityConfig.enabled(), "clientSecurityConfig is null or not enabled.");
+        checkArgument(config != null && config.enabled(), "clientSecurityConfig is null or not enabled.");
 
-        switch (clientSecurityConfig.getAuthScheme()) {
+        switch (config.getAuthScheme()) {
             case NEGOTIATE:
                 break;
             default:
-                throw new AuthenticationException("Unsupported scheme " + clientSecurityConfig.getAuthScheme());
+                throw new AuthenticationException("Unsupported scheme " + config.getAuthScheme());
         }
-        this.clientSecurityConfig = clientSecurityConfig;
+        this.config = config;
     }
 
     public Authentication createAuthentication(URI serviceUri)
     {
-        SpnegoAuthentication spengoAuthentication = new SpnegoAuthentication(
-                clientSecurityConfig.getAuthScheme(),
-                clientSecurityConfig.getKrb5Conf(),
-                clientSecurityConfig.getServiceName(),
+        return new SpnegoAuthentication(
+                config.getAuthScheme(),
+                config.getKrb5Conf(),
+                config.getServiceName(),
                 serviceUri);
-        return spengoAuthentication;
     }
 }

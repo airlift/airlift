@@ -22,7 +22,7 @@ import io.airlift.http.client.StaticBodyGenerator;
 import io.airlift.log.Logger;
 import io.airlift.security.client.AuthenticationProvider;
 import io.airlift.security.client.ClientSecurityConfig;
-import io.airlift.security.client.JettyAuthenticationStore;
+import io.airlift.security.client.ExpiringAuthenticationStore;
 import io.airlift.stats.Distribution;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.client.ConnectionPool;
@@ -125,12 +125,12 @@ public class JettyHttpClient
 
     public JettyHttpClient(HttpClientConfig config, Iterable<? extends HttpRequestFilter> requestFilters)
     {
-        this(config, null, Optional.<JettyIoPool>absent(), requestFilters);
+        this(config, new ClientSecurityConfig(), Optional.<JettyIoPool>absent(), requestFilters);
     }
 
     public JettyHttpClient(HttpClientConfig config, JettyIoPool jettyIoPool, Iterable<? extends HttpRequestFilter> requestFilters)
     {
-        this(config, null, Optional.of(jettyIoPool), requestFilters);
+        this(config, new ClientSecurityConfig(), Optional.of(jettyIoPool), requestFilters);
     }
 
     public JettyHttpClient(HttpClientConfig config, ClientSecurityConfig securityConfig)
@@ -151,6 +151,7 @@ public class JettyHttpClient
     private JettyHttpClient(HttpClientConfig config, ClientSecurityConfig securityConfig, Optional<JettyIoPool> jettyIoPool, Iterable<? extends HttpRequestFilter> requestFilters)
     {
         checkNotNull(config, "config is null");
+        checkNotNull(securityConfig, "securityConfig is null");
         checkNotNull(jettyIoPool, "jettyIoPool is null");
         checkNotNull(requestFilters, "requestFilters is null");
 
@@ -158,7 +159,7 @@ public class JettyHttpClient
         requestTimeoutMillis = config.getRequestTimeout().toMillis();
         idleTimeoutMillis = config.getIdleTimeout().toMillis();
         this.securityConfig = securityConfig;
-        authenticationProvider = securityConfig != null && securityConfig.enabled() ?
+        authenticationProvider = securityConfig.enabled() ?
                 new AuthenticationProvider(securityConfig) : null;
 
         creationLocation.fillInStackTrace();
@@ -170,7 +171,7 @@ public class JettyHttpClient
             sslContextFactory.setKeyStorePassword(config.getKeyStorePassword());
         }
 
-        httpClient = new SecureHttpClient(new HttpClientTransportOverHTTP(2), sslContextFactory);
+        httpClient = new WrappedHttpClient(new HttpClientTransportOverHTTP(2), sslContextFactory);
         httpClient.setMaxConnectionsPerDestination(config.getMaxConnectionsPerServer());
         httpClient.setMaxRequestsQueuedPerDestination(config.getMaxRequestsQueuedPerDestination());
 
@@ -293,7 +294,7 @@ public class JettyHttpClient
 
         // apply filters
         request = applyRequestFilters(request);
-        
+
         // create jetty request and response listener
         HttpRequest jettyRequest = buildJettyRequest(request);
         InputStreamResponseListener listener = new InputStreamResponseListener(maxContentLength)
@@ -421,15 +422,17 @@ public class JettyHttpClient
         jettyRequest.idleTimeout(idleTimeoutMillis, MILLISECONDS);
 
         // client authentications
-        if (jettyRequest.getURI().getScheme().equalsIgnoreCase("https")) {
+        if (jettyRequest.getURI().getScheme().equalsIgnoreCase("https") &&
+                securityConfig.enabled()) {
+            // Unlike other clients, Jetty Kerberos client requires the server to include a realm
+            // in the challenge from the server. This breaks the SPNEGO protocol. We use a custom
+            // header to tell the server to return the required realm.
             jettyRequest.header(io.airlift.security.utils.SecurityUtil.REALM_IN_CHALLENGE, "true");
             AuthenticationStore authStore = httpClient.getAuthenticationStore();
-            if (securityConfig != null && securityConfig.enabled()) {
-                String authScheme = securityConfig.getAuthScheme().toString();
-                if (authStore.findAuthentication(authScheme, jettyRequest.getURI(), null) == null) {
-                        httpClient.getAuthenticationStore().addAuthentication(
-                                authenticationProvider.createAuthentication(jettyRequest.getURI()));
-                }
+            String authScheme = securityConfig.getAuthScheme().toString();
+            if (authStore.findAuthentication(authScheme, jettyRequest.getURI(), null) == null) {
+                    httpClient.getAuthenticationStore().addAuthentication(
+                            authenticationProvider.createAuthentication(jettyRequest.getURI()));
             }
         }
         return jettyRequest;
@@ -1330,27 +1333,29 @@ public class JettyHttpClient
         }
     }
 
-    private static class SecureHttpClient
+    // By wrapping HttpClient, we are able to substitute the underlying AuthenticationStore
+    // with a more efficient one.
+    private static class WrappedHttpClient
             extends HttpClient
     {
-        private final JettyAuthenticationStore jettyAuthenticationStore;
+        private final ExpiringAuthenticationStore authenticationStore;
 
-        public SecureHttpClient(HttpClientTransport transport, SslContextFactory sslContextFactory)
+        public WrappedHttpClient(HttpClientTransport transport, SslContextFactory sslContextFactory)
         {
             super(transport, sslContextFactory);
-            jettyAuthenticationStore = new JettyAuthenticationStore();
+            authenticationStore = new ExpiringAuthenticationStore();
         }
 
         @Override
         public AuthenticationStore getAuthenticationStore() {
-            return jettyAuthenticationStore;
+            return authenticationStore;
         }
 
         @Override
         protected void doStop() throws Exception
         {
-            jettyAuthenticationStore.clearAuthentications();
-            jettyAuthenticationStore.clearAuthenticationResults();
+            authenticationStore.clearAuthentications();
+            authenticationStore.clearAuthenticationResults();
 
             super.doStop();
         }

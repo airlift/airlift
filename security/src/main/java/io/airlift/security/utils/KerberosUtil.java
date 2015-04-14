@@ -1,6 +1,7 @@
 package io.airlift.security.utils;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableSet;
 import io.airlift.log.Logger;
 import io.airlift.security.exception.AuthenticationException;
 import org.ietf.jgss.GSSContext;
@@ -15,6 +16,7 @@ import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -25,14 +27,20 @@ import java.security.PrivilegedAction;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
-import static com.google.common.base.Preconditions.checkState;
+import java.util.Set;
 
 public class KerberosUtil
 {
     private static final Oid SPNEGO_OID;
     private static final Oid KERBEROS_OID;
     private static final Oid[] SUPPORTED_OIDS;
+    private static final Set<String> LOCALHOST_NAMES = ImmutableSet.of(
+            "localhost",
+            "0.0.0.0",
+            "127.0.0.0",
+            "0000:0000:0000:0000:0000:0000:0000:0001",
+            "::1"
+    );
 
     static {
         try {
@@ -72,22 +80,19 @@ public class KerberosUtil
             IllegalArgumentException, IllegalAccessException,
             InvocationTargetException
     {
-        Object kerbConf;
         Class<?> classRef;
-        Method getInstanceMethod;
-        Method getDefaultRealmMethod;
         if (System.getProperty("java.vendor").contains("IBM")) {
             classRef = Class.forName("com.ibm.security.krb5.internal.Config");
         }
         else {
             classRef = Class.forName("sun.security.krb5.Config");
         }
-        getInstanceMethod = classRef.getMethod("getInstance", new Class[0]);
-        kerbConf = getInstanceMethod.invoke(classRef, new Object[0]);
-        getDefaultRealmMethod = classRef.getDeclaredMethod(
+        Method getInstanceMethod = classRef.getMethod("getInstance", new Class[0]);
+        Object kerbConf = getInstanceMethod.invoke(classRef, new Object[0]);
+        Method getDefaultRealmMethod = classRef.getDeclaredMethod(
                 "getDefaultRealm",
                 new Class[0]);
-        return (String) getDefaultRealmMethod.invoke(kerbConf, new Object[0]);
+        return (String)getDefaultRealmMethod.invoke(kerbConf, new Object[0]);
     }
 
     /**
@@ -96,35 +101,38 @@ public class KerberosUtil
      * dynamically looked-up fqdn of the current host instead.
      *
      * @param serviceName Service for which you want to generate the principal.
-     * @param serviceHostname Fully-qualified domain name.
+     * @param hostName Fully-qualified domain name.
      * @return Converted Kerberos principal name.
      * @throws UnknownHostException If no IP address for the local host could be found.
      */
-    public static final String getServicePrincipal(String serviceName, String serviceHostname)
+    public static final String getServicePrincipal(String serviceName, String hostName)
             throws UnknownHostException
     {
-        String fqdn = serviceHostname;
-        if (null == fqdn || fqdn.equals("") || fqdn.equals("0.0.0.0") || fqdn.equals("localhost")) {
+        InetAddress address = hostName == null ? null : InetAddress.getByName(hostName);
+        String fqdn = null;
+        if (address == null || address.getHostName().toLowerCase().equals("localhost")) {
             fqdn = InetAddress.getLocalHost().getCanonicalHostName();
-            ;
         }
+        else {
+            fqdn = address.getCanonicalHostName();
+        }
+
         return serviceName + "/" + fqdn.toLowerCase(Locale.US);
     }
 
-    public static Subject getSubject(String subjectName, String krb5Conf, Boolean client)
+    public static Subject getSubject(String subjectName, boolean client)
             throws LoginException, UnknownHostException
     {
-        KerberosConfiguration kerberosConfiguration = new KerberosConfiguration(subjectName, krb5Conf, client);
+        KerberosConfiguration kerberosConfiguration = new KerberosConfiguration(subjectName, client);
         String configName = client ? KerberosConfiguration.GSS_CLIENT : KerberosConfiguration.GSS_SERVER;
         LoginContext context = new LoginContext(configName, null, null, kerberosConfiguration);
         context.login();
         return context.getSubject();
     }
 
-    public static GSSContext getGssContext(final Subject subject, final String servicePrincipal, final boolean initiator)
+    public static GSSContext getGssContext(Subject subject, String servicePrincipal, boolean initiator)
     {
-        GSSContext gssContext = null;
-        gssContext = Subject.doAs(subject, new PrivilegedAction<GSSContext>()
+        return Subject.doAs(subject, new PrivilegedAction<GSSContext>()
         {
             public GSSContext run()
             {
@@ -165,15 +173,13 @@ public class KerberosUtil
                     context.requestConf(true);
                     context.requestInteg(true);
                     context.requestCredDeleg(false);
-
+                    return context;
                 }
                 catch (GSSException e) {
                     throw Throwables.propagate(e);
                 }
-                return context;
             }
         });
-        return gssContext;
     }
 
     public static class KerberosConfiguration
@@ -181,11 +187,10 @@ public class KerberosUtil
     {
         public static final String GSS_SERVER = "gss-server";
         public static final String GSS_CLIENT = "gss-client";
-        private final String principal;
-        private final String krb5Conf;
         private static final Logger log = Logger.get(KerberosConfiguration.class);
+        private final String principal;
 
-        public KerberosConfiguration(String subjectName, String krb5Config, boolean fromClient)
+        public KerberosConfiguration(String subjectName, boolean fromClient)
                 throws UnknownHostException
         {
             if (fromClient) {
@@ -194,16 +199,12 @@ public class KerberosUtil
             else {
                 this.principal = KerberosUtil.getServicePrincipal(subjectName, null);
             }
-            this.krb5Conf = krb5Config;
         }
 
         @Override
         public AppConfigurationEntry[] getAppConfigurationEntry(String name)
         {
-            System.setProperty("java.security.krb5.conf", krb5Conf);
-            String ticketCache = System.getenv("KRB5CCNAME");
-
-            Map<String, String> options = new HashMap<String, String>();
+            Map<String, String> options = new HashMap<>();
             options.put("refreshKrb5Config", "true");
             options.put("doNotPrompt", "true");
             if (log.isDebugEnabled()) {
@@ -219,6 +220,7 @@ public class KerberosUtil
                     options.put("storeKey", "true");
                     break;
                 case GSS_CLIENT:
+                    String ticketCache = System.getenv("KRB5CCNAME");
                     if (ticketCache != null) {
                         options.put("ticketCache", ticketCache);
                         options.put("useTicketCache", "true");
@@ -226,12 +228,11 @@ public class KerberosUtil
                     }
                     break;
                 default:
-                    checkState(name == GSS_SERVER || name == GSS_CLIENT,
-                            String.format("Krb5LoginModule configuration name %s is invalid. it should be one of %s and %s",
-                                    name,
-                                    GSS_CLIENT,
-                                    GSS_SERVER));
-                    break;
+                    throw new IllegalArgumentException(String.format(
+                            "Krb5LoginModule configuration name %s is invalid. it should be one of %s and %s",
+                            name,
+                            GSS_CLIENT,
+                            GSS_SERVER));
             }
 
             return new AppConfigurationEntry[] {

@@ -1,23 +1,25 @@
 package io.airlift.security.exception;
 
-public class AuthenticationException extends RuntimeException
+public class AuthenticationException
+        extends RuntimeException
 {
     public AuthenticationException()
     {
+        super();
     }
 
-    public AuthenticationException(String s)
+    public AuthenticationException(String message)
     {
-        super(s);
+        super(message);
     }
 
-    public AuthenticationException(String s, Throwable throwable)
+    public AuthenticationException(String message, Throwable cause)
     {
-        super(s, throwable);
+        super(message, cause);
     }
 
-    public AuthenticationException(Throwable throwable)
+    public AuthenticationException(Throwable cause)
     {
-        super(throwable);
+        super(cause);
     }
 }

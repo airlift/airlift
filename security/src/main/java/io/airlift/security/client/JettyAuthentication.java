@@ -5,19 +5,18 @@ import org.eclipse.jetty.client.api.Authentication;
 
 import java.net.URI;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
-public abstract class JettyAuthentication implements Authentication
+public abstract class JettyAuthentication
+        implements Authentication
 {
-    private final AuthScheme authScheme;
+    private final AuthScheme scheme;
     private final URI serviceUri;
 
-    public JettyAuthentication(AuthScheme authScheme, URI serviceUri)
+    public JettyAuthentication(AuthScheme scheme, URI serviceUri)
     {
-        checkNotNull(authScheme, "authScheme is null");
-        checkNotNull(serviceUri, "serviceUri is null");
-        this.authScheme = authScheme;
-        this.serviceUri = serviceUri;
+        this.scheme = requireNonNull(scheme, "scheme is null");
+        this.serviceUri = requireNonNull(serviceUri, "serviceUri is null");
     }
 
     public URI getServiceUri()
@@ -27,6 +26,6 @@ public abstract class JettyAuthentication implements Authentication
 
     public AuthScheme getAuthScheme()
     {
-        return authScheme;
+        return scheme;
     }
 }

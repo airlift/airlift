@@ -19,8 +19,8 @@ public enum AuthScheme
             }
         }
 
-        throw new IllegalArgumentException("Invalid value " + value +
-                " for " + AuthScheme.class.getSimpleName());
+        throw new IllegalArgumentException(String.format("Invalid value %s for %s",
+                value, AuthScheme.class.getSimpleName()));
     }
 
     @Override
