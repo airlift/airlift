@@ -1,7 +1,6 @@
 package io.airlift.security.utils;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableSet;
 import io.airlift.log.Logger;
 import io.airlift.security.exception.AuthenticationException;
 import org.ietf.jgss.GSSContext;
@@ -27,20 +26,12 @@ import java.security.PrivilegedAction;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 public class KerberosUtil
 {
     private static final Oid SPNEGO_OID;
     private static final Oid KERBEROS_OID;
     private static final Oid[] SUPPORTED_OIDS;
-    private static final Set<String> LOCALHOST_NAMES = ImmutableSet.of(
-            "localhost",
-            "0.0.0.0",
-            "127.0.0.0",
-            "0000:0000:0000:0000:0000:0000:0000:0001",
-            "::1"
-    );
 
     static {
         try {
