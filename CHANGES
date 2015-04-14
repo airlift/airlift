@@ -1,3 +1,8 @@
+Platform 1.19
+
+* Maven plugin upgrades
+  - findbugs-maven-plugin to 3.0.1
+
 Platform 1.18
 
 * Bootstrap
