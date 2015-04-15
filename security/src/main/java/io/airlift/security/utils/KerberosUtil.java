@@ -27,6 +27,8 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import static com.google.common.base.Preconditions.checkState;
+
 public class KerberosUtil
 {
     private static final Oid SPNEGO_OID;
@@ -101,8 +103,10 @@ public class KerberosUtil
     {
         InetAddress address = hostName == null ? null : InetAddress.getByName(hostName);
         String fqdn = null;
-        if (address == null || address.getHostName().toLowerCase().equals("localhost")) {
+        if (address == null || address.getHostName().toLowerCase().startsWith("localhost")) {
             fqdn = InetAddress.getLocalHost().getCanonicalHostName();
+            checkState(!fqdn.equalsIgnoreCase("localhost"),
+                    "Fully qualified host name for localhost is not retrieved");
         }
         else {
             fqdn = address.getCanonicalHostName();

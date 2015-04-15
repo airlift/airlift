@@ -29,12 +29,13 @@ public class SpnegoAuthentication
     private final String krb5ConfPath;
     private final String serviceName;
 
-    public SpnegoAuthentication(AuthScheme authScheme, String krb5ConfPath, String serviceName, URI serviceUri)
+    public SpnegoAuthentication(AuthScheme authScheme, String krb5ConfPath, String serviceName)
     {
-        super(authScheme, serviceUri);
+        super(authScheme);
 
         this.krb5ConfPath = requireNonNull(krb5ConfPath, "krb5ConfPath is null");
         this.serviceName = requireNonNull(serviceName, "serviceName is null");
+
         System.setProperty("java.security.krb5.conf", krb5ConfPath);
     }
 
@@ -44,17 +45,15 @@ public class SpnegoAuthentication
         boolean caughtException = false;
         GSSContext gssContext = null;
         try {
-            gssContext = getGssContext();
-            byte[] token = new byte[0];
-            if (!gssContext.isEstablished()) {
-                token = gssContext.initSecContext(token, 0, token.length);
-            }
-
+            gssContext = getGssContext(request.getURI());
+            // We generate the token once and send it to the peer.
+            byte[] token = gssContext.initSecContext(new byte[0], 0, 0);
             if (token != null) {
                 log.debug("Successfully established GSSContext with source name: %s and target name: %s",
                         gssContext.getSrcName(),
                         gssContext.getTargName());
-                String spnegoToken = NEGOTIATE + " " + String.valueOf(B64Code.encode(token));
+                String spnegoToken = String.format("%s %s", NEGOTIATE,
+                        String.valueOf(B64Code.encode(token)));
                 URI requestUri = request.getURI();
                 URI baseUri = new URI(requestUri.getScheme(), requestUri.getHost(), null, null);
                 return new SpnegoResult(headerInfo.getHeader(), baseUri, spnegoToken);
@@ -86,16 +85,14 @@ public class SpnegoAuthentication
     @Override
     public boolean matches(String type, URI uri, String realm)
     {
-        //Realm is not used as for now
-        return AuthScheme.NEGOTIATE.toString().equalsIgnoreCase(type) &&
-                getServiceUri().getScheme().equalsIgnoreCase(uri.getScheme()) &&
-                getServiceUri().getHost().equalsIgnoreCase(uri.getHost());
+        // The class matches all requests for Negotiate scheme.Realm is not used as for now
+        return AuthScheme.NEGOTIATE.toString().equalsIgnoreCase(type);
     }
 
-    private GSSContext getGssContext()
+    private GSSContext getGssContext(URI serviceURI)
             throws UnknownHostException, LoginException
     {
-        String serviceHostName = getServiceUri().getHost();
+        String serviceHostName = serviceURI.getHost();
         String servicePrincipal = KerberosUtil.getServicePrincipal(serviceName, serviceHostName);
         Subject clientSubject = KerberosUtil.getSubject(null, true);
         return KerberosUtil.getGssContext(clientSubject, servicePrincipal, true);

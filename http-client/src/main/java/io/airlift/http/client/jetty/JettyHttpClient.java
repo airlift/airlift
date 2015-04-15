@@ -198,6 +198,11 @@ public class JettyHttpClient
         httpClient.setByteBufferPool(pool.getByteBufferPool());
         httpClient.setScheduler(pool.getScheduler());
 
+        if (authenticationProvider != null) {
+            httpClient.getAuthenticationStore().addAuthentication(
+                    authenticationProvider.createAuthentication());
+        }
+
         // Jetty client connections can sometimes get stuck while closing which reduces
         // the available connections.  The Jetty Sweeper periodically scans the active
         // connection pool looking for connections in the closed state, and if a connection
@@ -428,12 +433,6 @@ public class JettyHttpClient
             // in the challenge from the server. This breaks the SPNEGO protocol. We use a custom
             // header to tell the server to return the required realm.
             jettyRequest.header(io.airlift.security.utils.SecurityUtil.REALM_IN_CHALLENGE, "true");
-            AuthenticationStore authStore = httpClient.getAuthenticationStore();
-            String authScheme = securityConfig.getAuthScheme().toString();
-            if (authStore.findAuthentication(authScheme, jettyRequest.getURI(), null) == null) {
-                    httpClient.getAuthenticationStore().addAuthentication(
-                            authenticationProvider.createAuthentication(jettyRequest.getURI()));
-            }
         }
         return jettyRequest;
     }

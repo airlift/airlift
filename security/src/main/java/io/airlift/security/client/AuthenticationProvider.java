@@ -3,8 +3,6 @@ package io.airlift.security.client;
 import io.airlift.security.exception.AuthenticationException;
 import org.eclipse.jetty.client.api.Authentication;
 
-import java.net.URI;
-
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class AuthenticationProvider
@@ -24,12 +22,11 @@ public class AuthenticationProvider
         this.config = config;
     }
 
-    public Authentication createAuthentication(URI serviceUri)
+    public Authentication createAuthentication()
     {
         return new SpnegoAuthentication(
                 config.getAuthScheme(),
                 config.getKrb5Conf(),
-                config.getServiceName(),
-                serviceUri);
+                config.getServiceName());
     }
 }

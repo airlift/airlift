@@ -1,6 +1,5 @@
 package io.airlift.security.client;
 
-import com.google.common.base.Joiner;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.eclipse.jetty.client.api.Authentication;
@@ -9,6 +8,8 @@ import org.eclipse.jetty.client.api.AuthenticationStore;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -20,7 +21,9 @@ public class ExpiringAuthenticationStore implements AuthenticationStore
     private static final Duration DEFAULT_CACHE_EXPIRE_TIME = Duration.ofMinutes(5);
     private static final int DEFAULT_CONCURRENCY_LEVEL = 16;
     private final Cache<URI, Authentication.Result> results;
-    private final Cache<String, Authentication> authentications;
+
+    // Authentications are keyed by the AuthScheme.
+    private final Map<String, Authentication> authentications;
 
     public ExpiringAuthenticationStore()
     {
@@ -29,10 +32,7 @@ public class ExpiringAuthenticationStore implements AuthenticationStore
 
     public ExpiringAuthenticationStore(int cacheSize, Duration cacheExpireTime)
     {
-        authentications = CacheBuilder.newBuilder()
-                .concurrencyLevel(DEFAULT_CONCURRENCY_LEVEL)
-                .maximumSize(cacheSize)
-                .expireAfterAccess(cacheExpireTime.getSeconds(), TimeUnit.SECONDS).build();
+        authentications = new HashMap<>();
         results = CacheBuilder.newBuilder()
                 .concurrencyLevel(DEFAULT_CONCURRENCY_LEVEL)
                 .maximumSize(cacheSize)
@@ -44,8 +44,7 @@ public class ExpiringAuthenticationStore implements AuthenticationStore
     {
         checkArgument(authentication instanceof JettyAuthentication, "authentication is not instance of JettyAuthentication");
         JettyAuthentication jettyAuthentication = (JettyAuthentication)authentication;
-        String key = getKey(jettyAuthentication.getAuthScheme().toString(), jettyAuthentication.getServiceUri());
-        authentications.put(key, authentication);
+        authentications.put(jettyAuthentication.getAuthScheme().toString(), authentication);
     }
 
     @Override
@@ -54,22 +53,19 @@ public class ExpiringAuthenticationStore implements AuthenticationStore
         checkArgument(authentication instanceof JettyAuthentication,
                 "authentication is not instance of JettyAuthentication");
         JettyAuthentication jettyAuthentication = (JettyAuthentication)authentication;
-        String key = getKey(jettyAuthentication.getAuthScheme().toString(),
-                jettyAuthentication.getServiceUri());
-        authentications.invalidate(key);
+        authentications.remove(jettyAuthentication.getAuthScheme().toString());
     }
 
     @Override
     public void clearAuthentications()
     {
-        authentications.cleanUp();
+        authentications.clear();
     }
 
     @Override
     public Authentication findAuthentication(String type, URI uri, String realm)
     {
-        String key = getKey(type, uri);
-        return authentications.getIfPresent(key);
+        return authentications.get(type);
     }
 
     @Override
@@ -90,11 +86,6 @@ public class ExpiringAuthenticationStore implements AuthenticationStore
         } catch (URISyntaxException e) {
             // do nothing
         }
-    }
-
-    private String getKey(String type, URI uri)
-    {
-        return Joiner.on(":").join(type, uri.getScheme(), uri.getHost()).toLowerCase();
     }
 
     @Override
@@ -123,6 +114,6 @@ public class ExpiringAuthenticationStore implements AuthenticationStore
         if (uri == null) {
             return null;
         }
-        return new URI(uri.getScheme(),uri.getHost(), null, null);
+        return new URI(uri.getScheme(), null, uri.getHost(), uri.getPort(), null, null, null);
     }
 }
