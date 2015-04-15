@@ -30,8 +30,22 @@ import java.util.Collection;
 import java.util.List;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_CLASS_CAST_EXCEPTION;
+import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL;
+import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL_TO_NULL;
+import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_NOT_EQUAL;
+import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_NOT_REFLEXIVE;
+import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL;
+import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_NULL_EXCEPTION;
+import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_NULL;
+import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_UNRELATED_CLASS;
+import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_UNRELATED_CLASS_CLASS_CAST_EXCEPTION;
+import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.HASH_CODE_NOT_SAME;
+import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.NOT_EQUAL;
+import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.NOT_GREATER_THAN;
+import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.NOT_LESS_THAN;
+import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.NOT_REFLEXIVE;
 import static java.lang.String.format;
-import static com.proofpoint.testing.EquivalenceTester.EquivalenceFailureType.*;
 
 /**
  * Equivalence tester streamlining tests of {@link #equals(Object)} and {@link #hashCode} methods. Using this tester makes it
@@ -84,7 +98,7 @@ public final class EquivalenceTester
         }
 
         @SuppressWarnings({"ObjectEqualsNull"})
-        @SuppressFBWarnings("EC_NULL_ARG")
+        @SuppressFBWarnings({"EC_NULL_ARG","RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"})
         private List<ElementCheckFailure> checkEquivalence()
         {
             ImmutableList.Builder<ElementCheckFailure> errors = new ImmutableList.Builder<>();
