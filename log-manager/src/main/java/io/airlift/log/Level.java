@@ -1,6 +1,6 @@
 package io.airlift.log;
 
-enum Level
+public enum Level
 {
     OFF(java.util.logging.Level.OFF),
     DEBUG(java.util.logging.Level.FINE),
