@@ -1,6 +1,6 @@
 package com.proofpoint.log;
 
-enum Level
+public enum Level
 {
     OFF(java.util.logging.Level.OFF),
     DEBUG(java.util.logging.Level.FINE),
@@ -15,7 +15,7 @@ enum Level
         this.julLevel = julLevel;
     }
 
-    public java.util.logging.Level toJulLevel()
+    java.util.logging.Level toJulLevel()
     {
         return julLevel;
     }
