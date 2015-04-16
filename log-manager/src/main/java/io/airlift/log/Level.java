@@ -15,7 +15,7 @@ public enum Level
         this.julLevel = julLevel;
     }
 
-    public java.util.logging.Level toJulLevel()
+    java.util.logging.Level toJulLevel()
     {
         return julLevel;
     }
