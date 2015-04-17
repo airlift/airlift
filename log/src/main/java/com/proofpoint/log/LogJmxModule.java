@@ -18,7 +18,10 @@ package com.proofpoint.log;
 import com.google.common.annotations.Beta;
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
+
+import javax.inject.Singleton;
 
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
@@ -33,5 +36,12 @@ public class LogJmxModule
 
         binder.bind(LoggingMBean.class).in(Scopes.SINGLETON);
         newExporter(binder).export(LoggingMBean.class).as("com.proofpoint.log:name=Logging");
+    }
+
+    @Provides
+    @Singleton
+    public Logging getLogging()
+    {
+        return Logging.initialize();
     }
 }
