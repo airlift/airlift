@@ -1,35 +1,34 @@
 package io.airlift.security.client;
 
 import io.airlift.configuration.Config;
-import io.airlift.security.AuthScheme;
 
 public class ClientSecurityConfig
 {
-    private AuthScheme authScheme;
-    private String krb5Conf;
+    private String krb5ConfPath;
+    private boolean authenticationEnabled;
     private String serviceName;
 
-    public AuthScheme getAuthScheme()
+    public String getKrb5ConfPath()
     {
-        return authScheme;
+        return krb5ConfPath;
     }
 
-    @Config("http-security.client.authentication.scheme")
-    public ClientSecurityConfig setAuthScheme(AuthScheme authScheme)
+    @Config("http.authentication.negotiate.krb5conf")
+    public ClientSecurityConfig setKrb5ConfPath(String krb5ConfPath)
     {
-        this.authScheme = authScheme;
+        this.krb5ConfPath = krb5ConfPath;
         return this;
     }
 
-    public String getKrb5Conf()
+    public boolean getAuthenticationEnabled()
     {
-        return krb5Conf;
+        return authenticationEnabled;
     }
 
-    @Config("http-security.client.authentication.negotiate.krb5conf")
-    public ClientSecurityConfig setKrb5Conf(String krb5Conf)
+    @Config("http.client.authentication.enabled")
+    public ClientSecurityConfig setAuthenticationEnabled(boolean enabled)
     {
-        this.krb5Conf = krb5Conf;
+        this.authenticationEnabled = enabled;
         return this;
     }
 
@@ -38,15 +37,10 @@ public class ClientSecurityConfig
         return serviceName;
     }
 
-    @Config("http-security.client.authentication.negotiate.service-name")
+    @Config("http.client.authentication.negotiate.service-name")
     public ClientSecurityConfig setServiceName(String serviceName)
     {
         this.serviceName = serviceName;
         return this;
-    }
-
-    public boolean enabled()
-    {
-        return authScheme != null;
     }
 }

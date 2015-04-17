@@ -2,70 +2,61 @@ package io.airlift.security.client;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import io.airlift.units.Duration;
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
-public class ExpiringAuthenticationStore implements AuthenticationStore
+public class ExpiringAuthenticationStore
+        implements AuthenticationStore
 {
-    private static final int DEFAULT_CACHE_SIZE = 10000;
-    private static final Duration DEFAULT_CACHE_EXPIRE_TIME = Duration.ofMinutes(5);
-    private static final int DEFAULT_CONCURRENCY_LEVEL = 16;
+    private static final int CACHE_SIZE = 10000;
+    private static final Duration CACHE_EXPIRE_TIME = new Duration(5, TimeUnit.MINUTES);
+    private static final int CONCURRENCY_LEVEL = 16;
     private final Cache<URI, Authentication.Result> results;
 
-    // Authentications are keyed by the AuthScheme.
-    private final Map<String, Authentication> authentications;
+    // Only support SPNEGO authentication for now
+    private final SpnegoAuthentication authentication;
 
-    public ExpiringAuthenticationStore()
+    public ExpiringAuthenticationStore(SpnegoAuthentication authentication)
     {
-        this(DEFAULT_CACHE_SIZE, DEFAULT_CACHE_EXPIRE_TIME);
-    }
-
-    public ExpiringAuthenticationStore(int cacheSize, Duration cacheExpireTime)
-    {
-        authentications = new HashMap<>();
+        this.authentication = authentication;
         results = CacheBuilder.newBuilder()
-                .concurrencyLevel(DEFAULT_CONCURRENCY_LEVEL)
-                .maximumSize(cacheSize)
-                .expireAfterWrite(cacheExpireTime.getSeconds(), TimeUnit.SECONDS).build();
+                .concurrencyLevel(CONCURRENCY_LEVEL)
+                .maximumSize(CACHE_SIZE)
+                .expireAfterWrite(CACHE_EXPIRE_TIME.roundTo(TimeUnit.MINUTES), TimeUnit.MINUTES).build();
     }
 
     @Override
     public void addAuthentication(Authentication authentication)
     {
-        checkArgument(authentication instanceof JettyAuthentication, "authentication is not instance of JettyAuthentication");
-        JettyAuthentication jettyAuthentication = (JettyAuthentication)authentication;
-        authentications.put(jettyAuthentication.getAuthScheme().toString(), authentication);
+        throw new UnsupportedOperationException("addAuthentication is not supported");
     }
 
     @Override
     public void removeAuthentication(Authentication authentication)
     {
-        checkArgument(authentication instanceof JettyAuthentication,
-                "authentication is not instance of JettyAuthentication");
-        JettyAuthentication jettyAuthentication = (JettyAuthentication)authentication;
-        authentications.remove(jettyAuthentication.getAuthScheme().toString());
+        throw new UnsupportedOperationException("removeAuthentication is not supported");
     }
 
     @Override
     public void clearAuthentications()
     {
-        authentications.clear();
+        throw new UnsupportedOperationException("clearAuthentications is not supported");
     }
 
     @Override
     public Authentication findAuthentication(String type, URI uri, String realm)
     {
-        return authentications.get(type);
+        if (authentication.matches(type, uri, realm)) {
+            return authentication;
+        }
+        throw new UnsupportedOperationException(String.format("Authentication type %s is not supported", type));
     }
 
     @Override
@@ -73,7 +64,8 @@ public class ExpiringAuthenticationStore implements AuthenticationStore
     {
         try {
             results.put(normalizedUri(result.getURI()), result);
-        } catch (URISyntaxException e) {
+        }
+        catch (URISyntaxException e) {
             // do nothing
         }
     }
@@ -83,7 +75,8 @@ public class ExpiringAuthenticationStore implements AuthenticationStore
     {
         try {
             results.invalidate(normalizedUri(result.getURI()));
-        } catch (URISyntaxException e) {
+        }
+        catch (URISyntaxException e) {
             // do nothing
         }
     }
@@ -102,14 +95,16 @@ public class ExpiringAuthenticationStore implements AuthenticationStore
             try {
                 // TODO: match the longest URI based on Trie for fine grained control
                 return results.getIfPresent(normalizedUri(uri));
-            } catch (URISyntaxException e) {
+            }
+            catch (URISyntaxException e) {
                 return null;
             }
         }
         return null;
     }
 
-    private URI normalizedUri(URI uri) throws URISyntaxException
+    private URI normalizedUri(URI uri)
+            throws URISyntaxException
     {
         if (uri == null) {
             return null;

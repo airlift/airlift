@@ -1,39 +1,31 @@
 package io.airlift.security.client;
 
 import io.airlift.log.Logger;
-import io.airlift.security.AuthScheme;
 import io.airlift.security.exception.AuthenticationException;
-import io.airlift.security.utils.KerberosUtil;
+import io.airlift.security.utils.CloseableGSSContext;
+import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.B64Code;
-import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSException;
-
-import javax.security.auth.Subject;
-import javax.security.auth.login.LoginException;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.UnknownHostException;
 
 import static java.util.Objects.requireNonNull;
 
 public class SpnegoAuthentication
-        extends JettyAuthentication
+        implements Authentication
 {
     private static final String NEGOTIATE = HttpHeader.NEGOTIATE.asString();
     private static final Logger log = Logger.get(SpnegoAuthentication.class);
-    private final String krb5ConfPath;
     private final String serviceName;
 
-    public SpnegoAuthentication(AuthScheme authScheme, String krb5ConfPath, String serviceName)
+    public SpnegoAuthentication(String krb5ConfPath, String serviceName)
     {
-        super(authScheme);
-
-        this.krb5ConfPath = requireNonNull(krb5ConfPath, "krb5ConfPath is null");
+        requireNonNull(krb5ConfPath, "krb5ConfPath is null");
         this.serviceName = requireNonNull(serviceName, "serviceName is null");
 
         System.setProperty("java.security.krb5.conf", krb5ConfPath);
@@ -42,60 +34,33 @@ public class SpnegoAuthentication
     @Override
     public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context)
     {
-        boolean caughtException = false;
-        GSSContext gssContext = null;
-        try {
-            gssContext = getGssContext(request.getURI());
+        URI requestURI = request.getURI();
+        try (CloseableGSSContext gssContext = new CloseableGSSContext(serviceName, requestURI)) {
             // We generate the token once and send it to the peer.
-            byte[] token = gssContext.initSecContext(new byte[0], 0, 0);
+            byte[] token = gssContext.getContext().initSecContext(new byte[0], 0, 0);
             if (token != null) {
                 log.debug("Successfully established GSSContext with source name: %s and target name: %s",
-                        gssContext.getSrcName(),
-                        gssContext.getTargName());
-                String spnegoToken = String.format("%s %s", NEGOTIATE,
+                        gssContext.getContext().getSrcName(),
+                        gssContext.getContext().getTargName());
+                String tokenValue = String.format("%s %s", NEGOTIATE,
                         String.valueOf(B64Code.encode(token)));
-                URI requestUri = request.getURI();
-                URI baseUri = new URI(requestUri.getScheme(), requestUri.getHost(), null, null);
-                return new SpnegoResult(headerInfo.getHeader(), baseUri, spnegoToken);
+                URI baseUri = new URI(requestURI.getScheme(), null, requestURI.getHost(), requestURI.getPort(),
+                        null, null, null);
+                return new SpnegoResult(headerInfo.getHeader(), baseUri, tokenValue);
             }
+
+            throw new AuthenticationException(String.format("Failed to establish GSSContext for request %s", requestURI));
         }
-        catch (URISyntaxException | UnknownHostException | LoginException | GSSException e) {
-            caughtException = true;
+        catch (GSSException | URISyntaxException e) {
             throw new AuthenticationException(e);
         }
-        finally {
-            if (gssContext != null) {
-                try {
-                    gssContext.dispose();
-                }
-                catch (GSSException e) {
-                    // Wrap and throw the exception only if no one is outstanding.
-                    if (!caughtException) {
-                        throw new AuthenticationException(e);
-                    }
-                }
-            }
-        }
-
-        throw new AuthenticationException(String.format(
-                "Failed to establish GSSContext for request %s",
-                request.getURI()));
     }
 
     @Override
     public boolean matches(String type, URI uri, String realm)
     {
         // The class matches all requests for Negotiate scheme.Realm is not used as for now
-        return AuthScheme.NEGOTIATE.toString().equalsIgnoreCase(type);
-    }
-
-    private GSSContext getGssContext(URI serviceURI)
-            throws UnknownHostException, LoginException
-    {
-        String serviceHostName = serviceURI.getHost();
-        String servicePrincipal = KerberosUtil.getServicePrincipal(serviceName, serviceHostName);
-        Subject clientSubject = KerberosUtil.getSubject(null, true);
-        return KerberosUtil.getGssContext(clientSubject, servicePrincipal, true);
+        return NEGOTIATE.equalsIgnoreCase(type);
     }
 
     private static class SpnegoResult

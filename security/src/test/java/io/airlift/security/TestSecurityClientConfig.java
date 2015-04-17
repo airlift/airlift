@@ -13,8 +13,8 @@ public class TestSecurityClientConfig
     public void testDefaults()
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(ClientSecurityConfig.class)
-                .setAuthScheme(null)
-                .setKrb5Conf(null)
+                .setKrb5ConfPath(null)
+                .setAuthenticationEnabled(false)
                 .setServiceName(null)
         );
     }
@@ -23,14 +23,14 @@ public class TestSecurityClientConfig
     public void testExplicitPropertyMappings()
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("http-security.client.authentication.scheme", "negotiate")
-                .put("http-security.client.authentication.negotiate.krb5conf", "/etc/krb5.conf")
-                .put("http-security.client.authentication.negotiate.service-name", "airlift")
+                .put("http.authentication.negotiate.krb5conf", "/etc/krb5.conf")
+                .put("http.client.authentication.enabled", "true")
+                .put("http.client.authentication.negotiate.service-name", "airlift")
                 .build();
 
         ClientSecurityConfig expected = new ClientSecurityConfig()
-                .setAuthScheme(AuthScheme.NEGOTIATE)
-                .setKrb5Conf("/etc/krb5.conf")
+                .setKrb5ConfPath("/etc/krb5.conf")
+                .setAuthenticationEnabled(true)
                 .setServiceName("airlift");
 
         ConfigAssertions.assertFullMapping(properties, expected);

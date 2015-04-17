@@ -34,13 +34,16 @@ public class KerberosUtil
     private static final Oid SPNEGO_OID;
     private static final Oid KERBEROS_OID;
     private static final Oid[] SUPPORTED_OIDS;
+    private static final Class<?> KRB5_CONFIG_CLASS;
 
     static {
         try {
             SPNEGO_OID = new Oid("1.3.6.1.5.5.2");
             KERBEROS_OID = new Oid("1.2.840.113554.1.2.2");
-            SUPPORTED_OIDS = new Oid[]{SPNEGO_OID, KERBEROS_OID};
-        } catch (GSSException e) {
+            SUPPORTED_OIDS = new Oid[] {SPNEGO_OID, KERBEROS_OID};
+            KRB5_CONFIG_CLASS = Class.forName("sun.security.krb5.Config");
+        }
+        catch (GSSException | ClassNotFoundException e) {
             throw new AuthenticationException(e);
         }
     }
@@ -73,19 +76,10 @@ public class KerberosUtil
             IllegalArgumentException, IllegalAccessException,
             InvocationTargetException
     {
-        Class<?> classRef;
-        if (System.getProperty("java.vendor").contains("IBM")) {
-            classRef = Class.forName("com.ibm.security.krb5.internal.Config");
-        }
-        else {
-            classRef = Class.forName("sun.security.krb5.Config");
-        }
-        Method getInstanceMethod = classRef.getMethod("getInstance", new Class[0]);
-        Object kerbConf = getInstanceMethod.invoke(classRef, new Object[0]);
-        Method getDefaultRealmMethod = classRef.getDeclaredMethod(
-                "getDefaultRealm",
-                new Class[0]);
-        return (String)getDefaultRealmMethod.invoke(kerbConf, new Object[0]);
+        Method getInstanceMethod = KRB5_CONFIG_CLASS.getMethod("getInstance", new Class[0]);
+        Object kerbConf = getInstanceMethod.invoke(KRB5_CONFIG_CLASS, new Object[0]);
+        Method getDefaultRealmMethod = KRB5_CONFIG_CLASS.getDeclaredMethod("getDefaultRealm", new Class[0]);
+        return (String) getDefaultRealmMethod.invoke(kerbConf, new Object[0]);
     }
 
     /**
@@ -102,17 +96,16 @@ public class KerberosUtil
             throws UnknownHostException
     {
         InetAddress address = hostName == null ? null : InetAddress.getByName(hostName);
-        String fqdn = null;
+        String fqdn;
         if (address == null || address.getHostName().toLowerCase().startsWith("localhost")) {
             fqdn = InetAddress.getLocalHost().getCanonicalHostName();
-            checkState(!fqdn.equalsIgnoreCase("localhost"),
-                    "Fully qualified host name for localhost is not retrieved");
+            checkState(!fqdn.equalsIgnoreCase("localhost"), "Fully qualified host name for localhost is not retrieved");
         }
         else {
             fqdn = address.getCanonicalHostName();
         }
 
-        return serviceName + "/" + fqdn.toLowerCase(Locale.US);
+        return String.format("%s/%s", serviceName, fqdn.toLowerCase(Locale.US));
     }
 
     public static Subject getSubject(String subjectName, boolean client)
@@ -127,52 +120,34 @@ public class KerberosUtil
 
     public static GSSContext getGssContext(Subject subject, String servicePrincipal, boolean initiator)
     {
-        return Subject.doAs(subject, new PrivilegedAction<GSSContext>()
-        {
-            public GSSContext run()
-            {
-                GSSContext context = null;
-                try {
-                    Principal subjectPrincipal = subject.getPrincipals().iterator().next();
-                    GSSManager gssManager = GSSManager.getInstance();
+        return Subject.doAs(subject, (PrivilegedAction<GSSContext>) () -> {
+            GSSContext context = null;
+            try {
+                Principal subjectPrincipal = subject.getPrincipals().iterator().next();
+                GSSManager gssManager = GSSManager.getInstance();
 
-                    if (initiator) {
-                        GSSName gssUserName = gssManager.createName(subjectPrincipal.getName(), GSSName.NT_USER_NAME);
-                        GSSCredential clientCredential = gssManager.createCredential(
-                                gssUserName,
-                                GSSCredential.DEFAULT_LIFETIME,
-                                KERBEROS_OID,
-                                GSSCredential.INITIATE_ONLY);
+                if (initiator) {
+                    GSSName gssUserName = gssManager.createName(subjectPrincipal.getName(), GSSName.NT_USER_NAME);
+                    GSSCredential clientCredential = gssManager.createCredential(gssUserName, GSSCredential.DEFAULT_LIFETIME,
+                            KERBEROS_OID, GSSCredential.INITIATE_ONLY);
 
-                        GSSName gssServiceName = gssManager.createName(
-                                servicePrincipal,
-                                null);
-
-                        context = gssManager.createContext(
-                                gssServiceName,
-                                SPNEGO_OID,
-                                clientCredential,
-                                GSSContext.INDEFINITE_LIFETIME);
-                    }
-                    else {
-                        GSSName gssServiceName = gssManager.createName(servicePrincipal, null);
-                        GSSCredential serverCredential = gssManager.createCredential(
-                                gssServiceName,
-                                GSSCredential.INDEFINITE_LIFETIME,
-                                SUPPORTED_OIDS,
-                                GSSCredential.ACCEPT_ONLY);
-
-                        context = gssManager.createContext(serverCredential);
-                    }
-                    context.requestMutualAuth(true);
-                    context.requestConf(true);
-                    context.requestInteg(true);
-                    context.requestCredDeleg(false);
-                    return context;
+                    GSSName gssServiceName = gssManager.createName(servicePrincipal, null);
+                    context = gssManager.createContext(gssServiceName, SPNEGO_OID, clientCredential, GSSContext.INDEFINITE_LIFETIME);
                 }
-                catch (GSSException e) {
-                    throw Throwables.propagate(e);
+                else {
+                    GSSName gssServiceName = gssManager.createName(servicePrincipal, null);
+                    GSSCredential serverCredential = gssManager.createCredential(gssServiceName, GSSCredential.INDEFINITE_LIFETIME,
+                            SUPPORTED_OIDS, GSSCredential.ACCEPT_ONLY);
+                    context = gssManager.createContext(serverCredential);
                 }
+                context.requestMutualAuth(true);
+                context.requestConf(true);
+                context.requestInteg(true);
+                context.requestCredDeleg(false);
+                return context;
+            }
+            catch (GSSException e) {
+                throw Throwables.propagate(e);
             }
         });
     }
@@ -225,9 +200,7 @@ public class KerberosUtil
                 default:
                     throw new IllegalArgumentException(String.format(
                             "Krb5LoginModule configuration name %s is invalid. it should be one of %s and %s",
-                            name,
-                            GSS_CLIENT,
-                            GSS_SERVER));
+                            name, GSS_CLIENT, GSS_SERVER));
             }
 
             return new AppConfigurationEntry[] {
