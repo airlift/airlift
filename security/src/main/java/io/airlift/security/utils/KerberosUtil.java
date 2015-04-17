@@ -16,9 +16,6 @@ import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.Principal;
@@ -31,55 +28,20 @@ import static com.google.common.base.Preconditions.checkState;
 
 public class KerberosUtil
 {
+    private static final String KRB5_LOGIN_MODULE_NAME = "com.sun.security.auth.module.Krb5LoginModule";
     private static final Oid SPNEGO_OID;
     private static final Oid KERBEROS_OID;
     private static final Oid[] SUPPORTED_OIDS;
-    private static final Class<?> KRB5_CONFIG_CLASS;
 
     static {
         try {
             SPNEGO_OID = new Oid("1.3.6.1.5.5.2");
             KERBEROS_OID = new Oid("1.2.840.113554.1.2.2");
             SUPPORTED_OIDS = new Oid[] {SPNEGO_OID, KERBEROS_OID};
-            KRB5_CONFIG_CLASS = Class.forName("sun.security.krb5.Config");
         }
-        catch (GSSException | ClassNotFoundException e) {
+        catch (GSSException e) {
             throw new AuthenticationException(e);
         }
-    }
-
-    /* Return the Kerberos login module name */
-    public static String getKrb5LoginModuleName()
-    {
-        return System.getProperty("java.vendor").contains("IBM")
-                ? "com.ibm.security.auth.module.Krb5LoginModule"
-                : "com.sun.security.auth.module.Krb5LoginModule";
-    }
-
-    public static Oid getOidInstance(String oidName)
-            throws GSSException, ClassNotFoundException, NoSuchFieldException,
-            IllegalAccessException
-    {
-        Class<?> oidClass;
-        if (System.getProperty("java.vendor").contains("IBM")) {
-            oidClass = Class.forName("com.ibm.security.jgss.GSSUtil");
-        }
-        else {
-            oidClass = Class.forName("sun.security.jgss.GSSUtil");
-        }
-        Field oidField = oidClass.getDeclaredField(oidName);
-        return (Oid) oidField.get(oidClass);
-    }
-
-    public static String getDefaultRealm()
-            throws ClassNotFoundException, NoSuchMethodException,
-            IllegalArgumentException, IllegalAccessException,
-            InvocationTargetException
-    {
-        Method getInstanceMethod = KRB5_CONFIG_CLASS.getMethod("getInstance", new Class[0]);
-        Object kerbConf = getInstanceMethod.invoke(KRB5_CONFIG_CLASS, new Object[0]);
-        Method getDefaultRealmMethod = KRB5_CONFIG_CLASS.getDeclaredMethod("getDefaultRealm", new Class[0]);
-        return (String) getDefaultRealmMethod.invoke(kerbConf, new Object[0]);
     }
 
     /**
@@ -204,9 +166,8 @@ public class KerberosUtil
             }
 
             return new AppConfigurationEntry[] {
-                    new AppConfigurationEntry(KerberosUtil.getKrb5LoginModuleName(),
-                            AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
-                            options)};
+                    new AppConfigurationEntry(KRB5_LOGIN_MODULE_NAME, AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, options)
+            };
         }
     }
 }

@@ -22,9 +22,8 @@ public class CloseableGSSContext
     {
         requireNonNull(serviceName, "serviceName is null");
         requireNonNull(serviceURI, "serviceURI is null");
-        String servicePrincipal = null;
         try {
-            servicePrincipal = KerberosUtil.getServicePrincipal(serviceName, serviceURI.getHost());
+            String servicePrincipal = KerberosUtil.getServicePrincipal(serviceName, serviceURI.getHost());
             Subject clientSubject = KerberosUtil.getSubject(null, true);
             context = KerberosUtil.getGssContext(clientSubject, servicePrincipal, true);
         }
