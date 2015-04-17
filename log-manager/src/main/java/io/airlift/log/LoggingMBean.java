@@ -24,6 +24,8 @@ import javax.inject.Inject;
 import java.util.Locale;
 import java.util.Map;
 
+import static com.google.common.base.Functions.toStringFunction;
+
 public class LoggingMBean
 {
     private final Logging logging;
@@ -61,6 +63,6 @@ public class LoggingMBean
     @Managed
     public Map<String, String> getAllLevels()
     {
-        return ImmutableSortedMap.copyOf(Maps.transformValues(logging.getAllLevels(), Object::toString));
+        return ImmutableSortedMap.copyOf(Maps.transformValues(logging.getAllLevels(), toStringFunction()));
     }
 }
