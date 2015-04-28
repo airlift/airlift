@@ -1,3 +1,10 @@
+Airlift 0.107
+
+We have replaced use of SLF4J in the logging backend with a custom logging
+implementation directly connected to Java util logging.  This eases management
+of logging dependencies as the core codebase no longer depends directly on any
+third party logging frameworks.
+
 Airlift 0.106
 
 Minor maintenance release. See CHANGES.
