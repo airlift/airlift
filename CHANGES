@@ -1,3 +1,7 @@
+* 0.108
+
+- Exclude link local addresses in NodeInfo
+
 * 0.107
 
 - Remove dependency on SLF4J from log manager

@@ -340,6 +340,7 @@ public class NodeInfo
     private static boolean isGoodAddress(InetAddress address)
     {
         return !address.isAnyLocalAddress() &&
+                !address.isLinkLocalAddress() &&
                 !address.isLoopbackAddress() &&
                 !address.isMulticastAddress();
     }
