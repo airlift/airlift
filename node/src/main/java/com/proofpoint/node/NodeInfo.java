@@ -378,6 +378,7 @@ public class NodeInfo
     {
         return address instanceof Inet4Address &&
                 !address.isAnyLocalAddress() &&
+                !address.isLinkLocalAddress() &&
                 !address.isLoopbackAddress() &&
                 !address.isMulticastAddress();
     }
@@ -386,6 +387,7 @@ public class NodeInfo
     {
         return address instanceof Inet6Address &&
                 !address.isAnyLocalAddress() &&
+                !address.isLinkLocalAddress() &&
                 !address.isLoopbackAddress() &&
                 !address.isMulticastAddress();
     }
