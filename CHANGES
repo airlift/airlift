@@ -2,6 +2,7 @@
 
 - Change default HTTP server accept queue size to 8000 from 50
 - Upgrade to Airbase 38
+- Exclude link local addresses in NodeInfo
 
 * 0.107
 
