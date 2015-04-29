@@ -32,7 +32,7 @@ public class HttpServerConfig
 {
     private boolean httpEnabled = true;
     private int httpPort = 8080;
-    private int httpAcceptQueueSize = 0;
+    private int httpAcceptQueueSize = 8000;
 
     private boolean httpsEnabled = false;
     private int httpsPort = 8443;

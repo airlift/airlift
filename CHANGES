@@ -5,6 +5,11 @@ Platform 1.21
   We disabled all default-enabled DHE ciphers in both HttpServer and
   JettyHttpClient.
 
+* HttpServer
+
+  We changed the default value of the "http-server.accept-queue-size"
+  configuration option to 8000.
+
 Platform 1.20
 
 * TestingHttpClient
