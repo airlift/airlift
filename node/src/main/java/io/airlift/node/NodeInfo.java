@@ -261,7 +261,8 @@ public class NodeInfo
         InetAddress localAddress = null;
         try {
             localAddress = InetAddress.getLocalHost();
-            if (isV4Address(localAddress) && getGoodAddresses().contains(localAddress)) {
+            if ((isV4Address(localAddress) || isV6Address(localAddress)) 
+		    && getGoodAddresses().contains(localAddress)) {
                 return localAddress;
             }
         }
@@ -340,6 +341,7 @@ public class NodeInfo
     private static boolean isGoodAddress(InetAddress address)
     {
         return !address.isAnyLocalAddress() &&
+                !address.isLinkLocalAddress() &&
                 !address.isLoopbackAddress() &&
                 !address.isMulticastAddress();
     }
