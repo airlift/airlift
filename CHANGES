@@ -1,3 +1,7 @@
+* 0.108
+
+- Upgrade to Airbase 38
+
 * 0.107
 
 - Remove dependency on SLF4J from log manager

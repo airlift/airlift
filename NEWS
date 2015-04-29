@@ -1,3 +1,7 @@
+Airlift 0.108
+
+Minor maintenance release. See CHANGES.
+
 Airlift 0.107
 
 We have replaced use of SLF4J in the logging backend with a custom logging
