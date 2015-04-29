@@ -32,7 +32,7 @@ public class TestHttpServerConfig
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(HttpServerConfig.class)
                 .setHttpEnabled(true)
                 .setHttpPort(8080)
-                .setHttpAcceptQueueSize(0)
+                .setHttpAcceptQueueSize(8000)
                 .setHttpsEnabled(false)
                 .setHttpsPort(8443)
                 .setKeystorePath(null)
