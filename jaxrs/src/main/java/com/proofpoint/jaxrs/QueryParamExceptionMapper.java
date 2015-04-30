@@ -23,7 +23,7 @@ import javax.ws.rs.ext.Provider;
 
 /**
  * Map {@link org.glassfish.jersey.server.ParamException.QueryParamException} to status 400 errors.
- * <p/>
+ * <p>
  * When a {@link javax.ws.rs.QueryParam} annotated parameter fails to parse, the default behavior for Jersey is to map this to 404.
  * We want to change it to a saner 400 status.
  */

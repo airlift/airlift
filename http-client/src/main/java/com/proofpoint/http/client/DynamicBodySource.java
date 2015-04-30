@@ -23,9 +23,9 @@ public interface DynamicBodySource extends BodySource
      * Start writing the request body.
      *
      * @param out The @{link OutputStream} to write to
-     * @return a @{link Writer} that writes to the indicated @link{OutputStream}.
-     *         If the returned value implements @link{AutoCloseable}, the caller
-     *         is guaranteed to call @{link AutoCloseable#close()} on it.
+     * @return a {@link Writer} that writes to the indicated @link{OutputStream}.
+     *         If the returned value implements {@link AutoCloseable}, the caller
+     *         is guaranteed to call {@link AutoCloseable#close()} on it.
      * @throws Exception
      */
     public Writer start(OutputStream out)
@@ -34,16 +34,16 @@ public interface DynamicBodySource extends BodySource
     public interface Writer
     {
         /**
-         * Write some data to the @{link OutputStream} specified when this was
-         * created and/or call @{link OutputStream#close()} to indicate the
+         * Write some data to the {@link OutputStream} specified when this was
+         * created and/or call {@link OutputStream#close()} to indicate the
          * end of the request body.
          * <p>
          * This method will be called repeatedly until either it calls
-         * @{link OutputStream#close()} or the caller calls
-         * @{link Writer#close()}.
+         * {@link OutputStream#close()} or the caller calls
+         * {@link AutoCloseable#close()} on it.
          * <p>
          * For best performance, should not write an excessive amount of data
-         * to the @{link OutputStream} in one call.
+         * to the {@link OutputStream} in one call.
          *
          * @throws Exception
          */

@@ -44,7 +44,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 /**
  * Implements ScheduledExecutorService with a controllable time elapse. Tasks are run
  * in the context of the thread advancing time.
- * <p/>
+ * <p>
  * Tasks are modelled as instantaneous events; tasks scheduled to be run at the same
  * instant will be run in the order of their registration.
  */
@@ -183,7 +183,7 @@ public class SerialScheduledExecutorService
 
     /**
      * Advance time by the given quantum.
-     * <p/>
+     * <p>
      * Scheduled tasks due for execution will be executed in the caller's thread.
      *
      * @param quantum the amount of time to advance
