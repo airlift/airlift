@@ -133,65 +133,9 @@ public class JettyHttpClient
         checkNotNull(requestFilters, "requestFilters is null");
 
         maxContentLength = config.getMaxContentLength().toBytes();
-        httpClient = createHttpClient(config, creationLocation);
 
-        JettyIoPool pool = jettyIoPool.orNull();
-        if (pool == null) {
-            pool = new JettyIoPool("anonymous" + nameCounter.incrementAndGet(), new JettyIoPoolConfig());
-        }
+        creationLocation.fillInStackTrace();
 
-        name = pool.getName();
-        httpClient.setExecutor(pool.getExecutor());
-        httpClient.setByteBufferPool(pool.setByteBufferPool());
-        httpClient.setScheduler(pool.setScheduler());
-
-        try {
-            httpClient.start();
-
-            // remove the GZIP encoding from the client
-            // TODO: there should be a better way to to do this
-            httpClient.getContentDecoderFactories().clear();
-        }
-        catch (Exception e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
-            throw propagate(e);
-        }
-
-        this.requestFilters = ImmutableList.copyOf(requestFilters);
-
-        this.activeConnectionsPerDestination = new CachedDistribution(() -> {
-            Distribution distribution = new Distribution();
-            for (Destination destination : httpClient.getDestinations()) {
-                PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
-                distribution.add(poolingHttpDestination.getConnectionPool().getActiveConnections().size());
-            }
-            return distribution;
-        });
-
-        this.idleConnectionsPerDestination = new CachedDistribution(() -> {
-            Distribution distribution = new Distribution();
-            for (Destination destination : httpClient.getDestinations()) {
-                PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
-                distribution.add(poolingHttpDestination.getConnectionPool().getIdleConnections().size());
-            }
-            return distribution;
-        });
-
-        this.queuedRequestsPerDestination = new CachedDistribution(() -> {
-            Distribution distribution = new Distribution();
-            for (Destination destination : httpClient.getDestinations()) {
-                PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
-                distribution.add(poolingHttpDestination.getHttpExchanges().size());
-            }
-            return distribution;
-        });
-    }
-
-    private static HttpClient createHttpClient(HttpClientConfig config, Exception created)
-    {
-        created.fillInStackTrace();
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
         sslContextFactory.addExcludeProtocols("SSLv3", "SSLv2Hello");
@@ -201,7 +145,7 @@ public class JettyHttpClient
             sslContextFactory.setKeyStorePassword(config.getKeyStorePassword());
         }
 
-        HttpClient httpClient = new HttpClient(sslContextFactory);
+        httpClient = new HttpClient(sslContextFactory);
         httpClient.setMaxConnectionsPerDestination(config.getMaxConnectionsPerServer());
         httpClient.setMaxRequestsQueuedPerDestination(config.getMaxRequestsQueuedPerDestination());
 
@@ -229,7 +173,59 @@ public class JettyHttpClient
         if (socksProxy != null) {
             httpClient.getProxyConfiguration().getProxies().add(new Socks4Proxy(socksProxy.getHostText(), socksProxy.getPortOrDefault(1080)));
         }
-        return httpClient;
+
+        JettyIoPool pool = jettyIoPool.orNull();
+        if (pool == null) {
+            pool = new JettyIoPool("anonymous" + nameCounter.incrementAndGet(), new JettyIoPoolConfig());
+        }
+
+        name = pool.getName();
+        this.httpClient.setExecutor(pool.getExecutor());
+        this.httpClient.setByteBufferPool(pool.setByteBufferPool());
+        this.httpClient.setScheduler(pool.setScheduler());
+
+        try {
+            this.httpClient.start();
+
+            // remove the GZIP encoding from the client
+            // TODO: there should be a better way to to do this
+            this.httpClient.getContentDecoderFactories().clear();
+        }
+        catch (Exception e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw propagate(e);
+        }
+
+        this.requestFilters = ImmutableList.copyOf(requestFilters);
+
+        this.activeConnectionsPerDestination = new CachedDistribution(() -> {
+            Distribution distribution = new Distribution();
+            for (Destination destination : this.httpClient.getDestinations()) {
+                PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
+                distribution.add(poolingHttpDestination.getConnectionPool().getActiveConnections().size());
+            }
+            return distribution;
+        });
+
+        this.idleConnectionsPerDestination = new CachedDistribution(() -> {
+            Distribution distribution = new Distribution();
+            for (Destination destination : this.httpClient.getDestinations()) {
+                PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
+                distribution.add(poolingHttpDestination.getConnectionPool().getIdleConnections().size());
+            }
+            return distribution;
+        });
+
+        this.queuedRequestsPerDestination = new CachedDistribution(() -> {
+            Distribution distribution = new Distribution();
+            for (Destination destination : this.httpClient.getDestinations()) {
+                PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
+                distribution.add(poolingHttpDestination.getHttpExchanges().size());
+            }
+            return distribution;
+        });
     }
 
     @Override
