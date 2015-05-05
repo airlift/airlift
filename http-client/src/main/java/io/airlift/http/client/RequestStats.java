@@ -56,7 +56,7 @@ public class RequestStats
         if (requestProcessingTime != null) {
             requestTime.add(requestProcessingTime);
         }
-        if (requestProcessingTime != null) {
+        if (responseProcessingTime != null) {
             responseTime.add(responseProcessingTime);
         }
         readBytes.add(responseSizeInBytes);

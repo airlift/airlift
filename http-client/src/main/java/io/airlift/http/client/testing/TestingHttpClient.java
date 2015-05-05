@@ -68,8 +68,8 @@ public class TestingHttpClient
         state.set("PROCESSING_REQUEST");
         Response response;
         Duration requestProcessingTime;
+        long requestStart = System.nanoTime();
         try {
-            long requestStart = System.nanoTime();
             response = processor.apply(request);
             requestProcessingTime = Duration.nanosSince(requestStart);
         }
@@ -79,7 +79,7 @@ public class TestingHttpClient
                     0,
                     0,
                     0,
-                    null,
+                    Duration.nanosSince(requestStart),
                     null);
             if (e instanceof Exception) {
                 return responseHandler.handleException(request, (Exception) e);
