@@ -61,6 +61,10 @@ public class ConfigurationModule
         return null;
     }
 
+    /**
+     * @deprecated As of Airlift 0.109, replaced by {@link ConfigBinder#configBinder(Binder)}.
+     */
+    @Deprecated
     public static AnnotatedBindingBuilder bindConfig(Binder binder)
     {
         return new AnnotatedBindingBuilder(binder.withSource(getCaller()));
