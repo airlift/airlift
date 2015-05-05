@@ -24,7 +24,6 @@ import com.google.inject.Key;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import io.airlift.configuration.ConfigBinder;
 import io.airlift.configuration.ConfigDefaults;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.client.jetty.JettyIoPool;
@@ -40,7 +39,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static io.airlift.configuration.ConfigurationModule.bindConfig;
+import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.http.client.CompositeQualifierImpl.compositeQualifier;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
@@ -70,7 +69,7 @@ public class HttpClientModule
 
     void withPrivateIoThreadPool()
     {
-        bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(JettyIoPoolConfig.class);
+        configBinder(binder).bindConfig(JettyIoPoolConfig.class, annotation, name);
         binder.bind(JettyIoPoolManager.class).annotatedWith(annotation).toInstance(new JettyIoPoolManager(name, annotation));
     }
 
@@ -78,13 +77,13 @@ public class HttpClientModule
     public void configure()
     {
         // bind the configuration
-        bindConfig(binder).annotatedWith(annotation).prefixedWith(name).to(HttpClientConfig.class);
+        configBinder(binder).bindConfig(HttpClientConfig.class, annotation, name);
         if (configDefaults != null) {
-            ConfigBinder.configBinder(binder).bindConfigDefaults(HttpClientConfig.class, configDefaults);
+            configBinder(binder).bindConfigDefaults(HttpClientConfig.class, configDefaults);
         }
 
         // Shared thread pool
-        bindConfig(binder).to(JettyIoPoolConfig.class);
+        configBinder(binder).bindConfig(JettyIoPoolConfig.class);
         binder.bind(JettyIoPoolManager.class).to(SharedJettyIoPoolManager.class).in(Scopes.SINGLETON);
 
         // bind the client

@@ -24,7 +24,7 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
 
-import static io.airlift.configuration.ConfigurationModule.bindConfig;
+import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
 
@@ -58,7 +58,7 @@ public class DiscoveryBinder
     {
         Preconditions.checkNotNull(serviceType, "serviceType is null");
 
-        bindConfig(binder).annotatedWith(serviceType).prefixedWith("discovery." + serviceType.value()).to(ServiceSelectorConfig.class);
+        configBinder(binder).bindConfig(ServiceSelectorConfig.class, serviceType, "discovery." + serviceType.value());
 
         Key<ServiceSelector> key = Key.get(ServiceSelector.class, serviceType);
         binder.bind(key).toProvider(new ServiceSelectorProvider(serviceType.value())).in(Scopes.SINGLETON);

@@ -19,12 +19,12 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import io.airlift.configuration.ConfigurationModule;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 
 import javax.servlet.Filter;
 
+import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.event.client.EventBinder.eventBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
@@ -70,7 +70,7 @@ public class HttpServerModule
 
         newExporter(binder).export(RequestStats.class).withGeneratedName();
 
-        ConfigurationModule.bindConfig(binder).to(HttpServerConfig.class);
+        configBinder(binder).bindConfig(HttpServerConfig.class);
 
         eventBinder(binder).bindEventClient(HttpRequestEvent.class);
 

@@ -25,11 +25,12 @@ import com.google.inject.Scopes;
 import org.weakref.jmx.guice.MBeanModule;
 
 import javax.sql.DataSource;
+
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;
 
-import static io.airlift.configuration.ConfigurationModule.bindConfig;
+import static io.airlift.configuration.ConfigBinder.configBinder;
 
 public class H2EmbeddedDataSourceModule extends MBeanModule
 {
@@ -63,7 +64,7 @@ public class H2EmbeddedDataSourceModule extends MBeanModule
     public void configureMBeans()
     {
         // bind the configuration
-        bindConfig(binder()).annotatedWith(annotation).prefixedWith(propertyPrefix).to(H2EmbeddedDataSourceConfig.class);
+        configBinder(binder()).bindConfig(H2EmbeddedDataSourceConfig.class, annotation, propertyPrefix);
 
         // Bind the datasource
         bind(DataSource.class).annotatedWith(annotation).toProvider(new H2EmbeddedDataSourceProvider(annotation)).in(Scopes.SINGLETON);

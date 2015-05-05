@@ -19,7 +19,7 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 
-import static io.airlift.configuration.ConfigurationModule.bindConfig;
+import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.event.client.EventBinder.eventBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
@@ -39,7 +39,7 @@ public class MainModule
         jaxrsBinder(binder).bind(PersonsResource.class);
         jaxrsBinder(binder).bind(PersonResource.class);
 
-        bindConfig(binder).to(StoreConfig.class);
+        configBinder(binder).bindConfig(StoreConfig.class);
         eventBinder(binder).bindEventClient(PersonEvent.class);
 
         discoveryBinder(binder).bindHttpAnnouncement("person");

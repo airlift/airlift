@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static io.airlift.configuration.ConfigBinder.configBinder;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -134,9 +135,9 @@ public class TestConfig
     private static <T> Module createModule(Class<T> configClass, String prefix, ConfigDefaults<T>... configDefaults)
     {
         Module module = binder -> {
-            ConfigurationModule.bindConfig(binder).prefixedWith(prefix).to(configClass);
+            configBinder(binder).bindConfig(configClass, prefix);
 
-            ConfigBinder configBinder = ConfigBinder.configBinder(binder);
+            ConfigBinder configBinder = configBinder(binder);
             for (ConfigDefaults<T> configDefault : configDefaults) {
                 configBinder.bindConfigDefaults(configClass, configDefault);
             }

@@ -25,11 +25,12 @@ import io.airlift.discovery.client.ServiceSelector;
 import org.weakref.jmx.guice.MBeanModule;
 
 import javax.sql.DataSource;
+
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;
 
-import static io.airlift.configuration.ConfigurationModule.bindConfig;
+import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
 
@@ -62,7 +63,7 @@ public class MySqlDataSourceModule extends MBeanModule
     public void configureMBeans()
     {
         // bind the configuration
-        bindConfig(binder()).annotatedWith(annotation).prefixedWith(type).to(MySqlDataSourceConfig.class);
+        configBinder(binder()).bindConfig(MySqlDataSourceConfig.class, annotation, type);
 
         // bind the service selector
         discoveryBinder(binder()).bindSelector(type);

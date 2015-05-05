@@ -20,13 +20,13 @@ import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
-import io.airlift.configuration.ConfigurationModule;
 import io.airlift.discovery.client.ServiceAnnouncement;
 
 import javax.management.MBeanServer;
 
 import java.lang.management.ManagementFactory;
 
+import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
@@ -41,7 +41,7 @@ public class JmxModule
 
         binder.bind(MBeanServer.class).toInstance(ManagementFactory.getPlatformMBeanServer());
         binder.bind(JmxAgent.class).in(Scopes.SINGLETON);
-        ConfigurationModule.bindConfig(binder).to(JmxConfig.class);
+        configBinder(binder).bindConfig(JmxConfig.class);
 
         newExporter(binder).export(StackTraceMBean.class).withGeneratedName();
         binder.bind(StackTraceMBean.class).in(Scopes.SINGLETON);

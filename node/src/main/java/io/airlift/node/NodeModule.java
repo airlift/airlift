@@ -18,8 +18,8 @@ package io.airlift.node;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import io.airlift.configuration.ConfigurationModule;
 
+import static io.airlift.configuration.ConfigBinder.configBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class NodeModule
@@ -31,7 +31,7 @@ public class NodeModule
         binder.disableCircularProxies();
 
         binder.bind(NodeInfo.class).in(Scopes.SINGLETON);
-        ConfigurationModule.bindConfig(binder).to(NodeConfig.class);
+        configBinder(binder).bindConfig(NodeConfig.class);
         newExporter(binder).export(NodeInfo.class).withGeneratedName();
     }
 }

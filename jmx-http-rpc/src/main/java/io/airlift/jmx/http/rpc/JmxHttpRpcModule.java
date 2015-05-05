@@ -36,7 +36,7 @@ import java.lang.annotation.Annotation;
 import java.net.URI;
 import java.util.Map;
 
-import static io.airlift.configuration.ConfigurationModule.bindConfig;
+import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 
@@ -66,7 +66,7 @@ public class JmxHttpRpcModule implements Module
         ServiceAnnouncementBuilder serviceAnnouncementBuilder = serviceAnnouncement("jmx-http-rpc");
         discoveryBinder(binder).bindServiceAnnouncement(new JmxHttpRpcAnnouncementProvider(serviceAnnouncementBuilder));
 
-        bindConfig(binder).to(JmxHttpRpcConfig.class);
+        configBinder(binder).bindConfig(JmxHttpRpcConfig.class);
     }
 
     @Provides

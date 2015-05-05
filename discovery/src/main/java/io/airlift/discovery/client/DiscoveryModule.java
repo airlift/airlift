@@ -32,7 +32,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
-import static io.airlift.configuration.ConfigurationModule.bindConfig;
+import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
 import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
@@ -45,10 +45,10 @@ public class DiscoveryModule
     {
         // bind service inventory
         binder.bind(ServiceInventory.class).in(Scopes.SINGLETON);
-        bindConfig(binder).to(ServiceInventoryConfig.class);
+        configBinder(binder).bindConfig(ServiceInventoryConfig.class);
 
         // for legacy configurations
-        bindConfig(binder).to(DiscoveryClientConfig.class);
+        configBinder(binder).bindConfig(DiscoveryClientConfig.class);
 
         // bind discovery client and dependencies
         binder.bind(DiscoveryLookupClient.class).to(HttpDiscoveryLookupClient.class).in(Scopes.SINGLETON);
