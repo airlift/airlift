@@ -117,7 +117,9 @@ public class ConfigurationFactory
     @Beta
     public void registerConfigurationClasses(Module module)
     {
-        registeredProviders.addAll(getAllProviders(module));
+        List<ConfigurationProvider<?>> providers = getAllProviders(module);
+        providers.stream().forEach(provider -> provider.setConfigurationFactory(this));
+        registeredProviders.addAll(providers);
     }
 
     Iterable<ConfigurationProvider<?>> getConfigurationProviders()
