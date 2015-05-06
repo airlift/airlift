@@ -16,7 +16,6 @@
 package io.airlift.configuration;
 
 import com.google.common.collect.Maps;
-import com.google.inject.Binder;
 import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -29,9 +28,12 @@ import org.testng.annotations.Test;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
+import static io.airlift.configuration.ConfigurationModule.bindConfig;
 
 public class ConfigurationFactoryTest
 {
@@ -39,18 +41,12 @@ public class ConfigurationFactoryTest
     @Test
     public void testAnnotatedGettersThrows()
     {
-        Map<String, String> properties = new TreeMap<String, String>();
+        Map<String, String> properties = new TreeMap<>();
         properties.put("string-value", "some value");
         properties.put("boolean-value", "true");
         TestMonitor monitor = new TestMonitor();
         try {
-            createInjector(properties, monitor, new Module()
-            {
-                public void configure(Binder binder)
-                {
-                    ConfigurationModule.bindConfig(binder).to(AnnotatedGetter.class);
-                }
-            });
+            createInjector(properties, monitor, binder -> bindConfig(binder).to(AnnotatedGetter.class));
 
             Assert.fail("Expected an exception in object creation due to conflicting configuration");
         } catch (CreationException e) {
@@ -63,17 +59,11 @@ public class ConfigurationFactoryTest
     @Test
     public void testAnnotatedSetters()
     {
-        Map<String, String> properties = new TreeMap<String, String>();
+        Map<String, String> properties = new TreeMap<>();
         properties.put("string-value", "some value");
         properties.put("boolean-value", "true");
         TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(properties, monitor, new Module()
-        {
-            public void configure(Binder binder)
-            {
-                ConfigurationModule.bindConfig(binder).to(AnnotatedSetter.class);
-            }
-        });
+        Injector injector = createInjector(properties, monitor, binder -> bindConfig(binder).to(AnnotatedSetter.class));
         AnnotatedSetter annotatedSetter = injector.getInstance(AnnotatedSetter.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
@@ -85,17 +75,11 @@ public class ConfigurationFactoryTest
     @Test
     public void testConfigurationDespiteLegacyConfig()
     {
-        Map<String, String> properties = new TreeMap<String, String>();
+        Map<String, String> properties = new TreeMap<>();
         properties.put("string-a", "this is a");
         properties.put("string-b", "this is b");
         TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(properties, monitor, new Module()
-        {
-            public void configure(Binder binder)
-            {
-                ConfigurationModule.bindConfig(binder).to(LegacyConfigPresent.class);
-            }
-        });
+        Injector injector = createInjector(properties, monitor, binder -> bindConfig(binder).to(LegacyConfigPresent.class));
         LegacyConfigPresent legacyConfigPresent = injector.getInstance(LegacyConfigPresent.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
@@ -107,17 +91,11 @@ public class ConfigurationFactoryTest
     @Test
     public void testConfigurationThroughLegacyConfig()
     {
-        Map<String, String> properties = new TreeMap<String, String>();
+        Map<String, String> properties = new TreeMap<>();
         properties.put("string-value", "this is a");
         properties.put("string-b", "this is b");
         TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(properties, monitor, new Module()
-        {
-            public void configure(Binder binder)
-            {
-                ConfigurationModule.bindConfig(binder).to(LegacyConfigPresent.class);
-            }
-        });
+        Injector injector = createInjector(properties, monitor, binder -> bindConfig(binder).to(LegacyConfigPresent.class));
         LegacyConfigPresent legacyConfigPresent = injector.getInstance(LegacyConfigPresent.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
@@ -130,18 +108,12 @@ public class ConfigurationFactoryTest
     @Test
     public void testConfigurationWithRedundantLegacyConfig()
     {
-        Map<String, String> properties = new TreeMap<String, String>();
+        Map<String, String> properties = new TreeMap<>();
         properties.put("string-value", "this is a");
         properties.put("string-a", "this is a");
         properties.put("string-b", "this is b");
         TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(properties, monitor, new Module()
-        {
-            public void configure(Binder binder)
-            {
-                ConfigurationModule.bindConfig(binder).to(LegacyConfigPresent.class);
-            }
-        });
+        Injector injector = createInjector(properties, monitor, binder -> bindConfig(binder).to(LegacyConfigPresent.class));
         LegacyConfigPresent legacyConfigPresent = injector.getInstance(LegacyConfigPresent.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
@@ -154,19 +126,13 @@ public class ConfigurationFactoryTest
     @Test
     public void testConfigurationWithConflictingLegacyConfigThrows()
     {
-        Map<String, String> properties = new TreeMap<String, String>();
+        Map<String, String> properties = new TreeMap<>();
         properties.put("string-value", "this is the old value");
         properties.put("string-a", "this is a");
         properties.put("string-b", "this is b");
         TestMonitor monitor = new TestMonitor();
         try {
-            createInjector(properties, monitor, new Module()
-            {
-                public void configure(Binder binder)
-                {
-                    ConfigurationModule.bindConfig(binder).to(LegacyConfigPresent.class);
-                }
-            });
+            createInjector(properties, monitor, binder -> bindConfig(binder).to(LegacyConfigPresent.class));
 
             Assert.fail("Expected an exception in object creation due to conflicting configuration");
         } catch (CreationException e) {
@@ -180,16 +146,10 @@ public class ConfigurationFactoryTest
     @Test
     public void testConfigurationDespiteDeprecatedConfig()
     {
-        Map<String, String> properties = new TreeMap<String, String>();
+        Map<String, String> properties = new TreeMap<>();
         properties.put("string-b", "this is b");
         TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(properties, monitor, new Module()
-        {
-            public void configure(Binder binder)
-            {
-                ConfigurationModule.bindConfig(binder).to(DeprecatedConfigPresent.class);
-            }
-        });
+        Injector injector = createInjector(properties, monitor, binder -> bindConfig(binder).to(DeprecatedConfigPresent.class));
         DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
@@ -201,17 +161,11 @@ public class ConfigurationFactoryTest
     @Test
     public void testConfigurationThroughDeprecatedConfig()
     {
-        Map<String, String> properties = new TreeMap<String, String>();
+        Map<String, String> properties = new TreeMap<>();
         properties.put("string-a", "this is a");
         properties.put("string-b", "this is b");
         TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(properties, monitor, new Module()
-        {
-            public void configure(Binder binder)
-            {
-                ConfigurationModule.bindConfig(binder).to(DeprecatedConfigPresent.class);
-            }
-        });
+        Injector injector = createInjector(properties, monitor, binder -> bindConfig(binder).to(DeprecatedConfigPresent.class));
         DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
@@ -229,13 +183,7 @@ public class ConfigurationFactoryTest
         properties.put("defunct-value", "this shouldn't work");
         TestMonitor monitor = new TestMonitor();
         try {
-            createInjector(properties, monitor, new Module()
-            {
-                public void configure(Binder binder)
-                {
-                    ConfigurationModule.bindConfig(binder).to(DefunctConfigPresent.class);
-                }
-            });
+            createInjector(properties, monitor, binder -> bindConfig(binder).to(DefunctConfigPresent.class));
 
             Assert.fail("Expected an exception in object creation due to use of defunct config");
         } catch (CreationException e) {
@@ -252,13 +200,7 @@ public class ConfigurationFactoryTest
         properties.put("string-value", "has a value");
         properties.put("int-value", "50");
         TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(properties, monitor, new Module()
-        {
-            public void configure(Binder binder)
-            {
-                ConfigurationModule.bindConfig(binder).to(BeanValidationClass.class);
-            }
-        });
+        Injector injector = createInjector(properties, monitor, binder -> bindConfig(binder).to(BeanValidationClass.class));
         BeanValidationClass beanValidationClass = injector.getInstance(BeanValidationClass.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
@@ -275,13 +217,7 @@ public class ConfigurationFactoryTest
         properties.put("int-value", "5000");  // out of range
         TestMonitor monitor = new TestMonitor();
         try {
-            Injector injector = createInjector(properties, monitor, new Module()
-            {
-                public void configure(Binder binder)
-                {
-                    ConfigurationModule.bindConfig(binder).to(BeanValidationClass.class);
-                }
-            });
+            createInjector(properties, monitor, binder -> bindConfig(binder).to(BeanValidationClass.class));
         } catch (CreationException e) {
             monitor.assertNumberOfErrors(2);
             monitor.assertNumberOfWarnings(0);
@@ -299,6 +235,7 @@ public class ConfigurationFactoryTest
     }
 
 
+    @SuppressWarnings("unused")
     public static class AnnotatedGetter {
         private String stringValue;
         private boolean booleanValue;
@@ -412,6 +349,7 @@ public class ConfigurationFactoryTest
         }
     }
 
+    @SuppressWarnings("unused")
     @DefunctConfig("defunct-value")
     public static class DefunctConfigPresent
     {
@@ -433,7 +371,7 @@ public class ConfigurationFactoryTest
     public static class BeanValidationClass
     {
         @NotNull
-        private String stringValue = null;
+        private String stringValue;
 
         private int myIntValue;
 
