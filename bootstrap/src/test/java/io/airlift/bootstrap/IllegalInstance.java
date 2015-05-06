@@ -18,6 +18,7 @@ package io.airlift.bootstrap;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+@SuppressWarnings("MethodMayBeStatic")
 public class IllegalInstance
 {
     @PostConstruct

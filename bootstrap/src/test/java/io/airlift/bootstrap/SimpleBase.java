@@ -17,7 +17,7 @@ package io.airlift.bootstrap;
 
 public interface SimpleBase
 {
-    public void foo();
+    void foo();
 
-    public void bar();
+    void bar();
 }

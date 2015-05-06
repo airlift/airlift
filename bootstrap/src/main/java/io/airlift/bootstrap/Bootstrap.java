@@ -57,10 +57,10 @@ import static com.google.common.collect.Maps.fromProperties;
  * <p>
  * This class will:
  * <ul>
- *  <li>load, validate and bind configurations</li>
- *  <li>initialize logging</li>
- *  <li>set up bootstrap management</li>
- *  <li>create an Guice injector</li>
+ * <li>load, validate and bind configurations</li>
+ * <li>initialize logging</li>
+ * <li>set up bootstrap management</li>
+ * <li>create an Guice injector</li>
  * </ul>
  */
 public class Bootstrap
@@ -146,6 +146,7 @@ public class Bootstrap
         return this;
     }
 
+    @SuppressWarnings("unused")
     public Bootstrap requireExplicitBindings(boolean requireExplicitBindings)
     {
         this.requireExplicitBindings = requireExplicitBindings;
@@ -163,14 +164,7 @@ public class Bootstrap
             logging = Logging.initialize();
         }
 
-        Thread.currentThread().setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler()
-        {
-            @Override
-            public void uncaughtException(Thread t, Throwable e)
-            {
-                log.error(e, "Uncaught exception in thread %s", t.getName());
-            }
-        });
+        Thread.currentThread().setUncaughtExceptionHandler((thread, throwable) -> log.error(throwable, "Uncaught exception in thread %s", thread.getName()));
 
         Map<String, String> requiredProperties;
         ConfigurationFactory configurationFactory;
@@ -206,31 +200,19 @@ public class Bootstrap
             logging.configure(configuration);
         }
 
-        // create warning logger now that we have logging initialized
-        final WarningsMonitor warningsMonitor = new WarningsMonitor()
-        {
-            @Override
-            public void onWarning(String message)
-            {
-                log.warn(message);
-            }
-        };
-
         // initialize configuration factory
-        for (Module module : modules) {
-            if (module instanceof ConfigurationAwareModule) {
-                ConfigurationAwareModule configurationAwareModule = (ConfigurationAwareModule) module;
-                configurationAwareModule.setConfigurationFactory(configurationFactory);
-            }
-        }
+        modules.stream()
+                .filter(ConfigurationAwareModule.class::isInstance)
+                .map(ConfigurationAwareModule.class::cast)
+                .forEach(module -> module.setConfigurationFactory(configurationFactory));
 
         // Validate configuration
-        ConfigurationValidator configurationValidator = new ConfigurationValidator(configurationFactory, warningsMonitor);
+        ConfigurationValidator configurationValidator = new ConfigurationValidator(configurationFactory, log::warn);
         List<Message> messages = configurationValidator.validate(modules);
 
         // at this point all config file properties should be used
         // so we can calculate the unused properties
-        final TreeMap<String, String> unusedProperties = Maps.newTreeMap();
+        TreeMap<String, String> unusedProperties = new TreeMap<>();
         unusedProperties.putAll(requiredProperties);
         unusedProperties.keySet().removeAll(configurationFactory.getUsedProperties());
 
@@ -246,37 +228,19 @@ public class Bootstrap
         if (!messages.isEmpty()) {
             moduleList.add(new ValidationErrorModule(messages));
         }
-        moduleList.add(new Module()
-        {
-            @Override
-            public void configure(Binder binder)
-            {
-                binder.bind(WarningsMonitor.class).toInstance(warningsMonitor);
-            }
-        });
+        moduleList.add(binder -> binder.bind(WarningsMonitor.class).toInstance(log::warn));
 
-        moduleList.add(new Module()
-        {
-            @Override
-            public void configure(Binder binder)
-            {
-                binder.disableCircularProxies();
-                if(requireExplicitBindings) {
-                    binder.requireExplicitBindings();
-                }
-            }
-        });
+        // disable broken Guice "features"
+        moduleList.add(Binder::disableCircularProxies);
+        if (requireExplicitBindings) {
+            moduleList.add(Binder::requireExplicitBindings);
+        }
 
         // todo this should be part of the ValidationErrorModule
         if (strictConfig) {
-            moduleList.add(new Module()
-            {
-                @Override
-                public void configure(Binder binder)
-                {
-                    for (Entry<String, String> unusedProperty : unusedProperties.entrySet()) {
-                        binder.addError("Configuration property '%s=%s' was not used", unusedProperty.getKey(), unusedProperty.getValue());
-                    }
+            moduleList.add(binder -> {
+                for (Entry<String, String> unusedProperty : unusedProperties.entrySet()) {
+                    binder.addError("Configuration property '%s=%s' was not used", unusedProperty.getKey(), unusedProperty.getValue());
                 }
             });
         }
@@ -319,7 +283,7 @@ public class Bootstrap
         }
     }
 
-    private ColumnPrinter makePrinterForConfiguration(ConfigurationFactory configurationFactory)
+    private static ColumnPrinter makePrinterForConfiguration(ConfigurationFactory configurationFactory)
     {
         ConfigurationInspector configurationInspector = new ConfigurationInspector();
 

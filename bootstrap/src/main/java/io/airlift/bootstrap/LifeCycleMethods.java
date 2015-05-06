@@ -21,11 +21,14 @@ import com.google.common.collect.Multimap;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+
+import static java.lang.String.format;
 
 class LifeCycleMethods
 {
@@ -33,13 +36,13 @@ class LifeCycleMethods
 
     LifeCycleMethods(Class<?> clazz)
     {
-        addLifeCycleMethods(clazz, new HashSet<String>(), new HashSet<String>());
+        addLifeCycleMethods(clazz, new HashSet<>(), new HashSet<>());
     }
 
     boolean hasFor(Class<? extends Annotation> annotation)
     {
         Collection<Method> methods = methodMap.get(annotation);
-        return (methods != null) && (methods.size() > 0);
+        return (methods != null) && (!methods.isEmpty());
     }
 
     Collection<Method> methodsFor(Class<? extends Annotation> annotation)
@@ -74,7 +77,8 @@ class LifeCycleMethods
         if (method.isAnnotationPresent(annotationClass)) {
             if (!usedSet.contains(method.getName())) {
                 if (method.getParameterTypes().length != 0) {
-                    throw new UnsupportedOperationException(String.format("@PostConstruct/@PreDestroy methods cannot have arguments: %s", method.getDeclaringClass().getName() + "." + method.getName() + "(...)"));
+                    throw new UnsupportedOperationException(format("@PostConstruct/@PreDestroy methods cannot have arguments: %s",
+                            method.getDeclaringClass().getName() + "." + method.getName() + "(...)"));
                 }
 
                 method.setAccessible(true);

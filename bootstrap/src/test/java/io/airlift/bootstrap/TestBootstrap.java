@@ -44,7 +44,7 @@ public class TestBootstrap
 
     @Test
     public void testDoesNotAllowCircularDependencies()
-        throws Exception
+            throws Exception
     {
         Bootstrap bootstrap = new Bootstrap(new Module()
         {
@@ -65,23 +65,17 @@ public class TestBootstrap
         }
     }
 
-    public static class Instance
-    {
-    }
+    public static class Instance {}
 
     public static class InstanceA
     {
         @Inject
-        public InstanceA(InstanceB b)
-        {
-        }
+        public InstanceA(InstanceB b) { }
     }
 
     public static class InstanceB
     {
         @Inject
-        public InstanceB(InstanceA a)
-        {
-        }
+        public InstanceB(InstanceA a) { }
     }
 }

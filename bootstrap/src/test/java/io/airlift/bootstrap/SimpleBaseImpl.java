@@ -18,7 +18,9 @@ package io.airlift.bootstrap;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-public class SimpleBaseImpl implements SimpleBase
+@SuppressWarnings("MethodMayBeStatic")
+public class SimpleBaseImpl
+        implements SimpleBase
 {
     @Override
     public void foo()

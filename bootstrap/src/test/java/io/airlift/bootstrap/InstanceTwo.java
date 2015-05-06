@@ -20,6 +20,7 @@ import com.google.inject.Inject;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+@SuppressWarnings("MethodMayBeStatic")
 public class InstanceTwo
 {
     @Inject

@@ -19,7 +19,7 @@ import javax.annotation.PostConstruct;
 
 public class InstanceThatRequiresStart
 {
-    private boolean hasStarted = false;
+    private boolean hasStarted;
 
     @PostConstruct
     public void start()

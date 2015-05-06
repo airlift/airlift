@@ -20,12 +20,11 @@ import com.google.inject.Inject;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+@SuppressWarnings("MethodMayBeStatic")
 public class DependentInstance
 {
     @Inject
-    public DependentInstance()
-    {
-    }
+    public DependentInstance() { }
 
     @PostConstruct
     public void postDependentInstance()

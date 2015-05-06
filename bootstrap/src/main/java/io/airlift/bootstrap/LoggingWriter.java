@@ -22,7 +22,8 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 
-class LoggingWriter extends StringWriter
+class LoggingWriter
+        extends StringWriter
 {
     private final Logger logger;
     private final Type type;
@@ -51,7 +52,7 @@ class LoggingWriter extends StringWriter
     public void flush()
     {
         BufferedReader in = new BufferedReader(new StringReader(getBuffer().toString()));
-        for (; ;) {
+        while (true) {
             try {
                 String line = in.readLine();
                 if (line == null) {
@@ -81,10 +82,5 @@ class LoggingWriter extends StringWriter
         }
 
         getBuffer().setLength(0);
-    }
-
-    public void printMessage(String message, Object... args)
-    {
-        write(String.format(message, args) + "\n");
     }
 }

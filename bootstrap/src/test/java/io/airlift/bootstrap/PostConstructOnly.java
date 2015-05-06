@@ -17,6 +17,7 @@ package io.airlift.bootstrap;
 
 import javax.annotation.PostConstruct;
 
+@SuppressWarnings("MethodMayBeStatic")
 public class PostConstructOnly
 {
     @PostConstruct

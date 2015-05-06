@@ -20,6 +20,7 @@ import io.airlift.log.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collections;
@@ -34,8 +35,8 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class LifeCycleManager
 {
     private final Logger log = Logger.get(getClass());
-    private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
-    private final Queue<Object> managedInstances = new ConcurrentLinkedQueue<Object>();
+    private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
+    private final Queue<Object> managedInstances = new ConcurrentLinkedQueue<>();
     private final LifeCycleMethodsMap methodsMap;
 
     private enum State

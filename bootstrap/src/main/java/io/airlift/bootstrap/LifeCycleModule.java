@@ -27,6 +27,7 @@ import com.google.inject.spi.TypeListener;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -35,11 +36,12 @@ import static com.google.inject.matcher.Matchers.any;
 /**
  * Guice module for binding the LifeCycle manager
  */
-public class LifeCycleModule implements Module
+public class LifeCycleModule
+        implements Module
 {
     private final List<Object> injectedInstances = Lists.newArrayList();
     private final LifeCycleMethodsMap lifeCycleMethodsMap = new LifeCycleMethodsMap();
-    private final AtomicReference<LifeCycleManager> lifeCycleManagerRef = new AtomicReference<LifeCycleManager>(null);
+    private final AtomicReference<LifeCycleManager> lifeCycleManager = new AtomicReference<>(null);
 
     @Override
     public void configure(Binder binder)
@@ -51,24 +53,19 @@ public class LifeCycleModule implements Module
             @Override
             public <T> void hear(TypeLiteral<T> type, TypeEncounter<T> encounter)
             {
-                encounter.register(new InjectionListener<T>()
-                {
-                    @Override
-                    public void afterInjection(T obj)
-                    {
-                        if (isLifeCycleClass(obj.getClass())) {
-                            LifeCycleManager lifeCycleManager = lifeCycleManagerRef.get();
-                            if (lifeCycleManager != null) {
-                                try {
-                                    lifeCycleManager.addInstance(obj);
-                                }
-                                catch (Exception e) {
-                                    throw new Error(e);
-                                }
+                encounter.register((InjectionListener<T>) obj -> {
+                    if (isLifeCycleClass(obj.getClass())) {
+                        LifeCycleManager manager = lifeCycleManager.get();
+                        if (manager != null) {
+                            try {
+                                manager.addInstance(obj);
                             }
-                            else {
-                                injectedInstances.add(obj);
+                            catch (Exception e) {
+                                throw new Error(e);
                             }
+                        }
+                        else {
+                            injectedInstances.add(obj);
                         }
                     }
                 });
@@ -82,7 +79,7 @@ public class LifeCycleModule implements Module
             throws Exception
     {
         LifeCycleManager lifeCycleManager = new LifeCycleManager(injectedInstances, lifeCycleMethodsMap);
-        lifeCycleManagerRef.set(lifeCycleManager);
+        this.lifeCycleManager.set(lifeCycleManager);
         return lifeCycleManager;
     }
 
