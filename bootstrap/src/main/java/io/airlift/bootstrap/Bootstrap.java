@@ -28,14 +28,12 @@ import com.google.inject.Module;
 import com.google.inject.Stage;
 import com.google.inject.spi.Message;
 import io.airlift.bootstrap.LoggingWriter.Type;
-import io.airlift.configuration.ConfigurationAwareModule;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationInspector;
 import io.airlift.configuration.ConfigurationInspector.ConfigAttribute;
 import io.airlift.configuration.ConfigurationInspector.ConfigRecord;
 import io.airlift.configuration.ConfigurationLoader;
 import io.airlift.configuration.ConfigurationModule;
-import io.airlift.configuration.ConfigurationValidator;
 import io.airlift.configuration.ValidationErrorModule;
 import io.airlift.configuration.WarningsMonitor;
 import io.airlift.log.Logger;
@@ -51,6 +49,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import static com.google.common.collect.Maps.fromProperties;
+import static io.airlift.configuration.Configuration.processConfiguration;
 
 /**
  * Entry point for an application built using the platform codebase.
@@ -200,15 +199,8 @@ public class Bootstrap
             logging.configure(configuration);
         }
 
-        // initialize configuration factory
-        modules.stream()
-                .filter(ConfigurationAwareModule.class::isInstance)
-                .map(ConfigurationAwareModule.class::cast)
-                .forEach(module -> module.setConfigurationFactory(configurationFactory));
-
         // Validate configuration
-        ConfigurationValidator configurationValidator = new ConfigurationValidator(configurationFactory, log::warn);
-        List<Message> messages = configurationValidator.validate(modules);
+        List<Message> messages = processConfiguration(configurationFactory, log::warn, modules);
 
         // at this point all config file properties should be used
         // so we can calculate the unused properties

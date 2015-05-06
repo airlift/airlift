@@ -27,29 +27,32 @@ import com.google.inject.spi.InstanceBinding;
 import com.google.inject.spi.Message;
 import com.google.inject.spi.ProviderInstanceBinding;
 
+import java.util.Collection;
 import java.util.List;
 
 import static java.util.Collections.singletonList;
 
-public class ConfigurationValidator
+public final class Configuration
 {
-    private final ConfigurationFactory configurationFactory;
-    private final WarningsMonitor warningsMonitor;
-
-    public ConfigurationValidator(ConfigurationFactory configurationFactory, WarningsMonitor warningsMonitor)
+    private Configuration()
     {
-        this.configurationFactory = configurationFactory;
-        this.warningsMonitor = warningsMonitor;
     }
 
-    public List<Message> validate(Module... modules)
+    public static List<Message> processConfiguration(ConfigurationFactory configurationFactory, WarningsMonitor warningsMonitor, Module... modules)
     {
-        return validate(ImmutableList.copyOf(modules));
+        return processConfiguration(configurationFactory, warningsMonitor, ImmutableList.copyOf(modules));
     }
 
-    public List<Message> validate(Iterable<? extends Module> modules)
+    public static List<Message> processConfiguration(ConfigurationFactory configurationFactory, WarningsMonitor warningsMonitor, Collection<? extends Module> modules)
     {
-        final List<Message> messages = Lists.newArrayList();
+        // some modules need access to configuration factory so they can lazy register additional config classes
+        // initialize configuration factory
+        modules.stream()
+                .filter(ConfigurationAwareModule.class::isInstance)
+                .map(ConfigurationAwareModule.class::cast)
+                .forEach(module -> module.setConfigurationFactory(configurationFactory));
+
+        List<Message> messages = Lists.newArrayList();
 
         ElementsIterator elementsIterator = new ElementsIterator(modules);
         for (Element element : elementsIterator) {

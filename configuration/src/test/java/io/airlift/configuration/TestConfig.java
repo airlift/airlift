@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.airlift.configuration.Configuration.processConfiguration;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -127,7 +128,7 @@ public class TestConfig
     private static Injector createInjector(Map<String, String> properties, Module module)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
-        List<Message> messages = new ConfigurationValidator(configurationFactory, null).validate(module);
+        List<Message> messages = processConfiguration(configurationFactory, null, module);
         return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
     }
 

@@ -34,10 +34,10 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.airlift.configuration.Configuration.processConfiguration;
 
 public class ConfigurationFactoryTest
 {
-
     @Test
     public void testAnnotatedGettersThrows()
     {
@@ -227,10 +227,10 @@ public class ConfigurationFactoryTest
     }
 
 
-    private Injector createInjector(Map<String, String> properties, TestMonitor monitor, Module module)
+    private static Injector createInjector(Map<String, String> properties, TestMonitor monitor, Module module)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, monitor);
-        List<Message> messages = new ConfigurationValidator(configurationFactory, null).validate(module);
+        List<Message> messages = processConfiguration(configurationFactory, null, module);
         return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
     }
 
