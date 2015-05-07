@@ -61,6 +61,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
+@Test(singleThreaded = true)
 public class TestServer
 {
     private static final int NOT_ALLOWED = 405;
@@ -101,7 +102,7 @@ public class TestServer
         client = new JettyHttpClient();
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     public void teardown()
             throws Exception
     {

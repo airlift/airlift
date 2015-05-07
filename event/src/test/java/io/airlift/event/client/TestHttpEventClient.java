@@ -60,6 +60,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
+@Test(singleThreaded = true)
 public class TestHttpEventClient
 {
     private DummyServlet servlet;
@@ -136,7 +137,7 @@ public class TestHttpEventClient
         server.start();
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     public void tearDown()
             throws Exception
     {

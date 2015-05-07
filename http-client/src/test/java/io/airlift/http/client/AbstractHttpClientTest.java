@@ -69,6 +69,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.fail;
 
+@Test(singleThreaded = true)
 public abstract class AbstractHttpClientTest
 {
     protected EchoServlet servlet;
@@ -151,7 +152,7 @@ public abstract class AbstractHttpClientTest
         server.start();
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     public void abstractTeardown()
             throws Exception
     {
@@ -634,7 +635,7 @@ public abstract class AbstractHttpClientTest
         executor = Executors.newCachedThreadPool(threadsNamed("test-%s"));
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public final void tearDown()
             throws Exception
     {

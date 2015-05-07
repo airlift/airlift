@@ -25,6 +25,7 @@ import static io.airlift.http.client.StatusResponseHandler.createStatusResponseH
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.testng.Assert.assertEquals;
 
+@Test(singleThreaded = true)
 public class TestServer
 {
     private HttpClient client;
@@ -54,7 +55,7 @@ public class TestServer
         client = new JettyHttpClient();
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     public void teardown()
             throws Exception
     {

@@ -32,7 +32,7 @@ public class TestJettyHttpClientSocksProxy
         httpClient = new JettyHttpClient(new HttpClientConfig().setSocksProxy(testingSocksProxy.getHostAndPort()), jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public void tearDownHttpClient()
     {
         closeQuietly(httpClient);

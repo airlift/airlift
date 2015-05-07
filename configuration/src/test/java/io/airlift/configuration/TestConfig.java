@@ -22,7 +22,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.spi.Message;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
@@ -37,7 +36,25 @@ import static org.testng.Assert.fail;
 
 public class TestConfig
 {
-    private ImmutableMap<String, String> properties;
+    private final Map<String, String> properties = ImmutableMap.<String, String>builder()
+            .put("stringOption", "a string")
+            .put("booleanOption", "true")
+            .put("boxedBooleanOption", "true")
+            .put("byteOption", Byte.toString(Byte.MAX_VALUE))
+            .put("boxedByteOption", Byte.toString(Byte.MAX_VALUE))
+            .put("shortOption", Short.toString(Short.MAX_VALUE))
+            .put("boxedShortOption", Short.toString(Short.MAX_VALUE))
+            .put("integerOption", Integer.toString(Integer.MAX_VALUE))
+            .put("boxedIntegerOption", Integer.toString(Integer.MAX_VALUE))
+            .put("longOption", Long.toString(Long.MAX_VALUE))
+            .put("boxedLongOption", Long.toString(Long.MAX_VALUE))
+            .put("floatOption", Float.toString(Float.MAX_VALUE))
+            .put("boxedFloatOption", Float.toString(Float.MAX_VALUE))
+            .put("doubleOption", Double.toString(Double.MAX_VALUE))
+            .put("boxedDoubleOption", Double.toString(Double.MAX_VALUE))
+            .put("myEnumOption", MyEnum.FOO.toString())
+            .put("valueClassOption", "a value class")
+            .build();
 
     @Test
     public void testConfig()
@@ -145,31 +162,6 @@ public class TestConfig
         };
 
         return module;
-    }
-
-    @BeforeMethod
-    protected void setUp()
-            throws Exception
-    {
-        properties = ImmutableMap.<String, String>builder()
-                .put("stringOption", "a string")
-                .put("booleanOption", "true")
-                .put("boxedBooleanOption", "true")
-                .put("byteOption", Byte.toString(Byte.MAX_VALUE))
-                .put("boxedByteOption", Byte.toString(Byte.MAX_VALUE))
-                .put("shortOption", Short.toString(Short.MAX_VALUE))
-                .put("boxedShortOption", Short.toString(Short.MAX_VALUE))
-                .put("integerOption", Integer.toString(Integer.MAX_VALUE))
-                .put("boxedIntegerOption", Integer.toString(Integer.MAX_VALUE))
-                .put("longOption", Long.toString(Long.MAX_VALUE))
-                .put("boxedLongOption", Long.toString(Long.MAX_VALUE))
-                .put("floatOption", Float.toString(Float.MAX_VALUE))
-                .put("boxedFloatOption", Float.toString(Float.MAX_VALUE))
-                .put("doubleOption", Double.toString(Double.MAX_VALUE))
-                .put("boxedDoubleOption", Double.toString(Double.MAX_VALUE))
-                .put("myEnumOption", MyEnum.FOO.toString())
-                .put("valueClassOption", "a value class")
-                .build();
     }
 
     private static Map<String, String> prefix(String prefix, Map<String, String> properties)

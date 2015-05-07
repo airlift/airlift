@@ -24,6 +24,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+@Test(singleThreaded = true)
 public class TestLoggingMBean
 {
     private final LoggingMBean logging = new LoggingMBean(Logging.initialize());
@@ -36,7 +37,7 @@ public class TestLoggingMBean
         logging.setRootLevel("INFO");
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     public void restoreRootLevel()
     {
         logging.setRootLevel(rootLevel);

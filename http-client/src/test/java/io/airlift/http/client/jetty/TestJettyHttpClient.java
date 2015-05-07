@@ -25,7 +25,7 @@ public class TestJettyHttpClient
         httpClient = new JettyHttpClient(new HttpClientConfig(), jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public void tearDownHttpClient()
             throws Exception
     {

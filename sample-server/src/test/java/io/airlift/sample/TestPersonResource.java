@@ -30,6 +30,7 @@ import static io.airlift.sample.PersonEvent.personUpdated;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
+@Test(singleThreaded = true)
 public class TestPersonResource
 {
     private PersonResource resource;

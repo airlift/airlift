@@ -54,6 +54,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+@Test(singleThreaded = true)
 public class TestHttpServerProvider
 {
     private HttpServer server;
@@ -80,7 +81,7 @@ public class TestHttpServerProvider
         httpServerInfo = new HttpServerInfo(config, nodeInfo);
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     public void teardown()
             throws Exception
     {

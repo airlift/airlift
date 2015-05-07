@@ -3,7 +3,6 @@ package io.airlift.http.client;
 import com.google.common.collect.ImmutableListMultimap;
 import io.airlift.http.client.testing.TestingResponse;
 import io.airlift.json.JsonCodec;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -19,15 +18,8 @@ import static org.testng.Assert.assertTrue;
 
 public class TestJsonResponseHandler
 {
-    private JsonCodec<User> codec;
-    private JsonResponseHandler<User> handler;
-
-    @BeforeMethod
-    public void setUp()
-    {
-        codec = JsonCodec.jsonCodec(User.class);
-        handler = createJsonResponseHandler(codec);
-    }
+    private final JsonCodec<User> codec = JsonCodec.jsonCodec(User.class);
+    private final JsonResponseHandler<User> handler = createJsonResponseHandler(codec);
 
     @Test
     public void testValidJson()

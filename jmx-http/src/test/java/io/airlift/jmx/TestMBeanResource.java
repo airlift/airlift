@@ -74,7 +74,7 @@ public class TestMBeanResource
         client = new JettyHttpClient();
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public void teardown()
             throws Exception
     {

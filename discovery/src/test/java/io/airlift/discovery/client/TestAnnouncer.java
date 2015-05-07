@@ -35,6 +35,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
 
+@Test(singleThreaded = true)
 public class TestAnnouncer
 {
     public static final Duration MAX_AGE = new Duration(1, TimeUnit.MILLISECONDS);
@@ -54,7 +55,7 @@ public class TestAnnouncer
         announcer = new Announcer(discoveryClient, ImmutableSet.of(serviceAnnouncement));
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     public void tearDown()
             throws Exception
     {

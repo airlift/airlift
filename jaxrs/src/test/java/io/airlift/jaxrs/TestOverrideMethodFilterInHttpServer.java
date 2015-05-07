@@ -27,7 +27,8 @@ import io.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.json.JsonModule;
 import io.airlift.node.testing.TestingNodeModule;
 import io.airlift.testing.Closeables;
-import org.testng.annotations.AfterMethod;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -60,7 +61,7 @@ public class TestOverrideMethodFilterInHttpServer
     private TestResource resource;
     private HttpClient client;
 
-    @BeforeMethod
+    @BeforeClass
     public void setup()
             throws Exception
     {
@@ -72,9 +73,8 @@ public class TestOverrideMethodFilterInHttpServer
         server.start();
     }
 
-    @AfterMethod
+    @AfterClass(alwaysRun = true)
     public void teardown()
-            throws Exception
     {
         try {
             if (server != null) {
@@ -84,6 +84,12 @@ public class TestOverrideMethodFilterInHttpServer
         catch (Throwable ignored) {
         }
         Closeables.closeQuietly(client);
+    }
+
+    @BeforeMethod
+    public void resetResource()
+    {
+        resource.reset();
     }
 
     @Test
@@ -224,6 +230,14 @@ public class TestOverrideMethodFilterInHttpServer
         private volatile boolean put;
         private volatile boolean get;
         private volatile boolean delete;
+
+        public void reset()
+        {
+            post = false;
+            put = false;
+            get = false;
+            delete = false;
+        }
 
         @POST
         public void post()

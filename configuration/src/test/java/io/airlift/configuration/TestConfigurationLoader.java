@@ -17,8 +17,8 @@ package io.airlift.configuration;
 
 import com.google.common.io.Files;
 import io.airlift.testing.FileUtils;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -33,7 +33,7 @@ public class TestConfigurationLoader
 {
     private File tempDir;
 
-    @BeforeMethod
+    @BeforeClass
     public void setup()
             throws IOException
     {
@@ -42,7 +42,7 @@ public class TestConfigurationLoader
 
     }
 
-    @AfterMethod
+    @AfterClass(alwaysRun = true)
     public void teardown()
             throws IOException
     {

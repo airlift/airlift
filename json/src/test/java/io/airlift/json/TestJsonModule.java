@@ -34,7 +34,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -58,7 +58,7 @@ public class TestJsonModule
 
     private ObjectMapper objectMapper;
 
-    @BeforeMethod
+    @BeforeClass
     public void setUp()
             throws Exception
     {

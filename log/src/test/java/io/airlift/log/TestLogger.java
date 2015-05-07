@@ -31,6 +31,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
+@Test(singleThreaded = true)
 public class TestLogger
 {
     private MockHandler handler;
@@ -51,7 +52,7 @@ public class TestLogger
         logger = new Logger(inner);
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     public void teardown()
     {
         assertTrue(handler.isEmpty(), "Some log messages were not verified by test");

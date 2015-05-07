@@ -45,6 +45,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertSame;
 
+@Test(singleThreaded = true)
 public class TestH2EmbeddedDataSourceModule
 {
     @Retention(RUNTIME)
@@ -234,7 +235,7 @@ public class TestH2EmbeddedDataSourceModule
         this.temporaryFile = File.createTempFile("h2db-", ".db");
     }
 
-    @AfterMethod(groups = "requiresTempFile")
+    @AfterMethod(groups = "requiresTempFile", alwaysRun = true)
     private void deleteTempFile()
     {
         this.temporaryFile.delete();

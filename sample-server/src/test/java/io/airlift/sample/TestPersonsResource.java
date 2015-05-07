@@ -15,18 +15,19 @@
  */
 package io.airlift.sample;
 
-import io.airlift.event.client.InMemoryEventClient;
 import io.airlift.event.client.NullEventClient;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.core.Response;
+
 import java.util.Collection;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static io.airlift.testing.Assertions.assertInstanceOf;
 import static org.testng.Assert.assertEquals;
 
+@Test(singleThreaded = true)
 public class TestPersonsResource
 {
     private PersonsResource resource;

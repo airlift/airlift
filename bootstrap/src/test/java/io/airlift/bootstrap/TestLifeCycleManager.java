@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+@Test(singleThreaded = true)
 public class TestLifeCycleManager
 {
     private static final List<String> stateLog = new CopyOnWriteArrayList<>();

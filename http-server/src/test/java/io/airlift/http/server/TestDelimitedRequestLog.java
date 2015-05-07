@@ -27,7 +27,7 @@ import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
 import org.joda.time.format.ISODateTimeFormat;
 import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -40,24 +40,24 @@ import java.util.List;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@Test(singleThreaded = true)
 public class TestDelimitedRequestLog
 {
+    private final DateTimeFormatter isoFormatter = new DateTimeFormatterBuilder()
+            .append(ISODateTimeFormat.dateHourMinuteSecondFraction())
+            .appendTimeZoneOffset("Z", true, 2, 2)
+            .toFormatter();
+
     private File file;
-    private DateTimeFormatter isoFormatter;
 
     @BeforeMethod
     public void setup()
             throws IOException
     {
         file = File.createTempFile(getClass().getName(), ".log");
-
-        isoFormatter = new DateTimeFormatterBuilder()
-                .append(ISODateTimeFormat.dateHourMinuteSecondFraction())
-                .appendTimeZoneOffset("Z", true, 2, 2)
-                .toFormatter();
     }
 
-    @AfterMethod
+    @AfterClass(alwaysRun = true)
     public void teardown()
             throws IOException
     {

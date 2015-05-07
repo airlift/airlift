@@ -19,7 +19,6 @@ import org.testng.annotations.BeforeMethod;
 
 public class TestInMemoryEventClient extends AbstractTestInMemoryEventClient
 {
-
     @BeforeMethod
     public void setup()
             throws Exception
@@ -27,5 +26,4 @@ public class TestInMemoryEventClient extends AbstractTestInMemoryEventClient
         inMemoryEventClient = new InMemoryEventClient();
         eventClient = inMemoryEventClient;
     }
-
 }

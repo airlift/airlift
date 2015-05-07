@@ -19,7 +19,7 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import io.airlift.event.client.NestedDummyEventClass.NestedPart;
 import org.joda.time.DateTime;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -36,7 +36,7 @@ public class TestJsonEventWriter
 {
     private JsonEventWriter eventWriter;
 
-    @BeforeMethod
+    @BeforeClass
     public void setup()
             throws Exception
     {

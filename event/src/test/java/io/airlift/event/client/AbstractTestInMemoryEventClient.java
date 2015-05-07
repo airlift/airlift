@@ -23,6 +23,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 
+@Test(singleThreaded = true)
 public abstract class AbstractTestInMemoryEventClient
 {
     private final DummyEventClass event1 = new DummyEventClass(1.234, 5678, "foo", true);

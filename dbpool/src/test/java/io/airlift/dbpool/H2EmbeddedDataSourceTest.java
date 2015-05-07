@@ -32,6 +32,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
+@Test(singleThreaded = true)
 public class H2EmbeddedDataSourceTest
 {
     private File file;
@@ -43,7 +44,7 @@ public class H2EmbeddedDataSourceTest
         file = File.createTempFile("h2db-", ".db");
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     public void teardown()
     {
         file.delete();

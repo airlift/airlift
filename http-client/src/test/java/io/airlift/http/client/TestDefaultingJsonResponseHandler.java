@@ -3,7 +3,6 @@ package io.airlift.http.client;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.airlift.json.JsonCodec;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import static com.google.common.net.MediaType.JSON_UTF_8;
@@ -18,16 +17,8 @@ import static org.testng.Assert.assertSame;
 public class TestDefaultingJsonResponseHandler
 {
     private static final User DEFAULT_VALUE = new User("defaultUser", 998);
-    private JsonCodec<User> codec;
-    private DefaultingJsonResponseHandler<User> handler;
-
-    @BeforeMethod
-    public void setUp()
-            throws Exception
-    {
-        codec = JsonCodec.jsonCodec(User.class);
-        handler = createDefaultingJsonResponseHandler(codec, DEFAULT_VALUE);
-    }
+    private final JsonCodec<User> codec = JsonCodec.jsonCodec(User.class);
+    private final DefaultingJsonResponseHandler<User> handler = createDefaultingJsonResponseHandler(codec, DEFAULT_VALUE);
 
     @Test
     public void testValidJson()

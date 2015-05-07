@@ -51,6 +51,7 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 import static org.weakref.jmx.ObjectNames.generatedNameOf;
 
+@Test(singleThreaded = true)
 public class TestMBeanServerResource
 {
     private LifeCycleManager lifeCycleManager;
@@ -98,7 +99,7 @@ public class TestMBeanServerResource
         mbeanServerConnection = connect.getMBeanServerConnection();
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     public void teardown()
             throws Exception
     {
