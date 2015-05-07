@@ -51,24 +51,19 @@ public class LifeCycleModule implements Module
             @Override
             public <T> void hear(TypeLiteral<T> type, TypeEncounter<T> encounter)
             {
-                encounter.register(new InjectionListener<T>()
-                {
-                    @Override
-                    public void afterInjection(T obj)
-                    {
-                        if (isLifeCycleClass(obj.getClass())) {
-                            LifeCycleManager lifeCycleManager = lifeCycleManagerRef.get();
-                            if (lifeCycleManager != null) {
-                                try {
-                                    lifeCycleManager.addInstance(obj);
-                                }
-                                catch (Exception e) {
-                                    throw new Error(e);
-                                }
+                encounter.register((InjectionListener<T>) obj -> {
+                    if (isLifeCycleClass(obj.getClass())) {
+                        LifeCycleManager lifeCycleManager = lifeCycleManagerRef.get();
+                        if (lifeCycleManager != null) {
+                            try {
+                                lifeCycleManager.addInstance(obj);
                             }
-                            else {
-                                injectedInstances.add(obj);
+                            catch (Exception e) {
+                                throw new RuntimeException(e);
                             }
+                        }
+                        else {
+                            injectedInstances.add(obj);
                         }
                     }
                 });
