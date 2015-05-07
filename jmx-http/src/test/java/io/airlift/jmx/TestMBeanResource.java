@@ -3,9 +3,7 @@ package io.airlift.jmx;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.MediaType;
-import com.google.inject.Binder;
 import com.google.inject.Injector;
-import com.google.inject.Module;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.HttpClient;
@@ -18,8 +16,8 @@ import io.airlift.json.JsonModule;
 import io.airlift.json.ObjectMapperProvider;
 import io.airlift.node.testing.TestingNodeModule;
 import io.airlift.testing.Closeables;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -49,12 +47,12 @@ import static org.testng.Assert.assertTrue;
 
 public class TestMBeanResource
 {
-    public final MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+    private final MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
     private LifeCycleManager lifeCycleManager;
     private TestingHttpServer server;
     private HttpClient client;
 
-    @BeforeMethod
+    @BeforeClass
     public void setup()
             throws Exception
     {
@@ -64,14 +62,7 @@ public class TestMBeanResource
                 new JsonModule(),
                 new JaxrsModule(true),
                 new JmxHttpModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.bind(MBeanServer.class).toInstance(mbeanServer);
-                    }
-                });
+                binder -> binder.bind(MBeanServer.class).toInstance(mbeanServer));
 
         Injector injector = app
                 .quiet()
@@ -83,7 +74,7 @@ public class TestMBeanResource
         client = new JettyHttpClient();
     }
 
-    @AfterMethod
+    @AfterClass
     public void teardown()
             throws Exception
     {
