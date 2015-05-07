@@ -61,7 +61,7 @@ public class LifeCycleModule
                                 manager.addInstance(obj);
                             }
                             catch (Exception e) {
-                                throw new Error(e);
+                                throw new RuntimeException(e);
                             }
                         }
                         else {
