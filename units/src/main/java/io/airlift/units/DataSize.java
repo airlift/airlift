@@ -33,6 +33,16 @@ public class DataSize
 {
     private static final Pattern PATTERN = Pattern.compile("^\\s*(\\d+(?:\\.\\d+)?)\\s*([a-zA-Z]+)\\s*$");
 
+    public static DataSize succinctBytes(long bytes)
+    {
+        return succinctDataSize(bytes, Unit.BYTE);
+    }
+
+    public static DataSize succinctDataSize(double size, Unit unit)
+    {
+        return new DataSize(size, unit).convertToMostSuccinctDataSize();
+    }
+
     private final double value;
     private final Unit unit;
 

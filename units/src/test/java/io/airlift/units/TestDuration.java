@@ -25,6 +25,8 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import static io.airlift.testing.EquivalenceTester.comparisonTester;
+import static io.airlift.units.Duration.succinctDuration;
+import static io.airlift.units.Duration.succinctNanos;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
@@ -38,6 +40,18 @@ import static org.testng.Assert.fail;
 
 public class TestDuration
 {
+    @Test
+    public void testSuccinctFactories()
+    {
+        assertEquals(succinctNanos(123), new Duration(123, NANOSECONDS));
+        assertEquals(succinctNanos(123456), new Duration(123.456, MICROSECONDS));
+        assertEquals(succinctNanos(SECONDS.toNanos(300)), new Duration(5, MINUTES));
+
+        assertEquals(succinctDuration(123, NANOSECONDS), new Duration(123, NANOSECONDS));
+        assertEquals(succinctDuration(123456, NANOSECONDS), new Duration(123.456, MICROSECONDS));
+        assertEquals(succinctDuration(300, SECONDS), new Duration(5, MINUTES));
+    }
+
     @Test
     public void testGetValue()
     {
