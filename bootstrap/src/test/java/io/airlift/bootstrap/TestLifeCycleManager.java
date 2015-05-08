@@ -44,7 +44,7 @@ public class TestLifeCycleManager
         stateLog.clear();
     }
 
-    public static void note(String str)
+    static void note(String str)
     {
         // I'm assuming that tests are run serially
         stateLog.add(str);
