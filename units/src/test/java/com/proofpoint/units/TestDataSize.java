@@ -31,10 +31,24 @@ import static com.proofpoint.units.DataSize.Unit.KILOBYTE;
 import static com.proofpoint.units.DataSize.Unit.MEGABYTE;
 import static com.proofpoint.units.DataSize.Unit.PETABYTE;
 import static com.proofpoint.units.DataSize.Unit.TERABYTE;
+import static com.proofpoint.units.DataSize.succinctBytes;
+import static com.proofpoint.units.DataSize.succinctDataSize;
 import static org.testng.Assert.assertEquals;
 
 public class TestDataSize
 {
+    @Test
+    public void testSuccinctFactories()
+    {
+        assertEquals(succinctBytes(123), new DataSize(123, BYTE));
+        assertEquals(succinctBytes((long) (5.5 * 1024)), new DataSize(5.5, KILOBYTE));
+        assertEquals(succinctBytes(5 * 1024 * 1024), new DataSize(5, MEGABYTE));
+
+        assertEquals(succinctDataSize(123, BYTE), new DataSize(123, BYTE));
+        assertEquals(succinctDataSize((long) (5.5 * 1024), BYTE), new DataSize(5.5, KILOBYTE));
+        assertEquals(succinctDataSize(5 * 1024, KILOBYTE), new DataSize(5, MEGABYTE));
+    }
+
     @Test(dataProvider = "conversions")
     public void testConversions(DataSize.Unit unit, DataSize.Unit toUnit, double factor)
     {

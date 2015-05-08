@@ -46,6 +46,16 @@ public final class Duration implements Comparable<Duration>
         return new Duration(millis, MILLISECONDS).convertToMostSuccinctTimeUnit();
     }
 
+    public static Duration succinctNanos(long nanos)
+    {
+        return succinctDuration(nanos, NANOSECONDS);
+    }
+
+    public static Duration succinctDuration(double value, TimeUnit unit)
+    {
+        return new Duration(value, unit).convertToMostSuccinctTimeUnit();
+    }
+
     private final double value;
     private final TimeUnit unit;
 
