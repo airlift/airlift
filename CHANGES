@@ -1,3 +1,11 @@
+Platform 1.20
+
+* TestingHttpClient
+
+  We have deprecated the TestingHttpClient constructors that take a
+  Function<Request, Response> in order to remove ambiguity when using
+  a lambda. Use the Processor variants instead.
+
 Platform 1.19
 
 * Java 8 is now required

@@ -12,8 +12,7 @@ import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.units.Duration;
 
-import javax.validation.constraints.NotNull;
-import java.util.concurrent.Callable;
+import javax.annotation.Nonnull;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,6 +30,10 @@ public class TestingHttpClient
     private final RequestStats stats = new RequestStats();
     private final AtomicBoolean closed = new AtomicBoolean();
 
+    /**
+     * @deprecated Use {@link TestingHttpClient(Processor)}
+     */
+    @Deprecated
     public TestingHttpClient(Function<Request, Response> processor)
     {
         this(processor, MoreExecutors.sameThreadExecutor());
@@ -41,16 +44,13 @@ public class TestingHttpClient
         this(processor, MoreExecutors.sameThreadExecutor());
     }
 
+    /**
+     * @deprecated Use {@link TestingHttpClient(Processor, ExecutorService)}
+     */
+    @Deprecated
     public TestingHttpClient(final Function<Request, Response> processor, ExecutorService executor)
     {
-        this(new Processor()
-        {
-            @Override
-            public Response handle(Request request)
-            {
-                return processor.apply(request);
-            }
-        }, executor);
+        this((Processor) processor::apply, executor);
     }
 
     public TestingHttpClient(Processor processor, ExecutorService executor)
@@ -67,15 +67,7 @@ public class TestingHttpClient
         checkState(!closed.get(), "client is closed");
 
         final AtomicReference<String> state = new AtomicReference<>("SENDING_REQUEST");
-        ListenableFuture<T> future = executor.submit(new Callable<T>()
-        {
-            @Override
-            public T call()
-                    throws Exception
-            {
-                return execute(request, responseHandler, state);
-            }
-        });
+        ListenableFuture<T> future = executor.submit(() -> execute(request, responseHandler, state));
 
         return new TestingHttpResponseFuture<>(future, state);
     }
@@ -160,7 +152,7 @@ public class TestingHttpClient
 
     public interface Processor
     {
-        @NotNull
+        @Nonnull
         Response handle(Request request)
                 throws Exception;
     }

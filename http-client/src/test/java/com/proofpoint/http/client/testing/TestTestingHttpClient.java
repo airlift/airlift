@@ -29,13 +29,8 @@ public class TestTestingHttpClient
         final RuntimeException expectedException = new RuntimeException("test exception");
 
         HttpResponseFuture<String> future = new TestingHttpClient(
-                new Function<Request, Response>()
-                {
-                    @Override
-                    public Response apply(Request input)
-                    {
-                        throw expectedException;
-                    }
+                (Function<Request, Response>) input -> {
+                    throw expectedException;
                 }).executeAsync(request, new CaptureExceptionResponseHandler());
 
         try {
@@ -61,13 +56,8 @@ public class TestTestingHttpClient
         final Object expectedResponse = new Object();
 
         HttpResponseFuture<Object> future = new TestingHttpClient(
-                new Function<Request, Response>()
-                {
-                    @Override
-                    public Response apply(Request input)
-                    {
-                        throw testingException;
-                    }
+                (Function<Request, Response>) input -> {
+                    throw testingException;
                 }).executeAsync(request, new DefaultExceptionResponseHandler(testingException, expectedResponse));
 
         assertSame(future.get(), expectedResponse);
@@ -99,12 +89,12 @@ public class TestTestingHttpClient
         }
     }
 
-    private class DefaultExceptionResponseHandler implements ResponseHandler<Object, RuntimeException>
+    private static class DefaultExceptionResponseHandler implements ResponseHandler<Object, RuntimeException>
     {
         private final RuntimeException expectedException;
         private final Object response;
 
-        public DefaultExceptionResponseHandler(RuntimeException expectedException, Object response)
+        DefaultExceptionResponseHandler(RuntimeException expectedException, Object response)
         {
             this.expectedException = expectedException;
             this.response = response;
