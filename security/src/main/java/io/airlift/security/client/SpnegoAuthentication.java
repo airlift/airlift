@@ -8,11 +8,10 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.B64Code;
 import org.ietf.jgss.GSSException;
 
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.util.Base64;
 
 import static java.util.Objects.requireNonNull;
 
@@ -34,24 +33,22 @@ public class SpnegoAuthentication
     @Override
     public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context)
     {
-        URI requestURI = request.getURI();
-        try (CloseableGSSContext gssContext = new CloseableGSSContext(serviceName, requestURI)) {
+        URI requestUri = request.getURI();
+        try (CloseableGSSContext gssContext = new CloseableGSSContext(serviceName, requestUri)) {
             // We generate the token once and send it to the peer.
             byte[] token = gssContext.getContext().initSecContext(new byte[0], 0, 0);
             if (token != null) {
                 log.debug("Successfully established GSSContext with source name: %s and target name: %s",
                         gssContext.getContext().getSrcName(),
                         gssContext.getContext().getTargName());
-                String tokenValue = String.format("%s %s", NEGOTIATE,
-                        String.valueOf(B64Code.encode(token)));
-                URI baseUri = new URI(requestURI.getScheme(), null, requestURI.getHost(), requestURI.getPort(),
-                        null, null, null);
+                String tokenValue = String.format("%s %s", NEGOTIATE, Base64.getEncoder().encodeToString(token));
+                URI baseUri = UrlUtil.normalizedUri(requestUri);
                 return new SpnegoResult(headerInfo.getHeader(), baseUri, tokenValue);
             }
 
-            throw new AuthenticationException(String.format("Failed to establish GSSContext for request %s", requestURI));
+            throw new AuthenticationException(String.format("Failed to establish GSSContext for request %s", requestUri));
         }
-        catch (GSSException | URISyntaxException e) {
+        catch (GSSException e) {
             throw new AuthenticationException(e);
         }
     }

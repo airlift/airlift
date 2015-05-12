@@ -83,6 +83,9 @@ public class HttpClientModule
             configBinder(binder).bindConfigDefaults(HttpClientConfig.class, configDefaults);
         }
 
+        // bind the security configuration
+        configBinder(binder).bindConfig(ClientSecurityConfig.class, annotation, name);
+
         // Shared thread pool
         configBinder(binder).bindConfig(JettyIoPoolConfig.class);
         binder.bind(JettyIoPoolManager.class).to(SharedJettyIoPoolManager.class).in(Scopes.SINGLETON);

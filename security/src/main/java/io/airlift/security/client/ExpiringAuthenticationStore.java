@@ -7,7 +7,6 @@ import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Objects.requireNonNull;
@@ -25,6 +24,7 @@ public class ExpiringAuthenticationStore
 
     public ExpiringAuthenticationStore(SpnegoAuthentication authentication)
     {
+        requireNonNull(authentication, "authentication is null");
         this.authentication = authentication;
         results = CacheBuilder.newBuilder()
                 .concurrencyLevel(CONCURRENCY_LEVEL)
@@ -62,23 +62,13 @@ public class ExpiringAuthenticationStore
     @Override
     public void addAuthenticationResult(Authentication.Result result)
     {
-        try {
-            results.put(normalizedUri(result.getURI()), result);
-        }
-        catch (URISyntaxException e) {
-            // do nothing
-        }
+        results.put(UrlUtil.normalizedUri(result.getURI()), result);
     }
 
     @Override
     public void removeAuthenticationResult(Authentication.Result result)
     {
-        try {
-            results.invalidate(normalizedUri(result.getURI()));
-        }
-        catch (URISyntaxException e) {
-            // do nothing
-        }
+        results.invalidate(UrlUtil.normalizedUri(result.getURI()));
     }
 
     @Override
@@ -92,23 +82,9 @@ public class ExpiringAuthenticationStore
     {
         requireNonNull(uri, "uri is null");
         if (uri.getScheme().equalsIgnoreCase("https")) {
-            try {
-                // TODO: match the longest URI based on Trie for fine grained control
-                return results.getIfPresent(normalizedUri(uri));
-            }
-            catch (URISyntaxException e) {
-                return null;
-            }
+            // TODO: match the longest URI based on Trie for fine grained control
+            return results.getIfPresent(UrlUtil.normalizedUri(uri));
         }
         return null;
-    }
-
-    private URI normalizedUri(URI uri)
-            throws URISyntaxException
-    {
-        if (uri == null) {
-            return null;
-        }
-        return new URI(uri.getScheme(), null, uri.getHost(), uri.getPort(), null, null, null);
     }
 }

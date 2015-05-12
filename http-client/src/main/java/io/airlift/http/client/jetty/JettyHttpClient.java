@@ -82,9 +82,9 @@ import java.util.stream.Collectors;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Math.min;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static java.util.Objects.requireNonNull;
 
 public class JettyHttpClient
         implements io.airlift.http.client.HttpClient
@@ -92,6 +92,7 @@ public class JettyHttpClient
     private static final AtomicLong nameCounter = new AtomicLong();
     private static final String PRESTO_STATS_KEY = "presto_stats";
     private static final long SWEEP_PERIOD_MILLIS = 5000;
+    private static final String REAM_IN_CHALLENGE = "X-Airlift-Realm-In-Challenge";
 
     private final HttpClient httpClient;
     private final long maxContentLength;
@@ -111,7 +112,7 @@ public class JettyHttpClient
     private final List<HttpRequestFilter> requestFilters;
     private final Exception creationLocation = new Exception();
     private final String name;
-    private final ClientSecurityConfig securityConfig;
+    private final boolean authenticationEnabled;
 
     public JettyHttpClient()
     {
@@ -158,7 +159,7 @@ public class JettyHttpClient
         maxContentLength = config.getMaxContentLength().toBytes();
         requestTimeoutMillis = config.getRequestTimeout().toMillis();
         idleTimeoutMillis = config.getIdleTimeout().toMillis();
-        this.securityConfig = securityConfig;
+        authenticationEnabled = securityConfig.getAuthenticationEnabled();
 
         creationLocation.fillInStackTrace();
 
@@ -169,7 +170,14 @@ public class JettyHttpClient
             sslContextFactory.setKeyStorePassword(config.getKeyStorePassword());
         }
 
-        httpClient = new WrappedHttpClient(securityConfig, new HttpClientTransportOverHTTP(2), sslContextFactory);
+        if (authenticationEnabled) {
+            requireNonNull(securityConfig.getKrb5ConfPath(), "krb5ConfPath is null");
+            requireNonNull(securityConfig.getServiceName(), "serviceName is null");
+            httpClient = new WrappedHttpClient(securityConfig, new HttpClientTransportOverHTTP(2), sslContextFactory);
+        }
+        else {
+            httpClient = new HttpClient(new HttpClientTransportOverHTTP(2), sslContextFactory);
+        }
         httpClient.setMaxConnectionsPerDestination(config.getMaxConnectionsPerServer());
         httpClient.setMaxRequestsQueuedPerDestination(config.getMaxRequestsQueuedPerDestination());
 
@@ -420,12 +428,11 @@ public class JettyHttpClient
         jettyRequest.idleTimeout(idleTimeoutMillis, MILLISECONDS);
 
         // client authentications
-        if (jettyRequest.getURI().getScheme().equalsIgnoreCase("https") &&
-                securityConfig.getAuthenticationEnabled()) {
+        if (jettyRequest.getURI().getScheme().equalsIgnoreCase("https") && authenticationEnabled) {
             // Unlike other clients, Jetty Kerberos client requires the server to include a realm
             // in the challenge from the server. This breaks the SPNEGO protocol. We use a custom
             // header to tell the server to return the required realm.
-            jettyRequest.header(io.airlift.security.utils.SecurityUtil.REALM_IN_CHALLENGE, "true");
+            jettyRequest.header(REAM_IN_CHALLENGE, "true");
         }
         return jettyRequest;
     }
@@ -1332,28 +1339,25 @@ public class JettyHttpClient
     {
         private final AuthenticationStore authenticationStore;
 
-        public WrappedHttpClient(ClientSecurityConfig securityConfig, HttpClientTransport transport,
+        public WrappedHttpClient(
+                ClientSecurityConfig config,
+                HttpClientTransport transport,
                 SslContextFactory sslContextFactory)
         {
             super(transport, sslContextFactory);
-            if (securityConfig.getAuthenticationEnabled()) {
-                requireNonNull(securityConfig.getKrb5ConfPath(), "krb5ConfPath is null");
-                requireNonNull(securityConfig.getServiceName(), "serviceName is null");
-                authenticationStore = new ExpiringAuthenticationStore(new SpnegoAuthentication(
-                        securityConfig.getKrb5ConfPath(), securityConfig.getServiceName()));
-            }
-            else {
-                authenticationStore = super.getAuthenticationStore();
-            }
+            authenticationStore = new ExpiringAuthenticationStore(new SpnegoAuthentication(
+                    config.getKrb5ConfPath(), config.getServiceName()));
         }
 
         @Override
-        public AuthenticationStore getAuthenticationStore() {
+        public AuthenticationStore getAuthenticationStore()
+        {
             return authenticationStore;
         }
 
         @Override
-        protected void doStop() throws Exception
+        protected void doStop()
+                throws Exception
         {
             authenticationStore.clearAuthenticationResults();
 
