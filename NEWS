@@ -1,3 +1,27 @@
+Airlift 0.109
+
+* Default Config
+
+An application typically needs to override the default configuration of some
+components. For example, the default timeouts in the HTTP client are too large
+for communication between workers in a data center.  Rather than requiring
+these applications to ship with a default configuration file, we added the
+ability to change the defaults for any configuration object.  The following
+example changes the default store time-to-live to 1 minute in the sample
+server:
+
+    configBinder(binder).bindConfigDefaults(StoreConfig.class, storeConfig -> {
+        storeConfig.setTtl(new Duration(1, MINUTES));
+    });
+
+Additionally, we have added support for overriding HTTP client defaults during
+binding.  For example, this code changes the default idle timeout to 2 seconds:
+
+    httpClientBinder(binder).bindHttpClient("event", ForEventClient.class)
+            .withConfigDefaults(config -> {
+                config.setIdleTimeout(new Duration(2, SECONDS));
+            });
+
 Airlift 0.108
 
 Minor maintenance release. See CHANGES.

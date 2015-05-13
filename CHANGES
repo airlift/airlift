@@ -1,3 +1,7 @@
+* 0.109
+
+- Add framework to override defaults of any configuration object
+
 * 0.108
 
 - Change default HTTP server accept queue size to 8000 from 50
