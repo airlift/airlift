@@ -17,7 +17,6 @@ package com.proofpoint.reporting;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Function;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
@@ -30,6 +29,7 @@ import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.testing.TestingHttpClient;
+import com.proofpoint.http.client.testing.TestingHttpClient.Processor;
 import com.proofpoint.json.ObjectMapperProvider;
 import com.proofpoint.node.NodeConfig;
 import com.proofpoint.node.NodeInfo;
@@ -40,10 +40,8 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
@@ -83,13 +81,8 @@ public class TestReportClient
     @Test
     public void testReportingDisabled()
     {
-        httpClient = new TestingHttpClient(new Function<Request, Response>()
-        {
-            @Override
-            public Response apply(Request input)
-            {
-                throw new UnsupportedOperationException();
-            }
+        httpClient = new TestingHttpClient((Processor) request -> {
+            throw new UnsupportedOperationException();
         });
         ReportClient client = new ReportClient(nodeInfo, httpClient, new ReportClientConfig().setEnabled(false), objectMapper);
         client.report(System.currentTimeMillis(), collectedData);
@@ -170,10 +163,10 @@ public class TestReportClient
     }
 
     private class TestingResponseFunction
-            implements Function<Request, Response>
+            implements Processor
     {
         @Override
-        public Response apply(Request input)
+        public Response handle(Request input)
         {
             assertNull(sentJson);
             assertEquals(input.getMethod(), "POST");
@@ -189,14 +182,7 @@ public class TestReportClient
                 {
                 });
                 sentJson = Lists.newArrayList(sentJson);
-                Collections.sort(sentJson, new Comparator<Map<String, Object>>()
-                {
-                    @Override
-                    public int compare(Map<String, Object> o1, Map<String, Object> o2)
-                    {
-                        return ((String) o1.get("name")).compareTo((String) o2.get("name"));
-                    }
-                });
+                Collections.sort(sentJson, (o1, o2) -> ((String) o1.get("name")).compareTo((String) o2.get("name")));
             }
             catch (Exception e) {
                 throw propagate(e);
