@@ -37,7 +37,7 @@ public class HttpClientConfig
     public static final String JAVAX_NET_SSL_KEY_STORE_PASSWORD = "javax.net.ssl.keyStorePassword";
 
     private Duration connectTimeout = new Duration(1, TimeUnit.SECONDS);
-    private Duration requestTimeout = new Duration(5, TimeUnit.MINUTES);
+    private Duration requestTimeout = null;
     private Duration idleTimeout = new Duration(1, TimeUnit.MINUTES);
     private Duration keepAliveInterval = null;
     private int maxConnections = 200;
@@ -62,7 +62,6 @@ public class HttpClientConfig
         return this;
     }
 
-    @NotNull
     @MinDuration("0ms")
     public Duration getRequestTimeout()
     {

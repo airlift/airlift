@@ -99,7 +99,7 @@ public class JettyHttpClient
 
     private final HttpClient httpClient;
     private final long maxContentLength;
-    private final long requestTimeoutMillis;
+    private final Long requestTimeoutMillis;
     private final long idleTimeoutMillis;
     private final RequestStats stats = new RequestStats();
     private final CachedDistribution queuedRequestsPerDestination;
@@ -136,7 +136,13 @@ public class JettyHttpClient
         checkNotNull(requestFilters, "requestFilters is null");
 
         maxContentLength = config.getMaxContentLength().toBytes();
-        requestTimeoutMillis = config.getRequestTimeout().toMillis();
+        Duration requestTimeout = config.getRequestTimeout();
+        if (requestTimeout == null) {
+            requestTimeoutMillis = null;
+        }
+        else {
+            requestTimeoutMillis = requestTimeout.toMillis();
+        }
         idleTimeoutMillis = config.getIdleTimeout().toMillis();
 
         creationLocation.fillInStackTrace();
@@ -362,7 +368,9 @@ public class JettyHttpClient
         jettyRequest.followRedirects(finalRequest.isFollowRedirects());
 
         // timeouts
-        jettyRequest.timeout(requestTimeoutMillis, MILLISECONDS);
+        if (requestTimeoutMillis != null) {
+            jettyRequest.timeout(requestTimeoutMillis, MILLISECONDS);
+        }
         jettyRequest.idleTimeout(idleTimeoutMillis, MILLISECONDS);
 
         return jettyRequest;

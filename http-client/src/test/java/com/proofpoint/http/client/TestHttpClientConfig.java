@@ -39,7 +39,7 @@ public class TestHttpClientConfig
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(HttpClientConfig.class)
                 .setConnectTimeout(new Duration(1, TimeUnit.SECONDS))
-                .setRequestTimeout(new Duration(5, TimeUnit.MINUTES))
+                .setRequestTimeout(null)
                 .setIdleTimeout(new Duration(1, TimeUnit.MINUTES))
                 .setKeepAliveInterval(null)
                 .setMaxConnections(200)
@@ -102,7 +102,6 @@ public class TestHttpClientConfig
     public void testValidations()
     {
         assertFailsValidation(new HttpClientConfig().setConnectTimeout(null), "connectTimeout", "may not be null", NotNull.class);
-        assertFailsValidation(new HttpClientConfig().setRequestTimeout(null), "requestTimeout", "may not be null", NotNull.class);
         assertFailsValidation(new HttpClientConfig().setIdleTimeout(null), "idleTimeout", "may not be null", NotNull.class);
         assertFailsValidation(new HttpClientConfig().setMaxConnections(0), "maxConnections", "must be greater than or equal to 1", Min.class);
         assertFailsValidation(new HttpClientConfig().setMaxConnectionsPerServer(0), "maxConnectionsPerServer", "must be greater than or equal to 1", Min.class);
