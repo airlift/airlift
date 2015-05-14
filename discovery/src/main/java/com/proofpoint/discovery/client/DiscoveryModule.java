@@ -55,7 +55,7 @@ public class DiscoveryModule
     @Override
     public Map<String, String> getConfigurationDefaults()
     {
-        return ImmutableMap.of("discovery.http-client.read-timeout", "5s");
+        return ImmutableMap.of("discovery.http-client.idle-timeout", "5s");
     }
 
     @Override
