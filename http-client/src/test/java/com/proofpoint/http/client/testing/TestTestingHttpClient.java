@@ -2,15 +2,18 @@ package com.proofpoint.http.client.testing;
 
 import com.google.common.base.Function;
 import com.proofpoint.http.client.HttpClient.HttpResponseFuture;
+import com.proofpoint.http.client.HttpStatus;
 import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.ResponseHandler;
+import com.proofpoint.http.client.testing.TestingHttpClient.Processor;
 import org.testng.annotations.Test;
 
 import java.net.URI;
 import java.util.concurrent.ExecutionException;
 
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
+import static com.proofpoint.http.client.testing.TestingResponse.mockResponse;
 import static com.proofpoint.testing.Assertions.assertInstanceOf;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
@@ -18,6 +21,72 @@ import static org.testng.Assert.fail;
 
 public class TestTestingHttpClient
 {
+    @Test
+    public void testBlocking()
+            throws Exception
+    {
+        Request request = prepareGet()
+                .setUri(URI.create("http://example.org"))
+                .build();
+        Response expectedResponse = mockResponse(HttpStatus.BAD_REQUEST);
+
+        String result = new TestingHttpClient(
+                (Function<Request, Response>) input -> {
+                    assertSame(input, request);
+                    return expectedResponse;
+                })
+                .execute(request, new ResponseHandler<String, RuntimeException>()
+                {
+                    @Override
+                    public String handleException(Request request, Exception exception)
+                    {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    public String handle(Request request, Response response)
+                    {
+                        assertSame(response, expectedResponse);
+                        return "expected response";
+                    }
+                });
+
+        assertEquals(result, "expected response");
+    }
+
+    @Test
+    public void testAsync()
+            throws Exception
+    {
+        Request request = prepareGet()
+                .setUri(URI.create("http://example.org"))
+                .build();
+        Response expectedResponse = mockResponse(HttpStatus.BAD_REQUEST);
+
+        HttpResponseFuture<String> future = new TestingHttpClient(
+                (Function<Request, Response>) input -> {
+                    assertSame(input, request);
+                    return expectedResponse;
+                })
+                .executeAsync(request, new ResponseHandler<String, RuntimeException>()
+                {
+                    @Override
+                    public String handleException(Request request, Exception exception)
+                    {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    public String handle(Request request, Response response)
+                    {
+                        assertSame(response, expectedResponse);
+                        return "expected response";
+                    }
+                });
+
+        assertEquals(future.get(), "expected response");
+    }
+
     @Test
     public void testExceptionFromProcessor()
             throws Exception
@@ -63,7 +132,45 @@ public class TestTestingHttpClient
         assertSame(future.get(), expectedResponse);
     }
 
-    public static class CaptureExceptionResponseHandler implements ResponseHandler<String, CapturedException>
+    @Test
+    public void testReplaceProcessor()
+            throws Exception
+    {
+        Request request = prepareGet()
+                .setUri(URI.create("http://example.org"))
+                .build();
+        Response expectedResponse = mockResponse(HttpStatus.BAD_REQUEST);
+
+        TestingHttpClient client = new TestingHttpClient((Processor) input -> {
+            throw new UnsupportedOperationException();
+        });
+
+        client.setProcessor(input -> {
+            assertSame(input, request);
+            return expectedResponse;
+        });
+
+        HttpResponseFuture<String> future = client
+                .executeAsync(request, new ResponseHandler<String, RuntimeException>()
+                {
+                    @Override
+                    public String handleException(Request request, Exception exception)
+                    {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    public String handle(Request request, Response response)
+                    {
+                        assertSame(response, expectedResponse);
+                        return "expected response";
+                    }
+                });
+
+        assertEquals(future.get(), "expected response");
+    }
+
+    private static class CaptureExceptionResponseHandler implements ResponseHandler<String, CapturedException>
     {
         @Override
         public String handleException(Request request, Exception exception)

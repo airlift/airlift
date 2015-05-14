@@ -24,7 +24,7 @@ import static com.google.common.base.Preconditions.checkState;
 public class TestingHttpClient
         implements HttpClient
 {
-    private final Processor processor;
+    private final AtomicReference<Processor> processor;
     private final ListeningExecutorService executor;
 
     private final RequestStats stats = new RequestStats();
@@ -55,7 +55,7 @@ public class TestingHttpClient
 
     public TestingHttpClient(Processor processor, ExecutorService executor)
     {
-        this.processor = processor;
+        this.processor = new AtomicReference<>(processor);
         this.executor = MoreExecutors.listeningDecorator(executor);
     }
 
@@ -89,7 +89,7 @@ public class TestingHttpClient
         long requestStart = System.nanoTime();
         Response response;
         try {
-            response = processor.handle(request);
+            response = processor.get().handle(request);
         }
         catch (Throwable e) {
             state.set("FAILED");
@@ -136,6 +136,11 @@ public class TestingHttpClient
                     requestProcessingTime,
                     Duration.nanosSince(responseStart));
         }
+    }
+
+    public void setProcessor(Processor processor)
+    {
+        this.processor.set(processor);
     }
 
     @Override

@@ -6,6 +6,8 @@ Platform 1.20
   Function<Request, Response> in order to remove ambiguity when using
   a lambda. Use the Processor variants instead.
 
+  We have added a TestingHttpClient.setProcessor() method.
+
 Platform 1.19
 
 * Java 8 is now required
