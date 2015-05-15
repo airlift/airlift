@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
 
@@ -45,6 +46,9 @@ public class Logging
     private static final String ROOT_LOGGER_NAME = "";
     private static final java.util.logging.Logger ROOT = java.util.logging.Logger.getLogger("");
     private static Logging instance;
+
+    // hard reference to loggers for which we set the level
+    private final Map<String, java.util.logging.Logger> loggers = new ConcurrentHashMap<>();
 
     @GuardedBy("this")
     private OutputStreamHandler consoleHandler;
@@ -159,7 +163,8 @@ public class Logging
     @SuppressWarnings("MethodMayBeStatic")
     public void setLevel(String loggerName, Level level)
     {
-        java.util.logging.Logger.getLogger(loggerName).setLevel(level.toJulLevel());
+        loggers.computeIfAbsent(loggerName, java.util.logging.Logger::getLogger)
+                .setLevel(level.toJulLevel());
     }
 
     @SuppressWarnings("MethodMayBeStatic")

@@ -1,3 +1,7 @@
+* 0.110
+
+- Fix log levels being reset by garbage collection
+
 * 0.109
 
 - Add framework to override defaults of any configuration object
