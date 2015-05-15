@@ -8,6 +8,9 @@ Platform 1.20
 
   We have added a TestingHttpClient.setProcessor() method.
 
+* Library Upgrades
+  - Guice to 4.0
+
 Platform 1.19
 
 * Java 8 is now required
