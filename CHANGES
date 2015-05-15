@@ -8,6 +8,20 @@ Platform 1.20
 
   We have added a TestingHttpClient.setProcessor() method.
 
+* HttpClient
+
+  We renamed the "http-client.read-timeout" configuration option to
+  "http-client.idle-timeout".
+
+  We added the "http-client.request-timeout" configuration option.
+
+  We deprecated the unused "http-client.keep-alive-interval" configuration
+  option.
+
+* HttpServer
+
+  We added the "http-server.accept-queue-size" configuration option.
+
 * Threads
 
   Thread factories provided by the Threads utility class now add threads to a
