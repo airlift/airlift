@@ -12,13 +12,13 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.proofpoint.platform</groupId>
-            <artifactId>log</artifactId>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.google.inject</groupId>
-            <artifactId>guice</artifactId>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>annotations</artifactId>
         </dependency>
 
         <!-- for testing -->

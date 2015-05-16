@@ -15,14 +15,11 @@
  */
 package com.proofpoint.tracetoken;
 
-import com.proofpoint.log.Logging;
-
 import javax.annotation.Nullable;
 import java.util.UUID;
 
 public final class TraceTokenManager
 {
-    private static final String TRACE_TOKEN = "TraceToken";
     private static final ThreadLocal<String> token = new ThreadLocal<>();
 
     /**
@@ -36,12 +33,6 @@ public final class TraceTokenManager
     {
         String oldToken = TraceTokenManager.token.get();
         TraceTokenManager.token.set(token);
-        if (token == null) {
-            Logging.removeMDC(TRACE_TOKEN);
-        }
-        else {
-            Logging.putMDC(TRACE_TOKEN, token);
-        }
         return new TraceTokenScope(oldToken);
     }
 
@@ -61,6 +52,5 @@ public final class TraceTokenManager
     public static void clearRequestToken()
     {
         token.remove();
-        Logging.removeMDC(TRACE_TOKEN);
     }
 }

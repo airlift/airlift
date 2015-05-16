@@ -27,7 +27,6 @@ import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.status.Status;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.File;
@@ -292,15 +291,5 @@ public class Logging
         if (config.getLevelsFile() != null) {
             setLevels(new File(config.getLevelsFile()));
         }
-    }
-
-    public static void putMDC(String key, Object value)
-    {
-        MDC.put(key, value.toString());
-    }
-
-    public static void removeMDC(String key)
-    {
-        MDC.remove(key);
     }
 }
