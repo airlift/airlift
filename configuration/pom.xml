@@ -53,6 +53,7 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>testing</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 </project>
