@@ -851,7 +851,7 @@ public class JettyHttpClient
         public Iterator<ByteBuffer> iterator()
         {
             final BlockingQueue<ByteBuffer> chunks = new ArrayBlockingQueue<>(16);
-            final AtomicReference<Exception> exception = new AtomicReference<>();
+            final AtomicReference<Throwable> exception = new AtomicReference<>();
 
             FutureTask<?> writer = new FutureTask<>(() -> {
                 BodyGeneratorOutputStream out = new BodyGeneratorOutputStream(chunks);
@@ -859,9 +859,10 @@ public class JettyHttpClient
                     bodyGenerator.write(out);
                     out.close();
                 }
-                catch (Exception e) {
+                catch (Throwable e) {
                     exception.set(e);
                     chunks.add(EXCEPTION);
+                    Throwables.propagateIfInstanceOf(e, Error.class);
                 }
                 return null;
             });
@@ -876,10 +877,10 @@ public class JettyHttpClient
             implements Closeable
         {
             private final BlockingQueue<ByteBuffer> chunks;
-            private final AtomicReference<Exception> exception;
+            private final AtomicReference<Throwable> exception;
             private final Future<?> writerFuture;
 
-            public BufferIterator(BlockingQueue<ByteBuffer> chunks, AtomicReference<Exception> exception, Future<?> writerFuture)
+            public BufferIterator(BlockingQueue<ByteBuffer> chunks, AtomicReference<Throwable> exception, Future<?> writerFuture)
             {
                 this.chunks = chunks;
                 this.exception = exception;
