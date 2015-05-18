@@ -43,6 +43,13 @@ Platform 1.20
   is sent to this resource then the discovery announcer will revoke all
   announcements and shut down.
 
+* Logging
+
+  We have replaced use of SLF4J in the logging backend with a custom logging
+  implementation directly connected to Java util logging.  This eases
+  management of logging dependencies as the core codebase no longer depends
+  directly on any third party logging frameworks.
+
 * Library Upgrades
   - Guice to 4.0
 
