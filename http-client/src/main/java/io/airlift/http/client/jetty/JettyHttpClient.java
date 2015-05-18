@@ -906,6 +906,7 @@ public class JettyHttpClient
                     chunks.put(ByteBuffer.wrap(new byte[] {(byte) b}));
                 }
                 catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     throw new InterruptedIOException();
                 }
             }
@@ -920,6 +921,7 @@ public class JettyHttpClient
                     chunks.put(ByteBuffer.wrap(copy));
                 }
                 catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     throw new InterruptedIOException();
                 }
             }
@@ -932,6 +934,7 @@ public class JettyHttpClient
                     chunks.put(DONE);
                 }
                 catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     throw new InterruptedIOException();
                 }
             }
