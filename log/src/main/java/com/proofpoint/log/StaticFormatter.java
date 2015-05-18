@@ -12,6 +12,7 @@ import java.util.Locale;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 
+import static com.proofpoint.tracetoken.TraceTokenManager.getCurrentRequestToken;
 import static java.time.temporal.ChronoField.DAY_OF_MONTH;
 import static java.time.temporal.ChronoField.HOUR_OF_DAY;
 import static java.time.temporal.ChronoField.MILLI_OF_SECOND;
@@ -54,6 +55,7 @@ class StaticFormatter
     public String format(LogRecord record)
     {
         ZonedDateTime timestamp = ZonedDateTime.ofInstant(Instant.ofEpochMilli(record.getMillis()), SYSTEM_ZONE);
+        String token = getCurrentRequestToken();
 
         StringWriter stringWriter = new StringWriter()
                 .append(TIMESTAMP_FORMATTER.format(timestamp))
@@ -63,7 +65,12 @@ class StaticFormatter
                 .append(Thread.currentThread().getName())
                 .append('\t')
                 .append(record.getLoggerName())
-                .append('\t')
+                .append('\t');
+        if (token != null) {
+            stringWriter.append("TraceToken=")
+                    .append(token);
+        }
+        stringWriter.append('\t')
                 .append(record.getMessage());
 
         if (record.getThrown() != null) {
