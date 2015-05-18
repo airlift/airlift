@@ -52,6 +52,7 @@ import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -69,6 +70,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -850,7 +853,7 @@ public class JettyHttpClient
             final BlockingQueue<ByteBuffer> chunks = new ArrayBlockingQueue<>(16);
             final AtomicReference<Exception> exception = new AtomicReference<>();
 
-            executor.execute(() -> {
+            FutureTask<?> writer = new FutureTask<>(() -> {
                 BodyGeneratorOutputStream out = new BodyGeneratorOutputStream(chunks);
                 try {
                     bodyGenerator.write(out);
@@ -860,31 +863,55 @@ public class JettyHttpClient
                     exception.set(e);
                     chunks.add(EXCEPTION);
                 }
+                return null;
             });
 
-            return new AbstractIterator<ByteBuffer>()
-            {
-                @Override
-                protected ByteBuffer computeNext()
-                {
-                    ByteBuffer chunk;
-                    try {
-                        chunk = chunks.take();
-                    }
-                    catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException("Interrupted", e);
-                    }
+            executor.execute(writer);
 
-                    if (chunk == EXCEPTION) {
-                        throw Throwables.propagate(exception.get());
-                    }
-                    if (chunk == DONE) {
-                        return endOfData();
-                    }
-                    return chunk;
+            return new BufferIterator(chunks, exception, writer);
+        }
+
+        private static class BufferIterator
+            extends AbstractIterator<ByteBuffer>
+            implements Closeable
+        {
+            private final BlockingQueue<ByteBuffer> chunks;
+            private final AtomicReference<Exception> exception;
+            private final Future<?> writerFuture;
+
+            public BufferIterator(BlockingQueue<ByteBuffer> chunks, AtomicReference<Exception> exception, Future<?> writerFuture)
+            {
+                this.chunks = chunks;
+                this.exception = exception;
+                this.writerFuture = writerFuture;
+            }
+
+            @Override
+            protected ByteBuffer computeNext()
+            {
+                ByteBuffer chunk;
+                try {
+                    chunk = chunks.take();
                 }
-            };
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Interrupted", e);
+                }
+
+                if (chunk == EXCEPTION) {
+                    throw Throwables.propagate(exception.get());
+                }
+                if (chunk == DONE) {
+                    return endOfData();
+                }
+                return chunk;
+            }
+
+            @Override
+            public void close()
+            {
+                writerFuture.cancel(true);
+            }
         }
 
         private final class BodyGeneratorOutputStream
