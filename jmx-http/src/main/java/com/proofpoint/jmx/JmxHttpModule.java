@@ -52,6 +52,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.google.inject.Scopes.SINGLETON;
+import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
 import static com.proofpoint.discovery.client.announce.ServiceAnnouncement.serviceAnnouncement;
 import static com.proofpoint.jaxrs.JaxrsBinder.jaxrsBinder;
@@ -76,6 +78,10 @@ public class JmxHttpModule implements Module
         // jackson has a bug in the serializer selection code so it does not know that subclasses of LazyCompositeData are also CompositeData
         jsonBinder(binder).addSerializerBinding(LazyCompositeData.class).to(CompositeDataSerializer.class);
 
+        jaxrsBinder(binder).bindAdmin(StopAnnouncingResource.class);
+        bindConfig(binder).to(AdminServerConfig.class);
+        binder.bind(AdminServerCredentialVerifier.class).in(SINGLETON);
+
         ServiceAnnouncementBuilder serviceAnnouncementBuilder = serviceAnnouncement("jmx-http");
         discoveryBinder(binder).bindServiceAnnouncement(new JmxHttpAnnouncementProvider(serviceAnnouncementBuilder));
     }
@@ -83,7 +89,7 @@ public class JmxHttpModule implements Module
     static class ObjectNameDeserializer
             extends StdScalarDeserializer<ObjectName>
     {
-        public ObjectNameDeserializer()
+        ObjectNameDeserializer()
         {
             super(ObjectName.class);
         }
@@ -108,7 +114,7 @@ public class JmxHttpModule implements Module
     static class TabularDataSerializer
             extends StdSerializer<TabularData>
     {
-        public TabularDataSerializer()
+        TabularDataSerializer()
         {
             super(TabularData.class, true);
         }
@@ -144,7 +150,7 @@ public class JmxHttpModule implements Module
     static class CompositeDataSerializer
             extends StdSerializer<CompositeData>
     {
-        public CompositeDataSerializer()
+        CompositeDataSerializer()
         {
             super(CompositeData.class, true);
         }
@@ -243,7 +249,7 @@ public class JmxHttpModule implements Module
         private final ServiceAnnouncementBuilder builder;
         private HttpServerInfo httpServerInfo;
 
-        public JmxHttpAnnouncementProvider(ServiceAnnouncementBuilder serviceAnnouncementBuilder)
+        JmxHttpAnnouncementProvider(ServiceAnnouncementBuilder serviceAnnouncementBuilder)
         {
             builder = serviceAnnouncementBuilder;
         }

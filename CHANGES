@@ -35,6 +35,14 @@ Platform 1.20
   To ease migration, the code adapts formats with a single %d, but this may
   be removed in a future release.
 
+* Discovery
+
+  We have added an /admin/stop-announcing resource to the admin port.
+  When a PUT request, using Basic authentication with the username and
+  password configured as admin-server.username and admin-server.password,
+  is sent to this resource then the discovery announcer will revoke all
+  announcements and shut down.
+
 * Library Upgrades
   - Guice to 4.0
 
