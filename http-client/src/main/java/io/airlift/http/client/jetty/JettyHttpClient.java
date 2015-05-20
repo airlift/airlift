@@ -21,8 +21,6 @@ import io.airlift.http.client.ResponseTooLargeException;
 import io.airlift.http.client.StaticBodyGenerator;
 import io.airlift.log.Logger;
 import io.airlift.stats.Distribution;
-import io.airlift.units.DataSize;
-import io.airlift.units.DataSize.Unit;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
@@ -948,7 +946,7 @@ public class JettyHttpClient
         private final int maxLength;
 
         @GuardedBy("this")
-        private byte[] buffer = new byte[(int) new DataSize(64, Unit.KILOBYTE).toBytes()];
+        private byte[] buffer = new byte[0];
         @GuardedBy("this")
         private int size;
 
