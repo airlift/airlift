@@ -15,6 +15,7 @@
  */
 package com.proofpoint.platform.sample;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
@@ -29,7 +30,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 public class PersonStore
 {
@@ -39,8 +40,8 @@ public class PersonStore
     @Inject
     public PersonStore(StoreConfig config, EventClient eventClient)
     {
-        checkNotNull(config, "config must not be null");
-        checkNotNull(eventClient, "eventClient is null");
+        requireNonNull(config, "config must not be null");
+        requireNonNull(eventClient, "eventClient is null");
 
         Cache<String, Person> personCache = CacheBuilder.newBuilder()
                 .expireAfterWrite(config.getTtl().toMillis(), TimeUnit.MILLISECONDS)
@@ -63,7 +64,7 @@ public class PersonStore
 
     public Person get(String id)
     {
-        checkNotNull(id, "id must not be null");
+        requireNonNull(id, "id must not be null");
 
         Person person = persons.get(id);
         if (person != null) {
@@ -77,8 +78,8 @@ public class PersonStore
      */
     public boolean put(String id, Person person)
     {
-        checkNotNull(id, "id must not be null");
-        checkNotNull(person, "person must not be null");
+        requireNonNull(id, "id must not be null");
+        requireNonNull(person, "person must not be null");
 
         boolean added = persons.put(id, person) == null;
         if (added) {
@@ -95,7 +96,7 @@ public class PersonStore
      */
     public boolean delete(String id)
     {
-        checkNotNull(id, "id must not be null");
+        requireNonNull(id, "id must not be null");
 
         Person removedPerson = persons.remove(id);
         if (removedPerson != null) {
@@ -109,28 +110,16 @@ public class PersonStore
     {
         Builder<StoreEntry> builder = ImmutableList.builder();
         for (Entry<String, Person> entry : persons.entrySet()) {
-            builder.add(new StoreEntry(entry));
+            builder.add(new AutoValue_PersonStore_StoreEntry(entry.getKey(), entry.getValue()));
         }
         return builder.build();
     }
 
-    public static class StoreEntry
+    @AutoValue
+    public abstract static class StoreEntry
     {
-        private final Entry<String,Person> entry;
+        public abstract String getId();
 
-        private StoreEntry(Entry<String, Person> entry)
-        {
-            this.entry = entry;
-        }
-
-        public String getId()
-        {
-            return entry.getKey();
-        }
-
-        public Person getPerson()
-        {
-            return entry.getValue();
-        }
+        public abstract Person getPerson();
     }
 }

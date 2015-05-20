@@ -25,7 +25,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import java.util.Map;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 @Path("/v1/person")
 public class PersonsResource
@@ -35,9 +35,7 @@ public class PersonsResource
     @Inject
     public PersonsResource(PersonStore store)
     {
-        checkNotNull(store, "store must not be null");
-
-        this.store = store;
+        this.store = requireNonNull(store, "store must not be null");
     }
 
     @GET

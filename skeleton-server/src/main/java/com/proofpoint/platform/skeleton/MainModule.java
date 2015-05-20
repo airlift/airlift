@@ -17,7 +17,8 @@ package com.proofpoint.platform.skeleton;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
-import com.proofpoint.discovery.client.DiscoveryBinder;
+
+import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
 
 public class MainModule
         implements Module
@@ -28,6 +29,6 @@ public class MainModule
         binder.requireExplicitBindings();
         binder.disableCircularProxies();
 
-        DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("skeleton");
+        discoveryBinder(binder).bindHttpAnnouncement("skeleton");
     }
 }

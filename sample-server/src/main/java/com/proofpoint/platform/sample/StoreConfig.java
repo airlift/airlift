@@ -22,7 +22,7 @@ import com.proofpoint.units.MinDuration;
 
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 public class StoreConfig
 {
@@ -38,8 +38,7 @@ public class StoreConfig
     @Config("store.ttl")
     StoreConfig setTtl(Duration ttl)
     {
-        checkNotNull(ttl, "ttl must not be null");
-        this.ttl = ttl;
+        this.ttl = requireNonNull(ttl, "ttl must not be null");
         return this;
     }
 
