@@ -26,8 +26,6 @@ import com.proofpoint.http.client.StaticBodyGenerator;
 import com.proofpoint.log.Logger;
 import com.proofpoint.stats.Distribution;
 import com.proofpoint.tracetoken.TraceTokenScope;
-import com.proofpoint.units.DataSize;
-import com.proofpoint.units.DataSize.Unit;
 import com.proofpoint.units.Duration;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
@@ -1333,7 +1331,7 @@ public class JettyHttpClient
         private final int maxLength;
 
         @GuardedBy("this")
-        private byte[] buffer = new byte[(int) new DataSize(64, Unit.KILOBYTE).toBytes()];
+        private byte[] buffer = new byte[0];
         @GuardedBy("this")
         private int size;
 
