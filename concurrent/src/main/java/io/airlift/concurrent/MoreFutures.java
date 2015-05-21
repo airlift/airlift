@@ -163,9 +163,11 @@ public final class MoreFutures
             }
 
             @Override
-            public void onFailure(Throwable t)
+            public void onFailure(Throwable throwable)
             {
-                completableFuture.completeExceptionally(t);
+                if (throwable instanceof CancellationException) {
+                    completableFuture.cancel(true);
+                }
             }
         });
 
