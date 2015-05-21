@@ -2,6 +2,7 @@
 
 - Fix log levels being reset by garbage collection
 - Reduce default http response buffer size from 64KB to zero bytes
+- Add MoreFutures which contains utility methods for futures
 
 * 0.109
 
