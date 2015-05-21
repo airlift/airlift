@@ -5,6 +5,15 @@ Platform 1.21
   We disabled all default-enabled DHE ciphers in both HttpServer and
   JettyHttpClient.
 
+* Future Utilities
+
+  We've added MoreFutures class which contains utility methods for Future and
+  the new Java8 CompletableFuture.  For basic future, there are methods for
+  fetching the future value with minimal exception handling.  For
+  CompletableFuture, there are methods for easily creating futures.  Finally,
+  we have added methods for converting to and from Guava ListenableFuture to
+  ease the transition to CompletableFuture.
+
 * HttpServer
 
   We changed the default value of the "http-server.accept-queue-size"
