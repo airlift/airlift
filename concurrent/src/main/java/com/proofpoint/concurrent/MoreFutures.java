@@ -23,6 +23,22 @@ public final class MoreFutures
 {
     private MoreFutures() { }
 
+    public static <V> CompletableFuture<V> unmodifiableFuture(CompletableFuture<V> future)
+    {
+        requireNonNull(future, "future is null");
+
+        UnmodifiableCompletableFuture<V> unmodifiableFuture = new UnmodifiableCompletableFuture<>();
+        future.whenComplete((value, exception) -> {
+            if (exception != null) {
+                unmodifiableFuture.internalCompleteExceptionally(exception);
+            }
+            else {
+                unmodifiableFuture.internalComplete(value);
+            }
+        });
+        return unmodifiableFuture;
+    }
+
     public static <V> CompletableFuture<V> failedFuture(Throwable throwable)
     {
         requireNonNull(throwable, "throwable is null");
@@ -162,5 +178,50 @@ public final class MoreFutures
             }
         });
         return future;
+    }
+
+    private static class UnmodifiableCompletableFuture<V>
+            extends CompletableFuture<V>
+    {
+        void internalComplete(V value)
+        {
+            super.complete(value);
+        }
+
+        void internalCompleteExceptionally(Throwable ex)
+        {
+            super.completeExceptionally(ex);
+        }
+
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning)
+        {
+            // ignore cancellation
+            return false;
+        }
+
+        @Override
+        public boolean complete(V value)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean completeExceptionally(Throwable ex)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void obtrudeValue(V value)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void obtrudeException(Throwable ex)
+        {
+            throw new UnsupportedOperationException();
+        }
     }
 }
