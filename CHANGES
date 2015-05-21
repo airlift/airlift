@@ -1,6 +1,7 @@
 * 0.110
 
 - Fix log levels being reset by garbage collection
+- Reduce default http response buffer size from 64KB to zero bytes
 
 * 0.109
 
