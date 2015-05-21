@@ -17,16 +17,116 @@ import static io.airlift.concurrent.MoreFutures.getFutureValue;
 import static io.airlift.concurrent.MoreFutures.toCompletableFuture;
 import static io.airlift.concurrent.MoreFutures.toListenableFuture;
 import static io.airlift.concurrent.MoreFutures.tryGetFutureValue;
+import static io.airlift.concurrent.MoreFutures.unmodifiableFuture;
 import static io.airlift.testing.Assertions.assertInstanceOf;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class TestMoreFutures
 {
+    @Test
+    public void testModifyUnmodifiableFuture()
+            throws Exception
+    {
+        CompletableFuture<String> future = new CompletableFuture<>();
+        CompletableFuture<String> unmodifiableFuture = unmodifiableFuture(future);
+
+        // completion results in an UnsupportedOperationException
+        assertFailure(() -> unmodifiableFuture.complete("fail"), UnsupportedOperationException.class::isInstance);
+        assertFalse(future.isDone());
+        assertFalse(unmodifiableFuture.isDone());
+
+        assertFailure(() -> unmodifiableFuture.completeExceptionally(new IOException()), UnsupportedOperationException.class::isInstance);
+        assertFalse(future.isDone());
+        assertFalse(unmodifiableFuture.isDone());
+
+        assertFailure(() -> unmodifiableFuture.obtrudeValue("fail"), UnsupportedOperationException.class::isInstance);
+        assertFalse(future.isDone());
+        assertFalse(unmodifiableFuture.isDone());
+
+        assertFailure(() -> unmodifiableFuture.obtrudeException(new IOException()), UnsupportedOperationException.class::isInstance);
+        assertFalse(future.isDone());
+        assertFalse(unmodifiableFuture.isDone());
+
+        // cancel is ignored
+        assertFalse(unmodifiableFuture.cancel(false));
+        assertFalse(future.isDone());
+        assertFalse(unmodifiableFuture.isDone());
+
+        assertFalse(unmodifiableFuture.cancel(true));
+        assertFalse(future.isDone());
+        assertFalse(unmodifiableFuture.isDone());
+    }
+
+    @Test
+    public void testCompleteUnmodifiableFuture()
+            throws Exception
+    {
+        CompletableFuture<String> future = new CompletableFuture<>();
+        CompletableFuture<String> unmodifiableFuture = unmodifiableFuture(future);
+
+        assertTrue(future.complete("done"));
+        assertEquals(future.getNow(null), "done");
+        assertTrue(unmodifiableFuture.isDone());
+        assertEquals(unmodifiableFuture.getNow(null), "done");
+    }
+
+    @Test
+    public void testCompleteExceptionallyUnmodifiableFuture()
+            throws Exception
+    {
+        CompletableFuture<String> future = new CompletableFuture<>();
+        CompletableFuture<String> unmodifiableFuture = unmodifiableFuture(future);
+
+        assertTrue(future.completeExceptionally(new SQLException("foo")));
+        assertFailure(() -> getFutureValue(future, SQLException.class), (e) -> {
+            assertInstanceOf(e, SQLException.class);
+            assertEquals(e.getMessage(), "foo");
+        });
+
+        assertTrue(unmodifiableFuture.isDone());
+        assertFailure(() -> getFutureValue(unmodifiableFuture, SQLException.class), (e) -> {
+            assertInstanceOf(e, SQLException.class);
+            assertEquals(e.getMessage(), "foo");
+        });
+    }
+
+    @Test
+    public void testAlreadyCompleteUnmodifiableFuture()
+            throws Exception
+    {
+        CompletableFuture<String> future = completedFuture("done");
+        CompletableFuture<String> unmodifiableFuture = unmodifiableFuture(future);
+
+        assertEquals(future.getNow(null), "done");
+        assertTrue(unmodifiableFuture.isDone());
+        assertEquals(unmodifiableFuture.getNow(null), "done");
+    }
+
+    @Test
+    public void testAlreadyCompleteExceptionallyUnmodifiableFuture()
+            throws Exception
+    {
+        CompletableFuture<String> future = failedFuture(new SQLException("foo"));
+        CompletableFuture<String> unmodifiableFuture = unmodifiableFuture(future);
+
+        assertFailure(() -> getFutureValue(future, SQLException.class), (e) -> {
+            assertInstanceOf(e, SQLException.class);
+            assertEquals(e.getMessage(), "foo");
+        });
+
+        assertTrue(unmodifiableFuture.isDone());
+        assertFailure(() -> getFutureValue(unmodifiableFuture, SQLException.class), (e) -> {
+            assertInstanceOf(e, SQLException.class);
+            assertEquals(e.getMessage(), "foo");
+        });
+    }
+
     @Test
     public void testFailedFuture()
             throws Exception
