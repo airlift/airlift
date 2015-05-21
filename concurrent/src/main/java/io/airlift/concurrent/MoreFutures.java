@@ -70,7 +70,7 @@ public final class MoreFutures
         requireNonNull(exceptionType, "exceptionType is null");
 
         try {
-            return Optional.of(future.get(timeout, timeUnit));
+            return Optional.ofNullable(future.get(timeout, timeUnit));
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
