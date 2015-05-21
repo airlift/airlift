@@ -22,6 +22,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -65,17 +66,34 @@ public class TestMoreFutures
     public void testTryGetFutureValue()
             throws Exception
     {
-        assertGetUnchecked(future -> tryGetFutureValue(future, 100, MILLISECONDS).get());
+        assertGetUnchecked(future -> {
+            Optional<?> optional = tryGetFutureValue(future, 100, MILLISECONDS);
+            if (optional.isPresent()) {
+                return optional.get();
+            }
+
+            // null value is also absent
+            assertNull(getFutureValue(future));
+            return null;
+        });
 
         assertEquals(tryGetFutureValue(new CompletableFuture<>(), 10, MILLISECONDS), Optional.empty());
     }
-
 
     @Test
     public void testTryGetFutureValueWithExceptionType()
             throws Exception
     {
-        assertGetUnchecked(future -> tryGetFutureValue(future, 100, MILLISECONDS, IOException.class).get());
+        assertGetUnchecked(future -> {
+            Optional<?> optional = tryGetFutureValue(future, 100, MILLISECONDS, IOException.class);
+            if (optional.isPresent()) {
+                return optional.get();
+            }
+
+            // null value is also absent
+            assertNull(getFutureValue(future, IOException.class));
+            return null;
+        });
 
         assertEquals(tryGetFutureValue(new CompletableFuture<>(), 10, MILLISECONDS), Optional.empty());
 
@@ -143,6 +161,8 @@ public class TestMoreFutures
         CompletableFuture<?> canceledFuture = new CompletableFuture<>();
         canceledFuture.cancel(true);
         assertFailure(() -> getter.get(canceledFuture), e -> assertInstanceOf(e, CancellationException.class));
+
+        assertEquals(getter.get(completedFuture(null)), null);
     }
 
     private static void assertFailure(Thrower thrower, Consumer<Throwable> verifier)
