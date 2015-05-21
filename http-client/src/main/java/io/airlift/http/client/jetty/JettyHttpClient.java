@@ -92,7 +92,7 @@ public class JettyHttpClient
     private static final AtomicLong nameCounter = new AtomicLong();
     private static final String PRESTO_STATS_KEY = "presto_stats";
     private static final long SWEEP_PERIOD_MILLIS = 5000;
-    private static final String REAM_IN_CHALLENGE = "X-Airlift-Realm-In-Challenge";
+    private static final String REALM_IN_CHALLENGE = "X-Airlift-Realm-In-Challenge";
 
     private final HttpClient httpClient;
     private final long maxContentLength;
@@ -136,12 +136,7 @@ public class JettyHttpClient
 
     public JettyHttpClient(HttpClientConfig config, ClientSecurityConfig securityConfig)
     {
-        this(config, securityConfig, ImmutableList.<HttpRequestFilter>of());
-    }
-
-    public JettyHttpClient(HttpClientConfig config, ClientSecurityConfig securityConfig, Iterable<? extends HttpRequestFilter> requestFilters)
-    {
-        this(config, securityConfig, Optional.<JettyIoPool>absent(), requestFilters);
+        this(config, securityConfig, Optional.<JettyIoPool>absent(), ImmutableList.<HttpRequestFilter>of());
     }
 
     public JettyHttpClient(HttpClientConfig config, ClientSecurityConfig securityConfig, JettyIoPool jettyIoPool, Iterable<? extends HttpRequestFilter> requestFilters)
@@ -171,8 +166,8 @@ public class JettyHttpClient
         }
 
         if (authenticationEnabled) {
-            requireNonNull(securityConfig.getKrb5ConfPath(), "krb5ConfPath is null");
-            requireNonNull(securityConfig.getServiceName(), "serviceName is null");
+            requireNonNull(securityConfig.getKrb5Config(), "krb5Config is null");
+            requireNonNull(securityConfig.getKrb5RemoteServiceName(), "krb5RemoteServiceName is null");
             httpClient = new WrappedHttpClient(securityConfig, new HttpClientTransportOverHTTP(2), sslContextFactory);
         }
         else {
@@ -428,11 +423,11 @@ public class JettyHttpClient
         jettyRequest.idleTimeout(idleTimeoutMillis, MILLISECONDS);
 
         // client authentications
-        if (jettyRequest.getURI().getScheme().equalsIgnoreCase("https") && authenticationEnabled) {
+        if (authenticationEnabled && "https".equalsIgnoreCase(jettyRequest.getURI().getScheme())) {
             // Unlike other clients, Jetty Kerberos client requires the server to include a realm
             // in the challenge from the server. This breaks the SPNEGO protocol. We use a custom
             // header to tell the server to return the required realm.
-            jettyRequest.header(REAM_IN_CHALLENGE, "true");
+            jettyRequest.header(REALM_IN_CHALLENGE, "true");
         }
         return jettyRequest;
     }
@@ -1339,14 +1334,15 @@ public class JettyHttpClient
     {
         private final AuthenticationStore authenticationStore;
 
-        public WrappedHttpClient(
-                ClientSecurityConfig config,
-                HttpClientTransport transport,
-                SslContextFactory sslContextFactory)
+        public WrappedHttpClient(ClientSecurityConfig config, HttpClientTransport transport, SslContextFactory sslContextFactory)
         {
             super(transport, sslContextFactory);
             authenticationStore = new ExpiringAuthenticationStore(new SpnegoAuthentication(
-                    config.getKrb5ConfPath(), config.getServiceName()));
+                    config.getKrb5Keytab(),
+                    config.getKrb5Config(),
+                    config.getKrb5CredentialCache(),
+                    config.getKrb5Principal(),
+                    config.getKrb5RemoteServiceName()));
         }
 
         @Override

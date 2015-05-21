@@ -5,12 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>security</artifactId>
     <packaging>jar</packaging>
-    <name>security</name>
 
     <parent>
         <artifactId>airlift</artifactId>
         <groupId>io.airlift</groupId>
-        <version>0.109-SNAPSHOT</version>
+        <version>0.111-SNAPSHOT</version>
     </parent>
 
     <properties>
@@ -65,6 +64,5 @@
             <artifactId>testing</artifactId>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 </project>

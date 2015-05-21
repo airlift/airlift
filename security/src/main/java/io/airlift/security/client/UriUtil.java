@@ -5,10 +5,7 @@ import com.google.common.base.Throwables;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-/**
- * url utility functions shared within the package.
- */
-class UrlUtil
+class UriUtil
 {
     public static URI normalizedUri(URI uri)
     {

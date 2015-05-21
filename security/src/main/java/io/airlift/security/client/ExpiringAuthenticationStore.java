@@ -56,19 +56,19 @@ public class ExpiringAuthenticationStore
         if (authentication.matches(type, uri, realm)) {
             return authentication;
         }
-        throw new UnsupportedOperationException(String.format("Authentication type %s is not supported", type));
+        return null;
     }
 
     @Override
     public void addAuthenticationResult(Authentication.Result result)
     {
-        results.put(UrlUtil.normalizedUri(result.getURI()), result);
+        results.put(UriUtil.normalizedUri(result.getURI()), result);
     }
 
     @Override
     public void removeAuthenticationResult(Authentication.Result result)
     {
-        results.invalidate(UrlUtil.normalizedUri(result.getURI()));
+        results.invalidate(UriUtil.normalizedUri(result.getURI()));
     }
 
     @Override
@@ -81,9 +81,9 @@ public class ExpiringAuthenticationStore
     public Authentication.Result findAuthenticationResult(URI uri)
     {
         requireNonNull(uri, "uri is null");
-        if (uri.getScheme().equalsIgnoreCase("https")) {
+        if ("https".equalsIgnoreCase(uri.getScheme())) {
             // TODO: match the longest URI based on Trie for fine grained control
-            return results.getIfPresent(UrlUtil.normalizedUri(uri));
+            return results.getIfPresent(UriUtil.normalizedUri(uri));
         }
         return null;
     }

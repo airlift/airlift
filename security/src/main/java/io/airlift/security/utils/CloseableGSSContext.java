@@ -1,6 +1,7 @@
 package io.airlift.security.utils;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
 import com.sun.security.auth.module.Krb5LoginModule;
 import io.airlift.log.Logger;
 import io.airlift.security.exception.AuthenticationException;
@@ -23,23 +24,22 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.security.Principal;
 import java.security.PrivilegedAction;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkState;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag.REQUIRED;
 
 public class CloseableGSSContext
         implements Closeable
 {
-    private static final Logger log = Logger.get(KerberosUtil.class);
+    private static final Logger log = Logger.get(CloseableGSSContext.class);
 
     private final GSSContext context;
     private final LoginContext loginContext;
 
-    public CloseableGSSContext(String serviceName, URI serviceUri)
+    public CloseableGSSContext(String serviceName, String krb5Keytab, String krb5ccPath, String krb5ClientPrincipal, URI serviceUri)
     {
         requireNonNull(serviceName, "serviceName is null");
         requireNonNull(serviceUri, "serviceUri is null");
@@ -49,22 +49,30 @@ public class CloseableGSSContext
                 @Override
                 public AppConfigurationEntry[] getAppConfigurationEntry(String name)
                 {
-                    Map<String, String> options = new HashMap<>();
-                    options.put("refreshKrb5Config", "true");
-                    options.put("doNotPrompt", "true");
+                    ImmutableMap.Builder<String, String> optionsBuilder = ImmutableMap.builder();
+                    optionsBuilder.put("refreshKrb5Config", "true");
+                    optionsBuilder.put("doNotPrompt", "true");
                     if (log.isDebugEnabled()) {
-                        options.put("debug", "true");
+                        optionsBuilder.put("debug", "true");
                     }
 
-                    String ticketCache = System.getenv("KRB5CCNAME");
-                    if (ticketCache != null) {
-                        options.put("ticketCache", ticketCache);
-                        options.put("useTicketCache", "true");
-                        options.put("renewTGT", "true");
+                    if (krb5Keytab != null) {
+                        optionsBuilder.put("useKeytab", "true");
+                        optionsBuilder.put("keyTab", krb5Keytab); 
+                    }
+
+                    if (krb5ccPath != null) {
+                        optionsBuilder.put("ticketCache", krb5ccPath);
+                        optionsBuilder.put("useTicketCache", "true");
+                        optionsBuilder.put("renewTGT", "true");
+                    }
+
+                    if (krb5ClientPrincipal != null) {
+                        optionsBuilder.put("principal", krb5ClientPrincipal);
                     }
 
                     return new AppConfigurationEntry[] {
-                            new AppConfigurationEntry(Krb5LoginModule.class.getName(), REQUIRED, options)
+                            new AppConfigurationEntry(Krb5LoginModule.class.getName(), REQUIRED, optionsBuilder.build())
                     };
                 }
             });
@@ -86,8 +94,12 @@ public class CloseableGSSContext
     public void close()
     {
         try {
-            context.dispose();
-            loginContext.logout();
+            try {
+                context.dispose();
+            }
+            finally {
+                loginContext.logout();
+            }
         }
         catch (GSSException | LoginException e) {
             throw new AuthenticationException(e);
@@ -128,12 +140,12 @@ public class CloseableGSSContext
             requireNonNull(hostName, "hostName is null");
             InetAddress address = InetAddress.getByName(hostName);
             String fqdn;
-            if (address.getHostName().toLowerCase().startsWith("localhost")) {
+            if ("localhost".equalsIgnoreCase(address.getHostName())) {
                 return getServicePrincipal(serviceName);
             }
             fqdn = address.getCanonicalHostName();
 
-            return String.format("%s/%s", serviceName, fqdn.toLowerCase(Locale.US));
+            return format("%s/%s", serviceName, fqdn.toLowerCase(Locale.US));
         }
 
         public static String getServicePrincipal(String serviceName)
@@ -143,7 +155,7 @@ public class CloseableGSSContext
             String fqdn = InetAddress.getLocalHost().getCanonicalHostName();
             checkState(!fqdn.equalsIgnoreCase("localhost"), "Fully qualified host name for localhost is not retrieved");
 
-            return String.format("%s/%s", serviceName, fqdn.toLowerCase(Locale.US));
+            return format("%s/%s", serviceName, fqdn.toLowerCase(Locale.US));
         }
 
         public static Subject getClientSubject(LoginContext context)
@@ -157,13 +169,13 @@ public class CloseableGSSContext
         public static GSSContext getGssContext(Subject subject, String servicePrincipal)
         {
             return Subject.doAs(subject, (PrivilegedAction<GSSContext>) () -> {
-                GSSContext context = null;
                 try {
                     Principal subjectPrincipal = subject.getPrincipals().iterator().next();
                     GSSName gssUserName = gssManager.createName(subjectPrincipal.getName(), GSSName.NT_USER_NAME);
                     GSSCredential clientCredential = gssManager.createCredential(gssUserName, GSSCredential.DEFAULT_LIFETIME,
                             KERBEROS_OID, GSSCredential.INITIATE_ONLY);
                     GSSName gssServiceName = gssManager.createName(servicePrincipal, null);
+                    GSSContext context = null;
                     context = gssManager.createContext(gssServiceName, SPNEGO_OID, clientCredential, GSSContext.INDEFINITE_LIFETIME);
                     context.requestMutualAuth(true);
                     context.requestConf(true);
