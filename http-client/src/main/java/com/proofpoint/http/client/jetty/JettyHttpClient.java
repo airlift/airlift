@@ -535,7 +535,7 @@ public class JettyHttpClient
     @Managed
     public String dumpAllDestinations()
     {
-        return String.format("%s\t%s\t%s\t%s\t%s\n", "URI", "queued", "request", "wait", "response") +
+        return String.format("%s\t%s\t%s\t%s\t%s%n", "URI", "queued", "request", "wait", "response") +
                 httpClient.getDestinations().stream()
                         .map(JettyHttpClient::dumpDestination)
                         .collect(Collectors.joining("\n"));
