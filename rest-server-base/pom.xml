@@ -10,7 +10,7 @@
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>library</artifactId>
-        <version>1.20</version>
+        <version>1.21-SNAPSHOT</version>
         <relativePath>../library/pom.xml</relativePath>
     </parent>
 
@@ -38,7 +38,7 @@
         <connection>scm:git:git://github.com/proofpoint/platform.git</connection>
         <developerConnection>scm:git:git@github.com:proofpoint/platform.git</developerConnection>
         <url>http://github.com/proofpoint/platform/tree/master</url>
-      <tag>1.20</tag>
+      <tag>HEAD</tag>
   </scm>
 
     <profiles>
@@ -99,7 +99,7 @@
                             <dependency>
                                 <groupId>com.proofpoint.platform</groupId>
                                 <artifactId>packaging</artifactId>
-                                <version>1.20</version>
+                                <version>1.21-SNAPSHOT</version>
                             </dependency>
                         </dependencies>
 
