@@ -1,3 +1,10 @@
+Platform 1.21
+
+* DHE disabled
+
+  We disabled all default-enabled DHE ciphers in both HttpServer and
+  JettyHttpClient.
+
 Platform 1.20
 
 * TestingHttpClient
