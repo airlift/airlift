@@ -1,4 +1,4 @@
-package io.airlift.concurrent;
+package com.proofpoint.concurrent;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.SettableFuture;
@@ -12,12 +12,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
-import static io.airlift.concurrent.MoreFutures.failedFuture;
-import static io.airlift.concurrent.MoreFutures.getFutureValue;
-import static io.airlift.concurrent.MoreFutures.toCompletableFuture;
-import static io.airlift.concurrent.MoreFutures.toListenableFuture;
-import static io.airlift.concurrent.MoreFutures.tryGetFutureValue;
-import static io.airlift.testing.Assertions.assertInstanceOf;
+import static com.proofpoint.concurrent.MoreFutures.failedFuture;
+import static com.proofpoint.concurrent.MoreFutures.getFutureValue;
+import static com.proofpoint.concurrent.MoreFutures.toCompletableFuture;
+import static com.proofpoint.concurrent.MoreFutures.toListenableFuture;
+import static com.proofpoint.concurrent.MoreFutures.tryGetFutureValue;
+import static com.proofpoint.testing.Assertions.assertInstanceOf;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.testng.Assert.assertEquals;
