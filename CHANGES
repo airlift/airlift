@@ -43,6 +43,10 @@ Platform 1.20
   is sent to this resource then the discovery announcer will revoke all
   announcements and shut down.
 
+  This change adds a dependency from JmxHttpModule to Discovery, which
+  might break TestServer. TestServer usually doesn't need JmxHttpModule,
+  so it can be removed.
+
 * Logging
 
   We have replaced use of SLF4J in the logging backend with a custom logging
