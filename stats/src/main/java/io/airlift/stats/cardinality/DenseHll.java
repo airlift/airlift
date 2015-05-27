@@ -354,6 +354,7 @@ final class DenseHll
                 SizeOf.SIZE_OF_BYTE * overflows; // overflow bucket values
     }
 
+    @SuppressWarnings("NarrowingCompoundAssignment")
     private void setDelta(int bucket, int value)
     {
         int slot = bucketToSlot(bucket);

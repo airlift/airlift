@@ -33,8 +33,7 @@ public class TestEventSubmissionFailedException
     @Test(expectedExceptions = NullPointerException.class, expectedExceptionsMessageRegExp = "causes is null")
     public void testRejectsNull()
     {
-        //noinspection ThrowableInstanceNeverThrown
-        new EventSubmissionFailedException("service", "type", null);
+        throw new EventSubmissionFailedException("service", "type", null);
     }
 
     @Test
