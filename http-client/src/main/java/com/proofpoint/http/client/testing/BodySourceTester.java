@@ -1,6 +1,5 @@
 package com.proofpoint.http.client.testing;
 
-import com.google.common.io.ByteStreams;
 import com.proofpoint.http.client.BodyGenerator;
 import com.proofpoint.http.client.BodySource;
 import com.proofpoint.http.client.DynamicBodySource;
@@ -9,6 +8,7 @@ import com.proofpoint.http.client.InputStreamBodySource;
 import com.proofpoint.http.client.StaticBodyGenerator;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -29,7 +29,15 @@ public class BodySourceTester
             ((BodyGenerator) bodySource).write(out);
         }
         else if (bodySource instanceof InputStreamBodySource) {
-            ByteStreams.copy(((InputStreamBodySource) bodySource).getInputStream(), out);
+            InputStream in = ((InputStreamBodySource) bodySource).getInputStream();
+            byte[] buf = new byte[((InputStreamBodySource) bodySource).getBufferSize()];
+            while (true) {
+                int r = in.read(buf);
+                if (r == -1) {
+                    break;
+                }
+                out.write(buf, 0, r);
+            }
         }
         else if (bodySource instanceof DynamicBodySource) {
             final AtomicBoolean closed = new AtomicBoolean(false);

@@ -428,7 +428,8 @@ public class JettyHttpClient
                 bytesWritten.addAndGet(staticBodyGenerator.getBody().length);
             }
             else if (bodySource instanceof InputStreamBodySource) {
-                jettyRequest.content(new InputStreamContentProvider(new BodySourceInputStream((InputStreamBodySource) bodySource, bytesWritten), 4096, false));
+                InputStreamBodySource inputStreamBodySource = (InputStreamBodySource) bodySource;
+                jettyRequest.content(new InputStreamContentProvider(new BodySourceInputStream(inputStreamBodySource, bytesWritten), inputStreamBodySource.getBufferSize(), false));
             }
             else if (bodySource instanceof DynamicBodySource) {
                 jettyRequest.content(new DynamicBodySourceContentProvider((DynamicBodySource) bodySource, bytesWritten));

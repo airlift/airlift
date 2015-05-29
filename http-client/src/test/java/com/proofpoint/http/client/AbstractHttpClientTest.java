@@ -523,6 +523,7 @@ public abstract class AbstractHttpClientTest
                     {
                         switch (invocation.getAndIncrement()) {
                             case 0:
+                                assertEquals(b.length, 8123);
                                 b[0] = 1;
                                 return 1;
 
@@ -539,7 +540,7 @@ public abstract class AbstractHttpClientTest
                                 return -1;
                         }
                     }
-                }))
+                }, 8123))
                 .build();
 
         int statusCode = executeRequest(request, new ResponseStatusCodeHandler());

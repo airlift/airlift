@@ -26,9 +26,16 @@ public class InputStreamBodySource
 {
     private final InputStream inputStream;
     private final AtomicBoolean consumed = new AtomicBoolean(false);
+    private final int bufferSize;
 
     public InputStreamBodySource(final InputStream inputStream)
     {
+        this(inputStream, 4096);
+    }
+
+    public InputStreamBodySource(final InputStream inputStream, int bufferSize)
+    {
+        this.bufferSize = bufferSize;
         this.inputStream = new InputStream()
         {
             public boolean firstCall = true;
@@ -113,6 +120,11 @@ public class InputStreamBodySource
     {
         checkState(!consumed.get(), "InputStream has been consumed");
         return inputStream;
+    }
+
+    public int getBufferSize()
+    {
+        return bufferSize;
     }
 
     @Override
