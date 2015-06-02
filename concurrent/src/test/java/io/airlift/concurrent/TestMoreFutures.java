@@ -61,6 +61,10 @@ public class TestMoreFutures
         assertFalse(unmodifiableFuture.cancel(true));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
+
+        assertFalse(unmodifiableFuture.completeExceptionally(new CancellationException()));
+        assertFalse(future.isDone());
+        assertFalse(unmodifiableFuture.isDone());
     }
 
     @Test

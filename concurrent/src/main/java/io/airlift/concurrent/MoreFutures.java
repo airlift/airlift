@@ -276,6 +276,10 @@ public final class MoreFutures
         @Override
         public boolean completeExceptionally(Throwable ex)
         {
+            // ignore cancellation
+            if (ex instanceof CancellationException) {
+                return false;
+            }
             throw new UnsupportedOperationException();
         }
 
