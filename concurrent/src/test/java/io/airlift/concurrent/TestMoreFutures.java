@@ -166,6 +166,24 @@ public class TestMoreFutures
             throws Exception
     {
         assertGetUnchecked(future -> {
+            Optional<?> optional = tryGetFutureValue(future);
+            if (optional.isPresent()) {
+                return optional.get();
+            }
+
+            // null value is also absent
+            assertNull(getFutureValue(future));
+            return null;
+        });
+
+        assertEquals(tryGetFutureValue(new CompletableFuture<>()), Optional.empty());
+    }
+
+    @Test
+    public void testTryGetFutureValueWithWait()
+            throws Exception
+    {
+        assertGetUnchecked(future -> {
             Optional<?> optional = tryGetFutureValue(future, 100, MILLISECONDS);
             if (optional.isPresent()) {
                 return optional.get();

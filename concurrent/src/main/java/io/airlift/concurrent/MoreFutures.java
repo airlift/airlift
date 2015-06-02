@@ -18,6 +18,7 @@ import java.util.concurrent.TimeoutException;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.Iterables.isEmpty;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public final class MoreFutures
 {
@@ -89,6 +90,21 @@ public final class MoreFutures
             Throwables.propagateIfInstanceOf(cause, exceptionType);
             throw Throwables.propagate(cause);
         }
+    }
+
+    /**
+     * Gets the current value of the future without waiting. If the future
+     * value is null, an empty Optional is still returned, and in this case the caller
+     * must check the future directly for the null value.
+     */
+    public static <T> Optional<T> tryGetFutureValue(Future<T> future)
+    {
+        requireNonNull(future, "future is null");
+        if (!future.isDone()) {
+            return Optional.empty();
+        }
+
+        return tryGetFutureValue(future, 0, MILLISECONDS);
     }
 
     /**
