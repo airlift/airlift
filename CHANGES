@@ -1,3 +1,9 @@
+Platform 1.22
+
+* Library Upgrades
+
+  - Joda-time to 2.8
+
 Platform 1.21
 
 * DHE disabled
