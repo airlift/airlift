@@ -1,3 +1,8 @@
+* 0.115
+
+- Add more MoreFutures utilities
+- Add simple AsyncQueue
+
 * 0.114
 
 - Make HttpServer logging more configurable
