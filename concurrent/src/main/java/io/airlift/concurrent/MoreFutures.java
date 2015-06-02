@@ -5,18 +5,23 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import io.airlift.units.Duration;
 
+import java.lang.ref.WeakReference;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Throwables.propagateIfInstanceOf;
 import static com.google.common.collect.Iterables.isEmpty;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -104,7 +109,7 @@ public final class MoreFutures
         }
         catch (ExecutionException e) {
             Throwable cause = e.getCause() == null ? e : e.getCause();
-            Throwables.propagateIfInstanceOf(cause, exceptionType);
+            propagateIfInstanceOf(cause, exceptionType);
             throw Throwables.propagate(cause);
         }
     }
@@ -163,7 +168,7 @@ public final class MoreFutures
         }
         catch (ExecutionException e) {
             Throwable cause = e.getCause() == null ? e : e.getCause();
-            Throwables.propagateIfInstanceOf(cause, exceptionType);
+            propagateIfInstanceOf(cause, exceptionType);
             throw Throwables.propagate(cause);
         }
         catch (TimeoutException expected) {
@@ -194,6 +199,36 @@ public final class MoreFutures
             });
         }
         return future;
+    }
+
+    /**
+     * Returns a new future that is completed when the supplied future completes or
+     * when the timeout expires.  If the timeout occurs or the returned CompletableFuture
+     * is canceled, the supplied future will be canceled.
+     */
+    public static <T> CompletableFuture<T> addTimeout(CompletableFuture<T> future, ValueSupplier<T> onTimeout, Duration timeout, ScheduledExecutorService executorService)
+    {
+        requireNonNull(future, "future is null");
+        requireNonNull(onTimeout, "timeoutValue is null");
+        requireNonNull(timeout, "timeout is null");
+        requireNonNull(executorService, "executorService is null");
+
+        // if the future is already complete, just return it
+        if (future.isDone()) {
+            return future;
+        }
+
+        // create an unmodifiable future that propagates cancel
+        // down cast is safe because this is our code
+        UnmodifiableCompletableFuture<T> futureWithTimeout = (UnmodifiableCompletableFuture<T>) unmodifiableFuture(future, true);
+
+        // schedule a task to complete the future when the time expires
+        ScheduledFuture<?> timeoutTaskFuture = executorService.schedule(new TimeoutFutureTask<>(futureWithTimeout, onTimeout, future), timeout.toMillis(), MILLISECONDS);
+
+        // when future completes, cancel the timeout task
+        future.whenCompleteAsync((value, exception) -> timeoutTaskFuture.cancel(false), executorService);
+
+        return futureWithTimeout;
     }
 
     /**
@@ -264,6 +299,12 @@ public final class MoreFutures
         return future;
     }
 
+    public interface ValueSupplier<T>
+    {
+        T get()
+                throws Exception;
+    }
+
     private static class UnmodifiableCompletableFuture<V>
             extends CompletableFuture<V>
     {
@@ -315,6 +356,49 @@ public final class MoreFutures
         public void obtrudeException(Throwable ex)
         {
             throw new UnsupportedOperationException();
+        }
+    }
+
+    private static class TimeoutFutureTask<T>
+            implements Runnable
+    {
+        private final UnmodifiableCompletableFuture<T> settableFuture;
+        private final ValueSupplier<T> timeoutValue;
+        private final WeakReference<CompletableFuture<T>> futureReference;
+
+        public TimeoutFutureTask(UnmodifiableCompletableFuture<T> settableFuture, ValueSupplier<T> timeoutValue, CompletableFuture<T> future)
+        {
+            this.settableFuture = settableFuture;
+            this.timeoutValue = timeoutValue;
+
+            // the scheduled executor can hold on to the timeout task for a long time, and
+            // the future can reference large expensive objects.  Since we are only interested
+            // in canceling this future on a timeout, only hold a weak reference to the future
+            this.futureReference = new WeakReference<>(future);
+        }
+
+        @Override
+        public void run()
+        {
+            if (settableFuture.isDone()) {
+                return;
+            }
+
+            // run the timeout task and set the result into the future
+            try {
+                T result = timeoutValue.get();
+                settableFuture.internalComplete(result);
+            }
+            catch (Throwable t) {
+                settableFuture.internalCompleteExceptionally(t);
+                propagateIfInstanceOf(t, RuntimeException.class);
+            }
+
+            // cancel the original future, if it still exists
+            Future<T> future = futureReference.get();
+            if (future != null) {
+                future.cancel(true);
+            }
         }
     }
 }

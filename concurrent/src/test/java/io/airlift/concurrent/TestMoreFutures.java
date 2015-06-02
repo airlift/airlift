@@ -2,6 +2,8 @@ package io.airlift.concurrent;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.SettableFuture;
+import io.airlift.units.Duration;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -10,17 +12,22 @@ import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 
+import static io.airlift.concurrent.MoreFutures.addTimeout;
 import static io.airlift.concurrent.MoreFutures.failedFuture;
 import static io.airlift.concurrent.MoreFutures.getFutureValue;
 import static io.airlift.concurrent.MoreFutures.toCompletableFuture;
 import static io.airlift.concurrent.MoreFutures.toListenableFuture;
 import static io.airlift.concurrent.MoreFutures.tryGetFutureValue;
 import static io.airlift.concurrent.MoreFutures.unmodifiableFuture;
+import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.testing.Assertions.assertInstanceOf;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -29,6 +36,14 @@ import static org.testng.Assert.fail;
 
 public class TestMoreFutures
 {
+    private final ScheduledExecutorService executorService = newSingleThreadScheduledExecutor(daemonThreadsNamed("test-%s"));
+
+    @AfterClass
+    public void tearDown()
+    {
+        executorService.shutdownNow();
+    }
+
     @Test
     public void testModifyUnmodifiableFuture()
             throws Exception
@@ -311,7 +326,70 @@ public class TestMoreFutures
         assertEquals(tryGetFutureValue(toListenableFuture(new CompletableFuture<>()), 10, MILLISECONDS), Optional.empty());
     }
 
-    public static void assertGetUnchecked(UncheckedGetter getter)
+    @Test
+    public void testTimeout()
+            throws Exception
+    {
+        CompletableFuture<String> rootFuture = new CompletableFuture<>();
+        CompletableFuture<String> timeoutFuture = addTimeout(rootFuture, () -> "timeout", new Duration(0, MILLISECONDS), executorService);
+
+        assertEquals(tryGetFutureValue(timeoutFuture, 10, SECONDS).get(), "timeout");
+        assertTrue(timeoutFuture.isDone());
+        assertFalse(timeoutFuture.isCancelled());
+
+        // root exception is cancelled on a timeout
+        assertTrue(rootFuture.isDone());
+        assertTrue(rootFuture.isCancelled());
+    }
+
+    @Test
+    public void testTimeoutExceptionValue()
+            throws Exception
+    {
+        CompletableFuture<String> rootFuture = new CompletableFuture<>();
+        CompletableFuture<String> timeoutFuture = addTimeout(rootFuture, () -> { throw new SQLException("timeout"); }, new Duration(0, MILLISECONDS), executorService);
+
+        assertFailure(() -> tryGetFutureValue(timeoutFuture, 10, SECONDS, SQLException.class), e -> {
+            assertInstanceOf(e, SQLException.class);
+            assertEquals(e.getMessage(), "timeout");
+        });
+        assertTrue(timeoutFuture.isDone());
+        assertFalse(timeoutFuture.isCancelled());
+
+        // root exception is cancelled on a timeout
+        assertTrue(rootFuture.isDone());
+        assertTrue(rootFuture.isCancelled());
+    }
+
+    @Test
+    public void testTimeoutCancel()
+            throws Exception
+    {
+        CompletableFuture<String> rootFuture = new CompletableFuture<>();
+        CompletableFuture<String> timeoutFuture = addTimeout(rootFuture, () -> "timeout", new Duration(10, SECONDS), executorService);
+
+        // check timeout
+        assertEquals(tryGetFutureValue(timeoutFuture, 10, MILLISECONDS), Optional.<String>empty());
+
+        assertTrue(timeoutFuture.cancel(true));
+        assertTrue(timeoutFuture.isDone());
+        assertTrue(timeoutFuture.isCancelled());
+
+        // root exception is cancelled on a timeout
+        assertTrue(rootFuture.isDone());
+        assertTrue(rootFuture.isCancelled());
+    }
+
+    public void assertGetUnchecked(UncheckedGetter getter)
+            throws Exception
+    {
+        assertGetUncheckedInternal(getter);
+
+        // run all test wrapped in a timeout future that does not timeout
+        assertGetUncheckedInternal(future -> getter.get(addTimeout(future, () -> { throw new RuntimeException("timeout"); }, new Duration(10, SECONDS), executorService)));
+    }
+
+    public static void assertGetUncheckedInternal(UncheckedGetter getter)
             throws Exception
     {
         assertEquals(getter.get(completedFuture("foo")), "foo");
@@ -335,7 +413,7 @@ public class TestMoreFutures
         });
         assertFalse(Thread.currentThread().isInterrupted());
 
-        CompletableFuture<?> canceledFuture = new CompletableFuture<>();
+        CompletableFuture<Object> canceledFuture = new CompletableFuture<>();
         canceledFuture.cancel(true);
         assertFailure(() -> getter.get(canceledFuture), e -> assertInstanceOf(e, CancellationException.class));
 
@@ -356,7 +434,7 @@ public class TestMoreFutures
 
     private interface UncheckedGetter
     {
-        Object get(CompletableFuture<?> future)
+        Object get(CompletableFuture<Object> future)
                 throws Exception;
     }
 
