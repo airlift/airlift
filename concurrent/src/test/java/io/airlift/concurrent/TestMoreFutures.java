@@ -68,6 +68,62 @@ public class TestMoreFutures
     }
 
     @Test
+    public void testModifyCancelableUnmodifiableFuture()
+            throws Exception
+    {
+        CompletableFuture<String> future = new CompletableFuture<>();
+        CompletableFuture<String> unmodifiableFuture = unmodifiableFuture(future, true);
+
+        // completion results in an UnsupportedOperationException
+        assertFailure(() -> unmodifiableFuture.complete("fail"), UnsupportedOperationException.class::isInstance);
+        assertFalse(future.isDone());
+        assertFalse(unmodifiableFuture.isDone());
+
+        assertFailure(() -> unmodifiableFuture.completeExceptionally(new IOException()), UnsupportedOperationException.class::isInstance);
+        assertFalse(future.isDone());
+        assertFalse(unmodifiableFuture.isDone());
+
+        assertFailure(() -> unmodifiableFuture.obtrudeValue("fail"), UnsupportedOperationException.class::isInstance);
+        assertFalse(future.isDone());
+        assertFalse(unmodifiableFuture.isDone());
+
+        assertFailure(() -> unmodifiableFuture.obtrudeException(new IOException()), UnsupportedOperationException.class::isInstance);
+        assertFalse(future.isDone());
+        assertFalse(unmodifiableFuture.isDone());
+
+        // cancel is propagated so test separately
+    }
+
+    @Test
+    public void testUnmodifiableFutureCancelPropagation()
+            throws Exception
+    {
+        CompletableFuture<String> future = new CompletableFuture<>();
+        CompletableFuture<String> unmodifiableFuture = unmodifiableFuture(future, true);
+        assertTrue(unmodifiableFuture.cancel(false));
+        assertTrue(future.isDone());
+        assertTrue(future.isCancelled());
+        assertTrue(unmodifiableFuture.isDone());
+        assertTrue(unmodifiableFuture.isCancelled());
+
+        future = new CompletableFuture<>();
+        unmodifiableFuture = unmodifiableFuture(future, true);
+        assertTrue(unmodifiableFuture.cancel(true));
+        assertTrue(future.isDone());
+        assertTrue(future.isCancelled());
+        assertTrue(unmodifiableFuture.isDone());
+        assertTrue(unmodifiableFuture.isCancelled());
+
+        future = new CompletableFuture<>();
+        unmodifiableFuture = unmodifiableFuture(future, true);
+        assertTrue(unmodifiableFuture.completeExceptionally(new CancellationException()));
+        assertTrue(future.isDone());
+        assertTrue(future.isCancelled());
+        assertTrue(unmodifiableFuture.isDone());
+        assertTrue(unmodifiableFuture.isCancelled());
+    }
+
+    @Test
     public void testCompleteUnmodifiableFuture()
             throws Exception
     {
