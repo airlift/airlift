@@ -36,16 +36,12 @@
         </developer>
     </developers>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-
     <scm>
         <connection>scm:git:git://github.com/proofpoint/platform.git</connection>
         <developerConnection>scm:git:git@github.com:proofpoint/platform.git</developerConnection>
         <url>http://github.com/proofpoint/platform/tree/master</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <build>
         <pluginManagement>
@@ -77,28 +73,6 @@
             </plugins>
         </pluginManagement>
     </build>
-
-    <profiles>
-        <profile>
-            <id>sonatype-oss-release</id>
-            <properties>
-                <skipTests>true</skipTests> <!-- tests run in the preparation step of the release -->
-                <platform.check.skip-extended>true</platform.check.skip-extended>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 
     <modules>
         <module>library</module>
