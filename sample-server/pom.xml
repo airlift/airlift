@@ -56,11 +56,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.inject.extensions</groupId>
-            <artifactId>guice-multibindings</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.weakref</groupId>
             <artifactId>jmxutils</artifactId>
         </dependency>
@@ -128,6 +123,11 @@
         <dependency>
             <groupId>com.proofpoint.platform</groupId>
             <artifactId>reporting-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.proofpoint.platform</groupId>
+            <artifactId>stats</artifactId>
         </dependency>
 
         <dependency>

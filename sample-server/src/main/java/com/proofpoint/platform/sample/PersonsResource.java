@@ -15,7 +15,7 @@
  */
 package com.proofpoint.platform.sample;
 
-import autovalue.shaded.com.google.common.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.proofpoint.platform.sample.PersonStore.StoreEntry;
 

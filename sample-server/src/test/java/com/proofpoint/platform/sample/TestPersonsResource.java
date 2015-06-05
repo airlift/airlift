@@ -20,7 +20,6 @@ import com.proofpoint.event.client.NullEventClient;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static com.proofpoint.platform.sample.Person.createPerson;
 import static org.testng.Assert.assertEquals;
 
