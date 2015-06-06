@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -19,10 +20,20 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class TimeDistribution
 {
     private static final double MAX_ERROR = 0.01;
+    private static final int SEGMENTS = 16;
+
+    private final DecayCounter count;
+    private final Object[] locks = new Object[SEGMENTS];
+    private final QuantileDigest[] partials = new QuantileDigest[SEGMENTS];
+
+    private final TimeUnit unit;
+    private final double alpha;
 
     @GuardedBy("this")
-    private final QuantileDigest digest;
-    private final TimeUnit unit;
+    private final QuantileDigest merged;
+    @GuardedBy("this")
+    private long lastMerge;
+
 
     public TimeDistribution()
     {
@@ -31,10 +42,7 @@ public class TimeDistribution
 
     public TimeDistribution(TimeUnit unit)
     {
-        Preconditions.checkNotNull(unit, "unit is null");
-
-        digest = new QuantileDigest(MAX_ERROR);
-        this.unit = unit;
+        this(0, unit);
     }
 
     public TimeDistribution(double alpha)
@@ -46,67 +54,79 @@ public class TimeDistribution
     {
         Preconditions.checkNotNull(unit, "unit is null");
 
-        digest = new QuantileDigest(MAX_ERROR, alpha);
         this.unit = unit;
+        this.alpha = alpha;
+        this.count = new DecayCounter(alpha);
+        this.merged = new QuantileDigest(MAX_ERROR, alpha);
+        for (int i = 0; i < SEGMENTS; i++) {
+            locks[i] = new Object();
+            partials[i] = new QuantileDigest(MAX_ERROR, alpha);
+        }
     }
 
     public synchronized void add(long value)
     {
-        digest.add(value);
+        int segment = ThreadLocalRandom.current().nextInt(SEGMENTS);
+
+        synchronized (locks[segment]) {
+            partials[segment].add(value);
+        }
+
+        count.add(1);
     }
 
     @Managed
     public synchronized double getMaxError()
     {
-        return digest.getConfidenceFactor();
+        return mergeAndGetIfNeeded().getConfidenceFactor();
     }
 
     @Managed
-    public synchronized double getCount()
+    public double getCount()
     {
-        return digest.getCount();
+        return count.getCount();
     }
 
     @Managed
     public synchronized double getP50()
     {
-        return convertToUnit(digest.getQuantile(0.5));
+        return convertToUnit(mergeAndGetIfNeeded().getQuantile(0.5));
     }
 
     @Managed
     public synchronized double getP75()
     {
-        return convertToUnit(digest.getQuantile(0.75));
+        return convertToUnit(mergeAndGetIfNeeded().getQuantile(0.75));
     }
 
     @Managed
     public synchronized double getP90()
     {
-        return convertToUnit(digest.getQuantile(0.90));
+        return convertToUnit(mergeAndGetIfNeeded().getQuantile(0.90));
     }
 
     @Managed
     public synchronized double getP95()
     {
-        return convertToUnit(digest.getQuantile(0.95));
+        return convertToUnit(mergeAndGetIfNeeded().getQuantile(0.95));
     }
 
     @Managed
     public synchronized double getP99()
     {
-        return convertToUnit(digest.getQuantile(0.99));
+        return convertToUnit(mergeAndGetIfNeeded().getQuantile(0.99));
     }
 
     @Managed
     public synchronized double getMin()
     {
-        return convertToUnit(digest.getMin());
+        return convertToUnit(mergeAndGetIfNeeded().getMin());
     }
 
     @Managed
     public synchronized double getMax()
     {
-        return convertToUnit(digest.getMax());
+        return convertToUnit(mergeAndGetIfNeeded().getMax());
     }
 
     @Managed
@@ -125,7 +145,7 @@ public class TimeDistribution
 
         List<Long> values;
         synchronized (this) {
-            values = digest.getQuantiles(percentiles);
+            values = mergeAndGetIfNeeded().getQuantiles(percentiles);
         }
 
         Map<Double, Double> result = new LinkedHashMap<>(values.size());
@@ -142,6 +162,23 @@ public class TimeDistribution
             return Double.NaN;
         }
         return nanos * 1.0 / unit.toNanos(1);
+    }
+
+    private QuantileDigest mergeAndGetIfNeeded()
+    {
+        long now = System.currentTimeMillis();
+
+        if (now - lastMerge > 1000) {
+            lastMerge = now;
+            for (int i = 0; i < SEGMENTS; i++) {
+                synchronized (locks[i]) {
+                    merged.merge(partials[i]);
+                    partials[i] = new QuantileDigest(MAX_ERROR, alpha);
+                }
+            }
+        }
+
+        return merged;
     }
 
     public TimeDistributionSnapshot snapshot()
