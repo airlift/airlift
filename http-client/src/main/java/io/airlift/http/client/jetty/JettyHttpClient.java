@@ -91,6 +91,7 @@ public class JettyHttpClient
     private final long maxContentLength;
     private final long requestTimeoutMillis;
     private final long idleTimeoutMillis;
+    private final boolean recordRequestStats;
     private final RequestStats stats = new RequestStats();
     private final CachedDistribution queuedRequestsPerDestination;
     private final CachedDistribution activeConnectionsPerDestination;
@@ -135,6 +136,7 @@ public class JettyHttpClient
         maxContentLength = config.getMaxContentLength().toBytes();
         requestTimeoutMillis = config.getRequestTimeout().toMillis();
         idleTimeoutMillis = config.getIdleTimeout().toMillis();
+        recordRequestStats = config.isRecordRequestStats();
 
         creationLocation.fillInStackTrace();
 
@@ -319,7 +321,9 @@ public class JettyHttpClient
             value = responseHandler.handle(request, jettyResponse);
         }
         finally {
-            recordRequestComplete(stats, request, requestStart, jettyResponse, responseStart);
+            if (recordRequestStats) {
+                recordRequestComplete(stats, request, requestStart, jettyResponse, responseStart);
+            }
         }
         return value;
     }
@@ -334,7 +338,7 @@ public class JettyHttpClient
 
         HttpRequest jettyRequest = buildJettyRequest(request);
 
-        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest, responseHandler, stats);
+        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest, responseHandler, stats, recordRequestStats);
 
         BufferingResponseListener listener = new BufferingResponseListener(future, Ints.saturatedCast(maxContentLength));
 
@@ -679,18 +683,20 @@ public class JettyHttpClient
         private static final Logger log = Logger.get(JettyResponseFuture.class);
 
         private final long requestStart = System.nanoTime();
+        private final boolean recordRequestStats;
         private final AtomicReference<JettyAsyncHttpState> state = new AtomicReference<>(JettyAsyncHttpState.WAITING_FOR_CONNECTION);
         private final Request request;
         private final org.eclipse.jetty.client.api.Request jettyRequest;
         private final ResponseHandler<T, E> responseHandler;
         private final RequestStats stats;
 
-        public JettyResponseFuture(Request request, org.eclipse.jetty.client.api.Request jettyRequest, ResponseHandler<T, E> responseHandler, RequestStats stats)
+        public JettyResponseFuture(Request request, org.eclipse.jetty.client.api.Request jettyRequest, ResponseHandler<T, E> responseHandler, RequestStats stats, boolean recordRequestStats)
         {
             this.request = request;
             this.jettyRequest = jettyRequest;
             this.responseHandler = responseHandler;
             this.stats = stats;
+            this.recordRequestStats = recordRequestStats;
         }
 
         @Override
@@ -747,7 +753,9 @@ public class JettyHttpClient
                 value = responseHandler.handle(request, jettyResponse);
             }
             finally {
-                recordRequestComplete(stats, request, requestStart, jettyResponse, responseStart);
+                if (recordRequestStats) {
+                    recordRequestComplete(stats, request, requestStart, jettyResponse, responseStart);
+                }
             }
             return value;
         }

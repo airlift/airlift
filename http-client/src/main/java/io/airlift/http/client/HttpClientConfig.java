@@ -46,6 +46,19 @@ public class HttpClientConfig
     private HostAndPort socksProxy;
     private String keyStorePath = System.getProperty(JAVAX_NET_SSL_KEY_STORE);
     private String keyStorePassword = System.getProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD);
+    private boolean recordRequestStats = true;
+
+    public boolean isRecordRequestStats()
+    {
+        return recordRequestStats;
+    }
+
+    @Config("http-client.record-request-stats")
+    public HttpClientConfig setRecordRequestStats(boolean recordRequestStats)
+    {
+        this.recordRequestStats = recordRequestStats;
+        return this;
+    }
 
     @NotNull
     @MinDuration("0ms")

@@ -38,6 +38,7 @@ public class TestHttpClientConfig
     public void testDefaults()
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(HttpClientConfig.class)
+                .setRecordRequestStats(true)
                 .setConnectTimeout(new Duration(1, TimeUnit.SECONDS))
                 .setRequestTimeout(new Duration(5, TimeUnit.MINUTES))
                 .setIdleTimeout(new Duration(1, TimeUnit.MINUTES))
@@ -55,6 +56,7 @@ public class TestHttpClientConfig
     public void testExplicitPropertyMappings()
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("http-client.record-request-stats", "false")
                 .put("http-client.connect-timeout", "4s")
                 .put("http-client.request-timeout", "15s")
                 .put("http-client.idle-timeout", "5s")
@@ -69,6 +71,7 @@ public class TestHttpClientConfig
                 .build();
 
         HttpClientConfig expected = new HttpClientConfig()
+                .setRecordRequestStats(false)
                 .setConnectTimeout(new Duration(4, TimeUnit.SECONDS))
                 .setRequestTimeout(new Duration(15, TimeUnit.SECONDS))
                 .setIdleTimeout(new Duration(5, TimeUnit.SECONDS))
