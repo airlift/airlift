@@ -29,6 +29,7 @@ import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.client.jetty.JettyIoPool;
 import io.airlift.http.client.jetty.JettyIoPoolConfig;
 import io.airlift.log.Logger;
+import io.airlift.security.client.ClientSecurityConfig;
 
 import javax.annotation.PreDestroy;
 
@@ -82,6 +83,9 @@ public class HttpClientModule
             configBinder(binder).bindConfigDefaults(HttpClientConfig.class, configDefaults);
         }
 
+        // bind the security configuration
+        configBinder(binder).bindConfig(ClientSecurityConfig.class, annotation, name);
+
         // Shared thread pool
         configBinder(binder).bindConfig(JettyIoPoolConfig.class);
         binder.bind(JettyIoPoolManager.class).to(SharedJettyIoPoolManager.class).in(Scopes.SINGLETON);
@@ -125,6 +129,7 @@ public class HttpClientModule
         public HttpClient get()
         {
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
+            ClientSecurityConfig securityConfig = injector.getInstance(Key.get(ClientSecurityConfig.class, annotation));
             Set<HttpRequestFilter> filters = injector.getInstance(filterKey(annotation));
 
             JettyIoPoolManager ioPoolProvider;
@@ -137,7 +142,7 @@ public class HttpClientModule
                 ioPoolProvider = injector.getInstance(JettyIoPoolManager.class);
             }
 
-            JettyHttpClient client = new JettyHttpClient(config, ioPoolProvider.get(), ImmutableList.copyOf(filters));
+            JettyHttpClient client = new JettyHttpClient(config, securityConfig, ioPoolProvider.get(), ImmutableList.copyOf(filters));
             ioPoolProvider.addClient(client);
             return client;
         }

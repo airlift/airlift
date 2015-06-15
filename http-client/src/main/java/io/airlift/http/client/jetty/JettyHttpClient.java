@@ -20,14 +20,19 @@ import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.ResponseTooLargeException;
 import io.airlift.http.client.StaticBodyGenerator;
 import io.airlift.log.Logger;
+import io.airlift.security.client.ClientSecurityConfig;
+import io.airlift.security.client.ExpiringAuthenticationStore;
+import io.airlift.security.client.SpnegoAuthentication;
 import io.airlift.stats.Distribution;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.PoolingHttpDestination;
 import org.eclipse.jetty.client.Socks4Proxy;
+import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
@@ -77,6 +82,7 @@ import java.util.stream.Collectors;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Math.min;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -86,6 +92,7 @@ public class JettyHttpClient
     private static final AtomicLong nameCounter = new AtomicLong();
     private static final String PRESTO_STATS_KEY = "presto_stats";
     private static final long SWEEP_PERIOD_MILLIS = 5000;
+    private static final String REALM_IN_CHALLENGE = "X-Airlift-Realm-In-Challenge";
 
     private final HttpClient httpClient;
     private final long maxContentLength;
@@ -105,6 +112,7 @@ public class JettyHttpClient
     private final List<HttpRequestFilter> requestFilters;
     private final Exception creationLocation = new Exception();
     private final String name;
+    private final boolean authenticationEnabled;
 
     public JettyHttpClient()
     {
@@ -118,23 +126,35 @@ public class JettyHttpClient
 
     public JettyHttpClient(HttpClientConfig config, Iterable<? extends HttpRequestFilter> requestFilters)
     {
-        this(config, Optional.<JettyIoPool>absent(), requestFilters);
+        this(config, new ClientSecurityConfig(), Optional.<JettyIoPool>absent(), requestFilters);
     }
 
     public JettyHttpClient(HttpClientConfig config, JettyIoPool jettyIoPool, Iterable<? extends HttpRequestFilter> requestFilters)
     {
-        this(config, Optional.of(jettyIoPool), requestFilters);
+        this(config, new ClientSecurityConfig(), Optional.of(jettyIoPool), requestFilters);
     }
 
-    private JettyHttpClient(HttpClientConfig config, Optional<JettyIoPool> jettyIoPool, Iterable<? extends HttpRequestFilter> requestFilters)
+    public JettyHttpClient(HttpClientConfig config, ClientSecurityConfig securityConfig)
+    {
+        this(config, securityConfig, Optional.<JettyIoPool>absent(), ImmutableList.<HttpRequestFilter>of());
+    }
+
+    public JettyHttpClient(HttpClientConfig config, ClientSecurityConfig securityConfig, JettyIoPool jettyIoPool, Iterable<? extends HttpRequestFilter> requestFilters)
+    {
+        this(config, securityConfig, Optional.of(jettyIoPool), requestFilters);
+    }
+
+    private JettyHttpClient(HttpClientConfig config, ClientSecurityConfig securityConfig, Optional<JettyIoPool> jettyIoPool, Iterable<? extends HttpRequestFilter> requestFilters)
     {
         checkNotNull(config, "config is null");
+        checkNotNull(securityConfig, "securityConfig is null");
         checkNotNull(jettyIoPool, "jettyIoPool is null");
         checkNotNull(requestFilters, "requestFilters is null");
 
         maxContentLength = config.getMaxContentLength().toBytes();
         requestTimeoutMillis = config.getRequestTimeout().toMillis();
         idleTimeoutMillis = config.getIdleTimeout().toMillis();
+        authenticationEnabled = securityConfig.getAuthenticationEnabled();
 
         creationLocation.fillInStackTrace();
 
@@ -145,7 +165,14 @@ public class JettyHttpClient
             sslContextFactory.setKeyStorePassword(config.getKeyStorePassword());
         }
 
-        httpClient = new HttpClient(new HttpClientTransportOverHTTP(2), sslContextFactory);
+        if (authenticationEnabled) {
+            requireNonNull(securityConfig.getKrb5Config(), "krb5Config is null");
+            requireNonNull(securityConfig.getKrb5RemoteServiceName(), "krb5RemoteServiceName is null");
+            httpClient = new WrappedHttpClient(securityConfig, new HttpClientTransportOverHTTP(2), sslContextFactory);
+        }
+        else {
+            httpClient = new HttpClient(new HttpClientTransportOverHTTP(2), sslContextFactory);
+        }
         httpClient.setMaxConnectionsPerDestination(config.getMaxConnectionsPerServer());
         httpClient.setMaxRequestsQueuedPerDestination(config.getMaxRequestsQueuedPerDestination());
 
@@ -395,6 +422,13 @@ public class JettyHttpClient
         jettyRequest.timeout(requestTimeoutMillis, MILLISECONDS);
         jettyRequest.idleTimeout(idleTimeoutMillis, MILLISECONDS);
 
+        // client authentications
+        if (authenticationEnabled && "https".equalsIgnoreCase(jettyRequest.getURI().getScheme())) {
+            // Unlike other clients, Jetty Kerberos client requires the server to include a realm
+            // in the challenge from the server. This breaks the SPNEGO protocol. We use a custom
+            // header to tell the server to return the required realm.
+            jettyRequest.header(REALM_IN_CHALLENGE, "true");
+        }
         return jettyRequest;
     }
 
@@ -1290,6 +1324,40 @@ public class JettyHttpClient
                         .forEach(listener -> processor.process(distribution, listener, now));
                 return distribution;
             });
+        }
+    }
+
+    // By wrapping HttpClient, we are able to substitute the underlying AuthenticationStore
+    // with a more efficient one.
+    private static class WrappedHttpClient
+            extends HttpClient
+    {
+        private final AuthenticationStore authenticationStore;
+
+        public WrappedHttpClient(ClientSecurityConfig config, HttpClientTransport transport, SslContextFactory sslContextFactory)
+        {
+            super(transport, sslContextFactory);
+            authenticationStore = new ExpiringAuthenticationStore(new SpnegoAuthentication(
+                    config.getKrb5Keytab(),
+                    config.getKrb5Config(),
+                    config.getKrb5CredentialCache(),
+                    config.getKrb5Principal(),
+                    config.getKrb5RemoteServiceName()));
+        }
+
+        @Override
+        public AuthenticationStore getAuthenticationStore()
+        {
+            return authenticationStore;
+        }
+
+        @Override
+        protected void doStop()
+                throws Exception
+        {
+            authenticationStore.clearAuthenticationResults();
+
+            super.doStop();
         }
     }
 }
