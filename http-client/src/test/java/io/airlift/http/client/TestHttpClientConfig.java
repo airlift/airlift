@@ -48,7 +48,10 @@ public class TestHttpClientConfig
                 .setMaxContentLength(new DataSize(16, Unit.MEGABYTE))
                 .setSocksProxy(null)
                 .setKeyStorePath(System.getProperty(JAVAX_NET_SSL_KEY_STORE))
-                .setKeyStorePassword(System.getProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD)));
+                .setKeyStorePassword(System.getProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD))
+                .setAuthenticationEnabled(false)
+                .setKerberosRemoteServiceName(null)
+                .setKerberosPrincipal(null));
     }
 
     @Test
@@ -66,6 +69,9 @@ public class TestHttpClientConfig
                 .put("http-client.socks-proxy", "localhost:1080")
                 .put("http-client.key-store-path", "key-store")
                 .put("http-client.key-store-password", "key-store-password")
+                .put("http-client.authentication.enabled", "true")
+                .put("http-client.authentication.krb5.remote-service-name", "airlift")
+                .put("http-client.authentication.krb5.principal", "airlift-client")
                 .build();
 
         HttpClientConfig expected = new HttpClientConfig()
@@ -79,7 +85,10 @@ public class TestHttpClientConfig
                 .setMaxContentLength(new DataSize(1, Unit.MEGABYTE))
                 .setSocksProxy(HostAndPort.fromParts("localhost", 1080))
                 .setKeyStorePath("key-store")
-                .setKeyStorePassword("key-store-password");
+                .setKeyStorePassword("key-store-password")
+                .setAuthenticationEnabled(true)
+                .setKerberosRemoteServiceName("airlift")
+                .setKerberosPrincipal("airlift-client");
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

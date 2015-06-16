@@ -17,6 +17,7 @@ package io.airlift.http.client;
 
 import com.google.common.annotations.Beta;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -29,6 +30,7 @@ import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.client.jetty.JettyIoPool;
 import io.airlift.http.client.jetty.JettyIoPoolConfig;
 import io.airlift.log.Logger;
+import io.airlift.http.client.spnego.KerberosConfig;
 
 import javax.annotation.PreDestroy;
 
@@ -77,6 +79,7 @@ public class HttpClientModule
     public void configure()
     {
         // bind the configuration
+        configBinder(binder).bindConfig(KerberosConfig.class);
         configBinder(binder).bindConfig(HttpClientConfig.class, annotation, name);
         if (configDefaults != null) {
             configBinder(binder).bindConfigDefaults(HttpClientConfig.class, configDefaults);
@@ -124,6 +127,8 @@ public class HttpClientModule
         @Override
         public HttpClient get()
         {
+            KerberosConfig kerberosConfig = injector.getInstance(KerberosConfig.class);
+
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
             Set<HttpRequestFilter> filters = injector.getInstance(filterKey(annotation));
 
@@ -137,7 +142,7 @@ public class HttpClientModule
                 ioPoolProvider = injector.getInstance(JettyIoPoolManager.class);
             }
 
-            JettyHttpClient client = new JettyHttpClient(config, ioPoolProvider.get(), ImmutableList.copyOf(filters));
+            JettyHttpClient client = new JettyHttpClient(config, kerberosConfig, Optional.of(ioPoolProvider.get()), ImmutableList.copyOf(filters));
             ioPoolProvider.addClient(client);
             return client;
         }

@@ -18,6 +18,7 @@ package io.airlift.http.client;
 import com.google.common.annotations.Beta;
 import com.google.common.net.HostAndPort;
 import io.airlift.configuration.Config;
+import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.LegacyConfig;
 import io.airlift.units.DataSize;
 import io.airlift.units.DataSize.Unit;
@@ -46,6 +47,9 @@ public class HttpClientConfig
     private HostAndPort socksProxy;
     private String keyStorePath = System.getProperty(JAVAX_NET_SSL_KEY_STORE);
     private String keyStorePassword = System.getProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD);
+    private boolean authenticationEnabled;
+    private String kerberosPrincipal;
+    private String kerberosRemoteServiceName;
 
     @NotNull
     @MinDuration("0ms")
@@ -189,6 +193,45 @@ public class HttpClientConfig
     public HttpClientConfig setKeyStorePassword(String keyStorePassword)
     {
         this.keyStorePassword = keyStorePassword;
+        return this;
+    }
+
+    public boolean getAuthenticationEnabled()
+    {
+        return authenticationEnabled;
+    }
+
+    @Config("http-client.authentication.enabled")
+    @ConfigDescription("Enable client authentication")
+    public HttpClientConfig setAuthenticationEnabled(boolean enabled)
+    {
+        this.authenticationEnabled = enabled;
+        return this;
+    }
+
+    public String getKerberosPrincipal()
+    {
+        return kerberosPrincipal;
+    }
+
+    @Config("http-client.authentication.krb5.principal")
+    @ConfigDescription("Set kerberos client principal")
+    public HttpClientConfig setKerberosPrincipal(String kerberosClientPrincipal)
+    {
+        this.kerberosPrincipal = kerberosClientPrincipal;
+        return this;
+    }
+
+    public String getKerberosRemoteServiceName()
+    {
+        return kerberosRemoteServiceName;
+    }
+
+    @Config("http-client.authentication.krb5.remote-service-name")
+    @ConfigDescription("Set kerberos service principal name")
+    public HttpClientConfig setKerberosRemoteServiceName(String serviceName)
+    {
+        this.kerberosRemoteServiceName = serviceName;
         return this;
     }
 }

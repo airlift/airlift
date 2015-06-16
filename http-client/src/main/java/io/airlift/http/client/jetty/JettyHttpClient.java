@@ -20,14 +20,19 @@ import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.ResponseTooLargeException;
 import io.airlift.http.client.StaticBodyGenerator;
 import io.airlift.log.Logger;
+import io.airlift.http.client.spnego.KerberosConfig;
+import io.airlift.http.client.spnego.SpnegoAuthenticationStore;
+import io.airlift.http.client.spnego.SpnegoAuthentication;
 import io.airlift.stats.Distribution;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.PoolingHttpDestination;
 import org.eclipse.jetty.client.Socks4Proxy;
+import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
@@ -77,6 +82,7 @@ import java.util.stream.Collectors;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Math.min;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -86,6 +92,7 @@ public class JettyHttpClient
     private static final AtomicLong nameCounter = new AtomicLong();
     private static final String PRESTO_STATS_KEY = "presto_stats";
     private static final long SWEEP_PERIOD_MILLIS = 5000;
+    private static final String REALM_IN_CHALLENGE = "X-Airlift-Realm-In-Challenge";
 
     private final HttpClient httpClient;
     private final long maxContentLength;
@@ -105,6 +112,7 @@ public class JettyHttpClient
     private final List<HttpRequestFilter> requestFilters;
     private final Exception creationLocation = new Exception();
     private final String name;
+    private final boolean authenticationEnabled;
 
     public JettyHttpClient()
     {
@@ -118,15 +126,19 @@ public class JettyHttpClient
 
     public JettyHttpClient(HttpClientConfig config, Iterable<? extends HttpRequestFilter> requestFilters)
     {
-        this(config, Optional.<JettyIoPool>absent(), requestFilters);
+        this(config, new KerberosConfig(), Optional.<JettyIoPool>absent(), requestFilters);
     }
 
     public JettyHttpClient(HttpClientConfig config, JettyIoPool jettyIoPool, Iterable<? extends HttpRequestFilter> requestFilters)
     {
-        this(config, Optional.of(jettyIoPool), requestFilters);
+        this(config, new KerberosConfig(), Optional.of(jettyIoPool), requestFilters);
     }
 
-    private JettyHttpClient(HttpClientConfig config, Optional<JettyIoPool> jettyIoPool, Iterable<? extends HttpRequestFilter> requestFilters)
+    public JettyHttpClient(
+            HttpClientConfig config,
+            KerberosConfig kerberosConfig,
+            Optional<JettyIoPool> jettyIoPool,
+            Iterable<? extends HttpRequestFilter> requestFilters)
     {
         checkNotNull(config, "config is null");
         checkNotNull(jettyIoPool, "jettyIoPool is null");
@@ -135,6 +147,7 @@ public class JettyHttpClient
         maxContentLength = config.getMaxContentLength().toBytes();
         requestTimeoutMillis = config.getRequestTimeout().toMillis();
         idleTimeoutMillis = config.getIdleTimeout().toMillis();
+        authenticationEnabled = config.getAuthenticationEnabled();
 
         creationLocation.fillInStackTrace();
 
@@ -145,7 +158,15 @@ public class JettyHttpClient
             sslContextFactory.setKeyStorePassword(config.getKeyStorePassword());
         }
 
-        httpClient = new HttpClient(new HttpClientTransportOverHTTP(2), sslContextFactory);
+        HttpClientTransportOverHTTP transport = new HttpClientTransportOverHTTP(2);
+        if (authenticationEnabled) {
+            requireNonNull(kerberosConfig.getConfig(), "kerberos config path is null");
+            requireNonNull(config.getKerberosRemoteServiceName(), "kerberos remote service name is null");
+            httpClient = new SpnegoHttpClient(kerberosConfig, config, transport, sslContextFactory);
+        }
+        else {
+            httpClient = new HttpClient(transport, sslContextFactory);
+        }
         httpClient.setMaxConnectionsPerDestination(config.getMaxConnectionsPerServer());
         httpClient.setMaxRequestsQueuedPerDestination(config.getMaxRequestsQueuedPerDestination());
 
@@ -395,6 +416,14 @@ public class JettyHttpClient
         jettyRequest.timeout(requestTimeoutMillis, MILLISECONDS);
         jettyRequest.idleTimeout(idleTimeoutMillis, MILLISECONDS);
 
+        // client authentications
+        if (authenticationEnabled && "https".equalsIgnoreCase(jettyRequest.getURI().getScheme())) {
+            // Unlike other clients, Jetty Kerberos client requires the server to include a realm
+            // in the challenge from the server. This breaks the SPNEGO protocol. We use a custom
+            // header to tell the server to return the required realm.
+            // Workaround for https://bugs.eclipse.org/bugs/show_bug.cgi?id=458258
+            jettyRequest.header(REALM_IN_CHALLENGE, "true");
+        }
         return jettyRequest;
     }
 
@@ -1290,6 +1319,45 @@ public class JettyHttpClient
                         .forEach(listener -> processor.process(distribution, listener, now));
                 return distribution;
             });
+        }
+    }
+
+    // By wrapping HttpClient, we are able to substitute the underlying AuthenticationStore
+    // with a more efficient one.
+    private static class SpnegoHttpClient
+            extends HttpClient
+    {
+        private final AuthenticationStore authenticationStore;
+        private final SpnegoAuthentication spnego;
+
+        public SpnegoHttpClient(KerberosConfig kerberosConfig, HttpClientConfig config, HttpClientTransport transport, SslContextFactory sslContextFactory)
+        {
+            super(transport, sslContextFactory);
+
+            spnego = new SpnegoAuthentication(
+                    kerberosConfig.getKeytab(),
+                    kerberosConfig.getConfig(),
+                    kerberosConfig.getCredentialCache(),
+                    config.getKerberosPrincipal(),
+                    config.getKerberosRemoteServiceName());
+
+            authenticationStore = new SpnegoAuthenticationStore(spnego);
+        }
+
+        @Override
+        public AuthenticationStore getAuthenticationStore()
+        {
+            return authenticationStore;
+        }
+
+        @Override
+        protected void doStop()
+                throws Exception
+        {
+            authenticationStore.clearAuthenticationResults();
+            spnego.shutdown();
+
+            super.doStop();
         }
     }
 }
