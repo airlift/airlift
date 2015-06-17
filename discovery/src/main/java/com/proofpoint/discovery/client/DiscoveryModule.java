@@ -17,6 +17,7 @@ package com.proofpoint.discovery.client;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
+import com.google.inject.Key;
 import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -42,8 +43,8 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import static com.google.common.base.Preconditions.checkState;
 import static com.proofpoint.concurrent.Threads.daemonThreadsNamed;
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
-import static com.proofpoint.discovery.client.DiscoveryBinder.discoveryBinder;
 import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
+import static com.proofpoint.http.client.HttpClientBinder.httpClientBinder;
 import static com.proofpoint.json.JsonCodecBinder.jsonCodecBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
@@ -75,7 +76,7 @@ public class DiscoveryModule
         jsonCodecBinder(binder).bindJsonCodec(Announcement.class);
 
         // bind the http client
-        discoveryBinder(binder).bindDiscoveredHttpClientWithBalancer("discovery", serviceType("discovery"), ForDiscoveryClient.class);
+        httpClientBinder(binder).bindBalancingHttpClient("discovery", ForDiscoveryClient.class, Key.get(HttpServiceBalancer.class, serviceType("discovery")));
 
         // bind announcer
         binder.bind(Announcer.class).in(Scopes.SINGLETON);

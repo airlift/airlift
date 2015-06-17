@@ -16,6 +16,7 @@
 package com.proofpoint.http.client;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -25,14 +26,17 @@ import com.google.inject.PrivateBinder;
 import com.proofpoint.bootstrap.LifeCycleManager;
 import com.proofpoint.http.client.HttpClientModule.JettyIoPoolManager;
 import com.proofpoint.http.client.jetty.JettyHttpClient;
+import com.proofpoint.reporting.ReportingModule;
 import org.testng.annotations.Test;
 import org.weakref.jmx.Managed;
+import org.weakref.jmx.testing.TestingMBeanModule;
 
 import javax.inject.Qualifier;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.net.URI;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
@@ -373,6 +377,31 @@ public class TestHttpClientBinder
 
         assertNotNull(injector.getInstance(ExposeHttpClient.class).httpClient);
         assertNotNull(injector.getInstance(Key.get(HttpClient.class, BarClient.class)));
+
+        assertPoolsDestroyProperly(injector);
+    }
+
+    @Test
+    public void testBindBalancingHttpClientUris()
+            throws Exception
+    {
+        Injector injector = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
+                .withModules(
+                        new Module()
+                        {
+                            @Override
+                            public void configure(Binder binder)
+                            {
+                                httpClientBinder(binder).bindBalancingHttpClient("foo", FooClient.class, ImmutableSet.of(URI.create("http://nonexistent.nonexistent")));
+                            }
+                        },
+                        new ReportingModule(),
+                        new TestingMBeanModule())
+                .quiet()
+                .initialize();
+
+        assertNotNull(injector.getInstance(Key.get(HttpClient.class, FooClient.class)));
 
         assertPoolsDestroyProperly(injector);
     }

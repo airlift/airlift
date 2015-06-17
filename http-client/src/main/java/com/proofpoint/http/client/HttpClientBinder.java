@@ -17,14 +17,27 @@ package com.proofpoint.http.client;
 
 import com.google.common.annotations.Beta;
 import com.google.inject.Binder;
+import com.google.inject.Key;
+import com.google.inject.PrivateBinder;
+import com.google.inject.Scopes;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.Multibinder;
+import com.proofpoint.http.client.balancing.BalancingHttpClient;
+import com.proofpoint.http.client.balancing.BalancingHttpClientBindingBuilder;
+import com.proofpoint.http.client.balancing.BalancingHttpClientConfig;
+import com.proofpoint.http.client.balancing.ForBalancingHttpClient;
+import com.proofpoint.http.client.balancing.HttpServiceBalancer;
 
 import java.lang.annotation.Annotation;
+import java.net.URI;
 import java.util.Collection;
+import java.util.Set;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
+import static com.proofpoint.reporting.ReportBinder.reportBinder;
 
 @Beta
 public class HttpClientBinder
@@ -53,6 +66,41 @@ public class HttpClientBinder
         checkNotNull(name, "name is null");
         checkNotNull(annotation, "annotation is null");
         return createBindingBuilder(new HttpClientModule(name, annotation, rootBinder));
+    }
+
+    public BalancingHttpClientBindingBuilder bindBalancingHttpClient(String name, Class<? extends Annotation> annotation, Set<URI> baseUris)
+    {
+        checkNotNull(name, "name is null");
+        checkNotNull(annotation, "annotation is null");
+        checkNotNull(baseUris, "baseUris is null");
+        checkArgument(!baseUris.isEmpty(), "baseUris is empty");
+
+        PrivateBinder privateBinder = binder.newPrivateBinder();
+        privateBinder.bind(HttpServiceBalancer.class).annotatedWith(ForBalancingHttpClient.class).toProvider(new StaticHttpServiceBalancerProvider(annotation.getSimpleName(), baseUris));
+        HttpClientBindingBuilder delegateBindingBuilder = httpClientPrivateBinder(privateBinder, binder).bindHttpClient(name, ForBalancingHttpClient.class);
+        bindConfig(privateBinder).prefixedWith(name).to(BalancingHttpClientConfig.class);
+        privateBinder.bind(HttpClient.class).annotatedWith(annotation).to(BalancingHttpClient.class).in(Scopes.SINGLETON);
+        privateBinder.expose(HttpClient.class).annotatedWith(annotation);
+        reportBinder(binder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
+
+        return new BalancingHttpClientBindingBuilder(binder, annotation, delegateBindingBuilder);
+    }
+
+    public BalancingHttpClientBindingBuilder bindBalancingHttpClient(String name, Class<? extends Annotation> annotation, Key<? extends HttpServiceBalancer> balancerKey)
+    {
+        checkNotNull(name, "name is null");
+        checkNotNull(annotation, "annotation is null");
+        checkNotNull(balancerKey, "balancerKey is null");
+
+        PrivateBinder privateBinder = binder.newPrivateBinder();
+        privateBinder.bind(HttpServiceBalancer.class).annotatedWith(ForBalancingHttpClient.class).to(balancerKey);
+        HttpClientBindingBuilder delegateBindingBuilder = httpClientPrivateBinder(privateBinder, binder).bindHttpClient(name, ForBalancingHttpClient.class);
+        bindConfig(privateBinder).prefixedWith(name).to(BalancingHttpClientConfig.class);
+        privateBinder.bind(HttpClient.class).annotatedWith(annotation).to(BalancingHttpClient.class).in(Scopes.SINGLETON);
+        privateBinder.expose(HttpClient.class).annotatedWith(annotation);
+        reportBinder(binder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
+
+        return new BalancingHttpClientBindingBuilder(binder, annotation, delegateBindingBuilder);
     }
 
     @SuppressWarnings("deprecation")

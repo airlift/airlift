@@ -21,7 +21,6 @@ import com.google.inject.Key;
 import com.google.inject.PrivateBinder;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
-import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.Multibinder;
 import com.proofpoint.discovery.client.announce.AnnouncementHttpServerInfo;
 import com.proofpoint.discovery.client.announce.ServiceAnnouncement;
@@ -29,15 +28,14 @@ import com.proofpoint.discovery.client.announce.ServiceAnnouncement.ServiceAnnou
 import com.proofpoint.discovery.client.balancing.HttpServiceBalancerProvider;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.HttpClientBinder.HttpClientBindingBuilder;
-import com.proofpoint.http.client.HttpRequestFilter;
 import com.proofpoint.http.client.balancing.BalancingHttpClient;
+import com.proofpoint.http.client.balancing.BalancingHttpClientBindingBuilder;
 import com.proofpoint.http.client.balancing.BalancingHttpClientConfig;
 import com.proofpoint.http.client.balancing.ForBalancingHttpClient;
 import com.proofpoint.http.client.balancing.HttpServiceBalancer;
 import org.weakref.jmx.ObjectNameBuilder;
 
 import java.lang.annotation.Annotation;
-import java.util.Collection;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
@@ -45,6 +43,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
 import static com.proofpoint.discovery.client.ServiceTypes.serviceType;
 import static com.proofpoint.discovery.client.announce.ServiceAnnouncement.serviceAnnouncement;
+import static com.proofpoint.http.client.HttpClientBinder.httpClientBinder;
 import static com.proofpoint.http.client.HttpClientBinder.httpClientPrivateBinder;
 import static com.proofpoint.reporting.ReportBinder.reportBinder;
 
@@ -186,24 +185,7 @@ public class DiscoveryBinder
     public BalancingHttpClientBindingBuilder bindDiscoveredHttpClient(String name, ServiceType serviceType, Class<? extends Annotation> annotation)
     {
         bindHttpBalancer(serviceType);
-        return bindDiscoveredHttpClientWithBalancer(name, serviceType, annotation);
-    }
-
-    BalancingHttpClientBindingBuilder bindDiscoveredHttpClientWithBalancer(String name, ServiceType serviceType, Class<? extends Annotation> annotation)
-    {
-        checkNotNull(name, "name is null");
-        checkNotNull(serviceType, "serviceType is null");
-        checkNotNull(annotation, "annotation is null");
-
-        PrivateBinder privateBinder = binder.newPrivateBinder();
-        privateBinder.bind(HttpServiceBalancer.class).annotatedWith(ForBalancingHttpClient.class).to(Key.get(HttpServiceBalancer.class, serviceType));
-        HttpClientBindingBuilder delegateBindingBuilder = httpClientPrivateBinder(privateBinder, binder).bindHttpClient(name, ForBalancingHttpClient.class);
-        bindConfig(privateBinder).prefixedWith(name).to(BalancingHttpClientConfig.class);
-        privateBinder.bind(HttpClient.class).annotatedWith(annotation).to(BalancingHttpClient.class).in(Scopes.SINGLETON);
-        privateBinder.expose(HttpClient.class).annotatedWith(annotation);
-        reportBinder(binder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
-
-        return new BalancingHttpClientBindingBuilder(binder, annotation, delegateBindingBuilder);
+        return httpClientBinder(binder).bindBalancingHttpClient(name, annotation, Key.get(HttpServiceBalancer.class, serviceType));
     }
 
     static class HttpAnnouncementProvider implements Provider<ServiceAnnouncement>
@@ -233,67 +215,6 @@ public class DiscoveryBinder
                 builder.addProperty("https", httpServerInfo.getHttpsUri().toString());
             }
             return builder.build();
-        }
-    }
-
-    public static class BalancingHttpClientBindingBuilder
-    {
-        private final Binder binder;
-        private final Key<HttpClient> key;
-        private final HttpClientBindingBuilder delegateBindingBuilder;
-
-        public BalancingHttpClientBindingBuilder(Binder binder, Class<? extends Annotation> annotationType, HttpClientBindingBuilder delegateBindingBuilder)
-        {
-            this(binder, Key.get(HttpClient.class, annotationType), delegateBindingBuilder);
-        }
-
-        public BalancingHttpClientBindingBuilder(Binder binder, Annotation annotation, HttpClientBindingBuilder delegateBindingBuilder)
-        {
-            this(binder, Key.get(HttpClient.class, annotation), delegateBindingBuilder);
-        }
-
-        private BalancingHttpClientBindingBuilder(Binder binder, Key<HttpClient> key, HttpClientBindingBuilder delegateBindingBuilder)
-        {
-            this.binder = binder;
-            this.key = key;
-            this.delegateBindingBuilder = delegateBindingBuilder;
-        }
-
-        public BalancingHttpClientBindingBuilder withAlias(Class<? extends Annotation> alias)
-        {
-            binder.bind(HttpClient.class).annotatedWith(alias).to(key);
-            return this;
-        }
-
-        public BalancingHttpClientBindingBuilder withAliases(Collection<Class<? extends Annotation>> aliases)
-        {
-            for (Class<? extends Annotation> alias : aliases) {
-                binder.bind(HttpClient.class).annotatedWith(alias).to(key);
-            }
-            return this;
-        }
-
-        public LinkedBindingBuilder<HttpRequestFilter> addFilterBinding()
-        {
-            return delegateBindingBuilder.addFilterBinding();
-        }
-
-        public BalancingHttpClientBindingBuilder withFilter(Class<? extends HttpRequestFilter> filterClass)
-        {
-            delegateBindingBuilder.withFilter(filterClass);
-            return this;
-        }
-
-        public BalancingHttpClientBindingBuilder withTracing()
-        {
-            delegateBindingBuilder.withTracing();
-            return this;
-        }
-
-        public BalancingHttpClientBindingBuilder withPrivateIoThreadPool()
-        {
-            delegateBindingBuilder.withPrivateIoThreadPool();
-            return this;
         }
     }
 }
