@@ -1,5 +1,9 @@
 Platform 1.22
 
+* BalancingHttpClient
+
+  We added 499, 598, and 599 to the set of retryable response codes.
+
 * Library Upgrades
 
   - Joda-time to 2.8

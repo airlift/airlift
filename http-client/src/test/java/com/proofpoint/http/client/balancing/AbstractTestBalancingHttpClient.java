@@ -272,10 +272,13 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
     {
         return new Object[][] {
                 new Object[] { 408 },
+                new Object[] { 499 },
                 new Object[] { 500 },
                 new Object[] { 502 },
                 new Object[] { 503 },
                 new Object[] { 504 },
+                new Object[] { 598 },
+                new Object[] { 599 },
         };
     }
 
