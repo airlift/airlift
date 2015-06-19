@@ -152,14 +152,16 @@ public class SpnegoAuthentication
 
         try {
             byte[] token = context.initSecContext(new byte[0], 0, 0);
-            if (token != null) {
-                return new SpnegoResult(
-                        UriUtil.normalizedUri(requestUri), headerInfo.getHeader(),
-                        format("%s %s", NEGOTIATE, Base64.getEncoder().encodeToString(token)));
+            if (token == null) {
+                throw new AuthenticationException(format("No token generated from GSSContext for request %s", requestUri));
             }
+
+            return new SpnegoResult(
+                    UriUtil.normalizedUri(requestUri), headerInfo.getHeader(),
+                    format("%s %s", NEGOTIATE, Base64.getEncoder().encodeToString(token)));
         }
         catch (GSSException e) {
-            // ignore and fail the authentication
+            throw new AuthenticationException(format("Failed to establish GSSContext for request %s", requestUri), e);
         }
         finally {
             try {
@@ -169,8 +171,6 @@ public class SpnegoAuthentication
                 // ignore
             }
         }
-
-        throw new AuthenticationException(format("Failed to establish GSSContext for request %s", requestUri));
     }
 
     @Override
