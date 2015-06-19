@@ -193,10 +193,6 @@ public class Logging
     public void configure(LoggingConfiguration config)
             throws IOException
     {
-        if (config.getLogPath() == null && !config.isConsoleEnabled()) {
-            throw new IllegalArgumentException("No log file is configured (log.output-file) and logging to console is disabled (log.enable-console)");
-        }
-
         if (config.getLogPath() != null) {
             logToFile(config.getLogPath(), config.getMaxHistory(), config.getMaxSegmentSizeInBytes());
         }
