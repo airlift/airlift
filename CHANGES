@@ -1,3 +1,7 @@
+* 0.111
+
+- Support JSON serialization of Java 7 types
+
 * 0.110
 
 - Fix log levels being reset by garbage collection
