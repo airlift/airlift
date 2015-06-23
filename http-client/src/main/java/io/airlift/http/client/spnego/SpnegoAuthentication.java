@@ -133,44 +133,57 @@ public class SpnegoAuthentication
     @Override
     public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes attributes)
     {
-        URI requestUri = request.getURI();
-        String servicePrincipal = makeServicePrincipal(remoteServiceName, requestUri.getHost());
+        URI normalizedUri = UriUtil.normalizedUri(request.getURI());
 
-        GSSContext context = doAs(loginContext.getSubject(), () -> {
-            GSSContext result = GSS_MANAGER.createContext(
-                    GSS_MANAGER.createName(servicePrincipal, null),
-                    SPNEGO_OID,
-                    clientCredential,
-                    INDEFINITE_LIFETIME);
-
-            result.requestMutualAuth(true);
-            result.requestConf(true);
-            result.requestInteg(true);
-            result.requestCredDeleg(false);
-            return result;
-        });
-
-        try {
-            byte[] token = context.initSecContext(new byte[0], 0, 0);
-            if (token == null) {
-                throw new AuthenticationException(format("No token generated from GSSContext for request %s", requestUri));
+        return new Result()
+        {
+            @Override
+            public URI getURI()
+            {
+                return normalizedUri;
             }
 
-            return new SpnegoResult(
-                    UriUtil.normalizedUri(requestUri), headerInfo.getHeader(),
-                    format("%s %s", NEGOTIATE, Base64.getEncoder().encodeToString(token)));
-        }
-        catch (GSSException e) {
-            throw new AuthenticationException(format("Failed to establish GSSContext for request %s", requestUri), e);
-        }
-        finally {
-            try {
-                context.dispose();
+            @Override
+            public void apply(Request request)
+            {
+                String servicePrincipal = makeServicePrincipal(remoteServiceName, normalizedUri.getHost());
+
+                GSSContext context = doAs(loginContext.getSubject(), () -> {
+                    GSSContext result = GSS_MANAGER.createContext(
+                            GSS_MANAGER.createName(servicePrincipal, null),
+                            SPNEGO_OID,
+                            clientCredential,
+                            INDEFINITE_LIFETIME);
+
+                    result.requestMutualAuth(true);
+                    result.requestConf(true);
+                    result.requestInteg(true);
+                    result.requestCredDeleg(false);
+                    return result;
+                });
+
+                try {
+                    byte[] token = context.initSecContext(new byte[0], 0, 0);
+                    if (token != null) {
+                        request.header(headerInfo.getHeader(), format("%s %s", NEGOTIATE, Base64.getEncoder().encodeToString(token)));
+                    }
+                    else {
+                        LOG.debug("No token generated from GSS context for %s", request.getURI());
+                    }
+                }
+                catch (GSSException e) {
+                    LOG.debug(e, "Failed to establish GSSContext for request %s", request.getURI());
+                }
+                finally {
+                    try {
+                        context.dispose();
+                    }
+                    catch (GSSException e) {
+                        // ignore
+                    }
+                }
             }
-            catch (GSSException e) {
-                // ignore
-            }
-        }
+        };
     }
 
     @Override
@@ -198,33 +211,6 @@ public class SpnegoAuthentication
         }
         catch (UnknownHostException e) {
             throw Throwables.propagate(e);
-        }
-    }
-
-    private static class SpnegoResult
-            implements Result
-    {
-        private final URI uri;
-        private final HttpHeader header;
-        private final String value;
-
-        public SpnegoResult(URI uri, HttpHeader header, String value)
-        {
-            this.header = requireNonNull(header, "header is null");
-            this.uri = requireNonNull(uri, "uri is null");
-            this.value = requireNonNull(value, "value is null");
-        }
-
-        @Override
-        public URI getURI()
-        {
-            return uri;
-        }
-
-        @Override
-        public void apply(Request request)
-        {
-            request.header(header, value);
         }
     }
 
