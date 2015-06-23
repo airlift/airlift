@@ -13,7 +13,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airbase</artifactId>
-        <version>40</version>
+        <version>41</version>
     </parent>
 
     <inceptionYear>2010</inceptionYear>
