@@ -16,13 +16,28 @@
 package io.airlift.jmx;
 
 import io.airlift.configuration.Config;
+import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.DefunctConfig;
 
 @DefunctConfig("jmx.rmiserver.hostname")
 public class JmxConfig
 {
+    private boolean rmiEnabled = true;
     private Integer rmiRegistryPort;
     private Integer rmiServerPort;
+
+    public boolean isRmiEnabled()
+    {
+        return rmiEnabled;
+    }
+
+    @Config("jmx.rmi.enabled")
+    @ConfigDescription("Enable JMX RMI connector for remote management")
+    public JmxConfig setRmiEnabled(boolean rmiEnabled)
+    {
+        this.rmiEnabled = rmiEnabled;
+        return this;
+    }
 
     public Integer getRmiRegistryPort()
     {

@@ -15,41 +15,43 @@
  */
 package io.airlift.jmx;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Stage;
-import io.airlift.configuration.ConfigurationFactory;
-import io.airlift.configuration.ConfigurationModule;
-import io.airlift.node.NodeModule;
+import io.airlift.bootstrap.Bootstrap;
+import io.airlift.node.testing.TestingNodeModule;
 import org.testng.annotations.Test;
 import org.weakref.jmx.guice.MBeanModule;
 
-import java.util.Map;
+import javax.management.MBeanServerConnection;
+import javax.management.remote.JMXConnector;
+import javax.management.remote.JMXConnectorFactory;
+import javax.management.remote.JMXServiceURL;
+
+import static io.airlift.testing.Assertions.assertGreaterThan;
 
 public class TestJmxModule
 {
     @Test
-    public void testCanConstruct()
+    public void testModule()
+            throws Exception
     {
-        Map<String, String> properties = ImmutableMap.of("node.environment", "test");
-        ConfigurationFactory configFactory = new ConfigurationFactory(properties);
-        Injector injector = Guice.createInjector(new JmxModule(),
-                new NodeModule(),
-                new ConfigurationModule(configFactory));
-        injector.getInstance(JmxAgent.class);
-    }
+        Bootstrap app = new Bootstrap(
+                new TestingNodeModule(),
+                new JmxModule(),
+                new MBeanModule());
 
-    @Test
-    public void testCanExportBeans()
-    {
-        Map<String, String> properties = ImmutableMap.of("node.environment", "test");
-        ConfigurationFactory configFactory = new ConfigurationFactory(properties);
-        Injector injector = Guice.createInjector(Stage.PRODUCTION, new JmxModule(),
-                                                 new NodeModule(),
-                                                 new MBeanModule(),
-                                                 new ConfigurationModule(configFactory));
-        injector.getInstance(JmxAgent.class);
-    }
+        Injector injector = app
+                .strictConfig()
+                .doNotInitializeLogging()
+                .initialize();
 
+        JmxAgent agent = injector.getInstance(JmxAgent.class);
+
+        JMXServiceURL url = agent.getUrl();
+
+        JMXConnector connector = JMXConnectorFactory.connect(url);
+        connector.connect();
+
+        MBeanServerConnection connection = connector.getMBeanServerConnection();
+        assertGreaterThan(connection.getMBeanCount(), 0);
+    }
 }

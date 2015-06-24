@@ -1,6 +1,7 @@
 * 0.111
 
 - Support JSON serialization of Java 7 types
+- Remove detection of already running JMX agent (broken on Java 8)
 
 * 0.110
 

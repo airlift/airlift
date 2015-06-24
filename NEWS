@@ -88,7 +88,7 @@ Airlift 0.100
 
 The previous implementation of sparse HyperLogLog had an issue where errors
 introduced by a loss of information would compound when many instances were
-merged together. We've replaced it with a new implementation that doesn't 
+merged together. We've replaced it with a new implementation that doesn't
 suffer from this problem, but the change in the serialization format breaks
 backward compatibility.
 
@@ -310,8 +310,8 @@ Airlift 0.80
 
 * Launcher
 
-This release fixes an important issue in the new Python-based launcher introduced in 0.79 
-that prevents servers from starting properly. If you're relying on packaging/launcher, you 
+This release fixes an important issue in the new Python-based launcher introduced in 0.79
+that prevents servers from starting properly. If you're relying on packaging/launcher, you
 should upgrade to this version.
 
 
@@ -320,7 +320,7 @@ Airlift 0.79
 * JMX agent
 
 We've replaced the custom JMX agent in airlift by the one built into the JVM.
-This change makes it possible to use the VisualGC plugin for VisualVM when jstatd 
+This change makes it possible to use the VisualGC plugin for VisualVM when jstatd
 is also running in the same machine as the airlift-based process.
 
 As a result of this change, we've also removed the 'jmx.rmiserver.hostname' configuration
