@@ -1,6 +1,9 @@
 * 0.111
 
 - Support JSON serialization of Java 7 types
+- Add SPNEGO support to HTTP client
+- Upgrade Jetty to 9.2.11.v20150529 to fix an issue that causes HTTP requests to hang
+- Allow disabling console and file logging simultaneously
 
 * 0.110
 

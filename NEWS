@@ -1,3 +1,21 @@
+Airlift 0.111
+
+* SPNEGO
+
+This version adds experimental support for SPNEGO auth for Http client.
+The following options can be used to set up global Kerberos configuration:
+
+    http.authentication.krb5.config
+    http.authentication.krb5.credential-cache
+    http.authentication.krb5.keytab
+
+SPNEGO needs to be configured on a per-client basis with the following options:
+
+    http-client.authentication.enabled
+    http-client.authentication.krb5.remote-service-name
+    http-client.authentication.krb5.principal
+
+
 Airlift 0.110
 
 * Future Utilities
