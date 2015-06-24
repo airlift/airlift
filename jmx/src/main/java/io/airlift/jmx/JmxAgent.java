@@ -30,6 +30,7 @@ import javax.management.remote.JMXServiceURL;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.MalformedURLException;
+import java.net.ServerSocket;
 import java.rmi.server.RemoteObject;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -55,7 +56,7 @@ public class JmxAgent
             // otherwise, start it manually
             int registryPort;
             if (config.getRmiRegistryPort() == null) {
-                registryPort = NetUtils.findUnusedPort();
+                registryPort = findUnusedPort();
             }
             else {
                 registryPort = config.getRmiRegistryPort();
@@ -156,6 +157,14 @@ public class JmxAgent
         }
         catch (ClassCastException e) {
             throw new IllegalArgumentException(format("Field %s in class %s is not of type %s, actual: %s", name, clazz.getName(), returnType.getName(), field.getType().getName()), e);
+        }
+    }
+
+    private static int findUnusedPort()
+            throws IOException
+    {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
         }
     }
 }
