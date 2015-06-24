@@ -25,9 +25,11 @@ public interface HttpServiceBalancerStats
 {
     SparseCounterStat failure(@Key("targetUri") URI uri, @Key("failure") String failureCategory);
 
+    SparseCounterStat failure(@Key("targetUri") URI uri, @Key("failure") String failureCategory, @Key("handlerException") String handlerCategory);
+
     SparseTimeStat requestTime(@Key("targetUri") URI uri, @Key("status") Status status);
 
-    public enum Status {
+    enum Status {
         SUCCESS, FAILURE;
 
         @Override

@@ -74,7 +74,7 @@ public class HttpServiceBalancerImpl
         private final long startTick;
         private boolean inProgress = true;
 
-        public HttpServiceAttemptImpl(Set<URI> attempted)
+        HttpServiceAttemptImpl(Set<URI> attempted)
         {
             ArrayList<URI> httpUris = new ArrayList<>(HttpServiceBalancerImpl.this.httpUris.get());
             httpUris.removeAll(attempted);
@@ -129,6 +129,14 @@ public class HttpServiceBalancerImpl
             decrementConcurrency();
             httpServiceBalancerStats.requestTime(uri, Status.FAILURE).add(ticker.read() - startTick, TimeUnit.NANOSECONDS);
             httpServiceBalancerStats.failure(uri, failureCategory).add(1);
+        }
+
+        @Override
+        public void markBad(String failureCategory, String handlerCategory)
+        {
+            decrementConcurrency();
+            httpServiceBalancerStats.requestTime(uri, Status.FAILURE).add(ticker.read() - startTick, TimeUnit.NANOSECONDS);
+            httpServiceBalancerStats.failure(uri, failureCategory, handlerCategory).add(1);
         }
 
         private void decrementConcurrency()

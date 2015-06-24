@@ -25,7 +25,6 @@ import com.proofpoint.http.client.ResponseHandler;
 import com.proofpoint.log.Logger;
 
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -48,21 +47,16 @@ final class RetryingResponseHandler<T, E extends Exception>
     }
 
     @Override
-    public T handleException(final Request request, final Exception exception)
+    public T handleException(Request request, final Exception exception)
             throws RetryException
     {
         final AtomicBoolean isLogged = new AtomicBoolean(false);
         try {
-            exceptionCache.get(exception.getClass(), new Callable<Boolean>()
-            {
-                @Override
-                public Boolean call()
-                {
-                    log.warn(exception, "Exception querying %s",
-                            request.getUri().resolve("/"));
-                    isLogged.set(true);
-                    return true;
-                }
+            exceptionCache.get(exception.getClass(), () -> {
+                log.warn(exception, "Exception querying %s",
+                        request.getUri().resolve("/"));
+                isLogged.set(true);
+                return true;
             });
         }
         catch (ExecutionException ignored) {

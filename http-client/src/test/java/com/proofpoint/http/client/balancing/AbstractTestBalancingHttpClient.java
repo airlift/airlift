@@ -211,7 +211,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
         httpClient.assertDone();
 
         verify(serviceAttempt1, atLeastOnce()).getUri();
-        verify(serviceAttempt1).markBad("204 status code");
+        verify(serviceAttempt1).markBad("204 status code", "Exception");
         verify(responseHandler).handle(any(Request.class), same(response));
         verifyNoMoreInteractions(serviceAttempt1, responseHandler);
     }
@@ -464,7 +464,7 @@ public abstract class AbstractTestBalancingHttpClient<T extends HttpClient>
         verify(serviceAttempt2).markBad("503 status code");
         verify(serviceAttempt2).next();
         verify(serviceAttempt3, atLeastOnce()).getUri();
-        verify(serviceAttempt3).markBad("ConnectException");
+        verify(serviceAttempt3).markBad("ConnectException", "Exception");
         verify(responseHandler).handleException(any(Request.class), same(connectException));
         verifyNoMoreInteractions(serviceAttempt1, serviceAttempt2, serviceAttempt3, responseHandler);
     }

@@ -26,4 +26,9 @@ class InnerHandlerException extends RetryException
     {
         super(cause, failureException);
     }
+
+    public String getHandlerCategory()
+    {
+        return getCause().getClass().getSimpleName();
+    }
 }

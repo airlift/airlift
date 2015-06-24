@@ -98,7 +98,7 @@ public class BalancingHttpClient
                 return t;
             }
             catch (InnerHandlerException e) {
-                attempt.markBad(e.getFailureCategory());
+                attempt.markBad(e.getFailureCategory(), e.getHandlerCategory());
                 //noinspection unchecked
                 throw (E) e.getCause();
             }
@@ -208,7 +208,7 @@ public class BalancingHttpClient
         @GuardedBy("subFutureLock")
         private HttpResponseFuture<T> subFuture = null;
 
-        public RetryFuture(Request request, ResponseHandler<T, E> responseHandler)
+        RetryFuture(Request request, ResponseHandler<T, E> responseHandler)
         {
             this.request = request;
             this.responseHandler = responseHandler;
@@ -237,7 +237,8 @@ public class BalancingHttpClient
                 public void onFailure(Throwable t)
                 {
                     if (t instanceof InnerHandlerException) {
-                        attempt.markBad(((InnerHandlerException) t).getFailureCategory());
+                        InnerHandlerException innerHandlerException = (InnerHandlerException) t;
+                        attempt.markBad(innerHandlerException.getFailureCategory(), innerHandlerException.getHandlerCategory());
                         setException(t.getCause());
                     }
                     else if (t instanceof FailureStatusException) {
@@ -303,7 +304,7 @@ public class BalancingHttpClient
 
         private final T result;
 
-        public ImmediateHttpResponseFuture(T result)
+        ImmediateHttpResponseFuture(T result)
         {
             this.result = result;
             set(result);
@@ -323,7 +324,7 @@ public class BalancingHttpClient
 
         private final E exception;
 
-        public ImmediateFailedHttpResponseFuture(E exception)
+        ImmediateFailedHttpResponseFuture(E exception)
         {
             this.exception = exception;
             setException(exception);
