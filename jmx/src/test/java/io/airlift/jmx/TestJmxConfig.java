@@ -15,6 +15,7 @@ public class TestJmxConfig
     public void testDefaults()
     {
         assertRecordedDefaults(recordDefaults(JmxConfig.class)
+                .setRmiEnabled(true)
                 .setRmiRegistryPort(null)
                 .setRmiServerPort(null));
     }
@@ -23,11 +24,13 @@ public class TestJmxConfig
     public void testExplicitPropertyMappings()
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("jmx.rmi.enabled", "false")
                 .put("jmx.rmiregistry.port", "1")
                 .put("jmx.rmiserver.port", "2")
                 .build();
 
         JmxConfig expected = new JmxConfig()
+                .setRmiEnabled(false)
                 .setRmiRegistryPort(1)
                 .setRmiServerPort(2);
 

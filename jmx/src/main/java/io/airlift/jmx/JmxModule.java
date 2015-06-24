@@ -17,9 +17,9 @@ package io.airlift.jmx;
 
 import com.google.inject.Binder;
 import com.google.inject.Inject;
-import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
+import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.ServiceAnnouncement;
 
 import javax.management.MBeanServer;
@@ -32,21 +32,23 @@ import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncemen
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class JmxModule
-        implements Module
+        extends AbstractConfigurationAwareModule
 {
     @Override
-    public void configure(Binder binder)
+    protected void setup(Binder binder)
     {
         binder.disableCircularProxies();
 
         binder.bind(MBeanServer.class).toInstance(ManagementFactory.getPlatformMBeanServer());
-        binder.bind(JmxAgent.class).in(Scopes.SINGLETON);
-        configBinder(binder).bindConfig(JmxConfig.class);
 
         newExporter(binder).export(StackTraceMBean.class).withGeneratedName();
         binder.bind(StackTraceMBean.class).in(Scopes.SINGLETON);
 
-        discoveryBinder(binder).bindServiceAnnouncement(JmxAnnouncementProvider.class);
+        if (buildConfigObject(JmxConfig.class).isRmiEnabled()) {
+            binder.bind(JmxAgent.class).in(Scopes.SINGLETON);
+            configBinder(binder).bindConfig(JmxConfig.class);
+            discoveryBinder(binder).bindServiceAnnouncement(JmxAnnouncementProvider.class);
+        }
     }
 
     static class JmxAnnouncementProvider
