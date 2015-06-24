@@ -134,6 +134,18 @@ public class SpnegoAuthentication
     public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes attributes)
     {
         URI requestUri = request.getURI();
+        return new SpnegoResult(UriUtil.normalizedUri(requestUri), headerInfo.getHeader(), this);
+    }
+
+    @Override
+    public boolean matches(String type, URI uri, String realm)
+    {
+        // The class matches all requests for Negotiate scheme. Realm is not used for now
+        return NEGOTIATE.equalsIgnoreCase(type);
+    }
+
+    private String getToken(URI requestUri)
+    {
         String servicePrincipal = makeServicePrincipal(remoteServiceName, requestUri.getHost());
 
         GSSContext context = doAs(loginContext.getSubject(), () -> {
@@ -155,10 +167,7 @@ public class SpnegoAuthentication
             if (token == null) {
                 throw new AuthenticationException(format("No token generated from GSSContext for request %s", requestUri));
             }
-
-            return new SpnegoResult(
-                    UriUtil.normalizedUri(requestUri), headerInfo.getHeader(),
-                    format("%s %s", NEGOTIATE, Base64.getEncoder().encodeToString(token)));
+            return format("%s %s", NEGOTIATE, Base64.getEncoder().encodeToString(token));
         }
         catch (GSSException e) {
             throw new AuthenticationException(format("Failed to establish GSSContext for request %s", requestUri), e);
@@ -171,13 +180,6 @@ public class SpnegoAuthentication
                 // ignore
             }
         }
-    }
-
-    @Override
-    public boolean matches(String type, URI uri, String realm)
-    {
-        // The class matches all requests for Negotiate scheme. Realm is not used for now
-        return NEGOTIATE.equalsIgnoreCase(type);
     }
 
     private static String makeServicePrincipal(String serviceName, String hostName)
@@ -206,13 +208,13 @@ public class SpnegoAuthentication
     {
         private final URI uri;
         private final HttpHeader header;
-        private final String value;
+        private final SpnegoAuthentication spnegoAuthentication;
 
-        public SpnegoResult(URI uri, HttpHeader header, String value)
+        public SpnegoResult(URI uri, HttpHeader header, SpnegoAuthentication spnegoAuthentication)
         {
             this.header = requireNonNull(header, "header is null");
             this.uri = requireNonNull(uri, "uri is null");
-            this.value = requireNonNull(value, "value is null");
+            this.spnegoAuthentication = requireNonNull(spnegoAuthentication, "authentication is null");
         }
 
         @Override
@@ -224,7 +226,9 @@ public class SpnegoAuthentication
         @Override
         public void apply(Request request)
         {
-            request.header(header, value);
+            // This pre-authentication implementation is hacky and will be revisited later
+            String token = spnegoAuthentication.getToken(request.getURI());
+            request.header(header, token);
         }
     }
 
