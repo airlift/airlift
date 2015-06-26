@@ -80,12 +80,12 @@ public class SpnegoAuthentication
                     ImmutableMap.Builder<String, String> optionsBuilder = ImmutableMap.builder();
                     optionsBuilder.put("refreshKrb5Config", "true");
                     optionsBuilder.put("doNotPrompt", "true");
+                    optionsBuilder.put("useKeyTab", "true");
                     if (LOG.isDebugEnabled()) {
                         optionsBuilder.put("debug", "true");
                     }
 
                     if (keytab != null) {
-                        optionsBuilder.put("useKeytab", "true");
                         optionsBuilder.put("keytab", keytab.getAbsolutePath());
                     }
 
