@@ -1,3 +1,7 @@
+* 0.112
+
+- Always use keytab for kerberos auth
+
 * 0.111
 
 - Support JSON serialization of Java 7 types
