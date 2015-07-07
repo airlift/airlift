@@ -57,12 +57,12 @@ public class HttpRequestEvent
         long timeToLastByte = max(currentTimeInMillis - request.getTimeStamp(), 0);
 
         ImmutableList.Builder<String> builder = ImmutableList.builder();
-        if (request.getRemoteAddr() != null) {
-            builder.add(request.getRemoteAddr());
-        }
         for (Enumeration<String> e = request.getHeaders("X-FORWARDED-FOR"); e != null && e.hasMoreElements(); ) {
             String forwardedFor = e.nextElement();
             builder.addAll(Splitter.on(',').trimResults().omitEmptyStrings().split(forwardedFor));
+        }
+        if (request.getRemoteAddr() != null) {
+            builder.add(request.getRemoteAddr());
         }
         String clientAddress = null;
         ImmutableList<String> clientAddresses = builder.build();
@@ -72,8 +72,10 @@ public class HttpRequestEvent
                     clientAddress = address;
                     break;
                 }
+                clientAddress = address;
             }
             catch (IllegalArgumentException ignored) {
+                break;
             }
         }
         if (clientAddress == null) {
