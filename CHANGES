@@ -1,3 +1,18 @@
+Platform 1.23
+
+* BalancingHttpClient
+
+  When a ResponseHandler throws an exception, the ServiceClient.Failure.Count
+  metric incremented is given an additional "handlerException" tag with a
+  value of that exception's class.
+
+* [Bug] Fixed the request log's logic for when to use addresses in the
+  X-Forwarded-For: header.
+
+  - Ignore X-Forwarded-For: if the connection is from an external IP address.
+  - Use the closest (last-listed) external IP address, if any.
+  - Use the furthest (first-listed) IP address if all addresses are internal.
+
 Platform 1.22
 
 * BalancingHttpClient
