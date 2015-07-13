@@ -150,7 +150,7 @@ public class SpnegoAuthentication
 
                 GSSContext context = doAs(loginContext.getSubject(), () -> {
                     GSSContext result = GSS_MANAGER.createContext(
-                            GSS_MANAGER.createName(servicePrincipal, null),
+                            GSS_MANAGER.createName(servicePrincipal, GSSName.NT_HOSTBASED_SERVICE),
                             SPNEGO_OID,
                             clientCredential,
                             INDEFINITE_LIFETIME);
@@ -207,7 +207,7 @@ public class SpnegoAuthentication
 
             checkState(!fullHostName.equalsIgnoreCase("localhost"), "Fully qualified name of localhost should not resolve to 'localhost'. System configuration error?");
 
-            return format("%s/%s", serviceName, fullHostName.toLowerCase(Locale.US));
+            return format("%s@%s", serviceName, fullHostName.toLowerCase(Locale.US));
         }
         catch (UnknownHostException e) {
             throw Throwables.propagate(e);
