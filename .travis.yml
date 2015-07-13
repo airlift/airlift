@@ -1,11 +1,14 @@
 language: java
 
+sudo: false
+
 jdk:
   - oraclejdk8
 
-before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -y rpm
+addons:
+  apt:
+    packages:
+      - rpm
 
 script:
   - mvn test -B javadoc:javadoc
