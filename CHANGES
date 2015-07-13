@@ -13,6 +13,10 @@ Platform 1.23
   - Use the closest (last-listed) external IP address, if any.
   - Use the furthest (first-listed) IP address if all addresses are internal.
 
+* Library Upgrades
+
+  - Jetty to 9.2.12
+
 Platform 1.22
 
 * BalancingHttpClient
