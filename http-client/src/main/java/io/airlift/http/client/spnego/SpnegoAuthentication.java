@@ -147,7 +147,6 @@ public class SpnegoAuthentication
             public void apply(Request request)
             {
                 String servicePrincipal = makeServicePrincipal(remoteServiceName, normalizedUri.getHost());
-
                 GSSContext context = doAs(loginContext.getSubject(), () -> {
                     GSSContext result = GSS_MANAGER.createContext(
                             GSS_MANAGER.createName(servicePrincipal, GSSName.NT_HOSTBASED_SERVICE),
