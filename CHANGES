@@ -1,3 +1,7 @@
+* 0.123
+
+- Upgrade Jetty to 9.3.7.RC0
+
 * 0.122
 
 - Disable Jackson property mutator inference

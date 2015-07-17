@@ -25,6 +25,7 @@ import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.component.LifeCycle;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +33,7 @@ import java.io.IOException;
 import static io.airlift.http.server.HttpRequestEvent.createHttpRequestEvent;
 
 class DelimitedRequestLog
-        implements RequestLog
+        implements RequestLog, LifeCycle
 {
     private static final Logger log = Logger.get(DelimitedRequestLog.class);
     private static final String TEMP_FILE_EXTENSION = ".tmp";

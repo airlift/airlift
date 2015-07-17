@@ -106,7 +106,7 @@ public class TestDelimitedRequestLog
         when(request.getProtocol()).thenReturn("unknown");
         when(request.getHeader("X-FORWARDED-PROTO")).thenReturn(protocol);
         when(request.getAttribute(TimingFilter.FIRST_BYTE_TIME)).thenReturn(timestamp + timeToFirstByte);
-        when(request.getUri()).thenReturn(uri);
+        when(request.getRequestURI()).thenReturn(uri.toString());
         when(request.getUserPrincipal()).thenReturn(principal);
         when(request.getMethod()).thenReturn(method);
         when(request.getContentRead()).thenReturn(requestSize);

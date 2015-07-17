@@ -84,8 +84,8 @@ public class HttpRequestEvent
         }
 
         String requestUri = null;
-        if (request.getUri() != null) {
-            requestUri = request.getUri().toString();
+        if (request.getRequestURI() != null) {
+            requestUri = request.getRequestURI();
         }
 
         String method = request.getMethod();

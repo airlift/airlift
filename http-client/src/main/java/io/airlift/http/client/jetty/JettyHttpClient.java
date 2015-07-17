@@ -24,7 +24,7 @@ import io.airlift.http.client.spnego.SpnegoAuthenticationStore;
 import io.airlift.log.Logger;
 import io.airlift.stats.Distribution;
 import io.airlift.units.Duration;
-import org.eclipse.jetty.client.ConnectionPool;
+import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpExchange;
@@ -661,7 +661,7 @@ public class JettyHttpClient
         @Override
         public String getHeader(String name)
         {
-            return response.getHeaders().getStringField(name);
+            return response.getHeaders().get(name);
         }
 
         @Override
@@ -1270,7 +1270,7 @@ public class JettyHttpClient
     {
         interface Processor
         {
-            void process(Distribution distribution, ConnectionPool pool);
+            void process(Distribution distribution, DuplexConnectionPool pool);
         }
 
         public ConnectionPoolDistribution(HttpClient httpClient, Processor processor)
