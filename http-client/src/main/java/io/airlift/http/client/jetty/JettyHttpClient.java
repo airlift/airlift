@@ -650,7 +650,7 @@ public class JettyHttpClient
         @Override
         public String getHeader(String name)
         {
-            return response.getHeaders().getStringField(name);
+            return response.getHeaders().get(name);
         }
 
         @Override
