@@ -1,3 +1,7 @@
+* 0.113
+
+- Replace Guava Optional in TestingNodeModule and JettyHttpClient
+
 * 0.112
 
 - Always use keytab for kerberos auth

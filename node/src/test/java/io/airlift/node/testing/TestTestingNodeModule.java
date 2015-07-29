@@ -1,10 +1,11 @@
 package io.airlift.node.testing;
 
-import com.google.common.base.Optional;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.airlift.node.NodeInfo;
 import org.testng.annotations.Test;
+
+import java.util.Optional;
 
 import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
 import static io.airlift.testing.Assertions.assertNotEquals;
@@ -67,7 +68,7 @@ public class TestTestingNodeModule
     @Test
     public void testTestingNodeAbsentEnvironment()
     {
-        Injector injector = Guice.createInjector(new TestingNodeModule(Optional.<String>absent()));
+        Injector injector = Guice.createInjector(new TestingNodeModule(Optional.empty()));
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
 
         assertNotNull(nodeInfo);
