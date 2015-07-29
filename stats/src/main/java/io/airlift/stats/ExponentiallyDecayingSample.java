@@ -45,7 +45,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static java.lang.Math.*;
+import static java.lang.Math.exp;
+import static java.lang.Math.floor;
+import static java.lang.Math.min;
+import static java.lang.Math.random;
 
 /**
  * An exponentially-decaying random sample of {@code long}s. Uses Cormode et

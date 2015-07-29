@@ -16,11 +16,9 @@
 package io.airlift.discovery.client;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeoutException;
 
 public class CachingServiceSelectorFactory implements ServiceSelectorFactory
 {

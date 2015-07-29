@@ -19,6 +19,7 @@ import io.airlift.units.Duration;
 
 import javax.sql.ConnectionPoolDataSource;
 import javax.sql.PooledConnection;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Deque;

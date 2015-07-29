@@ -20,6 +20,7 @@ import io.airlift.discovery.client.ServiceDescriptor;
 import io.airlift.discovery.client.ServiceSelector;
 
 import javax.sql.PooledConnection;
+
 import java.sql.SQLException;
 import java.util.UUID;
 

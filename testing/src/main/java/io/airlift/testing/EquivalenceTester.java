@@ -29,8 +29,22 @@ import java.util.Collection;
 import java.util.List;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_CLASS_CAST_EXCEPTION;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL_TO_NULL;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_NOT_EQUAL;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_NOT_REFLEXIVE;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_NULL_EXCEPTION;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_NULL;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_UNRELATED_CLASS;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_UNRELATED_CLASS_CLASS_CAST_EXCEPTION;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.HASH_CODE_NOT_SAME;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_EQUAL;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_GREATER_THAN;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_LESS_THAN;
+import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_REFLEXIVE;
 import static java.lang.String.format;
-import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.*;
 
 /**
  * Equivalence tester streamlining tests of {@link #equals(Object)} and {@link #hashCode} methods. Using this tester makes it

@@ -18,6 +18,7 @@ package io.airlift.dbpool;
 import io.airlift.units.Duration;
 
 import javax.sql.PooledConnection;
+
 import java.sql.SQLException;
 
 public class MockManagedDataSource extends ManagedDataSource

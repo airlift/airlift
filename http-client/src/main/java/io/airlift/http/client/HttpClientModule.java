@@ -28,8 +28,8 @@ import io.airlift.configuration.ConfigDefaults;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.client.jetty.JettyIoPool;
 import io.airlift.http.client.jetty.JettyIoPoolConfig;
-import io.airlift.log.Logger;
 import io.airlift.http.client.spnego.KerberosConfig;
+import io.airlift.log.Logger;
 
 import javax.annotation.PreDestroy;
 
@@ -192,7 +192,7 @@ public class HttpClientModule
         @PreDestroy
         public void destroy()
         {
-            // clients must be destroyed before the pools or 
+            // clients must be destroyed before the pools or
             // you will create a several second busy wait loop
             for (JettyHttpClient client : clients) {
                 client.close();

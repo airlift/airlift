@@ -16,6 +16,7 @@
 package io.airlift.http.client;
 
 import javax.inject.Qualifier;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 

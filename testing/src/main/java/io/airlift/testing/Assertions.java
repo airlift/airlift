@@ -19,7 +19,6 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMultiset;
 import org.testng.Assert;
 
-import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
 public final class Assertions

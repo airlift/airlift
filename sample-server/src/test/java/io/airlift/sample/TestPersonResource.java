@@ -22,6 +22,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.core.Response;
+
 import java.net.URI;
 
 import static io.airlift.sample.PersonEvent.personAdded;

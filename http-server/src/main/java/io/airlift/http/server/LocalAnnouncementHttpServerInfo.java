@@ -18,6 +18,7 @@ package io.airlift.http.server;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 
 import javax.inject.Inject;
+
 import java.net.URI;
 
 public class LocalAnnouncementHttpServerInfo implements AnnouncementHttpServerInfo

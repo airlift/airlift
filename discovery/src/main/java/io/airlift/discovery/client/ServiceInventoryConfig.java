@@ -20,6 +20,7 @@ import io.airlift.configuration.ConfigDescription;
 import io.airlift.units.Duration;
 
 import javax.validation.constraints.NotNull;
+
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 

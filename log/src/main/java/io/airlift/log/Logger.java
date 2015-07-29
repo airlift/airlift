@@ -16,6 +16,7 @@
 package io.airlift.log;
 
 import javax.inject.Inject;
+
 import java.util.IllegalFormatException;
 
 import static java.lang.String.format;

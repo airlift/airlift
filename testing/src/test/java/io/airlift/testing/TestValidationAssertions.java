@@ -19,6 +19,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import javax.validation.constraints.NotNull;
+
 import java.lang.annotation.Annotation;
 
 import static io.airlift.testing.Assertions.assertContains;

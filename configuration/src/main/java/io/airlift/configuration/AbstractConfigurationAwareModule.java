@@ -19,7 +19,6 @@ import com.google.inject.Binder;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.configuration.ConfigBinder.configBinder;
-import static io.airlift.configuration.ConfigurationModule.bindConfig;
 
 @Beta
 public abstract class AbstractConfigurationAwareModule
