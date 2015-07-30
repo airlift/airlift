@@ -25,6 +25,7 @@ import com.google.inject.multibindings.Multibinder;
 import java.util.List;
 
 import static io.airlift.event.client.EventTypeMetadata.getEventTypeMetadata;
+import static java.util.Objects.requireNonNull;
 
 @Beta
 public class EventBinder
@@ -38,7 +39,7 @@ public class EventBinder
 
     private EventBinder(Binder binder)
     {
-        this.binder = binder;
+        this.binder = requireNonNull(binder, "binder is null").skipSources(getClass());
     }
 
     public void bindEventClient(Class<?>... types)

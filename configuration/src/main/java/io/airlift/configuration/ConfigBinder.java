@@ -24,7 +24,7 @@ public class ConfigBinder
 
     private ConfigBinder(Binder binder)
     {
-        this.binder = requireNonNull(binder, "binder is null");
+        this.binder = requireNonNull(binder, "binder is null").skipSources(getClass());
     }
 
     public <T> void bindConfig(Class<T> configClass)

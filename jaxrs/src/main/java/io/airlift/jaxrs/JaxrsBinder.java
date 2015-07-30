@@ -7,6 +7,7 @@ import com.google.inject.multibindings.Multibinder;
 
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static java.util.Objects.requireNonNull;
 
 public class JaxrsBinder
 {
@@ -16,7 +17,7 @@ public class JaxrsBinder
 
     private JaxrsBinder(Binder binder)
     {
-        this.binder = binder;
+        this.binder = requireNonNull(binder, "binder is null").skipSources(getClass());
         this.resourceBinder = newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
         this.keyBinder = newSetBinder(binder, JaxrsBinding.class, JaxrsResource.class).permitDuplicates();
     }

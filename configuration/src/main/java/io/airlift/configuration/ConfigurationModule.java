@@ -40,34 +40,13 @@ public class ConfigurationModule
         binder.bind(ConfigurationFactory.class).toInstance(configurationFactory);
     }
 
-    private static StackTraceElement getCaller()
-    {
-        // find the caller of this class to report source
-        StackTraceElement[] stack = Thread.currentThread().getStackTrace();
-        boolean foundThisClass = false;
-        for (StackTraceElement element : stack) {
-            if (!foundThisClass) {
-                if (element.getClassName().equals(ConfigurationModule.class.getName())) {
-                    foundThisClass = true;
-                }
-            }
-            else {
-                if (!element.getClassName().equals(ConfigurationModule.class.getName())) {
-                    return element;
-                }
-
-            }
-        }
-        return null;
-    }
-
     /**
      * @deprecated As of Airlift 0.109, replaced by {@link ConfigBinder#configBinder(Binder)}.
      */
     @Deprecated
     public static AnnotatedBindingBuilder bindConfig(Binder binder)
     {
-        return new AnnotatedBindingBuilder(binder.withSource(getCaller()));
+        return new AnnotatedBindingBuilder(binder.skipSources(ConfigurationModule.class));
     }
 
     public static class AnnotatedBindingBuilder

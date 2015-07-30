@@ -43,7 +43,7 @@ public class DiscoveryBinder
     protected DiscoveryBinder(Binder binder)
     {
         Preconditions.checkNotNull(binder, "binder is null");
-        this.binder = binder;
+        this.binder = binder.skipSources(getClass());
         this.serviceSelectorBinder = Multibinder.newSetBinder(binder, ServiceSelector.class);
         this.serviceAnnouncementBinder = Multibinder.newSetBinder(binder, ServiceAnnouncement.class);
     }

@@ -26,6 +26,8 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.Objects.requireNonNull;
+
 public class JsonCodecBinder
 {
     private final Binder binder;
@@ -37,7 +39,7 @@ public class JsonCodecBinder
 
     private JsonCodecBinder(Binder binder)
     {
-        this.binder = binder;
+        this.binder = requireNonNull(binder, "binder is null").skipSources(getClass());
     }
 
     public void bindJsonCodec(Class<?> type)

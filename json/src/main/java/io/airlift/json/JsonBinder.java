@@ -26,6 +26,8 @@ import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 
+import static java.util.Objects.requireNonNull;
+
 public class JsonBinder
 {
     private final MapBinder<Class<?>, JsonSerializer<?>> keySerializerMapBinder;
@@ -41,6 +43,7 @@ public class JsonBinder
 
     private JsonBinder(Binder binder)
     {
+        binder = requireNonNull(binder, "binder is null").skipSources(getClass());
         keySerializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() { }, new TypeLiteral<JsonSerializer<?>>() {}, JsonKeySerde.class);
         keyDeserializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() { }, new TypeLiteral<KeyDeserializer>() {}, JsonKeySerde.class);
         serializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() { }, new TypeLiteral<JsonSerializer<?>>() {});

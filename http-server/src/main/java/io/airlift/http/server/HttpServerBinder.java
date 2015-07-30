@@ -16,7 +16,7 @@ public class HttpServerBinder
 
     private HttpServerBinder(Binder binder)
     {
-        this.binder = checkNotNull(binder, "binder is null");
+        this.binder = checkNotNull(binder, "binder is null").skipSources(getClass());
     }
 
     public static HttpServerBinder httpServerBinder(Binder binder)
