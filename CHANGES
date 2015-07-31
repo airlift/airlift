@@ -1,5 +1,6 @@
 * 0.113
 
+- Change kerberos service principal format to correct serviceName@host
 - Replace Guava Optional in TestingNodeModule and JettyHttpClient
 
 * 0.112
