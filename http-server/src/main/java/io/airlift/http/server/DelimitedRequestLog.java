@@ -27,7 +27,6 @@ import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 
 import static io.airlift.http.server.HttpRequestEvent.createHttpRequestEvent;
@@ -93,6 +92,7 @@ class DelimitedRequestLog
         fileAppender.start();
     }
 
+    @Override
     public void log(Request request, Response response)
     {
         long currentTime = currentTimeMillisProvider.getCurrentTimeMillis();
@@ -103,51 +103,61 @@ class DelimitedRequestLog
         eventClient.post(event);
     }
 
+    @Override
     public void start()
             throws Exception
     {
     }
 
+    @Override
     public void stop()
             throws Exception
     {
         fileAppender.stop();
     }
 
+    @Override
     public boolean isRunning()
     {
         return true;
     }
 
+    @Override
     public boolean isStarted()
     {
         return true;
     }
 
+    @Override
     public boolean isStarting()
     {
         return false;
     }
 
+    @Override
     public boolean isStopping()
     {
         return false;
     }
 
+    @Override
     public boolean isStopped()
     {
         return false;
     }
 
+    @Override
     public boolean isFailed()
     {
         return false;
     }
 
+    @Override
     public void addLifeCycleListener(Listener listener)
     {
     }
 
+    @Override
     public void removeLifeCycleListener(Listener listener)
     {
     }
@@ -159,13 +169,8 @@ class DelimitedRequestLog
         // This method recovers them so that they aren't orphaned
 
         File logPathFile = new File(logPath).getParentFile();
-        File[] tempFiles = logPathFile.listFiles(new FilenameFilter()
-        {
-            @Override
-            public boolean accept(File dir, String name)
-            {
-                return name.endsWith(TEMP_FILE_EXTENSION);
-            }
+        File[] tempFiles = logPathFile.listFiles((dir, name) -> {
+            return name.endsWith(TEMP_FILE_EXTENSION);
         });
 
         if (tempFiles != null) {
