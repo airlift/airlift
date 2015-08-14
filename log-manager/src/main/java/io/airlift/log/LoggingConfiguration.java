@@ -16,12 +16,17 @@
 package io.airlift.log;
 
 import io.airlift.configuration.Config;
+import io.airlift.configuration.LegacyConfig;
+import io.airlift.units.DataSize;
+
+import static io.airlift.units.DataSize.Unit.BYTE;
+import static io.airlift.units.DataSize.Unit.MEGABYTE;
 
 public class LoggingConfiguration
 {
     private boolean consoleEnabled = true;
     private String logPath;
-    private long maxSegmentSizeInBytes = 100 * 1024 * 1024;  // TODO: need "size" unit similar to Duration
+    private DataSize maxSize = new DataSize(100, MEGABYTE);
     private int maxHistory = 30;
     private String levelsFile;
 
@@ -42,22 +47,37 @@ public class LoggingConfiguration
         return logPath;
     }
 
-    @Config("log.output-file")
+    @LegacyConfig("log.output-file")
+    @Config("log.path")
     public LoggingConfiguration setLogPath(String logPath)
     {
         this.logPath = logPath;
         return this;
     }
 
-    public long getMaxSegmentSizeInBytes()
+    @Deprecated
+    public long getMaxSizeInBytes()
     {
-        return maxSegmentSizeInBytes;
+        return maxSize.toBytes();
     }
 
+    @Deprecated
     @Config("log.max-size-in-bytes")
-    public LoggingConfiguration setMaxSegmentSizeInBytes(long maxSegmentSizeInBytes)
+    public LoggingConfiguration setMaxSizeInBytes(long maxSize)
     {
-        this.maxSegmentSizeInBytes = maxSegmentSizeInBytes;
+        this.maxSize = new DataSize(maxSize, BYTE);
+        return this;
+    }
+
+    public DataSize getMaxSize()
+    {
+        return maxSize;
+    }
+
+    @Config("log.max-size")
+    public LoggingConfiguration setMaxSize(DataSize maxSize)
+    {
+        this.maxSize = maxSize;
         return this;
     }
 

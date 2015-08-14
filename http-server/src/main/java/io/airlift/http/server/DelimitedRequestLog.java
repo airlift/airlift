@@ -46,14 +46,15 @@ class DelimitedRequestLog
     private final CurrentTimeMillisProvider currentTimeMillisProvider;
     private final RollingFileAppender<HttpRequestEvent> fileAppender;
 
-    public DelimitedRequestLog(String filename, int retainDays, TraceTokenManager traceTokenManager, EventClient eventClient)
+    public DelimitedRequestLog(String filename, int maxHistory, long maxFileSizeInBytes, TraceTokenManager traceTokenManager, EventClient eventClient)
             throws IOException
     {
-        this(filename, retainDays, traceTokenManager, eventClient, new SystemCurrentTimeMillisProvider());
+        this(filename, maxHistory, maxFileSizeInBytes, traceTokenManager, eventClient, new SystemCurrentTimeMillisProvider());
     }
 
     public DelimitedRequestLog(String filename,
-            int retainDays,
+            int maxHistory,
+            long maxFileSizeInBytes,
             TraceTokenManager traceTokenManager,
             EventClient eventClient,
             CurrentTimeMillisProvider currentTimeMillisProvider)
@@ -74,14 +75,14 @@ class DelimitedRequestLog
 
         rollingPolicy.setContext(context);
         rollingPolicy.setFileNamePattern(filename + "-%d{yyyy-MM-dd}.%i.log.gz");
-        rollingPolicy.setMaxHistory(retainDays);
+        rollingPolicy.setMaxHistory(maxHistory);
         rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(triggeringPolicy);
         rollingPolicy.setParent(fileAppender);
         rollingPolicy.start();
 
         triggeringPolicy.setContext(context);
         triggeringPolicy.setTimeBasedRollingPolicy(rollingPolicy);
-        triggeringPolicy.setMaxFileSize(String.valueOf(Long.MAX_VALUE));
+        triggeringPolicy.setMaxFileSize(String.valueOf(maxFileSizeInBytes));
         triggeringPolicy.start();
 
         fileAppender.setContext(context);

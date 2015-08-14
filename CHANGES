@@ -1,3 +1,8 @@
+* 0.114
+
+- Make HttpServer logging more configurable
+- Make configuration names for Logging and HttpServer logging match
+
 * 0.113
 
 - Change kerberos service principal format to correct serviceName@host

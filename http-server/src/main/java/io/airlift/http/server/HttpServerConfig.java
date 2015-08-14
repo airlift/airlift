@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
         "jetty.net.max-idle-time-ms",
         "jetty.auth.users-file",
         "http-server.https.keystore.password",
+        "http-server.log.retention-time",
 })
 public class HttpServerConfig
 {
@@ -53,7 +54,9 @@ public class HttpServerConfig
     private String keystorePassword;
 
     private String logPath = "var/log/http-request.log";
-    private Duration logRetentionTime = new Duration(15, TimeUnit.DAYS);
+    private boolean logEnabled = true;
+    private int logHistory = 15;
+    private DataSize logMaxFileSize = new DataSize(Long.MAX_VALUE, DataSize.Unit.BYTE);
 
     private int minThreads = 2;
     private int maxThreads = 200;
@@ -166,6 +169,30 @@ public class HttpServerConfig
         return this;
     }
 
+    public boolean isLogEnabled()
+    {
+        return logEnabled;
+    }
+
+    @Config("http-server.log.enabled")
+    public HttpServerConfig setLogEnabled(boolean logEnabled)
+    {
+        this.logEnabled = logEnabled;
+        return this;
+    }
+
+    public DataSize getLogMaxFileSize()
+    {
+        return logMaxFileSize;
+    }
+
+    @Config("http-server.log.max-size")
+    public HttpServerConfig setLogMaxFileSize(DataSize logMaxFileSize)
+    {
+        this.logMaxFileSize = logMaxFileSize;
+        return this;
+    }
+
     public int getMaxThreads()
     {
         return maxThreads;
@@ -202,15 +229,15 @@ public class HttpServerConfig
         return this;
     }
 
-    public Duration getLogRetentionTime()
+    public int getLogHistory()
     {
-        return logRetentionTime;
+        return logHistory;
     }
 
-    @Config("http-server.log.retention-time")
-    public HttpServerConfig setLogRetentionTime(Duration logRetentionTime)
+    @Config("http-server.log.max-history")
+    public HttpServerConfig setLogHistory(int logHistory)
     {
-        this.logRetentionTime = logRetentionTime;
+        this.logHistory = logHistory;
         return this;
     }
 

@@ -194,7 +194,7 @@ public class Logging
             throws IOException
     {
         if (config.getLogPath() != null) {
-            logToFile(config.getLogPath(), config.getMaxHistory(), config.getMaxSegmentSizeInBytes());
+            logToFile(config.getLogPath(), config.getMaxHistory(), config.getMaxSize().toBytes());
         }
 
         if (!config.isConsoleEnabled()) {

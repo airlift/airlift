@@ -62,7 +62,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
@@ -226,9 +225,11 @@ public class HttpServer
         }
 
         handlers.addHandler(createServletContext(theServlet, parameters, filters, tokenManager, loginService, "http", "https"));
-        RequestLogHandler logHandler = createLogHandler(config, tokenManager, eventClient);
-        if (logHandler != null) {
-            handlers.addHandler(logHandler);
+        if (config.isLogEnabled()) {
+            RequestLogHandler logHandler = createLogHandler(config, tokenManager, eventClient);
+            if (logHandler != null) {
+                handlers.addHandler(logHandler);
+            }
         }
 
         RequestLogHandler statsRecorder = new RequestLogHandler();
@@ -322,7 +323,7 @@ public class HttpServer
             throw new IOException(format("Cannot create %s and path does not already exist", logPath.getAbsolutePath()));
         }
 
-        RequestLog requestLog = new DelimitedRequestLog(config.getLogPath(), Ints.checkedCast(config.getLogRetentionTime().roundTo(TimeUnit.DAYS)), tokenManager, eventClient);
+        RequestLog requestLog = new DelimitedRequestLog(config.getLogPath(), config.getLogHistory(), config.getLogMaxFileSize().toBytes(), tokenManager, eventClient);
         logHandler.setRequestLog(requestLog);
 
         return logHandler;
