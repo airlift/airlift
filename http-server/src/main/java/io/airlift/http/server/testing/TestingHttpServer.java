@@ -17,7 +17,6 @@ package io.airlift.http.server.testing;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import io.airlift.event.client.EventClient;
 import io.airlift.event.client.NullEventClient;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
@@ -27,7 +26,6 @@ import io.airlift.http.server.RequestStats;
 import io.airlift.http.server.TheServlet;
 import io.airlift.node.NodeInfo;
 import io.airlift.tracetoken.TraceTokenManager;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
 
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
@@ -72,7 +70,7 @@ public class TestingHttpServer
     {
         super(httpServerInfo,
                 nodeInfo,
-                config,
+                config.setLogEnabled(false),
                 servlet,
                 initParameters,
                 ImmutableSet.copyOf(filters),
@@ -86,13 +84,6 @@ public class TestingHttpServer
                 new RequestStats(),
                 new NullEventClient());
         this.httpServerInfo = httpServerInfo;
-    }
-
-    @Override
-    public RequestLogHandler createLogHandler(HttpServerConfig config, TraceTokenManager tokenManager, EventClient eventClient)
-            throws IOException
-    {
-        return null;
     }
 
     public URI getBaseUrl()

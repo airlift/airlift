@@ -226,10 +226,7 @@ public class HttpServer
 
         handlers.addHandler(createServletContext(theServlet, parameters, filters, tokenManager, loginService, "http", "https"));
         if (config.isLogEnabled()) {
-            RequestLogHandler logHandler = createLogHandler(config, tokenManager, eventClient);
-            if (logHandler != null) {
-                handlers.addHandler(logHandler);
-            }
+            handlers.addHandler(createLogHandler(config, tokenManager, eventClient));
         }
 
         RequestLogHandler statsRecorder = new RequestLogHandler();
@@ -306,7 +303,7 @@ public class HttpServer
         return securityHandler;
     }
 
-    protected RequestLogHandler createLogHandler(HttpServerConfig config, TraceTokenManager tokenManager, EventClient eventClient)
+    private static RequestLogHandler createLogHandler(HttpServerConfig config, TraceTokenManager tokenManager, EventClient eventClient)
             throws IOException
     {
         // TODO: use custom (more easily-parseable) format
