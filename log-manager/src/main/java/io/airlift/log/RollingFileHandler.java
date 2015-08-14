@@ -26,7 +26,7 @@ final class RollingFileHandler
 
     private final RollingFileAppender<String> fileAppender;
 
-    public RollingFileHandler(String filename, int retainDays, long maxSizeInBytes)
+    public RollingFileHandler(String filename, int maxHistory, long maxSizeInBytes)
     {
         setFormatter(new StaticFormatter());
 
@@ -40,7 +40,7 @@ final class RollingFileHandler
 
         rollingPolicy.setContext(context);
         rollingPolicy.setFileNamePattern(filename + "-%d{yyyy-MM-dd}.%i.log.gz");
-        rollingPolicy.setMaxHistory(retainDays);
+        rollingPolicy.setMaxHistory(maxHistory);
         rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(triggeringPolicy);
         rollingPolicy.setParent(fileAppender);
         rollingPolicy.start();
