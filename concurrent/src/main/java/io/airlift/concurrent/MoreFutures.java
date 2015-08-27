@@ -184,6 +184,16 @@ public final class MoreFutures
      */
     public static <V> CompletableFuture<V> firstCompletedFuture(Iterable<? extends CompletionStage<? extends V>> futures)
     {
+        return firstCompletedFuture(futures, false);
+    }
+
+    /**
+     * Creates a future that completes when the first future completes either normally
+     * or exceptionally. Cancellation of the future will optionally propagate to the
+     * supplied futures.
+     */
+    public static <V> CompletableFuture<V> firstCompletedFuture(Iterable<? extends CompletionStage<? extends V>> futures, boolean propagateCancel)
+    {
         requireNonNull(futures, "futures is null");
         checkArgument(!isEmpty(futures), "futures is empty");
 
@@ -196,6 +206,18 @@ public final class MoreFutures
                 else {
                     future.complete(value);
                 }
+            });
+        }
+        if (propagateCancel) {
+            future.exceptionally(throwable -> {
+                if (throwable instanceof CancellationException) {
+                    for (CompletionStage<? extends V> sourceFuture : futures) {
+                        if (sourceFuture instanceof Future) {
+                            ((Future<?>) sourceFuture).cancel(true);
+                        }
+                    }
+                }
+                return null;
             });
         }
         return future;
