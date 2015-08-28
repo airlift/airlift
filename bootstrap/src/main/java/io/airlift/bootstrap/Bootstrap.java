@@ -41,12 +41,14 @@ import io.airlift.log.Logging;
 import io.airlift.log.LoggingConfiguration;
 
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 
 import static com.google.common.collect.Maps.fromProperties;
 import static io.airlift.configuration.Configuration.processConfiguration;
@@ -69,6 +71,7 @@ public class Bootstrap
 
     private Map<String, String> requiredConfigurationProperties;
     private Map<String, String> optionalConfigurationProperties;
+    private List<Consumer<Injector>> initializersBeforeStart;
     private boolean initializeLogging = true;
     private boolean quiet;
     private boolean strictConfig;
@@ -130,6 +133,16 @@ public class Bootstrap
     public Bootstrap doNotInitializeLogging()
     {
         this.initializeLogging = false;
+        return this;
+    }
+
+    @Beta
+    public Bootstrap addInitializerBeforeStart(Consumer<Injector> initializer)
+    {
+        if (this.initializersBeforeStart == null) {
+            this.initializersBeforeStart = new ArrayList<>();
+        }
+        this.initializersBeforeStart.add(initializer);
         return this;
     }
 
@@ -240,6 +253,13 @@ public class Bootstrap
 
         // create the injector
         Injector injector = Guice.createInjector(Stage.PRODUCTION, moduleList.build());
+
+        // initialize before start
+        if (initializersBeforeStart != null) {
+            for (Consumer<Injector> initializer : initializersBeforeStart) {
+                initializer.accept(injector);
+            }
+        }
 
         // Create the life-cycle manager
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
