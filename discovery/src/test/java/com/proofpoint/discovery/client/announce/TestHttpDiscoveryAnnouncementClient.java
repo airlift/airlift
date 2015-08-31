@@ -18,13 +18,10 @@ package com.proofpoint.discovery.client.announce;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.proofpoint.discovery.client.DiscoveryException;
-import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.testing.TestingHttpClient;
-import com.proofpoint.http.client.testing.TestingHttpClient.Processor;
 import com.proofpoint.http.client.testing.TestingResponse;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.units.Duration;
-import org.mockito.ArgumentCaptor;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -42,25 +39,21 @@ import static com.proofpoint.http.client.testing.TestingResponse.mockResponse;
 import static com.proofpoint.json.JsonCodec.jsonCodec;
 import static com.proofpoint.testing.Assertions.assertContains;
 import static com.proofpoint.testing.Assertions.assertInstanceOf;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
 public class TestHttpDiscoveryAnnouncementClient
 {
     private final NodeInfo nodeInfo = new NodeInfo("test");
-    private Processor processor;
     private HttpDiscoveryAnnouncementClient client;
     private Set<ServiceAnnouncement> announcements;
+    private TestingHttpClient httpClient;
 
     @BeforeMethod
     public void setup()
     {
-        processor = mock(Processor.class);
-        client = new HttpDiscoveryAnnouncementClient(nodeInfo, jsonCodec(Announcement.class), new TestingHttpClient(processor));
+        httpClient = new TestingHttpClient();
+        client = new HttpDiscoveryAnnouncementClient(nodeInfo, jsonCodec(Announcement.class), httpClient);
         announcements = ImmutableSet.of(
                 serviceAnnouncement("foo").addProperty("bar", "baz").build(),
                 serviceAnnouncement("quux").addProperty("a", "b").build()
@@ -71,27 +64,25 @@ public class TestHttpDiscoveryAnnouncementClient
     public void testAnnounce()
             throws Exception
     {
-        when(processor.handle(any(Request.class))).thenReturn(mockResponse(ACCEPTED));
+        httpClient.setProcessor((request) -> {
+            assertEquals(request.getMethod(), "PUT");
+            assertEquals(request.getUri(), URI.create("v1/announcement/" + nodeInfo.getNodeId()));
+            assertEquals(request.getHeader("User-Agent"), nodeInfo.getNodeId());
+            assertEquals(request.getHeader("Content-Type"), "application/json");
+            // TODO test request body
+            return mockResponse(ACCEPTED);
+        });
         Duration duration = client.announce(announcements).get();
 
         assertEquals(duration, new Duration(10, TimeUnit.SECONDS));
-
-        ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
-        verify(processor).handle(captor.capture());
-        Request request = captor.getValue();
-        assertEquals(request.getMethod(), "PUT");
-        assertEquals(request.getUri(), URI.create("v1/announcement/" + nodeInfo.getNodeId()));
-        assertEquals(request.getHeader("User-Agent"), nodeInfo.getNodeId());
-        assertEquals(request.getHeader("Content-Type"), "application/json");
-        // TODO test request body
+        assertEquals(httpClient.getRequestCount(), 1);
     }
 
     @Test
     public void testAnnounceCacheControl()
             throws Exception
     {
-        when(processor.handle(any(Request.class))).thenReturn(
-                new TestingResponse(ACCEPTED, ImmutableListMultimap.of("Cache-Control", "max-age=75"), new byte[0]));
+        httpClient.setProcessor((request -> new TestingResponse(ACCEPTED, ImmutableListMultimap.of("Cache-Control", "max-age=75"), new byte[0])));
         Duration duration = client.announce(announcements).get();
 
         assertEquals(duration, new Duration(75, TimeUnit.SECONDS));
@@ -101,7 +92,7 @@ public class TestHttpDiscoveryAnnouncementClient
     public void testAnnounceBadStatus()
             throws Exception
     {
-        when(processor.handle(any(Request.class))).thenReturn(mockResponse(NOT_FOUND));
+        httpClient.setProcessor((request -> mockResponse(NOT_FOUND)));
         try {
             client.announce(announcements).get();
             fail("expected ExecutionException");
@@ -116,7 +107,9 @@ public class TestHttpDiscoveryAnnouncementClient
     public void testAnnounceConnectException()
             throws Exception
     {
-        when(processor.handle(any(Request.class))).thenThrow(new ConnectException("test exception"));
+        httpClient.setProcessor((request -> {
+            throw new ConnectException("test exception");
+        }));
         try {
             client.announce(announcements).get();
             fail("expected ExecutionException");
@@ -131,17 +124,17 @@ public class TestHttpDiscoveryAnnouncementClient
     public void testAnnounceZeroAnnouncements()
             throws Exception
     {
-        when(processor.handle(any(Request.class))).thenReturn(mockResponse(NOT_FOUND));
+        httpClient.setProcessor((request -> {
+            assertEquals(request.getMethod(), "DELETE");
+            assertEquals(request.getUri(), URI.create("v1/announcement/" + nodeInfo.getNodeId()));
+            assertEquals(request.getHeader("User-Agent"), nodeInfo.getNodeId());
+
+            return mockResponse(NOT_FOUND);
+        }));
         Duration duration = client.announce(ImmutableSet.<ServiceAnnouncement>of()).get();
 
         assertEquals(duration, new Duration(10, TimeUnit.SECONDS));
-
-        ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
-        verify(processor).handle(captor.capture());
-        Request request = captor.getValue();
-        assertEquals(request.getMethod(), "DELETE");
-        assertEquals(request.getUri(), URI.create("v1/announcement/" + nodeInfo.getNodeId()));
-        assertEquals(request.getHeader("User-Agent"), nodeInfo.getNodeId());
+        assertEquals(httpClient.getRequestCount(), 1);
     }
 
 
@@ -149,7 +142,7 @@ public class TestHttpDiscoveryAnnouncementClient
     public void testAnnounceZeroAnnouncementsBadStatus()
             throws Exception
     {
-        when(processor.handle(any(Request.class))).thenReturn(mockResponse(INTERNAL_SERVER_ERROR));
+        httpClient.setProcessor((request -> mockResponse(INTERNAL_SERVER_ERROR)));
         try {
             client.announce(ImmutableSet.<ServiceAnnouncement>of()).get();
             fail("expected ExecutionException");
@@ -164,14 +157,15 @@ public class TestHttpDiscoveryAnnouncementClient
     public void testUnannounce()
             throws Exception
     {
-        when(processor.handle(any(Request.class))).thenReturn(mockResponse(NOT_FOUND));
+        httpClient.setProcessor((request -> {
+            assertEquals(request.getMethod(), "DELETE");
+            assertEquals(request.getUri(), URI.create("v1/announcement/" + nodeInfo.getNodeId()));
+            assertEquals(request.getHeader("User-Agent"), nodeInfo.getNodeId());
+
+            return mockResponse(NOT_FOUND);
+        }));
         client.unannounce().get();
 
-        ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
-        verify(processor).handle(captor.capture());
-        Request request = captor.getValue();
-        assertEquals(request.getMethod(), "DELETE");
-        assertEquals(request.getUri(), URI.create("v1/announcement/" + nodeInfo.getNodeId()));
-        assertEquals(request.getHeader("User-Agent"), nodeInfo.getNodeId());
+        assertEquals(httpClient.getRequestCount(), 1);;
     }
 }

@@ -23,9 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.net.MediaType;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.proofpoint.http.client.Request;
 import com.proofpoint.http.client.Request.Builder;
-import com.proofpoint.http.client.Response;
 import com.proofpoint.http.client.testing.TestingHttpClient;
 import com.proofpoint.http.client.testing.TestingHttpClient.Processor;
 import com.proofpoint.http.client.testing.TestingResponse;
@@ -134,18 +132,10 @@ public class TestHttpDiscoveryLookupClient
             throws Exception
     {
         ServiceDescriptors descriptors = createClient(
-                new Processor()
-                {
-                    @Override
-                    public Response handle(Request request)
-                            throws Exception
-                    {
-                        return new TestingResponse(NOT_MODIFIED, ImmutableListMultimap.of(
-                                "ETag", "newEtag",
-                                "Cache-Control", "max-age=123"
-                        ), new byte[0]);
-                    }
-                })
+                request -> new TestingResponse(NOT_MODIFIED, ImmutableListMultimap.of(
+                        "ETag", "newEtag",
+                        "Cache-Control", "max-age=123"
+                ), new byte[0]))
                 .refreshServices(new ServiceDescriptors("testService", "testPool", EXPECTED_SERVICE_DESCRIPTOR_LIST, new Duration(1, HOURS), "oldEtag"))
                 .get();
         assertDescriptorsExpected(descriptors, "newEtag", new Duration(123, SECONDS));
@@ -156,18 +146,10 @@ public class TestHttpDiscoveryLookupClient
             throws Exception
     {
         ListenableFuture<ServiceDescriptors> future = createClient(
-                new Processor()
-                {
-                    @Override
-                    public Response handle(Request request)
-                            throws Exception
-                    {
-                        return new TestingResponse(NOT_MODIFIED, ImmutableListMultimap.of(
-                                "ETag", "newEtag",
-                                "Cache-Control", "max-age=123"
-                        ), new byte[0]);
-                    }
-                })
+                request -> new TestingResponse(NOT_MODIFIED, ImmutableListMultimap.of(
+                        "ETag", "newEtag",
+                        "Cache-Control", "max-age=123"
+                ), new byte[0]))
                 .getServices("testService", "testPool");
 
         try {
@@ -190,25 +172,17 @@ public class TestHttpDiscoveryLookupClient
     {
         final IOException testingException = new IOException("testing exception");
         ListenableFuture<ServiceDescriptors> future = createClient(
-                new Processor()
+                request -> new TestingResponse(OK, ImmutableListMultimap.of(
+                        "Content-Type", "application/json"
+                ), new InputStream()
                 {
                     @Override
-                    public Response handle(Request request)
-                            throws Exception
+                    public int read()
+                            throws IOException
                     {
-                        return new TestingResponse(OK, ImmutableListMultimap.of(
-                                "Content-Type", "application/json"
-                        ), new InputStream()
-                        {
-                            @Override
-                            public int read()
-                                    throws IOException
-                            {
-                                throw testingException;
-                            }
-                        });
+                        throw testingException;
                     }
-                })
+                }))
                 .getServices("testService", "testPool");
 
         try {
@@ -252,14 +226,8 @@ public class TestHttpDiscoveryLookupClient
     {
         final Exception testingException = new Exception("testing exception");
         ListenableFuture<ServiceDescriptors> future = createClient(
-                new Processor()
-                {
-                    @Override
-                    public Response handle(Request request)
-                            throws Exception
-                    {
-                        throw testingException;
-                    }
+                request -> {
+                    throw testingException;
                 })
                 .getServices("testService", "testPool");
 
@@ -299,49 +267,43 @@ public class TestHttpDiscoveryLookupClient
 
     private Processor createProcessor(final ListMultimap<String, String> headers, final String etag, final String environment)
     {
-        return new Processor()
-        {
-            @Override
-            public Response handle(Request request)
-                    throws Exception
-            {
-                Builder requestBuilder = prepareGet()
-                        .setUri(URI.create("v1/service/testService/testPool"))
-                        .setHeader("User-Agent", nodeInfo.getNodeId());
-                if (etag != null) {
-                    requestBuilder = requestBuilder.addHeader(ETAG, etag);
-                }
-                assertEquals(request, requestBuilder
-                                .build()
-                );
-                ListMultimap<String, String> combinedHeaders = ArrayListMultimap.create(TestingResponse.contentType(MediaType.JSON_UTF_8));
-                if (headers != null) {
-                    combinedHeaders.putAll(headers);
-                }
-                return new TestingResponse(OK, combinedHeaders, jsonCodec(Object.class).toJson(ImmutableMap.of(
-                                "environment", environment,
-                                "services", ImmutableList.of(
-                                        ImmutableMap.builder()
-                                                .put("id", UUID_ID_1.toString())
-                                                .put("nodeId", UUID_NODEID_1.toString())
-                                                .put("type", "testService")
-                                                .put("pool", "testPool")
-                                                .put("location", "testLocation")
-                                                .put("state", "RUNNING")
-                                                .put("properties", TEST_PROPERTIES_1)
-                                                .build(),
-                                        ImmutableMap.builder()
-                                                .put("id", UUID_ID_2.toString())
-                                                .put("nodeId", UUID_NODEID_2.toString())
-                                                .put("type", "testService")
-                                                .put("pool", "testPool")
-                                                .put("state", "STOPPED")
-                                                .put("properties", TEST_PROPERTIES_2)
-                                                .build()
-                                )
-                        )
-                ).getBytes(Charsets.UTF_8));
+        return request -> {
+            Builder requestBuilder = prepareGet()
+                    .setUri(URI.create("v1/service/testService/testPool"))
+                    .setHeader("User-Agent", nodeInfo.getNodeId());
+            if (etag != null) {
+                requestBuilder = requestBuilder.addHeader(ETAG, etag);
             }
+            assertEquals(request, requestBuilder
+                            .build()
+            );
+            ListMultimap<String, String> combinedHeaders = ArrayListMultimap.create(TestingResponse.contentType(MediaType.JSON_UTF_8));
+            if (headers != null) {
+                combinedHeaders.putAll(headers);
+            }
+            return new TestingResponse(OK, combinedHeaders, jsonCodec(Object.class).toJson(ImmutableMap.of(
+                            "environment", environment,
+                            "services", ImmutableList.of(
+                                    ImmutableMap.builder()
+                                            .put("id", UUID_ID_1.toString())
+                                            .put("nodeId", UUID_NODEID_1.toString())
+                                            .put("type", "testService")
+                                            .put("pool", "testPool")
+                                            .put("location", "testLocation")
+                                            .put("state", "RUNNING")
+                                            .put("properties", TEST_PROPERTIES_1)
+                                            .build(),
+                                    ImmutableMap.builder()
+                                            .put("id", UUID_ID_2.toString())
+                                            .put("nodeId", UUID_NODEID_2.toString())
+                                            .put("type", "testService")
+                                            .put("pool", "testPool")
+                                            .put("state", "STOPPED")
+                                            .put("properties", TEST_PROPERTIES_2)
+                                            .build()
+                            )
+                    )
+            ).getBytes(Charsets.UTF_8));
         };
     }
 }

@@ -81,9 +81,7 @@ public class TestReportClient
     @Test
     public void testReportingDisabled()
     {
-        httpClient = new TestingHttpClient((Processor) request -> {
-            throw new UnsupportedOperationException();
-        });
+        httpClient = new TestingHttpClient();
         ReportClient client = new ReportClient(nodeInfo, httpClient, new ReportClientConfig().setEnabled(false), objectMapper);
         client.report(System.currentTimeMillis(), collectedData);
     }
