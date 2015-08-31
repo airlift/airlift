@@ -1,3 +1,11 @@
+Platform 1.24
+
+* TestingHttpClient
+
+  We created a default constructor for TestingHttpClient. The constructed
+  TestingHttpClient needs a call to setProcessor(Processor) before it can
+  be effectively used.
+
 Platform 1.23
 
 * BalancingHttpClient

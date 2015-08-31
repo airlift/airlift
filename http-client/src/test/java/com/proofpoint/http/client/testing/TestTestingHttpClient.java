@@ -13,6 +13,7 @@ import java.net.URI;
 import java.util.concurrent.ExecutionException;
 
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
+import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static com.proofpoint.http.client.testing.TestingResponse.mockResponse;
 import static com.proofpoint.testing.Assertions.assertInstanceOf;
 import static org.testng.Assert.assertEquals;
@@ -168,6 +169,18 @@ public class TestTestingHttpClient
                 });
 
         assertEquals(future.get(), "expected response");
+    }
+
+    @Test
+    public void testDefaultConstructor()
+    {
+        TestingHttpClient client = new TestingHttpClient();
+        try {
+            client.execute(prepareGet().setUri(URI.create("/")).build(), createStatusResponseHandler());
+            fail("Expected UnsupportedOperationException");
+        }
+        catch (UnsupportedOperationException ignored) {
+        }
     }
 
     private static class CaptureExceptionResponseHandler implements ResponseHandler<String, CapturedException>

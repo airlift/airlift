@@ -30,6 +30,18 @@ public class TestingHttpClient
     private final RequestStats stats = new RequestStats();
     private final AtomicBoolean closed = new AtomicBoolean();
 
+    public TestingHttpClient()
+    {
+        this(MoreExecutors.sameThreadExecutor());
+    }
+
+    public TestingHttpClient(ExecutorService executor)
+    {
+        this((Processor) (request) -> {
+            throw new UnsupportedOperationException();
+        }, executor);
+    }
+
     /**
      * @deprecated Use {@link TestingHttpClient(Processor)}
      */
