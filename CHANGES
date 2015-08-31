@@ -6,6 +6,8 @@ Platform 1.24
   TestingHttpClient needs a call to setProcessor(Processor) before it can
   be effectively used.
 
+  We added TestingHttpClient.getRequestCount().
+
 Platform 1.23
 
 * BalancingHttpClient

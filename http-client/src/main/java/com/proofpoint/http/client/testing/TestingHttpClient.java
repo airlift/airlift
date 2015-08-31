@@ -16,6 +16,7 @@ import javax.annotation.Nonnull;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -27,6 +28,7 @@ public class TestingHttpClient
     private final AtomicReference<Processor> processor;
     private final ListeningExecutorService executor;
 
+    private final AtomicInteger requestCount = new AtomicInteger();
     private final RequestStats stats = new RequestStats();
     private final AtomicBoolean closed = new AtomicBoolean();
 
@@ -99,6 +101,7 @@ public class TestingHttpClient
     {
         state.set("PROCESSING_REQUEST");
         long requestStart = System.nanoTime();
+        requestCount.incrementAndGet();
         Response response;
         try {
             response = processor.get().handle(request);
@@ -150,9 +153,23 @@ public class TestingHttpClient
         }
     }
 
+    /**
+     * Change the {@link Processor}. Resets the request count.
+     *
+     * @param processor The {@link Processor} to use for subsequent requests.
+     */
     public void setProcessor(Processor processor)
     {
         this.processor.set(processor);
+        requestCount.set(0);
+    }
+
+    /**
+     * @return The number of requests dispatched.
+     */
+    public int getRequestCount()
+    {
+        return requestCount.get();
     }
 
     @Override

@@ -31,11 +31,12 @@ public class TestTestingHttpClient
                 .build();
         Response expectedResponse = mockResponse(HttpStatus.BAD_REQUEST);
 
-        String result = new TestingHttpClient(
+        TestingHttpClient client = new TestingHttpClient(
                 (Function<Request, Response>) input -> {
                     assertSame(input, request);
                     return expectedResponse;
-                })
+                });
+        String result = client
                 .execute(request, new ResponseHandler<String, RuntimeException>()
                 {
                     @Override
@@ -53,6 +54,7 @@ public class TestTestingHttpClient
                 });
 
         assertEquals(result, "expected response");
+        assertEquals(client.getRequestCount(), 1);
     }
 
     @Test
@@ -64,11 +66,12 @@ public class TestTestingHttpClient
                 .build();
         Response expectedResponse = mockResponse(HttpStatus.BAD_REQUEST);
 
-        HttpResponseFuture<String> future = new TestingHttpClient(
+        TestingHttpClient client = new TestingHttpClient(
                 (Function<Request, Response>) input -> {
                     assertSame(input, request);
                     return expectedResponse;
-                })
+                });
+        HttpResponseFuture<String> future = client
                 .executeAsync(request, new ResponseHandler<String, RuntimeException>()
                 {
                     @Override
@@ -86,6 +89,7 @@ public class TestTestingHttpClient
                 });
 
         assertEquals(future.get(), "expected response");
+        assertEquals(client.getRequestCount(), 1);
     }
 
     @Test
@@ -98,10 +102,11 @@ public class TestTestingHttpClient
 
         final RuntimeException expectedException = new RuntimeException("test exception");
 
-        HttpResponseFuture<String> future = new TestingHttpClient(
+        TestingHttpClient client = new TestingHttpClient(
                 (Function<Request, Response>) input -> {
                     throw expectedException;
-                }).executeAsync(request, new CaptureExceptionResponseHandler());
+                });
+        HttpResponseFuture<String> future = client.executeAsync(request, new CaptureExceptionResponseHandler());
 
         try {
             future.get();
@@ -112,6 +117,7 @@ public class TestTestingHttpClient
             assertInstanceOf(cause, CapturedException.class);
             assertSame(cause.getCause(), expectedException);
         }
+        assertEquals(client.getRequestCount(), 1);
     }
 
     @Test
@@ -125,12 +131,14 @@ public class TestTestingHttpClient
         final RuntimeException testingException = new RuntimeException("test exception");
         final Object expectedResponse = new Object();
 
-        HttpResponseFuture<Object> future = new TestingHttpClient(
+        TestingHttpClient client = new TestingHttpClient(
                 (Function<Request, Response>) input -> {
                     throw testingException;
-                }).executeAsync(request, new DefaultExceptionResponseHandler(testingException, expectedResponse));
+                });
+        HttpResponseFuture<Object> future = client.executeAsync(request, new DefaultExceptionResponseHandler(testingException, expectedResponse));
 
         assertSame(future.get(), expectedResponse);
+        assertEquals(client.getRequestCount(), 1);
     }
 
     @Test
@@ -145,11 +153,31 @@ public class TestTestingHttpClient
         TestingHttpClient client = new TestingHttpClient((Processor) input -> {
             throw new UnsupportedOperationException();
         });
+        client.execute(request, new ResponseHandler<String, RuntimeException>()
+        {
+            @Override
+            public String handleException(Request request, Exception exception)
+                    throws RuntimeException
+            {
+                return null;
+            }
+
+            @Override
+            public String handle(Request request, Response response)
+                    throws RuntimeException
+            {
+                throw new UnsupportedOperationException();
+            }
+        });
+
+        assertEquals(client.getRequestCount(), 1);
 
         client.setProcessor(input -> {
             assertSame(input, request);
             return expectedResponse;
         });
+
+        assertEquals(client.getRequestCount(), 0);
 
         HttpResponseFuture<String> future = client
                 .executeAsync(request, new ResponseHandler<String, RuntimeException>()
@@ -169,6 +197,7 @@ public class TestTestingHttpClient
                 });
 
         assertEquals(future.get(), "expected response");
+        assertEquals(client.getRequestCount(), 1);
     }
 
     @Test
