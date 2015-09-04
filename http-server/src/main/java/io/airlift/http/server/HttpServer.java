@@ -127,7 +127,9 @@ public class HttpServer
                 httpConfiguration.setSecurePort(httpServerInfo.getHttpsUri().getPort());
             }
 
-            httpConnector = new ServerConnector(server, new HttpConnectionFactory(httpConfiguration));
+            Integer acceptors = config.getHttpAcceptorThreads();
+            Integer selectors = config.getHttpSelectorThreads();
+            httpConnector = new ServerConnector(server, null, null, null, acceptors == null ? -1 : acceptors, selectors == null ? -1 : selectors, new HttpConnectionFactory(httpConfiguration));
             httpConnector.setName("http");
             httpConnector.setPort(httpServerInfo.getHttpUri().getPort());
             httpConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());
@@ -153,7 +155,9 @@ public class HttpServer
             sslContextFactory.setKeyStorePassword(config.getKeystorePassword());
             SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
 
-            httpsConnector = new ServerConnector(server, sslConnectionFactory, new HttpConnectionFactory(httpsConfiguration));
+            Integer acceptors = config.getHttpsAcceptorThreads();
+            Integer selectors = config.getHttpsSelectorThreads();
+            httpsConnector = new ServerConnector(server, null, null, null, acceptors == null ? -1 : acceptors, selectors == null ? -1 : selectors, sslConnectionFactory, new HttpConnectionFactory(httpsConfiguration));
             httpsConnector.setName("https");
             httpsConnector.setPort(httpServerInfo.getHttpsUri().getPort());
             httpsConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());

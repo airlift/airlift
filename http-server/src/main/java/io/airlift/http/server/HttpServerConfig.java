@@ -58,6 +58,11 @@ public class HttpServerConfig
     private int logHistory = 15;
     private DataSize logMaxFileSize = new DataSize(Long.MAX_VALUE, DataSize.Unit.BYTE);
 
+    private Integer httpAcceptorThreads;
+    private Integer httpSelectorThreads;
+    private Integer httpsAcceptorThreads;
+    private Integer httpsSelectorThreads;
+
     private int minThreads = 2;
     private int maxThreads = 200;
     private Duration threadMaxIdleTime = new Duration(1, TimeUnit.MINUTES);
@@ -190,6 +195,58 @@ public class HttpServerConfig
     public HttpServerConfig setLogMaxFileSize(DataSize logMaxFileSize)
     {
         this.logMaxFileSize = logMaxFileSize;
+        return this;
+    }
+
+    @Min(1)
+    public Integer getHttpAcceptorThreads()
+    {
+        return httpAcceptorThreads;
+    }
+
+    @Config("http-server.http.acceptor-threads")
+    public HttpServerConfig setHttpAcceptorThreads(Integer httpAcceptorThreads)
+    {
+        this.httpAcceptorThreads = httpAcceptorThreads;
+        return this;
+    }
+
+    @Min(1)
+    public Integer getHttpSelectorThreads()
+    {
+        return httpSelectorThreads;
+    }
+
+    @Config("http-server.http.selector-threads")
+    public HttpServerConfig setHttpSelectorThreads(Integer httpSelectorThreads)
+    {
+        this.httpSelectorThreads = httpSelectorThreads;
+        return this;
+    }
+
+    @Min(1)
+    public Integer getHttpsAcceptorThreads()
+    {
+        return httpsAcceptorThreads;
+    }
+
+    @Config("http-server.https.acceptor-threads")
+    public HttpServerConfig setHttpsAcceptorThreads(Integer httpsAcceptorThreads)
+    {
+        this.httpsAcceptorThreads = httpsAcceptorThreads;
+        return this;
+    }
+
+    @Min(1)
+    public Integer getHttpsSelectorThreads()
+    {
+        return httpsSelectorThreads;
+    }
+
+    @Config("http-server.https.selector-threads")
+    public HttpServerConfig setHttpsSelectorThreads(Integer httpsSelectorThreads)
+    {
+        this.httpsSelectorThreads = httpsSelectorThreads;
         return this;
     }
 

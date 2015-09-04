@@ -41,6 +41,10 @@ public class TestHttpServerConfig
                 .setLogEnabled(true)
                 .setLogMaxFileSize(new DataSize(Long.MAX_VALUE, DataSize.Unit.BYTE))
                 .setLogHistory(15)
+                .setHttpAcceptorThreads(null)
+                .setHttpSelectorThreads(null)
+                .setHttpsAcceptorThreads(null)
+                .setHttpsSelectorThreads(null)
                 .setMinThreads(2)
                 .setMaxThreads(200)
                 .setThreadMaxIdleTime(new Duration(1, TimeUnit.MINUTES))
@@ -54,7 +58,7 @@ public class TestHttpServerConfig
                 .setShowStackTrace(true)
         );
     }
- 
+
     @Test
     public void testExplicitPropertyMappings()
     {
@@ -70,6 +74,10 @@ public class TestHttpServerConfig
                 .put("http-server.log.enabled", "false")
                 .put("http-server.log.max-size", "1GB")
                 .put("http-server.log.max-history", "1")
+                .put("http-server.http.acceptor-threads", "10")
+                .put("http-server.http.selector-threads", "11")
+                .put("http-server.https.acceptor-threads", "12")
+                .put("http-server.https.selector-threads", "13")
                 .put("http-server.threads.min", "100")
                 .put("http-server.threads.max", "500")
                 .put("http-server.threads.max-idle-time", "10m")
@@ -95,6 +103,10 @@ public class TestHttpServerConfig
                 .setLogEnabled(false)
                 .setLogMaxFileSize(new DataSize(1, DataSize.Unit.GIGABYTE))
                 .setLogHistory(1)
+                .setHttpAcceptorThreads(10)
+                .setHttpSelectorThreads(11)
+                .setHttpsAcceptorThreads(12)
+                .setHttpsSelectorThreads(13)
                 .setMinThreads(100)
                 .setMaxThreads(500)
                 .setThreadMaxIdleTime(new Duration(10, TimeUnit.MINUTES))
