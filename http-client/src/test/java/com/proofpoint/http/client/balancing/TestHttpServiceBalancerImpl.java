@@ -83,23 +83,23 @@ public class TestHttpServiceBalancerImpl
         httpServiceBalancer.updateHttpUris(expected);
 
         Set<URI> uris = new HashSet<>();
-        testingTicker.increment(3000, TimeUnit.SECONDS);
+        testingTicker.elapseTime(3000, TimeUnit.SECONDS);
         HttpServiceAttempt attempt = httpServiceBalancer.createAttempt();
-        testingTicker.increment(5, TimeUnit.SECONDS);
+        testingTicker.elapseTime(5, TimeUnit.SECONDS);
         uris.add(attempt.getUri());
-        testingTicker.increment(5, TimeUnit.SECONDS);
+        testingTicker.elapseTime(5, TimeUnit.SECONDS);
         attempt.markBad("testing failure");
-        testingTicker.increment(5, TimeUnit.SECONDS);
+        testingTicker.elapseTime(5, TimeUnit.SECONDS);
         attempt = attempt.next();
-        testingTicker.increment(5, TimeUnit.SECONDS);
+        testingTicker.elapseTime(5, TimeUnit.SECONDS);
         uris.add(attempt.getUri());
-        testingTicker.increment(5, TimeUnit.SECONDS);
+        testingTicker.elapseTime(5, TimeUnit.SECONDS);
         attempt.markBad("testing failure");
-        testingTicker.increment(10, TimeUnit.SECONDS);
+        testingTicker.elapseTime(10, TimeUnit.SECONDS);
         attempt = attempt.next();
-        testingTicker.increment(10, TimeUnit.SECONDS);
+        testingTicker.elapseTime(10, TimeUnit.SECONDS);
         uris.add(attempt.getUri());
-        testingTicker.increment(10, TimeUnit.SECONDS);
+        testingTicker.elapseTime(10, TimeUnit.SECONDS);
         attempt.markGood();
 
         assertEquals(uris, expected);

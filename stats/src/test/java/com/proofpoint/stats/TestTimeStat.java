@@ -124,7 +124,7 @@ public class TestTimeStat
             @Override
             public Void call()
             {
-                ticker.increment(10, TimeUnit.MILLISECONDS);
+                ticker.elapseTime(10, TimeUnit.MILLISECONDS);
                 return null;
             }
         });
@@ -147,7 +147,7 @@ public class TestTimeStat
                 @Override
                 public Void call()
                 {
-                    ticker.increment(10, TimeUnit.MILLISECONDS);
+                    ticker.elapseTime(10, TimeUnit.MILLISECONDS);
                     throw new RuntimeException("test exception");
                 }
             });
@@ -168,7 +168,7 @@ public class TestTimeStat
     {
         TimeStat stat = new TimeStat(ticker);
         try (BlockTimer ignored = stat.time()) {
-            ticker.increment(10, TimeUnit.MILLISECONDS);
+            ticker.elapseTime(10, TimeUnit.MILLISECONDS);
         }
 
         TimeDistribution allTime = stat.getAllTime();
@@ -184,7 +184,7 @@ public class TestTimeStat
     {
         TimeStat stat = new TimeStat(ticker);
         try (BlockTimer ignored = stat.time()) {
-            ticker.increment(10, TimeUnit.MILLISECONDS);
+            ticker.elapseTime(10, TimeUnit.MILLISECONDS);
             throw new Exception("test exception");
         }
         catch (Exception ignored) {
@@ -204,7 +204,7 @@ public class TestTimeStat
         TimeStat oldStat = new TimeStat(ticker);
         TimeStat stat = new TimeStat(ticker);
         try (BlockTimer timer = oldStat.time()) {
-            ticker.increment(10, TimeUnit.MILLISECONDS);
+            ticker.elapseTime(10, TimeUnit.MILLISECONDS);
             timer.timeTo(stat);
         }
 

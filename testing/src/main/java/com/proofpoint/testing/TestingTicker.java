@@ -17,9 +17,25 @@ public class TestingTicker
         return time;
     }
 
+    /**
+     * @deprecated Use {@link #elapseTime(long, TimeUnit)}
+     */
+    @Deprecated
     public void increment(long delta, TimeUnit unit)
     {
         checkArgument(delta >= 0, "delta is negative");
         time += unit.toNanos(delta);
+    }
+
+    /**
+     * Advance time by the given quantum.
+     *
+     * @param quantum the amount of time to advance
+     * @param timeUnit the unit of the quantum amount
+     */
+    public void elapseTime(long quantum, TimeUnit timeUnit)
+    {
+        checkArgument(quantum >= 0, "quantum is negative");
+        time += timeUnit.toNanos(quantum);
     }
 }

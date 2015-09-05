@@ -8,6 +8,11 @@ Platform 1.24
 
   We added TestingHttpClient.getRequestCount().
 
+* TestingTicker
+
+  We added TestingTicker.elapseTime() and deprecated TestingTicker.increment()
+  for consistency with SerialScheduledExecutorService.
+
 Platform 1.23
 
 * BalancingHttpClient

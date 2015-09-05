@@ -318,7 +318,7 @@ public class TestQuantileDigest
         assertEquals(digest.getCompressions(), 0);
         assertEquals(digest.getConfidenceFactor(), 0.0);
 
-        ticker.increment(60, TimeUnit.SECONDS);
+        ticker.elapseTime(60, TimeUnit.SECONDS);
         addAll(digest, asList(10, 11, 12, 13, 14, 15, 16, 17, 18, 19));
 
         // Considering that the first 10 values now have a weight of 0.5 per the alpha factor, they only contributed a count
@@ -340,7 +340,7 @@ public class TestQuantileDigest
         assertEquals(digest.getCompressions(), 0);
         assertEquals(digest.getConfidenceFactor(), 0.0);
 
-        ticker.increment(60, TimeUnit.SECONDS);
+        ticker.elapseTime(60, TimeUnit.SECONDS);
         addAll(digest, asList(10, 11, 12, 13, 14, 15, 16, 17, 18, 19));
 
         // The first 10 values only contribute 5 to the counts per the alpha factor
@@ -362,7 +362,7 @@ public class TestQuantileDigest
                 ExponentialDecay.computeAlpha(0.5, targetAgeInSeconds), ticker, false);
 
         addAll(digest, asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
-        ticker.increment(targetAgeInSeconds, TimeUnit.SECONDS);
+        ticker.elapseTime(targetAgeInSeconds, TimeUnit.SECONDS);
         addAll(digest, asList(10, 11, 12, 13, 14, 15, 16, 17, 18, 19));
 
         // The first 10 values only contribute 5 to the counts per the alpha factor
@@ -398,7 +398,7 @@ public class TestQuantileDigest
 
         addRange(digest, 1, 10);
 
-        ticker.increment(1000, TimeUnit.SECONDS); // TODO: tighter bounds?
+        ticker.elapseTime(1000, TimeUnit.SECONDS); // TODO: tighter bounds?
 
         int from = 4;
         int to = 7;
@@ -426,7 +426,7 @@ public class TestQuantileDigest
             digest.validate();
 
             // bump the clock to make all previous values decay to ~0
-            ticker.increment(targetAgeInSeconds, TimeUnit.SECONDS);
+            ticker.elapseTime(targetAgeInSeconds, TimeUnit.SECONDS);
         }
 
         assertEquals(digest.getTotalNodeCount(), 1);

@@ -15,7 +15,6 @@
  */
 package com.proofpoint.testing;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Longs;
@@ -38,7 +37,10 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Lists.newArrayList;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
@@ -59,7 +61,7 @@ public class SerialScheduledExecutorService
     @Override
     public void execute(Runnable runnable)
     {
-        Preconditions.checkNotNull(runnable, "Task object is null");
+        requireNonNull(runnable, "Task object is null");
         try {
             runnable.run();
         }
@@ -105,7 +107,7 @@ public class SerialScheduledExecutorService
     @Override
     public <T> Future<T> submit(Callable<T> tCallable)
     {
-        Preconditions.checkNotNull(tCallable, "Task object is null");
+        requireNonNull(tCallable, "Task object is null");
         try {
             return Futures.immediateFuture(tCallable.call());
         }
@@ -117,7 +119,7 @@ public class SerialScheduledExecutorService
     @Override
     public <T> Future<T> submit(Runnable runnable, T t)
     {
-        Preconditions.checkNotNull(runnable, "Task object is null");
+        requireNonNull(runnable, "Task object is null");
         try {
             runnable.run();
             return Futures.immediateFuture(t);
@@ -130,7 +132,7 @@ public class SerialScheduledExecutorService
     @Override
     public Future<?> submit(Runnable runnable)
     {
-        Preconditions.checkNotNull(runnable, "Task object is null");
+        requireNonNull(runnable, "Task object is null");
         return submit(runnable, null);
     }
 
@@ -139,7 +141,7 @@ public class SerialScheduledExecutorService
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> callables)
             throws InterruptedException
     {
-        Preconditions.checkNotNull(callables, "Task object list is null");
+        requireNonNull(callables, "Task object list is null");
         ImmutableList.Builder<Future<T>> resultBuilder = ImmutableList.builder();
         for (Callable<T> callable : callables) {
             try {
@@ -156,7 +158,7 @@ public class SerialScheduledExecutorService
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> callables, long l, TimeUnit timeUnit)
             throws InterruptedException
     {
-        Preconditions.checkNotNull(callables, "Task object list is null");
+        requireNonNull(callables, "Task object list is null");
         return invokeAll(callables);
     }
 
@@ -164,8 +166,8 @@ public class SerialScheduledExecutorService
     public <T> T invokeAny(Collection<? extends Callable<T>> callables)
             throws InterruptedException, ExecutionException
     {
-        Preconditions.checkNotNull(callables, "callables is null");
-        Preconditions.checkArgument(!callables.isEmpty(), "callables is empty");
+        requireNonNull(callables, "callables is null");
+        checkArgument(!callables.isEmpty(), "callables is empty");
         try {
             return callables.iterator().next().call();
         }
@@ -191,8 +193,8 @@ public class SerialScheduledExecutorService
      */
     public void elapseTime(long quantum, TimeUnit timeUnit)
     {
-        Preconditions.checkArgument(quantum > 0, "Time quantum must be a positive number");
-        Preconditions.checkState(!isShutdown, "Trying to elapse time after shutdown");
+        checkArgument(quantum > 0, "Time quantum must be a positive number");
+        checkState(!isShutdown, "Trying to elapse time after shutdown");
 
         elapseTime(toNanos(quantum, timeUnit), ticker);
     }
@@ -207,8 +209,8 @@ public class SerialScheduledExecutorService
     @Override
     public ScheduledFuture<?> schedule(Runnable runnable, long l, TimeUnit timeUnit)
     {
-        Preconditions.checkNotNull(runnable, "Task object is null");
-        Preconditions.checkArgument(l >= 0, "Delay must not be negative");
+        requireNonNull(runnable, "Task object is null");
+        checkArgument(l >= 0, "Delay must not be negative");
         SerialScheduledFuture<?> future = new SerialScheduledFuture<>(new FutureTask<Void>(runnable, null), toNanos(l, timeUnit));
         if (l == 0) {
             future.task.run();
@@ -222,8 +224,8 @@ public class SerialScheduledExecutorService
     @Override
     public <V> ScheduledFuture<V> schedule(Callable<V> vCallable, long l, TimeUnit timeUnit)
     {
-        Preconditions.checkNotNull(vCallable, "Task object is null");
-        Preconditions.checkArgument(l >= 0, "Delay must not be negative");
+        requireNonNull(vCallable, "Task object is null");
+        checkArgument(l >= 0, "Delay must not be negative");
         SerialScheduledFuture<V> future = new SerialScheduledFuture<>(new FutureTask<V>(vCallable), toNanos(l, timeUnit));
         if (l == 0) {
             future.task.run();
@@ -237,9 +239,9 @@ public class SerialScheduledExecutorService
     @Override
     public ScheduledFuture<?> scheduleAtFixedRate(Runnable runnable, long initialDelay, long period, TimeUnit timeUnit)
     {
-        Preconditions.checkNotNull(runnable, "Task object is null");
-        Preconditions.checkArgument(initialDelay >= 0, "Initial delay must not be negative");
-        Preconditions.checkArgument(period > 0, "Repeating delay must be greater than 0");
+        requireNonNull(runnable, "Task object is null");
+        checkArgument(initialDelay >= 0, "Initial delay must not be negative");
+        checkArgument(period > 0, "Repeating delay must be greater than 0");
         SerialScheduledFuture<?> future = new RecurringRunnableSerialScheduledFuture(runnable, toNanos(initialDelay, timeUnit), toNanos(period, timeUnit));
         if (initialDelay == 0) {
             future.task.run();
@@ -283,7 +285,7 @@ public class SerialScheduledExecutorService
 
             if (remainingDelayNanos <= quantumNanos) {
                 if (ticker != null) {
-                    ticker.increment(remainingDelayNanos, NANOSECONDS);
+                    ticker.elapseTime(remainingDelayNanos, NANOSECONDS);
                 }
                 task.run();
                 return remainingDelayNanos;
@@ -451,7 +453,7 @@ public class SerialScheduledExecutorService
                 }
             }
             if (ticker != null) {
-                ticker.increment(quantum, NANOSECONDS);
+                ticker.elapseTime(quantum, NANOSECONDS);
             }
         }
         finally {

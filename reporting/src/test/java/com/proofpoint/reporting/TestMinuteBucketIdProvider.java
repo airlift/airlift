@@ -37,21 +37,21 @@ public class TestMinuteBucketIdProvider
     public void testInitialState()
     {
         assertEquals(new MinuteBucketIdProvider(ticker).get(), 0);
-        ticker.increment(27, TimeUnit.HOURS);
-        ticker.increment(977_777, TimeUnit.NANOSECONDS);
+        ticker.elapseTime(27, TimeUnit.HOURS);
+        ticker.elapseTime(977_777, TimeUnit.NANOSECONDS);
         assertEquals(new MinuteBucketIdProvider(ticker).get(), 0);
     }
 
     @Test
     public void testMinuteBoundary()
     {
-        ticker.increment(27, TimeUnit.HOURS);
-        ticker.increment(977_777, TimeUnit.NANOSECONDS);
+        ticker.elapseTime(27, TimeUnit.HOURS);
+        ticker.elapseTime(977_777, TimeUnit.NANOSECONDS);
         MinuteBucketIdProvider idProvider = new MinuteBucketIdProvider(ticker);
         assertEquals(idProvider.get(), 0, "initial state");
-        ticker.increment(59_999_999_999L, TimeUnit.NANOSECONDS);
+        ticker.elapseTime(59_999_999_999L, TimeUnit.NANOSECONDS);
         assertEquals(idProvider.get(), 0, "before minute boundary");
-        ticker.increment(1, TimeUnit.NANOSECONDS);
+        ticker.elapseTime(1, TimeUnit.NANOSECONDS);
         assertEquals(idProvider.get(), 1, "on minute boundary");
     }
 }
