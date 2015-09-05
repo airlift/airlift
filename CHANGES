@@ -8,10 +8,13 @@ Platform 1.24
 
   We added TestingHttpClient.getRequestCount().
 
-* TestingTicker
+* TestingTicker and SerialScheduledExecutorService
 
   We added TestingTicker.elapseTime() and deprecated TestingTicker.increment()
   for consistency with SerialScheduledExecutorService.
+
+  We added elapseTimeNanosecondBefore() methods to TestingTicker and
+  SerialScheduledExecutorService.
 
 Platform 1.23
 

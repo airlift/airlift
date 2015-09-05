@@ -200,6 +200,22 @@ public class SerialScheduledExecutorService
     }
 
     /**
+     * Advance time by one nanosecond less than the given quantum.
+     * <p>
+     * Scheduled tasks due for execution will be executed in the caller's thread.
+     *
+     * @param quantum the amount of time to advance one nanosecond short of
+     * @param timeUnit the unit of the quantum amount
+     */
+    public void elapseTimeNanosecondBefore(long quantum, TimeUnit timeUnit)
+    {
+        checkArgument(quantum > 0, "Time quantum must be a positive number");
+        checkState(!isShutdown, "Trying to elapse time after shutdown");
+
+        elapseTime(toNanos(quantum, timeUnit) - 1, ticker);
+    }
+
+    /**
      * Returns a {@link com.google.common.base.Ticker} that is advanced by {@link #elapseTime}
      */
     public Ticker getTicker() {

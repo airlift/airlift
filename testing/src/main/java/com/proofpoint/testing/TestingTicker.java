@@ -38,4 +38,10 @@ public class TestingTicker
         checkArgument(quantum >= 0, "quantum is negative");
         time += timeUnit.toNanos(quantum);
     }
+
+    public void elapseTimeNanosecondBefore(long quantum, TimeUnit timeUnit)
+    {
+        checkArgument(quantum > 0, "quantum is non-positive");
+        time += timeUnit.toNanos(quantum) - 1;
+    }
 }

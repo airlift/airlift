@@ -161,6 +161,9 @@ public class TestSerialScheduledExecutorService
 
         executorService.elapseTime(10, TimeUnit.NANOSECONDS);
         assertEquals(ticker.read() - initialTick, 20);
+
+        executorService.elapseTimeNanosecondBefore(1, TimeUnit.MILLISECONDS);
+        assertEquals(ticker.read() - initialTick, 20 + 999_999);
     }
 
     @Test
