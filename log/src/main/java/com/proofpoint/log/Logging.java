@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Multimap;
 
 import javax.annotation.concurrent.GuardedBy;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -35,6 +36,9 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
@@ -48,8 +52,12 @@ import java.util.logging.LogRecord;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Throwables.propagate;
 import static com.google.common.collect.Multimaps.synchronizedMultimap;
 import static com.proofpoint.log.Level.fromJulLevel;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
  * Initializes the logging subsystem.
@@ -339,6 +347,7 @@ public class Logging
 
         if (config.getLogPath() != null) {
             logToFile(config.getLogPath(), config.getMaxHistory(), config.getMaxSegmentSize().toBytes());
+            setupBootstrapLog(config);
         }
 
         if (!config.isConsoleEnabled()) {
@@ -348,5 +357,50 @@ public class Logging
         if (config.getLevelsFile() != null) {
             setLevels(new File(config.getLevelsFile()));
         }
+    }
+
+    private void setupBootstrapLog(LoggingConfiguration config)
+            throws IOException
+    {
+        Path logPath = Paths.get(config.getLogPath())
+                .getParent()
+                .resolve("bootstrap.log");
+        BufferedWriter writer = Files.newBufferedWriter(logPath, WRITE, CREATE, TRUNCATE_EXISTING);
+        java.util.logging.Logger.getLogger("Bootstrap").addHandler(new Handler()
+        {
+            @Override
+            public void publish(LogRecord record)
+            {
+                try {
+                    writer.write(record.getMessage());
+                    writer.newLine();
+                    writer.flush();
+                }
+                catch (IOException e) {
+                    throw propagate(e);
+                }
+            }
+
+            @Override
+            public void flush()
+            {
+                try {
+                    writer.flush();
+                }
+                catch (IOException e) {
+                    throw propagate(e);
+                }
+            }
+
+            @Override
+            public void close()
+            {
+                try {
+                    writer.close();
+                }
+                catch (IOException ignored) {
+                }
+            }
+        });
     }
 }

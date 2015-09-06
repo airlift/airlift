@@ -2,6 +2,12 @@ Platform 1.24
 
 * Logging
 
+  Platform applications with log.output-file configured now also write a
+  bootstrap.log file in the same directory. The bootstrap.log file contains
+  a copy of messages logged from Bootstrap and is truncated on every startup.
+  This is intended to make the (redacted) configuration and other startup
+  information more accessible when troubleshooting.
+
   We added Logging.addLogTester() and Logging.resetLogTesters() methods for
   writing unit tests that verify logging.
 
