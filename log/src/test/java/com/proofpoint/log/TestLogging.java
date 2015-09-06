@@ -23,10 +23,13 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 
 import static com.google.common.io.Files.createTempDir;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 public class TestLogging
 {
@@ -133,5 +136,59 @@ public class TestLogging
         logging.setLevel("testChildLevelOverridesParent.child", Level.ERROR);
         assertFalse(logger.isDebugEnabled());
         assertFalse(logger.isInfoEnabled());
+    }
+
+    @Test
+    public void testAddLogTester()
+    {
+        Logging.initialize();
+        ArrayList<String> logRecords = new ArrayList<>();
+        Logging.addLogTester(TestAddLogTester.class, (level, message, thrown) -> {
+            assertEquals(level, Level.INFO);
+            assertFalse(thrown.isPresent());
+            logRecords.add(message);
+        });
+        Logger.get(TestAddLogTester.class).info("test log line");
+        assertEquals(logRecords.size(), 1);
+        assertEquals(logRecords.get(0), "test log line");
+    }
+
+    private static class TestAddLogTester
+    {
+    }
+
+    @Test
+    public void testAddLogTesterThrown()
+    {
+        Logging.initialize();
+        ArrayList<String> logRecords = new ArrayList<>();
+        Exception testingException = new Exception();
+        Logging.addLogTester(TestAddLogTesterThrown.class, (level, message, thrown) -> {
+            assertEquals(level, Level.WARN);
+            assertEquals(thrown.get(), testingException);
+            logRecords.add(message);
+        });
+        Logger.get(TestAddLogTesterThrown.class).warn(testingException, "test log line");
+        assertEquals(logRecords.size(), 1);
+        assertEquals(logRecords.get(0), "test log line");
+    }
+
+    private static class TestAddLogTesterThrown
+    {
+    }
+
+    @Test
+    public void testResetLogHandlers()
+    {
+        Logging.initialize();
+        Logging.addLogTester(TestResetLogHandlers.class, (level, message, thrown) -> {
+            fail("Unexpected call to publish");
+        });
+        Logging.resetLogTesters();
+        Logger.get(TestResetLogHandlers.class).info("test log line");
+    }
+
+    private static class TestResetLogHandlers
+    {
     }
 }

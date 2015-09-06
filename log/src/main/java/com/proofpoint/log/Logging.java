@@ -21,7 +21,10 @@ import ch.qos.logback.core.encoder.Encoder;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.Multimap;
 
 import javax.annotation.concurrent.GuardedBy;
 import java.io.File;
@@ -35,12 +38,18 @@ import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
+import java.util.logging.LogRecord;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.Multimaps.synchronizedMultimap;
+import static com.proofpoint.log.Level.fromJulLevel;
 
 /**
  * Initializes the logging subsystem.
@@ -62,6 +71,7 @@ public class Logging
 
     // hard reference to loggers for which we set the level
     private final Map<String, java.util.logging.Logger> loggers = new ConcurrentHashMap<>();
+    private final Multimap<java.util.logging.Logger, Handler> testingHandlers = synchronizedMultimap(ArrayListMultimap.create());
 
     @GuardedBy("this")
     private OutputStreamHandler consoleHandler;
@@ -135,6 +145,67 @@ public class Logging
         ROOT.addHandler(rollingFileHandler);
     }
 
+    /**
+     * Add a {@link LogTester} to the logger named after a class' fully qualified name.
+     *
+     * @param clazz the class
+     * @param logTester the LogTester
+     */
+    @VisibleForTesting
+    public static void addLogTester(Class<?> clazz, LogTester logTester)
+    {
+        addLogTester(clazz.getName(), logTester);
+    }
+
+    /**
+     * Add a {@link LogTester} to a named logger. Intended for writing unit tests that verify logging.
+     *
+     * @param name the name of the logger
+     * @param logTester the LogTester
+     */
+    @VisibleForTesting
+    public static void addLogTester(String name, LogTester logTester)
+    {
+        checkState(instance != null, "Logging is not initialized");
+        java.util.logging.Logger logger = java.util.logging.Logger.getLogger(name);
+        Handler handler = new Handler()
+        {
+            @Override
+            public void publish(LogRecord record)
+            {
+                logTester.log(fromJulLevel(record.getLevel()), record.getMessage(), Optional.ofNullable(record.getThrown()));
+            }
+
+            @Override
+            public void flush()
+            {
+            }
+
+            @Override
+            public void close()
+            {
+            }
+        };
+        instance.testingHandlers.put(logger, handler);
+        logger.addHandler(handler);
+    }
+
+    /**
+     * Remove all installed {@link LogTester}s
+     */
+    @VisibleForTesting
+    public static void resetLogTesters()
+    {
+        if (instance == null) {
+            return;
+        }
+
+        for (Entry<java.util.logging.Logger, Handler> entry : instance.testingHandlers.entries()) {
+            entry.getKey().removeHandler(entry.getValue());
+        }
+        instance.testingHandlers.clear();
+    }
+
     public static <T> Appender<T> createFileAppender(String logPath, int maxHistory, long maxSizeInBytes, Encoder<T> encoder, Context context)
     {
         recoverTempFiles(logPath);
@@ -203,7 +274,7 @@ public class Logging
         if (level == null) {
             return Level.OFF;
         }
-        return Level.fromJulLevel(level);
+        return fromJulLevel(level);
     }
 
     @SuppressWarnings("MethodMayBeStatic")
@@ -220,7 +291,7 @@ public class Logging
         for (String loggerName : Collections.list(LogManager.getLogManager().getLoggerNames())) {
             java.util.logging.Level level = java.util.logging.Logger.getLogger(loggerName).getLevel();
             if (level != null) {
-                levels.put(loggerName, Level.fromJulLevel(level));
+                levels.put(loggerName, fromJulLevel(level));
             }
         }
         return levels.build();

@@ -1,5 +1,10 @@
 Platform 1.24
 
+* Logging
+
+  We added Logging.addLogTester() and Logging.resetLogTesters() methods for
+  writing unit tests that verify logging.
+
 * TestingHttpClient
 
   We created a default constructor for TestingHttpClient. The constructed
