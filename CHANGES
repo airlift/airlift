@@ -27,6 +27,10 @@ Platform 1.24
   We added elapseTimeNanosecondBefore() methods to TestingTicker and
   SerialScheduledExecutorService.
 
+* Library Upgrades
+
+  - jnr-posix to 3.0.17
+
 Platform 1.23
 
 * BalancingHttpClient

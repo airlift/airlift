@@ -105,7 +105,7 @@ class Processes
     }
 
     private static class PosixSingletonHolder {
-        private static final POSIX instance = POSIXFactory.getPOSIX(posixHandler, true);
+        private static final POSIX instance = POSIXFactory.getNativePOSIX(posixHandler);
     }
 
     private static final class OurPOSIXHandler implements POSIXHandler
