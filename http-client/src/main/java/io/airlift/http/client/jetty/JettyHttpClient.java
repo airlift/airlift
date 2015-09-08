@@ -432,6 +432,11 @@ public class JettyHttpClient
         return requestFilters;
     }
 
+    public long getRequestTimeoutMillis()
+    {
+        return requestTimeoutMillis;
+    }
+
     @Override
     @Managed
     @Flatten
