@@ -114,6 +114,30 @@ public class TestConfig
     }
 
     @Test
+    public void testConfigDefaultsWithAnnotationType()
+    {
+        Injector injector = createInjector(ImmutableMap.of(), createModule(
+                Key.get(Config1.class, MyAnnotation.class), Config1.class,
+                null,
+                new StringOptionDefaults("default string")));
+
+        Config1 config = injector.getInstance(Key.get(Config1.class, MyAnnotation.class));
+        assertEquals("default string", config.getStringOption());
+    }
+
+    @Test
+    public void testConfigDefaultsWithAnnotationObject()
+    {
+        Injector injector = createInjector(ImmutableMap.of(), createModule(
+                Key.get(Config1.class, named("boo")), Config1.class,
+                null,
+                new StringOptionDefaults("default string")));
+
+        Config1 config = injector.getInstance(Key.get(Config1.class, named("boo")));
+        assertEquals("default string", config.getStringOption());
+    }
+
+    @Test
     public void testConfigDefaultsOverride()
     {
         Injector injector = createInjector(ImmutableMap.of(), createModule(

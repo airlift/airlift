@@ -119,7 +119,7 @@ public class ConfigBinder
 
         TypeLiteral<ConfigDefaultsHolder<T>> typeLiteral = (TypeLiteral<ConfigDefaultsHolder<T>>) TypeLiteral.get(type);
 
-        if (key.getAnnotation() == null) {
+        if (key.getAnnotationType() == null) {
             return newSetBinder(binder, typeLiteral);
         }
         if (key.hasAttributes()) {
