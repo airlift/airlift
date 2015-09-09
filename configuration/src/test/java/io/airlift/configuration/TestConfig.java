@@ -20,22 +20,39 @@ import com.google.common.collect.ImmutableMap.Builder;
 import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.spi.Message;
 import org.testng.annotations.Test;
 
+import javax.inject.Qualifier;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static com.google.inject.name.Names.named;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.configuration.Configuration.processConfiguration;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
 public class TestConfig
 {
+    @Retention(RUNTIME)
+    @Target({FIELD, PARAMETER, METHOD})
+    @Qualifier
+    public @interface MyAnnotation
+    {
+    }
+
     private final Map<String, String> properties = ImmutableMap.<String, String>builder()
             .put("stringOption", "a string")
             .put("booleanOption", "true")
@@ -59,14 +76,28 @@ public class TestConfig
     @Test
     public void testConfig()
     {
-        Injector injector = createInjector(properties, createModule(Config1.class, null));
+        Injector injector = createInjector(properties, createModule(Key.get(Config1.class), Config1.class, null));
         verifyConfig(injector.getInstance(Config1.class));
+    }
+
+    @Test
+    public void testConfigWithAnnotationType()
+    {
+        Injector injector = createInjector(properties, createModule(Key.get(Config1.class, MyAnnotation.class), Config1.class, null));
+        verifyConfig(injector.getInstance(Key.get(Config1.class, MyAnnotation.class)));
+    }
+
+    @Test
+    public void testConfigWithAnnotationObject()
+    {
+        Injector injector = createInjector(properties, createModule(Key.get(Config1.class, named("boo")), Config1.class, null));
+        verifyConfig(injector.getInstance(Key.get(Config1.class, named("boo"))));
     }
 
     @Test
     public void testPrefixConfigTypes()
     {
-        Injector injector = createInjector(prefix("prefix", properties), createModule(Config1.class, "prefix"));
+        Injector injector = createInjector(prefix("prefix", properties), createModule(Key.get(Config1.class), Config1.class, "prefix"));
         verifyConfig(injector.getInstance(Config1.class));
     }
 
@@ -74,7 +105,7 @@ public class TestConfig
     public void testConfigDefaults()
     {
         Injector injector = createInjector(ImmutableMap.of(), createModule(
-                Config1.class,
+                Key.get(Config1.class), Config1.class,
                 null,
                 new StringOptionDefaults("default string")));
 
@@ -86,7 +117,7 @@ public class TestConfig
     public void testConfigDefaultsOverride()
     {
         Injector injector = createInjector(ImmutableMap.of(), createModule(
-                Config1.class,
+                Key.get(Config1.class), Config1.class,
                 null,
                 new StringOptionDefaults("default string"),
                 new StringOptionDefaults("another default string"),
@@ -100,7 +131,7 @@ public class TestConfig
     public void testPropertiesOverrideDefaults()
     {
         Injector injector = createInjector(properties, createModule(
-                Config1.class,
+                Key.get(Config1.class), Config1.class,
                 null,
                 new StringOptionDefaults("default string"),
                 new StringOptionDefaults("another default string"),
@@ -133,7 +164,7 @@ public class TestConfig
     public void testDetectsNoConfigAnnotations()
     {
         try {
-            Injector injector = createInjector(Collections.<String, String>emptyMap(), createModule(ConfigWithNoAnnotations.class, null));
+            Injector injector = createInjector(Collections.<String, String>emptyMap(), createModule(Key.get(ConfigWithNoAnnotations.class), ConfigWithNoAnnotations.class, null));
             injector.getInstance(ConfigWithNoAnnotations.class);
             fail("Expected exception due to missing @Config annotations");
         }
@@ -150,14 +181,15 @@ public class TestConfig
     }
 
     @SafeVarargs
-    private static <T> Module createModule(Class<T> configClass, String prefix, ConfigDefaults<T>... configDefaults)
+    private static <T> Module createModule(Key<T> key, Class<T> configClass, String prefix, ConfigDefaults<T>... configDefaults)
     {
         Module module = binder -> {
-            configBinder(binder).bindConfig(configClass, prefix);
-
             ConfigBinder configBinder = configBinder(binder);
+
+            configBinder.bindConfig(key, configClass, prefix);
+
             for (ConfigDefaults<T> configDefault : configDefaults) {
-                configBinder.bindConfigDefaults(configClass, configDefault);
+                configBinder.bindConfigDefaults(key, configDefault);
             }
         };
 

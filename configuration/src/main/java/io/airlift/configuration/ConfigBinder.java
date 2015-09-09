@@ -73,7 +73,7 @@ public class ConfigBinder
         bindConfig(Key.get(configClass, annotation), configClass, prefix);
     }
 
-    private <T> void bindConfig(Key<T> key, Class<T> configClass, String prefix)
+    public <T> void bindConfig(Key<T> key, Class<T> configClass, String prefix)
     {
         binder.bind(key).toProvider(new ConfigurationProvider<>(key, configClass, prefix));
         createConfigDefaultsBinder(key);
@@ -105,7 +105,7 @@ public class ConfigBinder
         bindConfigDefaults(Key.get(configClass, annotation), configDefaults);
     }
 
-    private <T> void bindConfigDefaults(Key<T> key, ConfigDefaults<T> configDefaults)
+    public <T> void bindConfigDefaults(Key<T> key, ConfigDefaults<T> configDefaults)
     {
         createConfigDefaultsBinder(key).addBinding().toInstance(new ConfigDefaultsHolder<>(key, configDefaults));
     }
