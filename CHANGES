@@ -1,3 +1,9 @@
+* 0.116
+
+- Add configuration for HTTP selector and acceptor thread pools
+- Fix config defaults bindings with annotation class
+- Fix config defaults bindings for HTTP clients
+
 * 0.115
 
 - Add more MoreFutures utilities

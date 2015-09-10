@@ -1,3 +1,16 @@
+Airlift 0.116
+
+* Default Config Fixes
+
+Configuration defaults bound with an annotation were not being applied due to
+a bug.  This also caused HTTP client defaults to not be applied.
+
+* HTTP Selector and Acceptor Pool Configuration
+
+In installations with a high HTTP request volume the default selector and
+acceptor pool sizes in Jetty are too small which causes requests to backup
+in OS queues and eventually fail.
+
 Airlift 0.115
 
 Minor changes to logging configuration. See CHANGES.
