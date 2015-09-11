@@ -1,3 +1,10 @@
+Platform 1.25
+
+* Stats
+
+  We created a MaxGauge stats class for reporting the maximum value, over the
+  one minute reporting interval, value of a metric.
+
 Platform 1.24
 
 * Logging
