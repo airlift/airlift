@@ -33,6 +33,7 @@ import com.proofpoint.http.client.balancing.HttpServiceBalancer;
 import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
 import com.proofpoint.http.client.balancing.HttpServiceBalancerStats;
 import com.proofpoint.reporting.ReportCollectionFactory;
+import com.proofpoint.reporting.ReportExporter;
 import org.weakref.jmx.ObjectNameBuilder;
 
 import javax.annotation.PreDestroy;
@@ -99,14 +100,14 @@ public class DiscoveryModule
 
     @Provides
     @ServiceType("discovery")
-    public HttpServiceBalancer createHttpServiceBalancer(ReportCollectionFactory reportCollectionFactory)
+    public HttpServiceBalancer createHttpServiceBalancer(ReportExporter reportExporter, ReportCollectionFactory reportCollectionFactory)
     {
-        return getHttpServiceBalancerImpl(reportCollectionFactory);
+        return getHttpServiceBalancerImpl(reportExporter, reportCollectionFactory);
     }
 
-    @Provides
     @ServiceType("discovery")
-    synchronized public HttpServiceBalancerImpl getHttpServiceBalancerImpl(ReportCollectionFactory reportCollectionFactory)
+    @Provides
+    public synchronized HttpServiceBalancerImpl getHttpServiceBalancerImpl(ReportExporter reportExporter, ReportCollectionFactory reportCollectionFactory)
     {
         if (discoveryBalancer == null) {
             String name = new ObjectNameBuilder(HttpServiceBalancerStats.class.getPackage().getName())
@@ -114,6 +115,7 @@ public class DiscoveryModule
                     .withProperty("serviceType", "discovery")
                     .build();
             discoveryBalancer = new HttpServiceBalancerImpl("discovery", reportCollectionFactory.createReportCollection(HttpServiceBalancerStats.class, name));
+            reportExporter.export(name, discoveryBalancer);
         }
         return discoveryBalancer;
     }

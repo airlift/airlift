@@ -22,12 +22,12 @@ import com.proofpoint.http.client.balancing.HttpServiceBalancer;
 import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
 import com.proofpoint.http.client.balancing.HttpServiceBalancerStats;
 import com.proofpoint.reporting.ReportCollectionFactory;
+import com.proofpoint.reporting.ReportExporter;
 import org.weakref.jmx.ObjectNameBuilder;
 
 import java.net.URI;
 import java.util.Set;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -35,12 +35,20 @@ class StaticHttpServiceBalancerProvider implements Provider<HttpServiceBalancer>
 {
     private final String type;
     private final Set<URI> baseUris;
+    private ReportExporter reportExporter;
     private ReportCollectionFactory reportCollectionFactory;
 
     StaticHttpServiceBalancerProvider(String type, Set<URI> baseUris)
     {
         this.type = requireNonNull(type, "type is null");
         this.baseUris = ImmutableSet.copyOf(baseUris);
+    }
+
+    @Inject
+    public void setReportExporter(ReportExporter reportExporter)
+    {
+        requireNonNull(reportExporter, "reportExporter is null");
+        this.reportExporter = reportExporter;
     }
 
     @Inject
@@ -53,8 +61,8 @@ class StaticHttpServiceBalancerProvider implements Provider<HttpServiceBalancer>
     @Override
     public HttpServiceBalancer get()
     {
-        checkNotNull(type, "type is null");
-        checkNotNull(baseUris, "baseUris is null");
+        requireNonNull(type, "type is null");
+        requireNonNull(baseUris, "baseUris is null");
 
         String name = new ObjectNameBuilder(HttpServiceBalancerStats.class.getPackage().getName())
                 .withProperty("type", "ServiceClient")
@@ -62,6 +70,7 @@ class StaticHttpServiceBalancerProvider implements Provider<HttpServiceBalancer>
                 .build();
         HttpServiceBalancerStats httpServiceBalancerStats = reportCollectionFactory.createReportCollection(HttpServiceBalancerStats.class, name);
         HttpServiceBalancerImpl balancer = new HttpServiceBalancerImpl(format("type=[%s], static", type), httpServiceBalancerStats);
+        reportExporter.export(name, balancer);
         balancer.updateHttpUris(baseUris);
         return balancer;
     }

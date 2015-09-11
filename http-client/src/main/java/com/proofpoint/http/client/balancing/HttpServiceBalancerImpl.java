@@ -19,6 +19,8 @@ import com.google.common.annotations.Beta;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableSet;
 import com.proofpoint.http.client.balancing.HttpServiceBalancerStats.Status;
+import com.proofpoint.stats.MaxGauge;
+import org.weakref.jmx.Nested;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -41,6 +43,7 @@ public class HttpServiceBalancerImpl
     private final String description;
     private final HttpServiceBalancerStats httpServiceBalancerStats;
     private final Ticker ticker;
+    private final MaxGauge concurrency = new MaxGauge();
 
     public HttpServiceBalancerImpl(String description, HttpServiceBalancerStats httpServiceBalancerStats)
     {
@@ -104,6 +107,9 @@ public class HttpServiceBalancerImpl
 
                 uri = leastUris.get(ThreadLocalRandom.current().nextInt(0, leastUris.size()));
                 concurrentAttempts.put(uri, leastConcurrent + 1);
+                if (leastConcurrent == concurrency.get()) {
+                    concurrency.update(leastConcurrent + 1);
+                }
             }
 
             this.attempted = ImmutableSet.copyOf(attempted);
@@ -147,9 +153,21 @@ public class HttpServiceBalancerImpl
                 Integer uriConcurrent = concurrentAttempts.get(uri);
                 if (uriConcurrent == null || uriConcurrent <= 1) {
                     concurrentAttempts.remove(uri);
+                    if (concurrentAttempts.isEmpty()) {
+                        concurrency.update(0);
+                    }
                 }
                 else {
                     concurrentAttempts.put(uri, uriConcurrent - 1);
+                    if (concurrency.get() == uriConcurrent) {
+                        for (Integer concurrent : concurrentAttempts.values()) {
+                            if (concurrent == uriConcurrent) {
+                                ++uriConcurrent;
+                                break;
+                            }
+                        }
+                        concurrency.update(uriConcurrent - 1);
+                    }
                 }
             }
         }
@@ -164,5 +182,11 @@ public class HttpServiceBalancerImpl
                     .build();
             return new HttpServiceAttemptImpl(newAttempted);
         }
+    }
+
+    @Nested
+    public MaxGauge getConcurrency()
+    {
+        return concurrency;
     }
 }

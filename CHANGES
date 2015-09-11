@@ -1,5 +1,10 @@
 Platform 1.25
 
+* BalancingHttpClient
+
+  The balancer now reports a ServiceClient.Concurrency.Max metric that reports
+  the maximum number of concurrent requests to any instance in the pool.
+
 * Stats
 
   We created a MaxGauge stats class for reporting the maximum value, over the

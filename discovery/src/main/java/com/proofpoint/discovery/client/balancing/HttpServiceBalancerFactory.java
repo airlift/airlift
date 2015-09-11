@@ -20,40 +20,44 @@ import com.proofpoint.discovery.client.DiscoveryLookupClient;
 import com.proofpoint.discovery.client.ForDiscoveryClient;
 import com.proofpoint.discovery.client.ServiceDescriptorsUpdater;
 import com.proofpoint.discovery.client.ServiceSelectorConfig;
-import com.proofpoint.http.client.balancing.HttpServiceBalancerStats;
 import com.proofpoint.http.client.balancing.HttpServiceBalancer;
 import com.proofpoint.http.client.balancing.HttpServiceBalancerImpl;
+import com.proofpoint.http.client.balancing.HttpServiceBalancerStats;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.reporting.ReportCollectionFactory;
+import com.proofpoint.reporting.ReportExporter;
 import org.weakref.jmx.ObjectNameBuilder;
 
 import java.util.concurrent.ScheduledExecutorService;
 
 import static com.google.common.base.Objects.firstNonNull;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 
 public final class HttpServiceBalancerFactory
 {
     private final DiscoveryLookupClient lookupClient;
     private final ScheduledExecutorService executor;
+    private final ReportExporter reportExporter;
     private final ReportCollectionFactory reportCollectionFactory;
 
     @Inject
-    public HttpServiceBalancerFactory(DiscoveryLookupClient lookupClient, @ForDiscoveryClient ScheduledExecutorService executor, ReportCollectionFactory reportCollectionFactory)
+    public HttpServiceBalancerFactory(
+            DiscoveryLookupClient lookupClient,
+            @ForDiscoveryClient ScheduledExecutorService executor,
+            ReportExporter reportExporter,
+            ReportCollectionFactory reportCollectionFactory)
     {
-        checkNotNull(lookupClient, "client is null");
-        checkNotNull(executor, "executor is null");
-        checkNotNull(reportCollectionFactory, "reportCollectionFactory is null");
-        this.lookupClient = lookupClient;
-        this.executor = executor;
-        this.reportCollectionFactory = reportCollectionFactory;
+        this.lookupClient = requireNonNull(lookupClient, "lookupClient is null");
+        this.executor = requireNonNull(executor, "executor is null");
+        this.reportExporter = requireNonNull(reportExporter, "reportExporter is null");
+        this.reportCollectionFactory = requireNonNull(reportCollectionFactory, "reportCollectionFactory is null");
     }
 
     public HttpServiceBalancer createHttpServiceBalancer(String type, ServiceSelectorConfig selectorConfig, NodeInfo nodeInfo)
     {
-        checkNotNull(type, "type is null");
-        checkNotNull(selectorConfig, "selectorConfig is null");
+        requireNonNull(type, "type is null");
+        requireNonNull(selectorConfig, "selectorConfig is null");
 
         String pool = firstNonNull(selectorConfig.getPool(), nodeInfo.getPool());
         String name = new ObjectNameBuilder(HttpServiceBalancerStats.class.getPackage().getName())
@@ -62,6 +66,7 @@ public final class HttpServiceBalancerFactory
                 .build();
         HttpServiceBalancerStats httpServiceBalancerStats = reportCollectionFactory.createReportCollection(HttpServiceBalancerStats.class, name);
         HttpServiceBalancerImpl balancer = new HttpServiceBalancerImpl(format("type=[%s], pool=[%s]", type, pool), httpServiceBalancerStats);
+        reportExporter.export(name, balancer);
         ServiceDescriptorsUpdater updater = new ServiceDescriptorsUpdater(new HttpServiceBalancerListenerAdapter(balancer), type, selectorConfig, nodeInfo, lookupClient, executor);
         updater.start();
 
