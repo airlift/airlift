@@ -168,11 +168,11 @@ public class SpnegoAuthentication
                         request.header(headerInfo.getHeader(), format("%s %s", NEGOTIATE, Base64.getEncoder().encodeToString(token)));
                     }
                     else {
-                        LOG.debug("No token generated from GSS context for %s", request.getURI());
+                        throw new RuntimeException(format("No token generated from GSS context for %s", request.getURI()));
                     }
                 }
                 catch (GSSException e) {
-                    LOG.debug(e, "Failed to establish GSSContext for request %s", request.getURI());
+                    throw new RuntimeException(format("Failed to establish GSSContext for request %s", request.getURI()), e);
                 }
                 finally {
                     try {
