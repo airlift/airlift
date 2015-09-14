@@ -1,3 +1,10 @@
+Platform 1.26
+
+* HttpServer
+
+  We added a HttpServer.BusyThreads.Max metric that reports the maximum number
+  of busy threads in the http-server pool.
+
 Platform 1.25
 
 * BalancingHttpClient

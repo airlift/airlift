@@ -54,6 +54,19 @@ public class MaxGauge
         applyToCurrentBucket(bucket -> bucket.maxValue.accumulateAndGet(value, Long::max));
     }
 
+    /**
+     * Add to the current value of the metric.
+     *
+     * @param delta The amount to add to the current value of the metric.
+     */
+    public void add(int delta)
+    {
+        long value = currentValue.addAndGet(delta);
+        if (delta > 0) {
+            applyToCurrentBucket(bucket -> bucket.maxValue.accumulateAndGet(value, Long::max));
+        }
+    }
+
     public long get()
     {
         return currentValue.get();

@@ -21,6 +21,7 @@ import com.google.common.primitives.Ints;
 import com.proofpoint.bootstrap.AcceptRequests;
 import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 import com.proofpoint.node.NodeInfo;
+import com.proofpoint.stats.MaxGauge;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -49,6 +50,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.weakref.jmx.Flatten;
+import org.weakref.jmx.Nested;
 
 import javax.annotation.PreDestroy;
 import javax.management.MBeanServer;
@@ -94,6 +96,7 @@ public class HttpServer
     private final ServerConnector httpsConnector;
     private final ServerConnector adminConnector;
     private final RequestStats stats;
+    private final MaxGauge busyThreads = new MaxGauge();
 
     @SuppressWarnings({"deprecation"})
     public HttpServer(HttpServerInfo httpServerInfo,
@@ -119,7 +122,16 @@ public class HttpServer
         checkNotNull(queryStringFilter, "queryStringFilter is null");
         checkNotNull(theServlet, "theServlet is null");
 
-        QueuedThreadPool threadPool = new QueuedThreadPool(config.getMaxThreads());
+        QueuedThreadPool threadPool = new QueuedThreadPool(config.getMaxThreads()) {
+
+            @Override
+            protected void runJob(Runnable job)
+            {
+                busyThreads.add(1);
+                super.runJob(job);
+                busyThreads.add(-1);
+            }
+        };
         threadPool.setMinThreads(config.getMinThreads());
         threadPool.setIdleTimeout(Ints.checkedCast(config.getThreadMaxIdleTime().toMillis()));
         threadPool.setName("http-worker");
@@ -403,6 +415,12 @@ public class HttpServer
     {
         return stats;
     }
+
+    @Nested
+    public MaxGauge getBusyThreads() {
+        return busyThreads;
+    }
+
 
     private static void checkSufficientThreads(Connector connector, String name)
     {
