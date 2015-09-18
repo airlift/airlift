@@ -161,7 +161,7 @@ public class HttpServiceBalancerImpl
                     concurrentAttempts.put(uri, uriConcurrent - 1);
                     if (concurrency.get() == uriConcurrent) {
                         for (Integer concurrent : concurrentAttempts.values()) {
-                            if (concurrent == uriConcurrent) {
+                            if (uriConcurrent.equals(concurrent)) {
                                 ++uriConcurrent;
                                 break;
                             }

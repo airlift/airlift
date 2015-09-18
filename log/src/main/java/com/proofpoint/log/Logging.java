@@ -71,6 +71,7 @@ public class Logging
     private static final Logger log = Logger.get(Logging.class);
     private static final String ROOT_LOGGER_NAME = "";
     private static final java.util.logging.Logger ROOT = java.util.logging.Logger.getLogger("");
+    private static final java.util.logging.Logger BOOTSTRAP_LOGGER = java.util.logging.Logger.getLogger("Bootstrap");
 
     private static final String TEMP_FILE_EXTENSION = ".tmp";
     private static final String LOG_FILE_EXTENSION = ".log";
@@ -359,14 +360,17 @@ public class Logging
         }
     }
 
-    private void setupBootstrapLog(LoggingConfiguration config)
+    private static void setupBootstrapLog(LoggingConfiguration config)
             throws IOException
     {
-        Path logPath = Paths.get(config.getLogPath())
-                .getParent()
-                .resolve("bootstrap.log");
+        Path parent = Paths.get(config.getLogPath()).getParent();
+        if (parent == null) {
+            return;
+        }
+
+        Path logPath = parent.resolve("bootstrap.log");
         BufferedWriter writer = Files.newBufferedWriter(logPath, WRITE, CREATE, TRUNCATE_EXISTING);
-        java.util.logging.Logger.getLogger("Bootstrap").addHandler(new Handler()
+        BOOTSTRAP_LOGGER.addHandler(new Handler()
         {
             @Override
             public void publish(LogRecord record)

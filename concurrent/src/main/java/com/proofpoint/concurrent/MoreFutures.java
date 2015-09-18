@@ -5,6 +5,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
@@ -182,6 +183,7 @@ public final class MoreFutures
         Futures.addCallback(listenableFuture, new FutureCallback<V>()
         {
             @Override
+            @SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
             public void onSuccess(V result)
             {
                 future.complete(result);
