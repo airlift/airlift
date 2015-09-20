@@ -67,10 +67,10 @@ public class TimeStat
 
     public void add(Duration duration)
     {
-        add((long) duration.getValue(TimeUnit.NANOSECONDS));
+        addNanos((long) duration.getValue(TimeUnit.NANOSECONDS));
     }
 
-    private void add(long value)
+    public void addNanos(long value)
     {
         oneMinute.add(value);
         fiveMinutes.add(value);
@@ -83,7 +83,7 @@ public class TimeStat
     {
         long start = ticker.read();
         T result = callable.call();
-        add(ticker.read() - start);
+        addNanos(ticker.read() - start);
         return result;
     }
 
@@ -100,7 +100,7 @@ public class TimeStat
         @Override
         public void close()
         {
-            add(ticker.read() - start);
+            addNanos(ticker.read() - start);
         }
     }
 
