@@ -270,7 +270,7 @@
                             <defaultFilemode>644</defaultFilemode>
                             <defaultUsername>root</defaultUsername>
                             <defaultGroupname>root</defaultGroupname>
-                            <mappings>
+                            <mappings combine.children="append">
                             <!-- Root directory and README -->
                                  <mapping>
                                      <directory>/opt/proofpoint/${project.artifactId}</directory>
