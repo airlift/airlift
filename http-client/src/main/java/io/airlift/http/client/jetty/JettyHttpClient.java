@@ -1360,8 +1360,6 @@ public class JettyHttpClient
                 throws Exception
         {
             authenticationStore.clearAuthenticationResults();
-            spnego.shutdown();
-
             super.doStop();
         }
     }
