@@ -1,6 +1,7 @@
 * 0.127
 
 - Remove all usage of ThreadGroup
+- Add HTTP/2 support in HTTP server for HTTP (not HTTPS)
 
 * 0.126
 

@@ -57,6 +57,7 @@ public class TestHttpServerConfig
                 .setAdminMinThreads(2)
                 .setAdminMaxThreads(200)
                 .setMaxRequestHeaderSize(null)
+                .setHttp2MaxConcurrentStreams(16384)
                 .setShowStackTrace(true)
         );
     }
@@ -92,6 +93,7 @@ public class TestHttpServerConfig
                 .put("http-server.admin.threads.min", "3")
                 .put("http-server.admin.threads.max", "4")
                 .put("http-server.max-request-header-size", "32kB")
+                .put("http-server.http2.max-concurrent-streams", "1234")
                 .put("http-server.show-stack-trace", "false")
                 .build();
 
@@ -123,6 +125,7 @@ public class TestHttpServerConfig
                 .setAdminPort(3)
                 .setAdminMinThreads(3)
                 .setAdminMaxThreads(4)
+                .setHttp2MaxConcurrentStreams(1234)
                 .setShowStackTrace(false);
 
         ConfigAssertions.assertFullMapping(properties, expected);
