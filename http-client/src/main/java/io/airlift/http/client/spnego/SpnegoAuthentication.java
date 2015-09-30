@@ -4,6 +4,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.sun.security.auth.module.Krb5LoginModule;
 import io.airlift.log.Logger;
+import io.airlift.units.Duration;
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -13,9 +14,9 @@ import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
 import org.ietf.jgss.GSSManager;
-import org.ietf.jgss.GSSName;
 import org.ietf.jgss.Oid;
 
+import javax.annotation.concurrent.GuardedBy;
 import javax.security.auth.Subject;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
@@ -30,20 +31,24 @@ import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.Base64;
 import java.util.Locale;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag.REQUIRED;
 import static org.ietf.jgss.GSSContext.INDEFINITE_LIFETIME;
+import static org.ietf.jgss.GSSCredential.DEFAULT_LIFETIME;
+import static org.ietf.jgss.GSSCredential.INITIATE_ONLY;
+import static org.ietf.jgss.GSSName.NT_HOSTBASED_SERVICE;
+import static org.ietf.jgss.GSSName.NT_USER_NAME;
 
 public class SpnegoAuthentication
         implements Authentication
 {
     private static final String NEGOTIATE = HttpHeader.NEGOTIATE.asString();
     private static final Logger LOG = Logger.get(SpnegoAuthentication.class);
-    private static final int MIN_CREDENTIAL_LIFE_TIME_SEC = 60;
+    private static final Duration MIN_CREDENTIAL_LIFE_TIME = new Duration(60, TimeUnit.SECONDS);
 
     private static final GSSManager GSS_MANAGER = GSSManager.getInstance();
 
@@ -64,7 +69,9 @@ public class SpnegoAuthentication
     private final File credentialCache;
     private final String principal;
     private final String remoteServiceName;
-    private final AtomicReference<CredentialHolder> credentialHolder = new AtomicReference<>();
+
+    @GuardedBy("this")
+    private Session clientSession;
 
     public SpnegoAuthentication(File keytab, File kerberosConfig, File credentialCache, String principal, String remoteServiceName)
     {
@@ -77,18 +84,6 @@ public class SpnegoAuthentication
         this.remoteServiceName = remoteServiceName;
 
         System.setProperty("java.security.krb5.conf", kerberosConfig.getAbsolutePath());
-    }
-
-    public void shutdown()
-    {
-        try {
-            if (credentialHolder.get() != null) {
-                credentialHolder.get().getLoginContext().logout();
-            }
-        }
-        catch (LoginException e) {
-            Throwables.propagate(e);
-        }
     }
 
     @Override
@@ -109,21 +104,21 @@ public class SpnegoAuthentication
             {
                 GSSContext context = null;
                 try {
-                    CredentialHolder updatedCredentialHolder = getUpdatedCredentialHolder();
                     String servicePrincipal = makeServicePrincipal(remoteServiceName, normalizedUri.getHost());
-                    context = doAs(updatedCredentialHolder.getLoginContext().getSubject(), () -> {
-                            GSSContext result = GSS_MANAGER.createContext(
-                                    GSS_MANAGER.createName(servicePrincipal, GSSName.NT_HOSTBASED_SERVICE),
-                                    SPNEGO_OID,
-                                    updatedCredentialHolder.getGssCredential(),
-                                    INDEFINITE_LIFETIME);
+                    Session session = getSession();
+                    context = doAs(session.getLoginContext().getSubject(), () -> {
+                        GSSContext result = GSS_MANAGER.createContext(
+                                GSS_MANAGER.createName(servicePrincipal, NT_HOSTBASED_SERVICE),
+                                SPNEGO_OID,
+                                session.getClientCredential(),
+                                INDEFINITE_LIFETIME);
 
-                            result.requestMutualAuth(true);
-                            result.requestConf(true);
-                            result.requestInteg(true);
-                            result.requestCredDeleg(false);
-                            return result;
-                        });
+                        result.requestMutualAuth(true);
+                        result.requestConf(true);
+                        result.requestInteg(true);
+                        result.requestCredDeleg(false);
+                        return result;
+                    });
 
                     byte[] token = context.initSecContext(new byte[0], 0, 0);
                     if (token != null) {
@@ -160,10 +155,12 @@ public class SpnegoAuthentication
         return NEGOTIATE.equalsIgnoreCase(type);
     }
 
-    private CredentialHolder getUpdatedCredentialHolder()
+    private synchronized Session getSession()
             throws LoginException, GSSException
     {
-        if (credentialHolder.get() == null || credentialHolder.get().getGssCredential().getRemainingLifetime() <= MIN_CREDENTIAL_LIFE_TIME_SEC) {
+        if (clientSession == null || clientSession.getClientCredential().getRemainingLifetime() < MIN_CREDENTIAL_LIFE_TIME.getValue(TimeUnit.SECONDS)) {
+            // TODO: do we need to call logout() on the LoginContext?
+
             LoginContext loginContext = new LoginContext("", null, null, new Configuration()
             {
                 @Override
@@ -200,16 +197,16 @@ public class SpnegoAuthentication
             loginContext.login();
             Subject subject = loginContext.getSubject();
             Principal clientPrincipal = subject.getPrincipals().iterator().next();
-            GSSCredential gssCredential = doAs(subject, () -> GSS_MANAGER.createCredential(
-                    GSS_MANAGER.createName(clientPrincipal.getName(), GSSName.NT_USER_NAME),
-                    GSSCredential.DEFAULT_LIFETIME,
+            GSSCredential clientCredential = doAs(subject, () -> GSS_MANAGER.createCredential(
+                    GSS_MANAGER.createName(clientPrincipal.getName(), NT_USER_NAME),
+                    DEFAULT_LIFETIME,
                     KERBEROS_OID,
-                    GSSCredential.INITIATE_ONLY));
+                    INITIATE_ONLY));
 
-            CredentialHolder newCredentialHolder = new CredentialHolder(loginContext, gssCredential);
-            credentialHolder.set(newCredentialHolder);
+            clientSession = new Session(loginContext, clientCredential);
         }
-        return credentialHolder.get();
+
+        return clientSession;
     }
 
     private static String makeServicePrincipal(String serviceName, String hostName)
@@ -251,19 +248,19 @@ public class SpnegoAuthentication
         });
     }
 
-    private static class CredentialHolder
+    private static class Session
     {
         private final LoginContext loginContext;
-        private final GSSCredential gssCredential;
+        private final GSSCredential clientCredential;
 
-        public CredentialHolder(LoginContext loginContext, GSSCredential gssCredential)
+        public Session(LoginContext loginContext, GSSCredential clientCredential)
                 throws LoginException
         {
             requireNonNull(loginContext, "loginContext is null");
-            requireNonNull(gssCredential, "gssCredential is null");
+            requireNonNull(clientCredential, "gssCredential is null");
 
             this.loginContext = loginContext;
-            this.gssCredential = gssCredential;
+            this.clientCredential = clientCredential;
         }
 
         public LoginContext getLoginContext()
@@ -271,9 +268,9 @@ public class SpnegoAuthentication
             return loginContext;
         }
 
-        public GSSCredential getGssCredential()
+        public GSSCredential getClientCredential()
         {
-            return gssCredential;
+            return clientCredential;
         }
     }
 }
