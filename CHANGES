@@ -1,3 +1,7 @@
+* 0.117
+
+- Refresh Kerberos credentials for HTTP client before they expire
+
 * 0.116
 
 - Add configuration for HTTP selector and acceptor thread pools
