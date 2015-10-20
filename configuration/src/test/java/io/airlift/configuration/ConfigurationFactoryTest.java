@@ -221,8 +221,8 @@ public class ConfigurationFactoryTest
         } catch (CreationException e) {
             monitor.assertNumberOfErrors(2);
             monitor.assertNumberOfWarnings(0);
-            monitor.assertMatchingErrorRecorded("Constraint violation", "intValue", "must be less than or equal to 100", "BeanValidationClass");
-            monitor.assertMatchingErrorRecorded("Constraint violation", "stringValue", "may not be null", "BeanValidationClass");
+            monitor.assertMatchingErrorRecorded("Invalid configuration property", "int-value", "must be less than or equal to 100", "BeanValidationClass");
+            monitor.assertMatchingErrorRecorded("Invalid configuration property", "string-value", "may not be null", "BeanValidationClass");
         }
     }
 

@@ -54,6 +54,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static com.google.common.base.CaseFormat.LOWER_CAMEL;
+import static com.google.common.base.CaseFormat.UPPER_CAMEL;
 import static com.google.common.collect.Sets.newConcurrentHashSet;
 import static io.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
 import static io.airlift.configuration.Problems.exceptionFor;
@@ -248,8 +250,22 @@ public class ConfigurationFactory
         }
 
         for (ConstraintViolation<?> violation : VALIDATOR.validate(instance)) {
-            problems.addError("Constraint violation with property prefix '%s': %s %s (for class %s)",
-                    prefix, violation.getPropertyPath(), violation.getMessage(), configClass.getName());
+            String propertyFieldName = violation.getPropertyPath().toString();
+            // upper case first character to match config attribute name
+            String attributeName = LOWER_CAMEL.to(UPPER_CAMEL, propertyFieldName);
+            AttributeMetadata attribute = configurationMetadata.getAttributes().get(attributeName);
+            if (attribute != null && attribute.getInjectionPoint() != null) {
+                String propertyName = attribute.getInjectionPoint().getProperty();
+                if (!prefix.isEmpty()) {
+                    propertyName = prefix + "." + propertyName;
+                }
+                problems.addError("Invalid configuration property %s: %s (for class %s.%s)",
+                        propertyName, violation.getMessage(), configClass.getName(), violation.getPropertyPath());
+            }
+            else {
+                problems.addError("Invalid configuration property with prefix '%s': %s (for class %s.%s)",
+                        prefix, violation.getMessage(), configClass.getName(), violation.getPropertyPath());
+            }
         }
 
         problems.throwIfHasErrors();
