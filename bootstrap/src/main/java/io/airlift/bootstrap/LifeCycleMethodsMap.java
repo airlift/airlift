@@ -23,12 +23,16 @@ class LifeCycleMethodsMap
 {
     private final Map<Class<?>, LifeCycleMethods> map = Maps.newHashMap();
 
-    synchronized LifeCycleMethods get(Class<?> clazz)
-    {
+    public LifeCycleMethods get(Class<?> clazz) {
         LifeCycleMethods methods = map.get(clazz);
         if (methods == null) {
-            methods = new LifeCycleMethods(clazz);
-            map.put(clazz, methods);
+            synchronized {
+                methods = map.get(clazz);
+                if(methods == null) {
+                    methods = new LifeCycleMethods(clazz);
+                    map.put(clazz, methods);
+                }
+            }
         }
         return methods;
     }
