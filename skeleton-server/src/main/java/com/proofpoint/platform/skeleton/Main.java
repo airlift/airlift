@@ -15,6 +15,7 @@
  */
 package com.proofpoint.platform.skeleton;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Injector;
 import com.proofpoint.bootstrap.Bootstrap;
 import com.proofpoint.discovery.client.DiscoveryModule;
@@ -55,7 +56,9 @@ public class Main
                             new ReportingModule(),
                             new ReportingClientModule(),
                             new MainModule()
-                    );
+                    ).withApplicationDefaults(ImmutableMap.of(
+                            "http-server.http.port", "8080"
+                    ));
 
             Injector injector = app.initialize();
             injector.getInstance(Announcer.class).start();
