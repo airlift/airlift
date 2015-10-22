@@ -27,6 +27,7 @@ import com.proofpoint.event.client.InMemoryEventClient;
 import com.proofpoint.event.client.InMemoryEventModule;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
+import com.proofpoint.http.client.StringResponseHandler.StringResponse;
 import com.proofpoint.http.client.jetty.JettyHttpClient;
 import com.proofpoint.http.server.testing.TestingHttpServer;
 import com.proofpoint.http.server.testing.TestingHttpServerModule;
@@ -54,13 +55,19 @@ import static com.proofpoint.http.client.Request.Builder.preparePost;
 import static com.proofpoint.http.client.Request.Builder.preparePut;
 import static com.proofpoint.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static com.proofpoint.http.client.StringResponseHandler.createStringResponseHandler;
 import static com.proofpoint.jaxrs.JaxrsModule.explicitJaxrsModule;
 import static com.proofpoint.json.JsonCodec.mapJsonCodec;
 import static com.proofpoint.platform.sample.Person.createPerson;
 import static com.proofpoint.platform.sample.PersonEvent.personAdded;
 import static com.proofpoint.platform.sample.PersonEvent.personRemoved;
+import static com.proofpoint.platform.sample.PersonEvent.personUpdated;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.CREATED;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.Status.NO_CONTENT;
+import static javax.ws.rs.core.Response.Status.OK;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -124,14 +131,14 @@ public class TestServer
     {
         Map<String, Object> response = client.execute(
                 prepareGet().setUri(uriFor("/v1/person")).build(),
-                createJsonResponseHandler(mapCodec));
+                createJsonResponseHandler(mapCodec, OK.getStatusCode()));
 
         assertEquals(response, ImmutableMap.of());
     }
 
     @Test
     public void testGetAll()
-            throws IOException, ExecutionException, InterruptedException
+            throws Exception
     {
         store.put("bar", createPerson("bar@example.com", "Mr Bar"));
         store.put("foo", createPerson("foo@example.com", "Mr Foo"));
@@ -143,13 +150,26 @@ public class TestServer
 
         Object actual = client.execute(
                 prepareGet().setUri(uriFor("/v1/person")).build(),
-                createJsonResponseHandler(mapCodec));
+                createJsonResponseHandler(mapCodec, OK.getStatusCode()));
         assertEquals(actual, expected);
     }
 
     @Test
+    public void testGetNotFound()
+            throws Exception
+    {
+        URI requestUri = uriFor("/v1/person/foo");
+
+        StatusResponse response = client.execute(
+                prepareGet().setUri(requestUri).build(),
+                createStatusResponseHandler());
+
+        assertEquals(response.getStatusCode(), NOT_FOUND.getStatusCode());
+    }
+
+    @Test
     public void testGetSingle()
-            throws IOException, ExecutionException, InterruptedException
+            throws Exception
     {
         store.put("foo", createPerson("foo@example.com", "Mr Foo"));
 
@@ -159,26 +179,28 @@ public class TestServer
 
         Map<String, Object> actual = client.execute(
                 prepareGet().setUri(requestUri).build(),
-                createJsonResponseHandler(mapCodec));
+                createJsonResponseHandler(mapCodec, OK.getStatusCode()));
 
         assertEquals(actual, expected);
     }
 
     @Test
-    public void testPut()
-            throws IOException, ExecutionException, InterruptedException
+    public void testPutAdd()
+            throws Exception
     {
         String json = Resources.toString(Resources.getResource("single.json"), Charsets.UTF_8);
 
-        StatusResponse response = client.execute(
+        StringResponse response = client.execute(
                 preparePut()
                         .setUri(uriFor("/v1/person/foo"))
                         .addHeader(CONTENT_TYPE, APPLICATION_JSON)
                         .setBodySource(createStaticBodyGenerator(json, Charsets.UTF_8))
                         .build(),
-                createStatusResponseHandler());
+                createStringResponseHandler());
 
-        assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.CREATED.getStatusCode());
+        assertEquals(response.getStatusCode(), CREATED.getStatusCode());
+        assertNull(response.getHeader(CONTENT_TYPE));
+        assertEquals(response.getBody(), "");
 
         assertEquals(store.get("foo"), createPerson("foo@example.com", "Mr Foo"));
 
@@ -186,21 +208,50 @@ public class TestServer
                 personAdded("foo", createPerson("foo@example.com", "Mr Foo"))
         ));
     }
+    @Test
+    public void testPutReplace()
+            throws Exception
+    {
+        String json = Resources.toString(Resources.getResource("single.json"), Charsets.UTF_8);
+
+        store.put("foo", createPerson("foo@example.com", "Mr Foo"));
+
+        StringResponse response = client.execute(
+                preparePut()
+                        .setUri(uriFor("/v1/person/foo"))
+                        .addHeader(CONTENT_TYPE, APPLICATION_JSON)
+                        .setBodySource(createStaticBodyGenerator(json, Charsets.UTF_8))
+                        .build(),
+                createStringResponseHandler());
+
+        assertEquals(response.getStatusCode(), NO_CONTENT.getStatusCode());
+        assertNull(response.getHeader(CONTENT_TYPE));
+        assertEquals(response.getBody(), "");
+
+        assertEquals(store.get("foo"), createPerson("foo@example.com", "Mr Foo"));
+
+        assertEquals(eventClient.getEvents(), ImmutableList.of(
+                personAdded("foo", createPerson("foo@example.com", "Mr Foo")),
+                personUpdated("foo", createPerson("foo@example.com", "Mr Foo"))
+        ));
+    }
 
     @Test
     public void testDelete()
-            throws IOException, ExecutionException, InterruptedException
+            throws Exception
     {
         store.put("foo", createPerson("foo@example.com", "Mr Foo"));
 
-        StatusResponse response = client.execute(
+        StringResponse response = client.execute(
                 prepareDelete()
                         .setUri(uriFor("/v1/person/foo"))
                         .addHeader(CONTENT_TYPE, APPLICATION_JSON)
                         .build(),
-                createStatusResponseHandler());
+                createStringResponseHandler());
 
-        assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.NO_CONTENT.getStatusCode());
+        assertEquals(response.getStatusCode(), NO_CONTENT.getStatusCode());
+        assertNull(response.getHeader(CONTENT_TYPE));
+        assertEquals(response.getBody(), "");
 
         assertNull(store.get("foo"));
 
@@ -212,16 +263,16 @@ public class TestServer
 
     @Test
     public void testDeleteMissing()
-            throws IOException, ExecutionException, InterruptedException
+            throws Exception
     {
-        StatusResponse response = client.execute(
+        StringResponse response = client.execute(
                 prepareDelete()
                         .setUri(uriFor("/v1/person/foo"))
                         .addHeader(CONTENT_TYPE, APPLICATION_JSON)
                         .build(),
-                createStatusResponseHandler());
+                createStringResponseHandler());
 
-        assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.NOT_FOUND.getStatusCode());
+        assertEquals(response.getStatusCode(), NOT_FOUND.getStatusCode());
     }
 
     @Test
