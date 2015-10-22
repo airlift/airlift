@@ -26,7 +26,7 @@ class LifeCycleMethodsMap
     public LifeCycleMethods get(Class<?> clazz) {
         LifeCycleMethods methods = map.get(clazz);
         if (methods == null) {
-            synchronized {
+            synchronized (this) {
                 methods = map.get(clazz);
                 if(methods == null) {
                     methods = new LifeCycleMethods(clazz);
