@@ -35,6 +35,7 @@ import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.reporting.ReportingModule;
 import com.proofpoint.testing.Closeables;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -67,14 +68,13 @@ public class TestServer
 {
     private static final int NOT_ALLOWED = 405;
 
-    private HttpClient client;
-    private TestingHttpServer server;
-
-    private PersonStore store;
-
     private final JsonCodec<Map<String, Object>> mapCodec = mapJsonCodec(String.class, Object.class);
-    private InMemoryEventClient eventClient;
+    private final HttpClient client = new JettyHttpClient();
+
     private LifeCycleManager lifeCycleManager;
+    private TestingHttpServer server;
+    private PersonStore store;
+    private InMemoryEventClient eventClient;
 
     @BeforeMethod
     public void setup()
@@ -98,26 +98,24 @@ public class TestServer
                 .initialize();
 
         lifeCycleManager = injector.getInstance(LifeCycleManager.class);
-
         server = injector.getInstance(TestingHttpServer.class);
         store = injector.getInstance(PersonStore.class);
         eventClient = (InMemoryEventClient) injector.getInstance(EventClient.class);
-
-        client = new JettyHttpClient();
     }
 
     @AfterMethod
     public void teardown()
             throws Exception
     {
-        try {
-            if (lifeCycleManager != null) {
-                lifeCycleManager.stop();
-            }
+        if (lifeCycleManager != null) {
+            lifeCycleManager.stop();
         }
-        finally {
-            Closeables.closeQuietly(client);
-        }
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void teardownClass()
+    {
+        Closeables.closeQuietly(client);
     }
 
     @Test

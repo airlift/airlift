@@ -12,6 +12,7 @@ import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.reporting.ReportingModule;
 import com.proofpoint.testing.Closeables;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -28,9 +29,10 @@ import static org.testng.Assert.assertEquals;
 
 public class TestServer
 {
-    private HttpClient client;
-    private TestingHttpServer server;
+    private final HttpClient client = new JettyHttpClient();
+
     private LifeCycleManager lifeCycleManager;
+    private TestingHttpServer server;
 
     @BeforeMethod
     public void setup()
@@ -54,21 +56,21 @@ public class TestServer
 
         lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         server = injector.getInstance(TestingHttpServer.class);
-        client = new JettyHttpClient();
     }
 
     @AfterMethod
     public void teardown()
             throws Exception
     {
-        try {
-            if (lifeCycleManager != null) {
-                lifeCycleManager.stop();
-            }
+        if (lifeCycleManager != null) {
+            lifeCycleManager.stop();
         }
-        finally {
-            Closeables.closeQuietly(client);
-        }
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void teardownClass()
+    {
+        Closeables.closeQuietly(client);
     }
 
     @Test
