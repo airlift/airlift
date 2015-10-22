@@ -15,21 +15,15 @@
  */
 package io.airlift.bootstrap;
 
-import com.google.common.collect.Maps;
-
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 class LifeCycleMethodsMap
 {
-    private final Map<Class<?>, LifeCycleMethods> map = Maps.newHashMap();
+    private final Map<Class<?>, LifeCycleMethods> map = new ConcurrentHashMap<>();
 
-    synchronized LifeCycleMethods get(Class<?> clazz)
+    public LifeCycleMethods get(Class<?> clazz)
     {
-        LifeCycleMethods methods = map.get(clazz);
-        if (methods == null) {
-            methods = new LifeCycleMethods(clazz);
-            map.put(clazz, methods);
-        }
-        return methods;
+        return map.computeIfAbsent(clazz, LifeCycleMethods::new);
     }
 }
