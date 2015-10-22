@@ -51,6 +51,8 @@ import static io.airlift.http.client.StatusResponseHandler.createStatusResponseH
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.testing.Assertions.assertContains;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -218,6 +220,32 @@ public class TestHttpServerProvider
                 .setKeystorePassword("airlift")
                 .setMaxThreads(1);
         createAndStartServer();
+    }
+
+    @Test
+    public void testHttpsDaysUntilCertificateExpiration()
+            throws Exception
+    {
+        config.setHttpEnabled(false)
+                .setHttpsEnabled(true)
+                .setHttpsPort(0)
+                .setKeystorePath(new File(getResource("test.keystore").toURI()).getAbsolutePath())
+                .setKeystorePassword("airlift");
+        createAndStartServer();
+        Long daysUntilCertificateExpiration = server.getDaysUntilCertificateExpiration();
+        assertNotNull(daysUntilCertificateExpiration);
+        // todo this should be positive but the certificate is expired
+        assertTrue(daysUntilCertificateExpiration < 0);
+    }
+
+    @Test
+    public void testNoHttpsDaysUntilCertificateExpiration()
+            throws Exception
+    {
+        config.setHttpEnabled(true)
+                .setHttpsPort(0);
+        createAndStartServer();
+        assertNull(server.getDaysUntilCertificateExpiration());
     }
 
     @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "insufficient threads configured for admin connector")
