@@ -19,7 +19,6 @@ import com.google.inject.Injector;
 import com.proofpoint.bootstrap.Bootstrap;
 import com.proofpoint.discovery.client.DiscoveryModule;
 import com.proofpoint.discovery.client.announce.Announcer;
-import com.proofpoint.event.client.HttpEventModule;
 import com.proofpoint.http.server.HttpServerModule;
 import com.proofpoint.jmx.JmxHttpModule;
 import com.proofpoint.jmx.JmxModule;
@@ -53,7 +52,6 @@ public class Main
                             new JmxModule(),
                             new JmxHttpModule(),
                             new LogJmxModule(),
-                            new HttpEventModule(),
                             new ReportingModule(),
                             new ReportingClientModule(),
                             new MainModule()

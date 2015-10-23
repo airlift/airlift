@@ -15,10 +15,7 @@
  */
 package com.proofpoint.platform.sample;
 
-import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.proofpoint.event.client.InMemoryEventClient;
 import com.proofpoint.platform.sample.PersonStore.StoreEntry;
 import com.proofpoint.units.Duration;
 import org.testng.Assert;
@@ -28,9 +25,6 @@ import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 import static com.proofpoint.platform.sample.Person.createPerson;
-import static com.proofpoint.platform.sample.PersonEvent.personAdded;
-import static com.proofpoint.platform.sample.PersonEvent.personRemoved;
-import static com.proofpoint.platform.sample.PersonEvent.personUpdated;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -40,7 +34,7 @@ public class TestPersonStore
     @Test
     public void testStartsEmpty()
     {
-        PersonStore store = new PersonStore(new StoreConfig(), new InMemoryEventClient());
+        PersonStore store = new PersonStore(new StoreConfig());
         assertTrue(store.getAll().isEmpty());
     }
 
@@ -51,7 +45,7 @@ public class TestPersonStore
         StoreConfig config = new StoreConfig();
         config.setTtl(new Duration(1, TimeUnit.MILLISECONDS));
 
-        PersonStore store = new PersonStore(config, new InMemoryEventClient());
+        PersonStore store = new PersonStore(config);
         store.put("foo", createPerson("foo@example.com", "Mr Foo"));
         Thread.sleep(2);
         Assert.assertNull(store.get("foo"));
@@ -60,55 +54,39 @@ public class TestPersonStore
     @Test
     public void testPut()
     {
-        InMemoryEventClient eventClient = new InMemoryEventClient();
-        PersonStore store = new PersonStore(new StoreConfig(), eventClient);
+        PersonStore store = new PersonStore(new StoreConfig());
         store.put("foo", createPerson("foo@example.com", "Mr Foo"));
 
         assertEquals(createPerson("foo@example.com", "Mr Foo"), store.get("foo"));
         assertEquals(store.getAll().size(), 1);
-
-        assertEquals(eventClient.getEvents(), ImmutableList.of(personAdded("foo", createPerson("foo@example.com", "Mr Foo"))));
     }
 
     @Test
     public void testIdempotentPut()
     {
-        InMemoryEventClient eventClient = new InMemoryEventClient();
-        PersonStore store = new PersonStore(new StoreConfig(), eventClient);
+        PersonStore store = new PersonStore(new StoreConfig());
         store.put("foo", createPerson("foo@example.com", "Mr Foo"));
         store.put("foo", createPerson("foo@example.com", "Mr Bar"));
 
         assertEquals(createPerson("foo@example.com", "Mr Bar"), store.get("foo"));
         assertEquals(store.getAll().size(), 1);
-
-        assertEquals(eventClient.getEvents(), ImmutableList.of(
-                personAdded("foo", createPerson("foo@example.com", "Mr Foo")),
-                personUpdated("foo", createPerson("foo@example.com", "Mr Bar"))
-        ));
     }
 
     @Test
     public void testDelete()
     {
-        InMemoryEventClient eventClient = new InMemoryEventClient();
-        PersonStore store = new PersonStore(new StoreConfig(), eventClient);
+        PersonStore store = new PersonStore(new StoreConfig());
         store.put("foo", createPerson("foo@example.com", "Mr Foo"));
         store.delete("foo");
 
         assertNull(store.get("foo"));
         assertTrue(store.getAll().isEmpty());
-
-        assertEquals(eventClient.getEvents(), ImmutableList.of(
-                personAdded("foo", createPerson("foo@example.com", "Mr Foo")),
-                personRemoved("foo", createPerson("foo@example.com", "Mr Foo"))
-        ));
     }
 
     @Test
     public void testIdempotentDelete()
     {
-        InMemoryEventClient eventClient = new InMemoryEventClient();
-        PersonStore store = new PersonStore(new StoreConfig(), eventClient);
+        PersonStore store = new PersonStore(new StoreConfig());
         store.put("foo", createPerson("foo@example.com", "Mr Foo"));
 
         store.delete("foo");
@@ -118,17 +96,12 @@ public class TestPersonStore
         store.delete("foo");
         assertTrue(store.getAll().isEmpty());
         assertNull(store.get("foo"));
-
-        assertEquals(eventClient.getEvents(), ImmutableList.of(
-                personAdded("foo", createPerson("foo@example.com", "Mr Foo")),
-                personRemoved("foo", createPerson("foo@example.com", "Mr Foo"))
-        ));
     }
 
     @Test
     public void testGetAll()
     {
-        PersonStore store = new PersonStore(new StoreConfig(), new InMemoryEventClient());
+        PersonStore store = new PersonStore(new StoreConfig());
 
         store.put("foo", createPerson("foo@example.com", "Mr Foo"));
         store.put("bar", createPerson("bar@example.com", "Mr Bar"));
@@ -136,24 +109,10 @@ public class TestPersonStore
         Collection<StoreEntry> entries = store.getAll();
         assertEquals(entries.size(), 2);
 
-        StoreEntry fooEntry = Iterables.find(entries, new Predicate<StoreEntry>()
-        {
-            @Override
-            public boolean apply(StoreEntry input)
-            {
-                return input.getId().equals("foo");
-            }
-        });
+        StoreEntry fooEntry = Iterables.find(entries, input -> input.getId().equals("foo"));
         assertEquals(fooEntry.getPerson(), createPerson("foo@example.com", "Mr Foo"));
 
-        StoreEntry barEntry = Iterables.find(entries, new Predicate<StoreEntry>()
-        {
-            @Override
-            public boolean apply(StoreEntry input)
-            {
-                return input.getId().equals("bar");
-            }
-        });
+        StoreEntry barEntry = Iterables.find(entries, input -> input.getId().equals("bar"));
         assertEquals(barEntry.getPerson(), createPerson("bar@example.com", "Mr Bar"));
     }
 }

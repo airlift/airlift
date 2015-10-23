@@ -38,16 +38,15 @@ public class PersonStore
     private final PersonStoreStats stats;
 
     @Inject
-    public PersonStore(StoreConfig config, EventClient eventClient)
+    public PersonStore(StoreConfig config)
     {
         requireNonNull(config, "config must not be null");
-        requireNonNull(eventClient, "eventClient is null");
 
         Cache<String, Person> personCache = CacheBuilder.newBuilder()
                 .expireAfterWrite(config.getTtl().toMillis(), TimeUnit.MILLISECONDS)
                 .build();
         persons = personCache.asMap();
-        stats = new PersonStoreStats(eventClient);
+        stats = new PersonStoreStats();
     }
 
     @Flatten
@@ -83,10 +82,10 @@ public class PersonStore
 
         boolean added = persons.put(id, person) == null;
         if (added) {
-            stats.personAdded(id, person);
+            stats.personAdded();
         }
         else {
-            stats.personUpdated(id, person);
+            stats.personUpdated();
         }
         return added;
     }
@@ -100,7 +99,7 @@ public class PersonStore
 
         Person removedPerson = persons.remove(id);
         if (removedPerson != null) {
-            stats.personRemoved(id, removedPerson);
+            stats.personRemoved();
         }
 
         return removedPerson != null;

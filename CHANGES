@@ -9,6 +9,7 @@ Platform 1.27
   - TestServer initializes and tears down the HttpClient once for the class.
   - Resource classes are tested only through TestServer.
   - TestServer no longer uses resource files to supply JSON.
+  - The sample server no longer uses events
 
 Platform 1.26
 

@@ -15,13 +15,10 @@
  */
 package com.proofpoint.platform.sample;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Injector;
 import com.proofpoint.bootstrap.Bootstrap;
 import com.proofpoint.bootstrap.LifeCycleManager;
-import com.proofpoint.event.client.EventClient;
-import com.proofpoint.event.client.InMemoryEventClient;
 import com.proofpoint.event.client.InMemoryEventModule;
 import com.proofpoint.http.client.HttpClient;
 import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
@@ -57,9 +54,6 @@ import static com.proofpoint.http.client.StringResponseHandler.createStringRespo
 import static com.proofpoint.jaxrs.JaxrsModule.explicitJaxrsModule;
 import static com.proofpoint.json.JsonCodec.mapJsonCodec;
 import static com.proofpoint.platform.sample.Person.createPerson;
-import static com.proofpoint.platform.sample.PersonEvent.personAdded;
-import static com.proofpoint.platform.sample.PersonEvent.personRemoved;
-import static com.proofpoint.platform.sample.PersonEvent.personUpdated;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.CREATED;
@@ -83,7 +77,6 @@ public class TestServer
     private LifeCycleManager lifeCycleManager;
     private TestingHttpServer server;
     private PersonStore store;
-    private InMemoryEventClient eventClient;
 
     @BeforeMethod
     public void setup()
@@ -93,7 +86,6 @@ public class TestServer
                 .doNotInitializeLogging()
                 .withModules(
                         new TestingNodeModule(),
-                        new InMemoryEventModule(),
                         new TestingHttpServerModule(),
                         new JsonModule(),
                         explicitJaxrsModule(),
@@ -109,7 +101,6 @@ public class TestServer
         lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         server = injector.getInstance(TestingHttpServer.class);
         store = injector.getInstance(PersonStore.class);
-        eventClient = (InMemoryEventClient) injector.getInstance(EventClient.class);
     }
 
     @AfterMethod
@@ -203,10 +194,6 @@ public class TestServer
         assertEquals(response.getBody(), "");
 
         assertEquals(store.get("foo"), createPerson("foo@example.com", "Mr Foo"));
-
-        assertEquals(eventClient.getEvents(), ImmutableList.of(
-                personAdded("foo", createPerson("foo@example.com", "Mr Foo"))
-        ));
     }
     @Test
     public void testPutReplace()
@@ -227,11 +214,6 @@ public class TestServer
         assertEquals(response.getBody(), "");
 
         assertEquals(store.get("foo"), createPerson("foo@example.com", "Mr Foo"));
-
-        assertEquals(eventClient.getEvents(), ImmutableList.of(
-                personAdded("foo", createPerson("foo@example.com", "Mr Foo")),
-                personUpdated("foo", createPerson("foo@example.com", "Mr Foo"))
-        ));
     }
 
     @Test
@@ -252,11 +234,6 @@ public class TestServer
         assertEquals(response.getBody(), "");
 
         assertNull(store.get("foo"));
-
-        assertEquals(eventClient.getEvents(), ImmutableList.of(
-                personAdded("foo", createPerson("foo@example.com", "Mr Foo")),
-                personRemoved("foo", createPerson("foo@example.com", "Mr Foo"))
-        ));
     }
 
     @Test

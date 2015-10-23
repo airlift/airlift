@@ -15,7 +15,6 @@
  */
 package com.proofpoint.platform.sample;
 
-import com.proofpoint.event.client.EventClient;
 import com.proofpoint.stats.CounterStat;
 import org.weakref.jmx.Nested;
 
@@ -25,12 +24,6 @@ public class PersonStoreStats
     private final CounterStat added = new CounterStat();
     private final CounterStat updated = new CounterStat();
     private final CounterStat removed = new CounterStat();
-    private final EventClient eventClient;
-
-    public PersonStoreStats(EventClient eventClient)
-    {
-        this.eventClient = eventClient;
-    }
 
     @Nested
     public CounterStat getFetched()
@@ -61,21 +54,18 @@ public class PersonStoreStats
         fetched.add(1);
     }
 
-    public void personAdded(String id, Person person)
+    public void personAdded()
     {
         added.add(1);
-        eventClient.post(PersonEvent.personAdded(id, person));
     }
 
-    public void personUpdated(String id, Person person)
+    public void personUpdated()
     {
         updated.add(1);
-        eventClient.post(PersonEvent.personUpdated(id, person));
     }
 
-    public void personRemoved(String id, Person person)
+    public void personRemoved()
     {
         removed.add(1);
-        eventClient.post(PersonEvent.personRemoved(id, person));
     }
 }
