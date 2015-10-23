@@ -1,3 +1,15 @@
+Platform 1.27
+
+* Skeleton server and Sample server
+
+  We have updated the skeleton and sample servers to reflect current practice.
+
+  - The skeleton server Main class includes code to override the default value
+    of http-server.http.port.
+  - TestServer initializes and tears down the HttpClient once for the class.
+  - Resource classes are tested only through TestServer.
+  - TestServer no longer uses resource files to supply JSON.
+
 Platform 1.26
 
 * HttpServer

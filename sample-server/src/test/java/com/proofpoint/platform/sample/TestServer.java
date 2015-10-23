@@ -15,10 +15,8 @@
  */
 package com.proofpoint.platform.sample;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.Resources;
 import com.google.inject.Injector;
 import com.proofpoint.bootstrap.Bootstrap;
 import com.proofpoint.bootstrap.LifeCycleManager;
@@ -48,12 +46,12 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static com.proofpoint.bootstrap.Bootstrap.bootstrapApplication;
+import static com.proofpoint.http.client.JsonBodyGenerator.jsonBodyGenerator;
 import static com.proofpoint.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static com.proofpoint.http.client.Request.Builder.prepareDelete;
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
 import static com.proofpoint.http.client.Request.Builder.preparePost;
 import static com.proofpoint.http.client.Request.Builder.preparePut;
-import static com.proofpoint.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static com.proofpoint.http.client.StringResponseHandler.createStringResponseHandler;
 import static com.proofpoint.jaxrs.JaxrsModule.explicitJaxrsModule;
@@ -75,6 +73,10 @@ public class TestServer
 {
     private static final int NOT_ALLOWED = 405;
 
+    private final Map<String, Object> personJsonStructure = ImmutableMap.of(
+            "name", "Mr Foo",
+            "email", "foo@example.com"
+    );
     private final JsonCodec<Map<String, Object>> mapCodec = mapJsonCodec(String.class, Object.class);
     private final HttpClient client = new JettyHttpClient();
 
@@ -188,13 +190,11 @@ public class TestServer
     public void testPutAdd()
             throws Exception
     {
-        String json = Resources.toString(Resources.getResource("single.json"), Charsets.UTF_8);
-
         StringResponse response = client.execute(
                 preparePut()
                         .setUri(uriFor("/v1/person/foo"))
                         .addHeader(CONTENT_TYPE, APPLICATION_JSON)
-                        .setBodySource(createStaticBodyGenerator(json, Charsets.UTF_8))
+                        .setBodySource(jsonBodyGenerator(mapCodec, personJsonStructure))
                         .build(),
                 createStringResponseHandler());
 
@@ -212,15 +212,13 @@ public class TestServer
     public void testPutReplace()
             throws Exception
     {
-        String json = Resources.toString(Resources.getResource("single.json"), Charsets.UTF_8);
-
         store.put("foo", createPerson("foo@example.com", "Mr Foo"));
 
         StringResponse response = client.execute(
                 preparePut()
                         .setUri(uriFor("/v1/person/foo"))
                         .addHeader(CONTENT_TYPE, APPLICATION_JSON)
-                        .setBodySource(createStaticBodyGenerator(json, Charsets.UTF_8))
+                        .setBodySource(jsonBodyGenerator(mapCodec, personJsonStructure))
                         .build(),
                 createStringResponseHandler());
 
@@ -279,13 +277,11 @@ public class TestServer
     public void testPostNotAllowed()
             throws IOException, ExecutionException, InterruptedException
     {
-        String json = Resources.toString(Resources.getResource("single.json"), Charsets.UTF_8);
-
         StatusResponse response = client.execute(
                 preparePost()
                         .setUri(uriFor("/v1/person/foo"))
                         .addHeader(CONTENT_TYPE, APPLICATION_JSON)
-                        .setBodySource(createStaticBodyGenerator(json, Charsets.UTF_8))
+                        .setBodySource(jsonBodyGenerator(mapCodec, personJsonStructure))
                         .build(),
                 createStatusResponseHandler());
 
