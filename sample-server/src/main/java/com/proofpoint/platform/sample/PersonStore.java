@@ -16,6 +16,7 @@
 package com.proofpoint.platform.sample;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Ticker;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
@@ -38,12 +39,13 @@ public class PersonStore
     private final PersonStoreStats stats;
 
     @Inject
-    public PersonStore(StoreConfig config)
+    public PersonStore(StoreConfig config, Ticker ticker)
     {
         requireNonNull(config, "config must not be null");
 
         Cache<String, Person> personCache = CacheBuilder.newBuilder()
                 .expireAfterWrite(config.getTtl().toMillis(), TimeUnit.MILLISECONDS)
+                .ticker(ticker)
                 .build();
         persons = personCache.asMap();
         stats = new PersonStoreStats();

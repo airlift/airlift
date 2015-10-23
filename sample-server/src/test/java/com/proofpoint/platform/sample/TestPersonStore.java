@@ -17,6 +17,7 @@ package com.proofpoint.platform.sample;
 
 import com.google.common.collect.Iterables;
 import com.proofpoint.platform.sample.PersonStore.StoreEntry;
+import com.proofpoint.testing.TestingTicker;
 import com.proofpoint.units.Duration;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -31,10 +32,12 @@ import static org.testng.Assert.assertTrue;
 
 public class TestPersonStore
 {
+    private final TestingTicker ticker = new TestingTicker();
+
     @Test
     public void testStartsEmpty()
     {
-        PersonStore store = new PersonStore(new StoreConfig());
+        PersonStore store = new PersonStore(new StoreConfig(), ticker);
         assertTrue(store.getAll().isEmpty());
     }
 
@@ -45,16 +48,16 @@ public class TestPersonStore
         StoreConfig config = new StoreConfig();
         config.setTtl(new Duration(1, TimeUnit.MILLISECONDS));
 
-        PersonStore store = new PersonStore(config);
+        PersonStore store = new PersonStore(config, ticker);
         store.put("foo", createPerson("foo@example.com", "Mr Foo"));
-        Thread.sleep(2);
+        ticker.elapseTime(2, TimeUnit.MILLISECONDS);
         Assert.assertNull(store.get("foo"));
     }
 
     @Test
     public void testPut()
     {
-        PersonStore store = new PersonStore(new StoreConfig());
+        PersonStore store = new PersonStore(new StoreConfig(), ticker);
         store.put("foo", createPerson("foo@example.com", "Mr Foo"));
 
         assertEquals(createPerson("foo@example.com", "Mr Foo"), store.get("foo"));
@@ -64,7 +67,7 @@ public class TestPersonStore
     @Test
     public void testIdempotentPut()
     {
-        PersonStore store = new PersonStore(new StoreConfig());
+        PersonStore store = new PersonStore(new StoreConfig(), ticker);
         store.put("foo", createPerson("foo@example.com", "Mr Foo"));
         store.put("foo", createPerson("foo@example.com", "Mr Bar"));
 
@@ -75,7 +78,7 @@ public class TestPersonStore
     @Test
     public void testDelete()
     {
-        PersonStore store = new PersonStore(new StoreConfig());
+        PersonStore store = new PersonStore(new StoreConfig(), ticker);
         store.put("foo", createPerson("foo@example.com", "Mr Foo"));
         store.delete("foo");
 
@@ -86,7 +89,7 @@ public class TestPersonStore
     @Test
     public void testIdempotentDelete()
     {
-        PersonStore store = new PersonStore(new StoreConfig());
+        PersonStore store = new PersonStore(new StoreConfig(), ticker);
         store.put("foo", createPerson("foo@example.com", "Mr Foo"));
 
         store.delete("foo");
@@ -101,7 +104,7 @@ public class TestPersonStore
     @Test
     public void testGetAll()
     {
-        PersonStore store = new PersonStore(new StoreConfig());
+        PersonStore store = new PersonStore(new StoreConfig(), ticker);
 
         store.put("foo", createPerson("foo@example.com", "Mr Foo"));
         store.put("bar", createPerson("bar@example.com", "Mr Bar"));

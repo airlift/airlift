@@ -15,8 +15,10 @@
  */
 package com.proofpoint.platform.sample;
 
+import com.google.common.base.Ticker;
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 
 import static com.proofpoint.configuration.ConfigurationModule.bindConfig;
@@ -41,5 +43,11 @@ public class MainModule
         bindConfig(binder).to(StoreConfig.class);
 
         discoveryBinder(binder).bindHttpAnnouncement("person");
+    }
+
+    @Provides
+    static Ticker createTicker()
+    {
+        return Ticker.systemTicker();
     }
 }
