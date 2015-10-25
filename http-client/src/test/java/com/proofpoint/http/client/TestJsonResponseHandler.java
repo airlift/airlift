@@ -1,7 +1,5 @@
 package com.proofpoint.http.client;
 
-import com.google.common.collect.ImmutableListMultimap;
-import com.proofpoint.http.client.testing.TestingResponse;
 import com.proofpoint.json.JsonCodec;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -9,14 +7,11 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static com.proofpoint.http.client.HttpStatus.INTERNAL_SERVER_ERROR;
-import static com.proofpoint.http.client.HttpStatus.OK;
 import static com.proofpoint.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static com.proofpoint.http.client.TestFullJsonResponseHandler.User;
-import static com.proofpoint.http.client.testing.TestingResponse.contentType;
 import static com.proofpoint.http.client.testing.TestingResponse.mockResponse;
 import static com.proofpoint.testing.Assertions.assertInstanceOf;
 import static org.mockito.Matchers.any;
@@ -43,7 +38,7 @@ public class TestJsonResponseHandler
     public void testValidJson()
     {
         User user = new User("Joe", 25);
-        User response = handler.handle(null, mockResponse(OK, JSON_UTF_8, codec.toJson(user)));
+        User response = handler.handle(null, mockResponse().jsonBody(user).build());
 
         assertEquals(response.getName(), user.getName());
         assertEquals(response.getAge(), user.getAge());
@@ -54,7 +49,7 @@ public class TestJsonResponseHandler
     {
         String json = "{\"age\": \"foo\"}";
         try {
-            handler.handle(null, mockResponse(OK, JSON_UTF_8, json));
+            handler.handle(null, mockResponse().contentType(JSON_UTF_8).body(json).build());
         }
         catch (IllegalArgumentException e) {
             assertEquals(e.getMessage(), "Unable to create " + User.class + " from JSON response:\n" + json);
@@ -66,20 +61,27 @@ public class TestJsonResponseHandler
     @Test(expectedExceptions = UnexpectedResponseException.class, expectedExceptionsMessageRegExp = "Expected application/json response from server but got text/plain; charset=utf-8")
     public void testNonJsonResponse()
     {
-        handler.handle(null, mockResponse(OK, PLAIN_TEXT_UTF_8, "hello"));
+        handler.handle(null, mockResponse()
+                .contentType(PLAIN_TEXT_UTF_8)
+                .body("hello")
+                .build());
     }
 
     @Test(expectedExceptions = UnexpectedResponseException.class, expectedExceptionsMessageRegExp = "Content-Type is not set for response")
     public void testMissingContentType()
     {
-        handler.handle(null, new TestingResponse(OK, ImmutableListMultimap.<String, String>of(), "hello".getBytes(UTF_8)));
+        handler.handle(null, mockResponse().body("hello").build());
     }
 
     @Test(expectedExceptions = UnexpectedResponseException.class)
     public void testJsonErrorResponse()
     {
         String json = "{\"error\": true}";
-        handler.handle(null, mockResponse(INTERNAL_SERVER_ERROR, JSON_UTF_8, json));
+        handler.handle(null, mockResponse()
+                .status(INTERNAL_SERVER_ERROR)
+                .contentType(JSON_UTF_8)
+                .body(json)
+                .build());
     }
 
     @Test
@@ -93,7 +95,10 @@ public class TestJsonResponseHandler
         when(inputStream.read(any(byte[].class), anyInt(), anyInt())).thenThrow(expectedException);
 
         try {
-            handler.handle(null, new TestingResponse(OK, contentType(JSON_UTF_8), inputStream));
+            handler.handle(null, mockResponse()
+                    .contentType(JSON_UTF_8)
+                    .body(inputStream)
+                    .build());
             fail("expected exception");
         }
         catch (RuntimeException e) {

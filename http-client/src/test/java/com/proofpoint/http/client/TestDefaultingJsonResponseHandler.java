@@ -2,7 +2,6 @@ package com.proofpoint.http.client;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.proofpoint.http.client.testing.TestingResponse;
 import com.proofpoint.json.JsonCodec;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -15,7 +14,6 @@ import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static com.proofpoint.http.client.DefaultingJsonResponseHandler.createDefaultingJsonResponseHandler;
 import static com.proofpoint.http.client.HttpStatus.INTERNAL_SERVER_ERROR;
 import static com.proofpoint.http.client.HttpStatus.OK;
-import static com.proofpoint.http.client.testing.TestingResponse.contentType;
 import static com.proofpoint.http.client.testing.TestingResponse.mockResponse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -103,7 +101,10 @@ public class TestDefaultingJsonResponseHandler
         when(inputStream.read(any(byte[].class))).thenThrow(expectedException);
         when(inputStream.read(any(byte[].class), anyInt(), anyInt())).thenThrow(expectedException);
 
-        User response = handler.handle(null, new TestingResponse(OK, contentType(JSON_UTF_8), inputStream));
+        User response = handler.handle(null, mockResponse()
+                .contentType(JSON_UTF_8)
+                .body(inputStream)
+                .build());
 
         assertSame(response, DEFAULT_VALUE);
     }

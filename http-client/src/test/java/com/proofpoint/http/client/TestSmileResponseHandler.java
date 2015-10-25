@@ -3,10 +3,8 @@ package com.proofpoint.http.client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.MediaType;
-import com.proofpoint.http.client.testing.TestingResponse;
 import com.proofpoint.json.JsonCodec;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -15,7 +13,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
@@ -23,7 +20,6 @@ import static com.proofpoint.http.client.HttpStatus.INTERNAL_SERVER_ERROR;
 import static com.proofpoint.http.client.HttpStatus.OK;
 import static com.proofpoint.http.client.SmileResponseHandler.createSmileResponseHandler;
 import static com.proofpoint.http.client.TestFullJsonResponseHandler.User;
-import static com.proofpoint.http.client.testing.TestingResponse.contentType;
 import static com.proofpoint.http.client.testing.TestingResponse.mockResponse;
 import static com.proofpoint.testing.Assertions.assertContains;
 import static com.proofpoint.testing.Assertions.assertInstanceOf;
@@ -80,13 +76,16 @@ public class TestSmileResponseHandler
     @Test(expectedExceptions = UnexpectedResponseException.class, expectedExceptionsMessageRegExp = "Expected application/x-jackson-smile response from server but got text/plain; charset=utf-8")
     public void testNonJsonResponse()
     {
-        handler.handle(null, mockResponse(OK, PLAIN_TEXT_UTF_8, "hello"));
+        handler.handle(null, mockResponse()
+                .contentType(PLAIN_TEXT_UTF_8)
+                .body("hello")
+                .build());
     }
 
     @Test(expectedExceptions = UnexpectedResponseException.class, expectedExceptionsMessageRegExp = "Content-Type is not set for response")
     public void testMissingContentType()
     {
-        handler.handle(null, new TestingResponse(OK, ImmutableListMultimap.<String, String>of(), "hello".getBytes(UTF_8)));
+        handler.handle(null, mockResponse().body("hello").build());
     }
 
     @Test(expectedExceptions = UnexpectedResponseException.class)
@@ -107,7 +106,10 @@ public class TestSmileResponseHandler
         when(inputStream.read(any(byte[].class), anyInt(), anyInt())).thenThrow(expectedException);
 
         try {
-            handler.handle(null, new TestingResponse(OK, contentType(MEDIA_TYPE_SMILE), inputStream));
+            handler.handle(null, mockResponse()
+                    .contentType(MEDIA_TYPE_SMILE)
+                    .body(inputStream)
+                    .build());
             fail("expected exception");
         }
         catch (RuntimeException e) {
@@ -125,6 +127,10 @@ public class TestSmileResponseHandler
         catch (IOException e) {
             throw propagate(e);
         }
-        return new TestingResponse(status, contentType(MEDIA_TYPE_SMILE), outputStream.toByteArray());
+        return mockResponse()
+                .status(status)
+                .contentType(MEDIA_TYPE_SMILE)
+                .body(outputStream.toByteArray())
+                .build();
     }
 }

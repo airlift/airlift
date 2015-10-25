@@ -15,11 +15,9 @@
  */
 package com.proofpoint.discovery.client.announce;
 
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.proofpoint.discovery.client.DiscoveryException;
 import com.proofpoint.http.client.testing.TestingHttpClient;
-import com.proofpoint.http.client.testing.TestingResponse;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.units.Duration;
 import org.testng.annotations.BeforeMethod;
@@ -82,7 +80,10 @@ public class TestHttpDiscoveryAnnouncementClient
     public void testAnnounceCacheControl()
             throws Exception
     {
-        httpClient.setProcessor((request -> new TestingResponse(ACCEPTED, ImmutableListMultimap.of("Cache-Control", "max-age=75"), new byte[0])));
+        httpClient.setProcessor((request -> mockResponse()
+                .status(ACCEPTED)
+                .header("Cache-Control", "max-age=75")
+                .build()));
         Duration duration = client.announce(announcements).get();
 
         assertEquals(duration, new Duration(75, TimeUnit.SECONDS));

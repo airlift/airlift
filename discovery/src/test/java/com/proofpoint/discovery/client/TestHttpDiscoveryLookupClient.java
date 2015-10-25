@@ -15,8 +15,6 @@
  */
 package com.proofpoint.discovery.client;
 
-import com.google.common.base.Charsets;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -43,8 +41,8 @@ import static com.proofpoint.discovery.client.ServiceState.RUNNING;
 import static com.proofpoint.discovery.client.ServiceState.STOPPED;
 import static com.proofpoint.discovery.client.announce.DiscoveryAnnouncementClient.DEFAULT_DELAY;
 import static com.proofpoint.http.client.HttpStatus.NOT_MODIFIED;
-import static com.proofpoint.http.client.HttpStatus.OK;
 import static com.proofpoint.http.client.Request.Builder.prepareGet;
+import static com.proofpoint.http.client.testing.TestingResponse.mockResponse;
 import static com.proofpoint.json.JsonCodec.jsonCodec;
 import static com.proofpoint.testing.Assertions.assertInstanceOf;
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -132,10 +130,11 @@ public class TestHttpDiscoveryLookupClient
             throws Exception
     {
         ServiceDescriptors descriptors = createClient(
-                request -> new TestingResponse(NOT_MODIFIED, ImmutableListMultimap.of(
-                        "ETag", "newEtag",
-                        "Cache-Control", "max-age=123"
-                ), new byte[0]))
+                request -> mockResponse()
+                        .status(NOT_MODIFIED)
+                        .header("ETag", "newEtag")
+                        .header("Cache-Control", "max-age=123")
+                        .build())
                 .refreshServices(new ServiceDescriptors("testService", "testPool", EXPECTED_SERVICE_DESCRIPTOR_LIST, new Duration(1, HOURS), "oldEtag"))
                 .get();
         assertDescriptorsExpected(descriptors, "newEtag", new Duration(123, SECONDS));
@@ -146,10 +145,11 @@ public class TestHttpDiscoveryLookupClient
             throws Exception
     {
         ListenableFuture<ServiceDescriptors> future = createClient(
-                request -> new TestingResponse(NOT_MODIFIED, ImmutableListMultimap.of(
-                        "ETag", "newEtag",
-                        "Cache-Control", "max-age=123"
-                ), new byte[0]))
+                request -> mockResponse()
+                        .status(NOT_MODIFIED)
+                        .header("ETag", "newEtag")
+                        .header("Cache-Control", "max-age=123")
+                        .build())
                 .getServices("testService", "testPool");
 
         try {
@@ -172,17 +172,18 @@ public class TestHttpDiscoveryLookupClient
     {
         final IOException testingException = new IOException("testing exception");
         ListenableFuture<ServiceDescriptors> future = createClient(
-                request -> new TestingResponse(OK, ImmutableListMultimap.of(
-                        "Content-Type", "application/json"
-                ), new InputStream()
-                {
-                    @Override
-                    public int read()
-                            throws IOException
-                    {
-                        throw testingException;
-                    }
-                }))
+                request -> mockResponse()
+                        .contentType(MediaType.JSON_UTF_8)
+                        .body(new InputStream()
+                        {
+                            @Override
+                            public int read()
+                                    throws IOException
+                            {
+                                throw testingException;
+                            }
+                        })
+                        .build())
                 .getServices("testService", "testPool");
 
         try {
@@ -277,11 +278,9 @@ public class TestHttpDiscoveryLookupClient
             assertEquals(request, requestBuilder
                             .build()
             );
-            ListMultimap<String, String> combinedHeaders = ArrayListMultimap.create(TestingResponse.contentType(MediaType.JSON_UTF_8));
-            if (headers != null) {
-                combinedHeaders.putAll(headers);
-            }
-            return new TestingResponse(OK, combinedHeaders, jsonCodec(Object.class).toJson(ImmutableMap.of(
+
+            TestingResponse.Builder response = mockResponse()
+                    .jsonBody(ImmutableMap.of(
                             "environment", environment,
                             "services", ImmutableList.of(
                                     ImmutableMap.builder()
@@ -301,9 +300,11 @@ public class TestHttpDiscoveryLookupClient
                                             .put("state", "STOPPED")
                                             .put("properties", TEST_PROPERTIES_2)
                                             .build()
-                            )
-                    )
-            ).getBytes(Charsets.UTF_8));
+                            )));
+            if (headers != null) {
+                response = response.headers(headers);
+            }
+            return response.build();
         };
     }
 }

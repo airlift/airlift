@@ -5,10 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.MediaType;
-import com.proofpoint.http.client.testing.TestingResponse;
 import com.proofpoint.json.JsonCodec;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -17,14 +15,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static com.proofpoint.http.client.FullSmileResponseHandler.SmileResponse;
 import static com.proofpoint.http.client.FullSmileResponseHandler.createFullSmileResponseHandler;
 import static com.proofpoint.http.client.HttpStatus.INTERNAL_SERVER_ERROR;
 import static com.proofpoint.http.client.HttpStatus.OK;
-import static com.proofpoint.http.client.testing.TestingResponse.contentType;
 import static com.proofpoint.http.client.testing.TestingResponse.mockResponse;
 import static com.proofpoint.testing.Assertions.assertContains;
 import static com.proofpoint.testing.Assertions.assertInstanceOf;
@@ -112,8 +108,7 @@ public class TestFullSmileResponseHandler
     @Test
     public void testMissingContentType()
     {
-        SmileResponse<User> response = handler.handle(null,
-                new TestingResponse(OK, ImmutableListMultimap.<String, String>of(), "hello".getBytes(UTF_8)));
+        SmileResponse<User> response = handler.handle(null, mockResponse().body("hello").build());
 
         assertFalse(response.hasValue());
         assertNull(response.getException());
@@ -143,7 +138,10 @@ public class TestFullSmileResponseHandler
         when(inputStream.read(any(byte[].class), anyInt(), anyInt())).thenThrow(expectedException);
 
         try {
-            handler.handle(null, new TestingResponse(OK, contentType(MEDIA_TYPE_SMILE), inputStream));
+            handler.handle(null, mockResponse()
+                    .contentType(MEDIA_TYPE_SMILE)
+                    .body(inputStream)
+                    .build());
             fail("expected exception");
         }
         catch (RuntimeException e) {
@@ -152,7 +150,7 @@ public class TestFullSmileResponseHandler
         }
     }
 
-    private Response createSmileResponse(HttpStatus status, Object value)
+    private static Response createSmileResponse(HttpStatus status, Object value)
     {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try {
@@ -161,7 +159,11 @@ public class TestFullSmileResponseHandler
         catch (IOException e) {
             throw propagate(e);
         }
-        return new TestingResponse(status, contentType(MEDIA_TYPE_SMILE), outputStream.toByteArray());
+        return mockResponse()
+                .status(status)
+                .contentType(MEDIA_TYPE_SMILE)
+                .body(outputStream.toByteArray())
+                .build();
     }
 
     static class User
@@ -170,7 +172,7 @@ public class TestFullSmileResponseHandler
         private final int age;
 
         @JsonCreator
-        public User(@JsonProperty("name") String name, @JsonProperty("age") int age)
+        User(@JsonProperty("name") String name, @JsonProperty("age") int age)
         {
             this.name = name;
             this.age = age;

@@ -2,8 +2,6 @@ package com.proofpoint.http.client;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableListMultimap;
-import com.proofpoint.http.client.testing.TestingResponse;
 import com.proofpoint.json.JsonCodec;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -18,7 +16,6 @@ import static com.proofpoint.http.client.FullJsonResponseHandler.JsonResponse;
 import static com.proofpoint.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
 import static com.proofpoint.http.client.HttpStatus.INTERNAL_SERVER_ERROR;
 import static com.proofpoint.http.client.HttpStatus.OK;
-import static com.proofpoint.http.client.testing.TestingResponse.contentType;
 import static com.proofpoint.http.client.testing.TestingResponse.mockResponse;
 import static com.proofpoint.testing.Assertions.assertInstanceOf;
 import static org.mockito.Matchers.any;
@@ -125,8 +122,7 @@ public class TestFullJsonResponseHandler
     @Test
     public void testMissingContentType()
     {
-        JsonResponse<User> response = handler.handle(null,
-                new TestingResponse(OK, ImmutableListMultimap.<String, String>of(), "hello".getBytes(UTF_8)));
+        JsonResponse<User> response = handler.handle(null, mockResponse().body("hello").build());
 
         assertFalse(response.hasValue());
         assertNull(response.getException());
@@ -166,7 +162,10 @@ public class TestFullJsonResponseHandler
         when(inputStream.read(any(byte[].class), anyInt(), anyInt())).thenThrow(expectedException);
 
         try {
-            handler.handle(null, new TestingResponse(OK, contentType(JSON_UTF_8), inputStream));
+            handler.handle(null, mockResponse()
+                    .contentType(JSON_UTF_8)
+                    .body(inputStream)
+                    .build());
             fail("expected exception");
         }
         catch (RuntimeException e) {
@@ -181,7 +180,7 @@ public class TestFullJsonResponseHandler
         private final int age;
 
         @JsonCreator
-        public User(@JsonProperty("name") String name, @JsonProperty("age") int age)
+        User(@JsonProperty("name") String name, @JsonProperty("age") int age)
         {
             this.name = name;
             this.age = age;
