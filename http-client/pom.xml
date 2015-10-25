@@ -106,6 +106,12 @@
             <artifactId>jackson-dataformat-smile</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- for testing -->
         <dependency>
             <groupId>com.proofpoint.platform</groupId>

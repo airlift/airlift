@@ -1,5 +1,7 @@
 package com.proofpoint.http.client.testing;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.MediaType;
@@ -15,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.io.UnsupportedEncodingException;
 
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.io.ByteStreams.toByteArray;
@@ -98,6 +101,21 @@ public class TestTestingResponse
     }
 
     @Test
+    public void testBuilderContentTypeString()
+    {
+        assertResponse(
+                mockResponse()
+                        .contentType("foo/bar")
+                        .build(),
+                HttpStatus.NO_CONTENT,
+                ImmutableListMultimap.of(
+                        "Content-Type", "foo/bar"
+                ),
+                new byte[0]
+        );
+    }
+
+    @Test
     public void testBuilderByteBody()
     {
         byte[] input = { 0, 1, 5 };
@@ -122,6 +140,33 @@ public class TestTestingResponse
                 HttpStatus.OK, ImmutableListMultimap.<String, String>of(), new byte[0]);
     }
 
+    @Test
+    public void testBuilderJson()
+            throws UnsupportedEncodingException
+    {
+        assertResponse(mockResponse().jsonBody(new JsonClass()).build(),
+                HttpStatus.OK, ImmutableListMultimap.of("Content-Type", "application/json"), "{\"foo\":\"bar\"}".getBytes("utf-8"));
+    }
+
+    @Test
+    public void testBuilderJsonNull()
+            throws UnsupportedEncodingException
+    {
+        assertResponse(mockResponse().jsonBody(null).build(),
+                HttpStatus.OK, ImmutableListMultimap.of("Content-Type", "application/json"), new byte[] { 'n', 'u', 'l', 'l'});
+    }
+
+    @Test
+    public void testBuilderJsonSpecifiedContentType()
+    {
+        assertResponse(mockResponse()
+                        .jsonBody(ImmutableList.of("neé"))
+                        .header("conTeNt-tyPE", "foo/bar")
+                        .status(HttpStatus.BAD_REQUEST)
+                        .build(),
+                HttpStatus.BAD_REQUEST, ImmutableListMultimap.of("conTeNt-tyPE", "foo/bar"), new byte[] { '[', '"', 'n', 'e', -61, -87, '"', ']'});
+    }
+
     @Test(dataProvider = "bodyMethodPossibleCombinations", expectedExceptions = IllegalStateException.class)
     public void testBuilderMultipleBodiesThrowsException(Function<Builder, Builder> firstBody, Function<Builder, Builder> secondBody)
     {
@@ -134,7 +179,8 @@ public class TestTestingResponse
     {
         Set<Function<Builder, Builder>> bodyMethods = ImmutableSet.of(
                 builder -> builder.body(new byte[0]),
-                builder -> builder.body(new ByteArrayInputStream(new byte[0]))
+                builder -> builder.body(new ByteArrayInputStream(new byte[0])),
+                builder -> builder.jsonBody(new JsonClass())
         );
 
         List<Object[]> returnValues = new ArrayList<>();
@@ -156,6 +202,15 @@ public class TestTestingResponse
         }
         catch (IOException e) {
             propagate(e);
+        }
+    }
+
+    private static class JsonClass
+    {
+        @JsonProperty
+        public String getFoo()
+        {
+            return "bar";
         }
     }
 }
