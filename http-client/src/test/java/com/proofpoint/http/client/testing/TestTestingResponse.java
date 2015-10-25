@@ -33,6 +33,7 @@ public class TestTestingResponse
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testStringContent()
     {
         assertResponse(mockResponse(HttpStatus.ENHANCE_YOUR_CALM, MediaType.TEXT_JAVASCRIPT_UTF_8, "neé"),
@@ -101,6 +102,21 @@ public class TestTestingResponse
     }
 
     @Test
+    public void testBuilderContentType()
+    {
+        assertResponse(
+                mockResponse()
+                        .contentType(MediaType.JPEG)
+                        .build(),
+                HttpStatus.NO_CONTENT,
+                ImmutableListMultimap.of(
+                        "Content-Type", "image/jpeg"
+                ),
+                new byte[0]
+        );
+    }
+
+    @Test
     public void testBuilderContentTypeString()
     {
         assertResponse(
@@ -126,6 +142,17 @@ public class TestTestingResponse
                 HttpStatus.OK, ImmutableListMultimap.<String, String>of(), expected);
 
         assertResponse(mockResponse().body(new byte[0]).build(),
+                HttpStatus.OK, ImmutableListMultimap.<String, String>of(), new byte[0]);
+    }
+
+    @Test
+    public void testBuilderStringBody()
+    {
+        TestingResponse response = mockResponse().body("neé").build();
+        assertResponse(response,
+                HttpStatus.OK, ImmutableListMultimap.<String, String>of(), new byte[] { 'n', 'e', -61, -87});
+
+        assertResponse(mockResponse().body("").build(),
                 HttpStatus.OK, ImmutableListMultimap.<String, String>of(), new byte[0]);
     }
 
@@ -179,6 +206,7 @@ public class TestTestingResponse
     {
         Set<Function<Builder, Builder>> bodyMethods = ImmutableSet.of(
                 builder -> builder.body(new byte[0]),
+                builder -> builder.body(""),
                 builder -> builder.body(new ByteArrayInputStream(new byte[0])),
                 builder -> builder.jsonBody(new JsonClass())
         );

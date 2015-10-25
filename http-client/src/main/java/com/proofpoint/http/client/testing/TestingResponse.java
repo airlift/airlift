@@ -17,6 +17,7 @@ import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -118,12 +119,9 @@ public class TestingResponse
     }
 
     /**
-     * Returns a response, encoding the provided content in UTF-8.
-     *
-     * @param status the status
-     * @param type the type for the Content-Type: header
-     * @param content the content for the body
+     * @deprecated use {@link TestingResponse#mockResponse()}{@code .status(status).contentType(type).body(content).build()}
      */
+    @Deprecated
     @SuppressWarnings("deprecation")
     public static Response mockResponse(HttpStatus status, MediaType type, String content)
     {
@@ -189,6 +187,14 @@ public class TestingResponse
         /**
          * Adds a Content-Type: header to the response.
          */
+        public Builder contentType(MediaType type)
+        {
+            return header(HttpHeaders.CONTENT_TYPE, type.toString());
+        }
+
+        /**
+         * Adds a Content-Type: header to the response.
+         */
         public Builder contentType(String type)
         {
             return header(HttpHeaders.CONTENT_TYPE, type);
@@ -202,6 +208,22 @@ public class TestingResponse
             requireNonNull(bytes, "bytes is null");
             checkState(this.bytes == null && this.inputStream == null, "body is already set");
             this.bytes = Arrays.copyOf(bytes, bytes.length);
+            return this;
+        }
+
+        /**
+         * Sets the response's body to the UTF-8 encoding of a string
+         */
+        public Builder body(String content)
+        {
+            requireNonNull(content, "content is null");
+            checkState(this.bytes == null && this.inputStream == null, "body is already set");
+            try {
+                bytes = content.getBytes("utf-8");
+            }
+            catch (UnsupportedEncodingException e) {
+                throw propagate(e);
+            }
             return this;
         }
 
