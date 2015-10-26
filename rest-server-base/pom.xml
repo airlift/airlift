@@ -30,7 +30,6 @@
     <developers />
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.rpm.username>${project.artifactId}</project.rpm.username>
     </properties>
 
