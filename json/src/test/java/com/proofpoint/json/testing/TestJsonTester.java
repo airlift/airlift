@@ -65,10 +65,10 @@ public class TestJsonTester
         assertJsonEncode(new DateTime(1376344694123L), "2013-08-12T21:58:14.123Z");
     }
 
-    @Test(expectedExceptions = AssertionError.class, expectedExceptionsMessageRegExp = "JSON encoding \\{\n" +
-            "  \"s\" : \"fred\",\n" +
-            "  \"i\" : 3,\n" +
-            "  \"b\" : true\n" +
+    @Test(expectedExceptions = AssertionError.class, expectedExceptionsMessageRegExp = "JSON encoding \\{\r?\n" +
+            "  \"s\" : \"fred\",\r?\n" +
+            "  \"i\" : 3,\r?\n" +
+            "  \"b\" : true\r?\n" +
             "} expected \\[\\{b=true, s=fred, extra=field, i=3}] but found \\[\\{s=fred, i=3, b=true}]")
     public void testMissingField()
     {
@@ -76,10 +76,10 @@ public class TestJsonTester
        assertJsonEncode(simpleEncoder, simpleExpected);
     }
 
-    @Test(expectedExceptions = AssertionError.class, expectedExceptionsMessageRegExp = "testing message JSON encoding \\{\n" +
-            "  \"s\" : \"fred\",\n" +
-            "  \"i\" : 3,\n" +
-            "  \"b\" : true\n" +
+    @Test(expectedExceptions = AssertionError.class, expectedExceptionsMessageRegExp = "testing message JSON encoding \\{\r?\n" +
+            "  \"s\" : \"fred\",\r?\n" +
+            "  \"i\" : 3,\r?\n" +
+            "  \"b\" : true\r?\n" +
             "} expected \\[\\{s=fred, i=3}] but found \\[\\{s=fred, i=3, b=true}]")
     public void testExtraField()
     {
