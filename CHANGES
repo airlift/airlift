@@ -2,6 +2,10 @@ Platform 1.27
 
 * Skeleton server and Sample server
 
+  The Maven archetypes now supply a gitignore file. This file should be
+  renamed to ".gitignore" (it is impractical to get an archetype to create
+  a file named ".gitignore").
+
   We have updated the skeleton and sample servers to reflect current practice.
 
   - The skeleton server Main class includes code to override the default value
