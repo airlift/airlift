@@ -25,6 +25,11 @@ Platform 1.27
   - TestServer no longer uses resource files to supply JSON.
   - The sample server no longer uses events
 
+* Admin port
+
+  We added an /admin/configuration resource to the admin port which permits
+  retrieving the redacted configuration settings.
+
 * HttpServer
 
   We created TestingAdminHttpServer and TestingAdminHttpServerModule for
