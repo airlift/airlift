@@ -1,5 +1,15 @@
 Platform 1.27
 
+* TestingResponse
+
+  We created a new builder for TestingResponse and deprecated most of
+  the previous methods of creating TestingResponse. For example:
+
+      TestingResponse.mockResponse()
+          .header("X-Foo", "bar")
+          .jsonBody(object)
+          .build();
+
 * Skeleton server and Sample server
 
   The Maven archetypes now supply a gitignore file. This file should be
