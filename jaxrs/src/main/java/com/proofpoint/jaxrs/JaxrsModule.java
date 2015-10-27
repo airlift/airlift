@@ -205,6 +205,13 @@ public class JaxrsModule
         return new ServletContainer(ResourceConfig.forApplication(application));
     }
 
+    @Provides
+    @TheAdminServlet
+    public static Map<String, String> createTheAdminServletParams()
+    {
+        return new HashMap<>();
+    }
+
     private static boolean isJaxRsType(Class<?> type)
     {
         if (type == null) {
