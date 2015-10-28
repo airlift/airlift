@@ -15,6 +15,14 @@ Platform 1.27
   - TestServer no longer uses resource files to supply JSON.
   - The sample server no longer uses events
 
+* Library Upgrades
+
+  - AutoValue to 1.1
+
+* Maven plugin upgrades
+  - maven-resources-plugin to 2.7
+  - maven-invoker-plugin to 2.0.0
+
 Platform 1.26
 
 * HttpServer
