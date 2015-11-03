@@ -6,6 +6,7 @@ import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
+import com.google.common.io.Closeables;
 import com.google.common.io.CountingInputStream;
 import com.google.common.net.HostAndPort;
 import com.google.common.primitives.Ints;
@@ -336,8 +337,14 @@ public class JettyHttpClient
         JettyResponse jettyResponse = null;
         T value;
         try {
-            jettyResponse = new JettyResponse(response, listener.getInputStream());
-            value = responseHandler.handle(request, jettyResponse);
+            InputStream inputStream = listener.getInputStream();
+            try {
+                jettyResponse = new JettyResponse(response, inputStream);
+                value = responseHandler.handle(request, jettyResponse);
+            }
+            finally {
+                Closeables.closeQuietly(inputStream);
+            }
         }
         finally {
             recordRequestComplete(stats, request, requestStart, jettyResponse, responseStart);
