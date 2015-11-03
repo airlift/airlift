@@ -25,6 +25,9 @@ Platform 1.27
   - TestServer no longer uses resource files to supply JSON.
   - The sample server no longer uses events
 
+* [Bug] Fix connection hang when ResponseHandler throws without reading large
+  response.
+
 * Library Upgrades
 
   - AutoValue to 1.1
