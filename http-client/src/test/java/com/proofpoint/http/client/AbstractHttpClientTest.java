@@ -1,6 +1,7 @@
 package com.proofpoint.http.client;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
@@ -29,10 +30,13 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -48,6 +52,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -87,6 +92,7 @@ public abstract class AbstractHttpClientTest
     private String host = "127.0.0.1";
     private String keystore = null;
     protected RequestStats stats;
+    private SslContextFactory sslContextFactory;
 
     protected AbstractHttpClientTest()
     {
@@ -134,7 +140,7 @@ public abstract class AbstractHttpClientTest
         if (keystore != null) {
             httpConfiguration.addCustomizer(new SecureRequestCustomizer());
 
-            SslContextFactory sslContextFactory = new SslContextFactory(keystore);
+            sslContextFactory = new SslContextFactory(keystore);
             sslContextFactory.setKeyStorePassword("changeit");
             SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
 
@@ -1205,6 +1211,49 @@ public abstract class AbstractHttpClientTest
         executeRequest(request, new ThrowErrorResponseHandler());
     }
 
+    @Test
+    public void testResponseHandlerThrowsBeforeReadingBody()
+            throws Exception
+    {
+        try (LargeResponseServer largeResponseServer = new LargeResponseServer(scheme, host)) {
+            RuntimeException expectedException = new RuntimeException();
+
+            // kick the fake server
+            executor.execute(largeResponseServer);
+
+            Request request = prepareGet()
+                    .setUri(largeResponseServer.getUri())
+                    .build();
+
+            try {
+                executeRequest(request, new ResponseHandler<Void, RuntimeException>()
+                {
+                    @Override
+                    public Void handleException(Request request, Exception exception)
+                    {
+                        if (exception instanceof ResponseTooLargeException) {
+                            throw expectedException;
+                        }
+                        fail("Unexpected request failure", exception);
+                        return null;
+                    }
+
+                    @Override
+                    public Void handle(Request request, Response response)
+                    {
+                        throw expectedException;
+                    }
+                });
+                fail("Expected to get an exception");
+            }
+            catch (RuntimeException e) {
+                assertEquals(e, expectedException);
+            }
+
+            largeResponseServer.assertCompleted();
+        }
+    }
+
     private void executeRequest(FakeServer fakeServer, HttpClientConfig config)
             throws Exception
     {
@@ -1234,7 +1283,6 @@ public abstract class AbstractHttpClientTest
         private final AtomicReference<Socket> connectionSocket = new AtomicReference<>();
         private final String scheme;
         private final String host;
-
 
         private FakeServer(String scheme, String host, long readBytes, byte[] writeBuffer, boolean closeConnectionImmediately)
                 throws Exception
@@ -1288,6 +1336,85 @@ public abstract class AbstractHttpClientTest
                 if (closeConnectionImmediately) {
                     closeQuietly(connectionSocket.get());
                 }
+            }
+        }
+
+        @Override
+        public void close()
+                throws IOException
+        {
+            closeQuietly(connectionSocket.get());
+            serverSocket.close();
+        }
+    }
+
+    private class LargeResponseServer
+            implements Closeable, Runnable
+    {
+        private final ServerSocket serverSocket;
+        private final AtomicReference<Socket> connectionSocket = new AtomicReference<>();
+        private final String scheme;
+        private final String host;
+        private final CountDownLatch completed = new CountDownLatch(1);
+
+        private LargeResponseServer(String scheme, String host)
+                throws Exception
+        {
+            this.scheme = scheme;
+            this.host = host;
+            if (sslContextFactory != null) {
+                this.serverSocket = sslContextFactory.newSslServerSocket(null, 0, 5);
+            }
+            else {
+                this.serverSocket = new ServerSocket(0);
+            }
+        }
+
+        public URI getUri()
+        {
+            try {
+                return new URI(scheme, null, host, serverSocket.getLocalPort(), "/", null, null);
+            }
+            catch (URISyntaxException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        public void assertCompleted() {
+            try {
+                assertTrue(completed.await(4, SECONDS));
+            }
+            catch (InterruptedException e) {
+                throw propagate(e);
+            }
+        }
+
+        @Override
+        public void run()
+        {
+            try {
+                Socket connectionSocket = serverSocket.accept();
+                this.connectionSocket.set(connectionSocket);
+
+                BufferedReader reader = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream(), "UTF-8"));
+                String line;
+                do {
+                    line = reader.readLine();
+                } while (!line.isEmpty());
+
+                OutputStreamWriter writer = new OutputStreamWriter(connectionSocket.getOutputStream(), "UTF-8");
+                writer.write("HTTP/1.1 200 OK\r\n" +
+                        "Content-Type: application/octet-stream\r\n" +
+                        "Content-Length: 100000000\r\n" +
+                        "\r\n" +
+                        Strings.repeat("x", 100000000) +
+                        "\r\n");
+                writer.flush();
+            }
+            catch (IOException ignored) {
+            }
+            finally {
+                completed.countDown();
             }
         }
 
