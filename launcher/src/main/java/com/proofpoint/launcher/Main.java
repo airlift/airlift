@@ -252,6 +252,7 @@ public class Main
             javaArgs.add("-XX:+UseConcMarkSweepGC");
             javaArgs.add("-XX:+ExplicitGCInvokesConcurrent");
             javaArgs.add("-XX:+HeapDumpOnOutOfMemoryError");
+            javaArgs.add("-XX:HeapDumpPath=var");
             javaArgs.add("-XX:+AggressiveOpts");
             javaArgs.add("-XX:+DoEscapeAnalysis");
             javaArgs.add("-XX:+UseCompressedOops");

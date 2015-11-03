@@ -35,6 +35,10 @@ Platform 1.27
   We created TestingAdminHttpServer and TestingAdminHttpServerModule for
   testing of admin port resources.
 
+* Launcher
+
+  We added the "-XX:HeapDumpPath=var" option to the set of default JVM options.
+
 * [Bug] Fix connection hang when ResponseHandler throws without reading large
   response.
 
