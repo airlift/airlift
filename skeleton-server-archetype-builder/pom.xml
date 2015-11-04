@@ -8,7 +8,7 @@
     <parent>
         <groupId>com.proofpoint.platform</groupId>
         <artifactId>platform</artifactId>
-        <version>1.27-SNAPSHOT</version>
+        <version>1.27</version>
     </parent>
 
     <properties>
@@ -38,8 +38,7 @@
                                 </copy>
 
                                 <!-- Various maven plugins refuse to copy .gitignore files -->
-                                <copy file="${project.basedir}/../.gitignore"
-                                      tofile="${project.build.directory}/project/gitignore" />
+                                <copy file="${project.basedir}/../.gitignore" tofile="${project.build.directory}/project/gitignore" />
 
                                 <delete dir="${project.build.directory}/project-copy" />
                             </target>
