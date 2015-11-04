@@ -36,8 +36,8 @@ public class HttpServerConfig
 
     private boolean httpsEnabled = false;
     private int httpsPort = 8443;
-    private String keystorePath;
-    private String keystorePassword;
+    private String keystorePath = "etc/keystore.jks";
+    private String keystorePassword = "keystore";
 
     private String logPath = "var/log/http-request.log";
     private Duration logRetentionTime = new Duration(90, TimeUnit.DAYS);
