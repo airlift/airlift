@@ -16,6 +16,7 @@ Platform 1.28
   - slf4j to 1.7.12
   - joda-time to 2.9 (Fixes a compatibility issue with Java 8u60.)
   - testng to 6.9.6
+  - Jacoco to 0.7.5
 
 Platform 1.27
 
