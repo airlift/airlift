@@ -14,6 +14,7 @@ Platform 1.28
 * Library Upgrades
 
   - slf4j to 1.7.12
+  - joda-time to 2.9 (Fixes a compatibility issue with Java 8u60.)
 
 Platform 1.27
 
