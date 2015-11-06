@@ -42,6 +42,9 @@
         <!-- define the forkmode for tests. Default is 'once' -->
         <platform.test.fork-mode>once</platform.test.fork-mode>
 
+        <!-- define the JVM size for forked tests. Defaults to build JVM size. -->
+        <platform.test.jvmsize>${platform.build.jvmsize}</platform.test.jvmsize>
+
         <!-- Controls all the checkers run when building the project. -->
         <!-- Can be activated with -Dplatform.check.skip-all=true on the command line. -->
         <platform.check.skip-all>false</platform.check.skip-all>
@@ -233,6 +236,14 @@
                         </systemPropertyVariables>
                         <forkMode>${platform.test.fork-mode}</forkMode>
                         <runOrder>random</runOrder>
+                        <argLine>
+                            ${argLine}
+                            -Duser.timezone=UTC
+                            -Xmx${platform.test.jvmsize}
+                            -Xms${platform.test.jvmsize}
+                            -XX:OnOutOfMemoryError="kill -9 %p"
+                            -XX:+HeapDumpOnOutOfMemoryError
+                        </argLine>
                     </configuration>
                 </plugin>
 
