@@ -13,6 +13,7 @@ Platform 1.28
 
 * Library Upgrades
 
+  - Jetty to 9.2.13
   - Jersey to 2.22
   - slf4j to 1.7.12
   - joda-time to 2.9 (Fixes a compatibility issue with Java 8u60.)
