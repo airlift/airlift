@@ -11,6 +11,10 @@ Platform 1.28
 
   We added a "ci" Maven profile that builds Javadoc.
 
+* Library Upgrades
+
+  - slf4j to 1.7.12
+
 Platform 1.27
 
 * TestingResponse
