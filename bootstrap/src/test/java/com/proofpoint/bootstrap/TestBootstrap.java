@@ -21,6 +21,7 @@ import com.google.common.io.Resources;
 import com.google.inject.Binder;
 import com.google.inject.ConfigurationException;
 import com.google.inject.CreationException;
+import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.ProvisionException;
 import com.proofpoint.configuration.AbstractConfigurationAwareModule;
@@ -416,6 +417,26 @@ public class TestBootstrap
     }
 
     @Test
+    public void testConfigObjectsNotShared()
+            throws Exception
+    {
+        Injector injector = bootstrapApplication("test-application")
+                .doNotInitializeLogging()
+                .withModules(new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        bindConfig(binder).to(SimpleConfig.class);
+                    }
+                }).initialize();
+
+        injector.getInstance(SimpleConfig.class).setProperty("changed");
+        SimpleConfig simpleConfig = injector.getInstance(SimpleConfig.class);
+        assertNull(simpleConfig.getProperty());
+    }
+
+    @Test
     public void testPostConstructCalled()
             throws Exception
     {
@@ -458,24 +479,10 @@ public class TestBootstrap
     {
         Bootstrap bootstrap = bootstrapApplication(
                 SimpleConfig.class,
-                new Function<SimpleConfig, String>()
-                {
-                    @Override
-                    public String apply(SimpleConfig input)
-                    {
-                        return input.getProperty();
-                    }
-                })
+                SimpleConfig::getProperty)
                 .doNotInitializeLogging()
                 .withModules(new NodeModule(),
-                        new Module()
-                        {
-                            @Override
-                            public void configure(Binder binder)
-                            {
-                                bindConfig(binder).to(SimpleConfig.class);
-                            }
-                        })
+                        binder -> bindConfig(binder).to(SimpleConfig.class))
                 .quiet()
                 .setRequiredConfigurationProperties(ImmutableMap.of(
                         "node.environment", "test",

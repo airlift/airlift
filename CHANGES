@@ -1,5 +1,10 @@
 Platform 1.28
 
+* Configuration
+
+  Configuration objects are no longer treated as singletons, in order
+  to avoid action at a distance.
+
 * HttpServer
 
   We created new configuration defaults:

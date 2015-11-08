@@ -29,7 +29,6 @@ import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.inject.Binding;
 import com.google.inject.ConfigurationException;
 import com.google.inject.Module;
-import com.google.inject.Provider;
 import com.google.inject.spi.DefaultElementVisitor;
 import com.google.inject.spi.Element;
 import com.google.inject.spi.Message;
@@ -39,6 +38,7 @@ import com.proofpoint.configuration.ConfigurationMetadata.InjectionPointMetaData
 import com.proofpoint.configuration.Problems.Monitor;
 import org.apache.bval.jsr303.ApacheValidationProvider;
 
+import javax.inject.Provider;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
@@ -53,7 +53,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
@@ -73,9 +72,8 @@ public final class ConfigurationFactory
     private final Map<String, String> moduleDefaults;
     private final ImmutableMap<String, ConfigurationDefaultingModule> moduleDefaultSource;
     private final Problems.Monitor monitor;
-    private final Set<String> unusedProperties = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+    private final Set<String> unusedProperties = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Collection<String> initialErrors;
-    private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
     private final Set<ConfigurationProvider<?>> registeredProviders = newConcurrentHashSet();
     private final LoadingCache<Class<?>, ConfigurationMetadata<?>> metadataCache = CacheBuilder.newBuilder()
             .build(new CacheLoader<Class<?>, ConfigurationMetadata<?>>()
@@ -150,7 +148,7 @@ public final class ConfigurationFactory
 
     public <T> T build(Class<T> configClass)
     {
-        return build(configClass, null).instance;
+        return build(configClass, null, true).instance;
     }
 
     /**
@@ -159,31 +157,18 @@ public final class ConfigurationFactory
     <T> T build(ConfigurationProvider<T> configurationProvider, WarningsMonitor warningsMonitor)
     {
         Preconditions.checkNotNull(configurationProvider, "configurationProvider");
-        registeredProviders.add(configurationProvider);
+        boolean firstBuild = registeredProviders.add(configurationProvider);
 
-        // check for a prebuilt instance
-        T instance = getCachedInstance(configurationProvider);
-        if (instance != null) {
-            return instance;
-        }
+        ConfigurationHolder<T> holder = build(configurationProvider.getConfigClass(), configurationProvider.getPrefix(), firstBuild);
+        T instance = holder.instance;
 
-        ConfigurationHolder<T> holder = build(configurationProvider.getConfigClass(), configurationProvider.getPrefix());
-        instance = holder.instance;
-
-        // inform caller about warnings
-        if (warningsMonitor != null) {
+        // inform caller about warnings if this is the first time we've built from the provider
+        if (warningsMonitor != null && firstBuild) {
             for (Message message : holder.problems.getWarnings()) {
                 warningsMonitor.onWarning(message.toString());
             }
         }
 
-        // add to instance cache
-        T existingValue = putCachedInstance(configurationProvider, instance);
-        // if key was already associated with a value, there was a
-        // creation race and we lost. Just use the winners' instance;
-        if (existingValue != null) {
-            return existingValue;
-        }
         return instance;
     }
 
@@ -192,21 +177,15 @@ public final class ConfigurationFactory
         return build(configurationProvider.getConfigClass(), configurationProvider.getPrefix(), true, new Problems());
     }
 
-    @SuppressWarnings("unchecked")
-    private <T> T getCachedInstance(ConfigurationProvider<T> configurationProvider)
+    private <T> ConfigurationHolder<T> build(Class<T> configClass, String prefix, boolean reportToMonitor)
     {
-        return (T) instanceCache.get(configurationProvider);
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> T putCachedInstance(ConfigurationProvider<T> configurationProvider, T instance)
-    {
-        return (T) instanceCache.putIfAbsent(configurationProvider, instance);
-    }
-
-    private <T> ConfigurationHolder<T> build(Class<T> configClass, String prefix)
-    {
-        Problems problems = new Problems(monitor);
+        Problems problems;
+        if (reportToMonitor) {
+            problems = new Problems(monitor);
+        }
+        else {
+            problems = new Problems();
+        }
 
         final T instance = build(configClass, prefix, false, problems);
 
@@ -684,7 +663,7 @@ public final class ConfigurationFactory
                     // look for ConfigurationProviders...
                     if (binding instanceof ProviderInstanceBinding) {
                         ProviderInstanceBinding<?> providerInstanceBinding = (ProviderInstanceBinding<?>) binding;
-                        Provider<?> provider = providerInstanceBinding.getProviderInstance();
+                        Provider<?> provider = providerInstanceBinding.getUserSuppliedProvider();
                         if (provider instanceof ConfigurationProvider) {
                             ConfigurationProvider<?> configurationProvider = (ConfigurationProvider<?>) provider;
                             providers.add(configurationProvider);
