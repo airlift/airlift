@@ -5,6 +5,8 @@ Platform 1.28
   Configuration objects are no longer treated as singletons, in order
   to avoid action at a distance.
 
+  We deprecated ConfigurationFactory.registerConfigurationClasses(Module)
+
 * HttpServer
 
   We created new configuration defaults:

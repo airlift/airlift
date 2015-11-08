@@ -16,7 +16,6 @@
 package com.proofpoint.configuration;
 
 import com.google.common.annotations.Beta;
-import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -46,13 +45,11 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
@@ -62,6 +59,7 @@ import static com.proofpoint.configuration.ConfigurationMetadata.getConfiguratio
 import static com.proofpoint.configuration.ConfigurationMetadata.isConfigClass;
 import static com.proofpoint.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 
 public final class ConfigurationFactory
 {
@@ -72,7 +70,7 @@ public final class ConfigurationFactory
     private final Map<String, String> moduleDefaults;
     private final ImmutableMap<String, ConfigurationDefaultingModule> moduleDefaultSource;
     private final Problems.Monitor monitor;
-    private final Set<String> unusedProperties = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<String> unusedProperties = newConcurrentHashSet();
     private final Collection<String> initialErrors;
     private final Set<ConfigurationProvider<?>> registeredProviders = newConcurrentHashSet();
     private final LoadingCache<Class<?>, ConfigurationMetadata<?>> metadataCache = CacheBuilder.newBuilder()
@@ -112,7 +110,7 @@ public final class ConfigurationFactory
     @Beta
     public void consumeProperty(String property)
     {
-        Preconditions.checkNotNull(property, "property is null");
+        requireNonNull(property, "property is null");
         unusedProperties.remove(property);
     }
 
@@ -135,7 +133,7 @@ public final class ConfigurationFactory
     /**
      * Registers all configuration classes in the module so they can be part of configuration inspection.
      */
-    @Beta
+    @Deprecated
     public void registerConfigurationClasses(Module module)
     {
         registeredProviders.addAll(getAllProviders(module));
@@ -156,7 +154,7 @@ public final class ConfigurationFactory
      */
     <T> T build(ConfigurationProvider<T> configurationProvider, WarningsMonitor warningsMonitor)
     {
-        Preconditions.checkNotNull(configurationProvider, "configurationProvider");
+        requireNonNull(configurationProvider, "configurationProvider is null");
         boolean firstBuild = registeredProviders.add(configurationProvider);
 
         ConfigurationHolder<T> holder = build(configurationProvider.getConfigClass(), configurationProvider.getPrefix(), firstBuild);
@@ -196,9 +194,7 @@ public final class ConfigurationFactory
 
     private <T> T build(Class<T> configClass, String prefix, boolean isDefault, Problems problems)
     {
-        if (configClass == null) {
-            throw new NullPointerException("configClass is null");
-        }
+        requireNonNull(configClass, "configClass is null");
 
         if (prefix == null) {
             prefix = "";
@@ -341,7 +337,7 @@ public final class ConfigurationFactory
         InjectionPointMetaData operativeInjectionPoint = null;
         InjectionPointMetaData defaultInjectionPoint = null;
 
-        public OperativeInjectionData(AttributeMetadata attribute, String prefix, Problems problems)
+        OperativeInjectionData(AttributeMetadata attribute, String prefix, Problems problems)
         {
             this.attribute = attribute;
             this.prefix = prefix;
