@@ -199,7 +199,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test(timeOut = 2000)
+    @Test(timeOut = 4000)
     public void testConnectTimeout()
             throws Exception
     {
