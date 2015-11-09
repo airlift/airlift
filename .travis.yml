@@ -11,4 +11,4 @@ addons:
       - rpm
 
 script:
-  - mvn test -B javadoc:javadoc
+  - mvn test -P ci -B javadoc:javadoc
