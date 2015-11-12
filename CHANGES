@@ -24,9 +24,9 @@ Platform 1.28
   before sending it a SIGKILL is now configurable through the
   launcher.stop-timeout-seconds system property. The default is "60".
 
-* Maven config
+* We added a "ci" Maven profile that builds Javadoc.
 
-  We added a "ci" Maven profile that builds Javadoc.
+* We removed the dbpool sub-project.
 
 * Library Upgrades
 
