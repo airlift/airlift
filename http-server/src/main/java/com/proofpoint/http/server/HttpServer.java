@@ -136,6 +136,7 @@ public class HttpServer
         threadPool.setIdleTimeout(Ints.checkedCast(config.getThreadMaxIdleTime().toMillis()));
         threadPool.setName("http-worker");
         server = new Server(threadPool);
+        server.setStopTimeout(config.getStopTimeout().toMillis());
         this.stats = stats;
 
         if (config.isShowStackTrace()) {

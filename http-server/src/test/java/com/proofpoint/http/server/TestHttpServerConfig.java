@@ -28,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 import static com.proofpoint.configuration.testing.ConfigAssertions.assertFullMapping;
 import static com.proofpoint.configuration.testing.ConfigAssertions.assertLegacyEquivalence;
 import static com.proofpoint.configuration.testing.ConfigAssertions.assertRecordedDefaults;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TestHttpServerConfig
 {
@@ -49,12 +51,13 @@ public class TestHttpServerConfig
                 .setMinThreads(2)
                 .setMaxThreads(200)
                 .setThreadMaxIdleTime(new Duration(1, TimeUnit.MINUTES))
-                .setNetworkMaxIdleTime(new Duration(200, TimeUnit.SECONDS))
+                .setNetworkMaxIdleTime(new Duration(200, SECONDS))
                 .setUserAuthFile(null)
                 .setAdminEnabled(true)
                 .setAdminPort(0)
                 .setAdminMinThreads(2)
                 .setAdminMaxThreads(200)
+                .setStopTimeout(new Duration(30, SECONDS))
                 .setMaxRequestHeaderSize(null)
                 .setShowStackTrace(false)
         );
@@ -84,6 +87,7 @@ public class TestHttpServerConfig
                 .put("http-server.admin.port", "3")
                 .put("http-server.admin.threads.min", "3")
                 .put("http-server.admin.threads.max", "4")
+                .put("http-server.stop-timeout", "1500ms")
                 .put("http-server.max-request-header-size", "32kB")
                 .put("http-server.show-stack-trace", "true")
                 .build();
@@ -110,6 +114,7 @@ public class TestHttpServerConfig
                 .setAdminPort(3)
                 .setAdminMinThreads(3)
                 .setAdminMaxThreads(4)
+                .setStopTimeout(new Duration(1500, MILLISECONDS))
                 .setShowStackTrace(true);
 
         assertFullMapping(properties, expected);

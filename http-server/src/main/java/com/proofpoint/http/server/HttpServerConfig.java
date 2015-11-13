@@ -19,13 +19,14 @@ import com.proofpoint.configuration.Config;
 import com.proofpoint.configuration.ConfigDescription;
 import com.proofpoint.configuration.ConfigSecuritySensitive;
 import com.proofpoint.configuration.DefunctConfig;
-import com.proofpoint.configuration.LegacyConfig;
 import com.proofpoint.units.DataSize;
 import com.proofpoint.units.DataSize.Unit;
 import com.proofpoint.units.Duration;
 
 import javax.validation.constraints.Min;
 import java.util.concurrent.TimeUnit;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 @DefunctConfig({"jetty.http.enabled", "jetty.http.port", "jetty.https.enabled", "jetty.https.port", "jetty.https.keystore.path", "jetty.https.keystore.password", "http-server.https.keystore.password", "jetty.log.path", "jetty.threads.max", "jetty.threads.min", "jetty.threads.max-idle-time-ms", "jetty.log.retain-days", "jetty.auth.users-file", "jetty.net.max-idle-time-ms"})
 public class HttpServerConfig
@@ -47,7 +48,8 @@ public class HttpServerConfig
     private int minThreads = 2;
     private int maxThreads = 200;
     private Duration threadMaxIdleTime = new Duration(1, TimeUnit.MINUTES);
-    private Duration networkMaxIdleTime = new Duration(200, TimeUnit.SECONDS);
+    private Duration networkMaxIdleTime = new Duration(200, SECONDS);
+    private Duration stopTimeout = new Duration(30, SECONDS);
     private DataSize maxRequestHeaderSize;
 
     private String userAuthFile;
@@ -300,6 +302,19 @@ public class HttpServerConfig
     public HttpServerConfig setAdminMaxThreads(int adminMaxThreads)
     {
         this.adminMaxThreads = adminMaxThreads;
+        return this;
+    }
+
+    public Duration getStopTimeout()
+    {
+        return stopTimeout;
+    }
+
+    @Config("http-server.stop-timeout")
+    @ConfigDescription("On shutdown, amount of time to allow pending requests to complete before interrupting")
+    public HttpServerConfig setStopTimeout(Duration stopTimeout)
+    {
+        this.stopTimeout = stopTimeout;
         return this;
     }
 

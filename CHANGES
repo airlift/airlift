@@ -9,7 +9,11 @@ Platform 1.28
 
 * HttpServer
 
-  We created new configuration defaults:
+  We created the http-server.stop-timeout configuration option to allow
+  changing the amount of time upon server shutdown that requests are allowed
+  to complete before being interrupted.
+
+  We created new defaults for existing configuration options:
 
   http-server.https.keystore.path=etc/keystore.jks
   http-server.https.keystore.key=keystore
