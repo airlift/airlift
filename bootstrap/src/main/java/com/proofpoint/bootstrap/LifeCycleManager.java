@@ -131,8 +131,9 @@ public final class LifeCycleManager
         }
 
         log.info("Life cycle stopping...");
-
         stopList(acceptRequestInstances);
+
+        log.info("Life cycle stopped accepting new requests...");
         stopList(managedInstances);
 
         state.set(State.STOPPED);
