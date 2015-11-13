@@ -18,6 +18,12 @@ Platform 1.28
   http-server.https.keystore.path=etc/keystore.jks
   http-server.https.keystore.key=keystore
 
+* Launcher
+
+  The amount of time the launcher will wait for a server to gracefully stop
+  before sending it a SIGKILL is now configurable through the
+  launcher.stop-timeout-seconds system property. The default is "60".
+
 * Maven config
 
   We added a "ci" Maven profile that builds Javadoc.

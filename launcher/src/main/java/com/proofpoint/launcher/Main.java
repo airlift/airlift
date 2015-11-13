@@ -106,7 +106,7 @@ public class Main
         @Option(type = OptionType.GLOBAL, name = "--log-file", description = "Path to log file. Defaults to DATA_DIR/var/log/launcher.log")
         public String logPath = null;
 
-        @Option(type = OptionType.GLOBAL, name = "--log-levels-file", description = "Path to log config file. Defaults to INSTALL_PATH/etc/log.config")
+        @Option(type = OptionType.GLOBAL, name = "--log-levels-file", description = "Path to log config file. Defaults to INSTALL_PATH/etc/log.properties")
         public String logLevelsPath = null;
 
         @Option(type = OptionType.GLOBAL, name = "-D", description = "Set a Java System property")
@@ -114,6 +114,7 @@ public class Main
 
         final Properties systemProperties = new Properties();
         final List<String> launcherArgs = new LinkedList<>();
+        private int stopTimeoutSeconds = 60;
 
         LauncherCommand()
         {
@@ -220,6 +221,20 @@ public class Main
             else {
                 launcherArgs.add("--log-file");
                 launcherArgs.add(new File(logPath).getAbsolutePath());
+            }
+
+            String stopTimeoutString = systemProperties.getProperty("launcher.stop-timeout-seconds");
+            if (stopTimeoutString != null) {
+                try {
+                    stopTimeoutSeconds = Integer.parseUnsignedInt(stopTimeoutString);
+                    if (stopTimeoutSeconds == 0) {
+                        throw new NumberFormatException();
+                    }
+                }
+                catch (NumberFormatException e) {
+                    System.out.println("Value of launcher.stop-timeout-seconds property not a positive integer");
+                    System.exit(STATUS_INVALID_ARGS);
+                }
             }
 
             if (verbose) {
@@ -484,7 +499,7 @@ public class Main
                 if (pidStatus.pid != 0) {
                     int pid = pidStatus.pid;
                     Processes.kill(pid, graceful);
-                    for (int waitTriesLeft = 60 * 10; waitTriesLeft > 0; --waitTriesLeft) {
+                    for (int waitTriesLeft = stopTimeoutSeconds * 10; waitTriesLeft > 0; --waitTriesLeft) {
                         pidStatus = pidFile.getStatus();
                         if (!pidStatus.held || pidStatus.pid != pid) {
                             return new KillStatus(0, (graceful ? "Stopped " : "Killed ") + pid + "\n");
