@@ -89,6 +89,7 @@ public class JaxrsModule
         jaxrsBinder(binder).bind(QueryParamExceptionMapper.class);
         jaxrsBinder(binder).bind(OverrideMethodFilter.class);
         jaxrsBinder(binder).bind(TimingResourceDynamicFeature.class);
+        jaxrsBinder(binder).bind(DisallowOptionsModelProcessor.class);
         jaxrsBinder(binder).bindAdmin(ParsingExceptionMapper.class);
         jaxrsBinder(binder).bindAdmin(QueryParamExceptionMapper.class);
         jaxrsBinder(binder).bindAdmin(OverrideMethodFilter.class);

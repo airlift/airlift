@@ -33,6 +33,7 @@ import static com.proofpoint.jaxrs.JaxrsBinder.jaxrsBinder;
 import static com.proofpoint.jaxrs.JaxrsModule.explicitJaxrsModule;
 import static com.proofpoint.testing.Assertions.assertContains;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
 public class TestJaxrsModule
 {
@@ -71,6 +72,21 @@ public class TestJaxrsModule
                             .build();
         StatusResponse response = client.execute(request, createStatusResponseHandler());
         assertEquals(response.getStatusCode(), Status.NOT_FOUND.getStatusCode(), "Status code");
+    }
+
+    @Test
+    public void testOptionsDisabled()
+            throws Exception
+    {
+        createServer(binder -> jaxrsBinder(binder).bind(TestResource.class));
+
+        Request request = Request.builder()
+                            .setUri(server.getBaseUrl().resolve("/"))
+                            .setMethod("OPTIONS")
+                            .build();
+        StatusResponse response = client.execute(request, createStatusResponseHandler());
+        assertEquals(response.getStatusCode(), Status.METHOD_NOT_ALLOWED.getStatusCode(), "Status code");
+        assertNull(response.getHeader("Host")); // Pentest "finding"
     }
 
     @Test

@@ -2,7 +2,8 @@ Platform 1.28
 
 * JAX-RS
 
-  We disabled Jersey's automatic generation of WADL on the main service port.
+  We disabled on the main service port Jersey's automatic generation of WADL
+  and default support of the OPTIONS method.
 
 * Configuration
 
