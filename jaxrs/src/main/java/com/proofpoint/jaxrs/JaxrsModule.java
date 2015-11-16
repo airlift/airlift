@@ -17,6 +17,7 @@ package com.proofpoint.jaxrs;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
 import com.google.inject.Binding;
@@ -107,6 +108,7 @@ public class JaxrsModule
     public ResourceConfig createResourceConfig(Application application, @JaxrsInjectionProvider final Map<Class<?>, Supplier<?>> supplierMap)
     {
         ResourceConfig config = ResourceConfig.forApplication(application);
+        config.setProperties(ImmutableMap.of("jersey.config.server.wadl.disableWadl", "true"));
         config.register(MultiPartFeature.class);
 
         config.register(new ContainerLifecycleListener()

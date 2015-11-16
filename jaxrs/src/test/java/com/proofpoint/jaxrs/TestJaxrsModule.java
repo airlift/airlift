@@ -1,10 +1,10 @@
 package com.proofpoint.jaxrs;
 
 import com.google.common.base.Supplier;
-import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Module;
 import com.proofpoint.http.client.Request;
+import com.proofpoint.http.client.StatusResponseHandler.StatusResponse;
 import com.proofpoint.http.client.StringResponseHandler.StringResponse;
 import com.proofpoint.http.client.jetty.JettyHttpClient;
 import com.proofpoint.http.server.testing.TestingHttpServer;
@@ -14,12 +14,12 @@ import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.reporting.ReportingModule;
 import com.proofpoint.testing.Closeables;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.weakref.jmx.testing.TestingMBeanModule;
 
 import javax.inject.Inject;
-import javax.management.MBeanServer;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -27,54 +27,60 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static com.proofpoint.http.client.StringResponseHandler.createStringResponseHandler;
 import static com.proofpoint.jaxrs.JaxrsBinder.jaxrsBinder;
 import static com.proofpoint.jaxrs.JaxrsModule.explicitJaxrsModule;
 import static com.proofpoint.testing.Assertions.assertContains;
-import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 
-public class TestInjectedContext
+public class TestJaxrsModule
 {
-    TestingHttpServer server;
-    JettyHttpClient client;
     private static final String INJECTED_MESSSAGE = "Hello, World!";
     private static final String SECOND_INJECTED_MESSSAGE = "Goodbye, World!";
 
-    @BeforeMethod
-    public void setup()
-    {
-        client = new JettyHttpClient();
-    }
+    private final JettyHttpClient client = new JettyHttpClient();
 
-    @AfterMethod
+    private TestingHttpServer server;
+
+    @AfterMethod(alwaysRun = true)
     public void teardown()
             throws Exception
     {
-        try {
-            if (server != null) {
-                server.stop();
-            }
+        if (server != null) {
+            server.stop();
+            server = null;
         }
-        catch (Throwable ignored) {
-        }
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void teardownClass()
+    {
         Closeables.closeQuietly(client);
+    }
+
+    @Test
+    public void testWadlDisabled()
+            throws Exception
+    {
+        createServer(binder -> jaxrsBinder(binder).bind(TestResource.class));
+
+        Request request = Request.builder()
+                            .setUri(server.getBaseUrl().resolve("/application.wadl"))
+                            .setMethod("GET")
+                            .build();
+        StatusResponse response = client.execute(request, createStatusResponseHandler());
+        assertEquals(response.getStatusCode(), Status.NOT_FOUND.getStatusCode(), "Status code");
     }
 
     @Test
     public void testInjectableProvider()
             throws Exception
     {
-        server = createServer(new Module()
-        {
-            @Override
-            public void configure(Binder binder)
-            {
-                jaxrsBinder(binder).bindInstance(new InjectedResource());
-                jaxrsBinder(binder).bindInjectionProvider(InjectedContextObject.class).to(InjectedContextObjectSupplier.class);
-            }
+        createServer(binder -> {
+            jaxrsBinder(binder).bindInstance(new InjectedResource());
+            jaxrsBinder(binder).bindInjectionProvider(InjectedContextObject.class).to(InjectedContextObjectSupplier.class);
         });
-        server.start();
 
         Request request = Request.builder()
                             .setUri(server.getBaseUrl().resolve("/injectedresource"))
@@ -89,17 +95,11 @@ public class TestInjectedContext
     public void testTwoInjectableProviders()
             throws Exception
     {
-        server = createServer(new Module()
-        {
-            @Override
-            public void configure(Binder binder)
-            {
-                jaxrsBinder(binder).bindInstance(new InjectedResource2());
-                jaxrsBinder(binder).bindInjectionProvider(InjectedContextObject.class).to(InjectedContextObjectSupplier.class);
-                jaxrsBinder(binder).bindInjectionProvider(SecondInjectedContextObject.class).to(SecondInjectedContextObjectSupplier.class);
-            }
+        createServer(binder -> {
+            jaxrsBinder(binder).bindInstance(new InjectedResource2());
+            jaxrsBinder(binder).bindInjectionProvider(InjectedContextObject.class).to(InjectedContextObjectSupplier.class);
+            jaxrsBinder(binder).bindInjectionProvider(SecondInjectedContextObject.class).to(SecondInjectedContextObjectSupplier.class);
         });
-        server.start();
 
         Request request = Request.builder()
                             .setUri(server.getBaseUrl().resolve("/injectedresource2"))
@@ -111,24 +111,20 @@ public class TestInjectedContext
         assertContains(response.getBody(), SECOND_INJECTED_MESSSAGE);
     }
 
-    private static TestingHttpServer createServer(Module module)
+    private void createServer(Module module)
+            throws Exception
     {
-        return Guice.createInjector(
+        server = Guice.createInjector(
                 new ApplicationNameModule("test-application"),
                 new TestingNodeModule(),
                 explicitJaxrsModule(),
                 new JsonModule(),
                 new ReportingModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
-                    }
-                },
+                new TestingMBeanModule(),
                 new TestingHttpServerModule(),
-                module).getInstance(TestingHttpServer.class);
+                module)
+                .getInstance(TestingHttpServer.class);
+        server.start();
     }
 
     @Path("/injectedresource")

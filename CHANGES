@@ -1,5 +1,9 @@
 Platform 1.28
 
+* JAX-RS
+
+  We disabled Jersey's automatic generation of WADL on the main service port.
+
 * Configuration
 
   Configuration objects are no longer treated as singletons, in order
