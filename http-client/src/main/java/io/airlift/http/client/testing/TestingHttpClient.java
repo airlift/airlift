@@ -6,6 +6,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import io.airlift.http.client.HttpClient;
+import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.Response;
@@ -112,6 +113,12 @@ public class TestingHttpClient
     public RequestStats getStats()
     {
         return stats;
+    }
+
+    @Override
+    public long getMaxContentLength()
+    {
+        return new HttpClientConfig().getMaxContentLength().toBytes();
     }
 
     @Override

@@ -445,6 +445,12 @@ public class JettyHttpClient
         return stats;
     }
 
+    @Override
+    public long getMaxContentLength()
+    {
+        return maxContentLength;
+    }
+
     @Managed
     @Nested
     public CachedDistribution getActiveConnectionsPerDestination()
