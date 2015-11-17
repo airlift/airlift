@@ -17,7 +17,6 @@ package com.proofpoint.jaxrs;
 
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.google.inject.servlet.ServletModule.ServletKeyBindingBuilder;
 import com.proofpoint.bootstrap.LifeCycleManager;
 import com.proofpoint.discovery.client.testing.TestingDiscoveryModule;
 import com.proofpoint.http.client.HttpClient;
@@ -25,7 +24,6 @@ import com.proofpoint.http.client.StringResponseHandler.StringResponse;
 import com.proofpoint.http.client.jetty.JettyHttpClient;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.http.server.testing.TestingAdminHttpServer;
-import com.proofpoint.http.server.testing.TestingAdminHttpServerModule;
 import com.proofpoint.json.JsonModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.reporting.ReportingModule;
@@ -70,7 +68,7 @@ public class TestWadlResource
                         new ReportingModule(),
                         new TestingMBeanModule(),
                         new TestingDiscoveryModule(),
-                        binder -> jaxrsBinder(binder).bind(TestResource.class)
+                        binder -> jaxrsBinder(binder).bind(TestingResource.class)
                 )
                 .quiet()
                 .initialize();

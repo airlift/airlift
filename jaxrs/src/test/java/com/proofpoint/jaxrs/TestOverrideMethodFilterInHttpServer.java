@@ -56,14 +56,14 @@ public class TestOverrideMethodFilterInHttpServer
     private static final String DELETE = "DELETE";
 
     private TestingHttpServer server;
-    private TestResource resource;
+    private TestingResource resource;
     private HttpClient client;
 
     @BeforeMethod
     public void setup()
             throws Exception
     {
-        resource = new TestResource();
+        resource = new TestingResource();
         server = createServer(resource);
 
         client = new JettyHttpClient();
@@ -216,7 +216,7 @@ public class TestOverrideMethodFilterInHttpServer
         assertNonOverridableMethod(buildRequestWithQueryParam(PUT, GET));
     }
 
-    private static TestingHttpServer createServer(final TestResource resource)
+    private static TestingHttpServer createServer(final TestingResource resource)
     {
         return Guice.createInjector(
                 new ApplicationNameModule("test-application"),

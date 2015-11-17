@@ -64,7 +64,7 @@ public class TestJaxrsModule
     public void testWadlDisabled()
             throws Exception
     {
-        createServer(binder -> jaxrsBinder(binder).bind(TestResource.class));
+        createServer(binder -> jaxrsBinder(binder).bind(TestingResource.class));
 
         Request request = Request.builder()
                             .setUri(server.getBaseUrl().resolve("/application.wadl"))
@@ -78,7 +78,7 @@ public class TestJaxrsModule
     public void testOptionsDisabled()
             throws Exception
     {
-        createServer(binder -> jaxrsBinder(binder).bind(TestResource.class));
+        createServer(binder -> jaxrsBinder(binder).bind(TestingResource.class));
 
         Request request = Request.builder()
                             .setUri(server.getBaseUrl().resolve("/"))

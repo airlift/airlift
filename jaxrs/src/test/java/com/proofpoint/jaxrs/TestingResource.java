@@ -7,7 +7,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 
 @Path("/")
-public class TestResource
+public class TestingResource
 {
     private volatile boolean post;
     private volatile boolean put;
