@@ -25,16 +25,13 @@ import com.proofpoint.http.server.HttpServerInfo;
 import com.proofpoint.http.server.QueryStringFilter;
 import com.proofpoint.http.server.RequestStats;
 import com.proofpoint.http.server.TheAdminServlet;
+import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.stats.SparseTimeStat;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 import java.io.IOException;
 import java.net.URI;
@@ -53,14 +50,15 @@ public class TestingAdminHttpServer extends HttpServer
             HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
-            Servlet servlet,
+            Servlet adminServlet,
             Map<String, String> initParameters)
             throws IOException
     {
         this(httpServerInfo,
                 nodeInfo,
                 config,
-                servlet,
+                new NullServlet(),
+                adminServlet,
                 initParameters,
                 ImmutableSet.<Filter>of(),
                 new QueryStringFilter()
@@ -71,7 +69,8 @@ public class TestingAdminHttpServer extends HttpServer
     public TestingAdminHttpServer(HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
-            @TheAdminServlet Servlet servlet,
+            @ForTestingAdminHttpServer Servlet servlet,
+            @TheAdminServlet Servlet adminServlet,
             @TheAdminServlet Map<String, String> initParameters,
             @TheAdminServlet Set<Filter> filters,
             QueryStringFilter queryStringFilter)
@@ -80,11 +79,11 @@ public class TestingAdminHttpServer extends HttpServer
         super(httpServerInfo,
                 nodeInfo,
                 config,
-                new NullServlet(),
+                servlet,
                 ImmutableMap.<String, String>of(),
                 ImmutableSet.<Filter>of(),
                 ImmutableSet.<HttpResourceBinding>of(),
-                servlet,
+                adminServlet,
                 initParameters,
                 ImmutableSet.copyOf(filters),
                 null,
@@ -122,7 +121,7 @@ public class TestingAdminHttpServer extends HttpServer
         }
     }
 
-    private static class NullServlet
+    static class NullServlet
             extends HttpServlet
     {
     }

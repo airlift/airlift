@@ -5,6 +5,9 @@ Platform 1.28
   We disabled on the main service port Jersey's automatic generation of WADL
   and default support of the OPTIONS method.
 
+  We added an /admin/wadl resource to the admin port which returns the server
+  port's WADL.
+
 * Configuration
 
   Configuration objects are no longer treated as singletons, in order

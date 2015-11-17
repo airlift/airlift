@@ -27,15 +27,34 @@ import com.proofpoint.http.server.HttpServerInfo;
 import com.proofpoint.http.server.LocalAnnouncementHttpServerInfo;
 import com.proofpoint.http.server.QueryStringFilter;
 import com.proofpoint.http.server.TheAdminServlet;
+import com.proofpoint.http.server.TheServlet;
+import com.proofpoint.http.server.testing.TestingAdminHttpServer.NullServlet;
 import com.proofpoint.tracetoken.TraceTokenManager;
 
 import javax.servlet.Filter;
+import javax.servlet.Servlet;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 
 public class TestingAdminHttpServerModule
         implements Module
 {
+    private final boolean initializeMainServlet;
+
+    public TestingAdminHttpServerModule()
+    {
+        this(false);
+    }
+
+    private TestingAdminHttpServerModule(boolean initializeMainServlet)
+    {
+        this.initializeMainServlet = initializeMainServlet;
+    }
+
+    public static TestingAdminHttpServerModule initializesMainServletTestingAdminHttpServerModule() {
+        return new TestingAdminHttpServerModule(true);
+    }
+
     @Override
     public void configure(Binder binder)
     {
@@ -54,5 +73,12 @@ public class TestingAdminHttpServerModule
         newSetBinder(binder, Filter.class, TheAdminServlet.class);
         newSetBinder(binder, HttpResourceBinding.class, TheAdminServlet.class);
         binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class);
+
+        if (initializeMainServlet) {
+            binder.bind(Servlet.class).annotatedWith(ForTestingAdminHttpServer.class).to(Key.get(Servlet.class, TheServlet.class));
+        }
+        else {
+            binder.bind(Servlet.class).annotatedWith(ForTestingAdminHttpServer.class).to(NullServlet.class);
+        }
     }
 }

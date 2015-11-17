@@ -93,6 +93,7 @@ public class JaxrsModule
         jaxrsBinder(binder).bindAdmin(ParsingExceptionMapper.class);
         jaxrsBinder(binder).bindAdmin(QueryParamExceptionMapper.class);
         jaxrsBinder(binder).bindAdmin(OverrideMethodFilter.class);
+        jaxrsBinder(binder).bindAdmin(WadlResource.class);
 
         newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
         newSetBinder(binder, JaxrsBinding.class, JaxrsResource.class).permitDuplicates();
@@ -106,7 +107,7 @@ public class JaxrsModule
     }
 
     @Provides
-    public ResourceConfig createResourceConfig(Application application, @JaxrsInjectionProvider final Map<Class<?>, Supplier<?>> supplierMap)
+    public ResourceConfig createResourceConfig(Application application, @JaxrsInjectionProvider final Map<Class<?>, Supplier<?>> supplierMap, WadlResource wadlResource)
     {
         ResourceConfig config = ResourceConfig.forApplication(application);
         config.setProperties(ImmutableMap.of("jersey.config.server.wadl.disableWadl", "true"));
@@ -117,7 +118,9 @@ public class JaxrsModule
             @Override
             public void onStartup(Container container)
             {
-                locatorReference.set(container.getApplicationHandler().getServiceLocator());
+                ServiceLocator locator = container.getApplicationHandler().getServiceLocator();
+                locatorReference.set(locator);
+                wadlResource.setLocator(locator);
             }
 
             @Override
