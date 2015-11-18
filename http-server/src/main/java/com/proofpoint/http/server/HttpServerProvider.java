@@ -24,15 +24,20 @@ import com.proofpoint.bootstrap.LifeCycleManager;
 import com.proofpoint.http.server.HttpServerBinder.HttpResourceBinding;
 import com.proofpoint.node.NodeInfo;
 import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.server.RequestLog;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
 
 import javax.annotation.Nullable;
 import javax.management.MBeanServer;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
+import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Provides an instance of a Jetty server ready to be configured with
@@ -72,17 +77,17 @@ public class HttpServerProvider
             QueryStringFilter queryStringFilter,
             LifeCycleManager lifeCycleManager)
     {
-        checkNotNull(httpServerInfo, "httpServerInfo is null");
-        checkNotNull(nodeInfo, "nodeInfo is null");
-        checkNotNull(config, "config is null");
-        checkNotNull(theServlet, "theServlet is null");
-        checkNotNull(filters, "filters is null");
-        checkNotNull(resources, "resources is null");
-        checkNotNull(theAdminServlet, "theAdminServlet is null");
-        checkNotNull(adminFilters, "adminFilters is null");
-        checkNotNull(stats, "stats is null");
-        checkNotNull(detailedRequestStats, "detailedRequestStats is null");
-        checkNotNull(queryStringFilter, "queryStringFilter is null");
+        requireNonNull(httpServerInfo, "httpServerInfo is null");
+        requireNonNull(nodeInfo, "nodeInfo is null");
+        requireNonNull(config, "config is null");
+        requireNonNull(theServlet, "theServlet is null");
+        requireNonNull(filters, "filters is null");
+        requireNonNull(resources, "resources is null");
+        requireNonNull(theAdminServlet, "theAdminServlet is null");
+        requireNonNull(adminFilters, "adminFilters is null");
+        requireNonNull(stats, "stats is null");
+        requireNonNull(detailedRequestStats, "detailedRequestStats is null");
+        requireNonNull(queryStringFilter, "queryStringFilter is null");
 
         this.httpServerInfo = httpServerInfo;
         this.nodeInfo = nodeInfo;
@@ -95,7 +100,7 @@ public class HttpServerProvider
         this.stats = stats;
         this.detailedRequestStats = detailedRequestStats;
         this.queryStringFilter = queryStringFilter;
-        this.lifeCycleManager = checkNotNull(lifeCycleManager, "lifeCycleManager is null");
+        this.lifeCycleManager = requireNonNull(lifeCycleManager, "lifeCycleManager is null");
     }
 
     @Inject(optional = true)
@@ -126,6 +131,9 @@ public class HttpServerProvider
     public HttpServer get()
     {
         try {
+            RequestLogHandler logHandler = new RequestLogHandler();
+            logHandler.setRequestLog(createRequestLog(config));
+
             HttpServer httpServer = new HttpServer(httpServerInfo,
                     nodeInfo,
                     config,
@@ -140,7 +148,8 @@ public class HttpServerProvider
                     loginService,
                     queryStringFilter,
                     stats,
-                    detailedRequestStats
+                    detailedRequestStats,
+                    logHandler
             );
             lifeCycleManager.addInstance(httpServer);
             return httpServer;
@@ -148,5 +157,22 @@ public class HttpServerProvider
         catch (Exception e) {
             throw Throwables.propagate(e);
         }
+    }
+
+    protected RequestLog createRequestLog(HttpServerConfig config)
+            throws IOException
+    {
+        // TODO: use custom (more easily-parseable) format
+        File logFile = new File(config.getLogPath());
+        if (logFile.exists() && !logFile.isFile()) {
+            throw new IOException(format("Log path %s exists but is not a file", logFile.getAbsolutePath()));
+        }
+
+        File logPath = logFile.getParentFile();
+        if (!logPath.mkdirs() && !logPath.exists()) {
+            throw new IOException(format("Cannot create %s and path does not already exist", logPath.getAbsolutePath()));
+        }
+
+        return new DelimitedRequestLog(config.getLogPath(), config.getLogMaxHistory(), config.getLogMaxSegmentSize().toBytes());
     }
 }

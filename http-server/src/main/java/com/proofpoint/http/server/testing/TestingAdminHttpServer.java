@@ -28,7 +28,6 @@ import com.proofpoint.http.server.TheAdminServlet;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.stats.SparseTimeStat;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
 
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
@@ -74,7 +73,6 @@ public class TestingAdminHttpServer extends HttpServer
             @TheAdminServlet Map<String, String> initParameters,
             @TheAdminServlet Set<Filter> filters,
             QueryStringFilter queryStringFilter)
-            throws IOException
     {
         super(httpServerInfo,
                 nodeInfo,
@@ -90,16 +88,10 @@ public class TestingAdminHttpServer extends HttpServer
                 null,
                 queryStringFilter,
                 new RequestStats(),
-                new DetailedRequestStats()
+                new DetailedRequestStats(),
+                null
         );
         this.httpServerInfo = httpServerInfo;
-    }
-
-    @Override
-    public RequestLogHandler createLogHandler(HttpServerConfig config)
-            throws IOException
-    {
-        return null;
     }
 
     public URI getBaseUrl()

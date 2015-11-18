@@ -52,6 +52,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Nested;
 
+import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import javax.management.MBeanServer;
 import javax.servlet.Filter;
@@ -62,9 +63,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 
 public class HttpServer
 {
@@ -106,21 +107,26 @@ public class HttpServer
             Map<String, String> parameters,
             Set<Filter> filters,
             Set<HttpResourceBinding> resources,
-            Servlet theAdminServlet,
-            Map<String, String> adminParameters,
-            Set<Filter> adminFilters,
-            MBeanServer mbeanServer,
-            LoginService loginService,
+            @Nullable Servlet theAdminServlet,
+            @Nullable Map<String, String> adminParameters,
+            @Nullable Set<Filter> adminFilters,
+            @Nullable MBeanServer mbeanServer,
+            @Nullable LoginService loginService,
             QueryStringFilter queryStringFilter,
             RequestStats stats,
-            DetailedRequestStats detailedRequestStats)
-            throws IOException
+            DetailedRequestStats detailedRequestStats,
+            @Nullable RequestLogHandler logHandler)
     {
-        checkNotNull(httpServerInfo, "httpServerInfo is null");
-        checkNotNull(nodeInfo, "nodeInfo is null");
-        checkNotNull(config, "config is null");
-        checkNotNull(queryStringFilter, "queryStringFilter is null");
-        checkNotNull(theServlet, "theServlet is null");
+        requireNonNull(httpServerInfo, "httpServerInfo is null");
+        requireNonNull(nodeInfo, "nodeInfo is null");
+        requireNonNull(config, "config is null");
+        requireNonNull(theServlet, "theServlet is null");
+        requireNonNull(parameters, "parameters is null");
+        requireNonNull(filters, "filters is null");
+        requireNonNull(resources, "resources is null");
+        requireNonNull(queryStringFilter, "queryStringFilter is null");
+        requireNonNull(stats, "stats is null");
+        requireNonNull(detailedRequestStats, "detailedRequestStats is null");
 
         QueuedThreadPool threadPool = new QueuedThreadPool(config.getMaxThreads()) {
 
@@ -278,7 +284,6 @@ public class HttpServer
         }
 
         handlers.addHandler(createServletContext(theServlet, parameters, false, filters, queryStringFilter, loginService, "http", "https"));
-        RequestLogHandler logHandler = createLogHandler(config);
         if (logHandler != null) {
             handlers.addHandler(logHandler);
         }
@@ -362,28 +367,6 @@ public class HttpServer
         securityHandler.setAuthenticator(new BasicAuthenticator());
         securityHandler.setConstraintMappings(ImmutableList.of(constraintMapping));
         return securityHandler;
-    }
-
-    protected RequestLogHandler createLogHandler(HttpServerConfig config)
-            throws IOException
-    {
-        // TODO: use custom (more easily-parseable) format
-        RequestLogHandler logHandler = new RequestLogHandler();
-
-        File logFile = new File(config.getLogPath());
-        if (logFile.exists() && !logFile.isFile()) {
-            throw new IOException(format("Log path %s exists but is not a file", logFile.getAbsolutePath()));
-        }
-
-        File logPath = logFile.getParentFile();
-        if (!logPath.mkdirs() && !logPath.exists()) {
-            throw new IOException(format("Cannot create %s and path does not already exist", logPath.getAbsolutePath()));
-        }
-
-        RequestLog requestLog = new DelimitedRequestLog(config.getLogPath(), config.getLogMaxHistory(), config.getLogMaxSegmentSize().toBytes());
-        logHandler.setRequestLog(requestLog);
-
-        return logHandler;
     }
 
     @AcceptRequests

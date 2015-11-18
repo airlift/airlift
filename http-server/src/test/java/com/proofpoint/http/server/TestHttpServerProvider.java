@@ -33,6 +33,7 @@ import com.proofpoint.node.NodeConfig;
 import com.proofpoint.node.NodeInfo;
 import com.proofpoint.testing.FileUtils;
 import com.proofpoint.units.Duration;
+import org.eclipse.jetty.server.RequestLog;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
@@ -42,6 +43,7 @@ import javax.servlet.Filter;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
+import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Base64;
 import java.util.concurrent.TimeUnit;
@@ -53,6 +55,9 @@ import static com.proofpoint.http.client.StaticBodyGenerator.createStaticBodyGen
 import static com.proofpoint.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static com.proofpoint.http.client.StringResponseHandler.createStringResponseHandler;
 import static com.proofpoint.testing.Assertions.assertContains;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -67,6 +72,7 @@ public class TestHttpServerProvider
     private HttpServerConfig config;
     private HttpServerInfo httpServerInfo;
     private LifeCycleManager lifeCycleManager;
+    private DelimitedRequestLog requestLog;
 
     @BeforeSuite
     public void setupSuite()
@@ -128,6 +134,7 @@ public class TestHttpServerProvider
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
         }
+        verify(requestLog).log(any(), any());
     }
 
     @Test
@@ -292,6 +299,15 @@ public class TestHttpServerProvider
         createAndStartServer();
     }
 
+    @Test
+    public void testStopRequestLog()
+            throws Exception
+    {
+        createAndStartServer();
+        server.stop();
+        verify(requestLog).stop();
+    }
+
     private void createAndStartServer()
             throws Exception
     {
@@ -319,7 +335,15 @@ public class TestHttpServerProvider
                 new RequestStats(),
                 new TestingHttpServer.DetailedRequestStats(),
                 new QueryStringFilter(),
-                lifeCycleManager);
+                lifeCycleManager)
+        {
+            @Override
+            protected RequestLog createRequestLog(HttpServerConfig config)
+            {
+                requestLog = mock(DelimitedRequestLog.class);
+                return requestLog;
+            }
+        };
         serverProvider.setLoginService(loginServiceProvider.get());
         server = serverProvider.get();
     }
