@@ -28,15 +28,14 @@ public final class JettyIoPool
         try {
             String baseName = "http-client-" + name;
 
-            ThreadGroup threadGroup = new ThreadGroup(baseName);
-            QueuedThreadPool threadPool = new QueuedThreadPool(config.getMaxThreads(), config.getMinThreads(), 60000, null, threadGroup);
+            QueuedThreadPool threadPool = new QueuedThreadPool(config.getMaxThreads(), config.getMinThreads(), 60000, null);
             threadPool.setName(baseName);
             threadPool.setDaemon(true);
             threadPool.start();
             threadPool.setStopTimeout(2000);
             executor = threadPool;
 
-            scheduler = new ScheduledExecutorScheduler(baseName + "-scheduler", true, currentThread().getContextClassLoader(), threadGroup);
+            scheduler = new ScheduledExecutorScheduler(baseName + "-scheduler", true, currentThread().getContextClassLoader());
             scheduler.start();
 
             byteBufferPool = new MappedByteBufferPool();
