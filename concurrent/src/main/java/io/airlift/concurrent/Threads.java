@@ -84,18 +84,24 @@ public final class Threads
 
         public GroupedThreadFactory(String name)
         {
-            this(new ThreadGroup(name));
-        }
-
-        public GroupedThreadFactory(ThreadGroup threadGroup)
-        {
-            this.threadGroup = threadGroup;
+            this.threadGroup =  new ThreadGroup(name);
         }
 
         @Override
         public Thread newThread(Runnable runnable)
         {
             return new Thread(threadGroup, runnable);
+        }
+
+        @Override
+        protected void finalize()
+        {
+            try {
+                threadGroup.destroy();
+            }
+            catch (RuntimeException e) {
+                log.warn(e, "Leaked thread group '%s'", threadGroup.getName());
+            }
         }
     }
 }
