@@ -1,5 +1,13 @@
 Platform 1.29
 
+* HttpClient
+
+  The "http-client.max-requests-queued-per-destination" configuration option
+  may now be set to the value "0". This permits as many outstanding requests
+  as configured by the "http-client.max-connections-per-server" option, but
+  will reject new requests once all those connections have been assigned
+  requests.
+
 * Library Upgrades
 
   - Jetty to 9.3.6
