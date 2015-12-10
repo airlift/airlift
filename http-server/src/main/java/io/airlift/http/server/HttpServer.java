@@ -69,6 +69,7 @@ import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -169,6 +170,14 @@ public class HttpServer
 
             SslContextFactory sslContextFactory = new SslContextFactory(config.getKeystorePath());
             sslContextFactory.setKeyStorePassword(config.getKeystorePassword());
+            List<String> includedCipherSuites = config.getHttpsIncludedCipherSuites();
+            if (includedCipherSuites.isEmpty()) {
+                sslContextFactory.setIncludeCipherSuites(includedCipherSuites.toArray(new String[includedCipherSuites.size()]));
+            }
+            List<String> excludedCipherSuites = config.getHttpsExcludedCipherSuites();
+            if (excludedCipherSuites.isEmpty()) {
+                sslContextFactory.setExcludeCipherSuites(excludedCipherSuites.toArray(new String[excludedCipherSuites.size()]));
+            }
             SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
 
             Integer acceptors = config.getHttpsAcceptorThreads();

@@ -15,6 +15,8 @@
  */
 package io.airlift.http.server;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.DefunctConfig;
@@ -23,7 +25,10 @@ import io.airlift.units.Duration;
 
 import javax.validation.constraints.Min;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import static java.util.Objects.requireNonNull;
 
 @DefunctConfig({
         "jetty.http.enabled",
@@ -52,6 +57,8 @@ public class HttpServerConfig
     private int httpsPort = 8443;
     private String keystorePath;
     private String keystorePassword;
+    private List<String> includedCipherSuites = ImmutableList.of();
+    private List<String> excludedCipherSuites = ImmutableList.of();
 
     private String logPath = "var/log/http-request.log";
     private boolean logEnabled = true;
@@ -159,6 +166,38 @@ public class HttpServerConfig
     public HttpServerConfig setKeystorePassword(String keystorePassword)
     {
         this.keystorePassword = keystorePassword;
+        return this;
+    }
+
+    public List<String> getHttpsIncludedCipherSuites()
+    {
+        return includedCipherSuites;
+    }
+
+    @Config("http-server.https.included-cipher")
+    public HttpServerConfig setHttpsIncludedCipherSuites(String includedCipherSuites)
+    {
+        this.includedCipherSuites = Splitter
+                .on(',')
+                .trimResults()
+                .omitEmptyStrings()
+                .splitToList(requireNonNull(includedCipherSuites, "includedCipherSuites is null"));
+        return this;
+    }
+
+    public List<String> getHttpsExcludedCipherSuites()
+    {
+        return excludedCipherSuites;
+    }
+
+    @Config("http-server.https.excluded-cipher")
+    public HttpServerConfig setHttpsExcludedCipherSuites(String excludedCipherSuites)
+    {
+        this.excludedCipherSuites = Splitter
+                .on(',')
+                .trimResults()
+                .omitEmptyStrings()
+                .splitToList(requireNonNull(excludedCipherSuites, "excludedCipherSuites is null"));
         return this;
     }
 
