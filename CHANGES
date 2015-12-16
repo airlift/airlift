@@ -1,3 +1,7 @@
+* 0.121
+
+- Fix configuration property to include and exclude HTTPS cipher suites
+
 * 0.120
 
 - Add configuration property to include and exclude HTTPS cipher suites
