@@ -22,6 +22,7 @@
         <air.check.skip-extended>true</air.check.skip-extended>
         <air.check.fail-all>false</air.check.fail-all>
         <air.check.fail-basic>true</air.check.fail-basic>
+        <air.java.version>1.8.0-40</air.java.version>
 
         <dep.airlift.version>0.122-SNAPSHOT</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
