@@ -1,6 +1,7 @@
 * 0.122
 
 - Disable Jackson property mutator inference
+- Add allAsList and flatMap MoreFutures utilities
 
 * 0.121
 

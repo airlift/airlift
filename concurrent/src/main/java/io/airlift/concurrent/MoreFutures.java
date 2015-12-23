@@ -8,6 +8,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import io.airlift.units.Duration;
 
 import java.lang.ref.WeakReference;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -19,6 +20,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.propagateIfInstanceOf;
@@ -221,6 +223,55 @@ public final class MoreFutures
             });
         }
         return future;
+    }
+
+    /**
+     * Returns an unmodifiable future that is completed when all of the given
+     * futures complete. If any of the given futures complete exceptionally, then the
+     * returned future also does so immediately, with a CompletionException holding this exception
+     * as its cause. Otherwise, the results of the given futures are reflected in the
+     * returned future as a list of results matching the input order. If no futures are
+     * provided, returns a future completed with an empty list.
+     */
+    public static <V> CompletableFuture<List<V>> allAsList(List<CompletableFuture<? extends V>> futures)
+    {
+        CompletableFuture<Void> allDoneFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
+
+        // Eagerly propagate exceptions, rather than waiting for all the futures to complete first (default behavior)
+        for (CompletableFuture<? extends V> future : futures) {
+            future.whenComplete((v, throwable) -> {
+                if (throwable != null) {
+                    allDoneFuture.completeExceptionally(throwable);
+                }
+            });
+        }
+
+        return unmodifiableFuture(allDoneFuture.thenApply(v ->
+                futures.stream().
+                        map(CompletableFuture::join).
+                        collect(Collectors.<V>toList())));
+    }
+
+    /**
+     * Returns an unmodifiable future that is completed when the supplied future
+     * and its nested future is completed. If either the given future or its nested
+     * future complete exceptionally, then the returned future also does so, with a
+     * CompletionException holding this exception as its cause. Otherwise, the result
+     * of the nested future is reflected in the returned future.
+     */
+    public static <V> CompletableFuture<V> flatMap(CompletableFuture<CompletableFuture<V>> future)
+    {
+        CompletableFuture<V> newFuture = new CompletableFuture<>();
+        future.exceptionally(MoreFutures::failedFuture)
+                .thenAccept(completableFuture -> completableFuture.whenComplete((value, throwable) -> {
+                    if (throwable == null) {
+                        newFuture.complete(value);
+                    }
+                    else {
+                        newFuture.completeExceptionally(throwable);
+                    }
+                }));
+        return unmodifiableFuture(newFuture);
     }
 
     /**
