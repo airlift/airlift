@@ -19,7 +19,6 @@ import java.util.function.Consumer;
 import static io.airlift.concurrent.MoreFutures.addTimeout;
 import static io.airlift.concurrent.MoreFutures.allAsList;
 import static io.airlift.concurrent.MoreFutures.failedFuture;
-import static io.airlift.concurrent.MoreFutures.flatMap;
 import static io.airlift.concurrent.MoreFutures.getFutureValue;
 import static io.airlift.concurrent.MoreFutures.toCompletableFuture;
 import static io.airlift.concurrent.MoreFutures.toListenableFuture;
@@ -419,75 +418,6 @@ public class TestMoreFutures
             throws Exception
     {
         CompletableFuture<List<Object>> future = allAsList(ImmutableList.of(new CompletableFuture<String>()));
-        future.complete(null);
-    }
-
-    @Test
-    public void testFlatMap()
-            throws Exception
-    {
-        CompletableFuture<CompletableFuture<String>> input = new CompletableFuture<>();
-        CompletableFuture<String> future = flatMap(input);
-        assertFalse(future.isDone());
-        assertFalse(future.isCompletedExceptionally());
-        assertFalse(future.isCancelled());
-
-        CompletableFuture<String> input2 = new CompletableFuture<>();
-        input.complete(input2);
-        assertFalse(future.isDone());
-        assertFalse(future.isCompletedExceptionally());
-        assertFalse(future.isCancelled());
-
-        input2.complete("a");
-        assertTrue(future.isDone());
-        assertFalse(future.isCompletedExceptionally());
-        assertFalse(future.isCancelled());
-        assertEquals(future.join(), "a");
-    }
-
-    @Test
-    public void testFlatMapOuterException()
-            throws Exception
-    {
-        CompletableFuture<CompletableFuture<String>> input = new CompletableFuture<>();
-        CompletableFuture<String> future = flatMap(input);
-        assertFalse(future.isDone());
-        assertFalse(future.isCompletedExceptionally());
-        assertFalse(future.isCancelled());
-
-        input.completeExceptionally(new RuntimeException());
-        assertTrue(future.isDone());
-        assertTrue(future.isCompletedExceptionally());
-        assertFalse(future.isCancelled());
-    }
-
-    @Test
-    public void testFlatMapInnerException()
-            throws Exception
-    {
-        CompletableFuture<CompletableFuture<String>> input = new CompletableFuture<>();
-        CompletableFuture<String> future = flatMap(input);
-        assertFalse(future.isDone());
-        assertFalse(future.isCompletedExceptionally());
-        assertFalse(future.isCancelled());
-
-        CompletableFuture<String> input2 = new CompletableFuture<>();
-        input.complete(input2);
-        assertFalse(future.isDone());
-        assertFalse(future.isCompletedExceptionally());
-        assertFalse(future.isCancelled());
-
-        input2.completeExceptionally(new RuntimeException());
-        assertTrue(future.isDone());
-        assertTrue(future.isCompletedExceptionally());
-        assertFalse(future.isCancelled());
-    }
-
-    @Test(expectedExceptions = UnsupportedOperationException.class)
-    public void testUnmodifiableFlatMap()
-            throws Exception
-    {
-        CompletableFuture<Object> future = flatMap(new CompletableFuture<>());
         future.complete(null);
     }
 

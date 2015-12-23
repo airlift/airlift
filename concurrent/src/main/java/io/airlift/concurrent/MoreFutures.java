@@ -253,28 +253,6 @@ public final class MoreFutures
     }
 
     /**
-     * Returns an unmodifiable future that is completed when the supplied future
-     * and its nested future is completed. If either the given future or its nested
-     * future complete exceptionally, then the returned future also does so, with a
-     * CompletionException holding this exception as its cause. Otherwise, the result
-     * of the nested future is reflected in the returned future.
-     */
-    public static <V> CompletableFuture<V> flatMap(CompletableFuture<CompletableFuture<V>> future)
-    {
-        CompletableFuture<V> newFuture = new CompletableFuture<>();
-        future.exceptionally(MoreFutures::failedFuture)
-                .thenAccept(completableFuture -> completableFuture.whenComplete((value, throwable) -> {
-                    if (throwable == null) {
-                        newFuture.complete(value);
-                    }
-                    else {
-                        newFuture.completeExceptionally(throwable);
-                    }
-                }));
-        return unmodifiableFuture(newFuture);
-    }
-
-    /**
      * Returns a new future that is completed when the supplied future completes or
      * when the timeout expires.  If the timeout occurs or the returned CompletableFuture
      * is canceled, the supplied future will be canceled.
