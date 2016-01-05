@@ -169,6 +169,7 @@ public class TestHttpServerCipher
     private HttpServerConfig createHttpServerConfig()
     {
         return new HttpServerConfig()
+                .setHttpEnabled(false)
                 .setHttpsEnabled(true)
                 .setHttpsPort(0)
                 .setKeystorePath(KEY_STORE_PATH)
