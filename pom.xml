@@ -4,7 +4,7 @@
 
     <artifactId>airlift</artifactId>
     <packaging>pom</packaging>
-    <version>0.122</version>
+    <version>0.123-SNAPSHOT</version>
 
     <name>airlift</name>
     <description>Airlift</description>
@@ -24,7 +24,7 @@
         <air.check.fail-basic>true</air.check.fail-basic>
         <air.java.version>1.8.0-40</air.java.version>
 
-        <dep.airlift.version>0.122</dep.airlift.version>
+        <dep.airlift.version>0.123-SNAPSHOT</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
     </properties>
 
@@ -48,7 +48,7 @@
         <connection>scm:git:git://github.com/airlift/airlift.git</connection>
         <developerConnection>scm:git:git@github.com:airlift/airlift.git</developerConnection>
         <url>https://github.com/airlift/airlift/tree/master</url>
-        <tag>0.122</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <modules>
