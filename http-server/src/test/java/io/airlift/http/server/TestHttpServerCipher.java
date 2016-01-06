@@ -156,7 +156,7 @@ public class TestHttpServerCipher
         }
     }
 
-    private HttpClient createClientIncludeCiphers(String... includedCipherSuites)
+    private static HttpClient createClientIncludeCiphers(String... includedCipherSuites)
             throws Exception
     {
         SslContextFactory sslContextFactory = new SslContextFactory();
@@ -168,12 +168,12 @@ public class TestHttpServerCipher
         return httpClient;
     }
 
-    private HttpServer createServer(NodeInfo nodeInfo, HttpServerInfo httpServerInfo, HttpServerConfig config)
+    private static HttpServer createServer(NodeInfo nodeInfo, HttpServerInfo httpServerInfo, HttpServerConfig config)
     {
         return createServer(new DummyServlet(), nodeInfo, httpServerInfo, config);
     }
 
-    private HttpServer createServer(HttpServlet servlet, NodeInfo nodeInfo, HttpServerInfo httpServerInfo, HttpServerConfig config)
+    private static HttpServer createServer(HttpServlet servlet, NodeInfo nodeInfo, HttpServerInfo httpServerInfo, HttpServerConfig config)
     {
         HashLoginServiceProvider loginServiceProvider = new HashLoginServiceProvider(config);
         HttpServerProvider serverProvider = new HttpServerProvider(
