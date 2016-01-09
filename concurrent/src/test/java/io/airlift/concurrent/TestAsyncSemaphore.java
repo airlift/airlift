@@ -46,27 +46,13 @@ public class TestAsyncSemaphore
     public void testInlineExecution()
             throws Exception
     {
-        AsyncSemaphore<Runnable> asyncSemaphore = new AsyncSemaphore<>(1, executor, new Function<Runnable, ListenableFuture<?>>()
-        {
-            @Override
-            public ListenableFuture<?> apply(Runnable task)
-            {
-                return sameThreadExecutor().submit(task);
-            }
-        });
+        AsyncSemaphore<Runnable> asyncSemaphore = new AsyncSemaphore<>(1, executor, task -> sameThreadExecutor().submit(task));
 
-        final AtomicInteger count = new AtomicInteger();
+        AtomicInteger count = new AtomicInteger();
 
         List<ListenableFuture<?>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
-            futures.add(asyncSemaphore.submit(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    count.incrementAndGet();
-                }
-            }));
+            futures.add(asyncSemaphore.submit(count::incrementAndGet));
         }
 
         // Wait for completion
@@ -79,31 +65,19 @@ public class TestAsyncSemaphore
     public void testSingleThreadBoundedConcurrency()
             throws Exception
     {
-        AsyncSemaphore<Runnable> asyncSemaphore = new AsyncSemaphore<>(1, executor, new Function<Runnable, ListenableFuture<?>>()
-        {
-            @Override
-            public ListenableFuture<?> apply(Runnable task)
-            {
-                return executor.submit(task);
-            }
-        });
+        AsyncSemaphore<Runnable> asyncSemaphore = new AsyncSemaphore<>(1, executor, executor::submit);
 
-        final AtomicInteger count = new AtomicInteger();
-        final AtomicInteger concurrency = new AtomicInteger();
+        AtomicInteger count = new AtomicInteger();
+        AtomicInteger concurrency = new AtomicInteger();
 
         List<ListenableFuture<?>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
-            futures.add(asyncSemaphore.submit(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    count.incrementAndGet();
-                    int currentConcurrency = concurrency.incrementAndGet();
-                    assertLessThanOrEqual(currentConcurrency, 1);
-                    Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MILLISECONDS);
-                    concurrency.decrementAndGet();
-                }
+            futures.add(asyncSemaphore.submit((Runnable) () -> {
+                count.incrementAndGet();
+                int currentConcurrency = concurrency.incrementAndGet();
+                assertLessThanOrEqual(currentConcurrency, 1);
+                Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MILLISECONDS);
+                concurrency.decrementAndGet();
             }));
         }
 
@@ -117,31 +91,19 @@ public class TestAsyncSemaphore
     public void testMultiThreadBoundedConcurrency()
             throws Exception
     {
-        AsyncSemaphore<Runnable> asyncSemaphore = new AsyncSemaphore<>(2, executor, new Function<Runnable, ListenableFuture<?>>()
-        {
-            @Override
-            public ListenableFuture<?> apply(Runnable task)
-            {
-                return executor.submit(task);
-            }
-        });
+        AsyncSemaphore<Runnable> asyncSemaphore = new AsyncSemaphore<>(2, executor, executor::submit);
 
-        final AtomicInteger count = new AtomicInteger();
-        final AtomicInteger concurrency = new AtomicInteger();
+        AtomicInteger count = new AtomicInteger();
+        AtomicInteger concurrency = new AtomicInteger();
 
         List<ListenableFuture<?>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
-            futures.add(asyncSemaphore.submit(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    count.incrementAndGet();
-                    int currentConcurrency = concurrency.incrementAndGet();
-                    assertLessThanOrEqual(currentConcurrency, 2);
-                    Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MILLISECONDS);
-                    concurrency.decrementAndGet();
-                }
+            futures.add(asyncSemaphore.submit(() -> {
+                count.incrementAndGet();
+                int currentConcurrency = concurrency.incrementAndGet();
+                assertLessThanOrEqual(currentConcurrency, 2);
+                Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MILLISECONDS);
+                concurrency.decrementAndGet();
             }));
         }
 
@@ -155,41 +117,24 @@ public class TestAsyncSemaphore
     public void testMultiSubmitters()
             throws Exception
     {
-        final AsyncSemaphore<Runnable> asyncSemaphore = new AsyncSemaphore<>(2, executor, new Function<Runnable, ListenableFuture<?>>()
-        {
-            @Override
-            public ListenableFuture<?> apply(Runnable task)
-            {
-                return executor.submit(task);
-            }
-        });
+        AsyncSemaphore<Runnable> asyncSemaphore = new AsyncSemaphore<>(2, executor, executor::submit);
 
-        final AtomicInteger count = new AtomicInteger();
-        final AtomicInteger concurrency = new AtomicInteger();
+        AtomicInteger count = new AtomicInteger();
+        AtomicInteger concurrency = new AtomicInteger();
 
-        final CountDownLatch startLatch = new CountDownLatch(1);
-        final CountDownLatch completionLatch = new CountDownLatch(100);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch completionLatch = new CountDownLatch(100);
         for (int i = 0; i < 100; i++) {
-            executor.execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    Uninterruptibles.awaitUninterruptibly(startLatch, 1, TimeUnit.MINUTES);
-                    asyncSemaphore.submit(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            count.incrementAndGet();
-                            int currentConcurrency = concurrency.incrementAndGet();
-                            assertLessThanOrEqual(currentConcurrency, 2);
-                            Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MILLISECONDS);
-                            concurrency.decrementAndGet();
-                            completionLatch.countDown();
-                        }
-                    });
-                }
+            executor.execute(() -> {
+                Uninterruptibles.awaitUninterruptibly(startLatch, 1, TimeUnit.MINUTES);
+                asyncSemaphore.submit((Runnable) () -> {
+                    count.incrementAndGet();
+                    int currentConcurrency = concurrency.incrementAndGet();
+                    assertLessThanOrEqual(currentConcurrency, 2);
+                    Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MILLISECONDS);
+                    concurrency.decrementAndGet();
+                    completionLatch.countDown();
+                });
             });
         }
         // Start the submitters;
@@ -205,33 +150,21 @@ public class TestAsyncSemaphore
     public void testFailedTasks()
             throws Exception
     {
-        AsyncSemaphore<Runnable> asyncSemaphore = new AsyncSemaphore<>(2, executor, new Function<Runnable, ListenableFuture<?>>()
-        {
-            @Override
-            public ListenableFuture<?> apply(Runnable task)
-            {
-                return executor.submit(task);
-            }
-        });
+        AsyncSemaphore<Runnable> asyncSemaphore = new AsyncSemaphore<>(2, executor, executor::submit);
 
-        final AtomicInteger successCount = new AtomicInteger();
-        final AtomicInteger failureCount = new AtomicInteger();
-        final AtomicInteger concurrency = new AtomicInteger();
-        final CountDownLatch completionLatch = new CountDownLatch(1000);
+        AtomicInteger successCount = new AtomicInteger();
+        AtomicInteger failureCount = new AtomicInteger();
+        AtomicInteger concurrency = new AtomicInteger();
+        CountDownLatch completionLatch = new CountDownLatch(1000);
 
         List<ListenableFuture<?>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
-            ListenableFuture<?> future = asyncSemaphore.submit(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    int currentConcurrency = concurrency.incrementAndGet();
-                    assertLessThanOrEqual(currentConcurrency, 2);
-                    Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MILLISECONDS);
-                    concurrency.decrementAndGet();
-                    throw new IllegalStateException();
-                }
+            ListenableFuture<?> future = asyncSemaphore.submit(() -> {
+                int currentConcurrency = concurrency.incrementAndGet();
+                assertLessThanOrEqual(currentConcurrency, 2);
+                Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MILLISECONDS);
+                concurrency.decrementAndGet();
+                throw new IllegalStateException();
             });
             Futures.addCallback(future, new FutureCallback<Object>()
             {
@@ -272,34 +205,23 @@ public class TestAsyncSemaphore
     public void testFailedTaskSubmission()
             throws Exception
     {
-        final AtomicInteger successCount = new AtomicInteger();
-        final AtomicInteger failureCount = new AtomicInteger();
-        final AtomicInteger concurrency = new AtomicInteger();
-        final CountDownLatch completionLatch = new CountDownLatch(1000);
+        AtomicInteger successCount = new AtomicInteger();
+        AtomicInteger failureCount = new AtomicInteger();
+        AtomicInteger concurrency = new AtomicInteger();
+        CountDownLatch completionLatch = new CountDownLatch(1000);
+        AsyncSemaphore<Runnable> asyncSemaphore = new AsyncSemaphore<>(2, executor, task -> {
 
-        AsyncSemaphore<Runnable> asyncSemaphore = new AsyncSemaphore<>(2, executor, new Function<Runnable, ListenableFuture<?>>()
-        {
-            @Override
-            public ListenableFuture<?> apply(Runnable task)
-            {
-                int currentConcurrency = concurrency.incrementAndGet();
-                assertLessThanOrEqual(currentConcurrency, 2);
-                Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MILLISECONDS);
-                concurrency.decrementAndGet();
-                throw new IllegalStateException();
-            }
+            int currentConcurrency = concurrency.incrementAndGet();
+            assertLessThanOrEqual(currentConcurrency, 2);
+            Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MILLISECONDS);
+            concurrency.decrementAndGet();
+            throw new IllegalStateException();
         });
 
         List<ListenableFuture<?>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
-            ListenableFuture<?> future = asyncSemaphore.submit(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    Assert.fail(); // Should never execute this
-                }
-            });
+            // Should never execute this future
+            ListenableFuture<?> future = asyncSemaphore.submit(Assert::fail);
             Futures.addCallback(future, new FutureCallback<Object>()
             {
                 @Override
@@ -339,13 +261,13 @@ public class TestAsyncSemaphore
     public void testFailedTaskWithMultipleSubmitters()
             throws Exception
     {
-        final AtomicInteger successCount = new AtomicInteger();
-        final AtomicInteger failureCount = new AtomicInteger();
-        final AtomicInteger concurrency = new AtomicInteger();
-        final CountDownLatch startLatch = new CountDownLatch(1);
-        final CountDownLatch completionLatch = new CountDownLatch(100);
+        AtomicInteger successCount = new AtomicInteger();
+        AtomicInteger failureCount = new AtomicInteger();
+        AtomicInteger concurrency = new AtomicInteger();
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch completionLatch = new CountDownLatch(100);
 
-        final AsyncSemaphore<Runnable> asyncSemaphore = new AsyncSemaphore<>(2, executor, new Function<Runnable, ListenableFuture<?>>()
+        AsyncSemaphore<Runnable> asyncSemaphore = new AsyncSemaphore<>(2, executor, new Function<Runnable, ListenableFuture<?>>()
         {
             @Override
             public ListenableFuture<?> apply(Runnable task)
@@ -358,40 +280,29 @@ public class TestAsyncSemaphore
             }
         });
 
-        final Queue<ListenableFuture<?>> futures = new ConcurrentLinkedQueue<>();
+        Queue<ListenableFuture<?>> futures = new ConcurrentLinkedQueue<>();
         for (int i = 0; i < 100; i++) {
-            executor.execute(new Runnable()
-            {
-                @Override
-                public void run()
+            executor.execute(() -> {
+                Uninterruptibles.awaitUninterruptibly(startLatch, 1, TimeUnit.MINUTES);
+                // Should never execute this future
+                ListenableFuture<?> future = asyncSemaphore.submit(Assert::fail);
+                futures.add(future);
+                Futures.addCallback(future, new FutureCallback<Object>()
                 {
-                    Uninterruptibles.awaitUninterruptibly(startLatch, 1, TimeUnit.MINUTES);
-                    ListenableFuture<?> future = asyncSemaphore.submit(new Runnable()
+                    @Override
+                    public void onSuccess(@Nullable Object result)
                     {
-                        @Override
-                        public void run()
-                        {
-                            Assert.fail(); // Should never execute this
-                        }
-                    });
-                    futures.add(future);
-                    Futures.addCallback(future, new FutureCallback<Object>()
-                    {
-                        @Override
-                        public void onSuccess(@Nullable Object result)
-                        {
-                            successCount.incrementAndGet();
-                            completionLatch.countDown();
-                        }
+                        successCount.incrementAndGet();
+                        completionLatch.countDown();
+                    }
 
-                        @Override
-                        public void onFailure(Throwable t)
-                        {
-                            failureCount.incrementAndGet();
-                            completionLatch.countDown();
-                        }
-                    });
-                }
+                    @Override
+                    public void onFailure(Throwable t)
+                    {
+                        failureCount.incrementAndGet();
+                        completionLatch.countDown();
+                    }
+                });
             });
         }
         // Start the submitters;
@@ -418,14 +329,7 @@ public class TestAsyncSemaphore
     public void testNoStackOverflow()
             throws Exception
     {
-        AsyncSemaphore<Object> asyncSemaphore = new AsyncSemaphore<>(1, executor, new Function<Object, ListenableFuture<?>>()
-        {
-            @Override
-            public ListenableFuture<?> apply(Object object)
-            {
-                return Futures.immediateFuture(null);
-            }
-        });
+        AsyncSemaphore<Object> asyncSemaphore = new AsyncSemaphore<>(1, executor, object -> Futures.immediateFuture(null));
 
         List<ListenableFuture<?>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {

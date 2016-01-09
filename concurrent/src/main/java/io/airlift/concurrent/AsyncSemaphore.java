@@ -40,14 +40,7 @@ public class AsyncSemaphore<T>
 {
     private final Queue<QueuedTask<T>> queuedTasks = new ConcurrentLinkedQueue<>();
     private final AtomicInteger counter = new AtomicInteger();
-    private final Runnable runNextTask = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            runNext();
-        }
-    };
+    private final Runnable runNextTask = this::runNext;
     private final int maxPermits;
     private final Executor submitExecutor;
     private final Function<T, ListenableFuture<?>> submitter;
