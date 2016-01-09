@@ -46,13 +46,6 @@ public class BeanValidationException
 
     public static <T> Function<ConstraintViolation<T>, String> constraintMessageBuilder()
     {
-        return new Function<ConstraintViolation<T>, String>()
-        {
-            @Override
-            public String apply(ConstraintViolation<T> violation)
-            {
-                return violation.getPropertyPath().toString() + " " + violation.getMessage();
-            }
-        };
+        return violation -> violation.getPropertyPath().toString() + " " + violation.getMessage();
     }
 }

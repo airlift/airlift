@@ -1,7 +1,6 @@
 package io.airlift.stats;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
@@ -956,14 +955,7 @@ public class QuantileDigest
             }
         });
 
-        Multimap<Integer, Node> nodesByLevel = Multimaps.index(nodes, new Function<Node, Integer>()
-        {
-            @Override
-            public Integer apply(Node input)
-            {
-                return input.level;
-            }
-        });
+        Multimap<Integer, Node> nodesByLevel = Multimaps.index(nodes, input -> input.level);
 
         for (Map.Entry<Integer, Collection<Node>> entry : nodesByLevel.asMap().entrySet()) {
             builder.append("\tsubgraph level_" + entry.getKey() + " {\n")

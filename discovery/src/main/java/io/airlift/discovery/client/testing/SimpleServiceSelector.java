@@ -15,7 +15,6 @@
  */
 package io.airlift.discovery.client.testing;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -81,14 +80,7 @@ public class SimpleServiceSelector implements ServiceSelector
     @Override
     public ListenableFuture<List<ServiceDescriptor>> refresh()
     {
-        return Futures.transform(lookupClient.getServices(type, pool), new Function<ServiceDescriptors, List<ServiceDescriptor>>()
-        {
-            @Override
-            public List<ServiceDescriptor> apply(ServiceDescriptors serviceDescriptors)
-            {
-                return serviceDescriptors.getServiceDescriptors();
-            }
-        });
+        return Futures.transform(lookupClient.getServices(type, pool), ServiceDescriptors::getServiceDescriptors);
     }
 
     // TODO: move this to a utility package

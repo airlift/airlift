@@ -15,7 +15,6 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.FutureCallback;
@@ -145,14 +144,7 @@ public class CachingServiceSelector
             }
         }, executor);
 
-        return Futures.transform(future, new Function<ServiceDescriptors, List<ServiceDescriptor>>()
-        {
-            @Override
-            public List<ServiceDescriptor> apply(ServiceDescriptors serviceDescriptors)
-            {
-                return serviceDescriptors.getServiceDescriptors();
-            }
-        });
+        return Futures.transform(future, ServiceDescriptors::getServiceDescriptors);
     }
 
     private void scheduleRefresh(Duration delay)

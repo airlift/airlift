@@ -47,14 +47,8 @@ public class MergingServiceSelector
     @Override
     public ListenableFuture<List<ServiceDescriptor>> refresh()
     {
-        return Futures.transform(selector.refresh(), new Function<List<ServiceDescriptor>, List<ServiceDescriptor>>()
-        {
-            @Override
-            public List<ServiceDescriptor> apply(List<ServiceDescriptor> serviceDescriptors)
-            {
-                return merge(announcer.getServiceAnnouncements(), serviceDescriptors);
-            }
-        });
+        return Futures.transform(selector.refresh(), (Function<List<ServiceDescriptor>, List<ServiceDescriptor>>)
+                descriptors -> merge(announcer.getServiceAnnouncements(), descriptors));
     }
 
     private List<ServiceDescriptor> merge(Set<ServiceAnnouncement> serviceAnnouncements, List<ServiceDescriptor> serviceDescriptors)
