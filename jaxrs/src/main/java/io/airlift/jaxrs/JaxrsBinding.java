@@ -1,6 +1,5 @@
 package io.airlift.jaxrs;
 
-import com.google.common.base.Function;
 import com.google.inject.Key;
 
 import java.util.Objects;
@@ -15,11 +14,6 @@ final class JaxrsBinding
     JaxrsBinding(Key<?> key)
     {
         this.key = checkNotNull(key, "key is null");
-    }
-
-    public Key<?> getKey()
-    {
-        return key;
     }
 
     @Override
@@ -47,17 +41,5 @@ final class JaxrsBinding
         return toStringHelper(this)
                 .add("key", key)
                 .toString();
-    }
-
-    public static Function<JaxrsBinding, Key<?>> keyGetter()
-    {
-        return new Function<JaxrsBinding, Key<?>>()
-        {
-            @Override
-            public Key<?> apply(JaxrsBinding binding)
-            {
-                return binding.getKey();
-            }
-        };
     }
 }
