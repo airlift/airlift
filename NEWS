@@ -4,6 +4,9 @@ TestingHttpClient now uses a custom Processor interface that allows throwing
 checked exceptions instead of Guava Function. This change is is generally
 source-compatible but not binary-compatible.
 
+AsyncSemaphore now use JDK Function instead of Guava Function. As above,
+this change is generally source-compatible but not binary-compatible.
+
 Airlift 0.122
 
 Minor fixes to Jackson serialization.

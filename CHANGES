@@ -2,6 +2,7 @@
 
 - Upgrade Jetty to 9.3.7.RC0
 - Add ability for TestingHttpClient to send checked exceptions
+- Use JDK Function for AsyncSemaphore
 
 * 0.122
 
