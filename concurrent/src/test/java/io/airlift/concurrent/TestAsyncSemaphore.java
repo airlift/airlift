@@ -13,7 +13,6 @@
  */
 package io.airlift.concurrent;
 
-import com.google.common.base.Function;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -32,6 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.google.common.util.concurrent.Futures.addCallback;
 import static com.google.common.util.concurrent.MoreExecutors.listeningDecorator;
 import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
@@ -159,29 +159,8 @@ public class TestAsyncSemaphore
 
         List<ListenableFuture<?>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
-            ListenableFuture<?> future = asyncSemaphore.submit(() -> {
-                int currentConcurrency = concurrency.incrementAndGet();
-                assertLessThanOrEqual(currentConcurrency, 2);
-                Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MILLISECONDS);
-                concurrency.decrementAndGet();
-                throw new IllegalStateException();
-            });
-            Futures.addCallback(future, new FutureCallback<Object>()
-            {
-                @Override
-                public void onSuccess(@Nullable Object result)
-                {
-                    successCount.incrementAndGet();
-                    completionLatch.countDown();
-                }
-
-                @Override
-                public void onFailure(Throwable t)
-                {
-                    failureCount.incrementAndGet();
-                    completionLatch.countDown();
-                }
-            });
+            ListenableFuture<?> future = asyncSemaphore.submit(() -> assertFailedConcurrency(concurrency));
+            addCallback(future, completionCallback(successCount, failureCount, completionLatch));
             futures.add(future);
         }
 
@@ -210,34 +189,14 @@ public class TestAsyncSemaphore
         AtomicInteger concurrency = new AtomicInteger();
         CountDownLatch completionLatch = new CountDownLatch(1000);
         AsyncSemaphore<Runnable> asyncSemaphore = new AsyncSemaphore<>(2, executor, task -> {
-
-            int currentConcurrency = concurrency.incrementAndGet();
-            assertLessThanOrEqual(currentConcurrency, 2);
-            Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MILLISECONDS);
-            concurrency.decrementAndGet();
-            throw new IllegalStateException();
+            throw assertFailedConcurrency(concurrency);
         });
 
         List<ListenableFuture<?>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             // Should never execute this future
             ListenableFuture<?> future = asyncSemaphore.submit(Assert::fail);
-            Futures.addCallback(future, new FutureCallback<Object>()
-            {
-                @Override
-                public void onSuccess(@Nullable Object result)
-                {
-                    successCount.incrementAndGet();
-                    completionLatch.countDown();
-                }
-
-                @Override
-                public void onFailure(Throwable t)
-                {
-                    failureCount.incrementAndGet();
-                    completionLatch.countDown();
-                }
-            });
+            addCallback(future, completionCallback(successCount, failureCount, completionLatch));
             futures.add(future);
         }
 
@@ -267,17 +226,8 @@ public class TestAsyncSemaphore
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch completionLatch = new CountDownLatch(100);
 
-        AsyncSemaphore<Runnable> asyncSemaphore = new AsyncSemaphore<>(2, executor, new Function<Runnable, ListenableFuture<?>>()
-        {
-            @Override
-            public ListenableFuture<?> apply(Runnable task)
-            {
-                int currentConcurrency = concurrency.incrementAndGet();
-                assertLessThanOrEqual(currentConcurrency, 2);
-                Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MILLISECONDS);
-                concurrency.decrementAndGet();
-                throw new IllegalStateException();
-            }
+        AsyncSemaphore<Runnable> asyncSemaphore = new AsyncSemaphore<>(2, executor, task -> {
+            throw assertFailedConcurrency(concurrency);
         });
 
         Queue<ListenableFuture<?>> futures = new ConcurrentLinkedQueue<>();
@@ -287,22 +237,7 @@ public class TestAsyncSemaphore
                 // Should never execute this future
                 ListenableFuture<?> future = asyncSemaphore.submit(Assert::fail);
                 futures.add(future);
-                Futures.addCallback(future, new FutureCallback<Object>()
-                {
-                    @Override
-                    public void onSuccess(@Nullable Object result)
-                    {
-                        successCount.incrementAndGet();
-                        completionLatch.countDown();
-                    }
-
-                    @Override
-                    public void onFailure(Throwable t)
-                    {
-                        failureCount.incrementAndGet();
-                        completionLatch.countDown();
-                    }
-                });
+                addCallback(future, completionCallback(successCount, failureCount, completionLatch));
             });
         }
         // Start the submitters;
@@ -338,5 +273,34 @@ public class TestAsyncSemaphore
 
         // Wait for completion
         Futures.allAsList(futures).get(1, TimeUnit.MINUTES);
+    }
+
+    private static RuntimeException assertFailedConcurrency(AtomicInteger concurrency)
+    {
+        int currentConcurrency = concurrency.incrementAndGet();
+        assertLessThanOrEqual(currentConcurrency, 2);
+        Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MILLISECONDS);
+        concurrency.decrementAndGet();
+        throw new IllegalStateException();
+    }
+
+    private static FutureCallback<Object> completionCallback(AtomicInteger successCount, AtomicInteger failureCount, CountDownLatch completionLatch)
+    {
+        return new FutureCallback<Object>()
+        {
+            @Override
+            public void onSuccess(@Nullable Object result)
+            {
+                successCount.incrementAndGet();
+                completionLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t)
+            {
+                failureCount.incrementAndGet();
+                completionLatch.countDown();
+            }
+        };
     }
 }
