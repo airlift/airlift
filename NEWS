@@ -1,3 +1,8 @@
+Airlift 0.124
+
+Upgrade jmxutils which fixes the server not starting when LogJmxModule
+is used due to a Java 8 compatibility issue with jmxutils.
+
 Airlift 0.123
 
 TestingHttpClient now uses a custom Processor interface that allows throwing

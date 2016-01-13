@@ -1,3 +1,7 @@
+* 0.124
+
+- Upgrade to jmxutils 1.19 which fixes issue with LoggingMBean
+
 * 0.123
 
 - Upgrade Jetty to 9.3.7.RC0
