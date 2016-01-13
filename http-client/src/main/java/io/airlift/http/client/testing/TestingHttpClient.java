@@ -25,11 +25,23 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 public class TestingHttpClient
         implements HttpClient
 {
-    private final Processor processor;
+    private final AtomicReference<Processor> processor;
     private final ListeningExecutorService executor;
 
     private final RequestStats stats = new RequestStats();
     private final AtomicBoolean closed = new AtomicBoolean();
+
+    public TestingHttpClient()
+    {
+        this(newDirectExecutorService());
+    }
+
+    public TestingHttpClient(ExecutorService executor)
+    {
+        this((request) -> {
+            throw new UnsupportedOperationException();
+        }, executor);
+    }
 
     public TestingHttpClient(Processor processor)
     {
@@ -38,7 +50,7 @@ public class TestingHttpClient
 
     public TestingHttpClient(Processor processor, ExecutorService executor)
     {
-        this.processor = requireNonNull(processor, "processor is null");
+        this.processor = new AtomicReference<>(requireNonNull(processor, "processor is null"));
         this.executor = listeningDecorator(requireNonNull(executor, "executor is null"));
     }
 
@@ -72,7 +84,7 @@ public class TestingHttpClient
         Response response;
         long requestStart = System.nanoTime();
         try {
-            response = processor.handle(request);
+            response = processor.get().handle(request);
         }
         catch (Exception | Error e) {
             state.set("FAILED");
@@ -119,6 +131,11 @@ public class TestingHttpClient
         }
     }
 
+    public void setProcessor(Processor processor)
+    {
+        this.processor.set(processor);
+    }
+
     @Override
     public RequestStats getStats()
     {
@@ -143,7 +160,7 @@ public class TestingHttpClient
                 throws Exception;
     }
 
-    private class TestingHttpResponseFuture<T>
+    private static class TestingHttpResponseFuture<T>
             extends ForwardingListenableFuture<T>
             implements HttpResponseFuture<T>
     {
