@@ -175,7 +175,7 @@ public class SpnegoAuthentication
                     }
 
                     if (keytab != null) {
-                        optionsBuilder.put("keytab", keytab.getAbsolutePath());
+                        optionsBuilder.put("keyTab", keytab.getAbsolutePath());
                     }
 
                     if (credentialCache != null) {
