@@ -39,11 +39,7 @@ public final class Duration implements Comparable<Duration>
 
     public static Duration nanosSince(long start)
     {
-        long end = System.nanoTime();
-
-        long value = end - start;
-        double millis = value * millisPerTimeUnit(NANOSECONDS);
-        return new Duration(millis, MILLISECONDS).convertToMostSuccinctTimeUnit();
+        return succinctNanos(System.nanoTime() - start);
     }
 
     public static Duration succinctNanos(long nanos)
