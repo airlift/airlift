@@ -49,6 +49,7 @@ import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Sweeper;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
@@ -84,6 +85,7 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -220,6 +222,8 @@ public class JettyHttpClient
 
         try {
             httpClient.start();
+            checkState(httpClient.isStarted(), "Http Client is not started");
+            checkSufficientThreads(httpClient.getExecutor());
 
             // remove the GZIP encoding from the client
             // TODO: there should be a better way to to do this
@@ -395,6 +399,17 @@ public class JettyHttpClient
             future.failed(e);
         }
         return future;
+    }
+
+    private void checkSufficientThreads(Executor executor)
+    {
+        if (executor instanceof ThreadPool) {
+            ThreadPool queuedThreadPool = (ThreadPool) executor;
+            checkState(!queuedThreadPool.isLowOnThreads(), "insufficient threads configured for http client");
+        }
+        else {
+            throw new IllegalStateException("Unable to check number of threads");
+        }
     }
 
     private Request applyRequestFilters(Request request)
