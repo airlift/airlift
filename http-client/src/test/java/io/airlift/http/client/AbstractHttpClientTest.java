@@ -42,6 +42,7 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,6 +53,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.Deflater;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.base.Throwables.propagateIfInstanceOf;
 import static com.google.common.base.Throwables.propagateIfPossible;
@@ -617,6 +619,38 @@ public abstract class AbstractHttpClientTest
         else {
             assertEquals(statusMessage, "message");
         }
+    }
+
+    @Test
+    public void testResponseGetBytes()
+            throws Exception
+    {
+        servlet.setResponseBody("body");
+
+        Request request = prepareGet()
+                .setUri(baseURI)
+                .build();
+
+        String body = executeRequest(request, new ResponseHandler<String, Exception>()
+        {
+            @Override
+            public String handleException(Request request, Exception exception)
+                    throws Exception
+            {
+                throw exception;
+            }
+
+            @Override
+            public String handle(Request request, Response response)
+                    throws Exception
+            {
+                ByteBuffer byteBuffer = response.getBytes();
+                byte[] bytes = new byte[byteBuffer.remaining()];
+                byteBuffer.get(bytes);
+                return new String(bytes, UTF_8);
+            }
+        });
+        assertEquals(body, "body");
     }
 
     @Test(expectedExceptions = UnexpectedResponseException.class)

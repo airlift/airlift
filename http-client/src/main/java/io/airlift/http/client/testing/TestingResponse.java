@@ -13,10 +13,12 @@ import io.airlift.http.client.Response;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.Map;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.io.ByteStreams.toByteArray;
 
 public class TestingResponse
         implements Response
@@ -59,6 +61,13 @@ public class TestingResponse
     public long getBytesRead()
     {
         return countingInputStream.getCount();
+    }
+
+    @Override
+    public ByteBuffer getBytes()
+            throws IOException
+    {
+        return ByteBuffer.wrap(toByteArray(countingInputStream));
     }
 
     @Override
