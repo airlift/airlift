@@ -319,13 +319,16 @@ public class JettyHttpClient
             response = listener.get(httpClient.getIdleTimeout(), MILLISECONDS);
         }
         catch (InterruptedException e) {
+            stats.recordRequestFailed();
             Thread.currentThread().interrupt();
             return responseHandler.handleException(request, e);
         }
         catch (TimeoutException e) {
+            stats.recordRequestFailed();
             return responseHandler.handleException(request, e);
         }
         catch (ExecutionException e) {
+            stats.recordRequestFailed();
             Throwable cause = e.getCause();
             if (cause instanceof Exception) {
                 return responseHandler.handleException(request, (Exception) cause);
@@ -749,6 +752,7 @@ public class JettyHttpClient
         public boolean cancel(boolean mayInterruptIfRunning)
         {
             try {
+                stats.recordRequestCanceled();
                 state.set(JettyAsyncHttpState.CANCELED);
                 jettyRequest.abort(new CancellationException());
                 return super.cancel(mayInterruptIfRunning);
@@ -803,6 +807,8 @@ public class JettyHttpClient
             if (state.get() == JettyAsyncHttpState.CANCELED) {
                 return;
             }
+
+            stats.recordRequestFailed();
 
             // give handler a chance to rewrite the exception or return a value instead
             if (throwable instanceof Exception) {
@@ -859,7 +865,7 @@ public class JettyHttpClient
         Duration responseProcessingTime = Duration.nanosSince(responseStart);
         Duration requestProcessingTime = new Duration(responseStart - requestStart, NANOSECONDS);
 
-        requestStats.record(request.getMethod(),
+        requestStats.recordResponseReceived(request.getMethod(),
                 response.getStatusCode(),
                 response.getBytesRead(),
                 response.getBytesRead(),
