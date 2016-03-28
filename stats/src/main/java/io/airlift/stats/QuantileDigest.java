@@ -2,7 +2,6 @@ package io.airlift.stats;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
@@ -51,15 +50,16 @@ import static java.lang.String.format;
  * <p>This class also supports exponential decay. The implementation is based on the ideas laid out
  * in http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.159.3978</p>
  */
+@SuppressWarnings("AccessingNonPublicFieldOfAnotherObject")
 @NotThreadSafe
-public class QuantileDigest
+public final class QuantileDigest
 {
     private static final int MAX_BITS = 64;
     private static final double MAX_SIZE_FACTOR = 1.5;
 
     // needs to be such that Math.exp(alpha * seconds) does not grow too big
     static final long RESCALE_THRESHOLD_SECONDS = 50;
-    static final double ZERO_WEIGHT_THRESHOLD = 1e-5;
+    static final double ZERO_WEIGHT_THRESHOLD = 1.0e-5;
 
     private final double maxError;
     private final Ticker ticker;
@@ -74,9 +74,9 @@ public class QuantileDigest
 
     private long landmarkInSeconds;
 
-    private int totalNodeCount = 0;
-    private int nonZeroNodeCount = 0;
-    private int compressions = 0;
+    private int totalNodeCount;
+    private int nonZeroNodeCount;
+    private int compressions;
 
     private enum TraversalOrder
     {
@@ -248,13 +248,14 @@ public class QuantileDigest
             checkArgument(quantile >= 0 && quantile <= 1, "quantile must be between [0,1]");
         }
 
-        final ImmutableList.Builder<Long> builder = ImmutableList.builder();
-        final PeekingIterator<Double> iterator = Iterators.peekingIterator(quantiles.iterator());
+        ImmutableList.Builder<Long> builder = ImmutableList.builder();
+        PeekingIterator<Double> iterator = Iterators.peekingIterator(quantiles.iterator());
 
         postOrderTraversal(root, new Callback()
         {
-            private double sum = 0;
+            private double sum;
 
+            @Override
             public boolean process(Node node)
             {
                 sum += node.weightedCount;
@@ -326,37 +327,33 @@ public class QuantileDigest
     {
         checkArgument(Ordering.natural().isOrdered(bucketUpperBounds), "buckets must be sorted in increasing order");
 
-        final ImmutableList.Builder<Bucket> builder = ImmutableList.builder();
-        final PeekingIterator<Long> iterator = Iterators.peekingIterator(bucketUpperBounds.iterator());
+        ImmutableList.Builder<Bucket> builder = ImmutableList.builder();
+        PeekingIterator<Long> iterator = Iterators.peekingIterator(bucketUpperBounds.iterator());
 
-        final AtomicDouble sum = new AtomicDouble();
-        final AtomicDouble lastSum = new AtomicDouble();
+        AtomicDouble sum = new AtomicDouble();
+        AtomicDouble lastSum = new AtomicDouble();
 
         // for computing weighed average of values in bucket
-        final AtomicDouble bucketWeightedSum = new AtomicDouble();
+        AtomicDouble bucketWeightedSum = new AtomicDouble();
 
-        final double normalizationFactor = weight(TimeUnit.NANOSECONDS.toSeconds(ticker.read()));
+        double normalizationFactor = weight(TimeUnit.NANOSECONDS.toSeconds(ticker.read()));
 
-        postOrderTraversal(root, new Callback()
-        {
-            public boolean process(Node node)
-            {
+        postOrderTraversal(root, node -> {
 
-                while (iterator.hasNext() && iterator.peek() <= node.getUpperBound()) {
-                    double bucketCount = sum.get() - lastSum.get();
+            while (iterator.hasNext() && iterator.peek() <= node.getUpperBound()) {
+                double bucketCount = sum.get() - lastSum.get();
 
-                    Bucket bucket = new Bucket(bucketCount / normalizationFactor, bucketWeightedSum.get() / bucketCount);
+                Bucket bucket = new Bucket(bucketCount / normalizationFactor, bucketWeightedSum.get() / bucketCount);
 
-                    builder.add(bucket);
-                    lastSum.set(sum.get());
-                    bucketWeightedSum.set(0);
-                    iterator.next();
-                }
-
-                bucketWeightedSum.addAndGet(node.getMiddle() * node.weightedCount);
-                sum.addAndGet(node.weightedCount);
-                return iterator.hasNext();
+                builder.add(bucket);
+                lastSum.set(sum.get());
+                bucketWeightedSum.set(0);
+                iterator.next();
             }
+
+            bucketWeightedSum.addAndGet(node.getMiddle() * node.weightedCount);
+            sum.addAndGet(node.weightedCount);
+            return iterator.hasNext();
         });
 
         while (iterator.hasNext()) {
@@ -373,17 +370,13 @@ public class QuantileDigest
 
     public long getMin()
     {
-        final AtomicLong chosen = new AtomicLong(min);
-        postOrderTraversal(root, new Callback()
-        {
-            public boolean process(Node node)
-            {
-                if (node.weightedCount >= ZERO_WEIGHT_THRESHOLD) {
-                    chosen.set(node.getLowerBound());
-                    return false;
-                }
-                return true;
+        AtomicLong chosen = new AtomicLong(min);
+        postOrderTraversal(root, node -> {
+            if (node.weightedCount >= ZERO_WEIGHT_THRESHOLD) {
+                chosen.set(node.getLowerBound());
+                return false;
             }
+            return true;
         }, TraversalOrder.FORWARD);
 
         return Math.max(min, chosen.get());
@@ -391,17 +384,13 @@ public class QuantileDigest
 
     public long getMax()
     {
-        final AtomicLong chosen = new AtomicLong(max);
-        postOrderTraversal(root, new Callback()
-        {
-            public boolean process(Node node)
-            {
-                if (node.weightedCount >= ZERO_WEIGHT_THRESHOLD) {
-                    chosen.set(node.getUpperBound());
-                    return false;
-                }
-                return true;
+        AtomicLong chosen = new AtomicLong(max);
+        postOrderTraversal(root, node -> {
+            if (node.weightedCount >= ZERO_WEIGHT_THRESHOLD) {
+                chosen.set(node.getUpperBound());
+                return false;
             }
+            return true;
         }, TraversalOrder.REVERSE);
 
         return Math.min(max, chosen.get());
@@ -428,7 +417,7 @@ public class QuantileDigest
                 totalNodeCount * estimatedNodeSize;
     }
 
-    public void serialize(final DataOutput output)
+    public void serialize(DataOutput output)
     {
         try {
             output.writeDouble(maxError);
@@ -438,19 +427,14 @@ public class QuantileDigest
             output.writeLong(max);
             output.writeInt(totalNodeCount);
 
-            postOrderTraversal(root, new Callback()
-            {
-                @Override
-                public boolean process(Node node)
-                {
-                    try {
-                        serializeNode(output, node);
-                    }
-                    catch (IOException e) {
-                        Throwables.propagate(e);
-                    }
-                    return true;
+            postOrderTraversal(root, node -> {
+                try {
+                    serializeNode(output, node);
                 }
+                catch (IOException e) {
+                    Throwables.propagate(e);
+                }
+                return true;
             });
         }
         catch (IOException e) {
@@ -458,7 +442,7 @@ public class QuantileDigest
         }
     }
 
-    private void serializeNode(DataOutput output, Node node)
+    private static void serializeNode(DataOutput output, Node node)
             throws IOException
     {
         int flags = 0;
@@ -511,7 +495,7 @@ public class QuantileDigest
 
 
             if (!stack.isEmpty()) {
-                Preconditions.checkArgument(stack.size() == 1, "Tree is corrupted. Expected a single root node");
+                checkArgument(stack.size() == 1, "Tree is corrupted. Expected a single root node");
                 result.root = stack.pop();
             }
 
@@ -555,51 +539,47 @@ public class QuantileDigest
     {
         ++compressions;
 
-        final int compressionFactor = calculateCompressionFactor();
+        int compressionFactor = calculateCompressionFactor();
 
-        postOrderTraversal(root, new Callback()
-        {
-            public boolean process(Node node)
-            {
-                if (node.isLeaf()) {
-                    return true;
-                }
-
-                // if children's weights are ~0 remove them and shift the weight to their parent
-
-                double leftWeight = 0;
-                if (node.left != null) {
-                    leftWeight = node.left.weightedCount;
-                }
-
-                double rightWeight = 0;
-                if (node.right != null) {
-                    rightWeight = node.right.weightedCount;
-                }
-
-                boolean shouldCompress = node.weightedCount + leftWeight + rightWeight < (int) (weightedCount / compressionFactor);
-
-                double oldNodeWeight = node.weightedCount;
-                if (shouldCompress || leftWeight < ZERO_WEIGHT_THRESHOLD) {
-                    node.left = tryRemove(node.left);
-
-                    weightedCount += leftWeight;
-                    node.weightedCount += leftWeight;
-                }
-
-                if (shouldCompress || rightWeight < ZERO_WEIGHT_THRESHOLD) {
-                    node.right = tryRemove(node.right);
-
-                    weightedCount += rightWeight;
-                    node.weightedCount += rightWeight;
-                }
-
-                if (oldNodeWeight < ZERO_WEIGHT_THRESHOLD && node.weightedCount >= ZERO_WEIGHT_THRESHOLD) {
-                    ++nonZeroNodeCount;
-                }
-
+        postOrderTraversal(root, node -> {
+            if (node.isLeaf()) {
                 return true;
             }
+
+            // if children's weights are ~0 remove them and shift the weight to their parent
+
+            double leftWeight = 0;
+            if (node.left != null) {
+                leftWeight = node.left.weightedCount;
+            }
+
+            double rightWeight = 0;
+            if (node.right != null) {
+                rightWeight = node.right.weightedCount;
+            }
+
+            boolean shouldCompress = node.weightedCount + leftWeight + rightWeight < (int) (weightedCount / compressionFactor);
+
+            double oldNodeWeight = node.weightedCount;
+            if (shouldCompress || leftWeight < ZERO_WEIGHT_THRESHOLD) {
+                node.left = tryRemove(node.left);
+
+                weightedCount += leftWeight;
+                node.weightedCount += leftWeight;
+            }
+
+            if (shouldCompress || rightWeight < ZERO_WEIGHT_THRESHOLD) {
+                node.right = tryRemove(node.right);
+
+                weightedCount += rightWeight;
+                node.weightedCount += rightWeight;
+            }
+
+            if (oldNodeWeight < ZERO_WEIGHT_THRESHOLD && node.weightedCount >= ZERO_WEIGHT_THRESHOLD) {
+                ++nonZeroNodeCount;
+            }
+
+            return true;
         });
 
         if (root != null && root.weightedCount < ZERO_WEIGHT_THRESHOLD) {
@@ -616,24 +596,20 @@ public class QuantileDigest
     {
         // rescale the weights based on a new landmark to avoid numerical overflow issues
 
-        final double factor = Math.exp(-alpha * (newLandmarkInSeconds - landmarkInSeconds));
+        double factor = Math.exp(-alpha * (newLandmarkInSeconds - landmarkInSeconds));
 
         weightedCount *= factor;
 
-        postOrderTraversal(root, new Callback()
-        {
-            public boolean process(Node node)
-            {
-                double oldWeight = node.weightedCount;
+        postOrderTraversal(root, node -> {
+            double oldWeight = node.weightedCount;
 
-                node.weightedCount *= factor;
+            node.weightedCount *= factor;
 
-                if (oldWeight >= ZERO_WEIGHT_THRESHOLD && node.weightedCount < ZERO_WEIGHT_THRESHOLD) {
-                    --nonZeroNodeCount;
-                }
-
-                return true;
+            if (oldWeight >= ZERO_WEIGHT_THRESHOLD && node.weightedCount < ZERO_WEIGHT_THRESHOLD) {
+                --nonZeroNodeCount;
             }
+
+            return true;
         });
 
         landmarkInSeconds = newLandmarkInSeconds;
@@ -941,27 +917,22 @@ public class QuantileDigest
     @VisibleForTesting
     void validate()
     {
-        final AtomicDouble sumOfWeights = new AtomicDouble();
-        final AtomicInteger actualNodeCount = new AtomicInteger();
-        final AtomicInteger actualNonZeroNodeCount = new AtomicInteger();
+        AtomicDouble sumOfWeights = new AtomicDouble();
+        AtomicInteger actualNodeCount = new AtomicInteger();
+        AtomicInteger actualNonZeroNodeCount = new AtomicInteger();
 
         if (root != null) {
             validateStructure(root);
 
-            postOrderTraversal(root, new Callback()
-            {
-                @Override
-                public boolean process(Node node)
-                {
-                    sumOfWeights.addAndGet(node.weightedCount);
-                    actualNodeCount.incrementAndGet();
+            postOrderTraversal(root, node -> {
+                sumOfWeights.addAndGet(node.weightedCount);
+                actualNodeCount.incrementAndGet();
 
-                    if (node.weightedCount >= ZERO_WEIGHT_THRESHOLD) {
-                        actualNonZeroNodeCount.incrementAndGet();
-                    }
-
-                    return true;
+                if (node.weightedCount >= ZERO_WEIGHT_THRESHOLD) {
+                    actualNonZeroNodeCount.incrementAndGet();
                 }
+
+                return true;
             });
         }
 
@@ -1000,7 +971,7 @@ public class QuantileDigest
         long branch = child.bits & (1L << (parent.level - 1));
         checkState(branch == 0 && isLeft || branch != 0 && !isLeft, "Value of child node is inconsistent with its branch");
 
-        Preconditions.checkState(parent.weightedCount >= ZERO_WEIGHT_THRESHOLD ||
+        checkState(parent.weightedCount >= ZERO_WEIGHT_THRESHOLD ||
                 child.weightedCount >= ZERO_WEIGHT_THRESHOLD || otherChild != null,
                 "Found a linear chain of zero-weight nodes");
     }
@@ -1012,25 +983,20 @@ public class QuantileDigest
         builder.append("digraph QuantileDigest {\n")
                 .append("\tgraph [ordering=\"out\"];");
 
-        final List<Node> nodes = new ArrayList<>();
-        postOrderTraversal(root, new Callback()
-        {
-            @Override
-            public boolean process(Node node)
-            {
-                nodes.add(node);
-                return true;
-            }
+        List<Node> nodes = new ArrayList<>();
+        postOrderTraversal(root, node -> {
+            nodes.add(node);
+            return true;
         });
 
         Multimap<Integer, Node> nodesByLevel = Multimaps.index(nodes, input -> input.level);
 
         for (Map.Entry<Integer, Collection<Node>> entry : nodesByLevel.asMap().entrySet()) {
-            builder.append("\tsubgraph level_" + entry.getKey() + " {\n")
+            builder.append("\tsubgraph level_").append(entry.getKey()).append(" {\n")
                     .append("\t\trank = same;\n");
 
             for (Node node : entry.getValue()) {
-                builder.append(String.format("\t\t%s [label=\"[%s..%s]@%s\\n%s\", shape=rect, style=filled,color=%s];\n",
+                builder.append(format("\t\t%s [label=\"[%s..%s]@%s\\n%s\", shape=rect, style=filled,color=%s];\n",
                         idFor(node),
                         node.getLowerBound(),
                         node.getUpperBound(),
@@ -1059,7 +1025,7 @@ public class QuantileDigest
 
     private static String idFor(Node node)
     {
-        return String.format("node_%x_%x", node.bits, node.level);
+        return format("node_%x_%x", node.bits, node.level);
     }
 
     /**
@@ -1080,8 +1046,8 @@ public class QuantileDigest
 
     public static class Bucket
     {
-        private double count;
-        private double mean;
+        private final double count;
+        private final double mean;
 
         public Bucket(double count, double mean)
         {
@@ -1109,7 +1075,7 @@ public class QuantileDigest
                 return false;
             }
 
-            final Bucket bucket = (Bucket) o;
+            Bucket bucket = (Bucket) o;
 
             if (Double.compare(bucket.count, count) != 0) {
                 return false;
@@ -1126,24 +1092,24 @@ public class QuantileDigest
         {
             int result;
             long temp;
-            temp = count != +0.0d ? Double.doubleToLongBits(count) : 0L;
+            temp = count != 0.0d ? Double.doubleToLongBits(count) : 0L;
             result = (int) (temp ^ (temp >>> 32));
-            temp = mean != +0.0d ? Double.doubleToLongBits(mean) : 0L;
+            temp = mean != 0.0d ? Double.doubleToLongBits(mean) : 0L;
             result = 31 * result + (int) (temp ^ (temp >>> 32));
             return result;
         }
 
         public String toString()
         {
-            return String.format("[count: %f, mean: %f]", count, mean);
+            return format("[count: %f, mean: %f]", count, mean);
         }
     }
 
     private static class Node
     {
         private double weightedCount;
-        private int level;
-        private long bits;
+        private final int level;
+        private final long bits;
         private Node left;
         private Node right;
 
@@ -1223,7 +1189,7 @@ public class QuantileDigest
             if (obj == null || getClass() != obj.getClass()) {
                 return false;
             }
-            final Node other = (Node) obj;
+            Node other = (Node) obj;
             return Objects.equal(this.weightedCount, other.weightedCount) &&
                     Objects.equal(this.level, other.level) &&
                     Objects.equal(this.bits, other.bits) &&
@@ -1232,7 +1198,7 @@ public class QuantileDigest
         }
     }
 
-    private static interface Callback
+    private interface Callback
     {
         /**
          * @param node the node to process
@@ -1241,7 +1207,7 @@ public class QuantileDigest
         boolean process(Node node);
     }
 
-    private static class SizeOf
+    private static final class SizeOf
     {
         public static final int BYTE = 1;
         public static final int INTEGER = 4;
@@ -1253,7 +1219,7 @@ public class QuantileDigest
         public static final int NODE = ClassLayout.parseClass(Node.class).instanceSize();
     }
 
-    private static class Flags
+    private static final class Flags
     {
         public static final int HAS_LEFT = 1 << 0;
         public static final int HAS_RIGHT = 1 << 1;
