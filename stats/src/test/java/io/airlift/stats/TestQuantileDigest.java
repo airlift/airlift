@@ -174,6 +174,38 @@ public class TestQuantileDigest
     }
 
     @Test
+    public void testQuantileLowerBound()
+    {
+        QuantileDigest digest = new QuantileDigest(0.5);
+
+        addRange(digest, 1, 100);
+
+        assertEquals(digest.getQuantileLowerBound(0.0), 1);
+        for(int i=1; i <= 10; i++) {
+            assertTrue(digest.getQuantileLowerBound(i / 10.0) <= i * 10);
+            if (i > 5) {
+                assertTrue(digest.getQuantileLowerBound(i / 10.0) >= (i-5) * 10);
+            }
+        }
+    }
+
+    @Test
+    public void testQuantileUpperBound()
+    {
+        QuantileDigest digest = new QuantileDigest(0.5);
+
+        addRange(digest, 1, 100);
+
+        assertEquals(digest.getQuantileUpperBound(1.0), 99);
+        for(int i=0; i < 10; i++) {
+            assertTrue(digest.getQuantileUpperBound(i / 10.0) >= i * 10);
+            if (i < 5) {
+                assertTrue(digest.getQuantileUpperBound(i / 10.0) <= (i + 5) * 10);
+            }
+        }
+    }
+
+    @Test
     public void testWeightedValues()
     {
         QuantileDigest digest = new QuantileDigest(1);
