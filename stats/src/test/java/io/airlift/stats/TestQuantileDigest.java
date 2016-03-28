@@ -17,7 +17,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
-import static java.util.Arrays.asList;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -44,7 +43,7 @@ public class TestQuantileDigest
     public void testNegativeValues()
     {
         QuantileDigest digest = new QuantileDigest(1);
-        addAll(digest, asList(-1, -2, -3, -4, -5, 0, 1, 2, 3, 4, 5));
+        addAll(digest, ImmutableList.of(-1, -2, -3, -4, -5, 0, 1, 2, 3, 4, 5));
 
         assertEquals(digest.getCount(), (double) 11);
     }
@@ -88,7 +87,7 @@ public class TestQuantileDigest
     {
         QuantileDigest digest = new QuantileDigest(1);
 
-        List<Integer> values = asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7);
+        List<Integer> values = ImmutableList.of(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7);
         addAll(digest, values);
 
         // should have no compressions with so few values and the allowed error
@@ -105,7 +104,7 @@ public class TestQuantileDigest
     {
         QuantileDigest digest = new QuantileDigest(1);
 
-        List<Integer> values = asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7);
+        List<Integer> values = ImmutableList.of(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7);
         addAll(digest, Lists.reverse(values));
 
         // should have no compressions with so few values and the allowed error
@@ -124,7 +123,7 @@ public class TestQuantileDigest
         // maxError = 0.8 so that we get compression factor = 5 with the data below
         QuantileDigest digest = new QuantileDigest(0.8, 0, new TestingTicker(), false);
 
-        List<Integer> values = asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7);
+        List<Integer> values = ImmutableList.of(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7);
         addAll(digest, values);
 
         digest.compress();
@@ -155,7 +154,7 @@ public class TestQuantileDigest
     {
         QuantileDigest digest = new QuantileDigest(1);
 
-        addAll(digest, asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+        addAll(digest, ImmutableList.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 
         // should have no compressions with so few values and the allowed error
         assertEquals(digest.getCompressions(), 0);
@@ -248,14 +247,14 @@ public class TestQuantileDigest
     {
         QuantileDigest digest = new QuantileDigest(1);
 
-        addAll(digest, asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+        addAll(digest, ImmutableList.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 
         // should have no compressions with so few values and the allowed error
         assertEquals(digest.getCompressions(), 0);
         assertEquals(digest.getConfidenceFactor(), 0.0);
 
-        assertEquals(digest.getQuantiles(asList(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)),
-                asList(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 9L));
+        assertEquals(digest.getQuantiles(ImmutableList.of(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)),
+                ImmutableList.of(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 9L));
     }
 
     @Test
@@ -264,14 +263,14 @@ public class TestQuantileDigest
     {
         QuantileDigest digest = new QuantileDigest(1);
 
-        addAll(digest, asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+        addAll(digest, ImmutableList.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 
         // should have no compressions with so few values and the allowed error
         assertEquals(digest.getCompressions(), 0);
         assertEquals(digest.getConfidenceFactor(), 0.0);
 
-        assertEquals(digest.getHistogram(asList(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)),
-                asList(new QuantileDigest.Bucket(0, Double.NaN),
+        assertEquals(digest.getHistogram(ImmutableList.of(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)),
+                ImmutableList.of(new QuantileDigest.Bucket(0, Double.NaN),
                         new QuantileDigest.Bucket(1, 0),
                         new QuantileDigest.Bucket(1, 1),
                         new QuantileDigest.Bucket(1, 2),
@@ -283,16 +282,16 @@ public class TestQuantileDigest
                         new QuantileDigest.Bucket(1, 8),
                         new QuantileDigest.Bucket(1, 9)));
 
-        assertEquals(digest.getHistogram(asList(7L, 10L)),
-                asList(new QuantileDigest.Bucket(7, 3),
+        assertEquals(digest.getHistogram(ImmutableList.of(7L, 10L)),
+                ImmutableList.of(new QuantileDigest.Bucket(7, 3),
                         new QuantileDigest.Bucket(3, 8)));
 
         // test some edge conditions
-        assertEquals(digest.getHistogram(asList(0L)), asList(new QuantileDigest.Bucket(0, Double.NaN)));
-        assertEquals(digest.getHistogram(asList(9L)), asList(new QuantileDigest.Bucket(9, 4)));
-        assertEquals(digest.getHistogram(asList(10L)), asList(new QuantileDigest.Bucket(10, 4.5)));
-        assertEquals(digest.getHistogram(asList(Long.MAX_VALUE)),
-                asList(new QuantileDigest.Bucket(10, 4.5)));
+        assertEquals(digest.getHistogram(ImmutableList.of(0L)), ImmutableList.of(new QuantileDigest.Bucket(0, Double.NaN)));
+        assertEquals(digest.getHistogram(ImmutableList.of(9L)), ImmutableList.of(new QuantileDigest.Bucket(9, 4)));
+        assertEquals(digest.getHistogram(ImmutableList.of(10L)), ImmutableList.of(new QuantileDigest.Bucket(10, 4.5)));
+        assertEquals(digest.getHistogram(ImmutableList.of(Long.MAX_VALUE)),
+                ImmutableList.of(new QuantileDigest.Bucket(10, 4.5)));
     }
 
     @Test
@@ -310,7 +309,7 @@ public class TestQuantileDigest
         double actualMaxError = digest.getConfidenceFactor();
 
         for (long value = 0; value < total; ++value) {
-            QuantileDigest.Bucket bucket = digest.getHistogram(asList(value)).get(0);
+            QuantileDigest.Bucket bucket = digest.getHistogram(ImmutableList.of(value)).get(0);
 
             // estimated count should have an absolute error smaller than 2 * maxError * N
             assertTrue(Math.abs(bucket.getCount() - value) < 2 * actualMaxError * total);
@@ -353,14 +352,14 @@ public class TestQuantileDigest
         TestingTicker ticker = new TestingTicker();
         QuantileDigest digest = new QuantileDigest(1, ExponentialDecay.computeAlpha(0.5, 60), ticker, true);
 
-        addAll(digest, asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+        addAll(digest, ImmutableList.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 
         // should have no compressions with so few values and the allowed error
         assertEquals(digest.getCompressions(), 0);
         assertEquals(digest.getConfidenceFactor(), 0.0);
 
         ticker.increment(60, TimeUnit.SECONDS);
-        addAll(digest, asList(10, 11, 12, 13, 14, 15, 16, 17, 18, 19));
+        addAll(digest, ImmutableList.of(10, 11, 12, 13, 14, 15, 16, 17, 18, 19));
 
         // Considering that the first 10 values now have a weight of 0.5 per the alpha factor, they only contributed a count
         // of 5 to rank computations. Therefore, the 50th percentile is equivalent to a weighted rank of (5 + 10) / 2 = 7.5,
@@ -375,19 +374,19 @@ public class TestQuantileDigest
         TestingTicker ticker = new TestingTicker();
         QuantileDigest digest = new QuantileDigest(1, ExponentialDecay.computeAlpha(0.5, 60), ticker, true);
 
-        addAll(digest, asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+        addAll(digest, ImmutableList.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 
         // should have no compressions with so few values and the allowed error
         assertEquals(digest.getCompressions(), 0);
         assertEquals(digest.getConfidenceFactor(), 0.0);
 
         ticker.increment(60, TimeUnit.SECONDS);
-        addAll(digest, asList(10, 11, 12, 13, 14, 15, 16, 17, 18, 19));
+        addAll(digest, ImmutableList.of(10, 11, 12, 13, 14, 15, 16, 17, 18, 19));
 
         // The first 10 values only contribute 5 to the counts per the alpha factor
         assertEquals(
-                digest.getHistogram(asList(10L, 20L)),
-                asList(new QuantileDigest.Bucket(5.0, 4.5), new QuantileDigest.Bucket(10.0, 14.5)));
+                digest.getHistogram(ImmutableList.of(10L, 20L)),
+                ImmutableList.of(new QuantileDigest.Bucket(5.0, 4.5), new QuantileDigest.Bucket(10.0, 14.5)));
 
         assertEquals(digest.getCount(), 15.0);
     }
@@ -402,14 +401,14 @@ public class TestQuantileDigest
         QuantileDigest digest = new QuantileDigest(1,
                 ExponentialDecay.computeAlpha(0.5, targetAgeInSeconds), ticker, false);
 
-        addAll(digest, asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+        addAll(digest, ImmutableList.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
         ticker.increment(targetAgeInSeconds, TimeUnit.SECONDS);
-        addAll(digest, asList(10, 11, 12, 13, 14, 15, 16, 17, 18, 19));
+        addAll(digest, ImmutableList.of(10, 11, 12, 13, 14, 15, 16, 17, 18, 19));
 
         // The first 10 values only contribute 5 to the counts per the alpha factor
         assertEquals(
-                digest.getHistogram(asList(10L, 20L)),
-                asList(new QuantileDigest.Bucket(5.0, 4.5), new QuantileDigest.Bucket(10.0, 14.5)));
+                digest.getHistogram(ImmutableList.of(10L, 20L)),
+                ImmutableList.of(new QuantileDigest.Bucket(5.0, 4.5), new QuantileDigest.Bucket(10.0, 14.5)));
 
         assertEquals(digest.getCount(), 15.0);
     }
@@ -516,8 +515,8 @@ public class TestQuantileDigest
         QuantileDigest a = new QuantileDigest(0.01);
         QuantileDigest b = new QuantileDigest(0.01);
 
-        addAll(a, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
-        addAll(b, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
+        addAll(a, ImmutableList.of(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
+        addAll(b, ImmutableList.of(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
 
         assertTrue(a.equivalent(b));
     }
@@ -529,8 +528,8 @@ public class TestQuantileDigest
         QuantileDigest a = new QuantileDigest(0.01);
         QuantileDigest b = new QuantileDigest(0.01);
 
-        addAll(a, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
-        addAll(b, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7, 8));
+        addAll(a, ImmutableList.of(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
+        addAll(b, ImmutableList.of(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7, 8));
 
         assertFalse(a.equivalent(b));
     }
@@ -613,7 +612,7 @@ public class TestQuantileDigest
         QuantileDigest b = new QuantileDigest(0.01);
 
         a.add(1);
-        addAll(b, asList(2, 3));
+        addAll(b, ImmutableList.of(2, 3));
 
         a.merge(b);
 
@@ -658,7 +657,7 @@ public class TestQuantileDigest
         a.add(6);
         a.compress();
 
-        List<Integer> values = asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5);
+        List<Integer> values = ImmutableList.of(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5);
 
         addAll(b, values);
         b.compress();
@@ -686,12 +685,12 @@ public class TestQuantileDigest
         QuantileDigest b = new QuantileDigest(1, 0, Ticker.systemTicker(), false);
         QuantileDigest pristineB = new QuantileDigest(1, 0, Ticker.systemTicker(), false);
 
-        addAll(a, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5));
+        addAll(a, ImmutableList.of(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5));
 
         a.compress();
 
-        addAll(b, asList(6, 7));
-        addAll(pristineB, asList(6, 7));
+        addAll(b, ImmutableList.of(6, 7));
+        addAll(pristineB, ImmutableList.of(6, 7));
 
         a.merge(b);
 
@@ -714,9 +713,9 @@ public class TestQuantileDigest
         QuantileDigest b = new QuantileDigest(0.01);
         QuantileDigest pristineB = new QuantileDigest(0.01);
 
-        addAll(a, asList(-1, 1));
-        addAll(b, asList(-2, 2));
-        addAll(pristineB, asList(-2, 2));
+        addAll(a, ImmutableList.of(-1, 1));
+        addAll(b, ImmutableList.of(-2, 2));
+        addAll(pristineB, ImmutableList.of(-2, 2));
         a.merge(b);
 
         a.validate();
@@ -776,7 +775,7 @@ public class TestQuantileDigest
             throws Exception
     {
         QuantileDigest digest = new QuantileDigest(1);
-        addAll(digest, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
+        addAll(digest, ImmutableList.of(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
 
         assertTrue(digest.equivalent(deserialize(serialize(digest))));
 
