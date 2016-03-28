@@ -253,7 +253,8 @@ public class TestQuantileDigest
         assertEquals(digest.getCompressions(), 0);
         assertEquals(digest.getConfidenceFactor(), 0.0);
 
-        assertEquals(digest.getQuantiles(ImmutableList.of(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)),
+        assertEquals(
+                digest.getQuantiles(ImmutableList.of(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)),
                 ImmutableList.of(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 9L));
     }
 
@@ -269,8 +270,10 @@ public class TestQuantileDigest
         assertEquals(digest.getCompressions(), 0);
         assertEquals(digest.getConfidenceFactor(), 0.0);
 
-        assertEquals(digest.getHistogram(ImmutableList.of(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)),
-                ImmutableList.of(new QuantileDigest.Bucket(0, Double.NaN),
+        assertEquals(
+                digest.getHistogram(ImmutableList.of(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)),
+                ImmutableList.of(
+                        new QuantileDigest.Bucket(0, Double.NaN),
                         new QuantileDigest.Bucket(1, 0),
                         new QuantileDigest.Bucket(1, 1),
                         new QuantileDigest.Bucket(1, 2),
@@ -282,15 +285,18 @@ public class TestQuantileDigest
                         new QuantileDigest.Bucket(1, 8),
                         new QuantileDigest.Bucket(1, 9)));
 
-        assertEquals(digest.getHistogram(ImmutableList.of(7L, 10L)),
-                ImmutableList.of(new QuantileDigest.Bucket(7, 3),
+        assertEquals(
+                digest.getHistogram(ImmutableList.of(7L, 10L)),
+                ImmutableList.of(
+                        new QuantileDigest.Bucket(7, 3),
                         new QuantileDigest.Bucket(3, 8)));
 
         // test some edge conditions
         assertEquals(digest.getHistogram(ImmutableList.of(0L)), ImmutableList.of(new QuantileDigest.Bucket(0, Double.NaN)));
         assertEquals(digest.getHistogram(ImmutableList.of(9L)), ImmutableList.of(new QuantileDigest.Bucket(9, 4)));
         assertEquals(digest.getHistogram(ImmutableList.of(10L)), ImmutableList.of(new QuantileDigest.Bucket(10, 4.5)));
-        assertEquals(digest.getHistogram(ImmutableList.of(Long.MAX_VALUE)),
+        assertEquals(
+                digest.getHistogram(ImmutableList.of(Long.MAX_VALUE)),
                 ImmutableList.of(new QuantileDigest.Bucket(10, 4.5)));
     }
 
