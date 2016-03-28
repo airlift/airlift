@@ -160,6 +160,11 @@ public class FullJsonResponseHandler<T>
             return value;
         }
 
+        public int getResponseSize()
+        {
+            return responseBytes.length;
+        }
+
         public byte[] getResponseBytes()
         {
             return responseBytes.clone();
