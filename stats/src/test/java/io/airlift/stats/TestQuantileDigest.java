@@ -800,13 +800,13 @@ public class TestQuantileDigest
         assertTrue(digest.equivalent(deserialize(serialize(digest))), format("Serialization roundtrip failed for input: %s", values));
     }
 
-    private QuantileDigest deserialize(byte[] result)
+    private static QuantileDigest deserialize(byte[] result)
             throws IOException
     {
         return QuantileDigest.deserialize(new DataInputStream(new ByteArrayInputStream(result)));
     }
 
-    private byte[] serialize(QuantileDigest digest)
+    private static byte[] serialize(QuantileDigest digest)
             throws IOException
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream(digest.estimatedSerializedSizeInBytes());
@@ -814,15 +814,13 @@ public class TestQuantileDigest
         return out.toByteArray();
     }
 
-    private void addAll(QuantileDigest digest, List<Integer> values)
+    private static void addAll(QuantileDigest digest, List<Integer> values)
     {
-        for (int value : values) {
-            digest.add(value);
-        }
+        values.forEach(digest::add);
         digest.validate();
     }
 
-    private void addRange(QuantileDigest digest, int from, int to)
+    private static void addRange(QuantileDigest digest, int from, int to)
     {
         for (int i = from; i < to; ++i) {
             digest.add(i);
