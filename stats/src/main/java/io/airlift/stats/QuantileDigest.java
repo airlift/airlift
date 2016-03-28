@@ -34,21 +34,21 @@ import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 
 /**
- * <p>Implements http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.132.7343, a data structure
- * for approximating quantiles by trading off error with memory requirements.</p>
- *
- * <p>The size of the digest is adjusted dynamically to achieve the error bound and requires
+ * Implements http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.132.7343, a data structure
+ * for approximating quantiles by trading off error with memory requirements.
+ * <p>
+ * The size of the digest is adjusted dynamically to achieve the error bound and requires
  * O(log2(U) / maxError) space, where <em>U</em> is the number of bits needed to represent the
  * domain of the values added to the digest. The error is defined as the discrepancy between the
  * real rank of the value returned in a quantile query and the rank corresponding to the queried
- * quantile.</p>
- *
- * <p>Thus, for a query for quantile <em>q</em> that returns value <em>v</em>, the error is
+ * quantile.
+ * <p>
+ * Thus, for a query for quantile <em>q</em> that returns value <em>v</em>, the error is
  * |rank(v) - q * N| / N, where N is the number of elements added to the digest and rank(v) is the
- * real rank of <em>v</em></p>
- *
- * <p>This class also supports exponential decay. The implementation is based on the ideas laid out
- * in http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.159.3978</p>
+ * real rank of <em>v</em>
+ * <p>
+ * This class also supports exponential decay. The implementation is based on the ideas laid out
+ * in http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.159.3978
  */
 @SuppressWarnings("AccessingNonPublicFieldOfAnotherObject")
 @NotThreadSafe
@@ -84,7 +84,7 @@ public final class QuantileDigest
     }
 
     /**
-     * <p>Create a QuantileDigest with a maximum error guarantee of "maxError" and no decay.
+     * Create a QuantileDigest with a maximum error guarantee of "maxError" and no decay.
      *
      * @param maxError the max error tolerance
      */
@@ -94,8 +94,8 @@ public final class QuantileDigest
     }
 
     /**
-     *<p>Create a QuantileDigest with a maximum error guarantee of "maxError" and exponential decay
-     * with factor "alpha".</p>
+     * Create a QuantileDigest with a maximum error guarantee of "maxError" and exponential decay
+     * with factor "alpha".
      *
      * @param maxError the max error tolerance
      * @param alpha the exponential decay factor
@@ -971,8 +971,9 @@ public final class QuantileDigest
         long branch = child.bits & (1L << (parent.level - 1));
         checkState(branch == 0 && isLeft || branch != 0 && !isLeft, "Value of child node is inconsistent with its branch");
 
-        checkState(parent.weightedCount >= ZERO_WEIGHT_THRESHOLD ||
-                child.weightedCount >= ZERO_WEIGHT_THRESHOLD || otherChild != null,
+        checkState(
+                parent.weightedCount >= ZERO_WEIGHT_THRESHOLD ||
+                        child.weightedCount >= ZERO_WEIGHT_THRESHOLD || otherChild != null,
                 "Found a linear chain of zero-weight nodes");
     }
 
@@ -996,7 +997,8 @@ public final class QuantileDigest
                     .append("\t\trank = same;\n");
 
             for (Node node : entry.getValue()) {
-                builder.append(format("\t\t%s [label=\"[%s..%s]@%s\\n%s\", shape=rect, style=filled,color=%s];\n",
+                builder.append(format(
+                        "\t\t%s [label=\"[%s..%s]@%s\\n%s\", shape=rect, style=filled,color=%s];\n",
                         idFor(node),
                         node.getLowerBound(),
                         node.getUpperBound(),
@@ -1037,7 +1039,7 @@ public final class QuantileDigest
     }
 
     /**
-     *  Convert a 64-bit lexicographically-sortable binary to a java long (two's complement representation)
+     * Convert a 64-bit lexicographically-sortable binary to a java long (two's complement representation)
      */
     private static long bitsToLong(long bits)
     {
