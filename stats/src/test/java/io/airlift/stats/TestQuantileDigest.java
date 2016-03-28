@@ -1,6 +1,7 @@
 package io.airlift.stats;
 
 import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.airlift.testing.TestingTicker;
 import org.testng.annotations.Test;
@@ -181,12 +182,16 @@ public class TestQuantileDigest
         addRange(digest, 1, 100);
 
         assertEquals(digest.getQuantileLowerBound(0.0), 1);
-        for(int i=1; i <= 10; i++) {
+        for (int i = 1; i <= 10; i++) {
             assertTrue(digest.getQuantileLowerBound(i / 10.0) <= i * 10);
             if (i > 5) {
-                assertTrue(digest.getQuantileLowerBound(i / 10.0) >= (i-5) * 10);
+                assertTrue(digest.getQuantileLowerBound(i / 10.0) >= (i - 5) * 10);
             }
         }
+
+        assertEquals(
+                digest.getQuantilesLowerBound(ImmutableList.of(0.0, 0.1, 0.2)),
+                ImmutableList.of(digest.getQuantileLowerBound(0.0), digest.getQuantileLowerBound(0.1), digest.getQuantileLowerBound(0.2)));
     }
 
     @Test
@@ -197,12 +202,16 @@ public class TestQuantileDigest
         addRange(digest, 1, 100);
 
         assertEquals(digest.getQuantileUpperBound(1.0), 99);
-        for(int i=0; i < 10; i++) {
+        for (int i = 0; i < 10; i++) {
             assertTrue(digest.getQuantileUpperBound(i / 10.0) >= i * 10);
             if (i < 5) {
                 assertTrue(digest.getQuantileUpperBound(i / 10.0) <= (i + 5) * 10);
             }
         }
+
+        assertEquals(
+                digest.getQuantilesUpperBound(ImmutableList.of(0.8, 0.9, 1.0)),
+                ImmutableList.of(digest.getQuantileUpperBound(0.8), digest.getQuantileUpperBound(0.9), digest.getQuantileUpperBound(1.0)));
     }
 
     @Test

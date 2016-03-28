@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
@@ -188,7 +187,7 @@ public class QuantileDigest
     /**
      * Get a lower bound on the quantiles for the given proportions. A returned q quantile is guaranteed to be within
      * the q - maxError and q quantiles.
-     *
+     * <p>
      * The input list of quantile proportions must be sorted in increasing order, and each value must be in the range [0, 1]
      */
     public List<Long> getQuantilesLowerBound(List<Double> quantiles)
@@ -198,17 +197,18 @@ public class QuantileDigest
             checkArgument(quantile >= 0 && quantile <= 1, "quantile must be between [0,1]");
         }
 
-        ArrayList<Double> reversedQ = new ArrayList(quantiles);
-        Collections.reverse(reversedQ);
+        List<Double> reversedQuantiles = ImmutableList.copyOf(quantiles).reverse();
 
-        final ImmutableList.Builder<Long> builder = ImmutableList.builder();
-        final PeekingIterator<Double> iterator = Iterators.peekingIterator(reversedQ.iterator());
+        ImmutableList.Builder<Long> builder = ImmutableList.builder();
+        PeekingIterator<Double> iterator = Iterators.peekingIterator(reversedQuantiles.iterator());
 
-        postOrderTraversal(root, new Callback() {
-            private double sum = 0;
+        postOrderTraversal(root, new Callback()
+        {
+            private double sum;
 
-
-            public boolean process(Node node) {
+            @Override
+            public boolean process(Node node)
+            {
                 sum += node.weightedCount;
 
                 while (iterator.hasNext() && sum > (1.0 - iterator.peek()) * weightedCount) {
@@ -232,21 +232,17 @@ public class QuantileDigest
             iterator.next();
         }
 
-        List<Long> quantileValues = builder.build();
-        Collections.reverse(quantileValues);
-        return quantileValues;
+        return builder.build().reverse();
     }
 
     /**
      * Get an upper bound on the quantiles for the given proportions. A returned q quantile is guaranteed to be within
      * the q and q + maxError quantiles.
-     *
+     * <p>
      * The input list of quantile proportions must be sorted in increasing order, and each value must be in the range [0, 1]
      */
     public List<Long> getQuantilesUpperBound(List<Double> quantiles)
     {
-
-
         checkArgument(Ordering.natural().isOrdered(quantiles), "quantiles must be sorted in increasing order");
         for (double quantile : quantiles) {
             checkArgument(quantile >= 0 && quantile <= 1, "quantile must be between [0,1]");
