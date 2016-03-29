@@ -42,8 +42,8 @@ public class TestHttpServerCipher
 {
     private static final String KEY_STORE_PATH = constructKeyStorePath();
     private static final String KEY_STORE_PASSWORD = "airlift";
-    public static final String CIPHER_1 = "TLS_RSA_WITH_AES_128_CBC_SHA";
-    public static final String CIPHER_2 = "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA";
+    public static final String CIPHER_1 = "TLS_RSA_WITH_AES_128_CBC_SHA256";
+    public static final String CIPHER_2 = "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256";
     public static final String CIPHER_3 = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256";
 
     private File tempDir;
