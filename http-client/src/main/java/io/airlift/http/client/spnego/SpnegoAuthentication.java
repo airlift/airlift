@@ -32,6 +32,7 @@ import java.security.PrivilegedAction;
 import java.util.Base64;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
@@ -86,6 +87,11 @@ public class SpnegoAuthentication
         System.setProperty("java.security.krb5.conf", kerberosConfig.getAbsolutePath());
     }
 
+    public void shutdown()
+    {
+        releaseSessionNoThrow();
+    }
+
     @Override
     public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes attributes)
     {
@@ -102,15 +108,17 @@ public class SpnegoAuthentication
             @Override
             public void apply(Request request)
             {
+                Session session = null;
                 GSSContext context = null;
                 try {
                     String servicePrincipal = makeServicePrincipal(remoteServiceName, normalizedUri.getHost());
-                    Session session = getSession();
+                    session = getSession();
+                    GSSCredential clientCredential = session.getClientCredential();
                     context = doAs(session.getLoginContext().getSubject(), () -> {
                         GSSContext result = GSS_MANAGER.createContext(
                                 GSS_MANAGER.createName(servicePrincipal, NT_HOSTBASED_SERVICE),
                                 SPNEGO_OID,
-                                session.getClientCredential(),
+                                clientCredential,
                                 INDEFINITE_LIFETIME);
 
                         result.requestMutualAuth(true);
@@ -143,6 +151,8 @@ public class SpnegoAuthentication
                     catch (GSSException e) {
                         // ignore
                     }
+
+                    releaseSessionNoThrow();
                 }
             }
         };
@@ -159,7 +169,6 @@ public class SpnegoAuthentication
             throws LoginException, GSSException
     {
         if (clientSession == null || clientSession.getClientCredential().getRemainingLifetime() < MIN_CREDENTIAL_LIFE_TIME.getValue(TimeUnit.SECONDS)) {
-            // TODO: do we need to call logout() on the LoginContext?
 
             LoginContext loginContext = new LoginContext("", null, null, new Configuration()
             {
@@ -203,9 +212,13 @@ public class SpnegoAuthentication
                     KERBEROS_OID,
                     INITIATE_ONLY));
 
+            // Release the reference to the old client Session
+            releaseSessionNoThrow();
+
             clientSession = new Session(loginContext, clientCredential);
         }
 
+        clientSession.addRef();
         return clientSession;
     }
 
@@ -248,10 +261,28 @@ public class SpnegoAuthentication
         });
     }
 
+    private void releaseSessionNoThrow()
+    {
+        if (clientSession != null) {
+            try {
+                clientSession.release();
+            }
+            catch (LoginException e) {
+                // ignore
+            }
+        }
+    }
+
     private static class Session
     {
         private final LoginContext loginContext;
         private final GSSCredential clientCredential;
+
+        // Reference count allowing safe cleanup of the loginContext. It is initialized as 1 and decremented when the
+        // Session object is replaced with a new one due to expiration or when the SpnegoAuthentication object is
+        // being shut down. The addRef/release methods are called to guard the lifetime of the Session object when
+        // it is being used.
+        private AtomicInteger refCount;
 
         public Session(LoginContext loginContext, GSSCredential clientCredential)
                 throws LoginException
@@ -261,6 +292,7 @@ public class SpnegoAuthentication
 
             this.loginContext = loginContext;
             this.clientCredential = clientCredential;
+            this.refCount = new AtomicInteger(1);
         }
 
         public LoginContext getLoginContext()
@@ -271,6 +303,19 @@ public class SpnegoAuthentication
         public GSSCredential getClientCredential()
         {
             return clientCredential;
+        }
+
+        public int addRef()
+        {
+            return refCount.incrementAndGet();
+        }
+
+        public void release()
+                throws LoginException
+        {
+            if (refCount.decrementAndGet() == 0) {
+                loginContext.logout();
+            }
         }
     }
 }
