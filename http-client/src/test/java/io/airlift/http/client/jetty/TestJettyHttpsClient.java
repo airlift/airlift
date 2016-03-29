@@ -11,9 +11,6 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import javax.net.ssl.SSLHandshakeException;
-
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
@@ -75,7 +72,7 @@ public class TestJettyHttpsClient
         }
     }
 
-    @Test(expectedExceptions = {SSLHandshakeException.class, EOFException.class})
+    @Test(expectedExceptions = {IOException.class})
     public void testCertHostnameMismatch()
             throws Exception
     {
