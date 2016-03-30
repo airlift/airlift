@@ -7,6 +7,7 @@ import javax.servlet.AsyncContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ServletAsyncContextDelegateProvider
@@ -24,6 +25,7 @@ public class ServletAsyncContextDelegateProvider
         private final HttpServletRequest request;
         private final HttpServletResponse response;
         private final AtomicReference<AsyncContext> asyncContext = new AtomicReference<>();
+        private final AtomicBoolean completed = new AtomicBoolean();
 
         private ServletAsyncContextDelegate(HttpServletRequest request, HttpServletResponse response)
         {
@@ -48,16 +50,16 @@ public class ServletAsyncContextDelegateProvider
         @Override
         public void complete()
         {
-            // we only want to complete the request once, so clear the atomic
-            AsyncContext asyncContext = this.asyncContext.getAndSet(null);
-
             // ignore duplicate complete calls
-            if (asyncContext == null) {
+            if (!completed.compareAndSet(false, true)) {
                 return;
             }
 
-            // complete the request
-            asyncContext.complete();
+            // complete the request, if it was suspended
+            AsyncContext asyncContext = this.asyncContext.get();
+            if (asyncContext != null) {
+                asyncContext.complete();
+            }
         }
     }
 }
