@@ -22,7 +22,7 @@ public class TestJettyHttpClient
     public void setUpHttpClient()
     {
         jettyIoPool = new JettyIoPool("test-shared", new JettyIoPoolConfig());
-        httpClient = new JettyHttpClient(new HttpClientConfig(), jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()));
+        httpClient = new JettyHttpClient(createClientConfig(), jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()));
     }
 
     @AfterClass(alwaysRun = true)
@@ -31,6 +31,12 @@ public class TestJettyHttpClient
     {
         closeQuietly(httpClient);
         closeQuietly(jettyIoPool);
+    }
+
+    @Override
+    protected HttpClientConfig createClientConfig()
+    {
+        return new HttpClientConfig();
     }
 
     @Override
