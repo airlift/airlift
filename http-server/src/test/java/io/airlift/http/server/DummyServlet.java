@@ -33,5 +33,6 @@ class DummyServlet
         if (req.getUserPrincipal() != null) {
             resp.getOutputStream().write(req.getUserPrincipal().getName().getBytes());
         }
+        resp.setHeader("X-Protocol", req.getProtocol());
     }
 }

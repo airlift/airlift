@@ -36,6 +36,7 @@ public class HttpClientConfig
     public static final String JAVAX_NET_SSL_KEY_STORE = "javax.net.ssl.keyStore";
     public static final String JAVAX_NET_SSL_KEY_STORE_PASSWORD = "javax.net.ssl.keyStorePassword";
 
+    private boolean http2Enabled;
     private Duration connectTimeout = new Duration(1, TimeUnit.SECONDS);
     private Duration requestTimeout = new Duration(5, TimeUnit.MINUTES);
     private Duration idleTimeout = new Duration(1, TimeUnit.MINUTES);
@@ -50,6 +51,19 @@ public class HttpClientConfig
     private boolean authenticationEnabled;
     private String kerberosPrincipal;
     private String kerberosRemoteServiceName;
+
+    public boolean isHttp2Enabled()
+    {
+        return http2Enabled;
+    }
+
+    @Config("http-client.http2.enabled")
+    @ConfigDescription("Enable the HTTP/2 transport")
+    public HttpClientConfig setHttp2Enabled(boolean http2Enabled)
+    {
+        this.http2Enabled = http2Enabled;
+        return this;
+    }
 
     @NotNull
     @MinDuration("0ms")

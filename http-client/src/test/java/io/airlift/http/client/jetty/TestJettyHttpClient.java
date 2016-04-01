@@ -36,7 +36,8 @@ public class TestJettyHttpClient
     @Override
     protected HttpClientConfig createClientConfig()
     {
-        return new HttpClientConfig();
+        return new HttpClientConfig()
+                .setHttp2Enabled(false);
     }
 
     @Override

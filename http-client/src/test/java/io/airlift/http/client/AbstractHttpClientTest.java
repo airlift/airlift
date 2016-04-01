@@ -42,7 +42,6 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.ArrayList;
 import java.util.List;
@@ -77,6 +76,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;
 
 @Test(singleThreaded = true)
@@ -340,8 +340,9 @@ public abstract class AbstractHttpClientTest
                 .setUri(baseURI)
                 .build();
 
-        String body = executeRequest(request, createStringResponseHandler()).getBody();
-        assertEquals(body, "body text");
+        StringResponse response = executeRequest(request, createStringResponseHandler());
+        assertEquals(response.getStatusCode(), 500);
+        assertEquals(response.getBody(), "body text");
     }
 
     @Test
@@ -524,7 +525,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(servlet.getRequestBytes(), new byte[] {1, 2, 5});
     }
 
-    @Test(expectedExceptions = {SocketTimeoutException.class, TimeoutException.class, ClosedChannelException.class})
+    @Test(expectedExceptions = {IOException.class, TimeoutException.class})
     public void testReadTimeout()
             throws Exception
     {
@@ -549,8 +550,9 @@ public abstract class AbstractHttpClientTest
                 .setUri(baseURI)
                 .build();
 
-        String body = executeRequest(request, createStringResponseHandler()).getBody();
-        assertEquals(body, "body text");
+        StringResponse response = executeRequest(request, createStringResponseHandler());
+        assertEquals(response.getStatusCode(), 200);
+        assertEquals(response.getBody(), "body text");
     }
 
     @Test
@@ -608,7 +610,13 @@ public abstract class AbstractHttpClientTest
 
         String statusMessage = executeRequest(request, createStatusResponseHandler()).getStatusMessage();
 
-        assertEquals(statusMessage, "message");
+        if (createClientConfig().isHttp2Enabled()) {
+            // reason phrases are not supported in HTTP/2
+            assertNull(statusMessage);
+        }
+        else {
+            assertEquals(statusMessage, "message");
+        }
     }
 
     @Test(expectedExceptions = UnexpectedResponseException.class)

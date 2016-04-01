@@ -44,6 +44,8 @@ import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http2.client.HTTP2Client;
+import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Sweeper;
@@ -94,6 +96,7 @@ public class JettyHttpClient
     private static final String PRESTO_STATS_KEY = "presto_stats";
     private static final long SWEEP_PERIOD_MILLIS = 5000;
     private static final String REALM_IN_CHALLENGE = "X-Airlift-Realm-In-Challenge";
+    private static final int CLIENT_TRANSPORT_SELECTORS = 2;
 
     private final Optional<JettyIoPool> anonymousPool;
     private final HttpClient httpClient;
@@ -160,7 +163,16 @@ public class JettyHttpClient
             sslContextFactory.setKeyStorePassword(config.getKeyStorePassword());
         }
 
-        HttpClientTransportOverHTTP transport = new HttpClientTransportOverHTTP(2);
+        HttpClientTransport transport;
+        if (config.isHttp2Enabled()) {
+            HTTP2Client client = new HTTP2Client();
+            client.setSelectors(CLIENT_TRANSPORT_SELECTORS);
+            transport = new HttpClientTransportOverHTTP2(client);
+        }
+        else {
+            transport = new HttpClientTransportOverHTTP(CLIENT_TRANSPORT_SELECTORS);
+        }
+
         if (authenticationEnabled) {
             requireNonNull(kerberosConfig.getConfig(), "kerberos config path is null");
             requireNonNull(config.getKerberosRemoteServiceName(), "kerberos remote service name is null");
@@ -169,6 +181,7 @@ public class JettyHttpClient
         else {
             httpClient = new HttpClient(transport, sslContextFactory);
         }
+
         httpClient.setMaxConnectionsPerDestination(config.getMaxConnectionsPerServer());
         httpClient.setMaxRequestsQueuedPerDestination(config.getMaxRequestsQueuedPerDestination());
 
@@ -333,6 +346,9 @@ public class JettyHttpClient
             Throwable cause = e.getCause();
             if (cause instanceof Exception) {
                 return responseHandler.handleException(request, (Exception) cause);
+            }
+            else if ((cause instanceof NoClassDefFoundError) && cause.getMessage().endsWith("ALPNClientConnection")) {
+                return responseHandler.handleException(request, new RuntimeException("HTTPS cannot be used when HTTP/2 is enabled", cause));
             }
             else {
                 return responseHandler.handleException(request, new RuntimeException(cause));
