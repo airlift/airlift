@@ -17,6 +17,7 @@ package io.airlift.http.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
 
@@ -34,15 +35,15 @@ import java.util.Map;
 public final class EchoServlet
         extends HttpServlet
 {
-    String requestMethod;
-    URI requestUri;
-    final ListMultimap<String, String> requestHeaders = ArrayListMultimap.create();
-    byte[] requestBytes;
+    private String requestMethod;
+    private URI requestUri;
+    private final ListMultimap<String, String> requestHeaders = ArrayListMultimap.create();
+    private byte[] requestBytes;
 
-    int responseStatusCode = 200;
-    String responseStatusMessage;
-    final ListMultimap<String, String> responseHeaders = ArrayListMultimap.create();
-    String responseBody;
+    private int responseStatusCode = 200;
+    private String responseStatusMessage;
+    private final ListMultimap<String, String> responseHeaders = ArrayListMultimap.create();
+    private String responseBody;
 
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response)
@@ -88,5 +89,45 @@ public final class EchoServlet
         if (responseBody != null) {
             response.getOutputStream().write(responseBody.getBytes(Charsets.UTF_8));
         }
+    }
+
+    public String getRequestMethod()
+    {
+        return requestMethod;
+    }
+
+    public URI getRequestUri()
+    {
+        return requestUri;
+    }
+
+    public ListMultimap<String, String> getRequestHeaders()
+    {
+        return ImmutableListMultimap.copyOf(requestHeaders);
+    }
+
+    public byte[] getRequestBytes()
+    {
+        return requestBytes.clone();
+    }
+
+    public void setResponseStatusCode(int responseStatusCode)
+    {
+        this.responseStatusCode = responseStatusCode;
+    }
+
+    public void setResponseStatusMessage(String responseStatusMessage)
+    {
+        this.responseStatusMessage = responseStatusMessage;
+    }
+
+    public void addResponseHeader(String name, String value)
+    {
+        this.responseHeaders.put(name, value);
+    }
+
+    public void setResponseBody(String responseBody)
+    {
+        this.responseBody = responseBody;
     }
 }
