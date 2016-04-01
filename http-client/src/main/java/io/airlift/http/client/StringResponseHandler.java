@@ -78,10 +78,10 @@ public class StringResponseHandler implements ResponseHandler<StringResponse, Ru
     {
         private final int statusCode;
         private final String statusMessage;
-        private final ListMultimap<String, String> headers;
+        private final ListMultimap<HeaderName, String> headers;
         private final String body;
 
-        public StringResponse(int statusCode, String statusMessage, ListMultimap<String, String> headers, String body)
+        public StringResponse(int statusCode, String statusMessage, ListMultimap<HeaderName, String> headers, String body)
         {
             this.statusCode = statusCode;
             this.statusMessage = statusMessage;
@@ -106,14 +106,16 @@ public class StringResponseHandler implements ResponseHandler<StringResponse, Ru
 
         public String getHeader(String name)
         {
-            List<String> values = getHeaders().get(name);
-            if (values.isEmpty()) {
-                return null;
-            }
-            return values.get(0);
+            List<String> values = getHeaders().get(HeaderName.of(name));
+            return values.isEmpty() ? null : values.get(0);
         }
 
-        public ListMultimap<String, String> getHeaders()
+        public List<String> getHeaders(String name)
+        {
+            return headers.get(HeaderName.of(name));
+        }
+
+        public ListMultimap<HeaderName, String> getHeaders()
         {
             return headers;
         }

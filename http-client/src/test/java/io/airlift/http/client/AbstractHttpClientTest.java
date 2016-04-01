@@ -1,8 +1,8 @@
 package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ListMultimap;
 import io.airlift.http.client.HttpClient.HttpResponseFuture;
+import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.log.Logging;
 import io.airlift.testing.Closeables;
@@ -68,6 +68,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
 
 @Test(singleThreaded = true)
@@ -360,6 +361,24 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
+    public void testResponseHeadersCaseInsensitive()
+            throws Exception
+    {
+        URI uri = baseURI.resolve("/road/to/nowhere");
+        Request request = prepareGet()
+                .setUri(uri)
+                .build();
+
+        Response response = executeRequest(request, new PassThroughResponseHandler());
+
+        assertNotNull(response.getHeader("date"));
+        assertNotNull(response.getHeader("DATE"));
+
+        assertEquals(response.getHeaders("date").size(), 1);
+        assertEquals(response.getHeaders("DATE").size(), 1);
+    }
+
+    @Test
     public void testQuotedSpace()
         throws Exception
     {
@@ -383,19 +402,19 @@ public abstract class AbstractHttpClientTest
                 .setUri(uri)
                 .build();
 
-        ListMultimap<String, String> headers1 = executeRequest(request, createStatusResponseHandler()).getHeaders();
+        StatusResponse response1 = executeRequest(request, createStatusResponseHandler());
         Thread.sleep(1000);
-        ListMultimap<String, String> headers2 = executeRequest(request, createStatusResponseHandler()).getHeaders();
+        StatusResponse response2 = executeRequest(request, createStatusResponseHandler());
         Thread.sleep(1000);
-        ListMultimap<String, String> headers3 = executeRequest(request, createStatusResponseHandler()).getHeaders();
+        StatusResponse response3 = executeRequest(request, createStatusResponseHandler());
 
-        assertEquals(headers1.get("remotePort").size(), 1);
-        assertEquals(headers2.get("remotePort").size(), 1);
-        assertEquals(headers3.get("remotePort").size(), 1);
+        assertNotNull(response1.getHeader("remotePort"));
+        assertNotNull(response2.getHeader("remotePort"));
+        assertNotNull(response3.getHeader("remotePort"));
 
-        int port1 = Integer.parseInt(headers1.get("remotePort").get(0));
-        int port2 = Integer.parseInt(headers2.get("remotePort").get(0));
-        int port3 = Integer.parseInt(headers3.get("remotePort").get(0));
+        int port1 = Integer.parseInt(response1.getHeader("remotePort"));
+        int port2 = Integer.parseInt(response2.getHeader("remotePort"));
+        int port3 = Integer.parseInt(response3.getHeader("remotePort"));
 
         assertEquals(port2, port1);
         assertEquals(port3, port1);
@@ -547,10 +566,10 @@ public abstract class AbstractHttpClientTest
                 .setUri(baseURI)
                 .build();
 
-        ListMultimap<String, String> headers = executeRequest(request, createStatusResponseHandler()).getHeaders();
+        StatusResponse response = executeRequest(request, createStatusResponseHandler());
 
-        assertEquals(headers.get("foo"), ImmutableList.of("bar"));
-        assertEquals(headers.get("dupe"), ImmutableList.of("first", "second"));
+        assertEquals(response.getHeaders("foo"), ImmutableList.of("bar"));
+        assertEquals(response.getHeaders("dupe"), ImmutableList.of("first", "second"));
     }
 
     @Test
@@ -826,6 +845,22 @@ public abstract class AbstractHttpClientTest
                 throws Exception
         {
             throw new UnsupportedOperationException();
+        }
+    }
+
+    private static class PassThroughResponseHandler
+            implements ResponseHandler<Response, RuntimeException>
+    {
+        @Override
+        public Response handleException(Request request, Exception exception)
+        {
+            throw propagate(exception);
+        }
+
+        @Override
+        public Response handle(Request request, Response response)
+        {
+            return response;
         }
     }
 

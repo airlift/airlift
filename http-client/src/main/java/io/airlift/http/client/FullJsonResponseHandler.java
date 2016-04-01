@@ -80,14 +80,14 @@ public class FullJsonResponseHandler<T>
     {
         private final int statusCode;
         private final String statusMessage;
-        private final ListMultimap<String, String> headers;
+        private final ListMultimap<HeaderName, String> headers;
         private final boolean hasValue;
         private final byte[] jsonBytes;
         private final byte[] responseBytes;
         private final T value;
         private final IllegalArgumentException exception;
 
-        public JsonResponse(int statusCode, String statusMessage, ListMultimap<String, String> headers, byte[] responseBytes)
+        public JsonResponse(int statusCode, String statusMessage, ListMultimap<HeaderName, String> headers, byte[] responseBytes)
         {
             this.statusCode = statusCode;
             this.statusMessage = statusMessage;
@@ -101,7 +101,7 @@ public class FullJsonResponseHandler<T>
         }
 
         @SuppressWarnings("ThrowableInstanceNeverThrown")
-        public JsonResponse(int statusCode, String statusMessage, ListMultimap<String, String> headers, JsonCodec<T> jsonCodec, byte[] jsonBytes)
+        public JsonResponse(int statusCode, String statusMessage, ListMultimap<HeaderName, String> headers, JsonCodec<T> jsonCodec, byte[] jsonBytes)
         {
             this.statusCode = statusCode;
             this.statusMessage = statusMessage;
@@ -135,14 +135,16 @@ public class FullJsonResponseHandler<T>
 
         public String getHeader(String name)
         {
-            List<String> values = getHeaders().get(name);
-            if (values.isEmpty()) {
-                return null;
-            }
-            return values.get(0);
+            List<String> values = getHeaders().get(HeaderName.of(name));
+            return values.isEmpty() ? null : values.get(0);
         }
 
-        public ListMultimap<String, String> getHeaders()
+        public List<String> getHeaders(String name)
+        {
+            return headers.get(HeaderName.of(name));
+        }
+
+        public ListMultimap<HeaderName, String> getHeaders()
         {
             return headers;
         }
@@ -204,10 +206,10 @@ public class FullJsonResponseHandler<T>
 
         private Charset getCharset()
         {
-            List<String> values = headers.get(CONTENT_TYPE);
-            if ((values != null) && !values.isEmpty()) {
+            String value = getHeader(CONTENT_TYPE);
+            if (value != null) {
                 try {
-                    return MediaType.parse(values.get(0)).charset().or(UTF_8);
+                    return MediaType.parse(value).charset().or(UTF_8);
                 }
                 catch (RuntimeException ignored) {
                 }
