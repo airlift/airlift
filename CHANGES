@@ -1,6 +1,8 @@
 * 0.126
 
 - Upgrade Jetty to 9.3.8.v20160314
+- Upgrade Jersey to 2.22.2
+- Add getQuantilesUpperBound() and getQuantilesLowerBound() to QuantileDigest
 
 * 0.124
 
