@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -108,13 +107,6 @@ public abstract class AbstractHttpClientTest
     {
         servlet = new EchoServlet();
 
-        int port;
-        try (ServerSocket socket = new ServerSocket()) {
-            socket.bind(new InetSocketAddress(0));
-            port = socket.getLocalPort();
-        }
-        baseURI = new URI(scheme, null, host, port, null, null, null);
-
         Server server = new Server();
 
         HttpConfiguration httpConfiguration = new HttpConfiguration();
@@ -137,7 +129,6 @@ public abstract class AbstractHttpClientTest
 
         connector.setIdleTimeout(30000);
         connector.setName(scheme);
-        connector.setPort(port);
 
         server.addConnector(connector);
 
@@ -150,6 +141,8 @@ public abstract class AbstractHttpClientTest
 
         this.server = server;
         server.start();
+
+        baseURI = new URI(scheme, null, host, connector.getLocalPort(), null, null, null);
     }
 
     @AfterMethod(alwaysRun = true)
