@@ -69,11 +69,12 @@ public class SpnegoAuthentication
     private final File credentialCache;
     private final String principal;
     private final String remoteServiceName;
+    private final boolean useCanonicalHostname;
 
     @GuardedBy("this")
     private Session clientSession;
 
-    public SpnegoAuthentication(File keytab, File kerberosConfig, File credentialCache, String principal, String remoteServiceName)
+    public SpnegoAuthentication(File keytab, File kerberosConfig, File credentialCache, String principal, String remoteServiceName, boolean useCanonicalHostname)
     {
         requireNonNull(kerberosConfig, "kerberosConfig is null");
         requireNonNull(remoteServiceName, "remoteServiceName is null");
@@ -82,6 +83,7 @@ public class SpnegoAuthentication
         this.credentialCache = credentialCache;
         this.principal = principal;
         this.remoteServiceName = remoteServiceName;
+        this.useCanonicalHostname = useCanonicalHostname;
 
         System.setProperty("java.security.krb5.conf", kerberosConfig.getAbsolutePath());
     }
@@ -104,7 +106,7 @@ public class SpnegoAuthentication
             {
                 GSSContext context = null;
                 try {
-                    String servicePrincipal = makeServicePrincipal(remoteServiceName, normalizedUri.getHost());
+                    String servicePrincipal = makeServicePrincipal(remoteServiceName, normalizedUri.getHost(), useCanonicalHostname);
                     Session session = getSession();
                     context = doAs(session.getLoginContext().getSubject(), () -> {
                         GSSContext result = GSS_MANAGER.createContext(
@@ -209,7 +211,16 @@ public class SpnegoAuthentication
         return clientSession;
     }
 
-    private static String makeServicePrincipal(String serviceName, String hostName)
+    private static String makeServicePrincipal(String serviceName, String hostName, boolean useCanonicalHostname)
+    {
+        String serviceHostName = hostName;
+        if (useCanonicalHostname) {
+            serviceHostName = canonicalizeServiceHostname(hostName);
+        }
+        return format("%s@%s", serviceName, serviceHostName.toLowerCase(Locale.US));
+    }
+
+    private static String canonicalizeServiceHostname(String hostName)
     {
         try {
             InetAddress address = InetAddress.getByName(hostName);
@@ -220,10 +231,8 @@ public class SpnegoAuthentication
             else {
                 fullHostName = address.getCanonicalHostName();
             }
-
             checkState(!fullHostName.equalsIgnoreCase("localhost"), "Fully qualified name of localhost should not resolve to 'localhost'. System configuration error?");
-
-            return format("%s@%s", serviceName, fullHostName.toLowerCase(Locale.US));
+            return fullHostName;
         }
         catch (UnknownHostException e) {
             throw Throwables.propagate(e);

@@ -1362,7 +1362,8 @@ public class JettyHttpClient
                     kerberosConfig.getConfig(),
                     kerberosConfig.getCredentialCache(),
                     config.getKerberosPrincipal(),
-                    config.getKerberosRemoteServiceName());
+                    config.getKerberosRemoteServiceName(),
+                    kerberosConfig.isUseCanonicalHostname());
 
             authenticationStore = new SpnegoAuthenticationStore(spnego);
         }

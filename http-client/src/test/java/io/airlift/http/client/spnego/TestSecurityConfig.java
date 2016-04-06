@@ -28,7 +28,8 @@ public class TestSecurityConfig
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(KerberosConfig.class)
                 .setConfig(null)
                 .setKeytab(null)
-                .setCredentialCache(null));
+                .setCredentialCache(null)
+                .setUseCanonicalHostname(true));
     }
 
     @Test
@@ -38,12 +39,14 @@ public class TestSecurityConfig
                 .put("http.authentication.krb5.config", "/etc/krb5.conf")
                 .put("http.authentication.krb5.keytab", "/etc/krb5.keytab")
                 .put("http.authentication.krb5.credential-cache", "/etc/krb5.ccache")
+                .put("http.authentication.krb5.use-canonical-hostname", "false")
                 .build();
 
         KerberosConfig expected = new KerberosConfig()
                 .setConfig(new File("/etc/krb5.conf"))
                 .setKeytab(new File("/etc/krb5.keytab"))
-                .setCredentialCache(new File("/etc/krb5.ccache"));
+                .setCredentialCache(new File("/etc/krb5.ccache"))
+                .setUseCanonicalHostname(false);
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

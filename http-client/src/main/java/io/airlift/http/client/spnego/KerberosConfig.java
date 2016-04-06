@@ -10,6 +10,7 @@ public class KerberosConfig
     private File credentialCache;
     private File keytab;
     private File config;
+    private boolean useCanonicalHostname = true;
 
     public File getCredentialCache()
     {
@@ -47,6 +48,19 @@ public class KerberosConfig
     public KerberosConfig setConfig(File config)
     {
         this.config = config;
+        return this;
+    }
+
+    public boolean isUseCanonicalHostname()
+    {
+        return useCanonicalHostname;
+    }
+
+    @Config("http.authentication.krb5.use-canonical-hostname")
+    @ConfigDescription("Canonicalize service hostname using the DNS reverse lookup")
+    public KerberosConfig setUseCanonicalHostname(boolean useCanonicalHostname)
+    {
+        this.useCanonicalHostname = useCanonicalHostname;
         return this;
     }
 }
