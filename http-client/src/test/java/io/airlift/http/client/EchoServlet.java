@@ -30,6 +30,7 @@ import javax.servlet.http.HttpUtils;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 public final class EchoServlet
@@ -37,7 +38,7 @@ public final class EchoServlet
 {
     private String requestMethod;
     private URI requestUri;
-    private final ListMultimap<String, String> requestHeaders = ArrayListMultimap.create();
+    private final ListMultimap<HeaderName, String> requestHeaders = ArrayListMultimap.create();
     private byte[] requestBytes;
 
     private int responseStatusCode = 200;
@@ -57,7 +58,7 @@ public final class EchoServlet
 
         requestHeaders.clear();
         for (String name : Collections.list(request.getHeaderNames())) {
-            requestHeaders.putAll(name, Collections.list(request.getHeaders(name)));
+            requestHeaders.putAll(HeaderName.of(name), Collections.list(request.getHeaders(name)));
         }
 
         requestBytes = ByteStreams.toByteArray(request.getInputStream());
@@ -101,9 +102,14 @@ public final class EchoServlet
         return requestUri;
     }
 
-    public ListMultimap<String, String> getRequestHeaders()
+    public ListMultimap<HeaderName, String> getRequestHeaders()
     {
         return ImmutableListMultimap.copyOf(requestHeaders);
+    }
+
+    public List<String> getRequestHeaders(String name)
+    {
+        return requestHeaders.get(HeaderName.of(name));
     }
 
     public byte[] getRequestBytes()

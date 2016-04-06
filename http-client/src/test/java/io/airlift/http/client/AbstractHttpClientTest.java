@@ -51,6 +51,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.base.Throwables.propagateIfInstanceOf;
 import static com.google.common.base.Throwables.propagateIfPossible;
+import static com.google.common.net.HttpHeaders.ACCEPT_ENCODING;
 import static io.airlift.concurrent.Threads.threadsNamed;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
@@ -313,9 +314,9 @@ public abstract class AbstractHttpClientTest
         assertEquals(statusCode, 200);
         assertEquals(servlet.getRequestMethod(), "DELETE");
         assertEquals(servlet.getRequestUri(), uri);
-        assertEquals(servlet.getRequestHeaders().get("foo"), ImmutableList.of("bar"));
-        assertEquals(servlet.getRequestHeaders().get("dupe"), ImmutableList.of("first", "second"));
-        assertEquals(servlet.getRequestHeaders().get("x-custom-filter"), ImmutableList.of("custom value"));
+        assertEquals(servlet.getRequestHeaders("foo"), ImmutableList.of("bar"));
+        assertEquals(servlet.getRequestHeaders("dupe"), ImmutableList.of("first", "second"));
+        assertEquals(servlet.getRequestHeaders("x-custom-filter"), ImmutableList.of("custom value"));
     }
 
     @Test
@@ -355,9 +356,9 @@ public abstract class AbstractHttpClientTest
         else {
             assertEquals(servlet.getRequestUri(), uri);
         }
-        assertEquals(servlet.getRequestHeaders().get("foo"), ImmutableList.of("bar"));
-        assertEquals(servlet.getRequestHeaders().get("dupe"), ImmutableList.of("first", "second"));
-        assertEquals(servlet.getRequestHeaders().get("x-custom-filter"), ImmutableList.of("custom value"));
+        assertEquals(servlet.getRequestHeaders("foo"), ImmutableList.of("bar"));
+        assertEquals(servlet.getRequestHeaders("dupe"), ImmutableList.of("first", "second"));
+        assertEquals(servlet.getRequestHeaders("x-custom-filter"), ImmutableList.of("custom value"));
     }
 
     @Test
@@ -437,9 +438,9 @@ public abstract class AbstractHttpClientTest
         assertEquals(statusCode, 200);
         assertEquals(servlet.getRequestMethod(), "POST");
         assertEquals(servlet.getRequestUri(), uri);
-        assertEquals(servlet.getRequestHeaders().get("foo"), ImmutableList.of("bar"));
-        assertEquals(servlet.getRequestHeaders().get("dupe"), ImmutableList.of("first", "second"));
-        assertEquals(servlet.getRequestHeaders().get("x-custom-filter"), ImmutableList.of("custom value"));
+        assertEquals(servlet.getRequestHeaders("foo"), ImmutableList.of("bar"));
+        assertEquals(servlet.getRequestHeaders("dupe"), ImmutableList.of("first", "second"));
+        assertEquals(servlet.getRequestHeaders("x-custom-filter"), ImmutableList.of("custom value"));
     }
 
     @Test
@@ -458,9 +459,9 @@ public abstract class AbstractHttpClientTest
         assertEquals(statusCode, 200);
         assertEquals(servlet.getRequestMethod(), "PUT");
         assertEquals(servlet.getRequestUri(), uri);
-        assertEquals(servlet.getRequestHeaders().get("foo"), ImmutableList.of("bar"));
-        assertEquals(servlet.getRequestHeaders().get("dupe"), ImmutableList.of("first", "second"));
-        assertEquals(servlet.getRequestHeaders().get("x-custom-filter"), ImmutableList.of("custom value"));
+        assertEquals(servlet.getRequestHeaders("foo"), ImmutableList.of("bar"));
+        assertEquals(servlet.getRequestHeaders("dupe"), ImmutableList.of("first", "second"));
+        assertEquals(servlet.getRequestHeaders("x-custom-filter"), ImmutableList.of("custom value"));
     }
 
     @Test
@@ -481,9 +482,9 @@ public abstract class AbstractHttpClientTest
         assertEquals(statusCode, 200);
         assertEquals(servlet.getRequestMethod(), "PUT");
         assertEquals(servlet.getRequestUri(), uri);
-        assertEquals(servlet.getRequestHeaders().get("foo"), ImmutableList.of("bar"));
-        assertEquals(servlet.getRequestHeaders().get("dupe"), ImmutableList.of("first", "second"));
-        assertEquals(servlet.getRequestHeaders().get("x-custom-filter"), ImmutableList.of("custom value"));
+        assertEquals(servlet.getRequestHeaders("foo"), ImmutableList.of("bar"));
+        assertEquals(servlet.getRequestHeaders("dupe"), ImmutableList.of("first", "second"));
+        assertEquals(servlet.getRequestHeaders("x-custom-filter"), ImmutableList.of("custom value"));
         assertEquals(servlet.getRequestBytes(), body);
     }
 
@@ -507,9 +508,9 @@ public abstract class AbstractHttpClientTest
         assertEquals(statusCode, 200);
         assertEquals(servlet.getRequestMethod(), "PUT");
         assertEquals(servlet.getRequestUri(), uri);
-        assertEquals(servlet.getRequestHeaders().get("foo"), ImmutableList.of("bar"));
-        assertEquals(servlet.getRequestHeaders().get("dupe"), ImmutableList.of("first", "second"));
-        assertEquals(servlet.getRequestHeaders().get("x-custom-filter"), ImmutableList.of("custom value"));
+        assertEquals(servlet.getRequestHeaders("foo"), ImmutableList.of("bar"));
+        assertEquals(servlet.getRequestHeaders("dupe"), ImmutableList.of("first", "second"));
+        assertEquals(servlet.getRequestHeaders("x-custom-filter"), ImmutableList.of("custom value"));
         assertEquals(servlet.getRequestBytes(), new byte[] {1, 2, 5});
     }
 
@@ -622,7 +623,7 @@ public abstract class AbstractHttpClientTest
 
         String body = executeRequest(request, createStringResponseHandler()).getBody();
         assertEquals(body, "");
-        assertFalse(servlet.getRequestHeaders().containsKey("Accept-Encoding"));
+        assertFalse(servlet.getRequestHeaders().containsKey(HeaderName.of(ACCEPT_ENCODING)));
     }
 
     private ExecutorService executor;
