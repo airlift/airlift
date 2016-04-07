@@ -11,6 +11,13 @@
 - Upgrade Jersey to 2.22.2
 - Add getQuantilesUpperBound() and getQuantilesLowerBound() to QuantileDigest
 
+* 0.125
+
+- Add JMX stats for HTTP response codes and failures
+- Fix broken gzip handling in HTTP server
+- Fix typo for keytab option in SpnegoAuthentication
+- Fix thread leak in HTTP client when using anonymous pool
+
 * 0.124
 
 - Upgrade to jmxutils 1.19 which fixes issue with LoggingMBean

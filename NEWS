@@ -1,3 +1,37 @@
+Airlift 0.127
+
+* HTTP/2 support
+
+The HTTP server and client now have experimental support for the HTTP/2
+protocol for HTTP only (not HTTPS). The server supports the HTTP/2
+cleartext upgrade mechanism (h2c) which allows running both versions
+of the protocol on the same port. Both versions are always enabled.
+
+The HTTP client also supports HTTP/2 cleartext. However, there is
+no upgrade mechanism, so if HTTP/2 is enabled, the client will always
+use the HTTP/2 protocol and thus can only communicate with HTTP/2
+servers. Attempting to connect to an older server will result in
+"refused_stream_error". Thus, HTTP/2 is disabled by default.
+
+* HTTP Client API changes for Case-Insensitive Headers
+
+HTTP header field names are always lowercase in HTTP/2. They should
+always be treated as case insensitive, but the previous HTTP client
+API made that difficult by returning a map of strings.
+
+The Response interface and various ResponseHandler response objects
+now use the new case-insensitive HeaderName class. Additionally,
+these objects now have a getHeaders() method that takes a field name
+and returns a list of field values.
+
+Airlift 0.126
+
+Minor maintenance release. See CHANGES.
+
+Airlift 0.125
+
+Minor maintenance release. See CHANGES.
+
 Airlift 0.124
 
 Upgrade jmxutils which fixes the server not starting when LogJmxModule
