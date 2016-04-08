@@ -285,7 +285,12 @@ public class QuantileDigest
 
     public List<Long> getQuantiles(List<Double> quantiles)
     {
-        return getQuantilesUpperBound(quantiles);
+        List<Long> accumulator = new ArrayList<Long>(quantiles.size());
+
+        for (Double q : quantiles) {
+            accumulator.add(getQuantile(q));
+        }
+        return accumulator;
     }
 
     /**
@@ -293,7 +298,7 @@ public class QuantileDigest
      */
     public long getQuantile(double quantile)
     {
-        return getQuantiles(ImmutableList.of(quantile)).get(0);
+        return getQuantileFromCDF(quantile);
     }
 
     public long getQuantileLowerBound(double quantile)
@@ -369,6 +374,91 @@ public class QuantileDigest
         }
 
         return builder.build();
+    }
+
+    public double getCDF(long x) {
+        final ImmutableList.Builder<Double> builder = ImmutableList.builder();
+        final long value = x;
+
+        inOrderTraversal(root, new Callback() {
+            protected double sum = 0.0;
+
+            public boolean process(Node node) {
+                long lower = Math.max(min, node.getLowerBound());
+                long upper = Math.min(max, node.getUpperBound());
+
+                if(value >= upper) {
+                    sum += node.weightedCount;
+                    if (node.isLeaf() && value == upper) {
+                        builder.add(sum);
+                        return false;
+                    }
+                    return true;
+                } else if(value < lower) {
+                    // Stop if gone too far
+                    builder.add(sum);
+                    return false;
+                } else {
+                    // interpolate
+                    double ratio = (value - lower) / (double) (upper - lower);
+                    if (node.right == null && node.left != null) {
+                        long middle = Math.min(max, node.getMiddle());
+                        ratio = Math.max(0, value - middle) / (double) (upper - middle);
+                        sum += node.weightedCount * ratio;
+                    } else {
+                        sum += node.weightedCount * ratio;
+                    }
+                }
+
+                return true;
+            }
+        }, TraversalOrder.FORWARD);
+
+        List<Double> tmp = builder.build();
+        if(tmp.size() == 0) {
+            return 1.0;
+        } else {
+            return tmp.get(0) / weightedCount;
+        }
+    }
+
+    public long getQuantileFromCDF(double p) {
+        if (root == null) {
+            return Long.MAX_VALUE;
+        }
+
+        final double tol = 1e-9;
+        long lower = root.getLowerBound();
+        long upper = root.getUpperBound();
+        long middle = lower;
+        double q = getCDF(lower);
+
+        if (q > p) {
+            return min;
+        }
+
+        while( (upper - lower) > 1 ){
+            middle = lower + (upper - lower) / 2;
+            q = getCDF(middle);
+
+            if (q > p) {
+                upper = middle;
+            } else {
+                lower = middle;
+            }
+        }
+
+        q = getCDF(lower);
+        // Preserve unusual quantile semantics where the cdf
+        // F(x) = P(X <= x + 1/n) rather than P(X <= x)
+        if (q < p + 1.0 / weightedCount + tol) {
+            upper = Math.min(max, upper);
+            return upper;
+        } else {
+            lower = Math.max(min, lower);
+            return lower;
+        }
+
     }
 
     public long getMin()
@@ -880,6 +970,39 @@ public class QuantileDigest
         }
 
         return callback.process(node);
+    }
+
+    protected boolean inOrderTraversal(Node node, Callback callback, TraversalOrder order)
+    {
+        if (node == null) {
+            return false;
+        }
+
+        Node first;
+        Node second;
+
+        if (order == TraversalOrder.FORWARD) {
+            first = node.left;
+            second = node.right;
+        }
+        else {
+            first = node.right;
+            second = node.left;
+        }
+
+        if (first != null && !inOrderTraversal(first, callback, order)) {
+            return false;
+        }
+
+        if(!callback.process(node)) {
+            return false;
+        }
+
+        if (second != null && !inOrderTraversal(second, callback, order)) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
