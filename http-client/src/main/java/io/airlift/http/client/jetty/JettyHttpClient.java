@@ -39,6 +39,7 @@ import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
+import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpFields;
@@ -144,12 +145,12 @@ public class JettyHttpClient
         checkNotNull(config, "config is null");
         checkNotNull(jettyIoPool, "jettyIoPool is null");
         checkNotNull(requestFilters, "requestFilters is null");
-
+ 
         maxContentLength = config.getMaxContentLength().toBytes();
         requestTimeoutMillis = config.getRequestTimeout().toMillis();
         idleTimeoutMillis = config.getIdleTimeout().toMillis();
         authenticationEnabled = config.getAuthenticationEnabled();
-
+        
         creationLocation.fillInStackTrace();
 
         SslContextFactory sslContextFactory = new SslContextFactory();
@@ -158,7 +159,7 @@ public class JettyHttpClient
             sslContextFactory.setKeyStorePath(config.getKeyStorePath());
             sslContextFactory.setKeyStorePassword(config.getKeyStorePassword());
         }
-
+        
         HttpClientTransportOverHTTP transport = new HttpClientTransportOverHTTP(2);
         if (authenticationEnabled) {
             requireNonNull(kerberosConfig.getConfig(), "kerberos config path is null");
@@ -284,6 +285,18 @@ public class JettyHttpClient
             }
             distribution.add(NANOSECONDS.toMillis(finished - responseStarted));
         });
+    }//JettyHttpClient()
+    
+    public void enableLdapAuthentication(String ldapUser,
+                                         String ldapPassword,
+                                         URI server) 
+    {
+        checkNotNull(ldapUser,"ldap userid is null");
+        checkNotNull(ldapPassword, "ldap password is null");
+        checkNotNull(server, "uri is null");
+  
+        httpClient.getAuthenticationStore().addAuthentication(
+                    new BasicAuthentication(server, "presto", ldapUser, ldapPassword));
     }
 
     @Override
