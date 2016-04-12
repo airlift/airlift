@@ -34,5 +34,14 @@ class DummyServlet
             resp.getOutputStream().write(req.getUserPrincipal().getName().getBytes());
         }
         resp.setHeader("X-Protocol", req.getProtocol());
+
+        try {
+            if (req.getParameter("sleep") != null) {
+                Thread.sleep(Long.parseLong(req.getParameter("sleep")));
+            }
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

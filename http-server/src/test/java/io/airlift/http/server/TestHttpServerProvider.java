@@ -20,7 +20,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import io.airlift.event.client.NullEventClient;
 import io.airlift.http.client.HttpClient;
+import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.HttpClientConfig;
+import io.airlift.http.client.Request;
+import io.airlift.http.client.RuntimeIOException;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
@@ -42,7 +45,9 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.URI;
 import java.util.Base64;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.io.Resources.getResource;
@@ -50,6 +55,7 @@ import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.testing.Assertions.assertContains;
+import static io.airlift.testing.Assertions.assertInstanceOf;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -206,6 +212,29 @@ public class TestHttpServerProvider
             StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
             assertEquals(response.getStatusCode(), 500);
             assertTrue(!response.getBody().contains("ErrorServlet.java"));
+        }
+    }
+
+    @Test(timeOut = 60000)
+    public void testStop()
+            throws Exception
+    {
+        createAndStartServer();
+
+        try (HttpClient client = new JettyHttpClient()) {
+            URI uri = URI.create(httpServerInfo.getHttpUri().toASCIIString() + "/?sleep=50000");
+            Request request = prepareGet().setUri(uri).build();
+            HttpResponseFuture<?> future = client.executeAsync(request, createStatusResponseHandler());
+
+            server.stop();
+
+            try {
+                future.get(1, TimeUnit.SECONDS);
+                fail("expected exception");
+            }
+            catch (ExecutionException e) {
+                assertInstanceOf(e.getCause(), RuntimeIOException.class);
+            }
         }
     }
 

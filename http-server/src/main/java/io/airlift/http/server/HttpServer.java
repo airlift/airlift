@@ -396,6 +396,7 @@ public class HttpServer
     public void stop()
             throws Exception
     {
+        server.setStopTimeout(0);
         server.stop();
     }
 
