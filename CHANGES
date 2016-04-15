@@ -4,6 +4,7 @@
 - Make HTTP client response headers case insensitive
 - Add HTTP/2 support in HTTP server for HTTP (not HTTPS)
 - Add HTTP/2 support in HTTP client for HTTP (off by default)
+- Add BoundedThreadPool
 
 * 0.126
 

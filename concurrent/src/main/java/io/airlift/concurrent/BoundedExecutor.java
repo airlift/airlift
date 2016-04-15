@@ -23,6 +23,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  * handed to threads in that order.</li>
  * <li>Will not encounter starvation</li>
  * </ul>
+ * <p>
+ * Note that each task submitted to this executor will still submit a trigger
+ * task to the underlying executor. Thus, use of this class in conjunction
+ * with an unbounded thread pool, such as one created by
+ * {@link java.util.concurrent.Executors#newCachedThreadPool() newCachedThreadPool()},
+ * will not prevent a spike in thread creations when many tasks are submitted
+ * at once. Use {@link BoundedThreadPool} to provide a hard limit on thread creation.
  */
 @ThreadSafe
 public class BoundedExecutor
