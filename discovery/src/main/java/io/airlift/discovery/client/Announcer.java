@@ -36,7 +36,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -44,7 +43,7 @@ import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class Announcer
+public final class Announcer
 {
     private static final Logger log = Logger.get(Announcer.class);
     private final ConcurrentMap<UUID, ServiceAnnouncement> announcements = new MapMaker().makeMap();
@@ -67,9 +66,7 @@ public class Announcer
         checkNotNull(serviceAnnouncements, "serviceAnnouncements is null");
 
         this.announcementClient = announcementClient;
-        for (ServiceAnnouncement serviceAnnouncement : serviceAnnouncements) {
-            addServiceAnnouncement(serviceAnnouncement);
-        }
+        serviceAnnouncements.forEach(this::addServiceAnnouncement);
         executor = new ScheduledThreadPoolExecutor(5, daemonThreadsNamed("Announcer-%s"));
     }
 
@@ -80,7 +77,7 @@ public class Announcer
             // announce immediately, if discovery is running
             ListenableFuture<Duration> announce = announce();
             try {
-                announce.get(30, TimeUnit.SECONDS);
+                announce.get(30, SECONDS);
             }
             catch (Exception ignored) {
             }
@@ -92,7 +89,7 @@ public class Announcer
     {
         executor.shutdownNow();
         try {
-            executor.awaitTermination(30, TimeUnit.SECONDS);
+            executor.awaitTermination(30, SECONDS);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -166,14 +163,7 @@ public class Announcer
         if (executor.isShutdown()) {
             return;
         }
-        executor.schedule(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                announce();
-            }
-        }, delay.toMillis(), MILLISECONDS);
+        executor.schedule(this::announce, delay.toMillis(), MILLISECONDS);
     }
 
     // TODO: move this to a utility package
