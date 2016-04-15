@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public final class Announcer
@@ -75,7 +76,7 @@ public final class Announcer
         Preconditions.checkState(!executor.isShutdown(), "Announcer has been destroyed");
         if (started.compareAndSet(false, true)) {
             // announce immediately, if discovery is running
-            ListenableFuture<Duration> announce = announce();
+            ListenableFuture<Duration> announce = announce(System.nanoTime(), new Duration(0, SECONDS));
             try {
                 announce.get(30, SECONDS);
             }
@@ -125,26 +126,36 @@ public final class Announcer
         return ImmutableSet.copyOf(announcements.values());
     }
 
-    private ListenableFuture<Duration> announce()
+    private ListenableFuture<Duration> announce(long delayStart, Duration expectedDelay)
     {
+        // log announcement did not happen within 5 seconds of expected delay
+        if (System.nanoTime() - (delayStart + expectedDelay.roundTo(NANOSECONDS)) > SECONDS.toNanos(5)) {
+            log.error("Expected service announcement after %s, but announcement was delayed %s", expectedDelay, Duration.nanosSince(delayStart));
+        }
+
+        long requestStart = System.nanoTime();
         ListenableFuture<Duration> future = announcementClient.announce(getServiceAnnouncements());
 
         Futures.addCallback(future, new FutureCallback<Duration>()
         {
             @Override
-            public void onSuccess(Duration duration)
+            public void onSuccess(Duration expectedDelay)
             {
                 errorBackOff.success();
 
                 // wait 80% of the suggested delay
-                duration = new Duration(duration.toMillis() * 0.8, MILLISECONDS);
-                scheduleNextAnnouncement(duration);
+                expectedDelay = new Duration(expectedDelay.toMillis() * 0.8, MILLISECONDS);
+                log.debug("Service announcement succeeded after %s. Next request will happen within %s", Duration.nanosSince(requestStart), expectedDelay);
+
+                scheduleNextAnnouncement(expectedDelay);
             }
 
             @Override
             public void onFailure(Throwable t)
             {
                 Duration duration = errorBackOff.failed(t);
+                // todo this is a duplicate log message and should be remove after root cause of announcement delay is determined
+                log.error("Service announcement failed after %s. Next request will happen within %s", Duration.nanosSince(requestStart), expectedDelay);
                 scheduleNextAnnouncement(duration);
             }
         }, executor);
@@ -157,13 +168,15 @@ public final class Announcer
         return announcementClient.announce(getServiceAnnouncements());
     }
 
-    private void scheduleNextAnnouncement(Duration delay)
+    private void scheduleNextAnnouncement(Duration expectedDelay)
     {
         // already stopped?  avoids rejection exception
         if (executor.isShutdown()) {
             return;
         }
-        executor.schedule(this::announce, delay.toMillis(), MILLISECONDS);
+
+        long delayStart = System.nanoTime();
+        executor.schedule(() -> announce(delayStart, expectedDelay), expectedDelay.toMillis(), MILLISECONDS);
     }
 
     // TODO: move this to a utility package
