@@ -23,8 +23,11 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
+import io.airlift.concurrent.ThreadPoolExecutorMBean;
 import io.airlift.log.Logger;
 import io.airlift.units.Duration;
+import org.weakref.jmx.Managed;
+import org.weakref.jmx.Nested;
 
 import javax.annotation.PreDestroy;
 
@@ -36,6 +39,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -51,6 +55,7 @@ public final class Announcer
 
     private final DiscoveryAnnouncementClient announcementClient;
     private final ScheduledExecutorService executor;
+    private final ThreadPoolExecutorMBean executorMBean;
     private final AtomicBoolean started = new AtomicBoolean(false);
 
     private final ExponentialBackOff errorBackOff = new ExponentialBackOff(
@@ -69,6 +74,14 @@ public final class Announcer
         this.announcementClient = announcementClient;
         serviceAnnouncements.forEach(this::addServiceAnnouncement);
         executor = new ScheduledThreadPoolExecutor(5, daemonThreadsNamed("Announcer-%s"));
+        executorMBean = new ThreadPoolExecutorMBean((ThreadPoolExecutor) executor);
+    }
+
+    @Managed
+    @Nested
+    public ThreadPoolExecutorMBean getExecutor()
+    {
+        return executorMBean;
     }
 
     public void start()

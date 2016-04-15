@@ -61,6 +61,7 @@ public class DiscoveryModule
 
         // bind announcer
         binder.bind(Announcer.class).in(Scopes.SINGLETON);
+        newExporter(binder).export(Announcer.class).withGeneratedName();
 
         // Must create a multibinder for service announcements or construction will fail if no
         // service announcements are bound, which is legal for processes that don't have public services
