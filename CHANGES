@@ -5,6 +5,7 @@
 - Add HTTP/2 support in HTTP server for HTTP (not HTTPS)
 - Add HTTP/2 support in HTTP client for HTTP (off by default)
 - Add BoundedThreadPool
+- Use default thread count for TestingHttpServerModule
 
 * 0.126
 
