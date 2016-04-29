@@ -1,6 +1,7 @@
 * 0.128
 
 - Use default thread count for TestingHttpServerModule
+- Support building prefixed configs in AbstractConfigurationAwareModule
 
 * 0.127
 

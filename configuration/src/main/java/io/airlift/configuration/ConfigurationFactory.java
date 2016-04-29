@@ -160,7 +160,12 @@ public class ConfigurationFactory
 
     public <T> T build(Class<T> configClass)
     {
-        return build(configClass, null, ConfigDefaults.noDefaults()).getInstance();
+        return build(configClass, null);
+    }
+
+    public <T> T build(Class<T> configClass, String prefix)
+    {
+        return build(configClass, prefix, ConfigDefaults.noDefaults()).getInstance();
     }
 
     /**
