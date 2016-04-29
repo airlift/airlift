@@ -52,6 +52,12 @@ public abstract class AbstractConfigurationAwareModule
         return configurationFactory.build(configClass);
     }
 
+    protected synchronized <T> T buildConfigObject(Class<T> configClass, String prefix)
+    {
+        configBinder(binder).bindConfig(configClass, prefix);
+        return configurationFactory.build(configClass, prefix);
+    }
+
     protected synchronized void install(ConfigurationAwareModule module)
     {
         module.setConfigurationFactory(configurationFactory);
