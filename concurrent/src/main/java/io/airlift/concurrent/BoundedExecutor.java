@@ -39,14 +39,6 @@ public class BoundedExecutor
 
     private final Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
     private final AtomicInteger queueSize = new AtomicInteger(0);
-    private final Runnable triggerTask = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            executeOrMerge();
-        }
-    };
 
     private final Executor coreExecutor;
     private final int maxThreads;
@@ -63,23 +55,25 @@ public class BoundedExecutor
     public void execute(Runnable task)
     {
         queue.add(task);
-        coreExecutor.execute(triggerTask);
-        // INVARIANT: every enqueued task is matched with an executeOrMerge() triggerTask
-    }
 
-    private void executeOrMerge()
-    {
         int size = queueSize.incrementAndGet();
         if (size <= maxThreads) {
-            do {
-                try {
-                    queue.poll().run();
-                }
-                catch (Throwable e) {
-                    log.error(e, "Task failed");
-                }
-            }
-            while (queueSize.getAndDecrement() > maxThreads);
+            // If able to grab a permit (aka size <= maxThreads), then we are short exactly one draining thread
+            coreExecutor.execute(this::drainQueue);
         }
+    }
+
+    private void drainQueue()
+    {
+        // INVARIANT: queue has at least one task available when this method is called
+        do {
+            try {
+                queue.poll().run();
+            }
+            catch (Throwable e) {
+                log.error(e, "Task failed");
+            }
+        }
+        while (queueSize.getAndDecrement() > maxThreads);
     }
 }

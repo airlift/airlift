@@ -35,34 +35,50 @@ public class TestBoundedExecutor
     public void testCounter()
             throws Exception
     {
-        BoundedExecutor boundedExecutor = new BoundedExecutor(executorService, 1); // Enforce single thread
+        int maxThreads = 1;
+        BoundedExecutor boundedExecutor = new BoundedExecutor(executorService, maxThreads); // Enforce single thread
 
-        int totalTasks = 100_000;
-        final AtomicInteger counter = new AtomicInteger();
-        final CountDownLatch startLatch = new CountDownLatch(1);
-        final CountDownLatch completeLatch = new CountDownLatch(totalTasks);
+        int stageTasks = 100_000;
+        int totalTasks = stageTasks * 2;
+        AtomicInteger counter = new AtomicInteger();
+        CountDownLatch initializeLatch = new CountDownLatch(maxThreads);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch completeLatch = new CountDownLatch(totalTasks);
 
-        for (int i = 0; i < totalTasks; i++) {
-            boundedExecutor.execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    try {
-                        Uninterruptibles.awaitUninterruptibly(startLatch); // Wait for the go signal
+        // Pre-loaded tasks
+        for (int i = 0; i < stageTasks; i++) {
+            boundedExecutor.execute(() -> {
+                try {
+                    initializeLatch.countDown();
+                    Uninterruptibles.awaitUninterruptibly(startLatch); // Wait for the go signal
 
-                        // Intentional distinct read and write calls
-                        int initialCount = counter.get();
-                        counter.set(initialCount + 1);
-                    }
-                    finally {
-                        completeLatch.countDown();
-                    }
+                    // Intentional distinct read and write calls
+                    int initialCount = counter.get();
+                    counter.set(initialCount + 1);
+                }
+                finally {
+                    completeLatch.countDown();
                 }
             });
         }
 
-        startLatch.countDown(); // Signal go for threads
+        Uninterruptibles.awaitUninterruptibly(initializeLatch, 1, TimeUnit.MINUTES); // Wait for pre-load tasks to initialize
+        startLatch.countDown(); // Signal go for stage1 threads
+
+        // Concurrently submitted tasks
+        for (int i = 0; i < stageTasks; i++) {
+            boundedExecutor.execute(() -> {
+                try {
+                    // Intentional distinct read and write calls
+                    int initialCount = counter.get();
+                    counter.set(initialCount + 1);
+                }
+                finally {
+                    completeLatch.countDown();
+                }
+            });
+        }
+
         Uninterruptibles.awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES); // Wait for tasks to complete
         Assert.assertEquals(counter.get(), totalTasks);
     }
@@ -81,37 +97,61 @@ public class TestBoundedExecutor
         testBound(2, 100_000);
     }
 
-    private void testBound(final int maxThreads, int totalTasks)
+    @Test
+    public void testTripleThreadBound()
+            throws Exception
+    {
+        testBound(3, 100_000);
+    }
+
+    private void testBound(final int maxThreads, int stageTasks)
     {
         BoundedExecutor boundedExecutor = new BoundedExecutor(executorService, maxThreads);
 
-        final AtomicInteger activeThreadCount = new AtomicInteger();
-        final CountDownLatch startLatch = new CountDownLatch(1);
-        final CountDownLatch completeLatch = new CountDownLatch(totalTasks);
-        final AtomicBoolean failed = new AtomicBoolean();
+        int totalTasks = stageTasks * 2;
+        AtomicInteger activeThreadCount = new AtomicInteger();
+        CountDownLatch initializeLatch = new CountDownLatch(maxThreads);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch completeLatch = new CountDownLatch(totalTasks);
+        AtomicBoolean failed = new AtomicBoolean();
 
-        for (int i = 0; i < totalTasks; i++) {
-            boundedExecutor.execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    try {
-                        Uninterruptibles.awaitUninterruptibly(startLatch); // Wait for the go signal
-                        int count = activeThreadCount.incrementAndGet();
-                        if (count < 1 || count > maxThreads) {
-                            failed.set(true);
-                        }
-                        activeThreadCount.decrementAndGet();
+        // Pre-loaded tasks
+        for (int i = 0; i < stageTasks; i++) {
+            boundedExecutor.execute(() -> {
+                try {
+                    initializeLatch.countDown();
+                    Uninterruptibles.awaitUninterruptibly(startLatch); // Wait for the go signal
+                    int count = activeThreadCount.incrementAndGet();
+                    if (count < 1 || count > maxThreads) {
+                        failed.set(true);
                     }
-                    finally {
-                        completeLatch.countDown();
-                    }
+                    activeThreadCount.decrementAndGet();
+                }
+                finally {
+                    completeLatch.countDown();
                 }
             });
         }
 
-        startLatch.countDown(); // Signal go for threads
+        Uninterruptibles.awaitUninterruptibly(initializeLatch, 1, TimeUnit.MINUTES); // Wait for pre-load tasks to initialize
+        startLatch.countDown(); // Signal go for stage1 threads
+
+        // Concurrently submitted tasks
+        for (int i = 0; i < stageTasks; i++) {
+            boundedExecutor.execute(() -> {
+                try {
+                    int count = activeThreadCount.incrementAndGet();
+                    if (count < 1 || count > maxThreads) {
+                        failed.set(true);
+                    }
+                    activeThreadCount.decrementAndGet();
+                }
+                finally {
+                    completeLatch.countDown();
+                }
+            });
+        }
+
         Uninterruptibles.awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES); // Wait for tasks to complete
 
         Assert.assertFalse(failed.get());
