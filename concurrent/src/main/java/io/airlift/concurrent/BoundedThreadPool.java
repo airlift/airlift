@@ -9,6 +9,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.IntSupplier;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -29,7 +30,7 @@ public final class BoundedThreadPool
 
     public static ThreadPoolExecutor newBoundedThreadPool(int maxThreads, ThreadFactory threadFactory)
     {
-        return newBoundedThreadPool(0, maxThreads, threadFactory);
+        return newBoundedThreadPool(1, maxThreads, threadFactory);
     }
 
     public static ThreadPoolExecutor newBoundedThreadPool(int minThreads, int maxThreads, ThreadFactory threadFactory)
@@ -39,6 +40,10 @@ public final class BoundedThreadPool
 
     public static ThreadPoolExecutor newBoundedThreadPool(int minThreads, int maxThreads, ThreadFactory threadFactory, Duration keepAlive)
     {
+        // Require at least one core thread to avoid starvation if the
+        // last thread exits before the task is added to the queue.
+        checkArgument(minThreads >= 1, "minThreads must be at least one");
+
         RefusingQueue<Runnable> queue = new RefusingQueue<>();
         ThreadPoolExecutor pool = new ThreadPoolExecutor(
                 minThreads, maxThreads,
