@@ -19,7 +19,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * bound without unnecessarily creating many extra threads when usage is light.
  * <p>
  * The returned thread pool is a {@link ThreadPoolExecutor} that queues at most
- * one task per thread before creating a new thread.
+ * one task per idle thread before creating a new thread.
  */
 public final class BoundedThreadPool
 {
@@ -46,7 +46,7 @@ public final class BoundedThreadPool
                 queue,
                 threadFactory,
                 (runnable, executor) -> queue.add(runnable));
-        queue.setSizeSupplier(pool::getPoolSize);
+        queue.setSizeSupplier(() -> pool.getPoolSize() - pool.getActiveCount());
         return pool;
     }
 
