@@ -110,7 +110,7 @@ public class TestBoundedThreadPool
         assertFalse(failed.get());
     }
 
-    @Test
+    @Test(enabled = false)
     public void testThreadCreation()
     {
         int batchSize = 5;
