@@ -5,8 +5,10 @@ import org.testng.annotations.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.google.common.util.concurrent.Uninterruptibles.awaitUninterruptibly;
 import static io.airlift.concurrent.BoundedThreadPool.newBoundedThreadPool;
@@ -100,5 +102,55 @@ public class TestBoundedThreadPool
         awaitUninterruptibly(completeLatch, 1, MINUTES); // Wait for tasks to complete
 
         assertFalse(failed.get());
+    }
+
+    @Test
+    public void testThreadCreation()
+    {
+        int batchSize = 5;
+        CountingThreadFactory threadFactory = new CountingThreadFactory();
+        executor = newBoundedThreadPool(batchSize * 2, threadFactory);
+
+        for (int batch = 0; batch < 10; batch++) {
+            CountDownLatch startLatch = new CountDownLatch(1);
+            CountDownLatch completeLatch = new CountDownLatch(batchSize);
+            AtomicBoolean failed = new AtomicBoolean();
+
+            for (int i = 0; i < batchSize; i++) {
+                executor.execute(() -> {
+                    try {
+                        awaitUninterruptibly(startLatch); // Wait for the go signal
+                        if (threadFactory.getCount() > batchSize) {
+                            failed.set(true);
+                        }
+                    }
+                    finally {
+                        completeLatch.countDown();
+                    }
+                });
+            }
+
+            startLatch.countDown(); // Signal go for threads
+            awaitUninterruptibly(completeLatch, 1, MINUTES); // Wait for tasks to complete
+
+            assertFalse(failed.get());
+        }
+    }
+
+    private static class CountingThreadFactory
+        implements ThreadFactory
+    {
+        private final AtomicLong count = new AtomicLong();
+
+        @Override
+        public Thread newThread(Runnable runnable)
+        {
+            return new Thread(runnable, "test-" + count.getAndIncrement());
+        }
+
+        public long getCount()
+        {
+            return count.get();
+        }
     }
 }

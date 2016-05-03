@@ -7,7 +7,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.IntSupplier;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -15,6 +17,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Factory for creating a cached thread pool with a hard bound on the number of
  * created threads. This allows configuring thread pools with a large upper
  * bound without unnecessarily creating many extra threads when usage is light.
+ * <p>
+ * The returned thread pool is a {@link ThreadPoolExecutor} that queues at most
+ * one task per thread before creating a new thread.
  */
 public final class BoundedThreadPool
 {
@@ -34,19 +39,27 @@ public final class BoundedThreadPool
 
     public static ThreadPoolExecutor newBoundedThreadPool(int minThreads, int maxThreads, ThreadFactory threadFactory, Duration keepAlive)
     {
-        BlockingQueue<Runnable> queue = new RefusingQueue<>();
-        return new ThreadPoolExecutor(
+        RefusingQueue<Runnable> queue = new RefusingQueue<>();
+        ThreadPoolExecutor pool = new ThreadPoolExecutor(
                 minThreads, maxThreads,
                 keepAlive.toMillis(), MILLISECONDS,
                 queue,
                 threadFactory,
                 (runnable, executor) -> queue.add(runnable));
+        queue.setSizeSupplier(pool::getPoolSize);
+        return pool;
     }
 
     private static class RefusingQueue<T>
             extends ForwardingBlockingQueue<T>
     {
         private final BlockingQueue<T> queue = new LinkedBlockingQueue<>();
+        private volatile IntSupplier sizeSupplier = () -> 0;
+
+        public void setSizeSupplier(IntSupplier supplier)
+        {
+            sizeSupplier = requireNonNull(supplier, "supplier is null");
+        }
 
         @Override
         protected BlockingQueue<T> delegate()
@@ -57,6 +70,9 @@ public final class BoundedThreadPool
         @Override
         public boolean offer(T o)
         {
+            if (queue.size() < sizeSupplier.getAsInt()) {
+                return queue.offer(o);
+            }
             return false;
         }
     }
