@@ -1,11 +1,15 @@
 package io.airlift.concurrent;
 
+import com.google.common.base.Throwables;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -14,6 +18,7 @@ import static com.google.common.util.concurrent.Uninterruptibles.awaitUninterrup
 import static io.airlift.concurrent.BoundedThreadPool.newBoundedThreadPool;
 import static io.airlift.concurrent.Threads.threadsNamed;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 
@@ -136,6 +141,34 @@ public class TestBoundedThreadPool
 
             assertFalse(failed.get());
         }
+    }
+
+    @Test
+    public void testActiveThreads()
+            throws Exception
+    {
+        int tasks = 10;
+        executor = newBoundedThreadPool(tasks, threadsNamed("test-%s"));
+        CyclicBarrier barrier = new CyclicBarrier(tasks);
+        AtomicBoolean failed = new AtomicBoolean();
+
+        for (int i = 0; i < tasks; i++) {
+            CountDownLatch started = new CountDownLatch(1);
+            executor.execute(() -> {
+                started.countDown();
+                try {
+                    barrier.await(10, SECONDS);
+                }
+                catch (InterruptedException | BrokenBarrierException | TimeoutException e) {
+                    failed.set(true);
+                    throw Throwables.propagate(e);
+                }
+            });
+            started.await(10, SECONDS);
+        }
+
+        assertFalse(barrier.isBroken());
+        assertFalse(failed.get());
     }
 
     private static class CountingThreadFactory
