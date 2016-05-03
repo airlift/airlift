@@ -7,11 +7,15 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.testng.Assert.fail;
 
 public class TestBoundedExecutor
 {
@@ -102,6 +106,42 @@ public class TestBoundedExecutor
             throws Exception
     {
         testBound(3, 100_000);
+    }
+
+    @Test
+    public void testExecutorCorruptionDetection()
+            throws Exception
+    {
+        AtomicBoolean reject = new AtomicBoolean();
+        Executor executor = command -> {
+            if (reject.get()) {
+                throw new RejectedExecutionException();
+            }
+            executorService.execute(command);
+        };
+        BoundedExecutor boundedExecutor = new BoundedExecutor(executor, 1); // Enforce single thread
+
+        CountDownLatch completeLatch = new CountDownLatch(1);
+        boundedExecutor.execute(completeLatch::countDown);
+        Uninterruptibles.awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES);
+
+        // Force the underlying executor to fail
+        reject.set(true);
+        try {
+            boundedExecutor.execute(() -> fail("Should not be run"));
+            fail("Execute should fail");
+        }
+        catch (Exception e) {
+        }
+
+        // Recover the underlying executor, but all new tasks should fail
+        reject.set(false);
+        try {
+            boundedExecutor.execute(() -> fail("Should not be run"));
+            fail("Execute should still fail");
+        }
+        catch (Exception e) {
+        }
     }
 
     private void testBound(final int maxThreads, int stageTasks)
