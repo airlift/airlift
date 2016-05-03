@@ -1,6 +1,6 @@
 package io.airlift.concurrent;
 
-import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -17,11 +17,12 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 
+@Test(singleThreaded = true)
 public class TestBoundedThreadPool
 {
     private ExecutorService executor;
 
-    @AfterClass(alwaysRun = true)
+    @AfterMethod(alwaysRun = true)
     public void tearDown()
             throws Exception
     {
