@@ -1,5 +1,6 @@
 * 0.128
 
+- Fix behavior of BoundedThreadPool
 - Use default thread count for TestingHttpServerModule
 - Support building prefixed configs in AbstractConfigurationAwareModule
 
