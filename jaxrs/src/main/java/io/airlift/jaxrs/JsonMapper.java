@@ -242,10 +242,20 @@ public class JsonMapper
             writer = objectMapper.writer();
         }
 
-        writer.writeValue(jsonGenerator, value);
+        try {
+            writer.writeValue(jsonGenerator, value);
 
-        // add a newline so when you use curl it looks nice
-        outputStream.write('\n');
+            // add a newline so when you use curl it looks nice
+            outputStream.write('\n');
+        }
+        catch (EOFException e) {
+            // ignore EOFException
+            // This happens when the client terminates the connection when data
+            // is being written.  If the exception is allowed to propagate to
+            // Jersey, the exception will be logged, but this error is not
+            // important.  This is safe since the output stream is already
+            // closed.
+        }
     }
 
     private boolean isPrettyPrintRequested()
