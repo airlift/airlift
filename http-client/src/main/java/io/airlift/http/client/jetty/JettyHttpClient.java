@@ -162,6 +162,10 @@ public class JettyHttpClient
             sslContextFactory.setKeyStorePath(config.getKeyStorePath());
             sslContextFactory.setKeyStorePassword(config.getKeyStorePassword());
         }
+        if (config.getTrustStorePath() != null) {
+            sslContextFactory.setTrustStorePath(config.getTrustStorePath());
+            sslContextFactory.setTrustStorePassword(config.getTrustStorePassword());
+        }
 
         HttpClientTransport transport;
         if (config.isHttp2Enabled()) {

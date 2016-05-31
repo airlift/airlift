@@ -35,6 +35,8 @@ public class HttpClientConfig
 {
     public static final String JAVAX_NET_SSL_KEY_STORE = "javax.net.ssl.keyStore";
     public static final String JAVAX_NET_SSL_KEY_STORE_PASSWORD = "javax.net.ssl.keyStorePassword";
+    public static final String JAVAX_NET_SSL_TRUST_STORE = "javax.net.ssl.trustStore";
+    public static final String JAVAX_NET_SSL_TRUST_STORE_PASSWORD = "javax.net.ssl.trustStorePassword";
 
     private boolean http2Enabled;
     private Duration connectTimeout = new Duration(1, TimeUnit.SECONDS);
@@ -48,6 +50,8 @@ public class HttpClientConfig
     private HostAndPort socksProxy;
     private String keyStorePath = System.getProperty(JAVAX_NET_SSL_KEY_STORE);
     private String keyStorePassword = System.getProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD);
+    private String trustStorePath = System.getProperty(JAVAX_NET_SSL_TRUST_STORE);
+    private String trustStorePassword = System.getProperty(JAVAX_NET_SSL_TRUST_STORE_PASSWORD);
     private boolean authenticationEnabled;
     private String kerberosPrincipal;
     private String kerberosRemoteServiceName;
@@ -207,6 +211,30 @@ public class HttpClientConfig
     public HttpClientConfig setKeyStorePassword(String keyStorePassword)
     {
         this.keyStorePassword = keyStorePassword;
+        return this;
+    }
+
+    public String getTrustStorePath()
+    {
+        return trustStorePath;
+    }
+
+    @Config("http-client.trust-store-path")
+    public HttpClientConfig setTrustStorePath(String trustStorePath)
+    {
+        this.trustStorePath = trustStorePath;
+        return this;
+    }
+
+    public String getTrustStorePassword()
+    {
+        return trustStorePassword;
+    }
+
+    @Config("http-client.trust-store-password")
+    public HttpClientConfig setTrustStorePassword(String trustStorePassword)
+    {
+        this.trustStorePassword = trustStorePassword;
         return this;
     }
 

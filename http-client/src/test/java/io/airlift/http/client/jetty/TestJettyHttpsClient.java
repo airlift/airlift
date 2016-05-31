@@ -51,7 +51,9 @@ public class TestJettyHttpsClient
         return new HttpClientConfig()
                 .setHttp2Enabled(false)
                 .setKeyStorePath(getResource("localhost.keystore").getPath())
-                .setKeyStorePassword("changeit");
+                .setKeyStorePassword("changeit")
+                .setTrustStorePath(getResource("localhost.truststore").getPath())
+                .setTrustStorePassword("changeit");
     }
 
     @Override
@@ -66,7 +68,9 @@ public class TestJettyHttpsClient
             throws Exception
     {
         config.setKeyStorePath(getResource("localhost.keystore").getPath())
-                .setKeyStorePassword("changeit");
+                .setKeyStorePassword("changeit")
+                .setTrustStorePath(getResource("localhost.truststore").getPath())
+                .setTrustStorePassword("changeit");
 
         try (
                 JettyIoPool jettyIoPool = new JettyIoPool("test-private", new JettyIoPoolConfig());

@@ -30,6 +30,8 @@ import java.util.concurrent.TimeUnit;
 
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_KEY_STORE;
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_KEY_STORE_PASSWORD;
+import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_TRUST_STORE;
+import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_TRUST_STORE_PASSWORD;
 import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
 
 public class TestHttpClientConfig
@@ -50,6 +52,8 @@ public class TestHttpClientConfig
                 .setSocksProxy(null)
                 .setKeyStorePath(System.getProperty(JAVAX_NET_SSL_KEY_STORE))
                 .setKeyStorePassword(System.getProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD))
+                .setTrustStorePath(System.getProperty(JAVAX_NET_SSL_TRUST_STORE))
+                .setTrustStorePassword(System.getProperty(JAVAX_NET_SSL_TRUST_STORE_PASSWORD))
                 .setAuthenticationEnabled(false)
                 .setKerberosRemoteServiceName(null)
                 .setKerberosPrincipal(null));
@@ -71,6 +75,8 @@ public class TestHttpClientConfig
                 .put("http-client.socks-proxy", "localhost:1080")
                 .put("http-client.key-store-path", "key-store")
                 .put("http-client.key-store-password", "key-store-password")
+                .put("http-client.trust-store-path", "trust-store")
+                .put("http-client.trust-store-password", "trust-store-password")
                 .put("http-client.authentication.enabled", "true")
                 .put("http-client.authentication.krb5.remote-service-name", "airlift")
                 .put("http-client.authentication.krb5.principal", "airlift-client")
@@ -89,6 +95,8 @@ public class TestHttpClientConfig
                 .setSocksProxy(HostAndPort.fromParts("localhost", 1080))
                 .setKeyStorePath("key-store")
                 .setKeyStorePassword("key-store-password")
+                .setTrustStorePath("trust-store")
+                .setTrustStorePassword("trust-store-password")
                 .setAuthenticationEnabled(true)
                 .setKerberosRemoteServiceName("airlift")
                 .setKerberosPrincipal("airlift-client");
