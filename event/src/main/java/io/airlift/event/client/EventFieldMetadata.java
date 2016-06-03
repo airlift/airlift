@@ -32,7 +32,7 @@ import java.util.Map;
 import static com.google.common.base.Objects.firstNonNull;
 import static io.airlift.event.client.EventDataType.validateFieldValueType;
 
-class EventFieldMetadata
+public class EventFieldMetadata
 {
     public static final Comparator<EventFieldMetadata> NAME_COMPARATOR = new Comparator<EventFieldMetadata>()
     {
@@ -69,6 +69,21 @@ class EventFieldMetadata
         this.eventDataType = eventDataType;
         this.nestedType = nestedType;
         this.containerType = containerType;
+    }
+
+    public String getName()
+    {
+        return name;
+    }
+
+    public EventTypeMetadata<?> getNestedType()
+    {
+        return nestedType;
+    }
+
+    public ContainerType getContainerType()
+    {
+        return containerType;
     }
 
     private Object getValue(Object event)
