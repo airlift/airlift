@@ -21,6 +21,7 @@ import org.testng.annotations.Test;
 import java.util.List;
 
 import static io.airlift.event.client.EventTypeMetadata.getEventTypeMetadata;
+import static io.airlift.event.client.EventTypeMetadata.getEventTypeMetadataNested;
 import static io.airlift.event.client.EventTypeMetadata.getValidEventTypeMetadata;
 import static io.airlift.testing.Assertions.assertContains;
 import static org.testng.Assert.assertEquals;
@@ -68,7 +69,7 @@ public class TestEventValidation
         @EventType("Test")
         class TestEvent
         {
-            @EventType("Nested")
+            @EventType("NestedCustom")
             class Nested
             {}
 
@@ -77,9 +78,20 @@ public class TestEventValidation
             {
                 return null;
             }
+
+            @EventType
+            class Nested2
+            {}
+
+            @EventField
+            public Nested2 getNested2()
+            {
+                return null;
+            }
         }
 
-        assertInvalidEvent(TestEvent.class, "specifies an event name but is used as a nested event");
+        assertEquals(getEventTypeMetadataNested(TestEvent.Nested.class).getTypeName(), "NestedCustom");
+        assertEquals(getEventTypeMetadataNested(TestEvent.Nested2.class).getTypeName(), TestEvent.Nested2.class.getSimpleName());
     }
 
     private static void assertInvalidEvent(Class<?> eventClass, String errorPart)
