@@ -67,6 +67,11 @@ public final class EventTypeMetadata<T>
         return new EventTypeMetadata<T>(eventClass, Lists.<String>newArrayList(), Maps.<Class<?>, EventTypeMetadata<?>>newHashMap(), false);
     }
 
+    public static <T> EventTypeMetadata<T> getEventTypeMetadataNested(Class<T> eventClass)
+    {
+        return new EventTypeMetadata<T>(eventClass, Lists.<String>newArrayList(), Maps.<Class<?>, EventTypeMetadata<?>>newHashMap(), true);
+    }
+
     private final Class<T> eventClass;
     private final String typeName;
     private final EventFieldMetadata uuidField;
@@ -211,10 +216,8 @@ public final class EventTypeMetadata<T>
             return null;
         }
         String typeName = typeAnnotation.value();
-        if (nestedEvent) {
-            if (!typeName.isEmpty()) {
-                addClassError("specifies an event name but is used as a nested event");
-            }
+        if (nestedEvent && typeName.isEmpty()) {
+            return eventClass.getSimpleName();
         }
         else if (typeName.isEmpty()) {
             addClassError("does not specify an event name");
