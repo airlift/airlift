@@ -1,3 +1,6 @@
+* 0.129
+- Add CpuTimer to stats
+
 * 0.128
 
 - Remove BoundedThreadPool
