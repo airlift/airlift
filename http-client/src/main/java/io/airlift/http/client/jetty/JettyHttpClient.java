@@ -11,6 +11,7 @@ import com.google.common.net.HostAndPort;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AbstractFuture;
 import io.airlift.http.client.BodyGenerator;
+import io.airlift.http.client.FileBodyGenerator;
 import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
@@ -42,10 +43,12 @@ import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.client.util.PathContentProvider;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Sweeper;
@@ -63,6 +66,7 @@ import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -436,6 +440,10 @@ public class JettyHttpClient
                 StaticBodyGenerator staticBodyGenerator = (StaticBodyGenerator) bodyGenerator;
                 jettyRequest.content(new BytesContentProvider(staticBodyGenerator.getBody()));
             }
+            else if (bodyGenerator instanceof FileBodyGenerator) {
+                Path path = ((FileBodyGenerator) bodyGenerator).getPath();
+                jettyRequest.content(fileContentProvider(path));
+            }
             else {
                 jettyRequest.content(new BodyGeneratorContentProvider(bodyGenerator, httpClient.getExecutor()));
             }
@@ -454,6 +462,28 @@ public class JettyHttpClient
             jettyRequest.header(REALM_IN_CHALLENGE, "true");
         }
         return jettyRequest;
+    }
+
+    private static ContentProvider fileContentProvider(Path path)
+    {
+        try {
+            PathContentProvider provider = new PathContentProvider(null, path);
+            provider.setByteBufferPool(new ByteBufferPool()
+            {
+                @Override
+                public ByteBuffer acquire(int size, boolean direct)
+                {
+                    return ByteBuffer.allocate(size);
+                }
+
+                @Override
+                public void release(ByteBuffer buffer) {}
+            });
+            return provider;
+        }
+        catch (IOException e) {
+            throw Throwables.propagate(e);
+        }
     }
 
     public List<HttpRequestFilter> getRequestFilters()

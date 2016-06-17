@@ -30,6 +30,7 @@ import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
@@ -43,6 +44,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.nio.channels.UnresolvedAddressException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -56,6 +58,7 @@ import static com.google.common.base.Throwables.propagate;
 import static com.google.common.base.Throwables.propagateIfInstanceOf;
 import static com.google.common.base.Throwables.propagateIfPossible;
 import static com.google.common.net.HttpHeaders.ACCEPT_ENCODING;
+import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.airlift.concurrent.Threads.threadsNamed;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
@@ -71,12 +74,14 @@ import static io.airlift.testing.Closeables.closeQuietly;
 import static io.airlift.units.Duration.nanosSince;
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 @Test(singleThreaded = true)
@@ -523,6 +528,32 @@ public abstract class AbstractHttpClientTest
         assertEquals(servlet.getRequestHeaders("dupe"), ImmutableList.of("first", "second"));
         assertEquals(servlet.getRequestHeaders("x-custom-filter"), ImmutableList.of("custom value"));
         assertEquals(servlet.getRequestBytes(), new byte[] {1, 2, 5});
+    }
+
+    @Test
+    public void testPutMethodWithFileBodyGenerator()
+            throws Exception
+    {
+        byte[] contents = "hello world".getBytes(UTF_8);
+        File testFile = File.createTempFile("test", null);
+        Files.write(testFile.toPath(), contents);
+
+        URI uri = baseURI.resolve("/road/to/nowhere");
+        Request request = preparePut()
+                .setUri(uri)
+                .addHeader(CONTENT_TYPE, "x-test")
+                .setBodyGenerator(new FileBodyGenerator(testFile.toPath()))
+                .build();
+
+        int statusCode = executeRequest(request, createStatusResponseHandler()).getStatusCode();
+        assertEquals(statusCode, 200);
+        assertEquals(servlet.getRequestMethod(), "PUT");
+        assertEquals(servlet.getRequestUri(), uri);
+        assertEquals(servlet.getRequestHeaders(CONTENT_TYPE), ImmutableList.of("x-test"));
+        assertEquals(servlet.getRequestHeaders(CONTENT_LENGTH), ImmutableList.of(String.valueOf(contents.length)));
+        assertEquals(servlet.getRequestBytes(), contents);
+
+        assertTrue(testFile.delete());
     }
 
     @Test(expectedExceptions = {IOException.class, TimeoutException.class})
