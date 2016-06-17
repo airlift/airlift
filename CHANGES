@@ -1,5 +1,7 @@
 * 0.129
+
 - Add CpuTimer to stats
+- Add FileBodyGenerator for HTTP client
 
 * 0.128
 
