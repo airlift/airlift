@@ -29,6 +29,7 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.google.common.base.Objects.firstNonNull;
 import static io.airlift.event.client.EventDataType.validateFieldValueType;
@@ -57,14 +58,14 @@ public class EventFieldMetadata
 
     private final String name;
     private final Method method;
-    private final EventDataType eventDataType;
-    private final EventTypeMetadata<?> nestedType;
-    private final ContainerType containerType;
+    private final Optional<EventDataType> eventDataType;
+    private final Optional<EventTypeMetadata<?>> nestedType;
+    private final Optional<ContainerType> containerType;
 
-    EventFieldMetadata(String name, Method method, EventDataType eventDataType, EventTypeMetadata<?> nestedType, ContainerType containerType)
+    EventFieldMetadata(String name, Method method, Optional<EventDataType> eventDataType, Optional<EventTypeMetadata<?>> nestedType, Optional<ContainerType> containerType)
     {
-        Preconditions.checkArgument((eventDataType != null) || (nestedType != null), "both eventDataType and nestedType are null");
-        Preconditions.checkArgument((eventDataType == null) || (nestedType == null), "both eventDataType and nestedType are set");
+        Preconditions.checkArgument(eventDataType.isPresent() || nestedType.isPresent(), "both eventDataType and nestedType are unset");
+        Preconditions.checkArgument(!eventDataType.isPresent() || !nestedType.isPresent(), "both eventDataType and nestedType are set");
 
         this.name = name;
         this.method = method;
@@ -78,12 +79,18 @@ public class EventFieldMetadata
         return name;
     }
 
-    public EventTypeMetadata<?> getNestedType()
+    /**
+     * Returns Optional.empty() when this field does not contain a nested type.
+     */
+    public Optional<EventTypeMetadata<?>> getNestedType()
     {
         return nestedType;
     }
 
-    public ContainerType getContainerType()
+    /**
+     * Returns Optional.empty() when this field is not a container type.
+     */
+    public Optional<ContainerType> getContainerType()
     {
         return containerType;
     }
@@ -112,32 +119,33 @@ public class EventFieldMetadata
         Object value = getValue(event);
         if (value != null) {
             jsonGenerator.writeFieldName(name);
-            if (containerType == ContainerType.ITERABLE) {
-                validateFieldValueType(value, Iterable.class);
-                writeArray(jsonGenerator, (Iterable<?>) value, objectStack);
+            if (containerType.isPresent()) {
+                if (containerType.get() == ContainerType.ITERABLE) {
+                    validateFieldValueType(value, Iterable.class);
+                    writeArray(jsonGenerator, (Iterable<?>) value, objectStack);
+                }
+                else if (containerType.get() == ContainerType.MAP) {
+                    validateFieldValueType(value, Map.class);
+                    writeMap(jsonGenerator, (Map<?, ?>) value, objectStack);
+                }
+                else if (containerType.get() == ContainerType.MULTIMAP) {
+                    validateFieldValueType(value, Multimap.class);
+                    writeMultimap(jsonGenerator, (Multimap<?, ?>) value, objectStack);
+                }
+                return;
             }
-            else if (containerType == ContainerType.MAP) {
-                validateFieldValueType(value, Map.class);
-                writeMap(jsonGenerator, (Map<?, ?>) value, objectStack);
-            }
-            else if (containerType == ContainerType.MULTIMAP) {
-                validateFieldValueType(value, Multimap.class);
-                writeMultimap(jsonGenerator, (Multimap<?, ?>) value, objectStack);
-            }
-            else {
-                writeFieldValue(jsonGenerator, value, objectStack);
-            }
+            writeFieldValue(jsonGenerator, value, objectStack);
         }
     }
 
     private void writeFieldValue(JsonGenerator jsonGenerator, Object value, Deque<Object> objectStack)
             throws IOException
     {
-        if (eventDataType != null) {
-            eventDataType.writeFieldValue(jsonGenerator, value);
+        if (eventDataType.isPresent()) {
+            eventDataType.get().writeFieldValue(jsonGenerator, value);
         }
         else {
-            validateFieldValueType(value, nestedType.getEventClass());
+            validateFieldValueType(value, nestedType.get().getEventClass());
             writeObject(jsonGenerator, value, objectStack);
         }
     }
@@ -180,7 +188,7 @@ public class EventFieldMetadata
         checkForCycles(value, objectStack);
         objectStack.push(value);
         jsonGenerator.writeStartObject();
-        for (EventFieldMetadata field : nestedType.getFields()) {
+        for (EventFieldMetadata field : nestedType.get().getFields()) {
             field.writeField(jsonGenerator, value, objectStack);
         }
         jsonGenerator.writeEndObject();
