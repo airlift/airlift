@@ -32,6 +32,7 @@ import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.google.common.collect.Iterables.getFirst;
@@ -112,36 +113,36 @@ public final class EventTypeMetadata<T>
             method.setAccessible(true);
 
             Class<?> dataType = method.getReturnType();
-            ContainerType containerType = null;
+            Optional<ContainerType> containerType = Optional.empty();
 
             // extract container type and replace data type with it
             if (isIterable(dataType)) {
                 dataType = extractIterableType(method);
-                containerType = ContainerType.ITERABLE;
+                containerType = Optional.of(ContainerType.ITERABLE);
             }
             else if (isMap(dataType)) {
                 dataType = extractMapType(method, Map.class);
-                containerType = ContainerType.MAP;
+                containerType = Optional.of(ContainerType.MAP);
             }
             else if (isMultimap(dataType)) {
                 dataType = extractMapType(method, Multimap.class);
-                containerType = ContainerType.MULTIMAP;
+                containerType = Optional.of(ContainerType.MULTIMAP);
             }
 
             if (dataType == null) {
                 continue;
             }
 
-            EventDataType eventDataType = null;
-            EventTypeMetadata<?> nestedType = null;
+            Optional<EventDataType> eventDataType = Optional.empty();
+            Optional<EventTypeMetadata<?>> nestedType = Optional.empty();
 
             if (isNestedEvent(dataType)) {
-                nestedType = getNestedEventTypeMetadata(dataType, metadataClasses);
+                nestedType = Optional.of(getNestedEventTypeMetadata(dataType, metadataClasses));
             }
             else {
-                eventDataType = getEventDataType(dataType);
-                if (eventDataType == null) {
-                    Object typeSource = (containerType != null) ? containerType : "return";
+                eventDataType = Optional.ofNullable(getEventDataType(dataType));
+                if (!eventDataType.isPresent()) {
+                    Object typeSource = (containerType.isPresent()) ? containerType.get() : "return";
                     addMethodError("%s type [%s] is not supported", method, typeSource, dataType);
                     continue;
                 }
@@ -152,8 +153,8 @@ public final class EventTypeMetadata<T>
 
             if (eventField.fieldMapping() != EventFieldMapping.DATA) {
                 // validate special fields
-                if (containerType != null) {
-                    addMethodError("non-DATA fieldMapping (%s) not allowed for %s", method, eventField.fieldMapping(), containerType);
+                if (containerType.isPresent()) {
+                    addMethodError("non-DATA fieldMapping (%s) not allowed for %s", method, eventField.fieldMapping(), containerType.get());
                     continue;
                 }
                 if (nestedEvent) {
