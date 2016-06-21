@@ -2,6 +2,8 @@
 
 - Add CpuTimer to stats
 - Add FileBodyGenerator for HTTP client
+- Expose EventTypeMetadata and EventFieldMetadata classes
+- Remove requirement that nested event classes have no name
 
 * 0.128
 
