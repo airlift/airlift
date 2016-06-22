@@ -6,6 +6,7 @@
 - Expose EventTypeMetadata and EventFieldMetadata classes
 - Remove requirement that nested event classes have no name
 - Ignore EOFException (caused by client disconnect) while writing JSON HTTP response
+- Upgrade Jetty to 9.3.11.M0. This fixes a race when using async responses
 
 * 0.128
 
