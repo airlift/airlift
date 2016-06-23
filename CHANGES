@@ -1,3 +1,7 @@
+* 0.130
+
+- Move Jetty and Jersey dependencies from Airbase
+
 * 0.129
 
 - Add CpuTimer to stats
