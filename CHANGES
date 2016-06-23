@@ -1,6 +1,7 @@
 * 0.130
 
 - Move Jetty and Jersey dependencies from Airbase
+- Add getField method to EventTypeMetadata
 
 * 0.129
 
