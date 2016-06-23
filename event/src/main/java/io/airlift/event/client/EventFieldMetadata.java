@@ -37,14 +37,6 @@ import static io.airlift.event.client.EventDataType.validateFieldValueType;
 @Beta
 public class EventFieldMetadata
 {
-    public static final Comparator<EventFieldMetadata> NAME_COMPARATOR = new Comparator<EventFieldMetadata>()
-    {
-        public int compare(EventFieldMetadata a, EventFieldMetadata b)
-        {
-            return a.name.compareTo(b.name);
-        }
-    };
-
     public static enum ContainerType
     {
         ITERABLE, MAP, MULTIMAP;
