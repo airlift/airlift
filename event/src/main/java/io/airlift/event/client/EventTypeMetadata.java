@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
@@ -34,6 +35,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.stream.Collectors;
 
 import static com.google.common.collect.Iterables.getFirst;
 import static com.google.common.collect.Maps.newTreeMap;
@@ -78,7 +81,7 @@ public final class EventTypeMetadata<T>
     private final EventFieldMetadata uuidField;
     private final EventFieldMetadata timestampField;
     private final EventFieldMetadata hostField;
-    private final List<EventFieldMetadata> fields;
+    private final SortedMap<String, EventFieldMetadata> fields;
     private final List<String> errors;
 
     private EventTypeMetadata(Class<T> eventClass, List<String> errors, Map<Class<?>, EventTypeMetadata<?>> metadataClasses, boolean nestedEvent)
@@ -201,8 +204,7 @@ public final class EventTypeMetadata<T>
         this.uuidField = getFirst(specialFields.get(EventFieldMapping.UUID), null);
         this.timestampField = getFirst(specialFields.get(EventFieldMapping.TIMESTAMP), null);
         this.hostField = getFirst(specialFields.get(EventFieldMapping.HOST), null);
-
-        this.fields = Ordering.from(EventFieldMetadata.NAME_COMPARATOR).immutableSortedCopy(fields.values());
+        this.fields = ImmutableSortedMap.copyOf(fields);
 
         if (getErrors().isEmpty() && this.fields.isEmpty()) {
             addClassError("does not have any @X annotations");
@@ -389,7 +391,12 @@ public final class EventTypeMetadata<T>
 
     public List<EventFieldMetadata> getFields()
     {
-        return fields;
+        return ImmutableList.copyOf(fields.values());
+    }
+
+    public EventFieldMetadata getField(String fieldName)
+    {
+        return fields.get(fieldName);
     }
 
     public void addMethodError(String format, Method method, Object... args)
