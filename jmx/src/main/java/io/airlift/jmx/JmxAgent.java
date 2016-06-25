@@ -15,86 +15,76 @@
  */
 package io.airlift.jmx;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
-import com.google.common.net.HostAndPort;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
-import sun.management.Agent;
-import sun.management.jmxremote.ConnectorBootstrap;
-import sun.rmi.server.UnicastRef;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.annotation.concurrent.GuardedBy;
+import javax.management.MBeanServer;
 import javax.management.remote.JMXConnectorServer;
+import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
 
+import java.io.Closeable;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.net.MalformedURLException;
-import java.rmi.server.RemoteObject;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
-import static java.lang.String.format;
+import java.net.InetAddress;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
 public class JmxAgent
+    implements Closeable
 {
     private static final Logger log = Logger.get(JmxAgent.class);
 
     private final JMXServiceURL url;
+    private final int registryPort;
+    private final String host;
+    private final MBeanServer mBeanServer;
+
+    @GuardedBy("this")
+    private JMXConnectorServer connectorServer;
+
+    @GuardedBy("this")
+    private Registry registry;
 
     @Inject
-    public JmxAgent(JmxConfig config)
+    public JmxAgent(JmxConfig config, MBeanServer mBeanServer)
             throws IOException
     {
-        // first, see if the jmx agent is already started (e.g., via command line properties passed to the jvm)
-        HostAndPort address = getRunningAgentAddress(config.getRmiRegistryPort(), config.getRmiServerPort());
-        if (address != null) {
-            log.info("JMX agent already running and listening on %s", address);
+        this.mBeanServer = mBeanServer;
+
+        if (config.getRmiRegistryPort() == null) {
+            registryPort = NetUtils.findUnusedPort();
         }
         else {
-            // otherwise, start it manually
-            int registryPort;
-            if (config.getRmiRegistryPort() == null) {
-                registryPort = NetUtils.findUnusedPort();
-            }
-            else {
-                registryPort = config.getRmiRegistryPort();
-            }
-
-            int serverPort = 0;
-            if (config.getRmiServerPort() != null) {
-                serverPort = config.getRmiServerPort();
-            }
-
-            // This is somewhat of a hack, but the jmx agent in Oracle/OpenJDK doesn't
-            // have a programmatic API for starting it and controlling its parameters
-            System.setProperty("com.sun.management.jmxremote", "true");
-            System.setProperty("com.sun.management.jmxremote.port", Integer.toString(registryPort));
-            System.setProperty("com.sun.management.jmxremote.rmi.port", Integer.toString(serverPort));
-            System.setProperty("com.sun.management.jmxremote.authenticate", "false");
-            System.setProperty("com.sun.management.jmxremote.ssl", "false");
-
-            try {
-                Agent.startAgent();
-            }
-            catch (Exception e) {
-                throw Throwables.propagate(e);
-            }
-
-            try {
-                // This is how the jdk jmx agent constructs its url
-                JMXServiceURL url = new JMXServiceURL("rmi", null, registryPort);
-                address = HostAndPort.fromParts(url.getHost(), url.getPort());
-            }
-            catch (MalformedURLException e) {
-                // should not happen...
-                throw new AssertionError(e);
-            }
-
-            log.info("JMX agent started and listening on %s", address);
+            registryPort = config.getRmiRegistryPort();
         }
 
-        this.url = new JMXServiceURL(String.format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi", address.getHostText(), address.getPort()));
+        int rmiPort = 0;
+        if (config.getRmiServerPort() != null) {
+            rmiPort = config.getRmiServerPort();
+        }
+
+        host = InetAddress.getLocalHost().getHostName();
+        url = new JMXServiceURL(String.format("service:jmx:rmi://%s:%d/jndi/rmi://%s:%d/jmxrmi", host, rmiPort, host, registryPort));
+    }
+
+    @PostConstruct
+    public synchronized void start()
+    {
+        try {
+            registry = LocateRegistry.createRegistry(registryPort);
+            connectorServer = JMXConnectorServerFactory.newJMXConnectorServer(url, null, mBeanServer);
+            connectorServer.start();
+
+            log.info("JMX agent started and listening on %s:%s", host, registryPort);
+        }
+        catch (IOException e) {
+            Throwables.propagate(e);
+        }
     }
 
     public JMXServiceURL getUrl()
@@ -102,60 +92,11 @@ public class JmxAgent
         return url;
     }
 
-    @VisibleForTesting
-    static HostAndPort getRunningAgentAddress(Integer registryPort, Integer serverPort)
+    @PreDestroy
+    public synchronized void close()
+            throws IOException
     {
-        JMXConnectorServer jmxServer;
-        RemoteObject registry;
-        int actualRegistryPort;
-        try {
-            jmxServer = getField(Agent.class, JMXConnectorServer.class, "jmxServer");
-            registry = getField(ConnectorBootstrap.class, RemoteObject.class, "registry");
-
-            if (jmxServer == null || registry == null) {
-                log.warn("Cannot determine if JMX agent is already running (not an Oracle JVM?). Will try to start it manually.");
-                return null;
-            }
-
-            actualRegistryPort = ((UnicastRef) registry.getRef()).getLiveRef().getPort();
-        }
-        catch (Exception e) {
-            log.warn(e, "Cannot determine if JMX agent is already running. Will try to start it manually.");
-            return null;
-        }
-
-        checkState(actualRegistryPort > 0, "Expected actual RMI registry port to be > 0, actual: %s", actualRegistryPort);
-
-        // if registry port and server port were configured and the agent is already running, make sure
-        // the configuration agrees to avoid surprises
-        if (registryPort != null && registryPort != 0) {
-            checkArgument(actualRegistryPort == registryPort,
-                    "JMX agent is already running, but actual RMI registry port (%s) doesn't match configured port (%s)",
-                    actualRegistryPort,
-                    registryPort);
-        }
-
-        if (serverPort != null && serverPort != 0) {
-            int actualServerPort = jmxServer.getAddress().getPort();
-            checkArgument(actualServerPort == serverPort,
-                    "JMX agent is already running, but actual RMI server port (%s) doesn't match configured port (%s)",
-                    actualServerPort,
-                    serverPort);
-        }
-
-        return HostAndPort.fromParts(jmxServer.getAddress().getHost(), actualRegistryPort);
-    }
-
-    private static <T> T getField(Class<?> clazz, Class<T> returnType, String name)
-            throws Exception
-    {
-        Field field = clazz.getDeclaredField(name);
-        field.setAccessible(true);
-        try {
-            return returnType.cast(field.get(clazz));
-        }
-        catch (ClassCastException e) {
-            throw new IllegalArgumentException(format("Field %s in class %s is not of type %s, actual: %s", name, clazz.getName(), returnType.getName(), field.getType().getName()), e);
-        }
+        connectorServer.stop();
+        UnicastRemoteObject.unexportObject(registry, true);
     }
 }
