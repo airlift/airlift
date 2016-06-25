@@ -27,7 +27,7 @@
 
         <dependency>
             <groupId>org.apache.bval</groupId>
-            <artifactId>bval-jsr303</artifactId>
+            <artifactId>bval-jsr</artifactId>
         </dependency>
 
         <dependency>

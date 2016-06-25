@@ -16,7 +16,7 @@
 package io.airlift.testing;
 
 import com.google.common.annotations.Beta;
-import org.apache.bval.jsr303.ApacheValidationProvider;
+import org.apache.bval.jsr.ApacheValidationProvider;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;

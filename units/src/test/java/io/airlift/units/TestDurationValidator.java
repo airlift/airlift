@@ -17,7 +17,7 @@ package io.airlift.units;
 
 import com.google.common.base.Throwables;
 import io.airlift.testing.Assertions;
-import org.apache.bval.jsr303.ApacheValidationProvider;
+import org.apache.bval.jsr.ApacheValidationProvider;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

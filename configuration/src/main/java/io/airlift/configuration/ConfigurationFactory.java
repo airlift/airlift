@@ -39,7 +39,7 @@ import com.google.inject.spi.Element;
 import com.google.inject.spi.Message;
 import com.google.inject.spi.ProviderInstanceBinding;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
-import org.apache.bval.jsr303.ApacheValidationProvider;
+import org.apache.bval.jsr.ApacheValidationProvider;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;

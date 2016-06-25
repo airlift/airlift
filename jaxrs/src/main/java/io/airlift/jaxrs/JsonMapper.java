@@ -30,7 +30,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HttpHeaders;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
-import org.apache.bval.jsr303.ApacheValidationProvider;
+import org.apache.bval.jsr.ApacheValidationProvider;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
