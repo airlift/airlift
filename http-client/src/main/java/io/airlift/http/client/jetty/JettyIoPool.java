@@ -17,6 +17,10 @@ import static java.lang.Thread.currentThread;
 public final class JettyIoPool
         implements Closeable
 {
+    static {
+        JettyLogging.setup();
+    }
+
     private final String name;
     private final QueuedThreadPool executor;
     private final ByteBufferPool byteBufferPool;
