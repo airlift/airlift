@@ -287,7 +287,7 @@ public class QuantileDigest
     {
         List<Long> accumulator = new ArrayList<Long>(quantiles.size());
 
-        for (Double q : quantiles) {
+        for (double q : quantiles) {
             accumulator.add(getQuantile(q));
         }
         return accumulator;
@@ -376,53 +376,74 @@ public class QuantileDigest
         return builder.build();
     }
 
-    public double getCDF(long x) {
-        final ImmutableList.Builder<Double> builder = ImmutableList.builder();
-        final long value = x;
+    /*
+     * Let F be the CDF (Cumulative Distribution Function) of the data
+     * The q quantile is defined to be F^-1(q)
+     *
+     * The Q-digest stores a discretized copy of the data that is efficienctly stored with counts
+     * This means only an approximation Fhat to F can be computed
+     *
+     * The naive Q-Digest algorithm uses a worst case approximation Fhat that is guaranteed to be <= F
+     * This is very poor in practice in areas where the density is low. It works by assuming that any
+     * discretized point has value equal to the largest possible value it can take.
+     *
+     * This implements an approximation Fhat that performs linear interpolation over the range of possible values.
+     * Equivalanetly, a discretized point is treated as encoding a uniform distribution over the range of possible
+     * values it could have been discretized from.
+     */
+    public double getCDF(long x)
+    {
+        double[] totalWeight = {0.0};
 
         inOrderTraversal(root, new Callback() {
             protected double sum = 0.0;
 
-            public boolean process(Node node) {
+            public boolean process(Node node)
+            {
                 long lower = Math.max(min, node.getLowerBound());
                 long upper = Math.min(max, node.getUpperBound());
 
-                if(value >= upper) {
+                if (x >= upper) {
                     sum += node.weightedCount;
-                    if (node.isLeaf() && value == upper) {
-                        builder.add(sum);
+                    if (node.isLeaf() && x == upper) {
+                        totalWeight[0] = sum;
                         return false;
                     }
+                    totalWeight[0] = sum;
                     return true;
-                } else if(value < lower) {
+                } else if (x < lower) {
                     // Stop if gone too far
-                    builder.add(sum);
+                    totalWeight[0] = sum;
                     return false;
                 } else {
-                    // interpolate
-                    double ratio = (value - lower) / (double) (upper - lower);
-                    if (node.right == null && node.left != null) {
+                    // interpolate by assuming a uniform distribution
+                    // (lower, upper) represent the range of possible values
+                    // In the case where the node overlaps with the max (or min) and all the mass in
+                    // the children is only on the side closer to the median,
+                    // assume the distribution is skewed and put all the mass on that side except for
+                    // mass 1 on the min/max itself
+                    double ratio = (x - lower) / (double) (upper - lower);
+                    if (max <= upper && node.right == null && node.left != null) {
                         long middle = Math.min(max, node.getMiddle());
-                        ratio = Math.max(0, value - middle) / (double) (upper - middle);
-                        sum += node.weightedCount * ratio;
-                    } else {
-                        sum += node.weightedCount * ratio;
+                        ratio = Math.min(middle - lower, x - lower) / (double) Math.max(1, middle - lower);
+                    } else if (max >= lower && node.left == null && node.right != null) {
+                        long middle = Math.max(min, node.getMiddle());
+                        ratio = Math.max(0, x - middle) / (double) Math.max(1, upper - middle);
                     }
+                    sum += node.weightedCount * ratio;
+
                 }
 
+                totalWeight[0] = sum;
                 return true;
             }
         }, TraversalOrder.FORWARD);
 
-        List<Double> tmp = builder.build();
-        if(tmp.size() == 0) {
-            return 1.0;
-        } else {
-            return tmp.get(0) / weightedCount;
-        }
+        return totalWeight[0] / weightedCount;
     }
 
-    public long getQuantileFromCDF(double p) {
+    public long getQuantileFromCDF(double p)
+    {
         if (root == null) {
             return Long.MAX_VALUE;
         }
@@ -449,6 +470,7 @@ public class QuantileDigest
         }
 
         q = getCDF(lower);
+
         // Preserve unusual quantile semantics where the cdf
         // F(x) = P(X <= x + 1/n) rather than P(X <= x)
         if (q < p + 1.0 / weightedCount + tol) {
@@ -972,7 +994,7 @@ public class QuantileDigest
         return callback.process(node);
     }
 
-    protected boolean inOrderTraversal(Node node, Callback callback, TraversalOrder order)
+    private boolean inOrderTraversal(Node node, Callback callback, TraversalOrder order)
     {
         if (node == null) {
             return false;
