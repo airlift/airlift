@@ -391,7 +391,7 @@ public class QuantileDigest
      * Equivalanetly, a discretized point is treated as encoding a uniform distribution over the range of possible
      * values it could have been discretized from.
      */
-    public double getCDF(long x)
+    private double getCDF(long x)
     {
         double[] totalWeight = {0.0};
 
