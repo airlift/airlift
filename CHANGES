@@ -1,3 +1,7 @@
+* 0.131
+
+- Statically configure logging for Jetty HTTP client
+
 * 0.130
 
 - Move Jetty and Jersey dependencies from Airbase
