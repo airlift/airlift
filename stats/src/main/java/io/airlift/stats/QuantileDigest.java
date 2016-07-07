@@ -442,6 +442,15 @@ public class QuantileDigest
         return totalWeight[0] / weightedCount;
     }
 
+    /*
+     * The p quantile is typically defined to be F^-1(p) where F is the CDF
+     * Or more precisely, argmin_x F(x) >= p since the CDF isn't exactly invertible
+     * The previous CDF implementation has somewhat odd semantics where it's equivalent to
+     * argmin_x F(x) >= p + 1/n.
+     *
+     * getQuantileFromCDF essentially computes this inverse using bisection
+     *
+     */
     public long getQuantileFromCDF(double p)
     {
         if (root == null) {
