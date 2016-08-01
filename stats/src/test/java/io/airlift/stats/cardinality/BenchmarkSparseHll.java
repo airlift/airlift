@@ -13,8 +13,8 @@
  */
 package io.airlift.stats.cardinality;
 
+import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.GenerateMicroBenchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 @Measurement(iterations = 10, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 public class BenchmarkSparseHll
 {
-    @GenerateMicroBenchmark
+    @Benchmark
     public SparseHll benchmarkInsert(Data data)
     {
         for (long hash : data.hashes) {
