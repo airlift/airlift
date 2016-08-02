@@ -1,3 +1,7 @@
+* 0.132
+
+- Upgrade Jetty to 9.3.11.v20160721
+
 * 0.131
 
 - Statically configure logging for Jetty HTTP client
