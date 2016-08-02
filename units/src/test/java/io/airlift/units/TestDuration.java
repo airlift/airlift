@@ -130,13 +130,15 @@ public class TestDuration
     public void testNonEnglishLocale(String expectedString, double value, TimeUnit unit)
             throws Exception
     {
-        Locale previous = Locale.getDefault();
-        Locale.setDefault(Locale.GERMAN);
-        try {
-            assertEquals(new Duration(value, unit).toString(), expectedString);
-        }
-        finally {
-            Locale.setDefault(previous);
+        synchronized (Locale.class) {
+            Locale previous = Locale.getDefault();
+            Locale.setDefault(Locale.GERMAN);
+            try {
+                assertEquals(new Duration(value, unit).toString(), expectedString);
+            }
+            finally {
+                Locale.setDefault(previous);
+            }
         }
     }
 

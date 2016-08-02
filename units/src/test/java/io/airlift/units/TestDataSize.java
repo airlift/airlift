@@ -101,13 +101,15 @@ public class TestDataSize
     @Test(dataProvider = "printedValues")
     public void testNonEnglishLocale(String expectedString, double value, DataSize.Unit unit)
     {
-        Locale previous = Locale.getDefault();
-        Locale.setDefault(Locale.GERMAN);
-        try {
-            assertEquals(new DataSize(value, unit).toString(), expectedString);
-        }
-        finally {
-            Locale.setDefault(previous);
+        synchronized (Locale.class) {
+            Locale previous = Locale.getDefault();
+            Locale.setDefault(Locale.GERMAN);
+            try {
+                assertEquals(new DataSize(value, unit).toString(), expectedString);
+            }
+            finally {
+                Locale.setDefault(previous);
+            }
         }
     }
 
