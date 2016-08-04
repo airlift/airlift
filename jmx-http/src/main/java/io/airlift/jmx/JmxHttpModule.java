@@ -33,7 +33,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import io.airlift.discovery.client.DiscoveryBinder;
-import sun.management.LazyCompositeData;
 
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
@@ -66,9 +65,6 @@ public class JmxHttpModule implements Module
         jsonBinder(binder).addSerializerBinding(CompositeData.class).to(CompositeDataSerializer.class);
         jsonBinder(binder).addSerializerBinding(TabularData.class).to(TabularDataSerializer.class);
         jsonBinder(binder).addDeserializerBinding(ObjectName.class).to(ObjectNameDeserializer.class);
-
-        // jackson has a bug in the serializer selection code so it does not know that subclasses of LazyCompositeData are also CompositeData
-        jsonBinder(binder).addSerializerBinding(LazyCompositeData.class).to(CompositeDataSerializer.class);
 
         DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("jmx-http");
     }
