@@ -16,7 +16,7 @@
     </properties>
 
     <dependencies>
-        // TODO: remove after upgrade to Java 9
+        <!-- TODO: remove after upgrade to Java 9 -->
         <dependency>
             <groupId>com.sun</groupId>
             <artifactId>tools</artifactId>
