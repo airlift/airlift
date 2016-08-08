@@ -23,6 +23,7 @@ import com.google.common.io.ByteStreams;
 import com.google.common.net.MediaType;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.List;
 
@@ -104,6 +105,7 @@ public class StringResponseHandler implements ResponseHandler<StringResponse, Ru
             return body;
         }
 
+        @Nullable
         public String getHeader(String name)
         {
             List<String> values = getHeaders().get(HeaderName.of(name));

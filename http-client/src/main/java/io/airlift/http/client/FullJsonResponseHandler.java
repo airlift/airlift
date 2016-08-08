@@ -22,6 +22,7 @@ import com.google.common.net.MediaType;
 import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.json.JsonCodec;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -133,6 +134,7 @@ public class FullJsonResponseHandler<T>
             return statusMessage;
         }
 
+        @Nullable
         public String getHeader(String name)
         {
             List<String> values = getHeaders().get(HeaderName.of(name));
