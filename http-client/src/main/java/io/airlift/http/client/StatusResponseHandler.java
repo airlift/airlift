@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
@@ -71,6 +72,7 @@ public class StatusResponseHandler implements ResponseHandler<StatusResponse, Ru
             return statusMessage;
         }
 
+        @Nullable
         public String getHeader(String name)
         {
             List<String> values = getHeaders().get(HeaderName.of(name));
