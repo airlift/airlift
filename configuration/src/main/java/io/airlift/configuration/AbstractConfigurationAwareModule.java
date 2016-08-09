@@ -15,6 +15,7 @@ package io.airlift.configuration;
 
 import com.google.common.annotations.Beta;
 import com.google.inject.Binder;
+import com.google.inject.Module;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -58,9 +59,11 @@ public abstract class AbstractConfigurationAwareModule
         return configurationFactory.build(configClass, prefix);
     }
 
-    protected synchronized void install(ConfigurationAwareModule module)
+    protected synchronized void install(Module module)
     {
-        module.setConfigurationFactory(configurationFactory);
+        if (module instanceof ConfigurationAwareModule) {
+            ((ConfigurationAwareModule) module).setConfigurationFactory(configurationFactory);
+        }
         binder.install(module);
     }
 
