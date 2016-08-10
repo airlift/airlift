@@ -122,10 +122,6 @@ public class TestBoundedExecutor
         };
         BoundedExecutor boundedExecutor = new BoundedExecutor(executor, 1); // Enforce single thread
 
-        CountDownLatch completeLatch = new CountDownLatch(1);
-        boundedExecutor.execute(completeLatch::countDown);
-        assertTrue(Uninterruptibles.awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES));
-
         // Force the underlying executor to fail
         reject.set(true);
         try {
