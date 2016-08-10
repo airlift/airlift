@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class TestBoundedExecutor
@@ -66,7 +67,7 @@ public class TestBoundedExecutor
             });
         }
 
-        Uninterruptibles.awaitUninterruptibly(initializeLatch, 1, TimeUnit.MINUTES); // Wait for pre-load tasks to initialize
+        assertTrue(Uninterruptibles.awaitUninterruptibly(initializeLatch, 1, TimeUnit.MINUTES)); // Wait for pre-load tasks to initialize
         startLatch.countDown(); // Signal go for stage1 threads
 
         // Concurrently submitted tasks
@@ -83,7 +84,7 @@ public class TestBoundedExecutor
             });
         }
 
-        Uninterruptibles.awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES); // Wait for tasks to complete
+        assertTrue(Uninterruptibles.awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES)); // Wait for tasks to complete
         Assert.assertEquals(counter.get(), totalTasks);
     }
 
@@ -123,7 +124,7 @@ public class TestBoundedExecutor
 
         CountDownLatch completeLatch = new CountDownLatch(1);
         boundedExecutor.execute(completeLatch::countDown);
-        Uninterruptibles.awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES);
+        assertTrue(Uninterruptibles.awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES));
 
         // Force the underlying executor to fail
         reject.set(true);
@@ -173,7 +174,7 @@ public class TestBoundedExecutor
             });
         }
 
-        Uninterruptibles.awaitUninterruptibly(initializeLatch, 1, TimeUnit.MINUTES); // Wait for pre-load tasks to initialize
+        assertTrue(Uninterruptibles.awaitUninterruptibly(initializeLatch, 1, TimeUnit.MINUTES)); // Wait for pre-load tasks to initialize
         startLatch.countDown(); // Signal go for stage1 threads
 
         // Concurrently submitted tasks
@@ -192,7 +193,7 @@ public class TestBoundedExecutor
             });
         }
 
-        Uninterruptibles.awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES); // Wait for tasks to complete
+        assertTrue(Uninterruptibles.awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES)); // Wait for tasks to complete
 
         Assert.assertFalse(failed.get());
     }
