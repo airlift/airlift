@@ -1,6 +1,11 @@
 * 0.134
 
 - Add ConditionalModule
+- Alternative JMX agent implementation for Java 8 vs 9
+
+* 0.133
+
+- Fix issue with IntelliJ mishandling of system-scoped dependencies
 
 * 0.132
 
