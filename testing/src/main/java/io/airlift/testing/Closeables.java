@@ -44,7 +44,8 @@ public final class Closeables
                 if (rootCause == null) {
                     rootCause = e;
                 }
-                else {
+                else if (rootCause != e) {
+                    // Self-suppression not permitted
                     rootCause.addSuppressed(e);
                 }
             }
@@ -52,7 +53,8 @@ public final class Closeables
                 if (rootCause == null) {
                     rootCause = new IOException(e);
                 }
-                else {
+                else if (rootCause != e) {
+                    // Self-suppression not permitted
                     rootCause.addSuppressed(e);
                 }
             }
@@ -78,7 +80,8 @@ public final class Closeables
                 if (rootCause == null) {
                     rootCause = new RuntimeException(e);
                 }
-                else {
+                else if (rootCause != e) {
+                    // Self-suppression not permitted
                     rootCause.addSuppressed(e);
                 }
             }
@@ -101,7 +104,10 @@ public final class Closeables
                 }
             }
             catch (Throwable e) {
-                rootCause.addSuppressed(e);
+                // Self-suppression not permitted
+                if (rootCause != e) {
+                    rootCause.addSuppressed(e);
+                }
             }
         }
         return rootCause;
