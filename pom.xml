@@ -20,8 +20,6 @@
 
     <properties>
         <air.check.skip-extended>true</air.check.skip-extended>
-        <air.check.fail-all>false</air.check.fail-all>
-        <air.check.fail-basic>true</air.check.fail-basic>
         <air.java.version>1.8.0-40</air.java.version>
 
         <dep.airlift.version>0.135-SNAPSHOT</dep.airlift.version>
