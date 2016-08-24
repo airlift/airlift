@@ -1,3 +1,7 @@
+* 0.135
+
+- Add ThreadLocalCache
+
 * 0.134
 
 - Add ConditionalModule
