@@ -1,6 +1,9 @@
 * 0.135
 
 - Add ThreadLocalCache
+- Upgrade to Jackson 2.8.1
+- Extract units to a standalone project
+- Prevent self-supression in Closeables
 
 * 0.134
 

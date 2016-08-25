@@ -1,3 +1,25 @@
+Airlift 0.135
+
+* Units
+
+The units module has been extracted into a separate, standalone
+project. The Maven groupId and artifactId are the same, with the
+version updated to 1.0.
+
+* Upgrade to Jackson 2.8.1
+
+Airlift 0.134
+
+Minor maintenance release. See CHANGES.
+
+Airlift 0.133
+
+Minor maintenance release. See CHANGES.
+
+Airlift 0.132
+
+Minor maintenance release. See CHANGES.
+
 Airlift 0.131
 
 Minor maintenance release. See CHANGES.
