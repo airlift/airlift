@@ -21,6 +21,7 @@ import com.google.common.collect.ListMultimap;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.List;
 
 @Beta
@@ -45,6 +46,9 @@ public interface Response
     ListMultimap<HeaderName, String> getHeaders();
 
     long getBytesRead();
+
+    ByteBuffer getBytes()
+            throws IOException;
 
     InputStream getInputStream()
             throws IOException;

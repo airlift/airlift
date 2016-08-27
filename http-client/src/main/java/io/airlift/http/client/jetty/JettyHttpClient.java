@@ -52,6 +52,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Sweeper;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
@@ -88,6 +89,8 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.io.ByteStreams.toByteArray;
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -232,6 +235,8 @@ public class JettyHttpClient
 
         try {
             httpClient.start();
+            checkState(httpClient.isStarted(), "Http Client is not started");
+            checkSufficientThreads(httpClient.getExecutor());
 
             // remove the GZIP encoding from the client
             // TODO: there should be a better way to to do this
@@ -370,10 +375,10 @@ public class JettyHttpClient
         // process response
         long responseStart = System.nanoTime();
 
-        JettyResponse jettyResponse = null;
+        StreamingJettyResponse jettyResponse = null;
         T value;
         try {
-            jettyResponse = new JettyResponse(response, listener.getInputStream());
+            jettyResponse = new StreamingJettyResponse(response, listener.getInputStream());
             value = responseHandler.handle(request, jettyResponse);
         }
         finally {
@@ -407,6 +412,17 @@ public class JettyHttpClient
             future.failed(e);
         }
         return future;
+    }
+
+    private void checkSufficientThreads(Executor executor)
+    {
+        if (executor instanceof ThreadPool) {
+            ThreadPool queuedThreadPool = (ThreadPool) executor;
+            checkState(!queuedThreadPool.isLowOnThreads(), "insufficient threads configured for http client");
+        }
+        else {
+            throw new IllegalStateException("Unable to check number of threads");
+        }
     }
 
     private Request applyRequestFilters(Request request)
@@ -698,17 +714,15 @@ public class JettyHttpClient
         return creationLocation.getStackTrace();
     }
 
-    private static class JettyResponse
+    private static abstract class AbstractJettyResponse
             implements io.airlift.http.client.Response
     {
         private final Response response;
-        private final CountingInputStream inputStream;
         private final ListMultimap<HeaderName, String> headers;
 
-        public JettyResponse(Response response, InputStream inputStream)
+        public AbstractJettyResponse(Response response)
         {
             this.response = response;
-            this.inputStream = new CountingInputStream(inputStream);
             this.headers = toHeadersMap(response.getHeaders());
         }
 
@@ -731,18 +745,6 @@ public class JettyHttpClient
         }
 
         @Override
-        public long getBytesRead()
-        {
-            return inputStream.getCount();
-        }
-
-        @Override
-        public InputStream getInputStream()
-        {
-            return inputStream;
-        }
-
-        @Override
         public String toString()
         {
             return toStringHelper(this)
@@ -761,6 +763,72 @@ public class JettyHttpClient
                 }
             }
             return builder.build();
+        }
+    }
+
+    private static class StreamingJettyResponse
+            extends AbstractJettyResponse
+    {
+        private final CountingInputStream inputStream;
+
+        public StreamingJettyResponse(Response response, InputStream inputStream)
+        {
+            super(response);
+            this.inputStream = new CountingInputStream(inputStream);
+        }
+
+        @Override
+        public long getBytesRead()
+        {
+            return inputStream.getCount();
+        }
+
+        @Override
+        public InputStream getInputStream()
+        {
+            return inputStream;
+        }
+
+        @Override
+        public ByteBuffer getBytes()
+                throws IOException
+        {
+            return ByteBuffer.wrap(toByteArray(inputStream));
+        }
+    }
+
+    private static class BufferedJettyResponse
+            extends AbstractJettyResponse
+    {
+        private final CountingInputStream inputStream;
+        private final byte[] data;
+        private final int length;
+
+        public BufferedJettyResponse(Response response, byte[] data, int length)
+        {
+            super(response);
+            this.data = data;
+            this.length = length;
+            this.inputStream = new CountingInputStream(new ByteArrayInputStream(data, 0, length));
+        }
+
+        @Override
+        public long getBytesRead()
+        {
+            return inputStream.getCount();
+        }
+
+        @Override
+        public InputStream getInputStream()
+        {
+            return inputStream;
+        }
+
+        @Override
+        public ByteBuffer getBytes()
+                throws IOException
+        {
+            return ByteBuffer.wrap(data, 0, length);
         }
     }
 
@@ -817,7 +885,7 @@ public class JettyHttpClient
             }
         }
 
-        protected void completed(Response response, InputStream content)
+        protected void completed(Response response, byte[] data, int length)
         {
             if (state.get() == JettyAsyncHttpState.CANCELED) {
                 return;
@@ -825,7 +893,7 @@ public class JettyHttpClient
 
             T value;
             try {
-                value = processResponse(response, content);
+                value = processResponse(response, data, length);
             }
             catch (Throwable e) {
                 // this will be an instance of E from the response handler or an Error
@@ -836,7 +904,7 @@ public class JettyHttpClient
             set(value);
         }
 
-        private T processResponse(Response response, InputStream content)
+        private T processResponse(Response response, byte[] data, int length)
                 throws E
         {
             // this time will not include the data fetching portion of the response,
@@ -844,10 +912,10 @@ public class JettyHttpClient
             long responseStart = System.nanoTime();
 
             state.set(JettyAsyncHttpState.PROCESSING_RESPONSE);
-            JettyResponse jettyResponse = null;
+            BufferedJettyResponse jettyResponse = null;
             T value;
             try {
-                jettyResponse = new JettyResponse(response, content);
+                jettyResponse = new BufferedJettyResponse(response, data, length);
                 value = responseHandler.handle(request, jettyResponse);
             }
             finally {
@@ -910,7 +978,7 @@ public class JettyHttpClient
         }
     }
 
-    private static void recordRequestComplete(RequestStats requestStats, Request request, long requestStart, JettyResponse response, long responseStart)
+    private static void recordRequestComplete(RequestStats requestStats, Request request, long requestStart, AbstractJettyResponse response, long responseStart)
     {
         if (response == null) {
             return;
@@ -1104,7 +1172,7 @@ public class JettyHttpClient
                 future.failed(throwable);
             }
             else {
-                future.completed(result.getResponse(), new ByteArrayInputStream(buffer, 0, size));
+                future.completed(result.getResponse(), buffer, size);
             }
         }
     }
