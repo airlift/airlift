@@ -8,8 +8,6 @@ import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.log.Logging;
 import io.airlift.testing.Closeables;
 import io.airlift.units.Duration;
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -53,7 +51,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.zip.Deflater;
 
 import static com.google.common.base.Throwables.getStackTraceAsString;
 import static com.google.common.base.Throwables.propagate;
@@ -157,7 +154,7 @@ public abstract class AbstractHttpClientTest
 
         ServletHolder servletHolder = new ServletHolder(servlet);
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
-        context.setGzipHandler(new HackGzipHandler());
+        context.setGzipHandler(new GzipHandler());
         context.addServlet(servletHolder, "/*");
         HandlerCollection handlers = new HandlerCollection();
         handlers.addHandler(context);
@@ -1133,22 +1130,6 @@ public abstract class AbstractHttpClientTest
 
             // e.getCause() is some direct subclass of throwable
             throw propagate(e.getCause());
-        }
-    }
-
-    // TODO: remove this when fixed in Jetty
-    private static class HackGzipHandler
-            extends GzipHandler
-    {
-        @Override
-        public Deflater getDeflater(org.eclipse.jetty.server.Request request, long content_length)
-        {
-            // GzipHandler incorrectly skips this check for HTTP/2
-            HttpField accept = request.getHttpFields().getField(HttpHeader.ACCEPT_ENCODING);
-            if ((accept == null) || !accept.contains("gzip")) {
-                return null;
-            }
-            return super.getDeflater(request, content_length);
         }
     }
 }
