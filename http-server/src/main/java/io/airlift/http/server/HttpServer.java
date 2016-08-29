@@ -253,7 +253,7 @@ public class HttpServer
         HandlerCollection handlers = new HandlerCollection();
 
         for (HttpResourceBinding resource : resources) {
-            GzipHandler gzipHandler = new HackGzipHandler();
+            GzipHandler gzipHandler = new GzipHandler();
             gzipHandler.setHandler(new ClassPathResourceHandler(resource.getBaseUri(), resource.getClassPathResourceBase(), resource.getWelcomeFiles()));
             handlers.addHandler(gzipHandler);
         }
@@ -308,7 +308,7 @@ public class HttpServer
             context.addFilter(new FilterHolder(filter), "/*", null);
         }
         // -- gzip handler
-        context.setGzipHandler(new HackGzipHandler());
+        context.setGzipHandler(new GzipHandler());
 
         // -- the servlet
         ServletHolder servletHolder = new ServletHolder(theServlet);
