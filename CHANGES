@@ -1,3 +1,7 @@
+* 0.136
+
+- Revert Jetty to 9.3.9.M1
+
 * 0.135
 
 - Add ThreadLocalCache
