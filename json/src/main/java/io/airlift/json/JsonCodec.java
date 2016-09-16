@@ -21,11 +21,14 @@ import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
+import io.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -151,6 +154,29 @@ public class JsonCodec<T>
     {
         try {
             return mapper.writeValueAsString(instance);
+        }
+        catch (IOException e) {
+            throw new IllegalArgumentException(String.format("%s could not be converted to json", instance.getClass().getName()), e);
+        }
+    }
+
+    /**
+     * Converts the specified instance to optional json string with a length limit. Returns Optional.empty() if length limit is exceeded.
+     *
+     * @param instance the instance to convert to json
+     * @param lengthLimit the maximum length of the serialized string in bytes
+     * @return json string
+     * @throws IllegalArgumentException if the specified instance can not be converted to json
+     */
+    public Optional<String> toJsonWithLengthLimit(T instance, int lengthLimit)
+    {
+        try (StringWriter stringWriter = new StringWriter();
+                LengthLimitedWriter lengthLimitedWriter = new LengthLimitedWriter(stringWriter, lengthLimit)) {
+            mapper.writeValue(lengthLimitedWriter, instance);
+            return Optional.of(stringWriter.getBuffer().toString());
+        }
+        catch (LengthLimitExceededException e) {
+            return Optional.empty();
         }
         catch (IOException e) {
             throw new IllegalArgumentException(String.format("%s could not be converted to json", instance.getClass().getName()), e);
