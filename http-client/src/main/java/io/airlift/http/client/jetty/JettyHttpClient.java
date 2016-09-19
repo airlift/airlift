@@ -44,6 +44,7 @@ import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.PathContentProvider;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -191,7 +192,15 @@ public class JettyHttpClient
             httpClient = new SpnegoHttpClient(kerberosConfig, config, transport, sslContextFactory);
         }
         else {
-            httpClient = new HttpClient(transport, sslContextFactory);
+            httpClient = new HttpClient(transport, sslContextFactory)
+            {
+                protected org.eclipse.jetty.client.api.Request copyRequest(HttpRequest request, URI uri)
+                {
+                    org.eclipse.jetty.client.api.Request copy = super.copyRequest(request, uri);
+                    copyCustomHeaders(request, copy);
+                    return copy;
+                }
+            };
         }
 
         httpClient.setMaxConnectionsPerDestination(config.getMaxConnectionsPerServer());
@@ -1434,6 +1443,29 @@ public class JettyHttpClient
         {
             authenticationStore.clearAuthenticationResults();
             super.doStop();
+        }
+
+        protected org.eclipse.jetty.client.api.Request copyRequest(HttpRequest request, URI uri)
+        {
+            org.eclipse.jetty.client.api.Request copy = super.copyRequest(request, uri);
+            copyCustomHeaders(request, copy);
+            return copy;
+        }
+    }
+
+    /*
+     * Must be removed after https://github.com/eclipse/jetty.project/pull/937 is released
+     */
+    private static void copyCustomHeaders(org.eclipse.jetty.client.api.Request from, org.eclipse.jetty.client.api.Request to)
+    {
+        for (HttpField field : from.getHeaders()) {
+            if (field.getHeader() == null) {
+                String name = field.getName();
+                String value = field.getValue();
+                if (!to.getHeaders().contains(name, value)) {
+                    to.header(name, value);
+                }
+            }
         }
     }
 }
