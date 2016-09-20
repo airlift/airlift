@@ -453,6 +453,7 @@ public class TestMoreFutures
         assertFalse(timeoutFuture.isCancelled());
 
         // root exception is cancelled on a timeout
+        assertFailure(() -> rootFuture.get(10, SECONDS), e -> assertInstanceOf(e, CancellationException.class));
         assertTrue(rootFuture.isDone());
         assertTrue(rootFuture.isCancelled());
     }
@@ -472,6 +473,7 @@ public class TestMoreFutures
         assertTrue(timeoutFuture.isCancelled());
 
         // root exception is cancelled on a timeout
+        assertFailure(() -> rootFuture.get(10, SECONDS), e -> assertInstanceOf(e, CancellationException.class));
         assertTrue(rootFuture.isDone());
         assertTrue(rootFuture.isCancelled());
     }
