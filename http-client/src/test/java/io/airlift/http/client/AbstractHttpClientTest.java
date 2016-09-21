@@ -963,9 +963,8 @@ public abstract class AbstractHttpClientTest
 
         @Override
         public String handle(Request request, Response response)
-                throws CapturedException
         {
-            throw new UnsupportedOperationException();
+            return null;
         }
     }
 
