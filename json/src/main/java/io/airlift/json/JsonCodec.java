@@ -164,7 +164,7 @@ public class JsonCodec<T>
      * Converts the specified instance to optional json string with a length limit. Returns Optional.empty() if length limit is exceeded.
      *
      * @param instance the instance to convert to json
-     * @param lengthLimit the maximum length of the serialized string in bytes
+     * @param lengthLimit the maximum length of the serialized string in characters
      * @return json string
      * @throws IllegalArgumentException if the specified instance can not be converted to json
      */
