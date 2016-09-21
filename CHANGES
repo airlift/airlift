@@ -1,3 +1,7 @@
+* 0.138
+
+- Add toJsonWithLengthLimit to JsonCodec
+
 * 0.137
 
 - Set ThreadContextClassLoader to null when loading bval
