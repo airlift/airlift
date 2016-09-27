@@ -60,7 +60,7 @@ public class TestFullJsonResponseHandler
         assertEquals(response.getException().getMessage(),
                 "Unable to create " + User.class + " from JSON response:\n" + json);
         assertTrue(response.getException().getCause() instanceof IllegalArgumentException);
-        assertEquals(response.getException().getCause().getMessage(), "Invalid [simple type, class io.airlift.http.client.TestFullJsonResponseHandler$User] json bytes");
+        assertEquals(response.getException().getCause().getMessage(), "Invalid json bytes for [simple type, class io.airlift.http.client.TestFullJsonResponseHandler$User]");
 
         assertEquals(response.getJsonBytes(), json.getBytes(UTF_8));
         assertEquals(response.getJson(), json);

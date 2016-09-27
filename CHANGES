@@ -2,6 +2,7 @@
 
 - Add toJsonWithLengthLimit to JsonCodec
 - Fix version check in JMX module to work with -ea Java versions
+- Move type name to end of JsonCodec error message
 
 * 0.137
 
