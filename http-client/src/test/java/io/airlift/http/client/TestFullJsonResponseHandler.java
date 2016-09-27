@@ -15,6 +15,7 @@ import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonRespo
 import static io.airlift.http.client.HttpStatus.INTERNAL_SERVER_ERROR;
 import static io.airlift.http.client.HttpStatus.OK;
 import static io.airlift.http.client.testing.TestingResponse.mockResponse;
+import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotSame;
@@ -57,8 +58,7 @@ public class TestFullJsonResponseHandler
         JsonResponse<User> response = handler.handle(null, mockResponse(OK, JSON_UTF_8, json));
 
         assertFalse(response.hasValue());
-        assertEquals(response.getException().getMessage(),
-                "Unable to create " + User.class + " from JSON response:\n" + json);
+        assertEquals(response.getException().getMessage(), format("Unable to create %s from JSON response:\n[%s]", User.class, json));
         assertTrue(response.getException().getCause() instanceof IllegalArgumentException);
         assertEquals(response.getException().getCause().getMessage(), "Invalid json bytes for [simple type, class io.airlift.http.client.TestFullJsonResponseHandler$User]");
 

@@ -13,6 +13,7 @@ import static io.airlift.http.client.HttpStatus.OK;
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.TestFullJsonResponseHandler.User;
 import static io.airlift.http.client.testing.TestingResponse.mockResponse;
+import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -39,7 +40,7 @@ public class TestJsonResponseHandler
             handler.handle(null, mockResponse(OK, JSON_UTF_8, json));
         }
         catch (IllegalArgumentException e) {
-            assertEquals(e.getMessage(), "Unable to create " + User.class + " from JSON response:\n" + json);
+            assertEquals(e.getMessage(), format("Unable to create %s from JSON response:\n[%s]", User.class, json));
             assertTrue(e.getCause() instanceof IllegalArgumentException);
             assertEquals(e.getCause().getMessage(), "Invalid json bytes for [simple type, class io.airlift.http.client.TestFullJsonResponseHandler$User]");
         }

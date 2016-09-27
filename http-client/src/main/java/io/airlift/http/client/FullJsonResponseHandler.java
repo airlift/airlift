@@ -31,6 +31,7 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
+import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class FullJsonResponseHandler<T>
@@ -117,7 +118,7 @@ public class FullJsonResponseHandler<T>
                 value = jsonCodec.fromJson(jsonBytes);
             }
             catch (IllegalArgumentException e) {
-                exception = new IllegalArgumentException("Unable to create " + jsonCodec.getType() + " from JSON response:\n" + getJson(), e);
+                exception = new IllegalArgumentException(format("Unable to create %s from JSON response:\n[%s]", jsonCodec.getType(), getJson()), e);
             }
             this.hasValue = (exception == null);
             this.value = value;
