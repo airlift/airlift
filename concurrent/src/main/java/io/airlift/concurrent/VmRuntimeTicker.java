@@ -9,6 +9,7 @@ import io.airlift.stats.TimeStat;
 import io.airlift.units.Duration;
 import org.weakref.jmx.Managed;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -64,6 +65,12 @@ public class VmRuntimeTicker
     private final AtomicLong totalPauseNanos = new AtomicLong();
     private final TimeStat pauseTime = new TimeStat();
 
+    // public and volatile to assure the allocation is not optimized away
+    @SuppressWarnings({"WeakerAccess", "PublicField"})
+    public volatile Long sleepObjectAllocation;
+
+    private final AtomicBoolean badSystemNanoTime = new AtomicBoolean();
+
     public VmRuntimeTicker(Ticker systemTicker)
     {
         this(systemTicker, DEFAULT_LOOP_SLEEP_MILLIS, DEFAULT_MAX_SAFE_VM_PAUSE_NANOS);
@@ -77,7 +84,7 @@ public class VmRuntimeTicker
         checkArgument(loopSleepMillis > 0, "loopSleep must be at least 1 millis second");
 
         this.maxSafeVmPauseNanos = requireNonNull(maxSafeVmPause, "maxSafeVmPause is null").roundTo(NANOSECONDS);
-        checkArgument(maxSafeVmPauseNanos > MILLISECONDS.toNanos(loopSleepMillis) * 10, "maxSafeVmPause must be at least 10 times larger than loopSleep");
+        checkArgument(maxSafeVmPauseNanos > MILLISECONDS.toNanos(loopSleepMillis) * 2, "maxSafeVmPause must be at least 2 times larger than loopSleep");
 
         vmRuntimeMonitorThread = new Thread(this::updateLoop, "VM Runtime Monitor");
         vmRuntimeMonitorThread.setDaemon(true);
@@ -118,17 +125,36 @@ public class VmRuntimeTicker
             try {
                 Thread.sleep(loopSleepMillis);
 
+                // Allocate an object to make sure potential allocation stalls are measured.
+                sleepObjectAllocation = lastRead;
+
                 long currentRead = systemTicker.read();
 
-                update(currentRead - lastRead);
-
+                long sleepDuration = currentRead - lastRead;
                 lastRead = currentRead;
-            }
-            catch (RuntimeException | Error e) {
-                log.error("Exception while monitoring VM runtime", e);
+
+                // check if clock moved backwards
+                if (sleepDuration < 0) {
+                    if (badSystemNanoTime.compareAndSet(false, true)) {
+                        log.warn("Possible kernel or JVM bug: system nano time moved backwards");
+                    }
+                    continue;
+                }
+
+                long sleepDelta = sleepDuration - loopSleepMillis;
+
+                // check if thread was woken up early
+                if (sleepDelta < 0) {
+                    continue;
+                }
+
+                update(sleepDuration);
             }
             catch (InterruptedException e) {
                 return;
+            }
+            catch (RuntimeException | Error e) {
+                log.error("Exception while monitoring VM runtime", e);
             }
         }
     }
@@ -138,7 +164,9 @@ public class VmRuntimeTicker
     {
         if (deltaNanos < 0) {
             // clock moved backwards ignore
-            log.warn("Possible kernel bug: system nano time moved backwards");
+            if (badSystemNanoTime.compareAndSet(false, true)) {
+                log.warn("Possible kernel or JVM bug: system nano time moved backwards");
+            }
         }
         else if (deltaNanos > maxSafeVmPauseNanos) {
             totalPauseNanos.addAndGet(deltaNanos);
