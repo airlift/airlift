@@ -4,6 +4,7 @@
 - Fix version check in JMX module to work with -ea Java versions
 - Move type name to end of JsonCodec error message
 - Add brackets around JSON in HTTP client response handler error messages
+- Add utility to measure JVM and OS pauses
 
 * 0.137
 
