@@ -2,6 +2,7 @@
 
 - Upgrade to Jetty 9.3.13.M0
 - Make jmxutils dependency optional for concurrent
+- Add TempFile for use with try-with-resources
 
 * 0.138
 
