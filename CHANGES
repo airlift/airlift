@@ -1,3 +1,7 @@
+* 0.139
+
+- Upgrade to Jetty 9.3.13.M0
+
 * 0.138
 
 - Add toJsonWithLengthLimit to JsonCodec
