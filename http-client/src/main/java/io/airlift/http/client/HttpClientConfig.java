@@ -28,6 +28,7 @@ import io.airlift.units.MinDuration;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @Beta
@@ -275,5 +276,59 @@ public class HttpClientConfig
     {
         this.kerberosRemoteServiceName = serviceName;
         return this;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(
+                http2Enabled,
+                connectTimeout,
+                requestTimeout,
+                idleTimeout,
+                keepAliveInterval,
+                maxConnections,
+                maxConnectionsPerServer,
+                maxRequestsQueuedPerDestination,
+                maxContentLength,
+                socksProxy,
+                keyStorePath,
+                keyStorePassword,
+                trustStorePath,
+                trustStorePassword,
+                authenticationEnabled,
+                kerberosPrincipal,
+                kerberosRemoteServiceName);
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj) {
+            return true;
+        }
+
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+
+        final HttpClientConfig other = (HttpClientConfig) obj;
+        return Objects.equals(this.http2Enabled, other.http2Enabled) &&
+                Objects.equals(this.connectTimeout, other.connectTimeout) &&
+                Objects.equals(this.requestTimeout, other.requestTimeout) &&
+                Objects.equals(this.idleTimeout, other.idleTimeout) &&
+                Objects.equals(this.keepAliveInterval, other.keepAliveInterval) &&
+                Objects.equals(this.maxConnections, other.maxConnections) &&
+                Objects.equals(this.maxConnectionsPerServer, other.maxConnectionsPerServer) &&
+                Objects.equals(this.maxRequestsQueuedPerDestination, other.maxRequestsQueuedPerDestination) &&
+                Objects.equals(this.maxContentLength, other.maxContentLength) &&
+                Objects.equals(this.socksProxy, other.socksProxy) &&
+                Objects.equals(this.keyStorePath, other.keyStorePath) &&
+                Objects.equals(this.keyStorePassword, other.keyStorePassword) &&
+                Objects.equals(this.trustStorePath, other.trustStorePath) &&
+                Objects.equals(this.trustStorePassword, other.trustStorePassword) &&
+                Objects.equals(this.authenticationEnabled, other.authenticationEnabled) &&
+                Objects.equals(this.kerberosPrincipal, other.kerberosPrincipal) &&
+                Objects.equals(this.kerberosRemoteServiceName, other.kerberosRemoteServiceName);
     }
 }
