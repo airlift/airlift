@@ -1,6 +1,7 @@
 * 0.139
 
 - Upgrade to Jetty 9.3.13.M0
+- Make jmxutils dependency optional for concurrent
 
 * 0.138
 

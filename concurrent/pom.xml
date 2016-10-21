@@ -40,6 +40,7 @@
         <dependency>
             <groupId>org.weakref</groupId>
             <artifactId>jmxutils</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <!-- for testing -->
