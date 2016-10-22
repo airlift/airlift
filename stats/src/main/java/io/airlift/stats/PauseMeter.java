@@ -158,7 +158,7 @@ public class PauseMeter
     {
         Map<Double, Long> result = new TreeMap<>();
         for (HistogramIterationValue entry : snapshot.get().logarithmicBucketValues(TimeUnit.MILLISECONDS.toNanos(1), 2)) {
-            double median = entry.getValueIteratedTo() + entry.getValueIteratedFrom() / 2.0;
+            double median = (entry.getValueIteratedTo() + entry.getValueIteratedFrom()) / 2.0;
             result.put(round(median / (double) TimeUnit.MILLISECONDS.toNanos(1), 2), entry.getCountAddedInThisIterationStep());
         }
 
@@ -171,7 +171,7 @@ public class PauseMeter
         long previous = 0;
         Map<Double, Double> result = new TreeMap<>();
         for (HistogramIterationValue entry : snapshot.get().logarithmicBucketValues(TimeUnit.MILLISECONDS.toNanos(1), 2)) {
-            double median = entry.getValueIteratedTo() + entry.getValueIteratedFrom() / 2.0;
+            double median = (entry.getValueIteratedTo() + entry.getValueIteratedFrom()) / 2.0;
             long current = entry.getTotalValueToThisValue();
 
             result.put(round(median / TimeUnit.MILLISECONDS.toNanos(1), 2), round((current - previous) * 1.0 / TimeUnit.SECONDS.toNanos(1), 2));
