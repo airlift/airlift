@@ -4,6 +4,7 @@
 - Make jmxutils dependency optional for concurrent
 - Add TempFile for use with try-with-resources
 - Add unwrapCompletionException to MoreFutures
+- Fix incorrect bucket computation in PauseMeter
 
 * 0.138
 
