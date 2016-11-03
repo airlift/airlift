@@ -1,6 +1,5 @@
 package io.airlift.http.client.jetty;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
@@ -12,6 +11,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AbstractFuture;
 import io.airlift.http.client.BodyGenerator;
 import io.airlift.http.client.FileBodyGenerator;
+import io.airlift.http.client.GatheringByteArrayInputStream;
 import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
@@ -25,6 +25,7 @@ import io.airlift.http.client.spnego.SpnegoAuthentication;
 import io.airlift.http.client.spnego.SpnegoAuthenticationStore;
 import io.airlift.log.Logger;
 import io.airlift.stats.Distribution;
+import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
@@ -59,7 +60,6 @@ import org.weakref.jmx.Nested;
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -67,6 +67,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -87,7 +88,12 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+import static io.airlift.units.DataSize.Unit.KILOBYTE;
+import static io.airlift.units.DataSize.Unit.MEGABYTE;
+import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -1045,21 +1051,28 @@ public class JettyHttpClient
         }
     }
 
+    @ThreadSafe
     private static class BufferingResponseListener
             extends Listener.Adapter
     {
+        private static final long BUFFER_MAX_BYTES = new DataSize(1, MEGABYTE).toBytes();
+        private static final long BUFFER_MIN_BYTES = new DataSize(1, KILOBYTE).toBytes();
         private final JettyResponseFuture<?, ?> future;
         private final int maxLength;
 
         @GuardedBy("this")
-        private byte[] buffer = new byte[0];
+        private byte[] currentBuffer = new byte[0];
         @GuardedBy("this")
-        private int size;
+        private int currentBufferPosition;
+        @GuardedBy("this")
+        private List<byte[]> buffers = new ArrayList<>();
+        @GuardedBy("this")
+        private long size;
 
         public BufferingResponseListener(JettyResponseFuture<?, ?> future, int maxLength)
         {
             this.future = checkNotNull(future, "future is null");
-            Preconditions.checkArgument(maxLength > 0, "maxLength must be greater than zero");
+            checkArgument(maxLength > 0, "maxLength must be greater than zero");
             this.maxLength = maxLength;
         }
 
@@ -1070,30 +1083,27 @@ public class JettyHttpClient
             if (length > maxLength) {
                 response.abort(new ResponseTooLargeException());
             }
-            if (length > buffer.length) {
-                buffer = Arrays.copyOf(buffer, Ints.saturatedCast(length));
-            }
         }
 
         @Override
         public synchronized void onContent(Response response, ByteBuffer content)
         {
             int length = content.remaining();
-            int requiredCapacity = size + length;
-            if (requiredCapacity > buffer.length) {
-                if (requiredCapacity > maxLength) {
-                    response.abort(new ResponseTooLargeException());
-                    return;
-                }
-
-                // newCapacity = min(log2ceiling(requiredCapacity), maxLength);
-                int newCapacity = min(Integer.highestOneBit(requiredCapacity) << 1, maxLength);
-
-                buffer = Arrays.copyOf(buffer, newCapacity);
+            size += length;
+            if (size > maxLength) {
+                response.abort(new ResponseTooLargeException());
+                return;
             }
 
-            content.get(buffer, size, length);
-            size += length;
+            while (length > 0) {
+                if (currentBufferPosition >= currentBuffer.length) {
+                    allocateCurrentBuffer();
+                }
+                int readLength = min(length, currentBuffer.length - currentBufferPosition);
+                content.get(currentBuffer, currentBufferPosition, readLength);
+                length -= readLength;
+                currentBufferPosition += readLength;
+            }
         }
 
         @Override
@@ -1104,8 +1114,21 @@ public class JettyHttpClient
                 future.failed(throwable);
             }
             else {
-                future.completed(result.getResponse(), new ByteArrayInputStream(buffer, 0, size));
+                currentBuffer = new byte[0];
+                currentBufferPosition = 0;
+                future.completed(result.getResponse(), new GatheringByteArrayInputStream(buffers, size));
+                buffers = new ArrayList<>();
+                size = 0;
             }
+        }
+
+        private synchronized void allocateCurrentBuffer()
+        {
+            checkState(currentBufferPosition >= currentBuffer.length, "there is still remaining space in currentBuffer");
+
+            currentBuffer = new byte[(int) min(BUFFER_MAX_BYTES, max(2 * currentBuffer.length, BUFFER_MIN_BYTES))];
+            buffers.add(currentBuffer);
+            currentBufferPosition = 0;
         }
     }
 
