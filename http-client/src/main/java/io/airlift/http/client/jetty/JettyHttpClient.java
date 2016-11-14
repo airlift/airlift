@@ -180,6 +180,7 @@ public class JettyHttpClient
             sslContextFactory.setTrustStorePath(config.getTrustStorePath());
             sslContextFactory.setTrustStorePassword(config.getTrustStorePassword());
         }
+        sslContextFactory.setSecureRandomAlgorithm(config.getSecureRandomAlgorithm());
 
         HttpClientTransport transport;
         if (config.isHttp2Enabled()) {
