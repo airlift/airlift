@@ -55,6 +55,7 @@ public class TestHttpClientConfig
                 .setKeyStorePassword(System.getProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD))
                 .setTrustStorePath(System.getProperty(JAVAX_NET_SSL_TRUST_STORE))
                 .setTrustStorePassword(System.getProperty(JAVAX_NET_SSL_TRUST_STORE_PASSWORD))
+                .setSecureRandomAlgorithm(null)
                 .setAuthenticationEnabled(false)
                 .setKerberosRemoteServiceName(null)
                 .setKerberosPrincipal(null));
@@ -74,6 +75,7 @@ public class TestHttpClientConfig
                 .put("http-client.max-requests-queued-per-destination", "10")
                 .put("http-client.max-content-length", "1MB")
                 .put("http-client.socks-proxy", "localhost:1080")
+                .put("http-client.secure-random-algorithm", "NativePRNG")
                 .put("http-client.key-store-path", "key-store")
                 .put("http-client.key-store-password", "key-store-password")
                 .put("http-client.trust-store-path", "trust-store")
@@ -98,6 +100,7 @@ public class TestHttpClientConfig
                 .setKeyStorePassword("key-store-password")
                 .setTrustStorePath("trust-store")
                 .setTrustStorePassword("trust-store-password")
+                .setSecureRandomAlgorithm("NativePRNG")
                 .setAuthenticationEnabled(true)
                 .setKerberosRemoteServiceName("airlift")
                 .setKerberosPrincipal("airlift-client");

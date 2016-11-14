@@ -52,6 +52,7 @@ public class HttpClientConfig
     private String keyStorePassword = System.getProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD);
     private String trustStorePath = System.getProperty(JAVAX_NET_SSL_TRUST_STORE);
     private String trustStorePassword = System.getProperty(JAVAX_NET_SSL_TRUST_STORE_PASSWORD);
+    private String secureRandomAlgorithm;
     private boolean authenticationEnabled;
     private String kerberosPrincipal;
     private String kerberosRemoteServiceName;
@@ -235,6 +236,18 @@ public class HttpClientConfig
     public HttpClientConfig setTrustStorePassword(String trustStorePassword)
     {
         this.trustStorePassword = trustStorePassword;
+        return this;
+    }
+
+    public String getSecureRandomAlgorithm()
+    {
+        return secureRandomAlgorithm;
+    }
+
+    @Config("http-client.secure-random-algorithm")
+    public HttpClientConfig setSecureRandomAlgorithm(String secureRandomAlgorithm)
+    {
+        this.secureRandomAlgorithm = secureRandomAlgorithm;
         return this;
     }
 

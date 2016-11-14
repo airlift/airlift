@@ -57,6 +57,7 @@ public class HttpServerConfig
     private int httpsPort = 8443;
     private String keystorePath;
     private String keystorePassword;
+    private String secureRandomAlgorithm;
     private List<String> includedCipherSuites = ImmutableList.of();
     private List<String> excludedCipherSuites = ImmutableList.of();
 
@@ -167,6 +168,18 @@ public class HttpServerConfig
     public HttpServerConfig setKeystorePassword(String keystorePassword)
     {
         this.keystorePassword = keystorePassword;
+        return this;
+    }
+
+    public String getSecureRandomAlgorithm()
+    {
+        return secureRandomAlgorithm;
+    }
+
+    @Config("http-server.https.secure-random-algorithm")
+    public HttpServerConfig setSecureRandomAlgorithm(String secureRandomAlgorithm)
+    {
+        this.secureRandomAlgorithm = secureRandomAlgorithm;
         return this;
     }
 
