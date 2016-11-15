@@ -146,7 +146,7 @@ public class ServiceDescriptor
 
     public static class ServiceDescriptorBuilder
     {
-        private UUID id = UUID.randomUUID();
+        private UUID id;
         private String nodeId;
         private final String type;
         private String pool = ServiceSelectorConfig.DEFAULT_POOL;
@@ -221,6 +221,7 @@ public class ServiceDescriptor
 
         public ServiceDescriptor build()
         {
+            UUID id = (this.id == null) ? UUID.randomUUID() : this.id;
             return new ServiceDescriptor(id, nodeId, type, pool, location, state, properties.build());
         }
     }
