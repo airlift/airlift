@@ -18,6 +18,7 @@ package io.airlift.tracetoken;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNull;
 
 public class TestTraceTokenManager
@@ -36,6 +37,11 @@ public class TestTraceTokenManager
 
         String token = manager.createAndRegisterNewRequestToken();
         assertEquals(manager.getCurrentRequestToken(), token);
+        assertEquals(manager.getCurrentRequestToken(), token);
+
+        String token2 = manager.createAndRegisterNewRequestToken();
+        assertEquals(manager.getCurrentRequestToken(), token2);
+        assertNotEquals(token2, token);
     }
 
     @Test

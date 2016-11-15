@@ -15,10 +15,17 @@
  */
 package io.airlift.tracetoken;
 
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static java.lang.String.format;
+import static java.util.Locale.ENGLISH;
+import static java.util.UUID.randomUUID;
 
 public class TraceTokenManager
 {
+    private final String prefix = randomUUID().toString().toLowerCase(ENGLISH).replace("-", "");
+    private final AtomicLong sequence = new AtomicLong();
+
     private final ThreadLocal<String> token = new ThreadLocal<String>();
 
     public void registerRequestToken(String token)
@@ -33,7 +40,7 @@ public class TraceTokenManager
 
     public String createAndRegisterNewRequestToken()
     {
-        String newToken = UUID.randomUUID().toString();
+        String newToken = prefix + format("%010x", sequence.getAndIncrement());
         this.token.set(newToken);
 
         return newToken;
