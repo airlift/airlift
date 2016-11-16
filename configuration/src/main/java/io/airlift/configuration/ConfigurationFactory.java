@@ -60,7 +60,6 @@ import static com.google.common.collect.Sets.newConcurrentHashSet;
 import static io.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
 import static io.airlift.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
-import static java.util.stream.Collectors.toList;
 
 public class ConfigurationFactory
 {
@@ -148,13 +147,22 @@ public class ConfigurationFactory
 
     private <T> ConfigDefaults<T> getConfigDefaults(Key<T> key)
     {
-        List<ConfigDefaults<T>> defaults = registeredDefaultConfigs.get(key).stream()
+        ImmutableList.Builder<ConfigDefaults<T>> defaults = ImmutableList.builder();
+
+        Key globalDefaults = Key.get(key.getTypeLiteral(), GlobalDefaults.class);
+        registeredDefaultConfigs.get(globalDefaults).stream()
                 .map(holder -> (ConfigDefaultsHolder<T>) holder)
                 .sorted()
                 .map(ConfigDefaultsHolder::getConfigDefaults)
-                .collect(toList());
+                .forEach(defaults::add);
 
-        return ConfigDefaults.configDefaults(defaults);
+        registeredDefaultConfigs.get(key).stream()
+                .map(holder -> (ConfigDefaultsHolder<T>) holder)
+                .sorted()
+                .map(ConfigDefaultsHolder::getConfigDefaults)
+                .forEach(defaults::add);
+
+        return ConfigDefaults.configDefaults(defaults.build());
     }
 
     <T> T getDefaultConfig(Key<T> key)

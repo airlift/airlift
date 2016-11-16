@@ -110,6 +110,15 @@ public class ConfigBinder
         createConfigDefaultsBinder(key).addBinding().toInstance(new ConfigDefaultsHolder<>(key, configDefaults));
     }
 
+    /**
+     * Binds default values for all the instances of given config class for the current binder
+     */
+    public <T> void bindConfigGlobalDefaults(Class<T> configClass, ConfigDefaults<T> configDefaults)
+    {
+        Key<T> key = Key.get(configClass, GlobalDefaults.class);
+        createConfigDefaultsBinder(key).addBinding().toInstance(new ConfigDefaultsHolder<>(key, configDefaults));
+    }
+
     private <T> Multibinder<ConfigDefaultsHolder<T>> createConfigDefaultsBinder(Key<T> key)
     {
         @SuppressWarnings("SerializableInnerClassWithNonSerializableOuterClass")
