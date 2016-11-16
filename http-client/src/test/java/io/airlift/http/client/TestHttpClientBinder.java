@@ -26,6 +26,7 @@ import io.airlift.http.client.HttpClientBinder.HttpClientBindingBuilder;
 import io.airlift.http.client.HttpClientModule.JettyIoPoolManager;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.tracetoken.TraceTokenModule;
+import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import org.testng.annotations.Test;
 
@@ -40,7 +41,9 @@ import java.util.IdentityHashMap;
 import java.util.Set;
 
 import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
+import static io.airlift.http.client.HttpClientDefaultsBinder.httpClientDefaultsBinder;
 import static io.airlift.testing.Assertions.assertInstanceOf;
+import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.testng.Assert.assertEquals;
@@ -77,6 +80,50 @@ public class TestHttpClientBinder
 
         JettyHttpClient httpClient = (JettyHttpClient) injector.getInstance(Key.get(HttpClient.class, FooClient.class));
         assertEquals(httpClient.getRequestTimeoutMillis(), MINUTES.toMillis(33));
+
+        assertPoolsDestroyProperly(injector);
+    }
+
+    @Test
+    public void testHttpClientDefaultsBinder()
+            throws Exception
+    {
+        HttpRequestFilter filter1 = (r) -> r;
+        HttpRequestFilter filter2 = (r) -> r;
+        HttpRequestFilter filter3 = (r) -> r;
+        Injector injector = new Bootstrap(
+                binder -> {
+                    httpClientDefaultsBinder(binder)
+                            .bindConfig(config -> {
+                                config.setRequestTimeout(new Duration(2207, MINUTES));
+                                config.setMaxContentLength(new DataSize(1990, MEGABYTE));
+                            })
+                            .addFilterBinding().toInstance(filter1);
+                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+                            .withConfigDefaults(config -> config.setRequestTimeout(new Duration(722, MINUTES)))
+                            .addFilterBinding().toInstance(filter2);
+                    httpClientBinder(binder).bindHttpClient("bar", BarClient.class)
+                            .withConfigDefaults(config -> config.setRequestTimeout(new Duration(222, MINUTES)))
+                            .addFilterBinding().toInstance(filter3);
+                },
+                new TraceTokenModule())
+                .quiet()
+                .strictConfig()
+                .initialize();
+
+        JettyHttpClient fooClient = (JettyHttpClient) injector.getInstance(Key.get(HttpClient.class, FooClient.class));
+        assertEquals(fooClient.getRequestTimeoutMillis(), MINUTES.toMillis(722));
+        assertEquals(fooClient.getMaxContentLength(), new DataSize(1990, MEGABYTE).toBytes());
+        assertFilterCount(fooClient, 2);
+        assertEquals(fooClient.getRequestFilters().get(0), filter1);
+        assertEquals(fooClient.getRequestFilters().get(1), filter2);
+
+        JettyHttpClient barClient = (JettyHttpClient) injector.getInstance(Key.get(HttpClient.class, BarClient.class));
+        assertEquals(barClient.getRequestTimeoutMillis(), MINUTES.toMillis(222));
+        assertEquals(barClient.getMaxContentLength(), new DataSize(1990, MEGABYTE).toBytes());
+        assertFilterCount(barClient, 2);
+        assertEquals(barClient.getRequestFilters().get(0), filter1);
+        assertEquals(barClient.getRequestFilters().get(1), filter3);
 
         assertPoolsDestroyProperly(injector);
     }

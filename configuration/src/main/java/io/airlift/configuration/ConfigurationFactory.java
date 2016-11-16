@@ -148,11 +148,23 @@ public class ConfigurationFactory
 
     private <T> ConfigDefaults<T> getConfigDefaults(Key<T> key)
     {
-        List<ConfigDefaults<T>> defaults = registeredDefaultConfigs.get(key).stream()
+        Key generalDefaultsKey = Key.get(key.getTypeLiteral(), GeneralDefaults.class);
+        List<ConfigDefaults<T>> generalDefaults = registeredDefaultConfigs.get(generalDefaultsKey).stream()
                 .map(holder -> (ConfigDefaultsHolder<T>) holder)
                 .sorted()
                 .map(ConfigDefaultsHolder::getConfigDefaults)
                 .collect(toList());
+
+        List<ConfigDefaults<T>> keyDefaults = registeredDefaultConfigs.get(key).stream()
+                .map(holder -> (ConfigDefaultsHolder<T>) holder)
+                .sorted()
+                .map(ConfigDefaultsHolder::getConfigDefaults)
+                .collect(toList());
+
+        List<ConfigDefaults<T>> defaults = ImmutableList.<ConfigDefaults<T>>builder()
+                .addAll(generalDefaults)
+                .addAll(keyDefaults)
+                .build();
 
         return ConfigDefaults.configDefaults(defaults);
     }
