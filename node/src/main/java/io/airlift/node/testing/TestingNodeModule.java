@@ -15,6 +15,7 @@
  */
 package io.airlift.node.testing;
 
+import com.google.common.net.InetAddresses;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
@@ -74,7 +75,7 @@ public class TestingNodeModule
         binder.bind(NodeInfo.class).in(Scopes.SINGLETON);
         NodeConfig nodeConfig = new NodeConfig()
                 .setEnvironment(environment)
-                .setNodeInternalIp(getV4Localhost())
+                .setNodeInternalAddress(InetAddresses.toAddrString(getV4Localhost()))
                 .setNodeBindIp(getV4Localhost());
 
         if (pool.isPresent()) {

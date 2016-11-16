@@ -18,6 +18,7 @@ package io.airlift.node;
 import com.google.common.net.InetAddresses;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.DefunctConfig;
+import io.airlift.configuration.LegacyConfig;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
@@ -35,11 +36,12 @@ public class NodeConfig
     private String pool = "general";
     private String nodeId;
     private String location;
-    private InetAddress nodeInternalIp;
+    private String nodeInternalAddress;
     private String nodeExternalAddress;
     private InetAddress nodeBindIp;
     private String binarySpec;
     private String configSpec;
+    private AddressSource internalAddressSource = AddressSource.IP;
 
     @NotNull
     @Pattern(regexp = ENV_REGEXP, message = "is malformed")
@@ -94,23 +96,16 @@ public class NodeConfig
         return this;
     }
 
-    public InetAddress getNodeInternalIp()
+    public String getNodeInternalAddress()
     {
-        return nodeInternalIp;
+        return nodeInternalAddress;
     }
 
-    public NodeConfig setNodeInternalIp(InetAddress nodeInternalIp)
+    @Config("node.internal-address")
+    @LegacyConfig("node.ip")
+    public NodeConfig setNodeInternalAddress(String nodeInternalAddress)
     {
-        this.nodeInternalIp = nodeInternalIp;
-        return this;
-    }
-
-    @Config("node.ip")
-    public NodeConfig setNodeInternalIp(String nodeInternalIp)
-    {
-        if (nodeInternalIp != null) {
-            this.nodeInternalIp = InetAddresses.forString(nodeInternalIp);
-        }
+        this.nodeInternalAddress = nodeInternalAddress;
         return this;
     }
 
@@ -168,5 +163,22 @@ public class NodeConfig
     {
         this.configSpec = configSpec;
         return this;
+    }
+
+    public AddressSource getInternalAddressSource()
+    {
+        return internalAddressSource;
+    }
+
+    @Config("node.internal-address-source")
+    public NodeConfig setInternalAddressSource(AddressSource internalAddressSource)
+    {
+        this.internalAddressSource = internalAddressSource;
+        return this;
+    }
+
+    public enum AddressSource
+    {
+        HOSTNAME, FQDN, IP
     }
 }

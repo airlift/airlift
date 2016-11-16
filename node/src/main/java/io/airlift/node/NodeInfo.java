@@ -15,10 +15,12 @@
  */
 package io.airlift.node;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.InetAddresses;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import io.airlift.node.NodeConfig.AddressSource;
 import org.weakref.jmx.Managed;
 
 import java.net.Inet4Address;
@@ -45,7 +47,7 @@ public class NodeInfo
     private final String binarySpec;
     private final String configSpec;
     private final String instanceId = UUID.randomUUID().toString();
-    private final InetAddress internalIp;
+    private final String internalAddress;
     private final String externalAddress;
     private final InetAddress bindIp;
     private final long startTime = System.currentTimeMillis();
@@ -61,27 +63,30 @@ public class NodeInfo
         this(config.getEnvironment(),
                 config.getPool(),
                 config.getNodeId(),
-                config.getNodeInternalIp(),
+                config.getNodeInternalAddress(),
                 config.getNodeBindIp(),
                 config.getNodeExternalAddress(),
                 config.getLocation(),
                 config.getBinarySpec(),
-                config.getConfigSpec()
+                config.getConfigSpec(),
+                config.getInternalAddressSource()
         );
     }
 
     public NodeInfo(String environment,
             String pool,
             String nodeId,
-            InetAddress internalIp,
+            String internalAddress,
             InetAddress bindIp,
             String externalAddress,
             String location,
             String binarySpec,
-            String configSpec)
+            String configSpec,
+            AddressSource internalAddressSource)
     {
         checkNotNull(environment, "environment is null");
         checkNotNull(pool, "pool is null");
+        checkNotNull(internalAddressSource, "internalAddressSource is null");
         checkArgument(environment.matches(NodeConfig.ENV_REGEXP), "environment '%s' is invalid", environment);
         checkArgument(pool.matches(NodeConfig.POOL_REGEXP), "pool '%s' is invalid", pool);
 
@@ -106,11 +111,11 @@ public class NodeInfo
         this.binarySpec = binarySpec;
         this.configSpec = configSpec;
 
-        if (internalIp != null) {
-            this.internalIp = internalIp;
+        if (internalAddress != null) {
+            this.internalAddress = internalAddress;
         }
         else {
-            this.internalIp = findPublicIp();
+            this.internalAddress = findInternalAddress(internalAddressSource);
         }
 
         if (bindIp != null) {
@@ -124,7 +129,7 @@ public class NodeInfo
             this.externalAddress = externalAddress;
         }
         else {
-            this.externalAddress = InetAddresses.toAddrString(this.internalIp);
+            this.externalAddress = this.internalAddress;
         }
     }
 
@@ -193,9 +198,10 @@ public class NodeInfo
     }
 
     /**
-     * The internal network ip address the server should use when announcing its location to other machines.
-     * This ip address should available to all machines within the environment, but may not be globally routable.
-     * If this is not set, the following algorithm is used to choose the public ip:
+     * The internal network address the server should use when announcing its location to other machines.
+     * This address should available to all machines within the environment, but may not be globally routable.
+     * If this is not set, the following algorithm is used to choose the public address:
+     *
      * <ol>
      * <li>InetAddress.getLocalHost() if good IPv4</li>
      * <li>First good IPv4 address of an up network interface</li>
@@ -205,16 +211,16 @@ public class NodeInfo
      * An address is considered good if it is not a loopback address, a multicast address, or an any-local-address address.
      */
     @Managed
-    public InetAddress getInternalIp()
+    public String getInternalAddress()
     {
-        return internalIp;
+        return internalAddress;
     }
 
     /**
      * The address to use when contacting this server from an external network.  If possible, ip address should be globally
      * routable.  The address is returned as a string because the name may not be resolvable from the local machine.
      * <p>
-     * If this is not set, the internal ip is used.
+     * If this is not set, the internal address is used.
      */
     @Managed
     public String getExternalAddress()
@@ -248,14 +254,28 @@ public class NodeInfo
         return toStringHelper(this)
                 .add("nodeId", nodeId)
                 .add("instanceId", instanceId)
-                .add("internalIp", internalIp)
+                .add("internalAddress", internalAddress)
                 .add("externalAddress", externalAddress)
                 .add("bindIp", bindIp)
                 .add("startTime", startTime)
                 .toString();
     }
 
-    private static InetAddress findPublicIp()
+    private static String findInternalAddress(AddressSource addressSource)
+    {
+        switch (addressSource) {
+            case IP:
+                return InetAddresses.toAddrString(findInternalIp());
+            case HOSTNAME:
+                return getLocalHost().getHostName();
+            case FQDN:
+                return getLocalHost().getCanonicalHostName();
+            default:
+                throw new IllegalArgumentException();
+        }
+    }
+
+    private static InetAddress findInternalIp()
     {
         // Check if local host address is a good v4 address
         InetAddress localAddress = null;
@@ -343,5 +363,15 @@ public class NodeInfo
                 !address.isLinkLocalAddress() &&
                 !address.isLoopbackAddress() &&
                 !address.isMulticastAddress();
+    }
+
+    private static InetAddress getLocalHost()
+    {
+        try {
+            return InetAddress.getLocalHost();
+        }
+        catch (UnknownHostException e) {
+            throw Throwables.propagate(e);
+        }
     }
 }
