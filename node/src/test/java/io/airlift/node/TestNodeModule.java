@@ -25,10 +25,14 @@ import io.airlift.testing.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 public class TestNodeModule
 {
     @Test
     public void testDefaultConfig()
+            throws UnknownHostException
     {
         long testStartTime = System.currentTimeMillis();
 
@@ -46,8 +50,8 @@ public class TestNodeModule
 
         Assertions.assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
 
-        Assert.assertNotNull(nodeInfo.getInternalIp());
-        Assert.assertFalse(nodeInfo.getInternalIp().isAnyLocalAddress());
+        Assert.assertNotNull(nodeInfo.getInternalAddress());
+        Assert.assertFalse(InetAddress.getByName(nodeInfo.getInternalAddress()).isAnyLocalAddress());
         Assert.assertNotNull(nodeInfo.getBindIp());
         Assert.assertTrue(nodeInfo.getBindIp().isAnyLocalAddress());
         Assertions.assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
@@ -67,12 +71,12 @@ public class TestNodeModule
         String location = "location";
         String binarySpec = "binary";
         String configSpec = "config";
-        String publicIp = "10.0.0.22";
+        String publicAddress = "public";
         ConfigurationFactory configFactory = new ConfigurationFactory(ImmutableMap.<String, String>builder()
                 .put("node.environment", environment)
                 .put("node.pool", pool)
                 .put("node.id", nodeId)
-                .put("node.ip", publicIp)
+                .put("node.internal-address", publicAddress)
                 .put("node.location", location)
                 .put("node.binary-spec", binarySpec)
                 .put("node.config-spec", configSpec)
@@ -92,7 +96,7 @@ public class TestNodeModule
 
         Assertions.assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
 
-        Assert.assertEquals(nodeInfo.getInternalIp(), InetAddresses.forString(publicIp));
+        Assert.assertEquals(nodeInfo.getInternalAddress(), publicAddress);
         Assert.assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
         Assertions.assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
 

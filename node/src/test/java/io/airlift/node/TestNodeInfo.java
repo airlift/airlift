@@ -21,6 +21,11 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
+
+import static io.airlift.node.NodeConfig.AddressSource.FQDN;
+import static io.airlift.node.NodeConfig.AddressSource.HOSTNAME;
+import static io.airlift.node.NodeConfig.AddressSource.IP;
 
 public class TestNodeInfo
 {
@@ -36,11 +41,11 @@ public class TestNodeInfo
         String location = "location";
         String binarySpec = "binary";
         String configSpec = "config";
-        InetAddress internalIp = InetAddresses.forString("10.0.0.22");
+        String internalIp = "10.0.0.22";
         InetAddress bindIp = InetAddresses.forString("10.0.0.33");
         String externalAddress = "external";
 
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, nodeId, internalIp, bindIp, externalAddress, location, binarySpec, configSpec);
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, nodeId, internalIp, bindIp, externalAddress, location, binarySpec, configSpec, IP);
         Assert.assertEquals(nodeInfo.getEnvironment(), ENVIRONMENT);
         Assert.assertEquals(nodeInfo.getPool(), POOL);
         Assert.assertEquals(nodeInfo.getNodeId(), nodeId);
@@ -51,7 +56,7 @@ public class TestNodeInfo
 
         Assertions.assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
 
-        Assert.assertEquals(nodeInfo.getInternalIp(), internalIp);
+        Assert.assertEquals(nodeInfo.getInternalAddress(), internalIp);
         Assert.assertEquals(nodeInfo.getExternalAddress(), externalAddress);
         Assert.assertEquals(nodeInfo.getBindIp(), bindIp);
         Assertions.assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
@@ -63,35 +68,56 @@ public class TestNodeInfo
     @Test
     public void testDefaultAddresses()
     {
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", InetAddresses.forString("10.0.0.22"), null, null, null, null, null);
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", "10.0.0.22", null, null, null, null, null, IP);
         Assert.assertEquals(nodeInfo.getExternalAddress(), "10.0.0.22");
         Assert.assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
     }
 
     @Test
-    public void testAddressDiscovery()
+    public void testIpDiscovery()
+            throws UnknownHostException
     {
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null);
-        Assert.assertNotNull(nodeInfo.getInternalIp());
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP);
+        Assert.assertNotNull(nodeInfo.getInternalAddress());
         Assert.assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
-        Assert.assertEquals(nodeInfo.getExternalAddress(), InetAddresses.toAddrString(nodeInfo.getInternalIp()));
+        Assert.assertEquals(nodeInfo.getExternalAddress(), nodeInfo.getInternalAddress());
+    }
+
+    @Test
+    public void testHostnameDiscovery()
+            throws UnknownHostException
+    {
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, HOSTNAME);
+        Assert.assertNotNull(nodeInfo.getInternalAddress());
+        Assert.assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
+        Assert.assertEquals(nodeInfo.getExternalAddress(), InetAddress.getLocalHost().getHostName());
+    }
+
+    @Test
+    public void testFqdnDiscovery()
+            throws UnknownHostException
+    {
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, FQDN);
+        Assert.assertNotNull(nodeInfo.getInternalAddress());
+        Assert.assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
+        Assert.assertEquals(nodeInfo.getExternalAddress(), InetAddress.getLocalHost().getCanonicalHostName());
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "nodeId .*")
     public void testInvalidNodeId()
     {
-        new NodeInfo(ENVIRONMENT, POOL, "abc/123", null, null, null, null, null, null);
+        new NodeInfo(ENVIRONMENT, POOL, "abc/123", null, null, null, null, null, null, IP);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "environment .*")
     public void testInvalidEnvironment()
     {
-        new NodeInfo("ENV", POOL, null, null, null, null, null, null, null);
+        new NodeInfo("ENV", POOL, null, null, null, null, null, null, null, IP);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "pool .*")
     public void testInvalidPool()
     {
-        new NodeInfo(ENVIRONMENT, "POOL", null, null, null, null, null, null, null);
+        new NodeInfo(ENVIRONMENT, "POOL", null, null, null, null, null, null, null, IP);
     }
 }

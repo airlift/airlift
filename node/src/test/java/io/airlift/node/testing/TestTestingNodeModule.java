@@ -5,6 +5,8 @@ import com.google.inject.Injector;
 import io.airlift.node.NodeInfo;
 import org.testng.annotations.Test;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Optional;
 
 import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
@@ -18,6 +20,7 @@ public class TestTestingNodeModule
 {
     @Test
     public void testTestingNode()
+            throws UnknownHostException
     {
         long testStartTime = System.currentTimeMillis();
 
@@ -35,8 +38,8 @@ public class TestTestingNodeModule
 
         assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
 
-        assertEquals(nodeInfo.getInternalIp().toString(), "localhost/127.0.0.1");
-        assertEquals(nodeInfo.getBindIp(), nodeInfo.getInternalIp());
+        assertEquals(nodeInfo.getInternalAddress(), "127.0.0.1");
+        assertEquals(nodeInfo.getBindIp(), InetAddress.getByName(nodeInfo.getInternalAddress()));
         assertEquals(nodeInfo.getExternalAddress(), "127.0.0.1");
 
         assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);

@@ -23,7 +23,6 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.common.net.HttpHeaders;
-import com.google.common.net.InetAddresses;
 import com.google.common.net.MediaType;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
@@ -171,7 +170,7 @@ public class TestHttpServerModule
             assertNotNull(httpServerInfo);
             assertNotNull(httpServerInfo.getHttpUri());
             assertEquals(httpServerInfo.getHttpUri().getScheme(), "http");
-            assertEquals(InetAddresses.forUriString(httpServerInfo.getHttpUri().getHost()), nodeInfo.getInternalIp());
+            assertEquals(httpServerInfo.getHttpUri().getHost(), nodeInfo.getInternalAddress());
             assertNull(httpServerInfo.getHttpsUri());
         }
         catch (Exception e) {

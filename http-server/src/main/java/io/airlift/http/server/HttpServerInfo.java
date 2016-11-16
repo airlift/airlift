@@ -16,7 +16,6 @@
 package io.airlift.http.server;
 
 import com.google.common.base.Throwables;
-import com.google.common.net.InetAddresses;
 import com.google.inject.Inject;
 import io.airlift.node.NodeInfo;
 
@@ -37,7 +36,7 @@ public class HttpServerInfo
     public HttpServerInfo(HttpServerConfig config, NodeInfo nodeInfo)
     {
         if (config.isHttpEnabled()) {
-            httpUri = buildUri("http", InetAddresses.toUriString(nodeInfo.getInternalIp()), config.getHttpPort());
+            httpUri = buildUri("http", nodeInfo.getInternalAddress(), config.getHttpPort());
             httpExternalUri = buildUri("http", nodeInfo.getExternalAddress(), httpUri.getPort());
         }
         else {
@@ -46,7 +45,7 @@ public class HttpServerInfo
         }
 
         if (config.isHttpsEnabled()) {
-            httpsUri = buildUri("https", InetAddresses.toUriString(nodeInfo.getInternalIp()), config.getHttpsPort());
+            httpsUri = buildUri("https", nodeInfo.getInternalAddress(), config.getHttpsPort());
             httpsExternalUri = buildUri("https", nodeInfo.getExternalAddress(), httpsUri.getPort());
         }
         else {
@@ -56,10 +55,10 @@ public class HttpServerInfo
 
         if (config.isAdminEnabled()) {
             if (config.isHttpsEnabled()) {
-                adminUri = buildUri("https", InetAddresses.toUriString(nodeInfo.getInternalIp()), config.getAdminPort());
+                adminUri = buildUri("https", nodeInfo.getInternalAddress(), config.getAdminPort());
                 adminExternalUri = buildUri("https", nodeInfo.getExternalAddress(), adminUri.getPort());
             } else {
-                adminUri = buildUri("http", InetAddresses.toUriString(nodeInfo.getInternalIp()), config.getAdminPort());
+                adminUri = buildUri("http", nodeInfo.getInternalAddress(), config.getAdminPort());
                 adminExternalUri = buildUri("http", nodeInfo.getExternalAddress(), adminUri.getPort());
             }
         }

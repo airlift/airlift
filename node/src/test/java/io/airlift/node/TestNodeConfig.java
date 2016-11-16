@@ -26,6 +26,8 @@ import javax.validation.constraints.Pattern;
 import java.util.Map;
 import java.util.UUID;
 
+import static io.airlift.node.NodeConfig.AddressSource.HOSTNAME;
+import static io.airlift.node.NodeConfig.AddressSource.IP;
 import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
 import static io.airlift.testing.ValidationAssertions.assertValidates;
 
@@ -38,12 +40,13 @@ public class TestNodeConfig
                 .setEnvironment(null)
                 .setPool("general")
                 .setNodeId(null)
-                .setNodeInternalIp((String) null)
+                .setNodeInternalAddress(null)
                 .setNodeBindIp((String) null)
                 .setNodeExternalAddress(null)
                 .setLocation(null)
                 .setBinarySpec(null)
-                .setConfigSpec(null));
+                .setConfigSpec(null)
+                .setInternalAddressSource(IP));
     }
 
     @Test
@@ -53,24 +56,26 @@ public class TestNodeConfig
                 .put("node.environment", "environment")
                 .put("node.pool", "pool")
                 .put("node.id", "nodeId")
-                .put("node.ip", "10.9.8.7")
+                .put("node.internal-address", "internal")
                 .put("node.bind-ip", "10.11.12.13")
                 .put("node.external-address", "external")
                 .put("node.location", "location")
                 .put("node.binary-spec", "binary")
                 .put("node.config-spec", "config")
+                .put("node.internal-address-source", "HOSTNAME")
                 .build();
 
         NodeConfig expected = new NodeConfig()
                 .setEnvironment("environment")
                 .setPool("pool")
                 .setNodeId("nodeId")
-                .setNodeInternalIp(InetAddresses.forString("10.9.8.7"))
+                .setNodeInternalAddress("internal")
                 .setNodeBindIp(InetAddresses.forString("10.11.12.13"))
                 .setNodeExternalAddress("external")
                 .setLocation("location")
                 .setBinarySpec("binary")
-                .setConfigSpec("config");
+                .setConfigSpec("config")
+                .setInternalAddressSource(HOSTNAME);
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }
