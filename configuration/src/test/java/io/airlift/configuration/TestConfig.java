@@ -197,6 +197,35 @@ public class TestConfig
         }
     }
 
+    @Test
+    public void testConfigGlobalDefaults()
+            throws Exception
+    {
+        int globalDefaultValue = 1;
+        int defaultValue = 2;
+        int customValue = 3;
+
+        Module module = binder -> {
+            configBinder(binder).bindConfigGlobalDefaults(Config1.class, (config -> {
+                config.setByteOption((byte) globalDefaultValue);
+                config.setIntegerOption(globalDefaultValue);
+                config.setLongOption(globalDefaultValue);
+            }));
+            configBinder(binder).bindConfigDefaults(Config1.class, MyAnnotation.class, (config -> {
+                config.setIntegerOption(defaultValue);
+                config.setLongOption(defaultValue);
+            }));
+            configBinder(binder).bindConfig(Config1.class, MyAnnotation.class);
+        };
+
+        Injector injector = createInjector(ImmutableMap.of("longOption", "" + customValue), module);
+
+        Config1 config = injector.getInstance(Key.get(Config1.class, MyAnnotation.class));
+        assertEquals(config.getByteOption(), globalDefaultValue);
+        assertEquals(config.getIntegerOption(), defaultValue);
+        assertEquals(config.getLongOption(), customValue);
+    }
+
     private static Injector createInjector(Map<String, String> properties, Module module)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
