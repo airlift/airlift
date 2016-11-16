@@ -17,6 +17,7 @@ package io.airlift.http.client;
 
 import com.google.common.annotations.Beta;
 import com.google.inject.Binder;
+import com.google.inject.Scopes;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.Multibinder;
 import io.airlift.configuration.ConfigDefaults;
@@ -31,10 +32,12 @@ import static com.google.inject.multibindings.Multibinder.newSetBinder;
 public class HttpClientBinder
 {
     private final Binder binder;
+    private final Multibinder<HttpRequestFilter> globalFilterBinder;
 
     private HttpClientBinder(Binder binder)
     {
         this.binder = checkNotNull(binder, "binder is null").skipSources(getClass());
+        this.globalFilterBinder = newSetBinder(binder, HttpRequestFilter.class, GlobalFilter.class);
     }
 
     public static HttpClientBinder httpClientBinder(Binder binder)
@@ -47,6 +50,23 @@ public class HttpClientBinder
         checkNotNull(name, "name is null");
         checkNotNull(annotation, "annotation is null");
         return createBindingBuilder(new HttpClientModule(name, annotation));
+    }
+
+    public LinkedBindingBuilder<HttpRequestFilter> addGlobalFilterBinding()
+    {
+        return globalFilterBinder.addBinding();
+    }
+
+    public HttpClientBinder bindGlobalFilter(Class<? extends HttpRequestFilter> filterClass)
+    {
+        globalFilterBinder.addBinding().to(filterClass).in(Scopes.SINGLETON);
+        return this;
+    }
+
+    public HttpClientBinder bindGlobalFilter(HttpRequestFilter filter)
+    {
+        globalFilterBinder.addBinding().toInstance(filter);
+        return this;
     }
 
     private HttpClientBindingBuilder createBindingBuilder(HttpClientModule module)

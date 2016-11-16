@@ -82,6 +82,45 @@ public class TestHttpClientBinder
     }
 
     @Test
+    public void testGlobalFilterBinding()
+            throws Exception
+    {
+        HttpRequestFilter globalFilter1 = (r) -> r;
+        HttpRequestFilter globalFilter2 = (r) -> r;
+        HttpRequestFilter filter1 = (r) -> r;
+        HttpRequestFilter filter2 = (r) -> r;
+        Injector injector = new Bootstrap(
+                binder -> {
+                    httpClientBinder(binder)
+                            .addGlobalFilterBinding().toInstance(globalFilter1);
+                    httpClientBinder(binder)
+                            .bindGlobalFilter(globalFilter2);
+                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+                            .addFilterBinding().toInstance(filter1);
+                    httpClientBinder(binder).bindHttpClient("bar", BarClient.class)
+                            .addFilterBinding().toInstance(filter2);
+                },
+                new TraceTokenModule())
+                .quiet()
+                .strictConfig()
+                .initialize();
+
+        JettyHttpClient fooClient = (JettyHttpClient) injector.getInstance(Key.get(HttpClient.class, FooClient.class));
+        assertFilterCount(fooClient, 3);
+        assertEquals(fooClient.getRequestFilters().get(0), globalFilter1);
+        assertEquals(fooClient.getRequestFilters().get(1), globalFilter2);
+        assertEquals(fooClient.getRequestFilters().get(2), filter1);
+
+        JettyHttpClient barClient = (JettyHttpClient) injector.getInstance(Key.get(HttpClient.class, BarClient.class));
+        assertFilterCount(barClient, 3);
+        assertEquals(barClient.getRequestFilters().get(0), globalFilter1);
+        assertEquals(barClient.getRequestFilters().get(1), globalFilter2);
+        assertEquals(barClient.getRequestFilters().get(2), filter2);
+
+        assertPoolsDestroyProperly(injector);
+    }
+
+    @Test
     public void testBindingMultipleFiltersAndClients()
             throws Exception
     {

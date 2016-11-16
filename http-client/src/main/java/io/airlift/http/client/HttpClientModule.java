@@ -18,6 +18,7 @@ package io.airlift.http.client;
 import com.google.common.annotations.Beta;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -87,6 +88,9 @@ public class HttpClientModule
         // bind the client
         binder.bind(HttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(name, annotation)).in(Scopes.SINGLETON);
 
+        // kick off the binding for the default filters
+        newSetBinder(binder, HttpRequestFilter.class, GlobalFilter.class);
+
         // kick off the binding for the filter set
         newSetBinder(binder, HttpRequestFilter.class, filterQualifier(annotation));
 
@@ -125,7 +129,10 @@ public class HttpClientModule
             KerberosConfig kerberosConfig = injector.getInstance(KerberosConfig.class);
 
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
-            Set<HttpRequestFilter> filters = injector.getInstance(filterKey(annotation));
+            Set<HttpRequestFilter> filters = ImmutableSet.<HttpRequestFilter>builder()
+                    .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, GlobalFilter.class)))
+                    .addAll(injector.getInstance(filterKey(annotation)))
+                    .build();
 
             JettyIoPoolManager ioPoolProvider;
             if (injector.getExistingBinding(Key.get(JettyIoPoolManager.class, annotation)) != null) {
