@@ -35,7 +35,7 @@ public class TestHttpServerConfig
                 .setHttpAcceptQueueSize(8000)
                 .setHttpsEnabled(false)
                 .setHttpsPort(8443)
-                .setSecureRandomAlgorithm("SHA1PRNG")
+                .setSecureRandomAlgorithm(null)
                 .setHttpsIncludedCipherSuites("")
                 .setHttpsExcludedCipherSuites("")
                 .setKeystorePath(null)

@@ -52,7 +52,7 @@ public class HttpClientConfig
     private String keyStorePassword = System.getProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD);
     private String trustStorePath = System.getProperty(JAVAX_NET_SSL_TRUST_STORE);
     private String trustStorePassword = System.getProperty(JAVAX_NET_SSL_TRUST_STORE_PASSWORD);
-    private String secureRandomAlgorithm = "SHA1PRNG";
+    private String secureRandomAlgorithm;
     private boolean authenticationEnabled;
     private String kerberosPrincipal;
     private String kerberosRemoteServiceName;

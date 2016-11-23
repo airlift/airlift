@@ -57,7 +57,7 @@ public class HttpServerConfig
     private int httpsPort = 8443;
     private String keystorePath;
     private String keystorePassword;
-    private String secureRandomAlgorithm = "SHA1PRNG";
+    private String secureRandomAlgorithm;
     private List<String> includedCipherSuites = ImmutableList.of();
     private List<String> excludedCipherSuites = ImmutableList.of();
 

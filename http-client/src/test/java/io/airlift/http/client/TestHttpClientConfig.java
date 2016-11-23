@@ -55,7 +55,7 @@ public class TestHttpClientConfig
                 .setKeyStorePassword(System.getProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD))
                 .setTrustStorePath(System.getProperty(JAVAX_NET_SSL_TRUST_STORE))
                 .setTrustStorePassword(System.getProperty(JAVAX_NET_SSL_TRUST_STORE_PASSWORD))
-                .setSecureRandomAlgorithm("SHA1PRNG")
+                .setSecureRandomAlgorithm(null)
                 .setAuthenticationEnabled(false)
                 .setKerberosRemoteServiceName(null)
                 .setKerberosPrincipal(null));
