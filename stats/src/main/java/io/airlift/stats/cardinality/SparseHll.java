@@ -85,7 +85,8 @@ final class SparseHll
     {
         // TODO: investigate whether accumulate, sort and merge results in better performance due to avoiding the shift+insert in every call
 
-        int position = searchBucket(Utils.computeIndex(hash, EXTENDED_PREFIX_BITS));
+        int bucket = Utils.computeIndex(hash, EXTENDED_PREFIX_BITS);
+        int position = searchBucket(bucket);
 
         // add entry if missing
         if (position < 0) {
@@ -105,10 +106,10 @@ final class SparseHll
         }
         else {
             int currentEntry = entries[position];
-            int newValue = Utils.computeValue(hash, EXTENDED_PREFIX_BITS);
+            int newValue = Utils.numberOfLeadingZeros(hash, EXTENDED_PREFIX_BITS);
 
-            if (decodeBucketValue(currentEntry) > newValue) {
-                entries[position] = encode(position, newValue);
+            if (decodeBucketValue(currentEntry) < newValue) {
+                entries[position] = encode(bucket, newValue);
             }
         }
     }
