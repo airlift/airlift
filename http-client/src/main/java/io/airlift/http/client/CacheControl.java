@@ -18,8 +18,6 @@
  */
 package io.airlift.http.client;
 
-
-import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 
@@ -28,6 +26,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -330,7 +329,7 @@ public class CacheControl
     @Override
     public int hashCode()
     {
-        return Objects.hashCode(maxAge,
+        return Objects.hash(maxAge,
                 sMaxAge,
                 isPrivate,
                 noCache,
@@ -354,16 +353,16 @@ public class CacheControl
         }
 
         CacheControl other = (CacheControl) obj;
-        return Objects.equal(this.maxAge, other.maxAge) &&
-                Objects.equal(this.sMaxAge, other.sMaxAge) &&
-                Objects.equal(this.isPrivate, other.isPrivate) &&
-                Objects.equal(this.noCache, other.noCache) &&
-                Objects.equal(this.noStore, other.noStore) &&
-                Objects.equal(this.noTransform, other.noTransform) &&
-                Objects.equal(this.mustRevalidate, other.mustRevalidate) &&
-                Objects.equal(this.proxyRevalidate, other.proxyRevalidate) &&
-                Objects.equal(this.cacheExtensions, other.cacheExtensions) &&
-                Objects.equal(this.noCacheFields, other.noCacheFields) &&
-                Objects.equal(this.privateFields, other.privateFields);
+        return Objects.equals(this.maxAge, other.maxAge) &&
+                Objects.equals(this.sMaxAge, other.sMaxAge) &&
+                Objects.equals(this.isPrivate, other.isPrivate) &&
+                Objects.equals(this.noCache, other.noCache) &&
+                Objects.equals(this.noStore, other.noStore) &&
+                Objects.equals(this.noTransform, other.noTransform) &&
+                Objects.equals(this.mustRevalidate, other.mustRevalidate) &&
+                Objects.equals(this.proxyRevalidate, other.proxyRevalidate) &&
+                Objects.equals(this.cacheExtensions, other.cacheExtensions) &&
+                Objects.equals(this.noCacheFields, other.noCacheFields) &&
+                Objects.equals(this.privateFields, other.privateFields);
     }
 }

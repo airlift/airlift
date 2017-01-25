@@ -16,7 +16,6 @@
 package io.airlift.http.client;
 
 import com.google.common.annotations.Beta;
-import com.google.common.base.Objects;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
@@ -24,9 +23,9 @@ import com.google.common.collect.ListMultimap;
 import java.net.URI;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Objects;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.base.Objects.equal;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
@@ -104,16 +103,16 @@ public class Request
             return false;
         }
         Request r = (Request) o;
-        return equal(uri, r.uri) &&
-                equal(method, r.method) &&
-                equal(headers, r.headers) &&
-                equal(bodyGenerator, r.bodyGenerator);
+        return Objects.equals(uri, r.uri) &&
+                Objects.equals(method, r.method) &&
+                Objects.equals(headers, r.headers) &&
+                Objects.equals(bodyGenerator, r.bodyGenerator);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hashCode(uri, method, headers, bodyGenerator);
+        return Objects.hash(uri, method, headers, bodyGenerator);
     }
 
     @Beta

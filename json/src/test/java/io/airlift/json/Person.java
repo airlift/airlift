@@ -16,12 +16,12 @@
 package io.airlift.json;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static org.testng.Assert.assertEquals;
@@ -107,14 +107,14 @@ public class Person
             return false;
         }
         Person o = (Person) obj;
-        return Objects.equal(this.name, o.name) &&
-                Objects.equal(this.rocks, o.rocks);
+        return Objects.equals(this.name, o.name) &&
+                Objects.equals(this.rocks, o.rocks);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hashCode(name, rocks);
+        return Objects.hash(name, rocks);
     }
 
     @Override
