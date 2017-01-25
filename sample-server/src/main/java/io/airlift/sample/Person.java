@@ -15,9 +15,9 @@
  */
 package io.airlift.sample;
 
-import com.google.common.base.Preconditions;
-
 import javax.annotation.concurrent.Immutable;
+
+import static java.util.Objects.requireNonNull;
 
 @Immutable
 public class Person
@@ -27,8 +27,8 @@ public class Person
 
     public Person(String email, String name)
     {
-        Preconditions.checkNotNull(email, "email is null");
-        Preconditions.checkNotNull(name, "name is null");
+        requireNonNull(email, "email is null");
+        requireNonNull(name, "name is null");
 
         this.email = email;
         this.name = name;

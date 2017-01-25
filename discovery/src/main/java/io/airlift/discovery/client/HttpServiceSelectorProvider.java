@@ -15,13 +15,13 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Provider;
 
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
+import static java.util.Objects.requireNonNull;
 
 class HttpServiceSelectorProvider
         implements Provider<HttpServiceSelector>
@@ -31,7 +31,7 @@ class HttpServiceSelectorProvider
 
     public HttpServiceSelectorProvider(String type)
     {
-        Preconditions.checkNotNull(type);
+        requireNonNull(type);
         this.type = type;
     }
 
@@ -43,7 +43,7 @@ class HttpServiceSelectorProvider
 
     public HttpServiceSelector get()
     {
-        Preconditions.checkNotNull(injector, "injector is null");
+        requireNonNull(injector, "injector is null");
 
         ServiceSelector serviceSelector = injector.getInstance(Key.get(ServiceSelector.class, serviceType(type)));
 

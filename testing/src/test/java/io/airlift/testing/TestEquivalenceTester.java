@@ -21,7 +21,6 @@ package io.airlift.testing;
  * Licensed under Apache License, Version 2.0
  */
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ComparisonChain;
 import io.airlift.testing.EquivalenceTester.ElementCheckFailure;
 import io.airlift.testing.EquivalenceTester.PairCheckFailure;
@@ -48,6 +47,7 @@ import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_LE
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_REFLEXIVE;
 import static io.airlift.testing.EquivalenceTester.comparisonTester;
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
+import static java.util.Objects.requireNonNull;
 import static org.testng.Assert.assertEquals;
 import static org.testng.FileAssert.fail;
 
@@ -128,7 +128,7 @@ public class TestEquivalenceTester
         @Override
         public int compareTo(ComparableNotReflexive that)
         {
-            Preconditions.checkNotNull(that, "that is null");
+            requireNonNull(that, "that is null");
             return this == that ? 1 : -1;
         }
     }
@@ -206,7 +206,7 @@ public class TestEquivalenceTester
         @Override
         public int compareTo(ComparableNotSymmetric that)
         {
-            Preconditions.checkNotNull(that, "that is null");
+            requireNonNull(that, "that is null");
             if (id >= that.id) {
                 return 0;
             }

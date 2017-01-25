@@ -16,7 +16,6 @@
 package io.airlift.discovery.client;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Preconditions;
 import com.google.common.io.CharStreams;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
@@ -44,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.preparePut;
+import static java.util.Objects.requireNonNull;
 
 public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementClient
 {
@@ -60,10 +60,10 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
             JsonCodec<Announcement> announcementCodec,
             @ForDiscoveryClient HttpClient httpClient)
     {
-        Preconditions.checkNotNull(discoveryServiceURI, "discoveryServiceURI is null");
-        Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
-        Preconditions.checkNotNull(announcementCodec, "announcementCodec is null");
-        Preconditions.checkNotNull(httpClient, "httpClient is null");
+        requireNonNull(discoveryServiceURI, "discoveryServiceURI is null");
+        requireNonNull(nodeInfo, "nodeInfo is null");
+        requireNonNull(announcementCodec, "announcementCodec is null");
+        requireNonNull(httpClient, "httpClient is null");
 
         this.nodeInfo = nodeInfo;
         this.discoveryServiceURI = discoveryServiceURI;
@@ -74,7 +74,7 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
     @Override
     public ListenableFuture<Duration> announce(Set<ServiceAnnouncement> services)
     {
-        Preconditions.checkNotNull(services, "services is null");
+        requireNonNull(services, "services is null");
 
         URI uri = discoveryServiceURI.get();
         if (uri == null) {

@@ -15,7 +15,7 @@ package io.airlift.concurrent;
 
 import java.io.Closeable;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 public class SetThreadName
         implements Closeable
@@ -24,7 +24,7 @@ public class SetThreadName
 
     public SetThreadName(String format, Object... args)
     {
-        checkNotNull(format, "format is null");
+        requireNonNull(format, "format is null");
         originalThreadName = Thread.currentThread().getName();
         Thread.currentThread().setName(String.format(format, args) + "-" + Thread.currentThread().getId());
     }

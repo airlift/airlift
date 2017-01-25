@@ -23,6 +23,8 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 
+import static java.util.Objects.requireNonNull;
+
 //This is a copy from galaxy-server's com.proofpoint.galaxy.shared.FileUtils
 public class FileUtils
 {
@@ -149,24 +151,24 @@ public class FileUtils
 
     public static File newFile(String parent, String... paths)
     {
-        Preconditions.checkNotNull(parent, "parent is null");
-        Preconditions.checkNotNull(paths, "paths is null");
+        requireNonNull(parent, "parent is null");
+        requireNonNull(paths, "paths is null");
 
         return newFile(new File(parent), ImmutableList.copyOf(paths));
     }
 
     public static File newFile(File parent, String... paths)
     {
-        Preconditions.checkNotNull(parent, "parent is null");
-        Preconditions.checkNotNull(paths, "paths is null");
+        requireNonNull(parent, "parent is null");
+        requireNonNull(paths, "paths is null");
 
         return newFile(parent, ImmutableList.copyOf(paths));
     }
 
     public static File newFile(File parent, Iterable<String> paths)
     {
-        Preconditions.checkNotNull(parent, "parent is null");
-        Preconditions.checkNotNull(paths, "paths is null");
+        requireNonNull(parent, "parent is null");
+        requireNonNull(paths, "paths is null");
 
         File result = parent;
         for (String path : paths) {

@@ -15,7 +15,6 @@
  */
 package io.airlift.configuration;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Ordering;
@@ -26,6 +25,7 @@ import java.lang.reflect.Method;
 import java.util.SortedSet;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.util.Objects.requireNonNull;
 import static io.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
 
 public class ConfigurationInspector
@@ -69,7 +69,7 @@ public class ConfigurationInspector
 
         private ConfigRecord(ConfigurationFactory configurationFactory, ConfigurationProvider<T> configurationProvider)
         {
-            Preconditions.checkNotNull(configurationProvider, "configurationProvider");
+            requireNonNull(configurationProvider, "configurationProvider");
 
             ConfigurationBinding<T> configurationBinding = configurationProvider.getConfigurationBinding();
             key = configurationBinding.getKey();
@@ -174,11 +174,11 @@ public class ConfigurationInspector
 
         private ConfigAttribute(String attributeName, String propertyName, String defaultValue, String currentValue, String description)
         {
-            Preconditions.checkNotNull(attributeName, "attributeName");
-            Preconditions.checkNotNull(propertyName, "propertyName");
-            Preconditions.checkNotNull(defaultValue, "defaultValue");
-            Preconditions.checkNotNull(currentValue, "currentValue");
-            Preconditions.checkNotNull(description, "description");
+            requireNonNull(attributeName, "attributeName");
+            requireNonNull(propertyName, "propertyName");
+            requireNonNull(defaultValue, "defaultValue");
+            requireNonNull(currentValue, "currentValue");
+            requireNonNull(description, "description");
 
             this.attributeName = attributeName;
             this.propertyName = propertyName;

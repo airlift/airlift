@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 @Beta
 public class ServiceSelectorManager
@@ -22,7 +22,7 @@ public class ServiceSelectorManager
     @Inject
     public ServiceSelectorManager(Set<ServiceSelector> serviceSelectors)
     {
-        checkNotNull(serviceSelectors, "serviceSelectors is null");
+        requireNonNull(serviceSelectors, "serviceSelectors is null");
         this.serviceSelectors = ImmutableSet.copyOf(serviceSelectors);
     }
 

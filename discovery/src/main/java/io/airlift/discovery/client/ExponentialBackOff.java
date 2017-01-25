@@ -6,7 +6,7 @@ import io.airlift.units.Duration;
 import javax.annotation.concurrent.GuardedBy;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class ExponentialBackOff
@@ -25,13 +25,13 @@ class ExponentialBackOff
 
     public ExponentialBackOff(Duration initialWait, Duration maxWait, String serverUpMessage, String serverDownMessage, Logger log)
     {
-        this.initialWait = checkNotNull(initialWait, "initialWait is null").toMillis();
-        this.maxWait = checkNotNull(maxWait, "maxWait is null").toMillis();
+        this.initialWait = requireNonNull(initialWait, "initialWait is null").toMillis();
+        this.maxWait = requireNonNull(maxWait, "maxWait is null").toMillis();
         checkArgument(this.initialWait <= this.maxWait, "initialWait %s is less than maxWait %s", initialWait, maxWait);
 
-        this.serverUpMessage = checkNotNull(serverUpMessage, "serverUpMessage is null");
-        this.serverDownMessage = checkNotNull(serverDownMessage, "serverDownMessage is null");
-        this.log = checkNotNull(log, "log is null");
+        this.serverUpMessage = requireNonNull(serverUpMessage, "serverUpMessage is null");
+        this.serverDownMessage = requireNonNull(serverDownMessage, "serverDownMessage is null");
+        this.log = requireNonNull(log, "log is null");
     }
 
     public synchronized void success()

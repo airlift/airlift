@@ -15,7 +15,6 @@
  */
 package io.airlift.discovery.client.testing;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
@@ -32,6 +31,8 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import static java.util.Objects.requireNonNull;
+
 public class SimpleServiceSelector implements ServiceSelector
 {
     private static final Logger log = Logger.get(SimpleServiceSelector.class);
@@ -42,9 +43,9 @@ public class SimpleServiceSelector implements ServiceSelector
 
     public SimpleServiceSelector(String type, ServiceSelectorConfig selectorConfig, DiscoveryLookupClient lookupClient)
     {
-        Preconditions.checkNotNull(type, "type is null");
-        Preconditions.checkNotNull(selectorConfig, "selectorConfig is null");
-        Preconditions.checkNotNull(lookupClient, "client is null");
+        requireNonNull(type, "type is null");
+        requireNonNull(selectorConfig, "selectorConfig is null");
+        requireNonNull(lookupClient, "client is null");
 
         this.type = type;
         this.pool = selectorConfig.getPool();

@@ -7,8 +7,8 @@ import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static java.util.Objects.requireNonNull;
 
 public class HttpServerBinder
 {
@@ -16,7 +16,7 @@ public class HttpServerBinder
 
     private HttpServerBinder(Binder binder)
     {
-        this.binder = checkNotNull(binder, "binder is null").skipSources(getClass());
+        this.binder = requireNonNull(binder, "binder is null").skipSources(getClass());
     }
 
     public static HttpServerBinder httpServerBinder(Binder binder)

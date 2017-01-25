@@ -42,6 +42,7 @@ import static io.airlift.event.client.AnnotationUtils.findAnnotatedMethods;
 import static io.airlift.event.client.EventDataType.getEventDataType;
 import static io.airlift.event.client.EventFieldMetadata.ContainerType;
 import static io.airlift.event.client.TypeParameterUtils.getTypeParameters;
+import static java.util.Objects.requireNonNull;
 
 public final class EventTypeMetadata<T>
 {
@@ -84,9 +85,9 @@ public final class EventTypeMetadata<T>
 
     private EventTypeMetadata(Class<T> eventClass, List<String> errors, Map<Class<?>, EventTypeMetadata<?>> metadataClasses, boolean nestedEvent)
     {
-        Preconditions.checkNotNull(eventClass, "eventClass is null");
-        Preconditions.checkNotNull(errors, "errors is null");
-        Preconditions.checkNotNull(metadataClasses, "metadataClasses is null");
+        requireNonNull(eventClass, "eventClass is null");
+        requireNonNull(errors, "errors is null");
+        requireNonNull(metadataClasses, "metadataClasses is null");
         Preconditions.checkState(!metadataClasses.containsKey(eventClass), "metadataClasses contains eventClass");
 
         this.eventClass = eventClass;

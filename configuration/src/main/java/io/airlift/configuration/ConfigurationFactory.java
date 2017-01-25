@@ -17,7 +17,6 @@ package io.airlift.configuration;
 
 import com.google.common.annotations.Beta;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -70,6 +69,7 @@ import static com.google.common.collect.Sets.newConcurrentHashSet;
 import static io.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
 import static io.airlift.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 
 public class ConfigurationFactory
 {
@@ -135,7 +135,7 @@ public class ConfigurationFactory
     @Beta
     public void consumeProperty(String property)
     {
-        Preconditions.checkNotNull(property, "property is null");
+        requireNonNull(property, "property is null");
         usedProperties.add(property);
     }
 
@@ -299,7 +299,7 @@ public class ConfigurationFactory
      */
     <T> T build(ConfigurationProvider<T> configurationProvider)
     {
-        Preconditions.checkNotNull(configurationProvider, "configurationProvider");
+        requireNonNull(configurationProvider, "configurationProvider");
         registerConfigurationProvider(configurationProvider, Optional.empty());
 
         // check for a prebuilt instance

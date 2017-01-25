@@ -15,7 +15,6 @@
  */
 package io.airlift.http.server;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -34,6 +33,8 @@ import javax.servlet.Servlet;
 
 import java.util.Map;
 import java.util.Set;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Provides an instance of a Jetty server ready to be configured with
@@ -69,15 +70,15 @@ public class HttpServerProvider
             RequestStats stats,
             EventClient eventClient)
     {
-        Preconditions.checkNotNull(httpServerInfo, "httpServerInfo is null");
-        Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
-        Preconditions.checkNotNull(config, "config is null");
-        Preconditions.checkNotNull(theServlet, "theServlet is null");
-        Preconditions.checkNotNull(filters, "filters is null");
-        Preconditions.checkNotNull(resources, "resources is null");
-        Preconditions.checkNotNull(adminFilters, "adminFilters is null");
-        Preconditions.checkNotNull(stats, "stats is null");
-        Preconditions.checkNotNull(eventClient, "eventClient is null");
+        requireNonNull(httpServerInfo, "httpServerInfo is null");
+        requireNonNull(nodeInfo, "nodeInfo is null");
+        requireNonNull(config, "config is null");
+        requireNonNull(theServlet, "theServlet is null");
+        requireNonNull(filters, "filters is null");
+        requireNonNull(resources, "resources is null");
+        requireNonNull(adminFilters, "adminFilters is null");
+        requireNonNull(stats, "stats is null");
+        requireNonNull(eventClient, "eventClient is null");
 
         this.httpServerInfo = httpServerInfo;
         this.nodeInfo = nodeInfo;

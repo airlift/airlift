@@ -18,13 +18,14 @@ package io.airlift.event.client;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.google.common.base.Preconditions;
 import org.joda.time.DateTime;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.UUID;
+
+import static java.util.Objects.requireNonNull;
 
 public class EventJsonSerializer<T>
         extends JsonSerializer<T>
@@ -34,7 +35,7 @@ public class EventJsonSerializer<T>
 
     public EventJsonSerializer(EventTypeMetadata<T> eventTypeMetadata)
     {
-        Preconditions.checkNotNull(eventTypeMetadata, "eventTypeMetadata is null");
+        requireNonNull(eventTypeMetadata, "eventTypeMetadata is null");
 
         this.eventTypeMetadata = eventTypeMetadata;
         if (eventTypeMetadata.getHostField() == null) {

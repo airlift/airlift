@@ -15,13 +15,13 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import io.airlift.units.Duration;
 
 import java.util.List;
 
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 
 public class ServiceDescriptors
 {
@@ -35,7 +35,7 @@ public class ServiceDescriptors
             Duration maxAge,
             String eTag)
     {
-        Preconditions.checkNotNull(serviceDescriptors, "serviceDescriptors is null");
+        requireNonNull(serviceDescriptors, "serviceDescriptors is null");
 
         this.type = serviceDescriptors.type;
         this.pool = serviceDescriptors.pool;
@@ -50,9 +50,9 @@ public class ServiceDescriptors
             Duration maxAge,
             String eTag)
     {
-        Preconditions.checkNotNull(type, "type is null");
-        Preconditions.checkNotNull(serviceDescriptors, "serviceDescriptors is null");
-        Preconditions.checkNotNull(maxAge, "maxAge is null");
+        requireNonNull(type, "type is null");
+        requireNonNull(serviceDescriptors, "serviceDescriptors is null");
+        requireNonNull(maxAge, "maxAge is null");
 
         this.type = type;
         this.pool = pool;

@@ -15,13 +15,13 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Provider;
 
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
+import static java.util.Objects.requireNonNull;
 
 public class ServiceSelectorProvider
         implements Provider<ServiceSelector>
@@ -32,28 +32,28 @@ public class ServiceSelectorProvider
 
     public ServiceSelectorProvider(String type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        requireNonNull(type, "type is null");
         this.type = type;
     }
 
     @Inject
     public void setInjector(Injector injector)
     {
-        Preconditions.checkNotNull(injector, "injector is null");
+        requireNonNull(injector, "injector is null");
         this.injector = injector;
     }
 
     @Inject
     public void setServiceSelectorFactory(ServiceSelectorFactory serviceSelectorFactory)
     {
-        Preconditions.checkNotNull(serviceSelectorFactory, "serviceSelectorFactory is null");
+        requireNonNull(serviceSelectorFactory, "serviceSelectorFactory is null");
         this.serviceSelectorFactory = serviceSelectorFactory;
     }
 
     public ServiceSelector get()
     {
-        Preconditions.checkNotNull(serviceSelectorFactory, "serviceSelectorFactory is null");
-        Preconditions.checkNotNull(injector, "injector is null");
+        requireNonNull(serviceSelectorFactory, "serviceSelectorFactory is null");
+        requireNonNull(injector, "injector is null");
 
         ServiceSelectorConfig selectorConfig = injector.getInstance(Key.get(ServiceSelectorConfig.class, serviceType(type)));
 

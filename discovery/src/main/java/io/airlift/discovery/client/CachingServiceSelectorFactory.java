@@ -15,10 +15,11 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 
 import java.util.concurrent.ScheduledExecutorService;
+
+import static java.util.Objects.requireNonNull;
 
 public class CachingServiceSelectorFactory implements ServiceSelectorFactory
 {
@@ -28,16 +29,16 @@ public class CachingServiceSelectorFactory implements ServiceSelectorFactory
     @Inject
     public CachingServiceSelectorFactory(DiscoveryLookupClient lookupClient, @ForDiscoveryClient ScheduledExecutorService executor)
     {
-        Preconditions.checkNotNull(lookupClient, "client is null");
-        Preconditions.checkNotNull(executor, "executor is null");
+        requireNonNull(lookupClient, "client is null");
+        requireNonNull(executor, "executor is null");
         this.lookupClient = lookupClient;
         this.executor = executor;
     }
 
     public ServiceSelector createServiceSelector(String type, ServiceSelectorConfig selectorConfig)
     {
-        Preconditions.checkNotNull(type, "type is null");
-        Preconditions.checkNotNull(selectorConfig, "selectorConfig is null");
+        requireNonNull(type, "type is null");
+        requireNonNull(selectorConfig, "selectorConfig is null");
 
         CachingServiceSelector serviceSelector = new CachingServiceSelector(type, selectorConfig, lookupClient, executor);
         serviceSelector.start();

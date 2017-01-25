@@ -29,6 +29,7 @@ import java.util.Date;
 import java.util.List;
 
 import static java.util.Arrays.asList;
+import static java.util.Objects.requireNonNull;
 
 public class MockRequest implements Request
 {
@@ -165,7 +166,7 @@ public class MockRequest implements Request
     public Variant selectVariant(List<Variant> variants)
             throws IllegalArgumentException
     {
-        Preconditions.checkNotNull(variants, "variants is null");
+        requireNonNull(variants, "variants is null");
         Preconditions.checkArgument(!variants.isEmpty(), "variants is empty");
 
         return selectVariant;
@@ -194,7 +195,7 @@ public class MockRequest implements Request
     @Override
     public ResponseBuilder evaluatePreconditions(EntityTag eTag)
     {
-        Preconditions.checkNotNull(eTag, "eTag is null");
+        requireNonNull(eTag, "eTag is null");
 
         return firstNonNull(evaluateIfMatch(eTag), evaluateIfNoneMatch(eTag));
     }
@@ -202,7 +203,7 @@ public class MockRequest implements Request
     @Override
     public ResponseBuilder evaluatePreconditions(Date lastModified)
     {
-        Preconditions.checkNotNull(lastModified, "lastModified is null");
+        requireNonNull(lastModified, "lastModified is null");
 
         return firstNonNull(evaluateIfModifiedSince(lastModified), evaluateIfUnmodifiedSince(lastModified));
     }
@@ -210,8 +211,8 @@ public class MockRequest implements Request
     @Override
     public ResponseBuilder evaluatePreconditions(Date lastModified, EntityTag eTag)
     {
-        Preconditions.checkNotNull(eTag, "eTag is null");
-        Preconditions.checkNotNull(lastModified, "lastModified is null");
+        requireNonNull(eTag, "eTag is null");
+        requireNonNull(lastModified, "lastModified is null");
 
         return firstNonNull(evaluatePreconditions(lastModified), evaluatePreconditions(eTag));
     }

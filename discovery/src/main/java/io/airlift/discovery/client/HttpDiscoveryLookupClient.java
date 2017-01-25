@@ -15,7 +15,6 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.base.Preconditions;
 import com.google.common.io.ByteStreams;
 import com.google.common.net.HttpHeaders;
 import com.google.common.util.concurrent.Futures;
@@ -46,6 +45,7 @@ import static io.airlift.http.client.HttpStatus.NOT_MODIFIED;
 import static io.airlift.http.client.HttpStatus.OK;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 
 public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
 {
@@ -61,10 +61,10 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
             JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec,
             @ForDiscoveryClient HttpClient httpClient)
     {
-        Preconditions.checkNotNull(discoveryServiceURI, "discoveryServiceURI is null");
-        Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
-        Preconditions.checkNotNull(serviceDescriptorsCodec, "serviceDescriptorsCodec is null");
-        Preconditions.checkNotNull(httpClient, "httpClient is null");
+        requireNonNull(discoveryServiceURI, "discoveryServiceURI is null");
+        requireNonNull(nodeInfo, "nodeInfo is null");
+        requireNonNull(serviceDescriptorsCodec, "serviceDescriptorsCodec is null");
+        requireNonNull(httpClient, "httpClient is null");
 
         this.nodeInfo = nodeInfo;
         this.environment = nodeInfo.getEnvironment();
@@ -83,28 +83,28 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
     @Override
     public ListenableFuture<ServiceDescriptors> getServices(String type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        requireNonNull(type, "type is null");
         return lookup(type, null, null);
     }
 
     @Override
     public ListenableFuture<ServiceDescriptors> getServices(String type, String pool)
     {
-        Preconditions.checkNotNull(type, "type is null");
-        Preconditions.checkNotNull(pool, "pool is null");
+        requireNonNull(type, "type is null");
+        requireNonNull(pool, "pool is null");
         return lookup(type, pool, null);
     }
 
     @Override
     public ListenableFuture<ServiceDescriptors> refreshServices(ServiceDescriptors serviceDescriptors)
     {
-        Preconditions.checkNotNull(serviceDescriptors, "serviceDescriptors is null");
+        requireNonNull(serviceDescriptors, "serviceDescriptors is null");
         return lookup(serviceDescriptors.getType(), serviceDescriptors.getPool(), serviceDescriptors);
     }
 
     private ListenableFuture<ServiceDescriptors> lookup(final String type, final String pool, final ServiceDescriptors serviceDescriptors)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        requireNonNull(type, "type is null");
 
         URI uri = discoveryServiceURI.get();
         if (uri == null) {

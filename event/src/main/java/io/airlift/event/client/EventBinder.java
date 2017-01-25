@@ -49,13 +49,13 @@ public class EventBinder
 
     public void bindGenericEventClient(Class<?>... eventTypes)
     {
-        Preconditions.checkNotNull(eventTypes, "eventTypes is null");
+        requireNonNull(eventTypes, "eventTypes is null");
         bindGenericEventClient(ImmutableList.copyOf(eventTypes));
     }
 
     public void bindGenericEventClient(List<Class<?>> eventTypes)
     {
-        Preconditions.checkNotNull(eventTypes, "eventTypes is null");
+        requireNonNull(eventTypes, "eventTypes is null");
         Preconditions.checkArgument(!eventTypes.isEmpty(), "eventTypes is empty");
 
         Binder sourcedBinder = binder.withSource(getCaller());

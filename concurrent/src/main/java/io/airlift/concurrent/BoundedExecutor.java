@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.base.Preconditions.checkState;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Guarantees that no more than maxThreads will be used to execute tasks submitted
@@ -42,7 +43,7 @@ public class BoundedExecutor
 
     public BoundedExecutor(Executor coreExecutor, int maxThreads)
     {
-        Preconditions.checkNotNull(coreExecutor, "coreExecutor is null");
+        requireNonNull(coreExecutor, "coreExecutor is null");
         Preconditions.checkArgument(maxThreads > 0, "maxThreads must be greater than zero");
         this.coreExecutor = coreExecutor;
         this.maxThreads = maxThreads;

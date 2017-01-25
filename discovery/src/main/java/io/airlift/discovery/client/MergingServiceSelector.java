@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 public class MergingServiceSelector
         implements ServiceSelector
@@ -21,9 +21,9 @@ public class MergingServiceSelector
 
     public MergingServiceSelector(ServiceSelector selector, Announcer announcer, NodeInfo nodeInfo)
     {
-        this.selector = checkNotNull(selector, "selector is null");
-        this.announcer = checkNotNull(announcer, "announcer is null");
-        this.nodeInfo = checkNotNull(nodeInfo, "nodeInfo is null");
+        this.selector = requireNonNull(selector, "selector is null");
+        this.announcer = requireNonNull(announcer, "announcer is null");
+        this.nodeInfo = requireNonNull(nodeInfo, "nodeInfo is null");
     }
 
     @Override

@@ -15,7 +15,6 @@
  */
 package io.airlift.discovery.client.testing;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
@@ -36,6 +35,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static java.util.Objects.requireNonNull;
+
 public class InMemoryDiscoveryClient implements DiscoveryAnnouncementClient, DiscoveryLookupClient
 {
     private final AtomicReference<Set<ServiceDescriptor>> announcements = new AtomicReference<Set<ServiceDescriptor>>(ImmutableSet.<ServiceDescriptor>of());
@@ -47,29 +48,29 @@ public class InMemoryDiscoveryClient implements DiscoveryAnnouncementClient, Dis
     @Inject
     public InMemoryDiscoveryClient(NodeInfo nodeInfo)
     {
-        Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
+        requireNonNull(nodeInfo, "nodeInfo is null");
         this.nodeInfo = nodeInfo;
         maxAge = DEFAULT_DELAY;
     }
 
     public InMemoryDiscoveryClient(NodeInfo nodeInfo, Duration maxAge)
     {
-        Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
-        Preconditions.checkNotNull(maxAge, "maxAge is null");
+        requireNonNull(nodeInfo, "nodeInfo is null");
+        requireNonNull(maxAge, "maxAge is null");
         this.nodeInfo = nodeInfo;
         this.maxAge = maxAge;
     }
 
     public ServiceDescriptor addDiscoveredService(ServiceDescriptor serviceDescriptor)
     {
-        Preconditions.checkNotNull(serviceDescriptor, "serviceDescriptor is null");
+        requireNonNull(serviceDescriptor, "serviceDescriptor is null");
 
         return discovered.put(serviceDescriptor.getId(), serviceDescriptor);
     }
 
     public ServiceDescriptor remove(UUID uuid)
     {
-        Preconditions.checkNotNull(uuid, "uuid is null");
+        requireNonNull(uuid, "uuid is null");
 
         return discovered.remove(uuid);
     }
@@ -77,7 +78,7 @@ public class InMemoryDiscoveryClient implements DiscoveryAnnouncementClient, Dis
     @Override
     public CheckedFuture<Duration, DiscoveryException> announce(Set<ServiceAnnouncement> services)
     {
-        Preconditions.checkNotNull(services, "services is null");
+        requireNonNull(services, "services is null");
 
         ImmutableSet.Builder<ServiceDescriptor> builder = ImmutableSet.builder();
         for (ServiceAnnouncement service : services) {
@@ -97,7 +98,7 @@ public class InMemoryDiscoveryClient implements DiscoveryAnnouncementClient, Dis
     @Override
     public CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(String type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        requireNonNull(type, "type is null");
 
         ImmutableList.Builder<ServiceDescriptor> builder = ImmutableList.builder();
         for (ServiceDescriptor serviceDescriptor : this.announcements.get()) {
@@ -116,8 +117,8 @@ public class InMemoryDiscoveryClient implements DiscoveryAnnouncementClient, Dis
     @Override
     public CheckedFuture<ServiceDescriptors, DiscoveryException> getServices(String type, String pool)
     {
-        Preconditions.checkNotNull(type, "type is null");
-        Preconditions.checkNotNull(pool, "pool is null");
+        requireNonNull(type, "type is null");
+        requireNonNull(pool, "pool is null");
 
         ImmutableList.Builder<ServiceDescriptor> builder = ImmutableList.builder();
         for (ServiceDescriptor serviceDescriptor : this.announcements.get()) {
@@ -136,7 +137,7 @@ public class InMemoryDiscoveryClient implements DiscoveryAnnouncementClient, Dis
     @Override
     public CheckedFuture<ServiceDescriptors, DiscoveryException> refreshServices(ServiceDescriptors serviceDescriptors)
     {
-        Preconditions.checkNotNull(serviceDescriptors, "serviceDescriptors is null");
+        requireNonNull(serviceDescriptors, "serviceDescriptors is null");
 
         return getServices(serviceDescriptors.getType(), serviceDescriptors.getPool());
     }

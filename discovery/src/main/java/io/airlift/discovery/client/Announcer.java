@@ -42,8 +42,8 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -68,8 +68,8 @@ public final class Announcer
     @Inject
     public Announcer(DiscoveryAnnouncementClient announcementClient, Set<ServiceAnnouncement> serviceAnnouncements)
     {
-        checkNotNull(announcementClient, "client is null");
-        checkNotNull(serviceAnnouncements, "serviceAnnouncements is null");
+        requireNonNull(announcementClient, "client is null");
+        requireNonNull(serviceAnnouncements, "serviceAnnouncements is null");
 
         this.announcementClient = announcementClient;
         serviceAnnouncements.forEach(this::addServiceAnnouncement);
@@ -125,7 +125,7 @@ public final class Announcer
 
     public void addServiceAnnouncement(ServiceAnnouncement serviceAnnouncement)
     {
-        checkNotNull(serviceAnnouncement, "serviceAnnouncement is null");
+        requireNonNull(serviceAnnouncement, "serviceAnnouncement is null");
         announcements.put(serviceAnnouncement.getId(), serviceAnnouncement);
     }
 

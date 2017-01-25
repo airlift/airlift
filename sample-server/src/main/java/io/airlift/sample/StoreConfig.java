@@ -24,6 +24,8 @@ import javax.validation.constraints.NotNull;
 
 import java.util.concurrent.TimeUnit;
 
+import static java.util.Objects.requireNonNull;
+
 public class StoreConfig
 {
     private Duration ttl = new Duration(1, TimeUnit.HOURS);
@@ -38,7 +40,7 @@ public class StoreConfig
     @Config("store.ttl")
     public StoreConfig setTtl(Duration ttl)
     {
-        Preconditions.checkNotNull(ttl, "ttl must not be null");
+        requireNonNull(ttl, "ttl must not be null");
         Preconditions.checkArgument(ttl.toMillis() > 0, "ttl must be > 0");
 
         this.ttl = ttl;

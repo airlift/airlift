@@ -16,7 +16,6 @@
 package io.airlift.json;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Preconditions;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 
@@ -28,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
+import static java.util.Objects.requireNonNull;
 
 public class JsonCodecFactory
 {
@@ -58,28 +58,28 @@ public class JsonCodecFactory
 
     public <T> JsonCodec<T> jsonCodec(Class<T> type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        requireNonNull(type, "type is null");
 
         return new JsonCodec<>(createObjectMapper(), type);
     }
 
     public <T> JsonCodec<T> jsonCodec(Type type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        requireNonNull(type, "type is null");
 
         return new JsonCodec<>(createObjectMapper(), type);
     }
 
     public <T> JsonCodec<T> jsonCodec(TypeToken<T> type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        requireNonNull(type, "type is null");
 
         return new JsonCodec<>(createObjectMapper(), type.getType());
     }
 
     public <T> JsonCodec<List<T>> listJsonCodec(Class<T> type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        requireNonNull(type, "type is null");
 
         Type listType = new TypeToken<List<T>>() {}
                 .where(new TypeParameter<T>() {}, type)
@@ -90,7 +90,7 @@ public class JsonCodecFactory
 
     public <T> JsonCodec<List<T>> listJsonCodec(JsonCodec<T> type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        requireNonNull(type, "type is null");
 
         Type listType = new TypeToken<List<T>>() {}
                 .where(new TypeParameter<T>() {}, type.getTypeToken())
@@ -101,8 +101,8 @@ public class JsonCodecFactory
 
     public <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, Class<V> valueType)
     {
-        Preconditions.checkNotNull(keyType, "keyType is null");
-        Preconditions.checkNotNull(valueType, "valueType is null");
+        requireNonNull(keyType, "keyType is null");
+        requireNonNull(valueType, "valueType is null");
 
         Type mapType = new TypeToken<Map<K, V>>() {}
                 .where(new TypeParameter<K>() {}, keyType)
@@ -114,8 +114,8 @@ public class JsonCodecFactory
 
     public <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, JsonCodec<V> valueType)
     {
-        Preconditions.checkNotNull(keyType, "keyType is null");
-        Preconditions.checkNotNull(valueType, "valueType is null");
+        requireNonNull(keyType, "keyType is null");
+        requireNonNull(valueType, "valueType is null");
 
         Type mapType = new TypeToken<Map<K, V>>() {}
                 .where(new TypeParameter<K>() {}, keyType)

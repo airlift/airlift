@@ -1,10 +1,10 @@
 package io.airlift.sample;
 
-import com.google.common.base.Preconditions;
 import io.airlift.event.client.EventField;
 import io.airlift.event.client.EventType;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.util.Objects.requireNonNull;
 
 @EventType("Person")
 public class PersonEvent
@@ -32,9 +32,9 @@ public class PersonEvent
 
     private PersonEvent(Operation operation, String personId, Person person)
     {
-        Preconditions.checkNotNull(operation, "operation is null");
-        Preconditions.checkNotNull(personId, "id is null");
-        Preconditions.checkNotNull(person, "person is null");
+        requireNonNull(operation, "operation is null");
+        requireNonNull(personId, "id is null");
+        requireNonNull(person, "person is null");
 
         this.operation = operation;
         this.personId = personId;

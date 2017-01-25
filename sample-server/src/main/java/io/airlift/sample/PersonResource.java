@@ -15,7 +15,6 @@
  */
 package io.airlift.sample;
 
-import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 
 import javax.ws.rs.Consumes;
@@ -32,6 +31,7 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import static io.airlift.sample.PersonRepresentation.from;
+import static java.util.Objects.requireNonNull;
 
 @Path("/v1/person/{id: \\w+}")
 public class PersonResource
@@ -41,7 +41,7 @@ public class PersonResource
     @Inject
     public PersonResource(PersonStore store)
     {
-        Preconditions.checkNotNull(store, "store must not be null");
+        requireNonNull(store, "store must not be null");
 
         this.store = store;
     }
@@ -50,7 +50,7 @@ public class PersonResource
     @Produces(MediaType.APPLICATION_JSON)
     public Response get(@PathParam("id") String id, @Context UriInfo uriInfo)
     {
-        Preconditions.checkNotNull(id, "id must not be null");
+        requireNonNull(id, "id must not be null");
 
         Person person = store.get(id);
 
@@ -65,8 +65,8 @@ public class PersonResource
     @Consumes(MediaType.APPLICATION_JSON)
     public Response put(@PathParam("id") String id, PersonRepresentation person)
     {
-        Preconditions.checkNotNull(id, "id must not be null");
-        Preconditions.checkNotNull(person, "person must not be null");
+        requireNonNull(id, "id must not be null");
+        requireNonNull(person, "person must not be null");
 
         boolean added = store.put(id, person.toPerson());
         if (added) {
@@ -80,7 +80,7 @@ public class PersonResource
     @DELETE
     public Response delete(@PathParam("id") String id)
     {
-        Preconditions.checkNotNull(id, "id must not be null");
+        requireNonNull(id, "id must not be null");
 
         if (!store.delete(id)) {
             return Response.status(Response.Status.NOT_FOUND).build();

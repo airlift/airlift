@@ -24,7 +24,7 @@ import org.weakref.jmx.Nested;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 @Beta
 public class CounterStat
@@ -44,7 +44,7 @@ public class CounterStat
 
     public void merge(CounterStat counterStat)
     {
-        checkNotNull(counterStat, "counterStat is null");
+        requireNonNull(counterStat, "counterStat is null");
         oneMinute.merge(counterStat.getOneMinute());
         fiveMinute.merge(counterStat.getFiveMinute());
         fifteenMinute.merge(counterStat.getFifteenMinute());

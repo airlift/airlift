@@ -27,7 +27,7 @@ import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static javax.ws.rs.core.Response.status;
 
@@ -39,11 +39,11 @@ public class AsyncResponseHandler
 
     private AsyncResponseHandler(AsyncResponse asyncResponse, CompletableFuture<?> futureResponse)
     {
-        this.asyncResponse = checkNotNull(asyncResponse, "asyncResponse is null");
+        this.asyncResponse = requireNonNull(asyncResponse, "asyncResponse is null");
         // the jaxrs implementation can hold on to the async timeout for a long time, and
         // the future can reference large expensive objects.  Since we are only interested
         // in canceling this future on a timeout, only hold a weak reference to the future
-        this.futureResponseReference = new WeakReference<>(checkNotNull(futureResponse, "futureResponse is null"));
+        this.futureResponseReference = new WeakReference<>(requireNonNull(futureResponse, "futureResponse is null"));
     }
 
     public static AsyncResponseHandler bindAsyncResponse(AsyncResponse asyncResponse, CompletableFuture<?> futureResponse, Executor httpResponseExecutor)

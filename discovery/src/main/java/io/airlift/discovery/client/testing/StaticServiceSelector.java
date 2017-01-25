@@ -26,6 +26,7 @@ import io.airlift.discovery.client.ServiceSelector;
 import java.util.List;
 
 import static io.airlift.discovery.client.ServiceSelectorConfig.DEFAULT_POOL;
+import static java.util.Objects.requireNonNull;
 
 public class StaticServiceSelector implements ServiceSelector
 {
@@ -40,7 +41,7 @@ public class StaticServiceSelector implements ServiceSelector
 
     public StaticServiceSelector(Iterable<ServiceDescriptor> serviceDescriptors)
     {
-        Preconditions.checkNotNull(serviceDescriptors, "serviceDescriptors is null");
+        requireNonNull(serviceDescriptors, "serviceDescriptors is null");
 
         ServiceDescriptor serviceDescriptor = Iterables.getFirst(serviceDescriptors, null);
         if (serviceDescriptor != null) {

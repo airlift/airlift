@@ -17,9 +17,9 @@ import com.google.common.annotations.Beta;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static java.util.Objects.requireNonNull;
 
 @Beta
 public abstract class AbstractConfigurationAwareModule
@@ -31,14 +31,14 @@ public abstract class AbstractConfigurationAwareModule
     @Override
     public synchronized void setConfigurationFactory(ConfigurationFactory configurationFactory)
     {
-        this.configurationFactory = checkNotNull(configurationFactory, "configurationFactory is null");
+        this.configurationFactory = requireNonNull(configurationFactory, "configurationFactory is null");
     }
 
     @Override
     public final synchronized void configure(Binder binder)
     {
         checkState(this.binder == null, "re-entry not allowed");
-        this.binder = checkNotNull(binder, "binder is null");
+        this.binder = requireNonNull(binder, "binder is null");
         try {
             setup(binder);
         }

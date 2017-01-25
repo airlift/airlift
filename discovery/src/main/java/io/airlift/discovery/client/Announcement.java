@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Set;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.util.Objects.requireNonNull;
 
 public class Announcement
 {
@@ -33,10 +34,10 @@ public class Announcement
 
     public Announcement(String environment, String nodeId, String pool, String location, Set<ServiceAnnouncement> services)
     {
-        Preconditions.checkNotNull(environment, "environment is null");
-        Preconditions.checkNotNull(nodeId, "nodeId is null");
-        Preconditions.checkNotNull(services, "services is null");
-        Preconditions.checkNotNull(pool, "pool is null");
+        requireNonNull(environment, "environment is null");
+        requireNonNull(nodeId, "nodeId is null");
+        requireNonNull(services, "services is null");
+        requireNonNull(pool, "pool is null");
         Preconditions.checkArgument(!services.isEmpty(), "services is empty");
 
         this.environment = environment;

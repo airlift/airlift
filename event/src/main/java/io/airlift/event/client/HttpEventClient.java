@@ -42,8 +42,8 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static io.airlift.http.client.Request.Builder.preparePost;
+import static java.util.Objects.requireNonNull;
 
 public class HttpEventClient
         implements EventClient
@@ -63,10 +63,10 @@ public class HttpEventClient
             NodeInfo nodeInfo,
             @ForEventClient HttpClient httpClient)
     {
-        this.serviceSelector = checkNotNull(serviceSelector, "serviceSelector is null");
-        this.eventWriter = checkNotNull(eventWriter, "eventWriter is null");
-        this.nodeInfo = checkNotNull(nodeInfo, "nodeInfo is null");
-        this.httpClient = checkNotNull(httpClient, "httpClient is null");
+        this.serviceSelector = requireNonNull(serviceSelector, "serviceSelector is null");
+        this.eventWriter = requireNonNull(eventWriter, "eventWriter is null");
+        this.nodeInfo = requireNonNull(nodeInfo, "nodeInfo is null");
+        this.httpClient = requireNonNull(httpClient, "httpClient is null");
     }
 
     @Flatten
@@ -81,7 +81,7 @@ public class HttpEventClient
     public final <T> ListenableFuture<Void> post(T... event)
             throws IllegalArgumentException
     {
-        checkNotNull(event, "event is null");
+        requireNonNull(event, "event is null");
         return post(Arrays.asList(event));
     }
 
@@ -89,7 +89,7 @@ public class HttpEventClient
     public <T> ListenableFuture<Void> post(final Iterable<T> events)
             throws IllegalArgumentException
     {
-        checkNotNull(events, "eventsSupplier is null");
+        requireNonNull(events, "eventsSupplier is null");
         return post(new EventGenerator<T>()
         {
             @Override
@@ -106,7 +106,7 @@ public class HttpEventClient
     @Override
     public <T> ListenableFuture<Void> post(EventGenerator<T> eventGenerator)
     {
-        checkNotNull(eventGenerator, "eventGenerator is null");
+        requireNonNull(eventGenerator, "eventGenerator is null");
 
         List<URI> uris = serviceSelector.selectHttpService();
 
@@ -132,8 +132,8 @@ public class HttpEventClient
 
         public JsonEntityWriter(JsonEventWriter eventWriter, EventGenerator<T> events)
         {
-            this.eventWriter = checkNotNull(eventWriter, "eventWriter is null");
-            this.events = checkNotNull(events, "events is null");
+            this.eventWriter = requireNonNull(eventWriter, "eventWriter is null");
+            this.events = requireNonNull(events, "events is null");
         }
 
         @Override
@@ -151,8 +151,8 @@ public class HttpEventClient
 
         public EventResponseHandler(String type, String pool)
         {
-            this.type = checkNotNull(type, "type is null");
-            this.pool = checkNotNull(pool, "pool is null");
+            this.type = requireNonNull(type, "type is null");
+            this.pool = requireNonNull(pool, "pool is null");
         }
 
         @Override

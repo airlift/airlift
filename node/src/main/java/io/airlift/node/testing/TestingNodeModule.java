@@ -29,8 +29,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static java.util.Objects.requireNonNull;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class TestingNodeModule
@@ -61,12 +61,12 @@ public class TestingNodeModule
     {
         checkArgument(!isNullOrEmpty(environment), "environment is null or empty");
         this.environment = environment;
-        this.pool = checkNotNull(pool, "pool is null");
+        this.pool = requireNonNull(pool, "pool is null");
     }
 
     public TestingNodeModule(String environment, String pool)
     {
-        this(environment, Optional.of(checkNotNull(pool, "pool is null")));
+        this(environment, Optional.of(requireNonNull(pool, "pool is null")));
     }
 
     @Override

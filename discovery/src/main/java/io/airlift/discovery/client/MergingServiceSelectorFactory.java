@@ -2,7 +2,7 @@ package io.airlift.discovery.client;
 
 import io.airlift.node.NodeInfo;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 public class MergingServiceSelectorFactory
         implements ServiceSelectorFactory
@@ -13,9 +13,9 @@ public class MergingServiceSelectorFactory
 
     public MergingServiceSelectorFactory(ServiceSelectorFactory selectorFactory, Announcer announcer, NodeInfo nodeInfo)
     {
-        this.selectorFactory = checkNotNull(selectorFactory, "selectorFactory is null");
-        this.announcer = checkNotNull(announcer, "announcer is null");
-        this.nodeInfo = checkNotNull(nodeInfo, "nodeInfo is null");
+        this.selectorFactory = requireNonNull(selectorFactory, "selectorFactory is null");
+        this.announcer = requireNonNull(announcer, "announcer is null");
+        this.nodeInfo = requireNonNull(nodeInfo, "nodeInfo is null");
     }
 
     @Override

@@ -6,7 +6,7 @@ import org.weakref.jmx.Managed;
 
 import java.util.concurrent.ThreadPoolExecutor;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 @Beta
@@ -16,7 +16,7 @@ public class ThreadPoolExecutorMBean
 
     public ThreadPoolExecutorMBean(ThreadPoolExecutor threadPoolExecutor)
     {
-        this.threadPoolExecutor = checkNotNull(threadPoolExecutor, "threadPoolExecutor is null");
+        this.threadPoolExecutor = requireNonNull(threadPoolExecutor, "threadPoolExecutor is null");
     }
 
     @Managed
@@ -96,7 +96,7 @@ public class ThreadPoolExecutorMBean
     @Managed
     public void setKeepAliveTime(String duration)
     {
-        checkNotNull(duration, "duration is null");
+        requireNonNull(duration, "duration is null");
         threadPoolExecutor.setKeepAliveTime(Duration.valueOf(duration).roundTo(NANOSECONDS), NANOSECONDS);
     }
 

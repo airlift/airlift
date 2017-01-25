@@ -15,7 +15,6 @@
  */
 package io.airlift.json;
 
-import com.google.common.base.Preconditions;
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
@@ -44,21 +43,21 @@ public class JsonCodecBinder
 
     public void bindJsonCodec(Class<?> type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        requireNonNull(type, "type is null");
 
         binder.bind(getJsonCodecKey(type)).toProvider(new JsonCodecProvider(type)).in(Scopes.SINGLETON);
     }
 
     public void bindJsonCodec(TypeLiteral<?> type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        requireNonNull(type, "type is null");
 
         binder.bind(getJsonCodecKey(type.getType())).toProvider(new JsonCodecProvider(type.getType())).in(Scopes.SINGLETON);
     }
 
     public void bindListJsonCodec(Class<?> type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        requireNonNull(type, "type is null");
 
         ParameterizedTypeImpl listType = new ParameterizedTypeImpl(null, List.class, type);
         binder.bind(getJsonCodecKey(listType)).toProvider(new JsonCodecProvider(listType)).in(Scopes.SINGLETON);
@@ -66,7 +65,7 @@ public class JsonCodecBinder
 
     public void bindListJsonCodec(JsonCodec<?> type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        requireNonNull(type, "type is null");
 
         ParameterizedTypeImpl listType = new ParameterizedTypeImpl(null, List.class, type.getType());
         binder.bind(getJsonCodecKey(listType)).toProvider(new JsonCodecProvider(listType)).in(Scopes.SINGLETON);
@@ -74,8 +73,8 @@ public class JsonCodecBinder
 
     public void bindMapJsonCodec(Class<?> keyType, Class<?> valueType)
     {
-        Preconditions.checkNotNull(keyType, "keyType is null");
-        Preconditions.checkNotNull(valueType, "valueType is null");
+        requireNonNull(keyType, "keyType is null");
+        requireNonNull(valueType, "valueType is null");
 
         ParameterizedTypeImpl mapType = new ParameterizedTypeImpl(null, Map.class, keyType, valueType);
         binder.bind(getJsonCodecKey(mapType)).toProvider(new JsonCodecProvider(mapType)).in(Scopes.SINGLETON);
@@ -83,8 +82,8 @@ public class JsonCodecBinder
 
     public void bindMapJsonCodec(Class<?> keyType, JsonCodec<?> valueType)
     {
-        Preconditions.checkNotNull(keyType, "keyType is null");
-        Preconditions.checkNotNull(valueType, "valueType is null");
+        requireNonNull(keyType, "keyType is null");
+        requireNonNull(valueType, "valueType is null");
 
         ParameterizedTypeImpl mapType = new ParameterizedTypeImpl(null, Map.class, keyType, valueType.getType());
         binder.bind(getJsonCodecKey(mapType)).toProvider(new JsonCodecProvider(mapType)).in(Scopes.SINGLETON);

@@ -2,7 +2,6 @@ package io.airlift.stats;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Preconditions;
 import org.weakref.jmx.Managed;
 
 import javax.annotation.concurrent.GuardedBy;
@@ -14,6 +13,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TimeDistribution
@@ -31,7 +31,7 @@ public class TimeDistribution
 
     public TimeDistribution(TimeUnit unit)
     {
-        Preconditions.checkNotNull(unit, "unit is null");
+        requireNonNull(unit, "unit is null");
 
         digest = new QuantileDigest(MAX_ERROR);
         this.unit = unit;
@@ -44,7 +44,7 @@ public class TimeDistribution
 
     public TimeDistribution(double alpha, TimeUnit unit)
     {
-        Preconditions.checkNotNull(unit, "unit is null");
+        requireNonNull(unit, "unit is null");
 
         digest = new QuantileDigest(MAX_ERROR, alpha);
         this.unit = unit;

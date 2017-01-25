@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 /*
  * A counter that decays exponentially. Values are weighted according to the formula
@@ -54,7 +54,7 @@ public class DecayCounter
 
     public synchronized void merge(DecayCounter decayCounter)
     {
-        checkNotNull(decayCounter, "decayCounter is null");
+        requireNonNull(decayCounter, "decayCounter is null");
         checkArgument(decayCounter.alpha == alpha, "Expected decayCounter to have alpha %s, but was %s", alpha, decayCounter.alpha);
 
         synchronized (decayCounter) {

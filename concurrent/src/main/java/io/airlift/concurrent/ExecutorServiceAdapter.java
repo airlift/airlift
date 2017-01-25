@@ -12,7 +12,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Converts an Executor into a minimalistic ExecutorService
@@ -24,7 +24,7 @@ public class ExecutorServiceAdapter
 
     public ExecutorServiceAdapter(Executor executor)
     {
-        this.executor = checkNotNull(executor, "executor is null");
+        this.executor = requireNonNull(executor, "executor is null");
     }
 
     public static ExecutorService from(Executor executor)

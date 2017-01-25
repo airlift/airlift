@@ -19,7 +19,6 @@ import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
 import javax.inject.Inject;
@@ -29,6 +28,8 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.Set;
 
+import static java.util.Objects.requireNonNull;
+
 public class JsonEventWriter
 {
     private final JsonFactory jsonFactory;
@@ -37,7 +38,7 @@ public class JsonEventWriter
     @Inject
     public JsonEventWriter(Set<EventTypeMetadata<?>> eventTypes)
     {
-        Preconditions.checkNotNull(eventTypes, "eventTypes is null");
+        requireNonNull(eventTypes, "eventTypes is null");
 
         this.jsonFactory = new JsonFactory();
 
@@ -52,8 +53,8 @@ public class JsonEventWriter
     public <T> void writeEvents(EventClient.EventGenerator<T> events, OutputStream out)
             throws IOException
     {
-        Preconditions.checkNotNull(events, "events is null");
-        Preconditions.checkNotNull(out, "out is null");
+        requireNonNull(events, "events is null");
+        requireNonNull(out, "out is null");
 
         final JsonGenerator jsonGenerator = jsonFactory.createJsonGenerator(out, JsonEncoding.UTF8);
 

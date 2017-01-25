@@ -16,7 +16,6 @@
 package io.airlift.discovery.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.node.NodeInfo;
 
@@ -25,6 +24,7 @@ import java.util.UUID;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static io.airlift.discovery.client.ServiceDescriptor.serviceDescriptor;
+import static java.util.Objects.requireNonNull;
 
 public class ServiceAnnouncement
 {
@@ -34,8 +34,8 @@ public class ServiceAnnouncement
 
     private ServiceAnnouncement(String type, Map<String, String> properties)
     {
-        Preconditions.checkNotNull(type, "type is null");
-        Preconditions.checkNotNull(properties, "properties is null");
+        requireNonNull(type, "type is null");
+        requireNonNull(properties, "properties is null");
 
         this.type = type;
         this.properties = ImmutableMap.copyOf(properties);
@@ -122,15 +122,15 @@ public class ServiceAnnouncement
 
         public ServiceAnnouncementBuilder addProperty(String key, String value)
         {
-            Preconditions.checkNotNull(key, "key is null");
-            Preconditions.checkNotNull(value, "value is null");
+            requireNonNull(key, "key is null");
+            requireNonNull(value, "value is null");
             properties.put(key, value);
             return this;
         }
 
         public ServiceAnnouncementBuilder addProperties(Map<String, String> properties)
         {
-            Preconditions.checkNotNull(properties, "properties is null");
+            requireNonNull(properties, "properties is null");
             this.properties.putAll(properties);
             return this;
         }

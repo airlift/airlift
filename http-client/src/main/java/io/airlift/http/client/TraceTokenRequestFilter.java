@@ -18,8 +18,8 @@ package io.airlift.http.client;
 import com.google.inject.Inject;
 import io.airlift.tracetoken.TraceTokenManager;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static io.airlift.http.client.Request.Builder.fromRequest;
+import static java.util.Objects.requireNonNull;
 
 public class TraceTokenRequestFilter
         implements HttpRequestFilter
@@ -30,13 +30,13 @@ public class TraceTokenRequestFilter
     @Inject
     public TraceTokenRequestFilter(TraceTokenManager traceTokenManager)
     {
-        this.traceTokenManager = checkNotNull(traceTokenManager, "traceTokenManager is null");
+        this.traceTokenManager = requireNonNull(traceTokenManager, "traceTokenManager is null");
     }
 
     @Override
     public Request filterRequest(Request request)
     {
-        checkNotNull(request, "request is null");
+        requireNonNull(request, "request is null");
 
         String token = traceTokenManager.getCurrentRequestToken();
         if (token == null) {

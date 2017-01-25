@@ -30,6 +30,8 @@ import java.math.BigInteger;
 import java.net.InetAddress;
 import java.util.Map;
 
+import static java.util.Objects.requireNonNull;
+
 @SuppressWarnings("UnusedDeclaration")
 enum EventDataType
 {
@@ -208,7 +210,7 @@ enum EventDataType
 
     static void validateFieldValueType(Object value, Class<?> expectedType)
     {
-        Preconditions.checkNotNull(value, "value is null");
+        requireNonNull(value, "value is null");
         Preconditions.checkArgument(expectedType.isInstance(value),
                 "Expected 'value' to be a " + expectedType.getSimpleName() +
                         " but it is a " + value.getClass().getName());

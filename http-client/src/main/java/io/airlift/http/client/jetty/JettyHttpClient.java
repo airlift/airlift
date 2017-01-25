@@ -89,7 +89,6 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
@@ -159,9 +158,9 @@ public class JettyHttpClient
             Optional<JettyIoPool> jettyIoPool,
             Iterable<? extends HttpRequestFilter> requestFilters)
     {
-        checkNotNull(config, "config is null");
-        checkNotNull(jettyIoPool, "jettyIoPool is null");
-        checkNotNull(requestFilters, "requestFilters is null");
+        requireNonNull(config, "config is null");
+        requireNonNull(jettyIoPool, "jettyIoPool is null");
+        requireNonNull(requestFilters, "requestFilters is null");
 
         maxContentLength = config.getMaxContentLength().toBytes();
         requestTimeoutMillis = config.getRequestTimeout().toMillis();
@@ -391,8 +390,8 @@ public class JettyHttpClient
     @Override
     public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
     {
-        checkNotNull(request, "request is null");
-        checkNotNull(responseHandler, "responseHandler is null");
+        requireNonNull(request, "request is null");
+        requireNonNull(responseHandler, "responseHandler is null");
 
         request = applyRequestFilters(request);
 
@@ -1071,7 +1070,7 @@ public class JettyHttpClient
 
         public BufferingResponseListener(JettyResponseFuture<?, ?> future, int maxLength)
         {
-            this.future = checkNotNull(future, "future is null");
+            this.future = requireNonNull(future, "future is null");
             checkArgument(maxLength > 0, "maxLength must be greater than zero");
             this.maxLength = maxLength;
         }

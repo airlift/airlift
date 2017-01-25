@@ -17,12 +17,12 @@ package io.airlift.discovery.client;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.util.Objects.requireNonNull;
 
 public class ServiceDescriptorsRepresentation
 {
@@ -34,7 +34,7 @@ public class ServiceDescriptorsRepresentation
             @JsonProperty("environment") String environment,
             @JsonProperty("services") List<ServiceDescriptor> serviceDescriptors)
     {
-        Preconditions.checkNotNull(serviceDescriptors);
+        requireNonNull(serviceDescriptors);
         this.environment = environment;
         this.serviceDescriptors = ImmutableList.copyOf(serviceDescriptors);
     }

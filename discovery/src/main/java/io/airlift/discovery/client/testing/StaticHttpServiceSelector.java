@@ -15,7 +15,6 @@
  */
 package io.airlift.discovery.client.testing;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import io.airlift.discovery.client.HttpServiceSelector;
 
@@ -24,6 +23,7 @@ import java.util.List;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static io.airlift.discovery.client.ServiceSelectorConfig.DEFAULT_POOL;
+import static java.util.Objects.requireNonNull;
 
 public class StaticHttpServiceSelector implements HttpServiceSelector
 {
@@ -44,10 +44,10 @@ public class StaticHttpServiceSelector implements HttpServiceSelector
 
     public StaticHttpServiceSelector(String type, String pool, URI uri, URI... uris)
     {
-        Preconditions.checkNotNull(type, "type is null");
-        Preconditions.checkNotNull(pool, "pool is null");
-        Preconditions.checkNotNull(uri, "uri is null");
-        Preconditions.checkNotNull(uris, "uris is null");
+        requireNonNull(type, "type is null");
+        requireNonNull(pool, "pool is null");
+        requireNonNull(uri, "uri is null");
+        requireNonNull(uris, "uris is null");
 
         this.type = type;
         this.pool = pool;
@@ -67,9 +67,9 @@ public class StaticHttpServiceSelector implements HttpServiceSelector
 
     public StaticHttpServiceSelector(String type, String pool, Iterable<URI> uris)
     {
-        Preconditions.checkNotNull(type, "type is null");
-        Preconditions.checkNotNull(pool, "pool is null");
-        Preconditions.checkNotNull(uris, "uris is null");
+        requireNonNull(type, "type is null");
+        requireNonNull(pool, "pool is null");
+        requireNonNull(uris, "uris is null");
         this.type = type;
         this.pool = pool;
         this.uris = ImmutableList.copyOf(uris);

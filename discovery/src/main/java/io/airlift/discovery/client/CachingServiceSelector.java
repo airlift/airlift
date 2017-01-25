@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -54,10 +55,10 @@ public class CachingServiceSelector
 
     public CachingServiceSelector(String type, ServiceSelectorConfig selectorConfig, DiscoveryLookupClient lookupClient, ScheduledExecutorService executor)
     {
-        Preconditions.checkNotNull(type, "type is null");
-        Preconditions.checkNotNull(selectorConfig, "selectorConfig is null");
-        Preconditions.checkNotNull(lookupClient, "client is null");
-        Preconditions.checkNotNull(executor, "executor is null");
+        requireNonNull(type, "type is null");
+        requireNonNull(selectorConfig, "selectorConfig is null");
+        requireNonNull(lookupClient, "client is null");
+        requireNonNull(executor, "executor is null");
 
         this.type = type;
         this.pool = selectorConfig.getPool();

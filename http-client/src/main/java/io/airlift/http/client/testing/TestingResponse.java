@@ -16,7 +16,7 @@ import java.io.InputStream;
 import java.util.Map;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 public class TestingResponse
         implements Response
@@ -27,14 +27,14 @@ public class TestingResponse
 
     public TestingResponse(HttpStatus status, ListMultimap<String, String> headers, byte[] bytes)
     {
-        this(status, headers, new ByteArrayInputStream(checkNotNull(bytes, "bytes is null")));
+        this(status, headers, new ByteArrayInputStream(requireNonNull(bytes, "bytes is null")));
     }
 
     public TestingResponse(HttpStatus status, ListMultimap<String, String> headers, InputStream input)
     {
-        this.status = checkNotNull(status, "status is null");
-        this.headers = ImmutableListMultimap.copyOf(toHeaderMap(checkNotNull(headers, "headers is null")));
-        this.countingInputStream = new CountingInputStream(checkNotNull(input, "input is null"));
+        this.status = requireNonNull(status, "status is null");
+        this.headers = ImmutableListMultimap.copyOf(toHeaderMap(requireNonNull(headers, "headers is null")));
+        this.countingInputStream = new CountingInputStream(requireNonNull(input, "input is null"));
     }
 
     @Override

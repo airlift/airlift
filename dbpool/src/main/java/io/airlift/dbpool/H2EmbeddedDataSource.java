@@ -15,7 +15,6 @@
  */
 package io.airlift.dbpool;
 
-import com.google.common.base.Preconditions;
 import com.google.common.io.Resources;
 import com.google.common.primitives.Ints;
 import com.google.inject.Inject;
@@ -34,6 +33,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class H2EmbeddedDataSource extends ManagedDataSource
@@ -46,7 +46,7 @@ public class H2EmbeddedDataSource extends ManagedDataSource
     {
         super(config.getMaxConnections(), config.getMaxConnectionWait());
 
-        Preconditions.checkNotNull(config.getFilename());
+        requireNonNull(config.getFilename());
         if (config.getFilename().isEmpty()) {
             throw new IllegalArgumentException("filename is empty");
         }

@@ -53,25 +53,25 @@ public class JsonBinder
 
     public LinkedBindingBuilder<JsonSerializer<?>> addKeySerializerBinding(Class<?> type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        requireNonNull(type, "type is null");
         return keySerializerMapBinder.addBinding(type);
     }
 
     public LinkedBindingBuilder<KeyDeserializer> addKeyDeserializerBinding(Class<?> type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        requireNonNull(type, "type is null");
         return keyDeserializerMapBinder.addBinding(type);
     }
 
     public LinkedBindingBuilder<JsonSerializer<?>> addSerializerBinding(Class<?> type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        requireNonNull(type, "type is null");
         return serializerMapBinder.addBinding(type);
     }
 
     public LinkedBindingBuilder<JsonDeserializer<?>> addDeserializerBinding(Class<?> type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        requireNonNull(type, "type is null");
         return deserializerMapBinder.addBinding(type);
     }
 
@@ -83,10 +83,10 @@ public class JsonBinder
 
     public <T> void bindSerializer(JsonSerializer<T> jsonSerializer)
     {
-        Preconditions.checkNotNull(jsonSerializer, "jsonSerializer is null");
+        requireNonNull(jsonSerializer, "jsonSerializer is null");
 
         Class<?> type = jsonSerializer.handledType();
-        Preconditions.checkNotNull(type, "jsonSerializer.handledType is null");
+        requireNonNull(type, "jsonSerializer.handledType is null");
         Preconditions.checkArgument(type == Object.class, "jsonSerializer.handledType can not be Object.class");
         serializerMapBinder.addBinding(type).toInstance(jsonSerializer);
     }

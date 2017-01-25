@@ -26,8 +26,8 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static io.airlift.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
+import static java.util.Objects.requireNonNull;
 
 @Beta
 public class JsonEventSerializer
@@ -37,7 +37,7 @@ public class JsonEventSerializer
     @Inject
     public JsonEventSerializer(Set<EventTypeMetadata<?>> eventTypes)
     {
-        checkNotNull(eventTypes, "eventTypes is null");
+        requireNonNull(eventTypes, "eventTypes is null");
 
         ImmutableMap.Builder<Class<?>, JsonSerializer<?>> map = ImmutableMap.builder();
         for (EventTypeMetadata<?> eventType : eventTypes) {
@@ -54,8 +54,8 @@ public class JsonEventSerializer
     public <T> void serialize(T event, JsonGenerator jsonGenerator)
             throws IOException
     {
-        checkNotNull(event, "event is null");
-        checkNotNull(jsonGenerator, "jsonGenerator is null");
+        requireNonNull(event, "event is null");
+        requireNonNull(jsonGenerator, "jsonGenerator is null");
 
         JsonSerializer<T> serializer = getSerializer(event);
         if (serializer == null) {

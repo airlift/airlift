@@ -21,7 +21,6 @@ package io.airlift.testing;
  * Licensed under Apache License, Version 2.0
  */
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -45,6 +44,7 @@ import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_GR
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_LESS_THAN;
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_REFLEXIVE;
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Equivalence tester streamlining tests of {@link #equals(Object)} and {@link #hashCode} methods. Using this tester makes it
@@ -445,7 +445,7 @@ public final class EquivalenceTester
 
         public ElementCheckFailure(EquivalenceFailureType type, int primaryClassNumber, int primaryElementNumber, Object primaryObject)
         {
-            Preconditions.checkNotNull(type, "type is null");
+            requireNonNull(type, "type is null");
             this.type = type;
             this.primaryClassNumber = primaryClassNumber;
             this.primaryElementNumber = primaryElementNumber;

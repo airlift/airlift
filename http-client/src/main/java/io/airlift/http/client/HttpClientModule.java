@@ -43,7 +43,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static java.util.Objects.requireNonNull;
@@ -60,8 +59,8 @@ public class HttpClientModule
 
     public HttpClientModule(String name, Class<? extends Annotation> annotation)
     {
-        this.name = checkNotNull(name, "name is null");
-        this.annotation = checkNotNull(annotation, "annotation is null");
+        this.name = requireNonNull(name, "name is null");
+        this.annotation = requireNonNull(annotation, "annotation is null");
     }
 
     void withConfigDefaults(ConfigDefaults<HttpClientConfig> configDefaults)

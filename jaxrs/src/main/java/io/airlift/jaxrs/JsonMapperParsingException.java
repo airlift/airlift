@@ -15,7 +15,7 @@
  */
 package io.airlift.jaxrs;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Wraps JsonProcessingExceptions to provide more information about parsing errors.
@@ -27,7 +27,7 @@ public class JsonMapperParsingException
 
     public JsonMapperParsingException(Class<?> type, Throwable cause)
     {
-        super("Invalid json for Java type " + checkNotNull(type, "type is null").getName(), cause);
+        super("Invalid json for Java type " + requireNonNull(type, "type is null").getName(), cause);
         this.type = type;
     }
 

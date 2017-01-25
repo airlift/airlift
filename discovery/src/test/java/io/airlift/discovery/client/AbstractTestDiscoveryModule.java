@@ -30,10 +30,10 @@ import org.testng.annotations.Test;
 import java.net.URI;
 import java.util.Map;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
+import static java.util.Objects.requireNonNull;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -44,7 +44,7 @@ public abstract class AbstractTestDiscoveryModule
 
     protected AbstractTestDiscoveryModule(Module discoveryModule)
     {
-        this.discoveryModule = checkNotNull(discoveryModule, "discoveryModule is null");
+        this.discoveryModule = requireNonNull(discoveryModule, "discoveryModule is null");
     }
 
     @Test

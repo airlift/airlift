@@ -15,7 +15,6 @@
  */
 package io.airlift.http.server;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
@@ -81,6 +80,7 @@ import static java.lang.String.format;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Collections.list;
 import static java.util.Comparator.naturalOrder;
+import static java.util.Objects.requireNonNull;
 
 public class HttpServer
 {
@@ -109,10 +109,10 @@ public class HttpServer
             EventClient eventClient)
             throws IOException
     {
-        Preconditions.checkNotNull(httpServerInfo, "httpServerInfo is null");
-        Preconditions.checkNotNull(nodeInfo, "nodeInfo is null");
-        Preconditions.checkNotNull(config, "config is null");
-        Preconditions.checkNotNull(theServlet, "theServlet is null");
+        requireNonNull(httpServerInfo, "httpServerInfo is null");
+        requireNonNull(nodeInfo, "nodeInfo is null");
+        requireNonNull(config, "config is null");
+        requireNonNull(theServlet, "theServlet is null");
 
         QueuedThreadPool threadPool = new QueuedThreadPool(config.getMaxThreads());
         threadPool.setMinThreads(config.getMinThreads());

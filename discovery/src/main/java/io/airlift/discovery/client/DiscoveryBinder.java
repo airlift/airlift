@@ -15,7 +15,6 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.base.Preconditions;
 import com.google.inject.Binder;
 import com.google.inject.Inject;
 import com.google.inject.Key;
@@ -27,12 +26,13 @@ import io.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilde
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
+import static java.util.Objects.requireNonNull;
 
 public class DiscoveryBinder
 {
     public static DiscoveryBinder discoveryBinder(Binder binder)
     {
-        Preconditions.checkNotNull(binder, "binder is null");
+        requireNonNull(binder, "binder is null");
         return new DiscoveryBinder(binder);
     }
 
@@ -42,7 +42,7 @@ public class DiscoveryBinder
 
     protected DiscoveryBinder(Binder binder)
     {
-        Preconditions.checkNotNull(binder, "binder is null");
+        requireNonNull(binder, "binder is null");
         this.binder = binder.skipSources(getClass());
         this.serviceSelectorBinder = Multibinder.newSetBinder(binder, ServiceSelector.class);
         this.serviceAnnouncementBinder = Multibinder.newSetBinder(binder, ServiceAnnouncement.class);
@@ -50,13 +50,13 @@ public class DiscoveryBinder
 
     public void bindSelector(String type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        requireNonNull(type, "type is null");
         bindSelector(serviceType(type));
     }
 
     public void bindSelector(ServiceType serviceType)
     {
-        Preconditions.checkNotNull(serviceType, "serviceType is null");
+        requireNonNull(serviceType, "serviceType is null");
 
         configBinder(binder).bindConfig(ServiceSelectorConfig.class, serviceType, "discovery." + serviceType.value());
 
@@ -67,19 +67,19 @@ public class DiscoveryBinder
 
     public void bindServiceAnnouncement(ServiceAnnouncement announcement)
     {
-        Preconditions.checkNotNull(announcement, "announcement is null");
+        requireNonNull(announcement, "announcement is null");
         serviceAnnouncementBinder.addBinding().toInstance(announcement);
     }
 
     public void bindServiceAnnouncement(Provider<ServiceAnnouncement> announcementProvider)
     {
-        Preconditions.checkNotNull(announcementProvider, "announcementProvider is null");
+        requireNonNull(announcementProvider, "announcementProvider is null");
         serviceAnnouncementBinder.addBinding().toProvider(announcementProvider);
     }
 
     public <T extends ServiceAnnouncement> void bindServiceAnnouncement(Class<? extends Provider<T>> announcementProviderClass)
     {
-        Preconditions.checkNotNull(announcementProviderClass, "announcementProviderClass is null");
+        requireNonNull(announcementProviderClass, "announcementProviderClass is null");
         serviceAnnouncementBinder.addBinding().toProvider(announcementProviderClass);
     }
 
@@ -92,13 +92,13 @@ public class DiscoveryBinder
 
     public void bindHttpSelector(String type)
     {
-        Preconditions.checkNotNull(type, "type is null");
+        requireNonNull(type, "type is null");
         bindHttpSelector(serviceType(type));
     }
 
     public void bindHttpSelector(ServiceType serviceType)
     {
-        Preconditions.checkNotNull(serviceType, "serviceType is null");
+        requireNonNull(serviceType, "serviceType is null");
         bindSelector(serviceType);
         binder.bind(HttpServiceSelector.class).annotatedWith(serviceType).toProvider(new HttpServiceSelectorProvider(serviceType.value())).in(Scopes.SINGLETON);
     }

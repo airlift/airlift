@@ -3,7 +3,7 @@ package io.airlift.testing;
 import java.io.Closeable;
 import java.io.IOException;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 public final class Closeables
 {
@@ -93,7 +93,7 @@ public final class Closeables
 
     public static <T extends Throwable> T closeAllSuppress(T rootCause, Closeable... closeables)
     {
-        checkNotNull(rootCause, "rootCause is null");
+        requireNonNull(rootCause, "rootCause is null");
         if (closeables == null) {
             return rootCause;
         }

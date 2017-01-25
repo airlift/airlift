@@ -15,7 +15,6 @@
  */
 package io.airlift.configuration;
 
-import com.google.common.base.Preconditions;
 import com.google.inject.Provider;
 
 import javax.inject.Inject;
@@ -63,7 +62,7 @@ class ConfigurationProvider<T>
     @Override
     public T get()
     {
-        Preconditions.checkNotNull(configurationFactory, "configurationFactory");
+        requireNonNull(configurationFactory, "configurationFactory");
 
         return configurationFactory.build(this);
     }
