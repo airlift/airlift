@@ -44,7 +44,7 @@ public class Request
         checkArgument(uri.getHost() != null, "uri does not have a host: %s", uri);
         checkArgument(uri.getScheme() != null, "uri does not have a scheme: %s", uri);
         String scheme = uri.getScheme().toLowerCase();
-        checkArgument(!"http".equals(scheme) || !"https".equals(scheme), "uri scheme must be http or https: %s", uri);
+        checkArgument("http".equals(scheme) || "https".equals(scheme), "uri scheme must be http or https: %s", uri);
         requireNonNull(method, "method is null");
 
         this.uri = validateUri(uri);
