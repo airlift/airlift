@@ -16,14 +16,14 @@
 package io.airlift.dbpool;
 
 import com.google.common.collect.ImmutableList;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import io.airlift.discovery.client.ServiceSelector;
 import org.weakref.jmx.guice.MBeanModule;
 
+import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.sql.DataSource;
 
 import java.lang.annotation.Annotation;

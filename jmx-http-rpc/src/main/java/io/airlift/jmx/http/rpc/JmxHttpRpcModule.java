@@ -18,9 +18,7 @@ package io.airlift.jmx.http.rpc;
 import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
-import com.google.inject.Inject;
 import com.google.inject.Module;
-import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
@@ -30,6 +28,8 @@ import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.TheAdminServlet;
 import io.airlift.node.NodeInfo;
 
+import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.servlet.Servlet;
 
 import java.lang.annotation.Annotation;

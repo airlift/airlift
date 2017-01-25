@@ -19,10 +19,10 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Multimap;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
 import org.weakref.jmx.Managed;
 
+import javax.inject.Inject;
 import javax.management.MBeanServer;
 import javax.management.ObjectInstance;
 

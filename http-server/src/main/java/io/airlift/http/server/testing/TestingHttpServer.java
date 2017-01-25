@@ -16,7 +16,6 @@
 package io.airlift.http.server.testing;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
 import io.airlift.event.client.NullEventClient;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
@@ -27,6 +26,7 @@ import io.airlift.http.server.TheServlet;
 import io.airlift.node.NodeInfo;
 import io.airlift.tracetoken.TraceTokenManager;
 
+import javax.inject.Inject;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
 

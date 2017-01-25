@@ -15,7 +15,7 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.inject.Inject;
+import javax.inject.Inject;
 
 import java.util.concurrent.ScheduledExecutorService;
 

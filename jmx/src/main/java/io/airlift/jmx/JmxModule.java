@@ -16,12 +16,12 @@
 package io.airlift.jmx;
 
 import com.google.inject.Binder;
-import com.google.inject.Inject;
 import com.google.inject.Module;
-import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import io.airlift.discovery.client.ServiceAnnouncement;
 
+import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.management.MBeanServer;
 
 import java.lang.management.ManagementFactory;

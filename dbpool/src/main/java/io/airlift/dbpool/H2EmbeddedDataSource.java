@@ -17,11 +17,11 @@ package io.airlift.dbpool;
 
 import com.google.common.io.Resources;
 import com.google.common.primitives.Ints;
-import com.google.inject.Inject;
 import io.airlift.dbpool.H2EmbeddedDataSourceConfig.Cipher;
 import org.h2.jdbcx.JdbcDataSource;
 import org.h2.util.ScriptReader;
 
+import javax.inject.Inject;
 import javax.sql.PooledConnection;
 
 import java.io.File;

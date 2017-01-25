@@ -20,11 +20,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
-import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import io.airlift.configuration.ConfigDefaults;
@@ -35,6 +33,8 @@ import io.airlift.http.client.spnego.KerberosConfig;
 import io.airlift.log.Logger;
 
 import javax.annotation.PreDestroy;
+import javax.inject.Inject;
+import javax.inject.Provider;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;

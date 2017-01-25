@@ -15,8 +15,9 @@
  */
 package io.airlift.jmx;
 
-import com.google.inject.Inject;
 import org.weakref.jmx.Managed;
+
+import javax.inject.Inject;
 
 import java.util.ArrayList;
 import java.util.List;

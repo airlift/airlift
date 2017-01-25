@@ -18,12 +18,12 @@ package io.airlift.jmx;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 import com.google.common.net.HostAndPort;
-import com.google.inject.Inject;
 import io.airlift.log.Logger;
 import sun.management.Agent;
 import sun.management.jmxremote.ConnectorBootstrap;
 import sun.rmi.server.UnicastRef;
 
+import javax.inject.Inject;
 import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXServiceURL;
 

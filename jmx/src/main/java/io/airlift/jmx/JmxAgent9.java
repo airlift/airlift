@@ -17,11 +17,11 @@ package io.airlift.jmx;
 
 import com.google.common.base.Throwables;
 import com.google.common.net.HostAndPort;
-import com.google.inject.Inject;
 import com.sun.tools.attach.AttachNotSupportedException;
 import com.sun.tools.attach.VirtualMachine;
 import io.airlift.log.Logger;
 
+import javax.inject.Inject;
 import javax.management.remote.JMXServiceURL;
 
 import java.io.IOException;

@@ -15,10 +15,11 @@
  */
 package io.airlift.http.server;
 
-import com.google.inject.Inject;
-import com.google.inject.Provider;
 import io.airlift.log.Logger;
 import org.eclipse.jetty.security.HashLoginService;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
 
 import java.io.IOException;
 

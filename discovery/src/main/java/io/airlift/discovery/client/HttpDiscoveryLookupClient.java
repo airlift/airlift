@@ -19,7 +19,6 @@ import com.google.common.io.ByteStreams;
 import com.google.common.net.HttpHeaders;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.inject.Inject;
 import io.airlift.http.client.CacheControl;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
@@ -33,6 +32,7 @@ import io.airlift.units.Duration;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
+import javax.inject.Inject;
 import javax.inject.Provider;
 
 import java.io.IOException;

@@ -16,8 +16,9 @@
 package io.airlift.http.server;
 
 import com.google.common.base.Throwables;
-import com.google.inject.Inject;
 import io.airlift.node.NodeInfo;
+
+import javax.inject.Inject;
 
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;

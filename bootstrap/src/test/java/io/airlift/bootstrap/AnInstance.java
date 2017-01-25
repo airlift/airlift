@@ -15,7 +15,7 @@
  */
 package io.airlift.bootstrap;
 
-import com.google.inject.Inject;
+import javax.inject.Inject;
 
 public class AnInstance
 {

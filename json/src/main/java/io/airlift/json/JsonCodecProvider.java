@@ -15,8 +15,8 @@
  */
 package io.airlift.json;
 
-import com.google.inject.Inject;
-import com.google.inject.Provider;
+import javax.inject.Inject;
+import javax.inject.Provider;
 
 import java.lang.reflect.Type;
 
