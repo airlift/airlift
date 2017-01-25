@@ -15,7 +15,6 @@
  */
 package io.airlift.dbpool;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import io.airlift.dbpool.H2EmbeddedDataSourceConfig.Cipher;
@@ -31,6 +30,8 @@ import java.net.URL;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Test(singleThreaded = true)
 public class H2EmbeddedDataSourceTest
@@ -114,7 +115,7 @@ public class H2EmbeddedDataSourceTest
         File initScript = File.createTempFile("initscript", ".ddl");
         try {
             String invalidDdl = "This isn't valid SQL";
-            Files.write(invalidDdl, initScript, Charsets.UTF_8);
+            Files.write(invalidDdl, initScript, UTF_8);
 
             H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
                     .setFilename(file.getAbsolutePath())

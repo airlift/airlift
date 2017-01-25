@@ -7,7 +7,6 @@ import io.airlift.http.client.testing.TestingResponse;
 import io.airlift.json.JsonCodec;
 import org.testng.annotations.Test;
 
-import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
@@ -16,6 +15,7 @@ import static io.airlift.http.client.HttpStatus.INTERNAL_SERVER_ERROR;
 import static io.airlift.http.client.HttpStatus.OK;
 import static io.airlift.http.client.testing.TestingResponse.mockResponse;
 import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotSame;

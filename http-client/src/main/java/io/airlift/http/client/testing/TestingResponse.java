@@ -1,6 +1,5 @@
 package io.airlift.http.client.testing;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.CountingInputStream;
@@ -16,6 +15,7 @@ import java.io.InputStream;
 import java.util.Map;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 public class TestingResponse
@@ -85,7 +85,7 @@ public class TestingResponse
 
     public static Response mockResponse(HttpStatus status, MediaType type, String content)
     {
-        return new TestingResponse(status, contentType(type), content.getBytes(Charsets.UTF_8));
+        return new TestingResponse(status, contentType(type), content.getBytes(UTF_8));
     }
 
     private static ListMultimap<HeaderName, String> toHeaderMap(ListMultimap<String, String> headers)

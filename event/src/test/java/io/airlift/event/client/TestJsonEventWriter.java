@@ -15,7 +15,6 @@
  */
 package io.airlift.event.client;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import io.airlift.event.client.NestedDummyEventClass.NestedPart;
 import org.joda.time.DateTime;
@@ -30,6 +29,7 @@ import java.util.UUID;
 import static com.google.common.io.ByteStreams.nullOutputStream;
 import static io.airlift.event.client.ChainedCircularEventClass.ChainedPart;
 import static io.airlift.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.testng.Assert.assertEquals;
 
 public class TestJsonEventWriter
@@ -106,7 +106,7 @@ public class TestJsonEventWriter
 
         eventWriter.writeEvents(events, out);
 
-        String json = out.toString(Charsets.UTF_8.name());
+        String json = out.toString(UTF_8.name());
         assertEquals(json, TestingUtils.getNormalizedJson(resource));
     }
 

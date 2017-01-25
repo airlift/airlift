@@ -15,7 +15,6 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 import io.airlift.json.JsonCodec;
@@ -30,6 +29,7 @@ import static io.airlift.discovery.client.ServiceDescriptor.ServiceDescriptorBui
 import static io.airlift.discovery.client.ServiceDescriptor.serviceDescriptor;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
@@ -48,7 +48,7 @@ public class TestServiceDescriptor
                 "location",
                 ServiceState.RUNNING, ImmutableMap.of("a", "apple", "b", "banana"));
 
-        String json = Resources.toString(Resources.getResource("service-descriptor.json"), Charsets.UTF_8);
+        String json = Resources.toString(Resources.getResource("service-descriptor.json"), UTF_8);
         ServiceDescriptor actual = serviceDescriptorCodec.fromJson(json);
 
         assertDescriptorEquals(expected, actual);

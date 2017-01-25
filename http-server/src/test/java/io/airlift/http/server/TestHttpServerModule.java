@@ -15,7 +15,6 @@
  */
 package io.airlift.http.server;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -78,6 +77,7 @@ import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerat
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.nCopies;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -310,7 +310,7 @@ public class TestHttpServerModule
                             .addHeader(CONTENT_TYPE, requestContentType)
                             .addHeader(REFERER, referrer)
                             .addHeader("X-Airlift-TraceToken", token)
-                            .setBodyGenerator(createStaticBodyGenerator(requestBody, Charsets.UTF_8))
+                            .setBodyGenerator(createStaticBodyGenerator(requestBody, UTF_8))
                             .build(),
                     createStringResponseHandler());
 
@@ -373,7 +373,7 @@ public class TestHttpServerModule
             response.setStatus(responseStatusCode);
 
             if (responseBody != null) {
-                response.getOutputStream().write(responseBody.getBytes(Charsets.UTF_8));
+                response.getOutputStream().write(responseBody.getBytes(UTF_8));
             }
         }
     }

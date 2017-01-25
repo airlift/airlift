@@ -15,7 +15,6 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
@@ -29,6 +28,7 @@ import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncemen
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
@@ -49,7 +49,7 @@ public class TestAnnouncement
         );
         Map<String, Object> actual = objectCodec.fromJson(announcementCodec.toJson(announcement));
 
-        String json = Resources.toString(Resources.getResource("announcement.json"), Charsets.UTF_8);
+        String json = Resources.toString(Resources.getResource("announcement.json"), UTF_8);
         Map<String, Object> expected = objectCodec.fromJson(json);
 
         // set id in expected

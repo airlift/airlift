@@ -15,7 +15,6 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
 import io.airlift.http.client.jetty.JettyHttpClient;
@@ -40,6 +39,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TestServiceInventory
 {
@@ -85,7 +86,7 @@ public class TestServiceInventory
     public void testHttpServiceInventory()
             throws Exception
     {
-        String serviceInventoryJson = Resources.toString(Resources.getResource("service-inventory.json"), Charsets.UTF_8);
+        String serviceInventoryJson = Resources.toString(Resources.getResource("service-inventory.json"), UTF_8);
 
         Server server = null;
         try (JettyHttpClient httpClient = new JettyHttpClient()) {
@@ -148,7 +149,7 @@ public class TestServiceInventory
 
         private ServiceInventoryServlet(String serviceInventory)
         {
-            this.serviceInventory = serviceInventory.getBytes(Charsets.UTF_8);
+            this.serviceInventory = serviceInventory.getBytes(UTF_8);
         }
 
         @Override

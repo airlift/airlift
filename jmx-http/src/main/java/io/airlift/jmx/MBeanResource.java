@@ -16,7 +16,6 @@
 package io.airlift.jmx;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import com.google.inject.Inject;
@@ -33,6 +32,7 @@ import javax.ws.rs.core.MediaType;
 import java.util.List;
 
 import static com.google.common.io.Resources.getResource;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 @Path("/v1/jmx")
@@ -53,7 +53,7 @@ public class MBeanResource
     public String getMBeansUi()
             throws Exception
     {
-        return Resources.toString(getResource(getClass(), "mbeans.html"), Charsets.UTF_8);
+        return Resources.toString(getResource(getClass(), "mbeans.html"), UTF_8);
     }
 
     @GET

@@ -15,7 +15,6 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
@@ -32,6 +31,8 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public final class EchoServlet
         extends HttpServlet
@@ -88,7 +89,7 @@ public final class EchoServlet
         }
 
         if (responseBody != null) {
-            response.getOutputStream().write(responseBody.getBytes(Charsets.UTF_8));
+            response.getOutputStream().write(responseBody.getBytes(UTF_8));
         }
     }
 

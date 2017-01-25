@@ -18,11 +18,11 @@ package io.airlift.event.client;
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.google.common.base.Charsets;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.testng.Assert.assertEquals;
 
 public class TestJsonEventSerializer
@@ -39,7 +39,7 @@ public class TestJsonEventSerializer
         FixedDummyEventClass event = TestingUtils.getEvents().get(0);
         eventSerializer.serialize(event, jsonGenerator);
 
-        String json = out.toString(Charsets.UTF_8.name());
+        String json = out.toString(UTF_8.name());
         assertEquals(json, TestingUtils.getNormalizedJson("event.json"));
     }
 }

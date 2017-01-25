@@ -16,7 +16,6 @@
 package io.airlift.event.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import org.joda.time.DateTime;
@@ -24,6 +23,8 @@ import org.joda.time.DateTime;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 class TestingUtils
 {
@@ -39,7 +40,7 @@ class TestingUtils
     public static String getNormalizedJson(String resource)
             throws IOException
     {
-        String json = Resources.toString(Resources.getResource(resource), Charsets.UTF_8);
+        String json = Resources.toString(Resources.getResource(resource), UTF_8);
         ObjectMapper mapper = new ObjectMapper();
         return mapper.writeValueAsString(mapper.readValue(json, Object.class));
     }

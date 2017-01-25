@@ -15,7 +15,6 @@
  */
 package io.airlift.sample;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import com.google.inject.Injector;
@@ -56,6 +55,7 @@ import static io.airlift.json.JsonCodec.mapJsonCodec;
 import static io.airlift.sample.PersonEvent.personAdded;
 import static io.airlift.sample.PersonEvent.personRemoved;
 import static io.airlift.testing.Assertions.assertEqualsIgnoreOrder;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.testng.Assert.assertEquals;
@@ -134,7 +134,7 @@ public class TestServer
         store.put("bar", new Person("bar@example.com", "Mr Bar"));
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
 
-        List<Object> expected = listCodec.fromJson(Resources.toString(Resources.getResource("list.json"), Charsets.UTF_8));
+        List<Object> expected = listCodec.fromJson(Resources.toString(Resources.getResource("list.json"), UTF_8));
 
         List<Object> actual = client.execute(
                 prepareGet().setUri(uriFor("/v1/person")).build(),
@@ -151,7 +151,7 @@ public class TestServer
 
         URI requestUri = uriFor("/v1/person/foo");
 
-        Map<String, Object> expected = mapCodec.fromJson(Resources.toString(Resources.getResource("single.json"), Charsets.UTF_8));
+        Map<String, Object> expected = mapCodec.fromJson(Resources.toString(Resources.getResource("single.json"), UTF_8));
         expected.put("self", requestUri.toString());
 
         Map<String, Object> actual = client.execute(
@@ -165,13 +165,13 @@ public class TestServer
     public void testPut()
             throws IOException, ExecutionException, InterruptedException
     {
-        String json = Resources.toString(Resources.getResource("single.json"), Charsets.UTF_8);
+        String json = Resources.toString(Resources.getResource("single.json"), UTF_8);
 
         StatusResponse response = client.execute(
                 preparePut()
                         .setUri(uriFor("/v1/person/foo"))
                         .addHeader(CONTENT_TYPE, APPLICATION_JSON)
-                        .setBodyGenerator(createStaticBodyGenerator(json, Charsets.UTF_8))
+                        .setBodyGenerator(createStaticBodyGenerator(json, UTF_8))
                         .build(),
                 createStatusResponseHandler());
 
@@ -225,13 +225,13 @@ public class TestServer
     public void testPostNotAllowed()
             throws IOException, ExecutionException, InterruptedException
     {
-        String json = Resources.toString(Resources.getResource("single.json"), Charsets.UTF_8);
+        String json = Resources.toString(Resources.getResource("single.json"), UTF_8);
 
         StatusResponse response = client.execute(
                 preparePost()
                         .setUri(uriFor("/v1/person/foo"))
                         .addHeader(CONTENT_TYPE, APPLICATION_JSON)
-                        .setBodyGenerator(createStaticBodyGenerator(json, Charsets.UTF_8))
+                        .setBodyGenerator(createStaticBodyGenerator(json, UTF_8))
                         .build(),
                 createStatusResponseHandler());
 

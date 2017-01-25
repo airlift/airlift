@@ -15,7 +15,6 @@
  */
 package io.airlift.http.server;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import io.airlift.event.client.NullEventClient;
@@ -56,6 +55,7 @@ import static io.airlift.http.client.StatusResponseHandler.createStatusResponseH
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.testing.Assertions.assertContains;
 import static io.airlift.testing.Assertions.assertInstanceOf;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -166,7 +166,7 @@ public class TestHttpServerProvider
             throws Exception
     {
         File file = File.createTempFile("auth", ".properties", tempDir);
-        Files.write("user: password", file, Charsets.UTF_8);
+        Files.write("user: password", file, UTF_8);
 
         config.setUserAuthFile(file.getAbsolutePath());
 

@@ -15,7 +15,6 @@
  */
 package io.airlift.http.server;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 import io.airlift.event.client.InMemoryEventClient;
@@ -37,6 +36,7 @@ import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -141,7 +141,7 @@ public class TestDelimitedRequestLog
         Assert.assertEquals(event.getTimeToLastByte(), timeToLastByte);
         Assert.assertEquals(event.getTraceToken(), tokenManager.getCurrentRequestToken());
 
-        String actual = Files.toString(file, Charsets.UTF_8);
+        String actual = Files.toString(file, UTF_8);
         String expected = String.format("%s\t%s\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%d\t%s\n",
                 isoFormatter.print(timestamp),
                 ip,

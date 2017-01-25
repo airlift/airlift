@@ -15,12 +15,12 @@
  */
 package io.airlift.sample;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import io.airlift.json.JsonCodec;
 import org.testng.annotations.Test;
 
 import static io.airlift.json.JsonCodec.jsonCodec;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.testng.Assert.assertEquals;
 
 public class TestPersonRepresentation
@@ -44,7 +44,7 @@ public class TestPersonRepresentation
     {
         PersonRepresentation expected = new PersonRepresentation("foo@example.com", "Mr Foo", null);
 
-        String json = Resources.toString(Resources.getResource("single.json"), Charsets.UTF_8);
+        String json = Resources.toString(Resources.getResource("single.json"), UTF_8);
         PersonRepresentation actual = codec.fromJson(json);
 
         assertEquals(actual, expected);

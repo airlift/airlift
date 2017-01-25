@@ -19,7 +19,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HttpHeaders;
 import io.airlift.jaxrs.testing.GuavaMultivaluedMap;
@@ -41,6 +40,7 @@ import java.util.zip.ZipException;
 
 import static com.google.common.collect.Iterables.transform;
 import static io.airlift.jaxrs.BeanValidationException.constraintMessageBuilder;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TestJsonMapper
 {
@@ -65,7 +65,7 @@ public class TestJsonMapper
         MultivaluedMap<String, Object> headers = new GuavaMultivaluedMap<>();
         jsonMapper.writeTo(value, String.class, null, null, null, headers, outputStream);
 
-        String json = new String(outputStream.toByteArray(), Charsets.UTF_8);
+        String json = new String(outputStream.toByteArray(), UTF_8);
         Assert.assertTrue(!json.contains("<"));
         Assert.assertTrue(!json.contains(">"));
         Assert.assertTrue(!json.contains("'"));
