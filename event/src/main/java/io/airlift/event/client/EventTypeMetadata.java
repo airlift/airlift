@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Ordering;
 import io.airlift.event.client.EventField.EventFieldMapping;
 
 import java.lang.reflect.Method;
@@ -36,7 +35,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.stream.Collectors;
 
 import static com.google.common.collect.Iterables.getFirst;
 import static com.google.common.collect.Maps.newTreeMap;
