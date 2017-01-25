@@ -24,6 +24,7 @@ import com.google.common.collect.Multimap;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
@@ -191,7 +192,7 @@ public class EventFieldMetadata
     {
         for (Object o : objectStack) {
             if (value == o) {
-                List<Object> path = Lists.reverse(Lists.newArrayList(objectStack));
+                List<Object> path = Lists.reverse(new ArrayList<>(objectStack));
                 throw new InvalidEventException("Cycle detected in event data: %s", path);
             }
         }

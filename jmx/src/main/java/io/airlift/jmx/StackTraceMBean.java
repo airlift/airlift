@@ -15,10 +15,10 @@
  */
 package io.airlift.jmx;
 
-import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import org.weakref.jmx.Managed;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -32,7 +32,7 @@ public class StackTraceMBean
     @Managed
     public List<String> getStackTrace()
     {
-        List<String> output = Lists.newArrayList();
+        List<String> output = new ArrayList<>();
         Map<Thread, StackTraceElement[]> stackTraces = Thread.getAllStackTraces();
         for (Map.Entry<Thread, StackTraceElement[]> entry : stackTraces.entrySet()) {
             output.add(entry.getKey().toString());

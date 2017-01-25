@@ -15,19 +15,19 @@
  */
 package io.airlift.jmx;
 
-import com.google.common.collect.Sets;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Type;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
 class GuiceInjectorIterator implements Iterator<Class<?>>, Iterable<Class<?>>
 {
-    private final Set<Key<?>> visited = Sets.newHashSet();
+    private final Set<Key<?>> visited = new HashSet<>();
     private final Iterator<Key<?>> keyIterator;
     private final Injector injector;
 

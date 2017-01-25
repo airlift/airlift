@@ -16,7 +16,6 @@
 package io.airlift.configuration;
 
 import com.google.common.collect.ImmutableSortedMap;
-import com.google.common.collect.Maps;
 
 import java.io.File;
 import java.io.FileReader;
@@ -24,6 +23,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Map;
 import java.util.Properties;
+import java.util.TreeMap;
 
 import static com.google.common.collect.Maps.fromProperties;
 
@@ -32,7 +32,7 @@ public class ConfigurationLoader
     public Map<String, String> loadProperties()
             throws IOException
     {
-        Map<String, String> result = Maps.newTreeMap();
+        Map<String, String> result = new TreeMap<>();
         String configFile = System.getProperty("config");
         if (configFile != null) {
             result.putAll(loadPropertiesFrom(configFile));

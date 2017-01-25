@@ -29,6 +29,7 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -262,7 +263,7 @@ public class TestLifeCycleManager
         lifeCycleManager.start();
         lifeCycleManager.stop();
 
-        Set<String> stateLogSet = Sets.newHashSet(stateLog);
+        Set<String> stateLogSet = new HashSet<>(stateLog);
         Assert.assertEquals(stateLogSet,
                 Sets.newHashSet(
                         "postDependentBoundInstance",

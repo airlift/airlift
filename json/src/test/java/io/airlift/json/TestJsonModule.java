@@ -27,7 +27,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -38,6 +37,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -133,7 +133,7 @@ public class TestJsonModule
     public void testIgnoreUnknownFields()
             throws Exception
     {
-        Map<String, Object> data = Maps.newHashMap(objectMapper.readValue(objectMapper.writeValueAsString(CAR), Map.class));
+        Map<String, Object> data = new HashMap<>(objectMapper.readValue(objectMapper.writeValueAsString(CAR), Map.class));
 
         // add an unknown field
         data.put("unknown", "bogus");

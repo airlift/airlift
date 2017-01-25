@@ -15,7 +15,6 @@
  */
 package io.airlift.bootstrap;
 
-import com.google.common.collect.Lists;
 import io.airlift.log.Logger;
 
 import javax.annotation.PostConstruct;
@@ -23,6 +22,7 @@ import javax.annotation.PreDestroy;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
@@ -124,7 +124,7 @@ public final class LifeCycleManager
 
         log.info("Life cycle stopping...");
 
-        List<Object> reversedInstances = Lists.newArrayList(managedInstances);
+        List<Object> reversedInstances = new ArrayList<>(managedInstances);
         Collections.reverse(reversedInstances);
 
         for (Object obj : reversedInstances) {

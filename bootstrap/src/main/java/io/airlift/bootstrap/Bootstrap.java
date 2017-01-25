@@ -20,7 +20,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableSortedMap;
-import com.google.common.collect.Maps;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -180,7 +179,7 @@ public class Bootstrap
         else {
             requiredProperties = requiredConfigurationProperties;
         }
-        SortedMap<String, String> properties = Maps.newTreeMap();
+        SortedMap<String, String> properties = new TreeMap<>();
         if (optionalConfigurationProperties != null) {
             properties.putAll(optionalConfigurationProperties);
         }

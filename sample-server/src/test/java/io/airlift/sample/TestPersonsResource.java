@@ -21,6 +21,7 @@ import org.testng.annotations.Test;
 
 import javax.ws.rs.core.Response;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 import static com.google.common.collect.Lists.newArrayList;
@@ -46,7 +47,7 @@ public class TestPersonsResource
         Response response = resource.listAll();
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
         assertInstanceOf(response.getEntity(), Collection.class);
-        assertEquals((Collection<?>) response.getEntity(), newArrayList());
+        assertEquals((Collection<?>) response.getEntity(), new ArrayList<>());
     }
 
     @Test

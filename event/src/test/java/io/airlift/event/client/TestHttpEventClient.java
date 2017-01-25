@@ -46,6 +46,7 @@ import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -53,7 +54,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static io.airlift.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 import static io.airlift.event.client.TestingUtils.getNormalizedJson;
 import static java.util.Arrays.asList;
@@ -114,7 +114,7 @@ public class TestHttpEventClient
     {
         client = newEventClient(asList(baseUri));
 
-        List<Future<Void>> futures = newArrayList();
+        List<Future<Void>> futures = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
             futures.add(client.post(TestingUtils.getEvents()));
         }

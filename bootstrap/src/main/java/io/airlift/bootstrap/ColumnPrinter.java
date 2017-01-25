@@ -15,8 +15,6 @@
  */
 package io.airlift.bootstrap;
 
-import com.google.common.collect.Lists;
-
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,9 +32,9 @@ class ColumnPrinter
 {
     private static final int DEFAULT_MARGIN = 2;
 
-    private final List<List<String>> data = Lists.newArrayList();
-    private final List<String> columnNames = Lists.newArrayList();
-    private final List<Integer> columnWidths = Lists.newArrayList();
+    private final List<List<String>> data = new ArrayList<>();
+    private final List<String> columnNames = new ArrayList<>();
+    private final List<Integer> columnWidths = new ArrayList<>();
     private final int margin;
 
     public ColumnPrinter()
@@ -89,7 +87,7 @@ class ColumnPrinter
 
     private List<String> generateOutput()
     {
-        List<String> lines = Lists.newArrayList();
+        List<String> lines = new ArrayList<>();
         StringBuilder buffer = new StringBuilder();
 
         List<Iterator<String>> dataIterators = data.stream()

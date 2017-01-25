@@ -27,7 +27,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimaps;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.inject.Binding;
@@ -224,7 +223,7 @@ public class ConfigurationFactory
 
     public List<Message> validateRegisteredConfigurationProvider()
     {
-        List<Message> messages = Lists.newArrayList();
+        List<Message> messages = new ArrayList<>();
         for (ConfigurationProvider<?> configurationProvider : ImmutableList.copyOf(registeredProviders)) {
             try {
                 // call the getter which will cause object creation

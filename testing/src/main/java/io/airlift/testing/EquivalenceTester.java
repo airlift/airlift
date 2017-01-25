@@ -24,6 +24,7 @@ package io.airlift.testing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -71,7 +72,7 @@ public final class EquivalenceTester
 
     public static class EquivalenceCheck<T>
     {
-        private final List<List<T>> equivalenceClasses = newArrayList();
+        private final List<List<T>> equivalenceClasses = new ArrayList<>();
 
         private EquivalenceCheck()
         {

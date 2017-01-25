@@ -15,7 +15,6 @@
  */
 package io.airlift.bootstrap;
 
-import com.google.common.collect.Lists;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
@@ -28,6 +27,7 @@ import com.google.inject.spi.TypeListener;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -39,7 +39,7 @@ import static com.google.inject.matcher.Matchers.any;
 public class LifeCycleModule
         implements Module
 {
-    private final List<Object> injectedInstances = Lists.newArrayList();
+    private final List<Object> injectedInstances = new ArrayList<>();
     private final LifeCycleMethodsMap lifeCycleMethodsMap = new LifeCycleMethodsMap();
     private final AtomicReference<LifeCycleManager> lifeCycleManager = new AtomicReference<>(null);
 
