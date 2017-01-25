@@ -13,13 +13,16 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airbase</artifactId>
-        <version>59</version>
+        <version>61</version>
     </parent>
 
     <inceptionYear>2010</inceptionYear>
 
     <properties>
-        <air.check.skip-extended>true</air.check.skip-extended>
+        <air.check.skip-findbugs>true</air.check.skip-findbugs>
+        <air.check.skip-pmd>true</air.check.skip-pmd>
+        <air.check.skip-jacoco>true</air.check.skip-jacoco>
+        <air.check.skip-license>true</air.check.skip-license>
         <air.java.version>1.8.0-40</air.java.version>
 
         <dep.airlift.version>0.143-SNAPSHOT</dep.airlift.version>
