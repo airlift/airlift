@@ -46,7 +46,7 @@ public class PauseMeter
     private final Thread thread;
 
     // public to make it less likely for the VM to optimize it out
-    public volatile Long allocatedObject;
+    public volatile Object allocatedObject;
 
     public PauseMeter()
     {
@@ -89,7 +89,7 @@ public class PauseMeter
                 TimeUnit.NANOSECONDS.sleep(sleepNanos);
 
                 // attempt to allocate an object to capture any effects due to allocation stalls
-                allocatedObject = new Long(before);
+                allocatedObject = new Long[] {before};
 
                 long after = System.nanoTime();
                 long delta = after - before;

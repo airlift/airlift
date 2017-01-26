@@ -32,6 +32,7 @@ import static io.airlift.stats.cardinality.Utils.computeIndex;
 import static io.airlift.stats.cardinality.Utils.linearCounting;
 import static io.airlift.stats.cardinality.Utils.numberOfBuckets;
 import static io.airlift.stats.cardinality.Utils.numberOfLeadingZeros;
+import static java.util.Comparator.comparingInt;
 
 @NotThreadSafe
 final class SparseHll
@@ -300,7 +301,7 @@ final class SparseHll
                 "Expected number of hashes (%s) larger than array length (%s)",
                 numberOfEntries, entries.length);
 
-        checkState(Ordering.from((Integer e1, Integer e2) -> Ints.compare(decodeBucketIndex(e1), decodeBucketIndex(e2)))
+        checkState(Ordering.from(comparingInt(e -> decodeBucketIndex((Integer) e)))
                         .isOrdered(Ints.asList(Arrays.copyOf(entries, numberOfEntries))),
                 "entries are not sorted");
     }

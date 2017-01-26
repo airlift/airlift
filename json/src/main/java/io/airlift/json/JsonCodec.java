@@ -17,7 +17,6 @@ package io.airlift.json;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
@@ -29,6 +28,7 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static java.lang.String.format;
@@ -36,13 +36,8 @@ import static java.util.Objects.requireNonNull;
 
 public class JsonCodec<T>
 {
-    private static final Supplier<ObjectMapper> OBJECT_MAPPER_SUPPLIER = Suppliers.memoize(new Supplier<ObjectMapper>()
-    {
-        public ObjectMapper get()
-        {
-            return new ObjectMapperProvider().get().enable(INDENT_OUTPUT);
-        }
-    });
+    private static final Supplier<ObjectMapper> OBJECT_MAPPER_SUPPLIER = Suppliers.memoize(
+            () -> new ObjectMapperProvider().get().enable(INDENT_OUTPUT))::get;
 
     public static <T> JsonCodec<T> jsonCodec(Class<T> type)
     {

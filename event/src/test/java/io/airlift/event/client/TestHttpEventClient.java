@@ -56,6 +56,7 @@ import java.util.concurrent.Future;
 
 import static io.airlift.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 import static io.airlift.event.client.TestingUtils.getNormalizedJson;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
@@ -208,7 +209,7 @@ public class TestHttpEventClient
                 throws ServletException, IOException
         {
             lastPath = request.getPathInfo();
-            lastBody = CharStreams.toString(new InputStreamReader(request.getInputStream(), "UTF-8"));
+            lastBody = CharStreams.toString(new InputStreamReader(request.getInputStream(), UTF_8));
         }
     }
 }
