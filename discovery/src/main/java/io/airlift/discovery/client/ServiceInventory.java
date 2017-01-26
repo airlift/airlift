@@ -16,9 +16,7 @@
 package io.airlift.discovery.client;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request.Builder;
 import io.airlift.json.JsonCodec;
@@ -48,6 +46,7 @@ import static io.airlift.http.client.Request.Builder.prepareGet;
 import static java.nio.file.Files.readAllBytes;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+import static java.util.stream.Collectors.toList;
 
 public class ServiceInventory
 {
@@ -60,7 +59,7 @@ public class ServiceInventory
     private final JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec;
     private final HttpClient httpClient;
 
-    private final AtomicReference<List<ServiceDescriptor>> serviceDescriptors = new AtomicReference<List<ServiceDescriptor>>(ImmutableList.<ServiceDescriptor>of());
+    private final AtomicReference<List<ServiceDescriptor>> serviceDescriptors = new AtomicReference<>(ImmutableList.of());
     private final ScheduledExecutorService executorService = newSingleThreadScheduledExecutor(daemonThreadsNamed("service-inventory-%s"));
     private final AtomicBoolean serverUp = new AtomicBoolean(true);
     private ScheduledFuture<?> scheduledFuture;
@@ -130,29 +129,19 @@ public class ServiceInventory
         return serviceDescriptors.get();
     }
 
-    public Iterable<ServiceDescriptor> getServiceDescriptors(final String type)
+    public Iterable<ServiceDescriptor> getServiceDescriptors(String type)
     {
-        return Iterables.filter(getServiceDescriptors(), new Predicate<ServiceDescriptor>()
-        {
-            @Override
-            public boolean apply(ServiceDescriptor serviceDescriptor)
-            {
-                return serviceDescriptor.getType().equals(type);
-            }
-        });
+        return serviceDescriptors.get().stream()
+                .filter(descriptor -> descriptor.getType().equals(type))
+                .collect(toList());
     }
 
-    public Iterable<ServiceDescriptor> getServiceDescriptors(final String type, final String pool)
+    public Iterable<ServiceDescriptor> getServiceDescriptors(String type, String pool)
     {
-        return Iterables.filter(getServiceDescriptors(), new Predicate<ServiceDescriptor>()
-        {
-            @Override
-            public boolean apply(ServiceDescriptor serviceDescriptor)
-            {
-                return serviceDescriptor.getType().equals(type) &&
-                        serviceDescriptor.getPool().equals(pool);
-            }
-        });
+        return serviceDescriptors.get().stream()
+                .filter(descriptor -> descriptor.getType().equals(type))
+                .filter(descriptor -> descriptor.getPool().equals(pool))
+                .collect(toList());
     }
 
     @Managed
