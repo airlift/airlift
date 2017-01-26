@@ -1,22 +1,22 @@
 package io.airlift.http.server;
 
 import ch.qos.logback.core.LayoutBase;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.DateTimeFormatterBuilder;
-import org.joda.time.format.ISODateTimeFormat;
+
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+
+import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
 public class HttpLogLayout
         extends LayoutBase<HttpRequestEvent>
 {
-    private static final DateTimeFormatter ISO_FORMATTER = new DateTimeFormatterBuilder()
-            .append(ISODateTimeFormat.dateHourMinuteSecondFraction())
-            .appendTimeZoneOffset("Z", true, 2, 2)
-            .toFormatter();
+    private static final DateTimeFormatter ISO_FORMATTER = ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault());
 
+    @Override
     public String doLayout(HttpRequestEvent event)
     {
         StringBuilder builder = new StringBuilder();
-        builder.append(ISO_FORMATTER.print(event.getTimeStamp()))
+        builder.append(ISO_FORMATTER.format(event.getTimeStamp()))
                 .append('\t')
                 .append(event.getClientAddress())
                 .append('\t')

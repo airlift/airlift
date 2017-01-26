@@ -141,11 +141,6 @@
             <artifactId>jetty-jmx</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time</artifactId>
-        </dependency>
-
         <!-- for testing -->
         <dependency>
             <groupId>io.airlift</groupId>

@@ -23,9 +23,9 @@ import io.airlift.event.client.EventType;
 import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.joda.time.DateTime;
 
 import java.security.Principal;
+import java.time.Instant;
 import java.util.Enumeration;
 
 import static io.airlift.event.client.EventField.EventFieldMapping.TIMESTAMP;
@@ -102,7 +102,7 @@ public class HttpRequestEvent
         }
 
         return new HttpRequestEvent(
-                new DateTime(request.getTimeStamp()),
+                Instant.ofEpochMilli(request.getTimeStamp()),
                 token,
                 clientAddress,
                 protocol,
@@ -122,7 +122,7 @@ public class HttpRequestEvent
         );
     }
 
-    private final DateTime timeStamp;
+    private final Instant timeStamp;
     private final String traceToken;
     private final String clientAddress;
     private final String protocol;
@@ -140,7 +140,8 @@ public class HttpRequestEvent
     private final Long timeToFirstByte;
     private final long timeToLastByte;
 
-    public HttpRequestEvent(DateTime timeStamp,
+    public HttpRequestEvent(
+            Instant timeStamp,
             String traceToken,
             String clientAddress,
             String protocol,
@@ -178,7 +179,7 @@ public class HttpRequestEvent
     }
 
     @EventField(fieldMapping = TIMESTAMP)
-    public DateTime getTimeStamp()
+    public Instant getTimeStamp()
     {
         return timeStamp;
     }

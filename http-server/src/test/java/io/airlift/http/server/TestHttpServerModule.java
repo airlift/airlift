@@ -345,7 +345,7 @@ public class TestHttpServerModule
         Assert.assertEquals(event.getResponseCode(), responseCode);
         Assert.assertEquals(event.getResponseContentType(), responseContentType);
 
-        Assert.assertTrue(event.getTimeStamp().getMillis() >= beforeRequest);
+        Assert.assertTrue(event.getTimeStamp().toEpochMilli() >= beforeRequest);
         Assert.assertTrue(event.getTimeToLastByte() <= afterRequest - beforeRequest);
         Assert.assertNotNull(event.getTimeToFirstByte());
         Assert.assertTrue(event.getTimeToDispatch() <= event.getTimeToFirstByte());
