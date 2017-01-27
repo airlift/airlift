@@ -138,6 +138,11 @@ public class DecayCounter
                 .toString();
     }
 
+    public double getAlpha()
+    {
+        return alpha;
+    }
+
     public static class DecayCounterSnapshot
     {
         private final double count;

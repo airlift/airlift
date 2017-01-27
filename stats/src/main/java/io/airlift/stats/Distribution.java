@@ -40,7 +40,7 @@ public class Distribution
     public Distribution(Distribution distribution)
     {
         digest = new QuantileDigest(distribution.digest);
-        total = new DecayCounter(distribution.digest.getAlpha());
+        total = new DecayCounter(distribution.total.getAlpha());
         total.merge(distribution.total);
     }
 
