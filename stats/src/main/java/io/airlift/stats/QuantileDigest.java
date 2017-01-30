@@ -23,8 +23,10 @@ import javax.annotation.concurrent.NotThreadSafe;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -61,7 +63,6 @@ public class QuantileDigest
     static final double ZERO_WEIGHT_THRESHOLD = 1e-5;
 
     private static final int INITIAL_CAPACITY = 1;
-    private static final double GROWTH_FACTOR = 1.1;
 
     private final double maxError;
     private final Ticker ticker;
@@ -81,8 +82,10 @@ public class QuantileDigest
     private int[] lefts;
     private int[] rights;
 
-    private int[] freeList = new int[INITIAL_CAPACITY];
-    private int nextFree = 0;
+    // We use lefts[] to store a linked list of free slots.
+    // freeIndex points to the first available slot
+    private int freeCount;
+    private int firstFree = -1;
 
     private enum TraversalOrder
     {
@@ -494,8 +497,7 @@ public class QuantileDigest
                 SizeOf.sizeOf(levels) +
                 SizeOf.sizeOf(values) +
                 SizeOf.sizeOf(lefts) +
-                SizeOf.sizeOf(rights) +
-                SizeOf.sizeOf(freeList));
+                SizeOf.sizeOf(rights));
     }
 
     public int estimatedSerializedSizeInBytes()
@@ -566,7 +568,7 @@ public class QuantileDigest
     @VisibleForTesting
     int getNodeCount()
     {
-        return nextNode - nextFree;
+        return nextNode - freeCount;
     }
 
     @VisibleForTesting
@@ -723,13 +725,9 @@ public class QuantileDigest
 
     private int createNode(long value, int level, double count)
     {
-        int node;
+        int node = popFree();
 
-        if (nextFree > 0) {
-            nextFree--;
-            node = freeList[nextFree];
-        }
-        else {
+        if (node == -1) {
             if (nextNode == counts.length) {
                 // try to double the array, but don't allocate too much to avoid going over the upper bound of nodes
                 // by a large margin (hence, the heuristic to not allocate more than k / 5 nodes)
@@ -885,18 +883,33 @@ public class QuantileDigest
             nextNode--;
         }
         else {
-            if (nextFree == freeList.length) {
-                int newSize = Math.max((int) (freeList.length * GROWTH_FACTOR), freeList.length + 1);
-                freeList = Arrays.copyOf(freeList, newSize);
-            }
-
-            freeList[nextFree] = node;
-            nextFree++;
+            pushFree(node);
         }
 
         if (node == root) {
             root = -1;
         }
+    }
+
+    private void pushFree(int node)
+    {
+        lefts[node] = firstFree;
+        firstFree = node;
+        freeCount++;
+    }
+
+    private int popFree()
+    {
+        int node = firstFree;
+
+        if (node == -1) {
+            return node;
+        }
+
+        firstFree = lefts[firstFree];
+        freeCount--;
+
+        return node;
     }
 
     private void postOrderTraversal(int node, Callback callback)
@@ -994,8 +1007,11 @@ public class QuantileDigest
         AtomicDouble sum = new AtomicDouble();
         AtomicInteger nodeCount = new AtomicInteger();
 
+        Set<Integer> freeSlots = computeFreeList();
+        checkState(freeSlots.size() == freeCount, "Free count (%s) doesn't match actual free slots: %s", freeCount, freeSlots.size());
+
         if (root != -1) {
-            validateStructure(root);
+            validateStructure(root, freeSlots);
 
             postOrderTraversal(root, node -> {
                 sum.addAndGet(counts[node]);
@@ -1013,18 +1029,19 @@ public class QuantileDigest
                 nodeCount.get(), getNodeCount());
     }
 
-    private void validateStructure(int node)
+    private void validateStructure(int node, Set<Integer> freeNodes)
     {
         checkState(levels[node] >= 0);
 
+        checkState(!freeNodes.contains(node), "Node is in list of free slots: %s", node);
         if (lefts[node] != -1) {
             validateBranchStructure(node, lefts[node], rights[node], true);
-            validateStructure(lefts[node]);
+            validateStructure(lefts[node], freeNodes);
         }
 
         if (rights[node] != -1) {
             validateBranchStructure(node, rights[node], lefts[node], false);
-            validateStructure(rights[node]);
+            validateStructure(rights[node], freeNodes);
         }
     }
 
@@ -1038,6 +1055,17 @@ public class QuantileDigest
         Preconditions.checkState(counts[parent] > 0 ||
                         counts[child] > 0 || otherChild != -1,
                 "Found a linear chain of zero-weight nodes");
+    }
+
+    private Set<Integer> computeFreeList()
+    {
+        Set<Integer> freeSlots = new HashSet<>();
+        int index = firstFree;
+        while (index != -1) {
+            freeSlots.add(index);
+            index = lefts[index];
+        }
+        return freeSlots;
     }
 
     public String toGraphviz()
