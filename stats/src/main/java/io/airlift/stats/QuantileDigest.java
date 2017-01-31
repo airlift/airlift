@@ -824,7 +824,9 @@ public class QuantileDigest
 
     private int copyRecursive(QuantileDigest other, int otherNode)
     {
-        checkArgument(otherNode != -1, "otherNode is -1");
+        if (otherNode == -1) {
+            return otherNode;
+        }
 
         int node = createNode(other.values[otherNode], other.levels[otherNode], other.counts[otherNode]);
 
