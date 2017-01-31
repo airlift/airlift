@@ -783,8 +783,6 @@ public class QuantileDigest
             return node;
         }
         else if (levels[node] < other.levels[otherNode]) {
-            int result = createNode(other.values[otherNode], other.levels[otherNode], other.counts[otherNode]);
-
             long branch = values[node] & getBranchMask(other.levels[otherNode]);
 
             // variables needed because the arrays may be re-allocated during merge()
@@ -798,6 +796,8 @@ public class QuantileDigest
                 left = copyRecursive(other, other.lefts[otherNode]);
                 right = merge(node, other, other.rights[otherNode]);
             }
+
+            int result = createNode(other.values[otherNode], other.levels[otherNode], other.counts[otherNode]);
             lefts[result] = left;
             rights[result] = right;
 
