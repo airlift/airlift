@@ -39,7 +39,9 @@ public class Distribution
 
     public Distribution(Distribution distribution)
     {
-        digest = new QuantileDigest(distribution.digest);
+        synchronized (distribution) {
+            digest = new QuantileDigest(distribution.digest);
+        }
         total = new DecayCounter(distribution.total.getAlpha());
         total.merge(distribution.total);
     }
