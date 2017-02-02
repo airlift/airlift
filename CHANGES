@@ -1,3 +1,16 @@
+* 0.140
+
+- Fix rare bug when inserting into Sparse HLL that could result
+  in corruption.
+- Improve performance and memory utilization for QuantileDigest.
+- Improve performance when generating trace tokens.
+- Add BasicAuthRequestFilter for HttpClient to pre-authenticate
+  requests with basic authentication.
+- Add bindConfigGlobalDefaults to ConfigBinder to customize
+  defaults for bound config objects.
+- Buffer HTTP responses in chunks to avoid allocating big byte arrays.
+- Update QuantileDigest serialization to take and produce Slice objects.
+
 * 0.139
 
 - Upgrade to Jetty 9.3.13.M0
