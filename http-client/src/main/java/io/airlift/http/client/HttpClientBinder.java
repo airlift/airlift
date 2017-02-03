@@ -47,9 +47,9 @@ public class HttpClientBinder
 
     public HttpClientBindingBuilder bindHttpClient(String name, Class<? extends Annotation> annotation)
     {
-        checkNotNull(name, "name is null");
-        checkNotNull(annotation, "annotation is null");
-        return createBindingBuilder(new HttpClientModule(name, annotation));
+        HttpClientModule module = new HttpClientModule(name, annotation);
+        binder.install(module);
+        return new HttpClientBindingBuilder(module, newSetBinder(binder, HttpRequestFilter.class, annotation));
     }
 
     public LinkedBindingBuilder<HttpRequestFilter> addGlobalFilterBinding()
@@ -67,13 +67,6 @@ public class HttpClientBinder
     {
         globalFilterBinder.addBinding().toInstance(filter);
         return this;
-    }
-
-    private HttpClientBindingBuilder createBindingBuilder(HttpClientModule module)
-    {
-        binder.install(module);
-        return new HttpClientBindingBuilder(module,
-                newSetBinder(binder, HttpRequestFilter.class, module.getFilterQualifier()));
     }
 
     public static class HttpClientBindingBuilder

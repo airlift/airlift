@@ -19,9 +19,11 @@ import com.google.common.annotations.Beta;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.inject.Binder;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
@@ -41,26 +43,25 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
-import static io.airlift.http.client.CompositeQualifierImpl.compositeQualifier;
+import static java.util.Objects.requireNonNull;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 @Beta
 public class HttpClientModule
-        extends AbstractHttpClientModule
+        implements Module
 {
     private static final Logger log = Logger.get(HttpClientModule.class);
+    protected final String name;
+    protected final Class<? extends Annotation> annotation;
+    protected Binder binder;
 
-    protected HttpClientModule(String name, Class<? extends Annotation> annotation)
+    public HttpClientModule(String name, Class<? extends Annotation> annotation)
     {
-        super(name, annotation);
-    }
-
-    @Override
-    public Annotation getFilterQualifier()
-    {
-        return filterQualifier(annotation);
+        this.name = checkNotNull(name, "name is null");
+        this.annotation = checkNotNull(annotation, "annotation is null");
     }
 
     void withConfigDefaults(ConfigDefaults<HttpClientConfig> configDefaults)
@@ -75,8 +76,10 @@ public class HttpClientModule
     }
 
     @Override
-    public void configure()
+    public void configure(Binder binder)
     {
+        this.binder = requireNonNull(binder, "binder is null");
+
         // bind the configuration
         configBinder(binder).bindConfig(KerberosConfig.class);
         configBinder(binder).bindConfig(HttpClientConfig.class, annotation, name);
@@ -92,13 +95,12 @@ public class HttpClientModule
         newSetBinder(binder, HttpRequestFilter.class, GlobalFilter.class);
 
         // kick off the binding for the filter set
-        newSetBinder(binder, HttpRequestFilter.class, filterQualifier(annotation));
+        newSetBinder(binder, HttpRequestFilter.class, annotation);
 
         // export stats
         newExporter(binder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
     }
 
-    @Override
     public void addAlias(Class<? extends Annotation> alias)
     {
         binder.bind(HttpClient.class).annotatedWith(alias).to(Key.get(HttpClient.class, annotation));
@@ -131,7 +133,7 @@ public class HttpClientModule
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
             Set<HttpRequestFilter> filters = ImmutableSet.<HttpRequestFilter>builder()
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, GlobalFilter.class)))
-                    .addAll(injector.getInstance(filterKey(annotation)))
+                    .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, annotation)))
                     .build();
 
             JettyIoPoolManager ioPoolProvider;
@@ -219,15 +221,5 @@ public class HttpClientModule
     private static <T> Key<T> keyFromNullable(Class<T> type, Class<? extends Annotation> annotation)
     {
         return (annotation != null) ? Key.get(type, annotation) : Key.get(type);
-    }
-
-    private static Key<Set<HttpRequestFilter>> filterKey(Class<? extends Annotation> annotation)
-    {
-        return Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, filterQualifier(annotation));
-    }
-
-    private static CompositeQualifier filterQualifier(Class<? extends Annotation> annotation)
-    {
-        return compositeQualifier(annotation, HttpClient.class);
     }
 }
