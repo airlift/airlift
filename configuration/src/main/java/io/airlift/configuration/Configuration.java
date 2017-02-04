@@ -83,8 +83,8 @@ public final class Configuration
                     if (binding instanceof ProviderInstanceBinding) {
                         ProviderInstanceBinding<?> providerInstanceBinding = (ProviderInstanceBinding<?>) binding;
                         Provider<?> provider = providerInstanceBinding.getProviderInstance();
-                        if (provider instanceof ConfigurationAwareProvider) {
-                            ConfigurationAwareProvider<?> configurationProvider = (ConfigurationAwareProvider<?>) provider;
+                        if (provider instanceof ConfigurationProvider) {
+                            ConfigurationProvider<?> configurationProvider = (ConfigurationProvider<?>) provider;
                             // give the provider the configuration factory
                             configurationProvider.setConfigurationFactory(configurationFactory);
                             configurationProvider.setWarningsMonitor(warningsMonitor);

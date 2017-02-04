@@ -18,9 +18,11 @@ package io.airlift.configuration;
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.google.inject.Key;
+import com.google.inject.Provider;
 
+// Note this class must implement com.google.inject.Provider for the Guice element inspection code to
 public class ConfigurationProvider<T>
-        implements ConfigurationAwareProvider<T>
+        implements Provider<T>
 {
     private final Key<T> key;
     private final Class<T> configClass;
@@ -38,14 +40,12 @@ public class ConfigurationProvider<T>
         this.prefix = prefix;
     }
 
-    @Override
     @Inject
     public void setConfigurationFactory(ConfigurationFactory configurationFactory)
     {
         this.configurationFactory = configurationFactory;
     }
 
-    @Override
     @Inject(optional = true)
     public void setWarningsMonitor(WarningsMonitor warningsMonitor)
     {
