@@ -229,7 +229,7 @@ public class TestConfig
     private static Injector createInjector(Map<String, String> properties, Module module)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
-        List<Message> messages = processConfiguration(configurationFactory, null, module);
+        List<Message> messages = processConfiguration(configurationFactory, module);
         return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
     }
 

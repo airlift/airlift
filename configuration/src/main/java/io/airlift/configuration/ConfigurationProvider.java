@@ -28,7 +28,6 @@ public class ConfigurationProvider<T>
     private final Class<T> configClass;
     private final String prefix;
     private ConfigurationFactory configurationFactory;
-    private WarningsMonitor warningsMonitor;
 
     public ConfigurationProvider(Key<T> key, Class<T> configClass, String prefix)
     {
@@ -44,12 +43,6 @@ public class ConfigurationProvider<T>
     public void setConfigurationFactory(ConfigurationFactory configurationFactory)
     {
         this.configurationFactory = configurationFactory;
-    }
-
-    @Inject(optional = true)
-    public void setWarningsMonitor(WarningsMonitor warningsMonitor)
-    {
-        this.warningsMonitor = warningsMonitor;
     }
 
     public Key<T> getKey()
@@ -82,7 +75,7 @@ public class ConfigurationProvider<T>
     {
         Preconditions.checkNotNull(configurationFactory, "configurationFactory");
 
-        return configurationFactory.build(this, warningsMonitor);
+        return configurationFactory.build(this);
     }
 
     @Override

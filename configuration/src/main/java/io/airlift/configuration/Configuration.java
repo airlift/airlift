@@ -38,12 +38,12 @@ public final class Configuration
     {
     }
 
-    public static List<Message> processConfiguration(ConfigurationFactory configurationFactory, WarningsMonitor warningsMonitor, Module... modules)
+    public static List<Message> processConfiguration(ConfigurationFactory configurationFactory, Module... modules)
     {
-        return processConfiguration(configurationFactory, warningsMonitor, ImmutableList.copyOf(modules));
+        return processConfiguration(configurationFactory, ImmutableList.copyOf(modules));
     }
 
-    public static List<Message> processConfiguration(ConfigurationFactory configurationFactory, WarningsMonitor warningsMonitor, Collection<? extends Module> modules)
+    public static List<Message> processConfiguration(ConfigurationFactory configurationFactory, Collection<? extends Module> modules)
     {
         // some modules need access to configuration factory so they can lazy register additional config classes
         // initialize configuration factory
@@ -87,7 +87,6 @@ public final class Configuration
                             ConfigurationProvider<?> configurationProvider = (ConfigurationProvider<?>) provider;
                             // give the provider the configuration factory
                             configurationProvider.setConfigurationFactory(configurationFactory);
-                            configurationProvider.setWarningsMonitor(warningsMonitor);
                             try {
                                 // call the getter which will cause object creation
                                 configurationProvider.get();

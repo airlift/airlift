@@ -16,6 +16,7 @@
 package io.airlift.configuration;
 
 import com.google.common.annotations.Beta;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
@@ -78,6 +79,7 @@ public class ConfigurationFactory
     }
 
     private final Map<String, String> properties;
+    private final WarningsMonitor warningsMonitor;
     private final Problems.Monitor monitor;
     private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
     private final Set<String> usedProperties = newConcurrentHashSet();
@@ -95,13 +97,20 @@ public class ConfigurationFactory
 
     public ConfigurationFactory(Map<String, String> properties)
     {
-        this(properties, Problems.NULL_MONITOR);
+        this(properties, null, Problems.NULL_MONITOR);
     }
 
-    ConfigurationFactory(Map<String, String> properties, Problems.Monitor monitor)
+    public ConfigurationFactory(Map<String, String> properties, WarningsMonitor warningsMonitor)
     {
-        this.monitor = monitor;
+        this(properties, warningsMonitor, Problems.NULL_MONITOR);
+    }
+
+    @VisibleForTesting
+    ConfigurationFactory(Map<String, String> properties, WarningsMonitor warningsMonitor, Problems.Monitor monitor)
+    {
         this.properties = ImmutableMap.copyOf(properties);
+        this.warningsMonitor = warningsMonitor;
+        this.monitor = monitor;
     }
 
     public Map<String, String> getProperties()
@@ -191,7 +200,7 @@ public class ConfigurationFactory
     /**
      * This is used by the configuration provider
      */
-    <T> T build(ConfigurationProvider<T> configurationProvider, WarningsMonitor warningsMonitor)
+    <T> T build(ConfigurationProvider<T> configurationProvider)
     {
         Preconditions.checkNotNull(configurationProvider, "configurationProvider");
         registeredProviders.add(configurationProvider);

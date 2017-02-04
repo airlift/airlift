@@ -189,7 +189,7 @@ public class Bootstrap
         properties.putAll(fromProperties(System.getProperties()));
         properties = ImmutableSortedMap.copyOf(properties);
 
-        configurationFactory = new ConfigurationFactory(properties);
+        configurationFactory = new ConfigurationFactory(properties, log::warn);
 
 
         if (logging != null) {
@@ -200,7 +200,7 @@ public class Bootstrap
         }
 
         // Validate configuration
-        List<Message> messages = processConfiguration(configurationFactory, log::warn, modules);
+        List<Message> messages = processConfiguration(configurationFactory, modules);
 
         // at this point all config file properties should be used
         // so we can calculate the unused properties
