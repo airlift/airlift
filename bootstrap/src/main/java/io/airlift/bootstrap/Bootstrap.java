@@ -49,7 +49,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import static com.google.common.collect.Maps.fromProperties;
-import static io.airlift.configuration.Configuration.processConfiguration;
 
 /**
  * Entry point for an application built using the platform codebase.
@@ -191,7 +190,6 @@ public class Bootstrap
 
         configurationFactory = new ConfigurationFactory(properties, log::warn);
 
-
         if (logging != null) {
             // initialize logging
             log.info("Initializing logging");
@@ -199,8 +197,11 @@ public class Bootstrap
             logging.configure(configuration);
         }
 
-        // Validate configuration
-        List<Message> messages = processConfiguration(configurationFactory, modules);
+        // Register configuration classes defined in the modules
+        configurationFactory.registerConfigurationClasses(modules);
+
+        // Validate configuration classes
+        List<Message> messages = configurationFactory.validateRegisteredConfigurationProvider();
 
         // at this point all config file properties should be used
         // so we can calculate the unused properties

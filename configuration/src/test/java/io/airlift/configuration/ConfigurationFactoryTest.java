@@ -15,6 +15,7 @@
  */
 package io.airlift.configuration;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.inject.CreationException;
 import com.google.inject.Guice;
@@ -34,7 +35,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
-import static io.airlift.configuration.Configuration.processConfiguration;
 
 public class ConfigurationFactoryTest
 {
@@ -230,7 +230,8 @@ public class ConfigurationFactoryTest
     private static Injector createInjector(Map<String, String> properties, TestMonitor monitor, Module module)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, null, monitor);
-        List<Message> messages = processConfiguration(configurationFactory, module);
+        configurationFactory.registerConfigurationClasses(ImmutableList.of(module));
+        List<Message> messages = configurationFactory.validateRegisteredConfigurationProvider();
         return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
     }
 

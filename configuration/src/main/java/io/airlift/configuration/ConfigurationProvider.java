@@ -21,6 +21,8 @@ import com.google.inject.Provider;
 
 import javax.inject.Inject;
 
+import java.util.Optional;
+
 // Note this class must implement com.google.inject.Provider for the Guice element inspection code to
 class ConfigurationProvider<T>
         implements Provider<T>
@@ -29,6 +31,7 @@ class ConfigurationProvider<T>
     private final Class<T> configClass;
     private final String prefix;
     private ConfigurationFactory configurationFactory;
+    private Optional<Object> bindingSource;
 
     public ConfigurationProvider(Key<T> key, Class<T> configClass, String prefix)
     {
@@ -69,6 +72,16 @@ class ConfigurationProvider<T>
     public T getDefaultConfig()
     {
         return configurationFactory.getDefaultConfig(key);
+    }
+
+    public Optional<Object> getBindingSource()
+    {
+        return bindingSource;
+    }
+
+    public void setBindingSource(Optional<Object> bindingSource)
+    {
+        this.bindingSource = bindingSource;
     }
 
     @Override
