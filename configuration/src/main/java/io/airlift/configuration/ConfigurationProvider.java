@@ -16,12 +16,13 @@
 package io.airlift.configuration;
 
 import com.google.common.base.Preconditions;
-import com.google.inject.Inject;
 import com.google.inject.Key;
 import com.google.inject.Provider;
 
+import javax.inject.Inject;
+
 // Note this class must implement com.google.inject.Provider for the Guice element inspection code to
-public class ConfigurationProvider<T>
+class ConfigurationProvider<T>
         implements Provider<T>
 {
     private final Key<T> key;
