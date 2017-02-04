@@ -9,6 +9,7 @@ import com.google.inject.multibindings.Multibinder;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.Optional;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static java.util.Objects.requireNonNull;
@@ -75,7 +76,7 @@ public class ConfigBinder
 
     public <T> void bindConfig(Key<T> key, Class<T> configClass, String prefix)
     {
-        binder.bind(key).toProvider(new ConfigurationProvider<>(key, configClass, prefix));
+        binder.bind(key).toProvider(new ConfigurationProvider<>(new ConfigurationBinding<>(key, configClass, Optional.ofNullable(prefix))));
         createConfigDefaultsBinder(key);
     }
 

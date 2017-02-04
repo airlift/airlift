@@ -43,6 +43,7 @@ import com.google.inject.spi.ProviderInstanceBinding;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 import org.apache.bval.jsr.ApacheValidationProvider;
 
+import javax.annotation.Nullable;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
@@ -268,9 +269,9 @@ public class ConfigurationFactory
         return build(configClass, null);
     }
 
-    public <T> T build(Class<T> configClass, String prefix)
+    public <T> T build(Class<T> configClass, @Nullable String prefix)
     {
-        return build(configClass, prefix, ConfigDefaults.noDefaults()).getInstance();
+        return build(configClass, Optional.ofNullable(prefix), ConfigDefaults.noDefaults()).getInstance();
     }
 
     /**
@@ -287,7 +288,8 @@ public class ConfigurationFactory
             return instance;
         }
 
-        ConfigurationHolder<T> holder = build(configurationProvider.getConfigClass(), configurationProvider.getPrefix(), getConfigDefaults(configurationProvider.getKey()));
+        ConfigurationBinding<T> configurationBinding = configurationProvider.getConfigurationBinding();
+        ConfigurationHolder<T> holder = build(configurationBinding.getConfigClass(), configurationBinding.getPrefix(), getConfigDefaults(configurationBinding.getKey()));
         instance = holder.getInstance();
 
         // inform caller about warnings
@@ -319,18 +321,15 @@ public class ConfigurationFactory
         return (T) instanceCache.putIfAbsent(configurationProvider, instance);
     }
 
-    private <T> ConfigurationHolder<T> build(Class<T> configClass, String prefix, ConfigDefaults<T> configDefaults)
+    private <T> ConfigurationHolder<T> build(Class<T> configClass, Optional<String> configPrefix, ConfigDefaults<T> configDefaults)
     {
         if (configClass == null) {
             throw new NullPointerException("configClass is null");
         }
 
-        if (prefix == null) {
-            prefix = "";
-        }
-        else if (!prefix.isEmpty()) {
-            prefix += ".";
-        }
+        String prefix = configPrefix
+                .map(value -> value + ".")
+                .orElse("");
 
         ConfigurationMetadata<T> configurationMetadata = getMetadata(configClass);
         configurationMetadata.getProblems().throwIfHasErrors();

@@ -16,31 +16,27 @@
 package io.airlift.configuration;
 
 import com.google.common.base.Preconditions;
-import com.google.inject.Key;
 import com.google.inject.Provider;
 
 import javax.inject.Inject;
 
+import java.util.Objects;
 import java.util.Optional;
+
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.util.Objects.requireNonNull;
 
 // Note this class must implement com.google.inject.Provider for the Guice element inspection code to
 class ConfigurationProvider<T>
         implements Provider<T>
 {
-    private final Key<T> key;
-    private final Class<T> configClass;
-    private final String prefix;
+    private final ConfigurationBinding<T> configurationBinding;
     private ConfigurationFactory configurationFactory;
     private Optional<Object> bindingSource;
 
-    public ConfigurationProvider(Key<T> key, Class<T> configClass, String prefix)
+    public ConfigurationProvider(ConfigurationBinding<T> configurationBinding)
     {
-        Preconditions.checkNotNull(key, "key");
-        Preconditions.checkNotNull(configClass, "configClass");
-
-        this.key = key;
-        this.configClass = configClass;
-        this.prefix = prefix;
+        this.configurationBinding = requireNonNull(configurationBinding, "configurationBinding is null");
     }
 
     @Inject
@@ -49,29 +45,9 @@ class ConfigurationProvider<T>
         this.configurationFactory = configurationFactory;
     }
 
-    public Key<T> getKey()
+    public ConfigurationBinding<T> getConfigurationBinding()
     {
-        return key;
-    }
-
-    public Class<T> getConfigClass()
-    {
-        return configClass;
-    }
-
-    public String getPrefix()
-    {
-        return prefix;
-    }
-
-    public ConfigurationMetadata<T> getConfigurationMetadata()
-    {
-        return ConfigurationMetadata.getConfigurationMetadata(configClass);
-    }
-
-    public T getDefaultConfig()
-    {
-        return configurationFactory.getDefaultConfig(key);
+        return configurationBinding;
     }
 
     public Optional<Object> getBindingSource()
@@ -101,19 +77,21 @@ class ConfigurationProvider<T>
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-
         ConfigurationProvider<?> that = (ConfigurationProvider<?>) o;
-
-        if (!key.equals(that.key)) {
-            return false;
-        }
-
-        return true;
+        return Objects.equals(configurationBinding, that.configurationBinding);
     }
 
     @Override
     public int hashCode()
     {
-        return key.hashCode();
+        return Objects.hash(configurationBinding);
+    }
+
+    @Override
+    public String toString()
+    {
+        return toStringHelper(this)
+                .add("configurationBinding", configurationBinding)
+                .toString();
     }
 }
