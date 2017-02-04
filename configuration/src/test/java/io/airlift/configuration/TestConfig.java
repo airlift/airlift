@@ -18,6 +18,8 @@ package io.airlift.configuration;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.Binder;
 import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -30,10 +32,12 @@ import javax.inject.Qualifier;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 
 import static com.google.inject.name.Names.named;
 import static io.airlift.configuration.ConfigBinder.configBinder;
@@ -226,12 +230,44 @@ public class TestConfig
         assertEquals(config.getLongOption(), customValue);
     }
 
+    @Test
+    public void testConfigurationBindingListener()
+    {
+        List<ConfigurationBinding<?>> seenBindings = new ArrayList<>();
+        Module module = binder -> {
+            ConfigBinder configBinder = configBinder(binder);
+            configBinder.bindConfig(AnotherConfig.class);
+
+            configBinder.bindConfigurationBindingListener((configurationBinding, callbackConfigBinder) -> {
+                seenBindings.add(configurationBinding);
+                callbackConfigBinder.bindConfig(Config1.class);
+                callbackConfigBinder.bindConfig(Config1.class, MyAnnotation.class);
+            });
+        };
+        Injector injector = createInjector(properties, module);
+
+        verifyConfig(injector.getInstance(Config1.class));
+        verifyConfig(injector.getInstance(Key.get(Config1.class, MyAnnotation.class)));
+
+        assertEquals(seenBindings.size(), 3);
+        assertEquals(
+                ImmutableSet.copyOf(seenBindings),
+                ImmutableSet.of(
+                        new ConfigurationBinding<>(Key.get(Config1.class), Config1.class, Optional.empty()),
+                        new ConfigurationBinding<>(Key.get(Config1.class, MyAnnotation.class), Config1.class, Optional.empty()),
+                        new ConfigurationBinding<>(Key.get(AnotherConfig.class), AnotherConfig.class, Optional.empty())));
+    }
+
     private static Injector createInjector(Map<String, String> properties, Module module)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
         configurationFactory.registerConfigurationClasses(ImmutableList.of(module));
         List<Message> messages = configurationFactory.validateRegisteredConfigurationProvider();
-        return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
+        return Guice.createInjector(
+                new ConfigurationModule(configurationFactory),
+                module,
+                new ValidationErrorModule(messages),
+                Binder::requireExplicitBindings);
     }
 
     @SafeVarargs
@@ -273,6 +309,23 @@ public class TestConfig
         public void setDefaults(Config1 config)
         {
             config.setStringOption(stringOptionDefault);
+        }
+    }
+
+    public static class AnotherConfig
+    {
+        private String stringOption;
+
+        public String getStringOption()
+        {
+            return stringOption;
+        }
+
+        @Config("stringOption")
+        public AnotherConfig setStringOption(String stringOption)
+        {
+            this.stringOption = stringOption;
+            return this;
         }
     }
 }

@@ -38,6 +38,13 @@ public class ConfigurationModule
         binder.disableCircularProxies();
 
         binder.bind(ConfigurationFactory.class).toInstance(configurationFactory);
+
+        configurationFactory.getConfigurationProviders().forEach(configurationProvider -> bindConfigurationProvider(binder, configurationProvider));
+    }
+
+    private static <T> void bindConfigurationProvider(Binder binder, ConfigurationProvider<T> configurationProvider)
+    {
+        binder.bind(configurationProvider.getConfigurationBinding().getKey()).toProvider(configurationProvider);
     }
 
     /**

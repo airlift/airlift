@@ -25,6 +25,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
@@ -37,6 +38,7 @@ import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.spi.DefaultElementVisitor;
 import com.google.inject.spi.Element;
+import com.google.inject.spi.Elements;
 import com.google.inject.spi.InstanceBinding;
 import com.google.inject.spi.Message;
 import com.google.inject.spi.ProviderInstanceBinding;
@@ -44,6 +46,7 @@ import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 import org.apache.bval.jsr.ApacheValidationProvider;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
@@ -51,6 +54,7 @@ import javax.validation.Validator;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +62,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
@@ -88,6 +93,8 @@ public class ConfigurationFactory
     private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
     private final Set<String> usedProperties = newConcurrentHashSet();
     private final Set<ConfigurationProvider<?>> registeredProviders = newConcurrentHashSet();
+    @GuardedBy("this")
+    private final List<Consumer<ConfigurationProvider<?>>> configurationBindingListeners = new ArrayList<>();
     private final ListMultimap<Key<?>, ConfigDefaultsHolder<?>> registeredDefaultConfigs = Multimaps.synchronizedListMultimap(ArrayListMultimap.create());
     private final LoadingCache<Class<?>, ConfigurationMetadata<?>> metadataCache = CacheBuilder.newBuilder()
             .build(new CacheLoader<Class<?>, ConfigurationMetadata<?>>()
@@ -155,27 +162,21 @@ public class ConfigurationFactory
                 .map(ConfigurationAwareModule.class::cast)
                 .forEach(module -> module.setConfigurationFactory(this));
 
-        ElementsIterator elementsIterator = new ElementsIterator(modules);
-        for (Element element : elementsIterator) {
+        for (Element element : Elements.getElements(modules)) {
             element.acceptVisitor(new DefaultElementVisitor<Void>()
             {
                 @Override
                 public <T> Void visit(Binding<T> binding)
                 {
-                    return null;
-                }
-            });
-        }
-
-        for (Element element : elementsIterator) {
-            element.acceptVisitor(new DefaultElementVisitor<Void>()
-            {
-                @Override
-                public <T> Void visit(Binding<T> binding)
-                {
-                    // config defaults
                     if (binding instanceof InstanceBinding) {
                         InstanceBinding<T> instanceBinding = (InstanceBinding<T>) binding;
+
+                        // configuration listener
+                        if (instanceBinding.getInstance() instanceof ConfigurationBindingListenerHolder) {
+                            addConfigurationBindingListener(((ConfigurationBindingListenerHolder) instanceBinding.getInstance()).getConfigurationBindingListener());
+                        }
+
+                        // config defaults
                         if (instanceBinding.getInstance() instanceof ConfigDefaultsHolder) {
                             registerConfigDefaults((ConfigDefaultsHolder<?>) instanceBinding.getInstance());
                         }
@@ -195,11 +196,30 @@ public class ConfigurationFactory
         }
     }
 
-    private void registerConfigurationProvider(ConfigurationProvider<?> configurationProvider, Optional<Object> bindingSource)
+    void registerConfigurationProvider(ConfigurationProvider<?> configurationProvider, Optional<Object> bindingSource)
     {
         configurationProvider.setConfigurationFactory(this);
         configurationProvider.setBindingSource(bindingSource);
-        registeredProviders.add(configurationProvider);
+
+        ImmutableList<Consumer<ConfigurationProvider<?>>> listeners = ImmutableList.of();
+        synchronized (this) {
+            if (registeredProviders.add(configurationProvider)) {
+                listeners = ImmutableList.copyOf(configurationBindingListeners);
+            }
+        }
+        listeners.forEach(listener -> listener.accept(configurationProvider));
+    }
+
+    public void addConfigurationBindingListener(ConfigurationBindingListener listener)
+    {
+        ConfigurationProviderConsumer consumer = new ConfigurationProviderConsumer(listener);
+
+        ImmutableSet<ConfigurationProvider<?>> currentProviders;
+        synchronized (this) {
+            configurationBindingListeners.add(consumer);
+            currentProviders = ImmutableSet.copyOf(registeredProviders);
+        }
+        currentProviders.forEach(consumer);
     }
 
     public List<Message> validateRegisteredConfigurationProvider()
@@ -226,7 +246,7 @@ public class ConfigurationFactory
         return ImmutableList.copyOf(registeredProviders);
     }
 
-    private <T> void registerConfigDefaults(ConfigDefaultsHolder<T> holder)
+    <T> void registerConfigDefaults(ConfigDefaultsHolder<T> holder)
     {
         registeredDefaultConfigs.put(holder.getConfigKey(), holder);
     }
@@ -588,6 +608,25 @@ public class ConfigurationFactory
         public Problems getProblems()
         {
             return problems;
+        }
+    }
+
+    private class ConfigurationProviderConsumer
+            implements Consumer<ConfigurationProvider<?>>
+    {
+        private final ConfigurationBindingListener listener;
+        private final ConfigBinder configBinder;
+
+        public ConfigurationProviderConsumer(ConfigurationBindingListener listener)
+        {
+            this.listener = listener;
+            this.configBinder = ConfigBinder.configBinder(ConfigurationFactory.this, Optional.of(listener));
+        }
+
+        @Override
+        public void accept(ConfigurationProvider<?> configurationProvider)
+        {
+            listener.configurationBound(configurationProvider.getConfigurationBinding(), configBinder);
         }
     }
 }

@@ -18,14 +18,110 @@ public class ConfigBinder
 {
     public static ConfigBinder configBinder(Binder binder)
     {
-        return new ConfigBinder(binder);
+        return new ConfigBinder(new GuiceConfigBinder(binder));
     }
 
-    private final Binder binder;
-
-    private ConfigBinder(Binder binder)
+    static ConfigBinder configBinder(ConfigurationFactory configurationFactory, Optional<Object> bindingSource)
     {
-        this.binder = requireNonNull(binder, "binder is null").skipSources(getClass());
+        return new ConfigBinder(new CallbackConfigBinder(configurationFactory, bindingSource));
+    }
+
+    public interface InternalConfigBinder
+    {
+        <T> void bind(ConfigurationBinding<T> configurationBinding);
+
+        <T> void bindConfigDefaults(ConfigDefaultsHolder<T> configDefaultsHolder);
+
+        void bindConfigurationBindingListener(ConfigurationBindingListener configurationBindingListener);
+    }
+
+    private static final class GuiceConfigBinder
+            implements InternalConfigBinder
+    {
+        private final Binder binder;
+        private Multibinder<ConfigurationBindingListenerHolder> listenerMultibinder;
+
+        public GuiceConfigBinder(Binder binder)
+        {
+            this.binder = requireNonNull(binder, "binder is null").skipSources(getClass(), ConfigBinder.class);
+            this.listenerMultibinder = newSetBinder(binder, ConfigurationBindingListenerHolder.class);
+        }
+
+        @Override
+        public <T> void bind(ConfigurationBinding<T> configurationBinding)
+        {
+            Key<T> key = configurationBinding.getKey();
+            binder.bind(key).toProvider(new ConfigurationProvider<>(configurationBinding));
+            createConfigDefaultsBinder(key);
+        }
+
+        @Override
+        public <T> void bindConfigDefaults(ConfigDefaultsHolder<T> configDefaultsHolder)
+        {
+            createConfigDefaultsBinder(configDefaultsHolder.getConfigKey()).addBinding().toInstance(configDefaultsHolder);
+        }
+
+        @Override
+        public void bindConfigurationBindingListener(ConfigurationBindingListener configurationBindingListener)
+        {
+            listenerMultibinder.addBinding().toInstance(new ConfigurationBindingListenerHolder(configurationBindingListener));
+        }
+
+        private <T> Multibinder<ConfigDefaultsHolder<T>> createConfigDefaultsBinder(Key<T> key)
+        {
+            @SuppressWarnings("SerializableInnerClassWithNonSerializableOuterClass")
+            Type type = new TypeToken<ConfigDefaultsHolder<T>>() {}
+                    .where(new TypeParameter<T>() {}, (TypeToken<T>) TypeToken.of(key.getTypeLiteral().getType()))
+                    .getType();
+
+            TypeLiteral<ConfigDefaultsHolder<T>> typeLiteral = (TypeLiteral<ConfigDefaultsHolder<T>>) TypeLiteral.get(type);
+
+            if (key.getAnnotationType() == null) {
+                return newSetBinder(binder, typeLiteral);
+            }
+            if (key.hasAttributes()) {
+                return newSetBinder(binder, typeLiteral, key.getAnnotation());
+            }
+            return newSetBinder(binder, typeLiteral, key.getAnnotationType());
+        }
+    }
+
+    private static final class CallbackConfigBinder
+            implements InternalConfigBinder
+    {
+        private final ConfigurationFactory configurationFactory;
+        private final Optional<Object> bindingSource;
+
+        public CallbackConfigBinder(ConfigurationFactory configurationFactory, Optional<Object> bindingSource)
+        {
+            this.configurationFactory = requireNonNull(configurationFactory, "configurationFactory is null");
+            this.bindingSource = requireNonNull(bindingSource, "bindingSource is null");
+        }
+
+        @Override
+        public <T> void bind(ConfigurationBinding<T> configurationBinding)
+        {
+            configurationFactory.registerConfigurationProvider(new ConfigurationProvider<>(configurationBinding), bindingSource);
+        }
+
+        @Override
+        public <T> void bindConfigDefaults(ConfigDefaultsHolder<T> configDefaultsHolder)
+        {
+            configurationFactory.registerConfigDefaults(configDefaultsHolder);
+        }
+
+        @Override
+        public void bindConfigurationBindingListener(ConfigurationBindingListener configurationBindingListener)
+        {
+            configurationFactory.addConfigurationBindingListener(configurationBindingListener);
+        }
+    }
+
+    private final InternalConfigBinder binder;
+
+    private ConfigBinder(InternalConfigBinder binder)
+    {
+        this.binder = requireNonNull(binder, "binder is null");
     }
 
     public <T> void bindConfig(Class<T> configClass)
@@ -76,8 +172,7 @@ public class ConfigBinder
 
     public <T> void bindConfig(Key<T> key, Class<T> configClass, String prefix)
     {
-        binder.bind(key).toProvider(new ConfigurationProvider<>(new ConfigurationBinding<>(key, configClass, Optional.ofNullable(prefix))));
-        createConfigDefaultsBinder(key);
+        binder.bind(new ConfigurationBinding<>(key, configClass, Optional.ofNullable(prefix)));
     }
 
     public <T> void bindConfigDefaults(Class<T> configClass, ConfigDefaults<T> configDefaults)
@@ -108,7 +203,7 @@ public class ConfigBinder
 
     public <T> void bindConfigDefaults(Key<T> key, ConfigDefaults<T> configDefaults)
     {
-        createConfigDefaultsBinder(key).addBinding().toInstance(new ConfigDefaultsHolder<>(key, configDefaults));
+        binder.bindConfigDefaults(new ConfigDefaultsHolder<>(key, configDefaults));
     }
 
     /**
@@ -117,24 +212,14 @@ public class ConfigBinder
     public <T> void bindConfigGlobalDefaults(Class<T> configClass, ConfigDefaults<T> configDefaults)
     {
         Key<T> key = Key.get(configClass, GlobalDefaults.class);
-        createConfigDefaultsBinder(key).addBinding().toInstance(new ConfigDefaultsHolder<>(key, configDefaults));
+        binder.bindConfigDefaults(new ConfigDefaultsHolder<>(key, configDefaults));
     }
 
-    private <T> Multibinder<ConfigDefaultsHolder<T>> createConfigDefaultsBinder(Key<T> key)
+    /**
+     * Binds a configuration binding listener that can create additional config bindings.
+     */
+    public void bindConfigurationBindingListener(ConfigurationBindingListener configurationBindingListener)
     {
-        @SuppressWarnings("SerializableInnerClassWithNonSerializableOuterClass")
-        Type type = new TypeToken<ConfigDefaultsHolder<T>>() {}
-                .where(new TypeParameter<T>() {}, (TypeToken<T>) TypeToken.of(key.getTypeLiteral().getType()))
-                .getType();
-
-        TypeLiteral<ConfigDefaultsHolder<T>> typeLiteral = (TypeLiteral<ConfigDefaultsHolder<T>>) TypeLiteral.get(type);
-
-        if (key.getAnnotationType() == null) {
-            return newSetBinder(binder, typeLiteral);
-        }
-        if (key.hasAttributes()) {
-            return newSetBinder(binder, typeLiteral, key.getAnnotation());
-        }
-        return newSetBinder(binder, typeLiteral, key.getAnnotationType());
+        binder.bindConfigurationBindingListener(configurationBindingListener);
     }
 }
