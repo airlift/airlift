@@ -16,3 +16,6 @@ cache:
     - $HOME/.m2/repository/mysql
 
 sudo: false
+
+before_install:
+  - rm -f ~/.m2/settings.xml
