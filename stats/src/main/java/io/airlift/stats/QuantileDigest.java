@@ -137,10 +137,26 @@ public class QuantileDigest
         Arrays.fill(rights, -1);
     }
 
-    public QuantileDigest(QuantileDigest quantileDigest)
+    public QuantileDigest(QuantileDigest other)
     {
-        this(quantileDigest.getMaxError(), quantileDigest.getAlpha());
-        merge(quantileDigest);
+        this.maxError = other.maxError;
+        this.alpha = other.alpha;
+        this.ticker = alpha == 0.0 ? noOpTicker() : Ticker.systemTicker();
+
+        this.landmarkInSeconds = other.landmarkInSeconds;
+        this.weightedCount = other.weightedCount;
+
+        this.max = other.max;
+        this.min = other.min;
+        this.root = other.root;
+        this.nextNode = other.nextNode;
+        this.counts = other.counts.clone();
+        this.levels = other.levels.clone();
+        this.values = other.values.clone();
+        this.lefts = other.lefts.clone();
+        this.rights = other.rights.clone();
+        this.freeCount = other.freeCount;
+        this.firstFree = other.firstFree;
     }
 
     public QuantileDigest(Slice serialized)
