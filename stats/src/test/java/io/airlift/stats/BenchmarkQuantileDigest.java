@@ -30,17 +30,49 @@ public class BenchmarkQuantileDigest
     @State(Scope.Thread)
     public static class Data
     {
-        private long[] values;
+        private long[] values1;
+        private long[] values2;
 
         @Setup
         public void setup()
         {
-            values = new long[NUMBER_OF_ENTRIES];
-            for (int i = 0; i < NUMBER_OF_ENTRIES; i++) {
+            values1 = makeValues(NUMBER_OF_ENTRIES);
+            values2 = makeValues(NUMBER_OF_ENTRIES);
+        }
+
+        private long[] makeValues(int size)
+        {
+            long[] values = new long[size];
+            for (int i = 0; i < size; i++) {
                 // generate values from a large domain but not many distinct values
                 long value = Math.abs((long) (ThreadLocalRandom.current().nextGaussian() * 1_000_000_000));
                 values[i] = (value / 1_000_000) * 1_000_000;
             }
+
+            return values;
+        }
+    }
+
+    @State(Scope.Thread)
+    public static class Digest
+    {
+        private QuantileDigest digest1;
+        private QuantileDigest digest2;
+
+        @Setup
+        public void setup(Data data)
+        {
+            digest1 = makeDigest(data.values1);
+            digest2 = makeDigest(data.values2);
+        }
+
+        private QuantileDigest makeDigest(long[] values)
+        {
+            QuantileDigest result = new QuantileDigest(0.01);
+            for (long value : values) {
+                result.add(value);
+            }
+            return result;
         }
     }
 
@@ -50,11 +82,25 @@ public class BenchmarkQuantileDigest
     {
         QuantileDigest digest = new QuantileDigest(0.01);
 
-        for (long value : data.values) {
+        for (long value : data.values1) {
             digest.add(value);
         }
 
         return digest;
+    }
+
+    @Benchmark
+    public QuantileDigest benchmarkCopy(Digest data)
+    {
+        return new QuantileDigest(data.digest1);
+    }
+
+    @Benchmark
+    public QuantileDigest benchmarkMerge(Digest data)
+    {
+        QuantileDigest merged = new QuantileDigest(data.digest1);
+        merged.merge(data.digest2);
+        return merged;
     }
 
     public static void main(String[] args)
