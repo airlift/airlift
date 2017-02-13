@@ -3,6 +3,7 @@
 - Deprecate usages of CompletableFuture or replace with ListenableFuture,
   which is easier to use and less error prone.
 - Add MoreFutures methods for ListenableFuture.
+- Replace RuntimeIOException with UncheckedIOException in HTTP client.
 
 * 0.142
 
@@ -12,7 +13,7 @@
 * 0.141
 
 - Fix thread-safety issue in Distribution copy constructor.
-  
+
 * 0.140
 
 - Fix rare bug when inserting into Sparse HLL that could result

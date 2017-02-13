@@ -22,7 +22,6 @@ import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
-import io.airlift.http.client.RuntimeIOException;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
@@ -43,6 +42,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.ConnectException;
 import java.net.URI;
 import java.util.Base64;
@@ -233,7 +233,7 @@ public class TestHttpServerProvider
                 fail("expected exception");
             }
             catch (ExecutionException e) {
-                assertInstanceOf(e.getCause(), RuntimeIOException.class);
+                assertInstanceOf(e.getCause(), UncheckedIOException.class);
             }
         }
     }
