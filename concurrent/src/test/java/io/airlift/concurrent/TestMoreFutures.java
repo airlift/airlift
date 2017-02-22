@@ -1,6 +1,7 @@
 package io.airlift.concurrent;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import io.airlift.units.Duration;
 import org.testng.annotations.AfterClass;
@@ -17,6 +18,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 
+import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
+import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static io.airlift.concurrent.MoreFutures.addTimeout;
 import static io.airlift.concurrent.MoreFutures.allAsList;
 import static io.airlift.concurrent.MoreFutures.failedFuture;
@@ -26,6 +29,7 @@ import static io.airlift.concurrent.MoreFutures.toListenableFuture;
 import static io.airlift.concurrent.MoreFutures.tryGetFutureValue;
 import static io.airlift.concurrent.MoreFutures.unmodifiableFuture;
 import static io.airlift.concurrent.MoreFutures.unwrapCompletionException;
+import static io.airlift.concurrent.MoreFutures.whenAnyComplete;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.testing.Assertions.assertInstanceOf;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -390,6 +394,20 @@ public class TestMoreFutures
     }
 
     @Test
+    public void testWhenAnyComplete()
+            throws Exception
+    {
+        assertGetUncheckedListenable(future -> getFutureValue(whenAnyComplete(ImmutableList.of(SettableFuture.create(), future, SettableFuture.create()))));
+
+        assertFailure(() -> whenAnyComplete(null), e -> assertInstanceOf(e, NullPointerException.class));
+        assertFailure(() -> whenAnyComplete(ImmutableList.of()), e -> assertInstanceOf(e, IllegalArgumentException.class));
+
+        assertEquals(
+                tryGetFutureValue(whenAnyComplete(ImmutableList.of(SettableFuture.create(), SettableFuture.create())), 10, MILLISECONDS),
+                Optional.empty());
+    }
+
+    @Test
     public void testAnyOf()
             throws Exception
     {
@@ -398,7 +416,8 @@ public class TestMoreFutures
         assertFailure(() -> MoreFutures.firstCompletedFuture(null), e -> assertInstanceOf(e, NullPointerException.class));
         assertFailure(() -> MoreFutures.firstCompletedFuture(ImmutableList.of()), e -> assertInstanceOf(e, IllegalArgumentException.class));
 
-        assertEquals(tryGetFutureValue(MoreFutures.firstCompletedFuture(ImmutableList.of(new CompletableFuture<>(), new CompletableFuture<>())), 10, MILLISECONDS),
+        assertEquals(
+                tryGetFutureValue(MoreFutures.firstCompletedFuture(ImmutableList.of(new CompletableFuture<>(), new CompletableFuture<>())), 10, MILLISECONDS),
                 Optional.empty());
     }
 
@@ -570,6 +589,37 @@ public class TestMoreFutures
         assertTrue(rootFuture.isCancelled());
     }
 
+    private static void assertGetUncheckedListenable(UncheckedGetterListenable getter)
+            throws Exception
+    {
+        assertEquals(getter.get(immediateFuture("foo")), "foo");
+
+        assertFailure(() -> getter.get(immediateFailedFuture(new IllegalArgumentException("foo"))), (e) -> {
+            assertInstanceOf(e, IllegalArgumentException.class);
+            assertEquals(e.getMessage(), "foo");
+        });
+
+        assertFailure(() -> getter.get(immediateFailedFuture(new SQLException("foo"))), (e) -> {
+            assertInstanceOf(e, RuntimeException.class);
+            assertInstanceOf(e.getCause(), SQLException.class);
+            assertEquals(e.getCause().getMessage(), "foo");
+        });
+
+        Thread.currentThread().interrupt();
+        assertFailure(() -> getter.get(SettableFuture.create()), (e) -> {
+            assertInstanceOf(e, RuntimeException.class);
+            assertInstanceOf(e.getCause(), InterruptedException.class);
+            assertTrue(Thread.interrupted());
+        });
+        assertFalse(Thread.currentThread().isInterrupted());
+
+        SettableFuture<Object> canceledFuture = SettableFuture.create();
+        canceledFuture.cancel(true);
+        assertFailure(() -> getter.get(canceledFuture), e -> assertInstanceOf(e, CancellationException.class));
+
+        assertEquals(getter.get(immediateFuture(null)), null);
+    }
+
     private void assertGetUnchecked(UncheckedGetter getter)
             throws Exception
     {
@@ -620,6 +670,12 @@ public class TestMoreFutures
             return;
         }
         fail("expected exception to be thrown");
+    }
+
+    private interface UncheckedGetterListenable
+    {
+        Object get(ListenableFuture<Object> future)
+                throws Exception;
     }
 
     private interface UncheckedGetter

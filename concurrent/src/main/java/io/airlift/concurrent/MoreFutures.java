@@ -21,6 +21,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -236,6 +237,65 @@ public final class MoreFutures
      * or exceptionally. Cancellation of the future does not propagate to the supplied
      * futures.
      */
+    public static <V> ListenableFuture<V> whenAnyComplete(Iterable<? extends ListenableFuture<? extends V>> futures)
+    {
+        return whenAnyComplete(futures, false);
+    }
+
+    /**
+     * Creates a future that completes when the first future completes either normally
+     * or exceptionally. Cancellation of the future will optionally propagate to the
+     * supplied futures.
+     */
+    public static <V> ListenableFuture<V> whenAnyComplete(Iterable<? extends ListenableFuture<? extends V>> futures, boolean propagateCancel)
+    {
+        requireNonNull(futures, "futures is null");
+        checkArgument(!isEmpty(futures), "futures is empty");
+
+        SettableFuture<V> firstCompletedFuture = SettableFuture.create();
+        for (ListenableFuture<? extends V> future : futures) {
+            Futures.addCallback(future, new FutureCallback<V>()
+            {
+                @Override
+                public void onSuccess(V value)
+                {
+                    firstCompletedFuture.set(value);
+                }
+
+                @Override
+                public void onFailure(Throwable exception)
+                {
+                    firstCompletedFuture.setException(exception);
+                }
+            });
+        }
+        if (propagateCancel) {
+            Futures.addCallback(firstCompletedFuture, new FutureCallback<V>()
+            {
+                @Override
+                public void onSuccess(@Nullable V result)
+                {
+                }
+
+                @Override
+                public void onFailure(Throwable throwable)
+                {
+                    if (throwable instanceof CancellationException) {
+                        for (ListenableFuture<? extends V> sourceFuture : futures) {
+                            sourceFuture.cancel(true);
+                        }
+                    }
+                }
+            });
+        }
+        return firstCompletedFuture;
+    }
+
+    /**
+     * Creates a future that completes when the first future completes either normally
+     * or exceptionally. Cancellation of the future does not propagate to the supplied
+     * futures.
+     */
     public static <V> CompletableFuture<V> firstCompletedFuture(Iterable<? extends CompletionStage<? extends V>> futures)
     {
         return firstCompletedFuture(futures, false);
@@ -400,6 +460,38 @@ public final class MoreFutures
             }
         });
         return future;
+    }
+    
+    public static <T> void addExceptionCallback(ListenableFuture<T> result, Consumer<Throwable> exceptionCallback)
+    {
+        Futures.addCallback(result, new FutureCallback<T>() {
+            @Override
+            public void onSuccess(@Nullable T result)
+            {
+            }
+
+            @Override
+            public void onFailure(Throwable t)
+            {
+                exceptionCallback.accept(t);
+            }
+        });
+    }
+
+    public static <T> void addExceptionCallback(ListenableFuture<T> result, Runnable exceptionCallback)
+    {
+        Futures.addCallback(result, new FutureCallback<T>() {
+            @Override
+            public void onSuccess(@Nullable T result)
+            {
+            }
+
+            @Override
+            public void onFailure(Throwable t)
+            {
+                exceptionCallback.run();
+            }
+        });
     }
 
     public interface ValueSupplier<T>
