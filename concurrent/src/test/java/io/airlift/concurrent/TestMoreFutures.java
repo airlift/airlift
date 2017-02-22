@@ -36,6 +36,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -47,6 +48,83 @@ public class TestMoreFutures
     public void tearDown()
     {
         executorService.shutdownNow();
+    }
+
+    @Test
+    public void propagateCancellationWithoutInterrupt()
+            throws Exception
+    {
+        // Test interrupt override
+        ExtendedSettableFuture<Object> fromFuture = ExtendedSettableFuture.create();
+        ExtendedSettableFuture<Object> toFuture = ExtendedSettableFuture.create();
+        MoreFutures.propagateCancellation(fromFuture, toFuture, false);
+        fromFuture.cancel(true);
+        assertTrue(toFuture.isCancelled());
+        assertFalse(toFuture.checkWasInterrupted());
+
+        fromFuture = ExtendedSettableFuture.create();
+        toFuture = ExtendedSettableFuture.create();
+        MoreFutures.propagateCancellation(fromFuture, toFuture, false);
+        fromFuture.cancel(false);
+        assertTrue(toFuture.isCancelled());
+        assertFalse(toFuture.checkWasInterrupted());
+    }
+
+    @Test
+    public void propagateCancellationWithInterrupt()
+            throws Exception
+    {
+        ExtendedSettableFuture<Object> fromFuture = ExtendedSettableFuture.create();
+        ExtendedSettableFuture<Object> toFuture = ExtendedSettableFuture.create();
+        MoreFutures.propagateCancellation(fromFuture, toFuture, true);
+        fromFuture.cancel(true);
+        assertTrue(toFuture.isCancelled());
+        assertTrue(toFuture.checkWasInterrupted());
+
+        // Test interrupt override
+        fromFuture = ExtendedSettableFuture.create();
+        toFuture = ExtendedSettableFuture.create();
+        MoreFutures.propagateCancellation(fromFuture, toFuture, true);
+        fromFuture.cancel(false);
+        assertTrue(toFuture.isCancelled());
+        assertTrue(toFuture.checkWasInterrupted());
+    }
+
+    @Test
+    public void testMirror()
+            throws Exception
+    {
+        // Test return value
+        ExtendedSettableFuture<String> fromFuture = ExtendedSettableFuture.create();
+        SettableFuture<String> toFuture = SettableFuture.create();
+        MoreFutures.mirror(fromFuture, toFuture, true);
+        fromFuture.set("abc");
+        assertEquals(toFuture.get(), "abc");
+
+        // Test exception
+        fromFuture = ExtendedSettableFuture.create();
+        toFuture = SettableFuture.create();
+        MoreFutures.mirror(fromFuture, toFuture, true);
+        fromFuture.setException(new RuntimeException());
+        assertThrows(ExecutionException.class, toFuture::get);
+
+        // Test cancellation without interrupt
+        fromFuture = ExtendedSettableFuture.create();
+        toFuture = SettableFuture.create();
+        MoreFutures.mirror(fromFuture, toFuture, false);
+        toFuture.cancel(true);
+        // Parent Future should receive the cancellation
+        assertTrue(fromFuture.isCancelled());
+        assertFalse(fromFuture.checkWasInterrupted());
+
+        // Test cancellation with interrupt
+        fromFuture = ExtendedSettableFuture.create();
+        toFuture = SettableFuture.create();
+        MoreFutures.mirror(fromFuture, toFuture, true);
+        toFuture.cancel(false);
+        // Parent Future should receive the cancellation
+        assertTrue(fromFuture.isCancelled());
+        assertTrue(fromFuture.checkWasInterrupted());
     }
 
     @Test

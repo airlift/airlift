@@ -7,6 +7,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import io.airlift.units.Duration;
 
+import javax.annotation.Nullable;
+
 import java.lang.ref.WeakReference;
 import java.util.List;
 import java.util.Optional;
@@ -27,12 +29,49 @@ import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.propagateIfInstanceOf;
 import static com.google.common.collect.Iterables.isEmpty;
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public final class MoreFutures
 {
     private MoreFutures() { }
+
+    /**
+     * Cancels the destination Future if the source Future is cancelled.
+     */
+    public static <X, Y> void propagateCancellation(ListenableFuture<? extends X> source, ListenableFuture<? extends Y> destination, boolean mayInterruptIfRunning)
+    {
+        source.addListener(() -> {
+            if (source.isCancelled()) {
+                destination.cancel(mayInterruptIfRunning);
+            }
+        }, directExecutor());
+    }
+
+    /**
+     * Mirrors all results of the source Future to the destination Future.
+     *
+     * This also propagates cancellations from the destination Future back to the source Future.
+     */
+    public static <T> void mirror(ListenableFuture<? extends T> source, SettableFuture<? super T> destination, boolean mayInterruptIfRunning)
+    {
+        Futures.addCallback(source, new FutureCallback<T>()
+        {
+            @Override
+            public void onSuccess(@Nullable T result)
+            {
+                destination.set(result);
+            }
+
+            @Override
+            public void onFailure(Throwable t)
+            {
+                destination.setException(t);
+            }
+        });
+        propagateCancellation(destination, source, mayInterruptIfRunning);
+    }
 
     /**
      * Attempts to unwrap a throwable that has been wrapped in a {@link CompletionException}.
