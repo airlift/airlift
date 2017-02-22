@@ -14,17 +14,18 @@
 package io.airlift.http.server;
 
 import com.google.common.annotations.Beta;
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.units.Duration;
 
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.core.Response;
 
 import java.lang.ref.WeakReference;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.function.BiConsumer;
+import java.util.concurrent.Future;
+import java.util.function.Supplier;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
@@ -35,9 +36,9 @@ import static javax.ws.rs.core.Response.status;
 public class AsyncResponseHandler
 {
     private final AsyncResponse asyncResponse;
-    private final WeakReference<CompletableFuture<?>> futureResponseReference;
+    private final WeakReference<Future<?>> futureResponseReference;
 
-    private AsyncResponseHandler(AsyncResponse asyncResponse, CompletableFuture<?> futureResponse)
+    private AsyncResponseHandler(AsyncResponse asyncResponse, ListenableFuture<?> futureResponse)
     {
         this.asyncResponse = requireNonNull(asyncResponse, "asyncResponse is null");
         // the jaxrs implementation can hold on to the async timeout for a long time, and
@@ -46,9 +47,9 @@ public class AsyncResponseHandler
         this.futureResponseReference = new WeakReference<>(requireNonNull(futureResponse, "futureResponse is null"));
     }
 
-    public static AsyncResponseHandler bindAsyncResponse(AsyncResponse asyncResponse, CompletableFuture<?> futureResponse, Executor httpResponseExecutor)
+    public static AsyncResponseHandler bindAsyncResponse(AsyncResponse asyncResponse, ListenableFuture<?> futureResponse, Executor httpResponseExecutor)
     {
-        futureResponse.whenCompleteAsync(toCompletionCallback(asyncResponse), httpResponseExecutor);
+        Futures.addCallback(futureResponse, toFutureCallback(asyncResponse), httpResponseExecutor);
         return new AsyncResponseHandler(asyncResponse, futureResponse);
     }
 
@@ -62,7 +63,7 @@ public class AsyncResponseHandler
 
     public AsyncResponseHandler withTimeout(Duration timeout, Response timeoutResponse)
     {
-        return withTimeout(timeout, Suppliers.ofInstance(timeoutResponse));
+        return withTimeout(timeout, () -> timeoutResponse);
     }
 
     public AsyncResponseHandler withTimeout(Duration timeout, Supplier<Response> timeoutResponse)
@@ -78,7 +79,7 @@ public class AsyncResponseHandler
     private void cancelFuture()
     {
         // Cancel the original future if it still exists
-        CompletableFuture<?> futureResponse = futureResponseReference.get();
+        Future<?> futureResponse = futureResponseReference.get();
         if (futureResponse != null) {
             try {
                 // Do not interrupt the future if it is running. Jersey uses
@@ -90,15 +91,21 @@ public class AsyncResponseHandler
         }
     }
 
-    private static <T> BiConsumer<T, Throwable> toCompletionCallback(AsyncResponse asyncResponse)
+    private static <T> FutureCallback<T> toFutureCallback(AsyncResponse asyncResponse)
     {
-        return (value, throwable) -> {
-            if (throwable != null) {
-                asyncResponse.resume(throwable);
-            }
-            else {
+        return new FutureCallback<T>()
+        {
+            @Override
+            public void onSuccess(T value)
+            {
                 checkArgument(!(value instanceof Response.ResponseBuilder), "Value is a ResponseBuilder. Did you forget to call build?");
                 asyncResponse.resume(value);
+            }
+
+            @Override
+            public void onFailure(Throwable t)
+            {
+                asyncResponse.resume(t);
             }
         };
     }
