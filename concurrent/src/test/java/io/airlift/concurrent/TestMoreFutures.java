@@ -533,6 +533,63 @@ public class TestMoreFutures
     }
 
     @Test
+    public void testListenableTimeout()
+            throws Exception
+    {
+        SettableFuture<String> rootFuture = SettableFuture.create();
+        ListenableFuture<String> timeoutFuture = addTimeout(rootFuture, () -> "timeout", new Duration(0, MILLISECONDS), executorService);
+
+        assertEquals(tryGetFutureValue(timeoutFuture, 10, SECONDS).get(), "timeout");
+        assertTrue(timeoutFuture.isDone());
+        assertFalse(timeoutFuture.isCancelled());
+
+        // root exception is cancelled on a timeout
+        assertFailure(() -> rootFuture.get(10, SECONDS), e -> assertInstanceOf(e, CancellationException.class));
+        assertTrue(rootFuture.isDone());
+        assertTrue(rootFuture.isCancelled());
+    }
+
+    @Test
+    public void testListenableTimeoutExceptionValue()
+            throws Exception
+    {
+        SettableFuture<String> rootFuture = SettableFuture.create();
+        ListenableFuture<String> timeoutFuture = addTimeout(rootFuture, () -> { throw new SQLException("timeout"); }, new Duration(0, MILLISECONDS), executorService);
+
+        assertFailure(() -> tryGetFutureValue(timeoutFuture, 10, SECONDS, SQLException.class), e -> {
+            assertInstanceOf(e, SQLException.class);
+            assertEquals(e.getMessage(), "timeout");
+        });
+        assertTrue(timeoutFuture.isDone());
+        assertFalse(timeoutFuture.isCancelled());
+
+        // root exception is cancelled on a timeout
+        assertFailure(() -> rootFuture.get(10, SECONDS), e -> assertInstanceOf(e, CancellationException.class));
+        assertTrue(rootFuture.isDone());
+        assertTrue(rootFuture.isCancelled());
+    }
+
+    @Test
+    public void testListenableTimeoutCancel()
+            throws Exception
+    {
+        SettableFuture<String> rootFuture = SettableFuture.create();
+        ListenableFuture<String> timeoutFuture = addTimeout(rootFuture, () -> "timeout", new Duration(10, SECONDS), executorService);
+
+        // check timeout
+        assertEquals(tryGetFutureValue(timeoutFuture, 10, MILLISECONDS), Optional.<String>empty());
+
+        assertTrue(timeoutFuture.cancel(true));
+        assertTrue(timeoutFuture.isDone());
+        assertTrue(timeoutFuture.isCancelled());
+
+        // root exception is cancelled on a timeout
+        assertFailure(() -> rootFuture.get(10, SECONDS), e -> assertInstanceOf(e, CancellationException.class));
+        assertTrue(rootFuture.isDone());
+        assertTrue(rootFuture.isCancelled());
+    }
+
+    @Test
     public void testTimeout()
             throws Exception
     {

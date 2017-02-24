@@ -11,6 +11,7 @@ import javax.annotation.Nullable;
 import java.lang.ref.WeakReference;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -30,6 +31,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.propagateIfPossible;
 import static com.google.common.base.Throwables.throwIfInstanceOf;
 import static com.google.common.collect.Iterables.isEmpty;
+import static com.google.common.util.concurrent.Futures.catchingAsync;
+import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
+import static com.google.common.util.concurrent.Futures.immediateFuture;
+import static com.google.common.util.concurrent.Futures.withTimeout;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -369,7 +374,24 @@ public final class MoreFutures
      * when the timeout expires.  If the timeout occurs or the returned CompletableFuture
      * is canceled, the supplied future will be canceled.
      */
-    public static <T> CompletableFuture<T> addTimeout(CompletableFuture<T> future, ValueSupplier<T> onTimeout, Duration timeout, ScheduledExecutorService executorService)
+    public static <T> ListenableFuture<T> addTimeout(ListenableFuture<T> future, Callable<T> onTimeout, Duration timeout, ScheduledExecutorService executorService)
+    {
+        return catchingAsync(withTimeout(future, timeout.toMillis(), MILLISECONDS, executorService), TimeoutException.class, timeoutException -> {
+            try {
+                return immediateFuture(onTimeout.call());
+            }
+            catch (Throwable throwable) {
+                return immediateFailedFuture(throwable);
+            }
+        });
+    }
+
+    /**
+     * Returns a new future that is completed when the supplied future completes or
+     * when the timeout expires.  If the timeout occurs or the returned CompletableFuture
+     * is canceled, the supplied future will be canceled.
+     */
+    public static <T> CompletableFuture<T> addTimeout(CompletableFuture<T> future, Callable<T> onTimeout, Duration timeout, ScheduledExecutorService executorService)
     {
         requireNonNull(future, "future is null");
         requireNonNull(onTimeout, "timeoutValue is null");
@@ -494,12 +516,6 @@ public final class MoreFutures
         });
     }
 
-    public interface ValueSupplier<T>
-    {
-        T get()
-                throws Exception;
-    }
-
     private static class UnmodifiableCompletableFuture<V>
             extends CompletableFuture<V>
     {
@@ -558,10 +574,10 @@ public final class MoreFutures
             implements Runnable
     {
         private final UnmodifiableCompletableFuture<T> settableFuture;
-        private final ValueSupplier<T> timeoutValue;
+        private final Callable<T> timeoutValue;
         private final WeakReference<CompletableFuture<T>> futureReference;
 
-        public TimeoutFutureTask(UnmodifiableCompletableFuture<T> settableFuture, ValueSupplier<T> timeoutValue, CompletableFuture<T> future)
+        public TimeoutFutureTask(UnmodifiableCompletableFuture<T> settableFuture, Callable<T> timeoutValue, CompletableFuture<T> future)
         {
             this.settableFuture = settableFuture;
             this.timeoutValue = timeoutValue;
@@ -581,7 +597,7 @@ public final class MoreFutures
 
             // run the timeout task and set the result into the future
             try {
-                T result = timeoutValue.get();
+                T result = timeoutValue.call();
                 settableFuture.internalComplete(result);
             }
             catch (Throwable t) {
