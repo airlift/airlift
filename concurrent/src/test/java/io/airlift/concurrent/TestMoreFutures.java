@@ -520,7 +520,7 @@ public class TestMoreFutures
         CompletableFuture<String> rootFuture = new CompletableFuture<>();
         CompletableFuture<String> timeoutFuture = addTimeout(rootFuture, () -> "timeout", new Duration(0, MILLISECONDS), executorService);
 
-        assertEquals(tryGetFutureValue(timeoutFuture, 10, SECONDS).get(), "timeout");
+        assertEquals(tryGetFutureValue(timeoutFuture, 10, SECONDS).orElse("failed"), "timeout");
         assertTrue(timeoutFuture.isDone());
         assertFalse(timeoutFuture.isCancelled());
 
@@ -570,7 +570,7 @@ public class TestMoreFutures
         assertTrue(rootFuture.isCancelled());
     }
 
-    public void assertGetUnchecked(UncheckedGetter getter)
+    private void assertGetUnchecked(UncheckedGetter getter)
             throws Exception
     {
         assertGetUncheckedInternal(getter);
@@ -579,7 +579,7 @@ public class TestMoreFutures
         assertGetUncheckedInternal(future -> getter.get(addTimeout(future, () -> { throw new RuntimeException("timeout"); }, new Duration(10, SECONDS), executorService)));
     }
 
-    public static void assertGetUncheckedInternal(UncheckedGetter getter)
+    private static void assertGetUncheckedInternal(UncheckedGetter getter)
             throws Exception
     {
         assertEquals(getter.get(completedFuture("foo")), "foo");

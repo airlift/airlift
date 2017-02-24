@@ -1,6 +1,5 @@
 package io.airlift.concurrent;
 
-import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -27,7 +26,8 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Throwables.propagateIfInstanceOf;
+import static com.google.common.base.Throwables.propagateIfPossible;
+import static com.google.common.base.Throwables.throwIfInstanceOf;
 import static com.google.common.collect.Iterables.isEmpty;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static java.util.Objects.requireNonNull;
@@ -163,8 +163,8 @@ public final class MoreFutures
         }
         catch (ExecutionException e) {
             Throwable cause = e.getCause() == null ? e : e.getCause();
-            propagateIfInstanceOf(cause, exceptionType);
-            throw Throwables.propagate(cause);
+            propagateIfPossible(cause, exceptionType);
+            throw new RuntimeException(cause);
         }
     }
 
@@ -222,8 +222,8 @@ public final class MoreFutures
         }
         catch (ExecutionException e) {
             Throwable cause = e.getCause() == null ? e : e.getCause();
-            propagateIfInstanceOf(cause, exceptionType);
-            throw Throwables.propagate(cause);
+            propagateIfPossible(cause, exceptionType);
+            throw new RuntimeException(cause);
         }
         catch (TimeoutException expected) {
             // expected
@@ -494,7 +494,7 @@ public final class MoreFutures
             }
             catch (Throwable t) {
                 settableFuture.internalCompleteExceptionally(t);
-                propagateIfInstanceOf(t, RuntimeException.class);
+                throwIfInstanceOf(t, RuntimeException.class);
             }
 
             // cancel the original future, if it still exists
