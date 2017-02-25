@@ -1,3 +1,9 @@
+* 0.143
+
+- Deprecate usages of CompletableFuture or replace with ListenableFuture,
+  which is easier to use and less error prone.
+- Add MoreFutures methods for ListenableFuture.
+
 * 0.142
 
 - Improve performance of QuantileDigest copy constructor, which
