@@ -242,59 +242,16 @@ public final class MoreFutures
 
     /**
      * Creates a future that completes when the first future completes either normally
-     * or exceptionally. Cancellation of the future does not propagate to the supplied
-     * futures.
+     * or exceptionally. Cancellation of the future propagates to the supplied futures.
      */
     public static <V> ListenableFuture<V> whenAnyComplete(Iterable<? extends ListenableFuture<? extends V>> futures)
-    {
-        return whenAnyComplete(futures, false);
-    }
-
-    /**
-     * Creates a future that completes when the first future completes either normally
-     * or exceptionally. Cancellation of the future will optionally propagate to the
-     * supplied futures.
-     */
-    public static <V> ListenableFuture<V> whenAnyComplete(Iterable<? extends ListenableFuture<? extends V>> futures, boolean propagateCancel)
     {
         requireNonNull(futures, "futures is null");
         checkArgument(!isEmpty(futures), "futures is empty");
 
-        SettableFuture<V> firstCompletedFuture = SettableFuture.create();
+        ExtendedSettableFuture<V> firstCompletedFuture = ExtendedSettableFuture.create();
         for (ListenableFuture<? extends V> future : futures) {
-            Futures.addCallback(future, new FutureCallback<V>()
-            {
-                @Override
-                public void onSuccess(V value)
-                {
-                    firstCompletedFuture.set(value);
-                }
-
-                @Override
-                public void onFailure(Throwable exception)
-                {
-                    firstCompletedFuture.setException(exception);
-                }
-            });
-        }
-        if (propagateCancel) {
-            Futures.addCallback(firstCompletedFuture, new FutureCallback<V>()
-            {
-                @Override
-                public void onSuccess(@Nullable V result)
-                {
-                }
-
-                @Override
-                public void onFailure(Throwable throwable)
-                {
-                    if (throwable instanceof CancellationException) {
-                        for (ListenableFuture<? extends V> sourceFuture : futures) {
-                            sourceFuture.cancel(true);
-                        }
-                    }
-                }
-            });
+            firstCompletedFuture.setAsync(future);
         }
         return firstCompletedFuture;
     }
