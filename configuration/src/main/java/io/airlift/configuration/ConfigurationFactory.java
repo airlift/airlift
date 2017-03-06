@@ -72,6 +72,7 @@ import static java.util.Objects.requireNonNull;
 
 public class ConfigurationFactory
 {
+    @GuardedBy("VALIDATOR")
     private static final Validator VALIDATOR;
 
     static {
@@ -377,7 +378,7 @@ public class ConfigurationFactory
             }
         }
 
-        for (ConstraintViolation<?> violation : VALIDATOR.validate(instance)) {
+        for (ConstraintViolation<?> violation : validate(instance)) {
             String propertyFieldName = violation.getPropertyPath().toString();
             // upper case first character to match config attribute name
             String attributeName = LOWER_CAMEL.to(UPPER_CAMEL, propertyFieldName);
@@ -399,6 +400,13 @@ public class ConfigurationFactory
         problems.throwIfHasErrors();
 
         return new ConfigurationHolder<>(instance, problems);
+    }
+
+    private static <T> Set<ConstraintViolation<T>> validate(T instance)
+    {
+        synchronized (VALIDATOR) {
+            return VALIDATOR.validate(instance);
+        }
     }
 
     @SuppressWarnings("unchecked")
