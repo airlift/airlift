@@ -4,6 +4,9 @@
   which is easier to use and less error prone.
 - Add MoreFutures methods for ListenableFuture.
 - Replace RuntimeIOException with UncheckedIOException in HTTP client.
+- Fix sporadic failure due to thread-safety when performing Bean Validation.
+- Support using java.time.Instant for event client.
+- Validate scheme for HTTP client Request objects.
 
 * 0.142
 
