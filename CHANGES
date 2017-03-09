@@ -1,6 +1,7 @@
 * 0.144
 
 - Use JsonMapperParsingException in SmileMapper.
+- Bean Validation is no longer performed for JAX-RS request objects.
 
 * 0.143
 

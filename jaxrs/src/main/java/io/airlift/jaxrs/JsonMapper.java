@@ -29,13 +29,8 @@ import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HttpHeaders;
 import io.airlift.log.Logger;
-import org.apache.bval.jsr.ApacheValidationProvider;
 
-import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
@@ -63,9 +58,6 @@ import java.util.concurrent.atomic.AtomicReference;
 public class JsonMapper
         implements MessageBodyReader<Object>, MessageBodyWriter<Object>
 {
-    @GuardedBy("VALIDATOR")
-    private static final Validator VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
-
     /**
      * Looks like we need to worry about accidental
      * data binding for types we shouldn't be handling. This is
@@ -163,21 +155,7 @@ public class JsonMapper
             // Invalid json request. Throwing exception so the response code can be overridden using a mapper.
             throw new JsonMapperParsingException(type, e);
         }
-
-        // validate object using the bean validation framework
-        Set<ConstraintViolation<Object>> violations = validate(object);
-        if (!violations.isEmpty()) {
-            throw new BeanValidationException(violations);
-        }
-
         return object;
-    }
-
-    private static <T> Set<ConstraintViolation<T>> validate(T object)
-    {
-        synchronized (VALIDATOR) {
-            return VALIDATOR.validate(object);
-        }
     }
 
     @Override

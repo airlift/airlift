@@ -15,31 +15,23 @@
  */
 package io.airlift.jaxrs;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HttpHeaders;
 import io.airlift.jaxrs.testing.GuavaMultivaluedMap;
 import io.airlift.json.JsonCodec;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import javax.validation.constraints.NotNull;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MultivaluedMap;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Set;
 import java.util.zip.ZipException;
 
-import static com.google.common.collect.Iterables.transform;
-import static io.airlift.jaxrs.BeanValidationException.constraintMessageBuilder;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TestJsonMapper
@@ -180,51 +172,6 @@ public class TestJsonMapper
         }
         catch (WebApplicationException e) {
             Assert.fail("Should not have received a WebApplicationException", e);
-        }
-    }
-
-    @Test
-    public void testBeanValidationThrowsBeanValidationException()
-            throws IOException
-    {
-        try {
-            JsonMapper jsonMapper = new JsonMapper(new ObjectMapper());
-            InputStream is = new ByteArrayInputStream("{}".getBytes());
-            jsonMapper.readFrom(Object.class, JsonClass.class, null, null, null, is);
-            Assert.fail("Should have thrown an BeanValidationException");
-        }
-        catch (BeanValidationException e) {
-            Set<String> messages = ImmutableSet.copyOf(transform(e.getViolations(), constraintMessageBuilder()));
-            Assert.assertEquals(messages.size(), 2);
-            Assert.assertTrue(messages.contains("secondField may not be null"));
-            Assert.assertTrue(messages.contains("firstField may not be null"));
-        }
-    }
-
-    public static class JsonClass
-    {
-        private String firstField;
-        private String secondField;
-
-        @JsonCreator
-        public JsonClass(
-                @JsonProperty("firstField") String firstField,
-                @JsonProperty("secondField") String secondField)
-        {
-            this.firstField = firstField;
-            this.secondField = secondField;
-        }
-
-        @NotNull
-        public String getFirstField()
-        {
-            return firstField;
-        }
-
-        @NotNull
-        public String getSecondField()
-        {
-            return secondField;
         }
     }
 

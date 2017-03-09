@@ -21,17 +21,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.log.Logger;
 
 import javax.inject.Inject;
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -45,9 +40,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
 
 // This code is based on JacksonJsonProvider
 @Provider
@@ -56,8 +48,6 @@ import java.util.Set;
 public class SmileMapper
         implements MessageBodyReader<Object>, MessageBodyWriter<Object>
 {
-    public static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
-
     /**
      * Looks like we need to worry about accidental
      * data binding for types we shouldn't be handling. This is
@@ -143,17 +133,6 @@ public class SmileMapper
             // Invalid json request. Throwing exception so the response code can be overridden using a mapper.
             throw new JsonMapperParsingException(type, e);
         }
-
-        // validate object using the bean validation framework
-        Set<ConstraintViolation<Object>> violations = VALIDATOR.validate(object);
-        if (!violations.isEmpty()) {
-            throw new WebApplicationException(
-                    Response.status(Response.Status.BAD_REQUEST)
-                            .entity(messagesFor(violations))
-                            .build());
-        }
-
-
         return object;
     }
 
@@ -209,15 +188,5 @@ public class SmileMapper
         else {
             objectMapper.writeValue(jsonGenerator, value);
         }
-    }
-
-    private static List<String> messagesFor(Collection<? extends ConstraintViolation<?>> violations)
-    {
-        ImmutableList.Builder<String> messages = new ImmutableList.Builder<>();
-        for (ConstraintViolation<?> violation : violations) {
-            messages.add(violation.getPropertyPath() + " " + violation.getMessage());
-        }
-
-        return messages.build();
     }
 }
