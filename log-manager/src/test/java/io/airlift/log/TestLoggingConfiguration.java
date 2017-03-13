@@ -22,6 +22,7 @@ import java.util.Map;
 
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 
+@SuppressWarnings("deprecation")
 public class TestLoggingConfiguration
 {
     @Test
@@ -35,7 +36,7 @@ public class TestLoggingConfiguration
                         .setMaxHistory(30)
                         .setLevelsFile(null));
     }
- 
+
     @Test
     public void testExplicitPropertyMappings()
     {

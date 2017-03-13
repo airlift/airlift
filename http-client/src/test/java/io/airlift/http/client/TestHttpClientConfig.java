@@ -34,6 +34,7 @@ import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_TRUST_STORE;
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_TRUST_STORE_PASSWORD;
 import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
 
+@SuppressWarnings("deprecation")
 public class TestHttpClientConfig
 {
     @Test

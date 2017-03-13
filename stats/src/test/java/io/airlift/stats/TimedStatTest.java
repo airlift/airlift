@@ -31,7 +31,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-
+@SuppressWarnings("deprecation")
 public class TimedStatTest
 {
     private static final int VALUES = 1000;
