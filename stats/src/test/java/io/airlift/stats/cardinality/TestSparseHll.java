@@ -14,7 +14,7 @@
 package io.airlift.stats.cardinality;
 
 import com.google.common.collect.ImmutableList;
-import io.airlift.slice.Murmur3;
+import io.airlift.slice.Murmur3Hash128;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -65,13 +65,13 @@ public class TestSparseHll
         SparseHll expected = new SparseHll(prefixBitLength);
 
         for (long value : one) {
-            long hash = Murmur3.hash64(value);
+            long hash = Murmur3Hash128.hash64(value);
             hll1.insertHash(hash);
             expected.insertHash(hash);
         }
 
         for (long value : two) {
-            long hash = Murmur3.hash64(value);
+            long hash = Murmur3Hash128.hash64(value);
             hll2.insertHash(hash);
             expected.insertHash(hash);
         }
@@ -92,7 +92,7 @@ public class TestSparseHll
         SparseHll sparse = new SparseHll(prefixBitLength);
 
         for (long value : values) {
-            long hash = Murmur3.hash64(value);
+            long hash = Murmur3Hash128.hash64(value);
             sparse.insertHash(hash);
             expected.insertHash(hash);
         }

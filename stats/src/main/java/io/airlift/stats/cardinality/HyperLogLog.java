@@ -14,7 +14,7 @@
 package io.airlift.stats.cardinality;
 
 import com.google.common.annotations.VisibleForTesting;
-import io.airlift.slice.Murmur3;
+import io.airlift.slice.Murmur3Hash128;
 import io.airlift.slice.Slice;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -53,12 +53,12 @@ public class HyperLogLog
 
     public void add(long value)
     {
-        addHash(Murmur3.hash64(value));
+        addHash(Murmur3Hash128.hash64(value));
     }
 
     public void add(Slice value)
     {
-        addHash(Murmur3.hash64(value));
+        addHash(Murmur3Hash128.hash64(value));
     }
 
     /**

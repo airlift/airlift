@@ -14,7 +14,7 @@
 package io.airlift.stats.cardinality;
 
 import io.airlift.slice.DynamicSliceOutput;
-import io.airlift.slice.Murmur3;
+import io.airlift.slice.Murmur3Hash128;
 import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;
 import org.testng.annotations.Test;
@@ -59,7 +59,7 @@ public class TestSparseSerialization
 
         SparseHll hll = new SparseHll(12);
 
-        hll.insertHash(Murmur3.hash64(Slices.wrappedBuffer(new byte[] {64})));
+        hll.insertHash(Murmur3Hash128.hash64(Slices.wrappedBuffer(new byte[] {64})));
 
         assertSlicesEqual(hll.serialize(), expected);
     }
@@ -71,7 +71,7 @@ public class TestSparseSerialization
         SparseHll hll = new SparseHll(4);
 
         for (int i = 0; i < 1000; i++) {
-            hll.insertHash(Murmur3.hash64(i));
+            hll.insertHash(Murmur3Hash128.hash64(i));
 
             Slice serialized = hll.serialize();
 

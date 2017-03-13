@@ -14,7 +14,7 @@
 package io.airlift.stats.cardinality;
 
 import io.airlift.slice.DynamicSliceOutput;
-import io.airlift.slice.Murmur3;
+import io.airlift.slice.Murmur3Hash128;
 import io.airlift.slice.Slice;
 import io.airlift.slice.SliceOutput;
 import org.testng.annotations.Test;
@@ -157,7 +157,7 @@ public class TestDenseSerialization
         DenseHll hll = new DenseHll(4);
 
         for (int i = 0; i < 100; i++) {
-            hll.insertHash(Murmur3.hash64(i));
+            hll.insertHash(Murmur3Hash128.hash64(i));
         }
 
         assertSlicesEqual(hll.serialize(), expected);
@@ -187,9 +187,9 @@ public class TestDenseSerialization
         DenseHll hll = new DenseHll(4);
 
         for (int i = 0; i < 100; i++) {
-            hll.insertHash(Murmur3.hash64(i));
+            hll.insertHash(Murmur3Hash128.hash64(i));
         }
-        hll.insertHash(Murmur3.hash64(37227));
+        hll.insertHash(Murmur3Hash128.hash64(37227));
 
         assertSlicesEqual(hll.serialize(), expected);
     }
@@ -217,9 +217,9 @@ public class TestDenseSerialization
 
         DenseHll hll = new DenseHll(4);
 
-        hll.insertHash(Murmur3.hash64(37227));
+        hll.insertHash(Murmur3Hash128.hash64(37227));
         for (int i = 0; i < 100; i++) {
-            hll.insertHash(Murmur3.hash64(i));
+            hll.insertHash(Murmur3Hash128.hash64(i));
         }
 
         assertSlicesEqual(hll.serialize(), expected);
@@ -232,7 +232,7 @@ public class TestDenseSerialization
         DenseHll hll = new DenseHll(4);
 
         for (int i = 0; i < 1000; i++) {
-            hll.insertHash(Murmur3.hash64(i));
+            hll.insertHash(Murmur3Hash128.hash64(i));
 
             Slice serialized = hll.serialize();
             Slice reserialized = new DenseHll(serialized).serialize();
@@ -334,7 +334,7 @@ public class TestDenseSerialization
     {
         DenseHll result = new DenseHll(indexBits);
         for (long value : values) {
-            result.insertHash(Murmur3.hash64(value));
+            result.insertHash(Murmur3Hash128.hash64(value));
         }
         return result;
     }
