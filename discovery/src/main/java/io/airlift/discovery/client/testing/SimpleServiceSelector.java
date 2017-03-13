@@ -15,7 +15,6 @@
  */
 package io.airlift.discovery.client.testing;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -28,9 +27,8 @@ import io.airlift.discovery.client.ServiceSelectorConfig;
 import io.airlift.log.Logger;
 
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
+import static io.airlift.concurrent.MoreFutures.getFutureValue;
 import static java.util.Objects.requireNonNull;
 
 public class SimpleServiceSelector implements ServiceSelector
@@ -69,7 +67,7 @@ public class SimpleServiceSelector implements ServiceSelector
     {
         try {
             ListenableFuture<ServiceDescriptors> future = lookupClient.getServices(type, pool);
-            ServiceDescriptors serviceDescriptors = getFutureResult(future, DiscoveryException.class);
+            ServiceDescriptors serviceDescriptors = getFutureValue(future, DiscoveryException.class);
             return serviceDescriptors.getServiceDescriptors();
         }
         catch (DiscoveryException e) {
@@ -82,22 +80,5 @@ public class SimpleServiceSelector implements ServiceSelector
     public ListenableFuture<List<ServiceDescriptor>> refresh()
     {
         return Futures.transform(lookupClient.getServices(type, pool), ServiceDescriptors::getServiceDescriptors);
-    }
-
-    // TODO: move this to a utility package
-    private static <T, X extends Throwable> T getFutureResult(Future<T> future, Class<X> type)
-            throws X
-    {
-        try {
-            return future.get();
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw Throwables.propagate(e);
-        }
-        catch (ExecutionException e) {
-            Throwables.propagateIfPossible(e.getCause(), type);
-            throw Throwables.propagate(e.getCause());
-        }
     }
 }

@@ -16,7 +16,6 @@
 package io.airlift.discovery.client;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
 import com.google.common.util.concurrent.FutureCallback;
@@ -35,13 +34,12 @@ import java.net.ConnectException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.airlift.concurrent.MoreFutures.getFutureValue;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -111,7 +109,7 @@ public final class Announcer
 
         // unannounce
         try {
-            getFutureResult(announcementClient.unannounce(), DiscoveryException.class);
+            getFutureValue(announcementClient.unannounce(), DiscoveryException.class);
         }
         catch (DiscoveryException e) {
             if (e.getCause() instanceof ConnectException) {
@@ -190,22 +188,5 @@ public final class Announcer
 
         long delayStart = System.nanoTime();
         executor.schedule(() -> announce(delayStart, expectedDelay), expectedDelay.toMillis(), MILLISECONDS);
-    }
-
-    // TODO: move this to a utility package
-    private static <T, X extends Throwable> T getFutureResult(Future<T> future, Class<X> type)
-            throws X
-    {
-        try {
-            return future.get();
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw Throwables.propagate(e);
-        }
-        catch (ExecutionException e) {
-            Throwables.propagateIfPossible(e.getCause(), type);
-            throw Throwables.propagate(e.getCause());
-        }
     }
 }
