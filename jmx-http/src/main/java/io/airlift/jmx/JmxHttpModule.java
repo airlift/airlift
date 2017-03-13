@@ -93,7 +93,7 @@ public class JmxHttpModule implements Module
         {
             // List<Map<String, Object>
             ObjectNode o = createSchemaNode("array", true);
-            o.put("items", createSchemaNode("object", true));
+            o.set("items", createSchemaNode("object", true));
             return o;
         }
 

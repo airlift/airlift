@@ -29,7 +29,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
-import com.fasterxml.jackson.datatype.jsr310.JSR310Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 
@@ -53,7 +53,7 @@ public class ObjectMapperProvider
     public ObjectMapperProvider()
     {
         modules.add(new Jdk8Module());
-        modules.add(new JSR310Module());
+        modules.add(new JavaTimeModule());
         modules.add(new GuavaModule());
         modules.add(new JodaModule());
     }

@@ -56,7 +56,7 @@ public class JsonEventWriter
         requireNonNull(events, "events is null");
         requireNonNull(out, "out is null");
 
-        final JsonGenerator jsonGenerator = jsonFactory.createJsonGenerator(out, JsonEncoding.UTF8);
+        final JsonGenerator jsonGenerator = jsonFactory.createGenerator(out, JsonEncoding.UTF8);
 
         jsonGenerator.writeStartArray();
 

@@ -33,7 +33,7 @@ public class TestSerializingPrivateEvent
             throws IOException
     {
         JsonEventSerializer serializer = new JsonEventSerializer(PrivateEvent.class);
-        JsonGenerator generator = new JsonFactory().createJsonGenerator(nullOutputStream());
+        JsonGenerator generator = new JsonFactory().createGenerator(nullOutputStream());
         serializer.serialize(new PrivateEvent(), generator);
     }
 

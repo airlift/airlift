@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
@@ -378,7 +379,8 @@ public class TestJsonModule
             if (token == JsonToken.VALUE_STRING) {
                 return new SuperDuperNameList(jp.getText(), null);
             }
-            throw context.mappingException(getValueClass());
+            context.handleUnexpectedToken(handledType(), jp);
+            throw JsonMappingException.from(jp, null);
         }
     }
 

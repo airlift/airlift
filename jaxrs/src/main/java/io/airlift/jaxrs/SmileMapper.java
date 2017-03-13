@@ -183,7 +183,7 @@ public class SmileMapper
         }
 
         if (rootType != null) {
-            objectMapper.writerWithType(rootType).writeValue(jsonGenerator, value);
+            objectMapper.writerFor(rootType).writeValue(jsonGenerator, value);
         }
         else {
             objectMapper.writeValue(jsonGenerator, value);
