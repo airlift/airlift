@@ -1,6 +1,5 @@
 package io.airlift.http.client.jetty;
 
-import com.google.common.base.Throwables;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -12,6 +11,7 @@ import java.io.Closeable;
 import java.util.concurrent.Executor;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Throwables.throwIfUnchecked;
 import static java.lang.Thread.currentThread;
 
 public final class JettyIoPool
@@ -46,7 +46,8 @@ public final class JettyIoPool
         }
         catch (Exception e) {
             close();
-            throw Throwables.propagate(e);
+            throwIfUnchecked(e);
+            throw new RuntimeException(e);
         }
     }
 

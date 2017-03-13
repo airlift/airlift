@@ -16,7 +16,6 @@
 package io.airlift.jmx;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Throwables;
 import com.google.common.net.HostAndPort;
 import io.airlift.log.Logger;
 import sun.management.Agent;
@@ -34,6 +33,7 @@ import java.rmi.server.RemoteObject;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Throwables.throwIfUnchecked;
 import static java.lang.String.format;
 
 class JmxAgent8
@@ -79,7 +79,8 @@ class JmxAgent8
                 Agent.startAgent();
             }
             catch (Exception e) {
-                throw Throwables.propagate(e);
+                throwIfUnchecked(e);
+                throw new RuntimeException(e);
             }
 
             try {

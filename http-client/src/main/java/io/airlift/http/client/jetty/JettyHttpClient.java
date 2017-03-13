@@ -1,6 +1,5 @@
 package io.airlift.http.client.jetty;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
@@ -64,6 +63,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -90,6 +90,7 @@ import java.util.stream.Collectors;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Throwables.throwIfUnchecked;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.lang.Math.max;
@@ -246,7 +247,8 @@ public class JettyHttpClient
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
-            throw Throwables.propagate(e);
+            throwIfUnchecked(e);
+            throw new RuntimeException(e);
         }
 
         this.requestFilters = ImmutableList.copyOf(requestFilters);
@@ -491,7 +493,7 @@ public class JettyHttpClient
             return provider;
         }
         catch (IOException e) {
-            throw Throwables.propagate(e);
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -986,7 +988,8 @@ public class JettyHttpClient
                     }
 
                     if (chunk == EXCEPTION) {
-                        throw Throwables.propagate(exception.get());
+                        throwIfUnchecked(exception.get());
+                        throw new RuntimeException(exception.get());
                     }
                     if (chunk == DONE) {
                         return endOfData();

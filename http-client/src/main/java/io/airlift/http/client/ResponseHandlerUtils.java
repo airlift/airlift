@@ -1,10 +1,10 @@
 package io.airlift.http.client;
 
-import com.google.common.base.Throwables;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.ConnectException;
+
+import static com.google.common.base.Throwables.throwIfUnchecked;
 
 public final class ResponseHandlerUtils
 {
@@ -20,6 +20,7 @@ public final class ResponseHandlerUtils
         if (exception instanceof IOException) {
             throw new UncheckedIOException((IOException) exception);
         }
-        throw Throwables.propagate(exception);
+        throwIfUnchecked(exception);
+        throw new RuntimeException(exception);
     }
 }

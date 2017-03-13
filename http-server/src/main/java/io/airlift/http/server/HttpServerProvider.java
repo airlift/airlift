@@ -15,7 +15,6 @@
  */
 package io.airlift.http.server;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
@@ -34,6 +33,7 @@ import javax.servlet.Servlet;
 import java.util.Map;
 import java.util.Set;
 
+import static com.google.common.base.Throwables.throwIfUnchecked;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -149,7 +149,8 @@ public class HttpServerProvider
             return httpServer;
         }
         catch (Exception e) {
-            throw Throwables.propagate(e);
+            throwIfUnchecked(e);
+            throw new RuntimeException(e);
         }
     }
 }

@@ -15,7 +15,6 @@
  */
 package io.airlift.event.client;
 
-import com.google.common.base.Throwables;
 import com.google.common.io.CharStreams;
 import io.airlift.discovery.client.HttpServiceSelector;
 import io.airlift.discovery.client.testing.StaticHttpServiceSelector;
@@ -54,6 +53,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import static com.google.common.base.Throwables.throwIfUnchecked;
 import static io.airlift.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 import static io.airlift.event.client.TestingUtils.getNormalizedJson;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -81,7 +81,8 @@ public class TestHttpEventClient
             client.post(new FixedDummyEventClass("host", new DateTime(), UUID.randomUUID(), 1, "foo")).get();
         }
         catch (ExecutionException e) {
-            throw Throwables.propagate(e.getCause());
+            throwIfUnchecked(e.getCause());
+            throw new RuntimeException(e.getCause());
         }
     }
 

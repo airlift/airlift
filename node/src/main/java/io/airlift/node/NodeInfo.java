@@ -15,7 +15,6 @@
  */
 package io.airlift.node;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.InetAddresses;
 import com.google.inject.Singleton;
@@ -24,6 +23,7 @@ import org.weakref.jmx.Managed;
 
 import javax.inject.Inject;
 
+import java.io.UncheckedIOException;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -372,7 +372,7 @@ public class NodeInfo
             return InetAddress.getLocalHost();
         }
         catch (UnknownHostException e) {
-            throw Throwables.propagate(e);
+            throw new UncheckedIOException(e);
         }
     }
 }

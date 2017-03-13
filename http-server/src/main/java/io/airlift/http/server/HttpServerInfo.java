@@ -15,14 +15,15 @@
  */
 package io.airlift.http.server;
 
-import com.google.common.base.Throwables;
 import io.airlift.node.NodeInfo;
 
 import javax.inject.Inject;
 
-import java.net.InetSocketAddress;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.net.URI;
+import java.net.URISyntaxException;
 
 public class HttpServerInfo
 {
@@ -101,23 +102,26 @@ public class HttpServerInfo
 
     private static URI buildUri(String scheme, String host, int port)
     {
-        try {
-            // 0 means select a random port
-            if (port == 0) {
-                ServerSocket socket = new ServerSocket();
-                try {
-                    socket.bind(new InetSocketAddress(0));
-                    port = socket.getLocalPort();
-                }
-                finally {
-                    socket.close();
-                }
-            }
+        // 0 means select a random port
+        if (port == 0) {
+            port = findUnusedPort();
+        }
 
+        try {
             return new URI(scheme, null, host, port, null, null, null);
         }
-        catch (Exception e) {
-            throw Throwables.propagate(e);
+        catch (URISyntaxException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    private static int findUnusedPort()
+    {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

@@ -17,7 +17,6 @@ package io.airlift.configuration;
 
 import com.google.common.annotations.Beta;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -28,7 +27,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
-import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.inject.Binding;
 import com.google.inject.ConfigurationException;
 import com.google.inject.Key;
@@ -412,12 +410,7 @@ public class ConfigurationFactory
     @SuppressWarnings("unchecked")
     private <T> ConfigurationMetadata<T> getMetadata(Class<T> configClass)
     {
-        try {
-            return (ConfigurationMetadata<T>) metadataCache.getUnchecked(configClass);
-        }
-        catch (UncheckedExecutionException e) {
-            throw Throwables.propagate(e.getCause());
-        }
+        return (ConfigurationMetadata<T>) metadataCache.getUnchecked(configClass);
     }
 
     private static <T> T newInstance(ConfigurationMetadata<T> configurationMetadata)
