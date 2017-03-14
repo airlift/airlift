@@ -532,7 +532,7 @@ public class TestEquivalenceTester
     }
 
     @Test
-    @SuppressWarnings({"RawUseOfParameterizedType", "RedundantCast"})
+    @SuppressWarnings({"unchecked", "rawtypes", "OverlyStrongTypeCast"})
     public void testNotComparableComparison()
     {
         try {

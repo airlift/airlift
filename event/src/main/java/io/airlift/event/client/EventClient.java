@@ -23,6 +23,7 @@ import java.io.IOException;
 @Beta
 public interface EventClient
 {
+    @SuppressWarnings("unchecked")
     <T> ListenableFuture<Void> post(T... event)
             throws IllegalArgumentException;
 

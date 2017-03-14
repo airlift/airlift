@@ -89,6 +89,7 @@ public class JsonCodecBinder
         binder.bind(getJsonCodecKey(mapType)).toProvider(new JsonCodecProvider(mapType)).in(Scopes.SINGLETON);
     }
 
+    @SuppressWarnings("unchecked")
     private Key<JsonCodec<?>> getJsonCodecKey(Type type)
     {
         return (Key<JsonCodec<?>>) Key.get(new ParameterizedTypeImpl(null, JsonCodec.class, type));

@@ -53,10 +53,16 @@ public class TestAnnouncement
         Map<String, Object> expected = objectCodec.fromJson(json);
 
         // set id in expected
-        List<Map<String, Object>> services = (List<Map<String, Object>>) expected.get("services");
+        List<Map<String, Object>> services = toServices(expected.get("services"));
         services.get(0).put("id", Iterables.getOnlyElement(announcement.getServices()).getId().toString());
 
         assertEquals(actual, expected);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> toServices(Object value)
+    {
+        return (List<Map<String, Object>>) value;
     }
 
     @Test

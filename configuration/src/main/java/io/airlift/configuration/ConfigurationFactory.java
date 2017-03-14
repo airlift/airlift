@@ -59,6 +59,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
@@ -255,13 +256,13 @@ public class ConfigurationFactory
 
         Key<?> globalDefaults = Key.get(key.getTypeLiteral(), GlobalDefaults.class);
         registeredDefaultConfigs.get(globalDefaults).stream()
-                .map(holder -> (ConfigDefaultsHolder<T>) holder)
+                .map(ConfigurationFactory.<T>castHolder())
                 .sorted()
                 .map(ConfigDefaultsHolder::getConfigDefaults)
                 .forEach(defaults::add);
 
         registeredDefaultConfigs.get(key).stream()
-                .map(holder -> (ConfigDefaultsHolder<T>) holder)
+                .map(ConfigurationFactory.<T>castHolder())
                 .sorted()
                 .map(ConfigDefaultsHolder::getConfigDefaults)
                 .forEach(defaults::add);
@@ -269,9 +270,15 @@ public class ConfigurationFactory
         return ConfigDefaults.configDefaults(defaults.build());
     }
 
+    @SuppressWarnings("unchecked")
+    private static <T> Function<ConfigDefaultsHolder<?>, ConfigDefaultsHolder<T>> castHolder()
+    {
+        return holder -> (ConfigDefaultsHolder<T>) holder;
+    }
+
     <T> T getDefaultConfig(Key<T> key)
     {
-        ConfigurationMetadata<T> configurationMetadata = getMetadata((Class<T>) key.getTypeLiteral().getRawType());
+        ConfigurationMetadata<T> configurationMetadata = getMetadata(key);
         configurationMetadata.getProblems().throwIfHasErrors();
 
         T instance = newInstance(configurationMetadata);
@@ -405,6 +412,12 @@ public class ConfigurationFactory
         synchronized (VALIDATOR) {
             return VALIDATOR.validate(instance);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> ConfigurationMetadata<T> getMetadata(Key<T> key)
+    {
+        return getMetadata((Class<T>) key.getTypeLiteral().getRawType());
     }
 
     @SuppressWarnings("unchecked")

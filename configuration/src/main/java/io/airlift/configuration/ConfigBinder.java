@@ -8,7 +8,6 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Type;
 import java.util.Optional;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
@@ -69,12 +68,7 @@ public class ConfigBinder
 
         private <T> Multibinder<ConfigDefaultsHolder<T>> createConfigDefaultsBinder(Key<T> key)
         {
-            @SuppressWarnings("SerializableInnerClassWithNonSerializableOuterClass")
-            Type type = new TypeToken<ConfigDefaultsHolder<T>>() {}
-                    .where(new TypeParameter<T>() {}, (TypeToken<T>) TypeToken.of(key.getTypeLiteral().getType()))
-                    .getType();
-
-            TypeLiteral<ConfigDefaultsHolder<T>> typeLiteral = (TypeLiteral<ConfigDefaultsHolder<T>>) TypeLiteral.get(type);
+            TypeLiteral<ConfigDefaultsHolder<T>> typeLiteral = getTypeLiteral(key);
 
             if (key.getAnnotationType() == null) {
                 return newSetBinder(binder, typeLiteral);
@@ -83,6 +77,16 @@ public class ConfigBinder
                 return newSetBinder(binder, typeLiteral, key.getAnnotation());
             }
             return newSetBinder(binder, typeLiteral, key.getAnnotationType());
+        }
+
+        @SuppressWarnings("unchecked")
+        private static <T> TypeLiteral<ConfigDefaultsHolder<T>> getTypeLiteral(Key<T> key)
+        {
+            TypeToken<T> typeToken = (TypeToken<T>) TypeToken.of(key.getTypeLiteral().getType());
+            return (TypeLiteral<ConfigDefaultsHolder<T>>)
+                    TypeLiteral.get(new TypeToken<ConfigDefaultsHolder<T>>() {}
+                            .where(new TypeParameter<T>() {}, typeToken)
+                            .getType());
         }
     }
 

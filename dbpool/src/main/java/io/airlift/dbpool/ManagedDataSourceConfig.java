@@ -68,8 +68,7 @@ public class ManagedDataSourceConfig<T extends ManagedDataSourceConfig<T>>
     public T setMaxConnections(int maxConnections)
     {
         this.maxConnections = maxConnections;
-        return (T) this;
-
+        return self();
     }
 
     /**
@@ -91,7 +90,12 @@ public class ManagedDataSourceConfig<T extends ManagedDataSourceConfig<T>>
     public T setMaxConnectionWait(Duration maxConnectionWait)
     {
         this.maxConnectionWait = maxConnectionWait;
-        return (T) this;
+        return self();
+    }
 
+    @SuppressWarnings("unchecked")
+    private T self()
+    {
+        return (T) this;
     }
 }

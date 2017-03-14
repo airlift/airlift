@@ -16,8 +16,6 @@
 package io.airlift.jaxrs.testing;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicates;
-import com.google.common.collect.Iterables;
 
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Request;
@@ -28,7 +26,6 @@ import javax.ws.rs.core.Variant;
 import java.util.Date;
 import java.util.List;
 
-import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 
 public class MockRequest implements Request
@@ -292,8 +289,9 @@ public class MockRequest implements Request
         return Response.status(Response.Status.PRECONDITION_FAILED);
     }
 
-    private static <T> T firstNonNull(T... objects)
+    // Guava's version does not allow second to be null
+    private static <T> T firstNonNull(T first, T second)
     {
-        return Iterables.find(asList(objects), Predicates.<Object>notNull(), null);
+        return (first != null) ? first : second;
     }
 }

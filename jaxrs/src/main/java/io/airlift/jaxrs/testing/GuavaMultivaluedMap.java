@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 
 import javax.ws.rs.core.MultivaluedMap;
 
@@ -35,11 +36,9 @@ public class GuavaMultivaluedMap<K, V>
     }
 
     @Override
-    @SuppressWarnings("RedundantCast")
     protected Map<K, List<V>> delegate()
     {
-        // forced cast
-        return (Map<K, List<V>>) (Object) multimap.asMap();
+        return Multimaps.asMap(multimap);
     }
 
     @Override

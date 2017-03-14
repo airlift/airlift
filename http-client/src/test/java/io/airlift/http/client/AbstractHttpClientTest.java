@@ -1118,11 +1118,17 @@ public abstract class AbstractHttpClientTest
 
             if (e.getCause() instanceof Exception) {
                 // the HTTP client and ResponseHandler interface enforces this
-                throw (E) e.getCause();
+                throw AbstractHttpClientTest.<E>castThrowable(e.getCause());
             }
 
             // e.getCause() is some direct subclass of throwable
             throw new RuntimeException(e.getCause());
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <E extends Exception> E castThrowable(Throwable t)
+    {
+        return (E) t;
     }
 }

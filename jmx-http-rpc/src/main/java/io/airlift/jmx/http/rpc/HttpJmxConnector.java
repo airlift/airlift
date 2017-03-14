@@ -248,6 +248,7 @@ public class HttpJmxConnector implements JMXConnector, JMXAddressable
             }
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public Set<ObjectInstance> queryMBeans(ObjectName name, QueryExp query)
                 throws IOException
@@ -262,6 +263,7 @@ public class HttpJmxConnector implements JMXConnector, JMXAddressable
             }
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public Set<ObjectName> queryNames(ObjectName name, QueryExp query)
                 throws IOException

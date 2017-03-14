@@ -60,7 +60,7 @@ public final class EquivalenceTester
     {
         EquivalenceCheck<Object> tester = equivalenceTester();
         for (Collection<?> equivalenceClass : equivalenceClasses) {
-            tester.addEquivalentGroup((Iterable<Object>)equivalenceClass);
+            tester.addEquivalentGroup(equivalenceClass);
         }
         tester.check();
     }
@@ -78,7 +78,8 @@ public final class EquivalenceTester
         {
         }
 
-        public EquivalenceCheck<T> addEquivalentGroup(T value, T... moreValues)
+        @SafeVarargs
+        public final EquivalenceCheck<T> addEquivalentGroup(T value, T... moreValues)
         {
             equivalenceClasses.add(Lists.asList(value, moreValues));
             return this;
@@ -324,7 +325,8 @@ public final class EquivalenceTester
         {
         }
 
-        public <T extends Comparable<T>> ComparisonCheck<T> addLesserGroup(T value, T... moreValues)
+        @SafeVarargs
+        public final <T extends Comparable<T>> ComparisonCheck<T> addLesserGroup(T value, T... moreValues)
         {
             ComparisonCheck<T> comparisonCheck = new ComparisonCheck<T>();
             comparisonCheck.addGreaterGroup(Lists.asList(value, moreValues));
@@ -347,7 +349,8 @@ public final class EquivalenceTester
         {
         }
 
-        public ComparisonCheck<T> addGreaterGroup(T value, T... moreValues)
+        @SafeVarargs
+        public final ComparisonCheck<T> addGreaterGroup(T value, T... moreValues)
         {
             equivalence.addEquivalentGroup(Lists.asList(value, moreValues));
             return this;

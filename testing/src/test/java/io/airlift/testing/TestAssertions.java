@@ -164,14 +164,14 @@ public class TestAssertions
         failGreaterThan(createSuperComparable("bob"), createSubComparable("alice"));
     }
 
-    @SuppressWarnings({"RawUseOfParameterizedType"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void passGreaterThan(Comparable actual, Comparable expected)
     {
         Assertions.assertGreaterThan(actual, expected);
         Assertions.assertGreaterThan(actual, expected, MESSAGE);
     }
 
-    @SuppressWarnings({"RawUseOfParameterizedType"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void failGreaterThan(Comparable actual, Comparable expected)
     {
         try {
@@ -254,14 +254,14 @@ public class TestAssertions
         }
     }
 
-    @SuppressWarnings({"RawUseOfParameterizedType"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void passGreaterThanOrEqual(Comparable actual, Comparable expected)
     {
         Assertions.assertGreaterThanOrEqual(actual, expected);
         Assertions.assertGreaterThanOrEqual(actual, expected, MESSAGE);
     }
 
-    @SuppressWarnings({"RawUseOfParameterizedType"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void failGreaterThanOrEqual(Comparable actual, Comparable expected)
     {
         try {
@@ -299,14 +299,14 @@ public class TestAssertions
         failLessThan(createSuperComparable("alice"), createSubComparable("bob"));
     }
 
-    @SuppressWarnings({"RawUseOfParameterizedType"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void passLessThan(Comparable actual, Comparable expected)
     {
         Assertions.assertLessThan(actual, expected);
         Assertions.assertLessThan(actual, expected, MESSAGE);
     }
 
-    @SuppressWarnings({"RawUseOfParameterizedType"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void failLessThan(Comparable actual, Comparable expected)
     {
         try {
@@ -345,14 +345,14 @@ public class TestAssertions
         failLessThanOrEqual(createSuperComparable("alice"), createSubComparable("bob"));
     }
 
-    @SuppressWarnings({"RawUseOfParameterizedType"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void passLessThanOrEqual(Comparable actual, Comparable expected)
     {
         Assertions.assertLessThanOrEqual(actual, expected);
         Assertions.assertLessThanOrEqual(actual, expected, MESSAGE);
     }
 
-    @SuppressWarnings({"RawUseOfParameterizedType"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void failLessThanOrEqual(Comparable actual, Comparable expected)
     {
         try {
@@ -389,14 +389,14 @@ public class TestAssertions
         failBetweenInclusive("bob", "alice", 1);
     }
 
-    @SuppressWarnings({"RawUseOfParameterizedType"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void passBetweenInclusive(Comparable actual, Comparable lowerBound, Comparable upperBound)
     {
         Assertions.assertBetweenInclusive(actual, lowerBound, upperBound);
         Assertions.assertBetweenInclusive(actual, lowerBound, upperBound, MESSAGE);
     }
 
-    @SuppressWarnings({"RawUseOfParameterizedType"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void failBetweenInclusive(Comparable actual, Comparable lowerBound, Comparable upperBound)
     {
         try {
@@ -431,14 +431,14 @@ public class TestAssertions
         failBetweenExclusive("bob", "alice", 1);
     }
 
-    @SuppressWarnings({"RawUseOfParameterizedType"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void passBetweenExclusive(Comparable actual, Comparable lowerBound, Comparable upperBound)
     {
         Assertions.assertBetweenExclusive(actual, lowerBound, upperBound);
         Assertions.assertBetweenExclusive(actual, lowerBound, upperBound, MESSAGE);
     }
 
-    @SuppressWarnings({"RawUseOfParameterizedType"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void failBetweenExclusive(Comparable actual, Comparable lowerBound, Comparable upperBound)
     {
         try {
