@@ -212,7 +212,7 @@ public class JettyHttpClient
 
         HostAndPort socksProxy = config.getSocksProxy();
         if (socksProxy != null) {
-            httpClient.getProxyConfiguration().getProxies().add(new Socks4Proxy(socksProxy.getHostText(), socksProxy.getPortOrDefault(1080)));
+            httpClient.getProxyConfiguration().getProxies().add(new Socks4Proxy(socksProxy.getHost(), socksProxy.getPortOrDefault(1080)));
         }
 
         JettyIoPool pool = jettyIoPool.orElse(null);

@@ -17,7 +17,6 @@ package io.airlift.jmx;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableSortedSet;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Multimap;
 import com.google.inject.Injector;
 import org.weakref.jmx.Managed;
@@ -118,7 +117,7 @@ public class JmxInspector
     @Override
     public Iterator<InspectorRecord> iterator()
     {
-        return Iterators.unmodifiableIterator(inspectorRecords.iterator());
+        return inspectorRecords.iterator();
     }
 
     private void addConfig(Multimap<String, String> nameMap, Class<?> clazz, ImmutableSortedSet.Builder<InspectorRecord> builder)

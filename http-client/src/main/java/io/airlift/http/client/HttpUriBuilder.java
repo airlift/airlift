@@ -2,7 +2,6 @@ package io.airlift.http.client;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Ascii;
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
@@ -19,6 +18,7 @@ import java.nio.charset.CodingErrorAction;
 import java.util.Iterator;
 import java.util.Map;
 
+import static com.google.common.base.CharMatcher.ascii;
 import static java.lang.Character.forDigit;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
@@ -280,7 +280,7 @@ public class HttpUriBuilder
      */
     private static String percentDecode(String encoded)
     {
-        Preconditions.checkArgument(CharMatcher.ASCII.matchesAllOf(encoded), "string must be ASCII");
+        Preconditions.checkArgument(ascii().matchesAllOf(encoded), "string must be ASCII");
 
         ByteArrayOutputStream out = new ByteArrayOutputStream(encoded.length());
         for (int i = 0; i < encoded.length(); i++) {
@@ -317,7 +317,7 @@ public class HttpUriBuilder
     private static String bracketedHostString(HostAndPort hostAndPort)
     {
         // HostAndPort cannot return just the bracketed host
-        String host = hostAndPort.getHostText();
+        String host = hostAndPort.getHost();
         if (hostAndPort.toString().startsWith("[")) {
             return "[" + host + "]";
         }

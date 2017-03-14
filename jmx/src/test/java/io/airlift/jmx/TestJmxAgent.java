@@ -28,7 +28,7 @@ public class TestJmxAgent
 
         JMXServiceURL url = agent.getUrl();
 
-        assertEquals(url.toString(), format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi", address.getHostText(), address.getPort()));
+        assertEquals(url.toString(), format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi", address.getHost(), address.getPort()));
 
         JMXConnector connector = JMXConnectorFactory.connect(url);
         connector.connect();
