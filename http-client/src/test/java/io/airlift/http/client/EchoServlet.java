@@ -24,7 +24,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -52,7 +51,7 @@ public final class EchoServlet
             throws ServletException, IOException
     {
         requestMethod = request.getMethod();
-        requestUri = URI.create(HttpUtils.getRequestURL(request).toString());
+        requestUri = URI.create(request.getRequestURL().toString());
         if (request.getQueryString() != null) {
             requestUri = URI.create(requestUri.toASCIIString() + "?" + request.getQueryString());
         }
