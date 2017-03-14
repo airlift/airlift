@@ -183,7 +183,7 @@ public class ConfigurationFactory
                     // configuration provider
                     if (binding instanceof ProviderInstanceBinding) {
                         ProviderInstanceBinding<?> providerInstanceBinding = (ProviderInstanceBinding<?>) binding;
-                        Provider<?> provider = providerInstanceBinding.getProviderInstance();
+                        Provider<?> provider = providerInstanceBinding.getUserSuppliedProvider();
                         if (provider instanceof ConfigurationProvider) {
                             registerConfigurationProvider((ConfigurationProvider<?>) provider, Optional.of(binding.getSource()));
                         }
