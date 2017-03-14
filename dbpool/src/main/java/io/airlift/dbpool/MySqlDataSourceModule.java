@@ -16,8 +16,10 @@
 package io.airlift.dbpool;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Binder;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.inject.Module;
 import com.google.inject.Scopes;
 import io.airlift.discovery.client.ServiceSelector;
 import org.weakref.jmx.guice.MBeanModule;
@@ -33,8 +35,10 @@ import java.util.List;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
-public class MySqlDataSourceModule extends MBeanModule
+public class MySqlDataSourceModule
+        implements Module
 {
     private final Class<? extends Annotation> annotation;
     private final List<Class<? extends Annotation>> aliases;
@@ -60,26 +64,29 @@ public class MySqlDataSourceModule extends MBeanModule
     }
 
     @Override
-    public void configureMBeans()
+    public void configure(Binder binder)
     {
+        binder.install(new MBeanModule());
+
         // bind the configuration
-        configBinder(binder()).bindConfig(MySqlDataSourceConfig.class, annotation, type);
+        configBinder(binder).bindConfig(MySqlDataSourceConfig.class, annotation, type);
 
         // bind the service selector
-        discoveryBinder(binder()).bindSelector(type);
+        discoveryBinder(binder).bindSelector(type);
 
         // Bind the datasource
-        bind(DataSource.class).annotatedWith(annotation).toProvider(new MySqlDataSourceProvider(type, annotation)).in(Scopes.SINGLETON);
-        export(DataSource.class).annotatedWith(annotation).withGeneratedName();
+        binder.bind(DataSource.class).annotatedWith(annotation).toProvider(new MySqlDataSourceProvider(type, annotation)).in(Scopes.SINGLETON);
+        newExporter(binder).export(DataSource.class).annotatedWith(annotation).withGeneratedName();
 
         // Bind aliases
         Key<DataSource> key = Key.get(DataSource.class, annotation);
         for (Class<? extends Annotation> alias : aliases) {
-            bind(DataSource.class).annotatedWith(alias).to(key);
+            binder.bind(DataSource.class).annotatedWith(alias).to(key);
         }
     }
 
-    private static class MySqlDataSourceProvider implements Provider<MySqlDataSource>
+    private static class MySqlDataSourceProvider
+            implements Provider<MySqlDataSource>
     {
         private final String type;
         private final Class<? extends Annotation> annotation;

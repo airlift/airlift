@@ -16,8 +16,10 @@
 package io.airlift.dbpool;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Binder;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.inject.Module;
 import com.google.inject.ProvisionException;
 import com.google.inject.Scopes;
 import org.weakref.jmx.guice.MBeanModule;
@@ -31,8 +33,10 @@ import java.util.Collections;
 import java.util.List;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
-public class H2EmbeddedDataSourceModule extends MBeanModule
+public class H2EmbeddedDataSourceModule
+        implements Module
 {
     private final Class<? extends Annotation> annotation;
     private final List<Class<? extends Annotation>> aliases;
@@ -61,23 +65,26 @@ public class H2EmbeddedDataSourceModule extends MBeanModule
     }
 
     @Override
-    public void configureMBeans()
+    public void configure(Binder binder)
     {
+        binder.install(new MBeanModule());
+
         // bind the configuration
-        configBinder(binder()).bindConfig(H2EmbeddedDataSourceConfig.class, annotation, propertyPrefix);
+        configBinder(binder).bindConfig(H2EmbeddedDataSourceConfig.class, annotation, propertyPrefix);
 
         // Bind the datasource
-        bind(DataSource.class).annotatedWith(annotation).toProvider(new H2EmbeddedDataSourceProvider(annotation)).in(Scopes.SINGLETON);
-        export(DataSource.class).annotatedWith(annotation).withGeneratedName();
+        binder.bind(DataSource.class).annotatedWith(annotation).toProvider(new H2EmbeddedDataSourceProvider(annotation)).in(Scopes.SINGLETON);
+        newExporter(binder).export(DataSource.class).annotatedWith(annotation).withGeneratedName();
 
         // Bind aliases
         Key<DataSource> key = Key.get(DataSource.class, annotation);
         for (Class<? extends Annotation> alias : aliases) {
-            bind(DataSource.class).annotatedWith(alias).to(key);
+            binder.bind(DataSource.class).annotatedWith(alias).to(key);
         }
     }
 
-    private static class H2EmbeddedDataSourceProvider implements Provider<H2EmbeddedDataSource>
+    private static class H2EmbeddedDataSourceProvider
+            implements Provider<H2EmbeddedDataSource>
     {
         private final Class<? extends Annotation> annotation;
         private Injector injector;
