@@ -58,7 +58,9 @@ public class TestHttpClientConfig
                 .setSecureRandomAlgorithm(null)
                 .setAuthenticationEnabled(false)
                 .setKerberosRemoteServiceName(null)
-                .setKerberosPrincipal(null));
+                .setKerberosPrincipal(null)
+                .setHttp2InitialSessionReceiveWindowSize(new DataSize(16, DataSize.Unit.MEGABYTE))
+                .setHttp2InitialStreamReceiveWindowSize(new DataSize(16, DataSize.Unit.MEGABYTE)));
     }
 
     @Test
@@ -83,6 +85,8 @@ public class TestHttpClientConfig
                 .put("http-client.authentication.enabled", "true")
                 .put("http-client.authentication.krb5.remote-service-name", "airlift")
                 .put("http-client.authentication.krb5.principal", "airlift-client")
+                .put("http-client.http2.session-receive-window-size", "7MB")
+                .put("http-client.http2.stream-receive-window-size", "7MB")
                 .build();
 
         HttpClientConfig expected = new HttpClientConfig()
@@ -103,7 +107,9 @@ public class TestHttpClientConfig
                 .setSecureRandomAlgorithm("NativePRNG")
                 .setAuthenticationEnabled(true)
                 .setKerberosRemoteServiceName("airlift")
-                .setKerberosPrincipal("airlift-client");
+                .setKerberosPrincipal("airlift-client")
+                .setHttp2InitialSessionReceiveWindowSize(new DataSize(7, DataSize.Unit.MEGABYTE))
+                .setHttp2InitialStreamReceiveWindowSize(new DataSize(7, DataSize.Unit.MEGABYTE));
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

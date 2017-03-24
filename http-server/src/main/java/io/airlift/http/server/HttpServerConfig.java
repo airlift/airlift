@@ -23,8 +23,11 @@ import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.DefunctConfig;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
+import io.airlift.units.MaxDataSize;
+import io.airlift.units.MinDataSize;
 
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -78,6 +81,8 @@ public class HttpServerConfig
     private Duration networkMaxIdleTime = new Duration(200, TimeUnit.SECONDS);
     private DataSize maxRequestHeaderSize;
     private int http2MaxConcurrentStreams = 16384;
+    private DataSize http2InitialSessionReceiveWindowSize = new DataSize(16, DataSize.Unit.MEGABYTE);
+    private DataSize http2InitialStreamReceiveWindowSize = new DataSize(16, DataSize.Unit.MEGABYTE);
 
     private String userAuthFile;
 
@@ -462,6 +467,38 @@ public class HttpServerConfig
     public HttpServerConfig setShowStackTrace(boolean showStackTrace)
     {
         this.showStackTrace = showStackTrace;
+        return this;
+    }
+
+    @NotNull
+    @MinDataSize("1kB")
+    @MaxDataSize("1GB")
+    public DataSize getHttp2InitialSessionReceiveWindowSize()
+    {
+        return http2InitialSessionReceiveWindowSize;
+    }
+
+    @Config("http-server.http2.session-receive-window-size")
+    @ConfigDescription("Initial size of session's flow control receive window for HTTP/2")
+    public HttpServerConfig setHttp2InitialSessionReceiveWindowSize(DataSize http2InitialSessionReceiveWindowSize)
+    {
+        this.http2InitialSessionReceiveWindowSize = http2InitialSessionReceiveWindowSize;
+        return this;
+    }
+
+    @NotNull
+    @MinDataSize("1kB")
+    @MaxDataSize("1GB")
+    public DataSize getHttp2InitialStreamReceiveWindowSize()
+    {
+        return http2InitialStreamReceiveWindowSize;
+    }
+
+    @Config("http-server.http2.stream-receive-window-size")
+    @ConfigDescription("Initial size of stream's flow control receive window for HTTP/2")
+    public HttpServerConfig setHttp2InitialStreamReceiveWindowSize(DataSize http2InitialStreamReceiveWindowSize)
+    {
+        this.http2InitialStreamReceiveWindowSize = http2InitialStreamReceiveWindowSize;
         return this;
     }
 }

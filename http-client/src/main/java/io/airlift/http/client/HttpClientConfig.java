@@ -23,6 +23,8 @@ import io.airlift.configuration.LegacyConfig;
 import io.airlift.units.DataSize;
 import io.airlift.units.DataSize.Unit;
 import io.airlift.units.Duration;
+import io.airlift.units.MaxDataSize;
+import io.airlift.units.MinDataSize;
 import io.airlift.units.MinDuration;
 
 import javax.validation.constraints.Min;
@@ -56,6 +58,8 @@ public class HttpClientConfig
     private boolean authenticationEnabled;
     private String kerberosPrincipal;
     private String kerberosRemoteServiceName;
+    private DataSize http2InitialSessionReceiveWindowSize = new DataSize(16, Unit.MEGABYTE);
+    private DataSize http2InitialStreamReceiveWindowSize = new DataSize(16, Unit.MEGABYTE);
 
     public boolean isHttp2Enabled()
     {
@@ -287,6 +291,38 @@ public class HttpClientConfig
     public HttpClientConfig setKerberosRemoteServiceName(String serviceName)
     {
         this.kerberosRemoteServiceName = serviceName;
+        return this;
+    }
+
+    @NotNull
+    @MinDataSize("1kB")
+    @MaxDataSize("1GB")
+    public DataSize getHttp2InitialSessionReceiveWindowSize()
+    {
+        return http2InitialSessionReceiveWindowSize;
+    }
+
+    @Config("http-client.http2.session-receive-window-size")
+    @ConfigDescription("Initial size of session's flow control receive window for HTTP/2")
+    public HttpClientConfig setHttp2InitialSessionReceiveWindowSize(DataSize http2InitialSessionReceiveWindowSize)
+    {
+        this.http2InitialSessionReceiveWindowSize = http2InitialSessionReceiveWindowSize;
+        return this;
+    }
+
+    @NotNull
+    @MinDataSize("1kB")
+    @MaxDataSize("1GB")
+    public DataSize getHttp2InitialStreamReceiveWindowSize()
+    {
+        return http2InitialStreamReceiveWindowSize;
+    }
+
+    @Config("http-client.http2.stream-receive-window-size")
+    @ConfigDescription("Initial size of stream's flow control receive window for HTTP/2")
+    public HttpClientConfig setHttp2InitialStreamReceiveWindowSize(DataSize http2InitialStreamReceiveWindowSize)
+    {
+        this.http2InitialStreamReceiveWindowSize = http2InitialStreamReceiveWindowSize;
         return this;
     }
 }

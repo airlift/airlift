@@ -37,7 +37,6 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
@@ -76,6 +75,7 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 
 import static com.google.common.base.Preconditions.checkState;
+import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Collections.list;
@@ -88,6 +88,7 @@ public class HttpServer
     private final ServerConnector httpConnector;
     private final ServerConnector httpsConnector;
     private final ServerConnector adminConnector;
+    private final boolean registerErrorHandler;
 
     private final Optional<ZonedDateTime> certificateExpiration;
 
@@ -119,10 +120,7 @@ public class HttpServer
         threadPool.setIdleTimeout(Ints.checkedCast(config.getThreadMaxIdleTime().toMillis()));
         threadPool.setName("http-worker");
         server = new Server(threadPool);
-
-        if (config.isShowStackTrace()) {
-            server.addBean(new ErrorHandler());
-        }
+        registerErrorHandler = config.isShowStackTrace();
 
         if (mbeanServer != null) {
             // export jmx mbeans if a server was provided
@@ -149,6 +147,8 @@ public class HttpServer
             Integer selectors = config.getHttpSelectorThreads();
             HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
             HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(httpConfiguration);
+            http2c.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
+            http2c.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
             http2c.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
             httpConnector = new ServerConnector(server, null, null, null, acceptors == null ? -1 : acceptors, selectors == null ? -1 : selectors, http1, http2c);
             httpConnector.setName("http");
@@ -381,6 +381,10 @@ public class HttpServer
             throws Exception
     {
         server.start();
+        // clear the error handler registered by start()
+        if (!registerErrorHandler) {
+            server.setErrorHandler(null);
+        }
         checkState(server.isStarted(), "server is not started");
 
         // The combination of an NIO connector and an insufficient number of threads results

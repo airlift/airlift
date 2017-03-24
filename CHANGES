@@ -1,5 +1,6 @@
 * 0.149
 
+- Upgrade to Jetty 9.4.6.v20170531
 - Fix UnknownFormatConversionException for config errors.
 
 * 0.148
