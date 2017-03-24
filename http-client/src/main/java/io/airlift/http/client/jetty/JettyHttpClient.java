@@ -629,14 +629,14 @@ public class JettyHttpClient
 
     private static List<org.eclipse.jetty.client.api.Request> getRequestForDestination(Destination destination)
     {
-        PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
+        PoolingHttpDestination poolingHttpDestination = (PoolingHttpDestination) destination;
         Queue<HttpExchange> httpExchanges = poolingHttpDestination.getHttpExchanges();
 
         List<org.eclipse.jetty.client.api.Request> requests = httpExchanges.stream()
                 .map(HttpExchange::getRequest)
                 .collect(Collectors.toList());
 
-        poolingHttpDestination.getConnectionPool().getActiveConnections().stream()
+        ((DuplexConnectionPool) poolingHttpDestination.getConnectionPool()).getActiveConnections().stream()
                 .filter(HttpConnectionOverHTTP.class::isInstance)
                 .map(connection -> ((HttpConnectionOverHTTP) connection).getHttpChannel().getHttpExchange())
                 .filter(exchange -> exchange != null)
@@ -1370,10 +1370,10 @@ public class JettyHttpClient
                 Distribution distribution = new Distribution();
                 httpClient.getDestinations().stream()
                         .filter(PoolingHttpDestination.class::isInstance)
-                        .map(destination -> (PoolingHttpDestination<?>) destination)
+                        .map(destination -> (PoolingHttpDestination) destination)
                         .map(PoolingHttpDestination::getConnectionPool)
                         .filter(pool -> pool != null)
-                        .forEach(pool -> processor.process(distribution, pool));
+                        .forEach(pool -> processor.process(distribution, (DuplexConnectionPool) pool));
                 return distribution;
             });
         }
@@ -1384,7 +1384,7 @@ public class JettyHttpClient
     {
         interface Processor
         {
-            void process(Distribution distribution, PoolingHttpDestination<?> destination);
+            void process(Distribution distribution, PoolingHttpDestination destination);
         }
 
         public DestinationDistribution(HttpClient httpClient, Processor processor)
@@ -1393,7 +1393,7 @@ public class JettyHttpClient
                 Distribution distribution = new Distribution();
                 httpClient.getDestinations().stream()
                         .filter(PoolingHttpDestination.class::isInstance)
-                        .map(destination -> (PoolingHttpDestination<?>) destination)
+                        .map(destination -> (PoolingHttpDestination) destination)
                         .forEach(destination -> processor.process(distribution, destination));
                 return distribution;
             });
@@ -1415,7 +1415,7 @@ public class JettyHttpClient
                 Distribution distribution = new Distribution();
                 httpClient.getDestinations().stream()
                         .filter(PoolingHttpDestination.class::isInstance)
-                        .map(destination -> (PoolingHttpDestination<?>) destination)
+                        .map(destination -> (PoolingHttpDestination) destination)
                         .map(JettyHttpClient::getRequestListenersForDestination)
                         .flatMap(List::stream)
                         .forEach(listener -> processor.process(distribution, listener, now));

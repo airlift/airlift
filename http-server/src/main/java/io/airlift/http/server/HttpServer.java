@@ -120,9 +120,9 @@ public class HttpServer
         threadPool.setName("http-worker");
         server = new Server(threadPool);
 
-        if (config.isShowStackTrace()) {
-            server.addBean(new ErrorHandler());
-        }
+        ErrorHandler errorHandler = new ErrorHandler();
+        errorHandler.setShowStacks(config.isShowStackTrace());
+        server.setErrorHandler(errorHandler);
 
         if (mbeanServer != null) {
             // export jmx mbeans if a server was provided
