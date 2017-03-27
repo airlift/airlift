@@ -69,7 +69,7 @@ public class TestingSocksProxy
         checkState(serverSocket == null, "%s already started", getClass().getName());
 
         try {
-            serverSocket = new ServerSocket(bindPort);
+            serverSocket = new ServerSocket(bindPort, 50, InetAddress.getByName("127.0.0.1"));
             hostAndPort = HostAndPort.fromParts(serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort());
             executorService = listeningDecorator(newCachedThreadPool(threadsNamed("socks-proxy-" + serverSocket.getLocalPort() + "-%s")));
 

@@ -824,7 +824,7 @@ public abstract class AbstractHttpClientTest
             this.host = host;
             this.writeBuffer = writeBuffer;
             this.readBytes = readBytes;
-            this.serverSocket = new ServerSocket(0);
+            this.serverSocket = new ServerSocket(0, 50, InetAddress.getByName(host));
             this.closeConnectionImmediately = closeConnectionImmediately;
         }
 
@@ -1032,7 +1032,7 @@ public abstract class AbstractHttpClientTest
         private BackloggedServer()
                 throws IOException
         {
-            this.serverSocket = new ServerSocket(0, 1);
+            this.serverSocket = new ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"));
             localSocketAddress = serverSocket.getLocalSocketAddress();
 
             // some systems like Linux have a large minimum backlog
