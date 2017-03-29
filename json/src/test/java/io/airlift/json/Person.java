@@ -22,23 +22,49 @@ import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 public class Person
 {
     private String name;
     private boolean rocks;
+    private Optional<String> lastName;
 
     public static void validatePersonJsonCodec(JsonCodec<Person> jsonCodec)
     {
+        // create object with null lastName
         Person expected = new Person().setName("dain").setRocks(true);
 
         String json = jsonCodec.toJson(expected);
+        assertFalse(json.contains("lastName"));
         assertEquals(jsonCodec.fromJson(json), expected);
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
+        assertEquals(jsonCodec.fromJson(bytes), expected);
+
+        // create object with missing lastName
+        expected.setLastName(Optional.empty());
+
+        json = jsonCodec.toJson(expected);
+        assertFalse(json.contains("lastName"));
+        assertEquals(jsonCodec.fromJson(json), expected);
+
+        bytes = jsonCodec.toJsonBytes(expected);
+        assertEquals(jsonCodec.fromJson(bytes), expected);
+
+        // create object with present lastName
+        expected.setLastName(Optional.of("Awesome"));
+
+        json = jsonCodec.toJson(expected);
+        assertTrue(json.contains("lastName"));
+        assertEquals(jsonCodec.fromJson(json), expected);
+
+        bytes = jsonCodec.toJsonBytes(expected);
         assertEquals(jsonCodec.fromJson(bytes), expected);
     }
 
@@ -97,6 +123,18 @@ public class Person
         return this;
     }
 
+    @JsonProperty
+    public Optional<String> getLastName()
+    {
+        return lastName;
+    }
+
+    @JsonProperty
+    public void setLastName(Optional<String> lastName)
+    {
+        this.lastName = lastName;
+    }
+
     @Override
     public boolean equals(Object obj)
     {
@@ -123,6 +161,7 @@ public class Person
         return toStringHelper(this)
                 .add("name", name)
                 .add("rocks", rocks)
+                .add("lastName", lastName)
                 .toString();
     }
 }

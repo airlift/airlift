@@ -103,7 +103,7 @@ public class ObjectMapperProvider
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
         // skip fields that are null instead of writing an explicit json null value
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_ABSENT);
 
         // disable auto detection of json properties... all properties must be explicit
         objectMapper.disable(MapperFeature.AUTO_DETECT_CREATORS);
