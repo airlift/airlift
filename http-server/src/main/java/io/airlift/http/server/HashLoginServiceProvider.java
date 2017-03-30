@@ -15,21 +15,16 @@
  */
 package io.airlift.http.server;
 
-import io.airlift.log.Logger;
 import org.eclipse.jetty.security.HashLoginService;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
-
-import java.io.IOException;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 
 public class HashLoginServiceProvider
         implements Provider<HashLoginService>
 {
-    private static final Logger log = Logger.get(HashLoginServiceProvider.class);
-
     private final HttpServerConfig config;
 
     @Inject
@@ -42,18 +37,9 @@ public class HashLoginServiceProvider
     public HashLoginService get()
     {
         String authConfig = config.getUserAuthFile();
-        try {
-            if (!isNullOrEmpty(authConfig)) {
-                HashLoginService service = new HashLoginService(HttpServerModule.REALM_NAME, authConfig);
-                service.loadUsers();
-                return service;
-            }
-            return null;
+        if (!isNullOrEmpty(authConfig)) {
+            return new HashLoginService(HttpServerModule.REALM_NAME, authConfig);
         }
-        catch (IOException e) {
-            log.error(e, "Error when loading user auth info from %s", authConfig);
-        }
-
         return null;
     }
 }

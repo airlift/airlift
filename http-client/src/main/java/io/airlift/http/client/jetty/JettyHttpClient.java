@@ -73,6 +73,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -135,12 +136,12 @@ public class JettyHttpClient
 
     public JettyHttpClient()
     {
-        this(new HttpClientConfig(), ImmutableList.<HttpRequestFilter>of());
+        this(new HttpClientConfig(), ImmutableList.of());
     }
 
     public JettyHttpClient(HttpClientConfig config)
     {
-        this(config, ImmutableList.<HttpRequestFilter>of());
+        this(config, ImmutableList.of());
     }
 
     public JettyHttpClient(HttpClientConfig config, Iterable<? extends HttpRequestFilter> requestFilters)
@@ -622,27 +623,31 @@ public class JettyHttpClient
     private static List<JettyRequestListener> getRequestListenersForDestination(Destination destination)
     {
         return getRequestForDestination(destination).stream()
-                .map(request -> (JettyRequestListener) request.getAttributes().get(PRESTO_STATS_KEY))
-                .filter(listener -> listener != null)
+                .map(request -> request.getAttributes().get(PRESTO_STATS_KEY))
+                .map(JettyRequestListener.class::cast)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
     private static List<org.eclipse.jetty.client.api.Request> getRequestForDestination(Destination destination)
     {
-        PoolingHttpDestination<?> poolingHttpDestination = (PoolingHttpDestination<?>) destination;
+        PoolingHttpDestination poolingHttpDestination = (PoolingHttpDestination) destination;
         Queue<HttpExchange> httpExchanges = poolingHttpDestination.getHttpExchanges();
 
         List<org.eclipse.jetty.client.api.Request> requests = httpExchanges.stream()
                 .map(HttpExchange::getRequest)
                 .collect(Collectors.toList());
 
-        poolingHttpDestination.getConnectionPool().getActiveConnections().stream()
+        ((DuplexConnectionPool) poolingHttpDestination.getConnectionPool()).getActiveConnections().stream()
                 .filter(HttpConnectionOverHTTP.class::isInstance)
-                .map(connection -> ((HttpConnectionOverHTTP) connection).getHttpChannel().getHttpExchange())
-                .filter(exchange -> exchange != null)
+                .map(HttpConnectionOverHTTP.class::cast)
+                .map(connection -> connection.getHttpChannel().getHttpExchange())
+                .filter(Objects::nonNull)
                 .forEach(exchange -> requests.add(exchange.getRequest()));
 
-        return requests.stream().filter(request -> request != null).collect(Collectors.toList());
+        return requests.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     private static String dumpRequest(long now, JettyRequestListener listener)
@@ -1370,9 +1375,10 @@ public class JettyHttpClient
                 Distribution distribution = new Distribution();
                 httpClient.getDestinations().stream()
                         .filter(PoolingHttpDestination.class::isInstance)
-                        .map(destination -> (PoolingHttpDestination<?>) destination)
+                        .map(PoolingHttpDestination.class::cast)
                         .map(PoolingHttpDestination::getConnectionPool)
-                        .filter(pool -> pool != null)
+                        .filter(Objects::nonNull)
+                        .map(DuplexConnectionPool.class::cast)
                         .forEach(pool -> processor.process(distribution, pool));
                 return distribution;
             });
@@ -1384,7 +1390,7 @@ public class JettyHttpClient
     {
         interface Processor
         {
-            void process(Distribution distribution, PoolingHttpDestination<?> destination);
+            void process(Distribution distribution, PoolingHttpDestination destination);
         }
 
         public DestinationDistribution(HttpClient httpClient, Processor processor)
@@ -1393,7 +1399,7 @@ public class JettyHttpClient
                 Distribution distribution = new Distribution();
                 httpClient.getDestinations().stream()
                         .filter(PoolingHttpDestination.class::isInstance)
-                        .map(destination -> (PoolingHttpDestination<?>) destination)
+                        .map(PoolingHttpDestination.class::cast)
                         .forEach(destination -> processor.process(distribution, destination));
                 return distribution;
             });
@@ -1415,7 +1421,7 @@ public class JettyHttpClient
                 Distribution distribution = new Distribution();
                 httpClient.getDestinations().stream()
                         .filter(PoolingHttpDestination.class::isInstance)
-                        .map(destination -> (PoolingHttpDestination<?>) destination)
+                        .map(PoolingHttpDestination.class::cast)
                         .map(JettyHttpClient::getRequestListenersForDestination)
                         .flatMap(List::stream)
                         .forEach(listener -> processor.process(distribution, listener, now));

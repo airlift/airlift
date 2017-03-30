@@ -1,3 +1,7 @@
+* 0.145
+
+- Upgrade Jetty to 9.4.2.v20170220
+
 * 0.144
 
 - Use JsonMapperParsingException in SmileMapper.
