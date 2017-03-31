@@ -126,5 +126,11 @@
             <artifactId>bootstrap</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.osgi.foundation</artifactId>
+         <version>1.2.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

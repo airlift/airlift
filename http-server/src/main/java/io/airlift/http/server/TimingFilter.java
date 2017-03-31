@@ -16,6 +16,8 @@
 package io.airlift.http.server;
 
 import com.google.common.base.Preconditions;
+import io.airlift.log.Logger;
+import org.eclipse.jetty.server.Response;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -30,12 +32,15 @@ import javax.servlet.http.HttpServletResponseWrapper;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Locale;
 
 class TimingFilter
         implements Filter
 {
     public static final String FIRST_BYTE_TIME = TimingFilter.class.getName() + ".FIRST_BYTE_TIME";
+    private static final Logger log = Logger.get(TimingFilter.class);
+
 
     @Override
     public void init(FilterConfig filterConfig)
@@ -78,7 +83,12 @@ class TimingFilter
         public ServletOutputStream getOutputStream()
                 throws IOException
         {
-            Preconditions.checkState(printWriter == null, "getWriter() has already been called");
+            Response response = (Response) super.getResponse();
+//            if (response.isWriting()) {
+//                log.info("*********** Response is in writing mode %s", response.getHttpChannel());
+//                throw new IllegalStateException("Response in writing mode");
+//            }
+
             if (outputStream == null) {
                 outputStream = new TimedServletOutputStream(super.getOutputStream());
             }
@@ -89,6 +99,12 @@ class TimingFilter
         public PrintWriter getWriter()
                 throws IOException
         {
+            Response response = (Response) super.getResponse();
+            StringWriter sw = new StringWriter();
+            new Throwable("").printStackTrace(new PrintWriter(sw));
+
+//            log.info("************ TimingFilter::getWriter called %s from %s", response.getHttpChannel(), sw.toString());
+
             Preconditions.checkState(outputStream == null, "getOutputStream() has already been called");
             if (printWriter == null) {
                 printWriter = new TimedPrintWriter(super.getWriter());

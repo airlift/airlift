@@ -542,7 +542,7 @@ public abstract class AbstractHttpClientTest
                 .setIdleTimeout(new Duration(500, MILLISECONDS));
 
         URI uri = URI.create(baseURI.toASCIIString() + "/?sleep=1000");
-        Request request = prepareGet()
+        Request request = preparePost()
                 .setUri(uri)
                 .build();
 

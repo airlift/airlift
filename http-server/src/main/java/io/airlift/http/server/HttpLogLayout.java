@@ -20,6 +20,8 @@ public class HttpLogLayout
                 .append('\t')
                 .append(event.getClientAddress())
                 .append('\t')
+                .append(event.getHttpVersion())
+                .append('\t')
                 .append(event.getMethod())
                 .append('\t')
                 .append(event.getRequestUri()) // TODO: escape

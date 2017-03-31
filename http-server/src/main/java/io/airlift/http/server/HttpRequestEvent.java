@@ -118,7 +118,8 @@ public class HttpRequestEvent
                 response.getHeader("Content-Type"),
                 timeToDispatch,
                 timeToFirstByte,
-                timeToLastByte
+                timeToLastByte,
+                request.getHttpVersion() != null ? request.getHttpVersion().toString() : ""
         );
     }
 
@@ -139,6 +140,7 @@ public class HttpRequestEvent
     private final long timeToDispatch;
     private final Long timeToFirstByte;
     private final long timeToLastByte;
+    private final String httpVersion;
 
     public HttpRequestEvent(
             Instant timeStamp,
@@ -157,7 +159,8 @@ public class HttpRequestEvent
             String responseContentType,
             long timeToDispatch,
             Long timeToFirstByte,
-            long timeToLastByte)
+            long timeToLastByte,
+            String httpVersion)
     {
         this.timeStamp = timeStamp;
         this.traceToken = traceToken;
@@ -176,6 +179,7 @@ public class HttpRequestEvent
         this.timeToDispatch = timeToDispatch;
         this.timeToFirstByte = timeToFirstByte;
         this.timeToLastByte = timeToLastByte;
+        this.httpVersion = httpVersion;
     }
 
     @EventField(fieldMapping = TIMESTAMP)
@@ -278,5 +282,11 @@ public class HttpRequestEvent
     public long getTimeToLastByte()
     {
         return timeToLastByte;
+    }
+
+    @EventField
+    public String getHttpVersion()
+    {
+        return httpVersion;
     }
 }
