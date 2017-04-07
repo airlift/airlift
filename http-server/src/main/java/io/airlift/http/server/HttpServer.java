@@ -120,9 +120,9 @@ public class HttpServer
         threadPool.setName("http-worker");
         server = new Server(threadPool);
 
-        ErrorHandler errorHandler = new ErrorHandler();
-        errorHandler.setShowStacks(config.isShowStackTrace());
-        server.setErrorHandler(errorHandler);
+//        ErrorHandler errorHandler = new ErrorHandler();
+//        errorHandler.setShowStacks(config.isShowStackTrace());
+//        server.setErrorHandler(errorHandler);
 
         if (mbeanServer != null) {
             // export jmx mbeans if a server was provided
@@ -379,6 +379,7 @@ public class HttpServer
             throws Exception
     {
         server.start();
+        server.setErrorHandler(null);
         checkState(server.isStarted(), "server is not started");
 
         // The combination of an NIO connector and an insufficient number of threads results
