@@ -30,4 +30,5 @@ import java.lang.annotation.Target;
 public @interface Config
 {
     String value();
+    boolean redact() default false;
 }
