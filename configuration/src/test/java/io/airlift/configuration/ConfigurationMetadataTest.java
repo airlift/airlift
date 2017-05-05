@@ -802,21 +802,6 @@ public class ConfigurationMetadataTest
         monitor.assertMatchingErrorRecorded("Defunct property", "'defunct'", "listed more than once");
     }
 
-    @Test
-    public void testLegacyConfigSensitiveClass()
-            throws Exception
-    {
-        TestMonitor monitor = new TestMonitor();
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigSensitiveClass.class, monitor);
-        Map<String, Set<String>> expectedAttributes = Maps.newHashMap();
-        expectedAttributes.put("Value", ImmutableSet.of("value", "replacedValue"));
-
-        verifyMetaData(metadata, LegacyConfigSensitiveClass.class, null, false /* don't care */, expectedAttributes);
-        monitor.assertNumberOfErrors(1);
-        monitor.assertNumberOfWarnings(0);
-        monitor.assertMatchingErrorRecorded("@ConfigSecuritySensitive method", "setValue", "is not annotated with @Config.");
-    }
-
     private void verifyMetaData(ConfigurationMetadata<?> metadata, Class<?> configClass, String description, boolean securitySensitive, Map<String, Set<String>> attributeProperties)
             throws Exception
     {
@@ -884,8 +869,7 @@ public class ConfigurationMetadataTest
             return value;
         }
 
-        @Config("value")
-        @ConfigSecuritySensitive
+        @Config(value = "value", securitySensitive = true)
         @ConfigDescription("description")
         public void setValue(String value)
         {
@@ -1763,30 +1747,6 @@ public class ConfigurationMetadataTest
         public void setValue(String value)
         {
             this.value = value;
-        }
-    }
-
-    public static class LegacyConfigSensitiveClass
-    {
-        private String value;
-
-        public String getValue()
-        {
-            return value;
-        }
-
-        @Config("value")
-        public void setValue(String value)
-        {
-            this.value = value;
-        }
-
-        @Deprecated
-        @LegacyConfig("replacedValue")
-        @ConfigSecuritySensitive
-        public void setValue(int value)
-        {
-            this.value = Integer.toString(value);
         }
     }
 }

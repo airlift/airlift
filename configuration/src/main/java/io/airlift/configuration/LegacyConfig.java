@@ -31,4 +31,6 @@ public @interface LegacyConfig
     String[] value();
 
     String replacedBy() default "";
+
+    boolean securitySensitive() default false;
 }

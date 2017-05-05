@@ -248,14 +248,6 @@ public class ConfigurationMetadata<T>
             }
         }
 
-        // Find orphan @ConfigSecuritySensitive methods, in order to report errors
-        Collection<Method> sensitiveMethods = findSensitiveConfigMethods(configClass);
-        for (Method method : sensitiveMethods) {
-            if (!method.isAnnotationPresent(Config.class)) {
-                problems.addError("@ConfigSecuritySensitive method [%s] is not annotated with @Config.", method.toGenericString());
-            }
-        }
-
         return attributes;
     }
 
@@ -268,7 +260,6 @@ public class ConfigurationMetadata<T>
         }
 
         String propertyName = configMethod.getAnnotation(Config.class).value();
-        final boolean securitySensitive = configMethod.isAnnotationPresent(ConfigSecuritySensitive.class);
 
         // verify parameters
         if (!validateSetter(configMethod)) {
@@ -278,7 +269,10 @@ public class ConfigurationMetadata<T>
         // determine the attribute name
         String attributeName = configMethod.getName().substring(3);
 
-        AttributeMetaDataBuilder builder = new AttributeMetaDataBuilder(configClass, attributeName, securitySensitive);
+        AttributeMetaDataBuilder builder = new AttributeMetaDataBuilder(
+                configClass,
+                attributeName,
+                configMethod.getAnnotation(Config.class).securitySensitive());
 
         if (configMethod.isAnnotationPresent(ConfigDescription.class)) {
             builder.setDescription(configMethod.getAnnotation(ConfigDescription.class).value());
@@ -604,11 +598,6 @@ public class ConfigurationMetadata<T>
     private static Collection<Method> findLegacyConfigMethods(Class<?> configClass)
     {
         return findAnnotatedMethods(configClass, LegacyConfig.class);
-    }
-
-    private static Collection<Method> findSensitiveConfigMethods(Class<?> configClass)
-    {
-        return findAnnotatedMethods(configClass, ConfigSecuritySensitive.class);
     }
 
     /**
