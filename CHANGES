@@ -1,3 +1,7 @@
+* 0.146
+
+- Allow configuring secure random algorithm for HTTP client and server.
+
 * 0.145
 
 - Skip empty Optional fields in JSON serialization.
