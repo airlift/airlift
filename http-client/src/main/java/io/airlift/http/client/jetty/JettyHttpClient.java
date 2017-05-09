@@ -693,6 +693,12 @@ public class JettyHttpClient
     }
 
     @Override
+    public boolean isClosed()
+    {
+        return !httpClient.isRunning();
+    }
+
+    @Override
     public String toString()
     {
         return toStringHelper(this)

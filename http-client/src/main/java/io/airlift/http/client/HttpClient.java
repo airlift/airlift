@@ -36,6 +36,8 @@ public interface HttpClient
     @Override
     void close();
 
+    boolean isClosed();
+
     interface HttpResponseFuture<T>
             extends ListenableFuture<T>
     {
