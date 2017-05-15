@@ -363,6 +363,58 @@
                 <version>${dep.jersey.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.glassfish.jersey.core</groupId>
+                <artifactId>jersey-client</artifactId>
+                <version>${dep.jersey.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.glassfish.hk2.external</groupId>
+                        <artifactId>javax.inject</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.glassfish.hk2.external</groupId>
+                        <artifactId>aopalliance-repackaged</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.glassfish.jersey.test-framework</groupId>
+                <artifactId>jersey-test-framework-core</artifactId>
+                <version>${dep.jersey.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.ow2.asm</groupId>
+                        <artifactId>asm-debug-all</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.glassfish.jersey.test-framework.providers</groupId>
+                <artifactId>jersey-test-framework-provider-inmemory</artifactId>
+                <version>${dep.jersey.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.ow2.asm</groupId>
+                        <artifactId>asm-debug-all</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
             <!-- bval depends on commons-lang3 3.3.2, which is incompatible with Java 9 -->
             <dependency>
                 <groupId>org.apache.commons</groupId>
