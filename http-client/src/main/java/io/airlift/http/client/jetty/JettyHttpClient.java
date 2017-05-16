@@ -360,11 +360,13 @@ public class JettyHttpClient
         }
         catch (InterruptedException e) {
             stats.recordRequestFailed();
+            jettyRequest.abort(e);
             Thread.currentThread().interrupt();
             return responseHandler.handleException(request, e);
         }
         catch (TimeoutException e) {
             stats.recordRequestFailed();
+            jettyRequest.abort(e);
             return responseHandler.handleException(request, e);
         }
         catch (ExecutionException e) {
