@@ -2,6 +2,7 @@
 
 - Upgrade to Airbase 63
 - Upgrade to Guava 21.0
+- Add TestingHttpClient.Processor implementation that delegates to JAX-RS resource.
 
 * 0.146
 
