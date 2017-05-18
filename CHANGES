@@ -1,3 +1,8 @@
+* 0.147
+
+- Upgrade to Airbase 63
+- Upgrade to Guava 21.0
+
 * 0.146
 
 - Allow configuring secure random algorithm for HTTP client and server.
