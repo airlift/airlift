@@ -269,7 +269,10 @@ public class ConfigurationMetadata<T>
         // determine the attribute name
         String attributeName = configMethod.getName().substring(3);
 
-        AttributeMetaDataBuilder builder = new AttributeMetaDataBuilder(configClass, attributeName);
+        AttributeMetaDataBuilder builder = new AttributeMetaDataBuilder(
+                configClass,
+                attributeName,
+                configMethod.getAnnotation(Config.class).redact());
 
         if (configMethod.isAnnotationPresent(ConfigDescription.class)) {
             builder.setDescription(configMethod.getAnnotation(ConfigDescription.class).value());
@@ -423,13 +426,14 @@ public class ConfigurationMetadata<T>
         private final Class<?> configClass;
         private final String name;
         private final String description;
+        private final boolean redact;
         private final Method getter;
 
         private final InjectionPointMetaData injectionPoint;
         private final Set<InjectionPointMetaData> legacyInjectionPoints;
 
-        public AttributeMetadata(Class<?> configClass, String name, String description, Method getter,
-                InjectionPointMetaData injectionPoint, Set<InjectionPointMetaData> legacyInjectionPoints)
+        public AttributeMetadata(Class<?> configClass, String name, String description, boolean redact, Method getter,
+                                 InjectionPointMetaData injectionPoint, Set<InjectionPointMetaData> legacyInjectionPoints)
         {
             requireNonNull(configClass);
             requireNonNull(name);
@@ -440,6 +444,7 @@ public class ConfigurationMetadata<T>
             this.configClass = configClass;
             this.name = name;
             this.description = description;
+            this.redact = redact;
             this.getter = getter;
 
             this.injectionPoint = injectionPoint;
@@ -459,6 +464,10 @@ public class ConfigurationMetadata<T>
         public String getDescription()
         {
             return description;
+        }
+
+        public boolean isRedact() {
+            return redact;
         }
 
         public Method getGetter()
@@ -521,11 +530,12 @@ public class ConfigurationMetadata<T>
         private final String name;
 
         private String description;
+        private final boolean redact;
         private Method getter;
         private InjectionPointMetaData injectionPoint;
         private final Set<InjectionPointMetaData> legacyInjectionPoints = new HashSet<>();
 
-        public AttributeMetaDataBuilder(Class<?> configClass, String name)
+        public AttributeMetaDataBuilder(Class<?> configClass, String name, boolean redact)
         {
             requireNonNull(configClass);
             requireNonNull(name);
@@ -533,6 +543,7 @@ public class ConfigurationMetadata<T>
 
             this.configClass = configClass;
             this.name = name;
+            this.redact = redact;
         }
 
         public void setDescription(String description)
@@ -574,7 +585,7 @@ public class ConfigurationMetadata<T>
                 return null;
             }
 
-            return new AttributeMetadata(configClass, name, description, getter, injectionPoint, legacyInjectionPoints);
+            return new AttributeMetadata(configClass, name, description, redact, getter, injectionPoint, legacyInjectionPoints);
         }
     }
 
