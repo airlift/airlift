@@ -46,7 +46,7 @@ public final class MoreFutures
     /**
      * Cancels the destination Future if the source Future is cancelled.
      */
-    public static <X, Y> void propagateCancellation(ListenableFuture<? extends X> source, ListenableFuture<? extends Y> destination, boolean mayInterruptIfRunning)
+    public static <X, Y> void propagateCancellation(ListenableFuture<? extends X> source, Future<? extends Y> destination, boolean mayInterruptIfRunning)
     {
         source.addListener(() -> {
             if (source.isCancelled()) {
@@ -421,21 +421,7 @@ public final class MoreFutures
     {
         requireNonNull(completableFuture, "completableFuture is null");
         SettableFuture<V> future = SettableFuture.create();
-        Futures.addCallback(future, new FutureCallback<V>()
-        {
-            @Override
-            public void onSuccess(V result)
-            {
-            }
-
-            @Override
-            public void onFailure(Throwable throwable)
-            {
-                if (throwable instanceof CancellationException) {
-                    completableFuture.cancel(true);
-                }
-            }
-        });
+        propagateCancellation(future, completableFuture, true);
 
         completableFuture.whenComplete((value, exception) -> {
             if (exception != null) {
