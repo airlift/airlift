@@ -39,7 +39,7 @@ public class JmxHttpRpcConfig
         return password;
     }
 
-    @Config("jmx-http-rpc.password")
+    @Config(value = "jmx-http-rpc.password", securitySensitive = true)
     public JmxHttpRpcConfig setPassword(String password)
     {
         this.password = password;

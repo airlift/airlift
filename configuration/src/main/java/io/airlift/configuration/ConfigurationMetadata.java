@@ -269,7 +269,10 @@ public class ConfigurationMetadata<T>
         // determine the attribute name
         String attributeName = configMethod.getName().substring(3);
 
-        AttributeMetaDataBuilder builder = new AttributeMetaDataBuilder(configClass, attributeName);
+        AttributeMetaDataBuilder builder = new AttributeMetaDataBuilder(
+                configClass,
+                attributeName,
+                configMethod.getAnnotation(Config.class).securitySensitive());
 
         if (configMethod.isAnnotationPresent(ConfigDescription.class)) {
             builder.setDescription(configMethod.getAnnotation(ConfigDescription.class).value());
@@ -423,12 +426,13 @@ public class ConfigurationMetadata<T>
         private final Class<?> configClass;
         private final String name;
         private final String description;
+        private final boolean securitySensitive;
         private final Method getter;
 
         private final InjectionPointMetaData injectionPoint;
         private final Set<InjectionPointMetaData> legacyInjectionPoints;
 
-        public AttributeMetadata(Class<?> configClass, String name, String description, Method getter,
+        public AttributeMetadata(Class<?> configClass, String name, String description, boolean securitySensitive, Method getter,
                 InjectionPointMetaData injectionPoint, Set<InjectionPointMetaData> legacyInjectionPoints)
         {
             requireNonNull(configClass);
@@ -440,6 +444,7 @@ public class ConfigurationMetadata<T>
             this.configClass = configClass;
             this.name = name;
             this.description = description;
+            this.securitySensitive = securitySensitive;
             this.getter = getter;
 
             this.injectionPoint = injectionPoint;
@@ -459,6 +464,11 @@ public class ConfigurationMetadata<T>
         public String getDescription()
         {
             return description;
+        }
+
+        public boolean isSecuritySensitive()
+        {
+            return securitySensitive;
         }
 
         public Method getGetter()
@@ -524,8 +534,9 @@ public class ConfigurationMetadata<T>
         private Method getter;
         private InjectionPointMetaData injectionPoint;
         private final Set<InjectionPointMetaData> legacyInjectionPoints = new HashSet<>();
+        private final boolean securitySensitive;
 
-        public AttributeMetaDataBuilder(Class<?> configClass, String name)
+        public AttributeMetaDataBuilder(Class<?> configClass, String name, boolean securitySensitive)
         {
             requireNonNull(configClass);
             requireNonNull(name);
@@ -533,6 +544,7 @@ public class ConfigurationMetadata<T>
 
             this.configClass = configClass;
             this.name = name;
+            this.securitySensitive = securitySensitive;
         }
 
         public void setDescription(String description)
@@ -574,7 +586,7 @@ public class ConfigurationMetadata<T>
                 return null;
             }
 
-            return new AttributeMetadata(configClass, name, description, getter, injectionPoint, legacyInjectionPoints);
+            return new AttributeMetadata(configClass, name, description, securitySensitive, getter, injectionPoint, legacyInjectionPoints);
         }
     }
 

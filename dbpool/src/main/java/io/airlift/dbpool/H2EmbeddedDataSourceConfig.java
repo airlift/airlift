@@ -88,7 +88,7 @@ public class H2EmbeddedDataSourceConfig extends ManagedDataSourceConfig<H2Embedd
         return filePassword;
     }
 
-    @Config("db.file-password")
+    @Config(value = "db.file-password", securitySensitive = true)
     public H2EmbeddedDataSourceConfig setFilePassword(String filePassword)
     {
         this.filePassword = filePassword;

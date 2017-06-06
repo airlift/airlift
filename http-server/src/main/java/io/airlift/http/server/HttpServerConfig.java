@@ -164,7 +164,7 @@ public class HttpServerConfig
         return keystorePassword;
     }
 
-    @Config("http-server.https.keystore.key")
+    @Config(value = "http-server.https.keystore.key", securitySensitive = true)
     public HttpServerConfig setKeystorePassword(String keystorePassword)
     {
         this.keystorePassword = keystorePassword;

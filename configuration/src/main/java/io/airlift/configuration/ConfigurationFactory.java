@@ -454,7 +454,7 @@ public class ConfigurationFactory
             problems.addWarning("Configuration property '%s' is deprecated and should not be used", injectionPoint.getProperty());
         }
 
-        Object value = getInjectedValue(injectionPoint, prefix);
+        Object value = getInjectedValue(attribute, injectionPoint, prefix);
 
         try {
             injectionPoint.getSetter().invoke(instance, value);
@@ -477,10 +477,18 @@ public class ConfigurationFactory
             operativeName = prefix + operativeInjectionPoint.getProperty();
             operativeValue = properties.get(operativeName);
         }
+        String printableOperativeValue = operativeValue;
+        if (attribute.isSecuritySensitive()) {
+            printableOperativeValue = "[REDACTED]";
+        }
 
         for (ConfigurationMetadata.InjectionPointMetaData injectionPoint : attribute.getLegacyInjectionPoints()) {
             String fullName = prefix + injectionPoint.getProperty();
             String value = properties.get(fullName);
+            String printableValue = value;
+            if (attribute.isSecuritySensitive()) {
+                printableValue = "[REDACTED]";
+            }
             if (value != null) {
                 String replacement = "deprecated.";
                 if (attribute.getInjectionPoint() != null) {
@@ -491,10 +499,11 @@ public class ConfigurationFactory
                 if (operativeValue == null) {
                     operativeInjectionPoint = injectionPoint;
                     operativeValue = value;
+                    printableOperativeValue = printableValue;
                     operativeName = fullName;
                 }
-                else if (!value.equals(operativeValue)) {
-                    problems.addError("Value for property '%s' (=%s) conflicts with property '%s' (=%s)", fullName, value, operativeName, operativeValue);
+                else {
+                    problems.addError("Configuration property '%s' (=%s) conflicts with property '%s' (=%s)", fullName, printableValue, operativeName, printableOperativeValue);
                 }
             }
         }
@@ -508,12 +517,16 @@ public class ConfigurationFactory
         return operativeInjectionPoint;
     }
 
-    private Object getInjectedValue(ConfigurationMetadata.InjectionPointMetaData injectionPoint, String prefix)
+    private Object getInjectedValue(AttributeMetadata attribute, ConfigurationMetadata.InjectionPointMetaData injectionPoint, String prefix)
             throws InvalidConfigurationException
     {
         // Get the property value
         String name = prefix + injectionPoint.getProperty();
         String value = properties.get(name);
+        String printableValue = value;
+        if (attribute.isSecuritySensitive()) {
+            printableValue = "[REDACTED]";
+        }
 
         if (value == null) {
             return null;
@@ -525,7 +538,7 @@ public class ConfigurationFactory
         Object finalValue = coerce(propertyType, value);
         if (finalValue == null) {
             throw new InvalidConfigurationException(format("Could not coerce value '%s' to %s (property '%s') in order to call [%s]",
-                    value,
+                    printableValue,
                     propertyType.getName(),
                     injectionPoint.getProperty(),
                     injectionPoint.getSetter().toGenericString()));
