@@ -1,3 +1,7 @@
+* 0.148
+
+- Add @ConfigSecuritySensitive annotation to prevent printing config values.
+
 * 0.147
 
 - Upgrade to Airbase 63
