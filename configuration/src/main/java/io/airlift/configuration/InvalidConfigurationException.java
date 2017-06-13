@@ -18,13 +18,13 @@ package io.airlift.configuration;
 public class InvalidConfigurationException
         extends Exception
 {
-    public InvalidConfigurationException(String message, Object... args)
+    public InvalidConfigurationException(String message)
     {
-        super(String.format(message, args));
+        super(message);
     }
 
-    public InvalidConfigurationException(Throwable cause, String message, Object... args)
+    public InvalidConfigurationException(Throwable cause, String message)
     {
-        super(String.format(message, args), cause);
+        super(message, cause);
     }
 }
