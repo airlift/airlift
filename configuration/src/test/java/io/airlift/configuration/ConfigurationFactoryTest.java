@@ -231,6 +231,22 @@ public class ConfigurationFactoryTest
         }
     }
 
+    @Test
+    public void testFailedCoercion()
+    {
+        Map<String, String> properties = new HashMap<>();
+        properties.put("int-value", "abc %s xyz");  // not an int
+        TestMonitor monitor = new TestMonitor();
+        try {
+            createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(BeanValidationClass.class));
+        }
+        catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(0);
+            monitor.assertMatchingErrorRecorded("Could not coerce value 'abc %s xyz' to int (property 'int-value')", "BeanValidationClass");
+        }
+    }
+
     private static Injector createInjector(Map<String, String> properties, TestMonitor monitor, Module module)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, null, monitor);

@@ -370,7 +370,7 @@ public class ConfigurationFactory
                 setConfigProperty(instance, attribute, prefix, problems);
             }
             catch (InvalidConfigurationException e) {
-                problems.addError(e.getCause(), e.getMessage());
+                problems.addError(e.getCause(), "%s", e.getMessage());
             }
         }
 
