@@ -9,6 +9,7 @@
 * 0.147
 
 - Upgrade to Airbase 63
+- Upgrade to Jetty 9.4.6.v20170531
 - Upgrade to Guava 21.0
 - Add TestingHttpClient.Processor implementation that delegates to JAX-RS resource.
 

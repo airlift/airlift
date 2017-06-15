@@ -171,6 +171,7 @@ public abstract class AbstractHttpClientTest
             throws Exception
     {
         if (server != null) {
+            server.setStopTimeout(3000);
             server.stop();
         }
     }
