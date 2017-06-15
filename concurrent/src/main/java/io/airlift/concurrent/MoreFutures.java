@@ -255,9 +255,17 @@ public final class MoreFutures
     /**
      * Checks that the completed future completed successfully.
      */
-    public static void checkSucceess(Future<?> future)
+    public static void checkSuccess(Future<?> future, String errorMessage)
     {
-        getDone(future);
+        requireNonNull(future, "future is null");
+        requireNonNull(errorMessage, "errorMessage is null");
+        checkArgument(future.isDone(), "future not done yet");
+        try {
+            getFutureValue(future);
+        }
+        catch (RuntimeException e) {
+            throw new IllegalArgumentException(errorMessage, e);
+        }
     }
 
     /**
