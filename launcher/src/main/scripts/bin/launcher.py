@@ -168,10 +168,12 @@ def create_app_symlinks(options):
     This is needed to support programs that reference 'etc/xyz' from within
     their config files: log.levels-file=etc/log.properties
     """
-    if options.install_path != options.data_dir:
+    if options.etc_dir != pathjoin(options.data_dir, 'etc'):
         create_symlink(
-            pathjoin(options.install_path, 'etc'),
+            options.etc_dir,
             pathjoin(options.data_dir, 'etc'))
+
+    if options.install_path != options.data_dir:
         create_symlink(
             pathjoin(options.install_path, 'plugin'),
             pathjoin(options.data_dir, 'plugin'))
@@ -339,11 +341,12 @@ def create_parser():
     commands = 'Commands: ' + ', '.join(COMMANDS)
     parser = OptionParser(prog='launcher', usage='usage: %prog [options] command', description=commands)
     parser.add_option('-v', '--verbose', action='store_true', default=False, help='Run verbosely')
+    parser.add_option('--etc-dir', metavar='DIR', help='Defaults to INSTALL_PATH/etc')
     parser.add_option('--launcher-config', metavar='FILE', help='Defaults to INSTALL_PATH/bin/launcher.properties')
-    parser.add_option('--node-config', metavar='FILE', help='Defaults to INSTALL_PATH/etc/node.properties')
-    parser.add_option('--jvm-config', metavar='FILE', help='Defaults to INSTALL_PATH/etc/jvm.config')
-    parser.add_option('--config', metavar='FILE', help='Defaults to INSTALL_PATH/etc/config.properties')
-    parser.add_option('--log-levels-file', metavar='FILE', help='Defaults to INSTALL_PATH/etc/log.properties')
+    parser.add_option('--node-config', metavar='FILE', help='Defaults to ETC_DIR/node.properties')
+    parser.add_option('--jvm-config', metavar='FILE', help='Defaults to ETC_DIR/jvm.config')
+    parser.add_option('--config', metavar='FILE', help='Defaults to ETC_DIR/config.properties')
+    parser.add_option('--log-levels-file', metavar='FILE', help='Defaults to ETC_DIR/log.properties')
     parser.add_option('--data-dir', metavar='DIR', help='Defaults to INSTALL_PATH')
     parser.add_option('--pid-file', metavar='FILE', help='Defaults to DATA_DIR/var/run/launcher.pid')
     parser.add_option('--launcher-log-file', metavar='FILE', help='Defaults to DATA_DIR/var/log/launcher.log (only in daemon mode)')
@@ -404,10 +407,11 @@ def main():
     o.verbose = options.verbose
     o.install_path = install_path
     o.launcher_config = realpath(options.launcher_config or pathjoin(o.install_path, 'bin/launcher.properties'))
-    o.node_config = realpath(options.node_config or pathjoin(o.install_path, 'etc/node.properties'))
-    o.jvm_config = realpath(options.jvm_config or pathjoin(o.install_path, 'etc/jvm.config'))
-    o.config_path = realpath(options.config or pathjoin(o.install_path, 'etc/config.properties'))
-    o.log_levels = realpath(options.log_levels_file or pathjoin(o.install_path, 'etc/log.properties'))
+    o.etc_dir = realpath(options.etc_dir or pathjoin(o.install_path, 'etc'))
+    o.node_config = realpath(options.node_config or pathjoin(o.etc_dir, 'node.properties'))
+    o.jvm_config = realpath(options.jvm_config or pathjoin(o.etc_dir, 'jvm.config'))
+    o.config_path = realpath(options.config or pathjoin(o.etc_dir, 'config.properties'))
+    o.log_levels = realpath(options.log_levels_file or pathjoin(o.etc_dir, 'log.properties'))
     o.log_levels_set = bool(options.log_levels_file)
 
     if options.node_config and not exists(o.node_config):
