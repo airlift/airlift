@@ -2,6 +2,7 @@
 
 - Upgrade to Jetty 9.4.6.v20170531
 - Fix UnknownFormatConversionException for config errors.
+- Allow specifying etc directory for launcher.
 
 * 0.148
 
