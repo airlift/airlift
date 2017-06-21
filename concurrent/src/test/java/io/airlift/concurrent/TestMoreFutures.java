@@ -155,19 +155,19 @@ public class TestMoreFutures
         CompletableFuture<String> unmodifiableFuture = unmodifiableFuture(future);
 
         // completion results in an UnsupportedOperationException
-        assertFailure(() -> unmodifiableFuture.complete("fail"), UnsupportedOperationException.class::isInstance);
+        assertFailure(() -> unmodifiableFuture.complete("fail"), e -> assertInstanceOf(e, UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
-        assertFailure(() -> unmodifiableFuture.completeExceptionally(new IOException()), UnsupportedOperationException.class::isInstance);
+        assertFailure(() -> unmodifiableFuture.completeExceptionally(new IOException()), e -> assertInstanceOf(e, UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
-        assertFailure(() -> unmodifiableFuture.obtrudeValue("fail"), UnsupportedOperationException.class::isInstance);
+        assertFailure(() -> unmodifiableFuture.obtrudeValue("fail"), e -> assertInstanceOf(e, UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
-        assertFailure(() -> unmodifiableFuture.obtrudeException(new IOException()), UnsupportedOperationException.class::isInstance);
+        assertFailure(() -> unmodifiableFuture.obtrudeException(new IOException()), e -> assertInstanceOf(e, UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
@@ -193,19 +193,19 @@ public class TestMoreFutures
         CompletableFuture<String> unmodifiableFuture = unmodifiableFuture(future, true);
 
         // completion results in an UnsupportedOperationException
-        assertFailure(() -> unmodifiableFuture.complete("fail"), UnsupportedOperationException.class::isInstance);
+        assertFailure(() -> unmodifiableFuture.complete("fail"), e -> assertInstanceOf(e, UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
-        assertFailure(() -> unmodifiableFuture.completeExceptionally(new IOException()), UnsupportedOperationException.class::isInstance);
+        assertFailure(() -> unmodifiableFuture.completeExceptionally(new IOException()), e -> assertInstanceOf(e, UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
-        assertFailure(() -> unmodifiableFuture.obtrudeValue("fail"), UnsupportedOperationException.class::isInstance);
+        assertFailure(() -> unmodifiableFuture.obtrudeValue("fail"), e -> assertInstanceOf(e, UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
-        assertFailure(() -> unmodifiableFuture.obtrudeException(new IOException()), UnsupportedOperationException.class::isInstance);
+        assertFailure(() -> unmodifiableFuture.obtrudeException(new IOException()), e -> assertInstanceOf(e, UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
