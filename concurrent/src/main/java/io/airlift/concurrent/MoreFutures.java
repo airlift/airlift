@@ -241,6 +241,34 @@ public final class MoreFutures
     }
 
     /**
+     * Returns the result of the input {@link Future}, which must have already completed.
+     * <p>
+     * Similar to Futures{@link Futures#getDone(Future)}, but does not throw checked exceptions.
+     */
+    public static <T> T getDone(Future<T> future)
+    {
+        requireNonNull(future, "future is null");
+        checkArgument(future.isDone(), "future not done yet");
+        return getFutureValue(future);
+    }
+
+    /**
+     * Checks that the completed future completed successfully.
+     */
+    public static void checkSuccess(Future<?> future, String errorMessage)
+    {
+        requireNonNull(future, "future is null");
+        requireNonNull(errorMessage, "errorMessage is null");
+        checkArgument(future.isDone(), "future not done yet");
+        try {
+            getFutureValue(future);
+        }
+        catch (RuntimeException e) {
+            throw new IllegalArgumentException(errorMessage, e);
+        }
+    }
+
+    /**
      * Creates a future that completes when the first future completes either normally
      * or exceptionally. Cancellation of the future propagates to the supplied futures.
      */

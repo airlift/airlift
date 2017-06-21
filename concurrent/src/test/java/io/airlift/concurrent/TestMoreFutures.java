@@ -19,12 +19,15 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static io.airlift.concurrent.MoreFutures.addTimeout;
 import static io.airlift.concurrent.MoreFutures.allAsList;
+import static io.airlift.concurrent.MoreFutures.checkSuccess;
 import static io.airlift.concurrent.MoreFutures.failedFuture;
 import static io.airlift.concurrent.MoreFutures.firstCompletedFuture;
+import static io.airlift.concurrent.MoreFutures.getDone;
 import static io.airlift.concurrent.MoreFutures.getFutureValue;
 import static io.airlift.concurrent.MoreFutures.mirror;
 import static io.airlift.concurrent.MoreFutures.propagateCancellation;
@@ -36,12 +39,14 @@ import static io.airlift.concurrent.MoreFutures.unwrapCompletionException;
 import static io.airlift.concurrent.MoreFutures.whenAnyComplete;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.testing.Assertions.assertInstanceOf;
+import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertThrows;
@@ -155,19 +160,19 @@ public class TestMoreFutures
         CompletableFuture<String> unmodifiableFuture = unmodifiableFuture(future);
 
         // completion results in an UnsupportedOperationException
-        assertFailure(() -> unmodifiableFuture.complete("fail"), UnsupportedOperationException.class::isInstance);
+        assertFailure(() -> unmodifiableFuture.complete("fail"), e -> assertInstanceOf(e, UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
-        assertFailure(() -> unmodifiableFuture.completeExceptionally(new IOException()), UnsupportedOperationException.class::isInstance);
+        assertFailure(() -> unmodifiableFuture.completeExceptionally(new IOException()), e -> assertInstanceOf(e, UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
-        assertFailure(() -> unmodifiableFuture.obtrudeValue("fail"), UnsupportedOperationException.class::isInstance);
+        assertFailure(() -> unmodifiableFuture.obtrudeValue("fail"), e -> assertInstanceOf(e, UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
-        assertFailure(() -> unmodifiableFuture.obtrudeException(new IOException()), UnsupportedOperationException.class::isInstance);
+        assertFailure(() -> unmodifiableFuture.obtrudeException(new IOException()), e -> assertInstanceOf(e, UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
@@ -193,19 +198,19 @@ public class TestMoreFutures
         CompletableFuture<String> unmodifiableFuture = unmodifiableFuture(future, true);
 
         // completion results in an UnsupportedOperationException
-        assertFailure(() -> unmodifiableFuture.complete("fail"), UnsupportedOperationException.class::isInstance);
+        assertFailure(() -> unmodifiableFuture.complete("fail"), e -> assertInstanceOf(e, UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
-        assertFailure(() -> unmodifiableFuture.completeExceptionally(new IOException()), UnsupportedOperationException.class::isInstance);
+        assertFailure(() -> unmodifiableFuture.completeExceptionally(new IOException()), e -> assertInstanceOf(e, UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
-        assertFailure(() -> unmodifiableFuture.obtrudeValue("fail"), UnsupportedOperationException.class::isInstance);
+        assertFailure(() -> unmodifiableFuture.obtrudeValue("fail"), e -> assertInstanceOf(e, UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
-        assertFailure(() -> unmodifiableFuture.obtrudeException(new IOException()), UnsupportedOperationException.class::isInstance);
+        assertFailure(() -> unmodifiableFuture.obtrudeException(new IOException()), e -> assertInstanceOf(e, UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
@@ -651,6 +656,46 @@ public class TestMoreFutures
         assertTrue(rootFuture.isCancelled());
     }
 
+    @Test
+    public void testGetDone()
+    {
+        assertEquals(getDone(immediateFuture("Alice")), "Alice");
+
+        assertFailure(() -> getDone(immediateFailedFuture(new IllegalStateException("some failure"))), expect(IllegalStateException.class, "some failure"));
+
+        assertFailure(
+                () -> getDone(immediateFailedFuture(new IOException("some failure"))),
+                expect(RuntimeException.class, "java.io.IOException: some failure", expect(IOException.class, "some failure")));
+
+        assertFailure(() -> getDone(SettableFuture.create()), expect(IllegalArgumentException.class, "future not done yet"));
+
+        assertFailure(() -> getDone(null), expect(NullPointerException.class, "future is null"));
+    }
+
+    @Test
+    public void testCheckSuccess()
+    {
+        checkSuccess(immediateFuture("Alice"), "this should not fail");
+
+        assertFailure(
+                () -> checkSuccess(immediateFailedFuture(new IllegalStateException("some failure")), "msg"),
+                expect(
+                        IllegalArgumentException.class, "msg",
+                        expect(IllegalStateException.class, "some failure")));
+
+        assertFailure(
+                () -> checkSuccess(immediateFailedFuture(new IOException("some failure")), "msg"),
+                expect(
+                        IllegalArgumentException.class, "msg",
+                        expect(
+                                RuntimeException.class, "java.io.IOException: some failure",
+                                expect(IOException.class, "some failure"))));
+
+        assertFailure(() -> checkSuccess(SettableFuture.create(), "msg"), expect(IllegalArgumentException.class, "future not done yet"));
+
+        assertFailure(() -> checkSuccess(null, "msg"), expect(NullPointerException.class, "future is null"));
+    }
+
     private static void assertGetUncheckedListenable(Function<ListenableFuture<Object>, Object> getter)
             throws Exception
     {
@@ -732,6 +777,23 @@ public class TestMoreFutures
             return;
         }
         fail("expected exception to be thrown");
+    }
+
+    private static Consumer<Throwable> expect(Class<? extends Throwable> expectedClass, String expectedMessagePattern)
+    {
+        return expect(expectedClass, expectedMessagePattern, cause -> {
+        });
+    }
+
+    private static Consumer<Throwable> expect(Class<? extends Throwable> expectedClass, String expectedMessagePattern, Consumer<? super Throwable> causeVerifier)
+    {
+        return e -> {
+            assertNotNull(e, "exception is null");
+            if (!expectedClass.isInstance(e) || !nullToEmpty(e.getMessage()).matches(expectedMessagePattern)) {
+                fail(format("Expected %s with message '%s', got: %s", expectedClass, expectedMessagePattern, e));
+            }
+            causeVerifier.accept(e.getCause());
+        };
     }
 
     private interface UncheckedGetter
