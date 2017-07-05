@@ -21,6 +21,7 @@ import org.testng.annotations.Test;
 
 import java.net.URI;
 
+import static io.airlift.testing.Closeables.closeQuietly;
 import static org.testng.Assert.assertEquals;
 
 public class TestHttpServerInfo
@@ -32,27 +33,36 @@ public class TestHttpServerInfo
         NodeConfig nodeConfig = new NodeConfig();
         nodeConfig.setEnvironment("test");
         nodeConfig.setNodeInternalAddress("::1");
-        nodeConfig.setNodeExternalAddress("2001:db8:85a3::8a2e:370:7334");
+        nodeConfig.setNodeExternalAddress("2001:db8::2:1");
 
         NodeInfo nodeInfo = new NodeInfo(nodeConfig);
 
         HttpServerConfig serverConfig = new HttpServerConfig();
         serverConfig.setHttpEnabled(true);
-        serverConfig.setHttpPort(80);
+        serverConfig.setHttpPort(0);
         serverConfig.setHttpsEnabled(true);
-        serverConfig.setHttpsPort(443);
+        serverConfig.setHttpsPort(0);
         serverConfig.setAdminEnabled(true);
-        serverConfig.setAdminPort(444);
 
         HttpServerInfo httpServerInfo = new HttpServerInfo(serverConfig, nodeInfo);
 
-        assertEquals(httpServerInfo.getHttpUri(), new URI("http://[::1]:80"));
-        assertEquals(httpServerInfo.getHttpExternalUri(), new URI("http://[2001:db8:85a3::8a2e:370:7334]:80"));
+        int httpPort = httpServerInfo.getHttpUri().getPort();
+        assertEquals(httpServerInfo.getHttpUri(), new URI("http://[::1]:" + httpPort));
+        assertEquals(httpServerInfo.getHttpExternalUri(), new URI("http://[2001:db8::2:1]:" + httpPort));
 
-        assertEquals(httpServerInfo.getHttpsUri(), new URI("https://[::1]:443"));
-        assertEquals(httpServerInfo.getHttpsExternalUri(), new URI("https://[2001:db8:85a3::8a2e:370:7334]:443"));
+        int httpsPort = httpServerInfo.getHttpsUri().getPort();
+        assertEquals(httpServerInfo.getHttpsUri(), new URI("https://[::1]:" + httpsPort));
+        assertEquals(httpServerInfo.getHttpsExternalUri(), new URI("https://[2001:db8::2:1]:" + httpsPort));
 
-        assertEquals(httpServerInfo.getAdminUri(), new URI("https://[::1]:444"));
-        assertEquals(httpServerInfo.getAdminExternalUri(), new URI("https://[2001:db8:85a3::8a2e:370:7334]:444"));
+        int adminPort = httpServerInfo.getAdminUri().getPort();
+        assertEquals(httpServerInfo.getAdminUri(), new URI("https://[::1]:" + adminPort));
+        assertEquals(httpServerInfo.getAdminExternalUri(), new URI("https://[2001:db8::2:1]:" + adminPort));
+
+        closeChannels(httpServerInfo);
+    }
+
+    static void closeChannels(HttpServerInfo info)
+    {
+        closeQuietly(info.getHttpChannel(), info.getHttpsChannel(), info.getAdminChannel());
     }
 }
