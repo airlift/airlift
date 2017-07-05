@@ -48,7 +48,7 @@ public class TestInet4Network
     @DataProvider(name = "invalidCidr")
     public Object[][] invalidCidrProvider()
     {
-        return new Object[][]{
+        return new Object[][] {
                 {" 0.0.0.0/0"},
                 {"0.0.0.0/0 "},
                 {"x.0.0.0/0"},
@@ -65,7 +65,7 @@ public class TestInet4Network
                 {"8.0.0.0.0"},
                 {"-8.1.0.0"},
                 {"8.-1.0.0"},
-        };
+                };
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, dataProvider = "invalidCidr")

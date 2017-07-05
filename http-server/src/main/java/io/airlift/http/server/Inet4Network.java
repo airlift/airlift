@@ -19,7 +19,8 @@ import com.google.common.net.InetAddresses;
 
 import java.net.Inet4Address;
 
-final class Inet4Network implements Comparable<Inet4Network>
+final class Inet4Network
+        implements Comparable<Inet4Network>
 {
     private final Inet4Address address;
     private final int bits;

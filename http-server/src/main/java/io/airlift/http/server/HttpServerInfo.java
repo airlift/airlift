@@ -59,7 +59,8 @@ public class HttpServerInfo
             if (config.isHttpsEnabled()) {
                 adminUri = buildUri("https", nodeInfo.getInternalAddress(), config.getAdminPort());
                 adminExternalUri = buildUri("https", nodeInfo.getExternalAddress(), adminUri.getPort());
-            } else {
+            }
+            else {
                 adminUri = buildUri("http", nodeInfo.getInternalAddress(), config.getAdminPort());
                 adminExternalUri = buildUri("http", nodeInfo.getExternalAddress(), adminUri.getPort());
             }

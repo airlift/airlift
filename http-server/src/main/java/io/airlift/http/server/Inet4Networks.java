@@ -33,7 +33,6 @@ class Inet4Networks
             fromCidr("10.0.0.0/8")
     );
 
-
     public static boolean isPrivateNetworkAddress(String inetAddress)
     {
         Inet4Address address = InetAddresses.getCoercedIPv4Address(InetAddresses.forString(inetAddress));

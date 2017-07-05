@@ -89,7 +89,6 @@ public class TestDelimitedRequestLog
         final String responseContentType = "response/type";
         final HttpURI uri = new HttpURI("http://www.example.com/aaa+bbb/ccc?param=hello%20there&other=true");
 
-
         final TraceTokenManager tokenManager = new TraceTokenManager();
         InMemoryEventClient eventClient = new InMemoryEventClient();
         MockCurrentTimeMillisProvider currentTimeMillisProvider = new MockCurrentTimeMillisProvider(timestamp + timeToLastByte);
@@ -121,7 +120,6 @@ public class TestDelimitedRequestLog
         Assert.assertEquals(events.size(), 1);
         HttpRequestEvent event = (HttpRequestEvent) events.get(0);
 
-
         Assert.assertEquals(event.getTimeStamp().toEpochMilli(), timestamp);
         Assert.assertEquals(event.getClientAddress(), ip);
         Assert.assertEquals(event.getProtocol(), protocol);
@@ -135,7 +133,7 @@ public class TestDelimitedRequestLog
         Assert.assertEquals(event.getResponseSize(), responseSize);
         Assert.assertEquals(event.getResponseCode(), responseCode);
         Assert.assertEquals(event.getResponseContentType(), responseContentType);
-        Assert.assertEquals(event.getTimeToFirstByte(), (Long)timeToFirstByte);
+        Assert.assertEquals(event.getTimeToFirstByte(), (Long) timeToFirstByte);
         Assert.assertEquals(event.getTimeToLastByte(), timeToLastByte);
         Assert.assertEquals(event.getTraceToken(), tokenManager.getCurrentRequestToken());
 

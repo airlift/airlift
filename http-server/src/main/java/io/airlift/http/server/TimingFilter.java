@@ -64,7 +64,8 @@ class TimingFilter
     {
     }
 
-    private static class TimedResponse extends HttpServletResponseWrapper
+    private static class TimedResponse
+            extends HttpServletResponseWrapper
     {
         private TimedServletOutputStream outputStream;
         private TimedPrintWriter printWriter;
@@ -108,7 +109,8 @@ class TimingFilter
         }
     }
 
-    private static class TimedServletOutputStream extends ServletOutputStream
+    private static class TimedServletOutputStream
+            extends ServletOutputStream
     {
         private final ServletOutputStream delegate;
         private Long firstByteTime;
@@ -301,7 +303,8 @@ class TimingFilter
         }
     }
 
-    private static class TimedPrintWriter extends PrintWriter
+    private static class TimedPrintWriter
+            extends PrintWriter
     {
         private Long firstByteTime;
 

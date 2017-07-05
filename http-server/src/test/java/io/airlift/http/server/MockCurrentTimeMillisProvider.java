@@ -15,7 +15,8 @@
  */
 package io.airlift.http.server;
 
-public class MockCurrentTimeMillisProvider implements CurrentTimeMillisProvider
+public class MockCurrentTimeMillisProvider
+        implements CurrentTimeMillisProvider
 {
     private long time;
 
@@ -24,7 +25,8 @@ public class MockCurrentTimeMillisProvider implements CurrentTimeMillisProvider
         this.time = time;
     }
 
-    public void incrementTime(long delta) {
+    public void incrementTime(long delta)
+    {
         time += delta;
     }
 

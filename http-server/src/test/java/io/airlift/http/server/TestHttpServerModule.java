@@ -329,7 +329,6 @@ public class TestHttpServerModule
         Assert.assertEquals(events.size(), 1);
         HttpRequestEvent event = (HttpRequestEvent) events.get(0);
 
-
         Assert.assertEquals(event.getClientAddress(), echoServlet.remoteAddress);
         Assert.assertEquals(event.getProtocol(), "http");
         Assert.assertEquals(event.getMethod(), "POST");
@@ -353,7 +352,8 @@ public class TestHttpServerModule
         Assert.assertTrue(event.getTimeToFirstByte() <= event.getTimeToLastByte());
     }
 
-    private static final class EchoServlet extends HttpServlet
+    private static final class EchoServlet
+            extends HttpServlet
     {
         private int responseStatusCode = 300;
         private final ListMultimap<String, String> responseHeaders = ArrayListMultimap.create();

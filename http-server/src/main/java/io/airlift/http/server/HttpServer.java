@@ -160,7 +160,8 @@ public class HttpServer
             httpConnector.setAcceptQueueSize(config.getHttpAcceptQueueSize());
 
             server.addConnector(httpConnector);
-        } else {
+        }
+        else {
             httpConnector = null;
         }
 
@@ -193,7 +194,8 @@ public class HttpServer
             httpsConnector.setAcceptQueueSize(config.getHttpAcceptQueueSize());
 
             server.addConnector(httpsConnector);
-        } else {
+        }
+        else {
             httpsConnector = null;
         }
 
@@ -219,7 +221,8 @@ public class HttpServer
                 sslContextFactory.setSecureRandomAlgorithm(config.getSecureRandomAlgorithm());
                 SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
                 adminConnector = new ServerConnector(server, adminThreadPool, null, null, 0, -1, sslConnectionFactory, new HttpConnectionFactory(adminConfiguration));
-            } else {
+            }
+            else {
                 HttpConnectionFactory http1 = new HttpConnectionFactory(adminConfiguration);
                 HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(adminConfiguration);
                 http2c.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
@@ -233,11 +236,12 @@ public class HttpServer
             adminConnector.setAcceptQueueSize(config.getHttpAcceptQueueSize());
 
             server.addConnector(adminConnector);
-        } else {
+        }
+        else {
             adminConnector = null;
         }
 
-        /**
+        /*
          * structure is:
          *
          * server
