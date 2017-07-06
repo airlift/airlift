@@ -23,7 +23,7 @@ import java.net.URI;
 
 import static org.testng.Assert.assertEquals;
 
-public class HttpServerInfoTest
+public class TestHttpServerInfo
 {
     @Test
     public void testIPv6Url()
