@@ -16,7 +16,6 @@
 package io.airlift.configuration;
 
 import com.google.common.io.Files;
-import io.airlift.testing.FileUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -27,6 +26,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Map;
 
+import static com.google.common.io.MoreFiles.deleteRecursively;
+import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static org.testng.Assert.assertEquals;
 
 public class TestConfigurationLoader
@@ -46,7 +47,7 @@ public class TestConfigurationLoader
     public void teardown()
             throws IOException
     {
-        FileUtils.deleteRecursively(tempDir);
+        deleteRecursively(tempDir.toPath(), ALLOW_INSECURE);
     }
 
     @Test

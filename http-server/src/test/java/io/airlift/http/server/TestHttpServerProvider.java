@@ -28,7 +28,6 @@ import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
-import io.airlift.testing.FileUtils;
 import io.airlift.tracetoken.TraceTokenManager;
 import io.airlift.units.Duration;
 import org.testng.annotations.AfterMethod;
@@ -49,6 +48,8 @@ import java.util.Base64;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.io.MoreFiles.deleteRecursively;
+import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static com.google.common.io.Resources.getResource;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
@@ -99,7 +100,7 @@ public class TestHttpServerProvider
             }
         }
         finally {
-            FileUtils.deleteRecursively(tempDir);
+            deleteRecursively(tempDir.toPath(), ALLOW_INSECURE);
         }
     }
 

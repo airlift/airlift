@@ -44,7 +44,6 @@ import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.NodeModule;
-import io.airlift.testing.FileUtils;
 import io.airlift.tracetoken.TraceTokenModule;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -66,6 +65,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static com.google.common.io.MoreFiles.deleteRecursively;
+import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.HttpHeaders.REFERER;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
@@ -106,7 +107,7 @@ public class TestHttpServerModule
     public void tearDown()
             throws IOException
     {
-        FileUtils.deleteRecursively(tempDir);
+        deleteRecursively(tempDir.toPath(), ALLOW_INSECURE);
     }
 
     @Test
