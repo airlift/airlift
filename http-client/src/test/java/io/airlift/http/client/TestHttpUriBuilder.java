@@ -4,6 +4,7 @@ import com.google.common.net.HostAndPort;
 import org.testng.annotations.Test;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 
 import static io.airlift.http.client.HttpUriBuilder.uriBuilder;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
@@ -115,6 +116,15 @@ public class TestHttpUriBuilder
                 .build();
 
         assertEquals(uri.toASCIIString(), "http://www.example.com/a/b/c/x/y/z");
+    }
+
+    @Test
+    public void testNullPath()
+            throws URISyntaxException
+    {
+        URI uri = new URI("test-server:8080");
+        assertEquals(uri.getRawPath(), null);
+        assertEquals(uri.toASCIIString(), "test-server:8080");
     }
 
     @Test

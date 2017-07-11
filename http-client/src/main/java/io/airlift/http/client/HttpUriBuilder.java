@@ -17,6 +17,7 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.google.common.base.CharMatcher.ascii;
 import static java.lang.Character.forDigit;
@@ -55,7 +56,7 @@ public class HttpUriBuilder
         scheme = previous.getScheme();
         host = previous.getHost();
         port = previous.getPort();
-        path = percentDecode(previous.getRawPath());
+        path = Optional.ofNullable(previous.getRawPath()).map(HttpUriBuilder::percentDecode).orElse(null);
         params.putAll(parseParams(previous.getRawQuery()));
     }
 
@@ -280,6 +281,7 @@ public class HttpUriBuilder
      */
     private static String percentDecode(String encoded)
     {
+        requireNonNull(encoded, "encoded is null");
         Preconditions.checkArgument(ascii().matchesAllOf(encoded), "string must be ASCII");
 
         ByteArrayOutputStream out = new ByteArrayOutputStream(encoded.length());
