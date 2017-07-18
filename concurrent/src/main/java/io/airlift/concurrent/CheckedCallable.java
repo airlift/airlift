@@ -19,6 +19,7 @@ package io.airlift.concurrent;
  * @param <T> type of the value produced by the captured lambda
  * @param <E> type of exception thrown by the captured lambda
  */
+@FunctionalInterface
 public interface CheckedCallable<T, E extends Throwable>
 {
     T call()

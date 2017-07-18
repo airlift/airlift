@@ -13,10 +13,13 @@
  */
 package io.airlift.concurrent;
 
+import com.google.common.annotations.Beta;
+
 import java.util.concurrent.locks.Lock;
 
 import static java.util.Objects.requireNonNull;
 
+@Beta
 public class Locks
 {
     public static <E extends Throwable> void locking(Lock lock, CheckedRunnable<E> callback)

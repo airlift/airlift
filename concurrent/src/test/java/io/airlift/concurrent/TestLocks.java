@@ -35,7 +35,6 @@ import static io.airlift.concurrent.Locks.lockingInterruptibly;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class TestLocks
@@ -132,6 +131,7 @@ public class TestLocks
                 .collect(toImmutableList());
 
         futures.forEach(MoreFutures::getFutureValue);
+        assertEquals(maxUnderLock.get(), 1, "More than one thread acquired the lock at the same time");
     }
 
     @Test
@@ -139,10 +139,10 @@ public class TestLocks
             throws Exception
     {
         Lock lock = new ReentrantLock();
-        Exchanger<Thread> testBackgroundThreadExchanger = new Exchanger<>();
+        Exchanger<Thread> exchanger = new Exchanger<>();
 
         Future<Object> future = executor.submit(() -> {
-            testBackgroundThreadExchanger.exchange(Thread.currentThread());
+            exchanger.exchange(Thread.currentThread());
             // main thread is under lock now
             lockingInterruptibly(lock, () -> {
                 throw new AssertionError("test background thread got the lock");
@@ -151,7 +151,7 @@ public class TestLocks
         });
 
         locking(lock, () -> {
-            Thread testBackgroundThread = testBackgroundThreadExchanger.exchange(null, 5, SECONDS);
+            Thread testBackgroundThread = exchanger.exchange(null, 5, SECONDS);
             Thread.sleep(40); // give the thread chance to lock
             testBackgroundThread.interrupt();
             // we can release lock now, as Lock.lockInterruptibly throws interrupted even if lock is available
@@ -162,7 +162,9 @@ public class TestLocks
             fail("ExecutionException was expected");
         }
         catch (ExecutionException expected) {
-            assertTrue(expected.getCause() instanceof InterruptedException);
+            if (!(expected.getCause() instanceof InterruptedException)) {
+                fail("Expected failure caused by interruption", expected);
+            }
         }
     }
 }

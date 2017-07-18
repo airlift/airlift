@@ -18,6 +18,7 @@ package io.airlift.concurrent;
  *
  * @param <E> type of exception thrown by the captured lambda
  */
+@FunctionalInterface
 public interface CheckedRunnable<E extends Throwable>
 {
     void run()
