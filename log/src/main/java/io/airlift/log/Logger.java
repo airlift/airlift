@@ -15,8 +15,6 @@
  */
 package io.airlift.log;
 
-import javax.inject.Inject;
-
 import java.util.IllegalFormatException;
 
 import static java.lang.String.format;
@@ -30,7 +28,6 @@ public class Logger
 {
     private final java.util.logging.Logger logger;
 
-    @Inject
     Logger(java.util.logging.Logger logger)
     {
         this.logger = logger;
