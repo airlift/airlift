@@ -35,7 +35,7 @@ class JavaVersion
     private static final Pattern PATTERN = Pattern.compile(VERSION_NUMBER + PRE + BUILD + OPT);
 
     // For Java 8 and below
-    private static final Pattern LEGACY_PATTERN = Pattern.compile("1\\.(?<MAJOR>[0-9]+)(\\.(?<MINOR>(0|[1-9][0-9]*)))?(_(?<UPDATE>[1-9][0-9]*))?(?:-ea)?");
+    private static final Pattern LEGACY_PATTERN = Pattern.compile("1\\.(?<MAJOR>[0-9]+)(\\.(?<MINOR>(0|[1-9][0-9]*)))?(_(?<UPDATE>[1-9][0-9]*))?(?:-[a-zA-Z0-9.]+)*");
 
     private final int major;
     private final int minor;
