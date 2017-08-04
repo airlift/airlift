@@ -26,7 +26,6 @@ import java.lang.annotation.Annotation;
 import java.util.Collection;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static java.util.Objects.requireNonNull;
 
 @Beta
 public class HttpClientBinder
