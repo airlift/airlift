@@ -17,10 +17,10 @@ package io.airlift.configuration;
 
 import com.google.inject.ConfigurationException;
 import com.google.inject.spi.Message;
-import io.airlift.testing.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ProblemsTest
 {
@@ -32,7 +32,7 @@ public class ProblemsTest
 
         Message [] errors = problems.getErrors().toArray(new Message[]{});
         Assert.assertEquals(errors.length, 1);
-        Assertions.assertContainsAllOf(errors[0].toString(), "Error", "message 1");
+        assertThat(errors[0].toString()).contains("Error", "message 1");
 
         Assert.assertEquals(problems.getWarnings().size(), 0, "Found unexpected warnings in problem object");
 
@@ -42,7 +42,7 @@ public class ProblemsTest
         }
         catch(ConfigurationException e)
         {
-            Assertions.assertContainsAllOf(e.getMessage(), "message 1");
+            assertThat(e.getMessage()).contains("message 1");
         }
     }
 
@@ -55,8 +55,8 @@ public class ProblemsTest
 
         Message [] errors = problems.getErrors().toArray(new Message[]{});
         Assert.assertEquals(errors.length, 2);
-        Assertions.assertContainsAllOf(errors[0].toString(), "Error", "message 1");
-        Assertions.assertContainsAllOf(errors[1].toString(), "Error", "message 2");
+        assertThat(errors[0].toString()).contains("Error", "message 1");
+        assertThat(errors[1].toString()).contains("Error", "message 2");
 
         Assert.assertEquals(problems.getWarnings().size(), 0, "Found unexpected warnings in problem object");
 
@@ -67,7 +67,7 @@ public class ProblemsTest
         }
         catch(ConfigurationException e)
         {
-            Assertions.assertContainsAllOf(e.getMessage(), "message 1", "message 2");
+            assertThat(e.getMessage()).contains("message 1", "message 2");
         }
     }
 
@@ -81,7 +81,7 @@ public class ProblemsTest
 
         Message [] warnings = problems.getWarnings().toArray(new Message[]{});
         Assert.assertEquals(warnings.length, 1);
-        Assertions.assertContainsAllOf(warnings[0].toString(), "Warning", "message 1");
+        assertThat(warnings[0].toString()).contains("Warning", "message 1");
 
         try {
             problems.throwIfHasErrors();
@@ -103,8 +103,8 @@ public class ProblemsTest
 
         Message [] warnings = problems.getWarnings().toArray(new Message[]{});
         Assert.assertEquals(warnings.length, 2);
-        Assertions.assertContainsAllOf(warnings[0].toString(), "Warning", "message 1");
-        Assertions.assertContainsAllOf(warnings[1].toString(), "Warning", "message 2");
+        assertThat(warnings[0].toString()).contains("Warning", "message 1");
+        assertThat(warnings[1].toString()).contains("Warning", "message 2");
 
         try {
             problems.throwIfHasErrors();
@@ -128,14 +128,14 @@ public class ProblemsTest
 
         Message [] errors = problems.getErrors().toArray(new Message[]{});
         Assert.assertEquals(errors.length, 2);
-        Assertions.assertContainsAllOf(errors[0].toString(), "Error", "message e1");
-        Assertions.assertContainsAllOf(errors[1].toString(), "Error", "message e2");
+        assertThat(errors[0].toString()).contains("Error", "message e1");
+        assertThat(errors[1].toString()).contains("Error", "message e2");
 
         Message [] warnings = problems.getWarnings().toArray(new Message[]{});
         Assert.assertEquals(warnings.length, 3);
-        Assertions.assertContainsAllOf(warnings[0].toString(), "Warning", "message w1");
-        Assertions.assertContainsAllOf(warnings[1].toString(), "Warning", "message w2");
-        Assertions.assertContainsAllOf(warnings[2].toString(), "Warning", "message w3");
+        assertThat(warnings[0].toString()).contains("Warning", "message w1");
+        assertThat(warnings[1].toString()).contains("Warning", "message w2");
+        assertThat(warnings[2].toString()).contains("Warning", "message w3");
 
         try {
             problems.throwIfHasErrors();
@@ -143,7 +143,7 @@ public class ProblemsTest
         }
         catch(ConfigurationException e)
         {
-            Assertions.assertContainsAllOf(e.getMessage(), "message e1", "message e2", "message w1", "message w2", "message w3");
+            assertThat(e.getMessage()).contains("message e1", "message e2", "message w1", "message w2", "message w3");
         }
     }
 
@@ -179,6 +179,6 @@ public class ProblemsTest
         problems.addWarning("3");
         problems.addError("2");
 
-        Assertions.assertContains(monitor.getResult(), "E-Error: 1, W-Warning: 1, W-Warning: 2, W-Warning: 3, E-Error: 2");
+        assertThat(monitor.getResult()).contains("E-Error: 1, W-Warning: 1, W-Warning: 2, W-Warning: 3, E-Error: 2");
     }
 }

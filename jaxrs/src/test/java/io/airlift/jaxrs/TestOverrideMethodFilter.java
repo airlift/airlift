@@ -29,7 +29,7 @@ import java.net.URI;
 import java.security.Principal;
 import java.util.Collection;
 
-import static io.airlift.testing.Assertions.assertEqualsIgnoreCase;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -102,7 +102,7 @@ public class TestOverrideMethodFilter
                 new MockPropertiesDelegate());
 
         filter.filter(request);
-        assertEqualsIgnoreCase(request.getMethod(), method);
+        assertThat(request.getMethod()).isEqualToIgnoringCase(method);
     }
 
     @Test
@@ -119,8 +119,7 @@ public class TestOverrideMethodFilter
         request.header(OverrideMethodFilter.HEADER, "DELETE");
 
         filter.filter(request);
-        assertEqualsIgnoreCase(request.getMethod(), "DELETE");
-
+        assertThat(request.getMethod()).isEqualToIgnoringCase("DELETE");
     }
 
     public static String testQueryParam(String requestMethod, String override)
@@ -152,7 +151,7 @@ public class TestOverrideMethodFilter
     private static void assertHeaderOverridesMethod(String requestMethod, String override)
     {
         String resultMethod = testHeader(requestMethod, override);
-        assertEqualsIgnoreCase(resultMethod, override);
+        assertThat(resultMethod).isEqualToIgnoringCase(override);
     }
 
     private static void assertQueryParamThrowsException(String requestMethod, String override)
@@ -169,7 +168,7 @@ public class TestOverrideMethodFilter
     private static void assertQueryParamOverridesMethod(String requestMethod, String override)
     {
         String resultMethod = testQueryParam(requestMethod, override);
-        assertEqualsIgnoreCase(resultMethod, override);
+        assertThat(resultMethod).isEqualToIgnoringCase(override);
     }
 
     private static String testHeader(String requestMethod, String override)

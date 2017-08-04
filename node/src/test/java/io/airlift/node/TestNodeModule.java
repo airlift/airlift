@@ -21,12 +21,13 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationModule;
-import io.airlift.testing.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestNodeModule
 {
@@ -48,13 +49,13 @@ public class TestNodeModule
         Assert.assertNull(nodeInfo.getConfigSpec());
         Assert.assertNotNull(nodeInfo.getInstanceId());
 
-        Assertions.assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
+        Assert.assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
 
         Assert.assertNotNull(nodeInfo.getInternalAddress());
         Assert.assertFalse(InetAddress.getByName(nodeInfo.getInternalAddress()).isAnyLocalAddress());
         Assert.assertNotNull(nodeInfo.getBindIp());
         Assert.assertTrue(nodeInfo.getBindIp().isAnyLocalAddress());
-        Assertions.assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
+        assertThat(nodeInfo.getStartTime()).isGreaterThanOrEqualTo(testStartTime);
 
         // make sure toString doesn't throw an exception
         Assert.assertNotNull(nodeInfo.toString());
@@ -94,11 +95,11 @@ public class TestNodeModule
         Assert.assertEquals(nodeInfo.getConfigSpec(), configSpec);
         Assert.assertNotNull(nodeInfo.getInstanceId());
 
-        Assertions.assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
+        Assert.assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
 
         Assert.assertEquals(nodeInfo.getInternalAddress(), publicAddress);
         Assert.assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
-        Assertions.assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
+        assertThat(nodeInfo.getStartTime()).isGreaterThanOrEqualTo(testStartTime);
 
         // make sure toString doesn't throw an exception
         Assert.assertNotNull(nodeInfo.toString());

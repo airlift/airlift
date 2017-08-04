@@ -26,6 +26,7 @@ import java.util.List;
 
 import static io.airlift.testing.TestAssertions.SubComparable.createSubComparable;
 import static io.airlift.testing.TestAssertions.SuperComparable.createSuperComparable;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestAssertions
 {
@@ -121,14 +122,14 @@ public class TestAssertions
 
     private void passInstanceOf(Object actual, Class<?> expectedType)
     {
-        Assertions.assertInstanceOf(actual, expectedType);
+        assertThat(actual).isInstanceOf(expectedType);
         Assertions.assertInstanceOf(actual, expectedType, MESSAGE);
     }
 
     private void failInstanceOf(Object actual, Class<?> expectedType)
     {
         try {
-            Assertions.assertInstanceOf(actual, expectedType);
+            assertThat(actual).isInstanceOf(expectedType);
             Assert.fail("Expected AssertionError");
         }
         catch (AssertionError e) {
@@ -348,7 +349,7 @@ public class TestAssertions
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void passLessThanOrEqual(Comparable actual, Comparable expected)
     {
-        Assertions.assertLessThanOrEqual(actual, expected);
+        assertThat(actual).isLessThanOrEqualTo(expected);
         Assertions.assertLessThanOrEqual(actual, expected, MESSAGE);
     }
 
@@ -356,7 +357,7 @@ public class TestAssertions
     public void failLessThanOrEqual(Comparable actual, Comparable expected)
     {
         try {
-            Assertions.assertLessThanOrEqual(actual, expected);
+            assertThat(actual).isLessThanOrEqualTo(expected);
             Assert.fail("Expected AssertionError");
         }
         catch (AssertionError e) {

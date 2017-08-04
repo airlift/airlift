@@ -53,9 +53,8 @@ import static com.google.common.io.Resources.getResource;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
-import static io.airlift.testing.Assertions.assertContains;
-import static io.airlift.testing.Assertions.assertInstanceOf;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -196,7 +195,7 @@ public class TestHttpServerProvider
         try (HttpClient client = new JettyHttpClient()) {
             StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
             assertEquals(response.getStatusCode(), 500);
-            assertContains(response.getBody(), "ErrorServlet.java");
+            assertThat(response.getBody()).contains("ErrorServlet.java");
         }
     }
 
@@ -233,7 +232,7 @@ public class TestHttpServerProvider
                 fail("expected exception");
             }
             catch (ExecutionException e) {
-                assertInstanceOf(e.getCause(), UncheckedIOException.class);
+                assertThat(e.getCause()).isInstanceOf(UncheckedIOException.class);
             }
         }
     }

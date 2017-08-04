@@ -66,9 +66,6 @@ import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.Request.Builder.preparePut;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
-import static io.airlift.testing.Assertions.assertBetweenInclusive;
-import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
-import static io.airlift.testing.Assertions.assertLessThan;
 import static io.airlift.testing.Closeables.closeQuietly;
 import static io.airlift.units.Duration.nanosSince;
 import static java.lang.String.format;
@@ -76,6 +73,7 @@ import static java.lang.Thread.currentThread;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -222,7 +220,7 @@ public abstract class AbstractHttpClientTest
                 if (!isConnectTimeout(t)) {
                     fail(format("unexpected exception: [%s]", getStackTraceAsString(t)));
                 }
-                assertLessThan(nanosSince(start), new Duration(300, MILLISECONDS));
+                assertThat(nanosSince(start)).isLessThan(new Duration(300, MILLISECONDS));
             }
         }
     }
@@ -276,7 +274,6 @@ public abstract class AbstractHttpClientTest
 
         executeExceptionRequest(config, request);
     }
-
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testBadPort()
@@ -376,7 +373,7 @@ public abstract class AbstractHttpClientTest
 
     @Test
     public void testQuotedSpace()
-        throws Exception
+            throws Exception
     {
         URI uri = baseURI.resolve("/road/to/nowhere?query=ab%20cd");
         Request request = prepareGet()
@@ -414,7 +411,7 @@ public abstract class AbstractHttpClientTest
 
         assertEquals(port2, port1);
         assertEquals(port3, port1);
-        assertBetweenInclusive(port1, 1024, 65535);
+        assertThat(port1).isBetween(1024, 65535);
     }
 
     @Test
@@ -654,7 +651,7 @@ public abstract class AbstractHttpClientTest
         assertFalse(servlet.getRequestHeaders().containsKey(HeaderName.of(ACCEPT_ENCODING)));
 
         String json = "{\"foo\":\"bar\",\"hello\":\"world\"}";
-        assertGreaterThanOrEqual(json.length(), GzipHandler.DEFAULT_MIN_GZIP_SIZE);
+        assertThat(json.length()).isGreaterThanOrEqualTo(GzipHandler.DEFAULT_MIN_GZIP_SIZE);
 
         servlet.setResponseBody(json);
         servlet.addResponseHeader(CONTENT_TYPE, "application/json");
@@ -709,7 +706,6 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-
     @Test(expectedExceptions = {IOException.class, TimeoutException.class})
     public void testConnectReadIncomplete()
             throws Exception
@@ -722,7 +718,6 @@ public abstract class AbstractHttpClientTest
             executeRequest(fakeServer, config);
         }
     }
-
 
     @Test(expectedExceptions = {IOException.class, TimeoutException.class})
     public void testConnectReadIncompleteClose()
@@ -802,7 +797,7 @@ public abstract class AbstractHttpClientTest
             executeRequest(config, request, new ExceptionResponseHandler());
         }
         finally {
-            assertLessThan(nanosSince(start), new Duration(1, SECONDS), "Expected request to finish quickly");
+            assertThat(nanosSince(start)).isLessThan(new Duration(1, SECONDS)).as("Expected request to finish quickly");
         }
     }
 
@@ -816,7 +811,6 @@ public abstract class AbstractHttpClientTest
         private final AtomicReference<Socket> connectionSocket = new AtomicReference<>();
         private final String scheme;
         private final String host;
-
 
         private FakeServer(String scheme, String host, long readBytes, byte[] writeBuffer, boolean closeConnectionImmediately)
                 throws Exception
@@ -977,7 +971,8 @@ public abstract class AbstractHttpClientTest
     }
 
     private static class CustomError
-            extends Error {
+            extends Error
+    {
     }
 
     public static class CapturedException

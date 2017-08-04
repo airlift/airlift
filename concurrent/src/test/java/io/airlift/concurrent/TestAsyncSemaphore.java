@@ -35,8 +35,8 @@ import static com.google.common.util.concurrent.Futures.addCallback;
 import static com.google.common.util.concurrent.MoreExecutors.listeningDecorator;
 import static com.google.common.util.concurrent.MoreExecutors.newDirectExecutorService;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
-import static io.airlift.testing.Assertions.assertLessThanOrEqual;
 import static java.util.concurrent.Executors.newCachedThreadPool;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestAsyncSemaphore
 {
@@ -75,7 +75,7 @@ public class TestAsyncSemaphore
             futures.add(asyncSemaphore.submit((Runnable) () -> {
                 count.incrementAndGet();
                 int currentConcurrency = concurrency.incrementAndGet();
-                assertLessThanOrEqual(currentConcurrency, 1);
+                assertThat(currentConcurrency).isLessThanOrEqualTo(1);
                 Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MILLISECONDS);
                 concurrency.decrementAndGet();
             }));
@@ -101,7 +101,7 @@ public class TestAsyncSemaphore
             futures.add(asyncSemaphore.submit(() -> {
                 count.incrementAndGet();
                 int currentConcurrency = concurrency.incrementAndGet();
-                assertLessThanOrEqual(currentConcurrency, 2);
+                assertThat(currentConcurrency).isLessThanOrEqualTo(2);
                 Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MILLISECONDS);
                 concurrency.decrementAndGet();
             }));
@@ -130,7 +130,7 @@ public class TestAsyncSemaphore
                 asyncSemaphore.submit((Runnable) () -> {
                     count.incrementAndGet();
                     int currentConcurrency = concurrency.incrementAndGet();
-                    assertLessThanOrEqual(currentConcurrency, 2);
+                    assertThat(currentConcurrency).isLessThanOrEqualTo(2);
                     Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MILLISECONDS);
                     concurrency.decrementAndGet();
                     completionLatch.countDown();
@@ -278,7 +278,7 @@ public class TestAsyncSemaphore
     private static RuntimeException assertFailedConcurrency(AtomicInteger concurrency)
     {
         int currentConcurrency = concurrency.incrementAndGet();
-        assertLessThanOrEqual(currentConcurrency, 2);
+        assertThat(currentConcurrency).isLessThanOrEqualTo(2);
         Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MILLISECONDS);
         concurrency.decrementAndGet();
         throw new IllegalStateException();

@@ -20,7 +20,6 @@ import com.google.common.collect.MapMaker;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationMetadata;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
-import io.airlift.testing.Assertions;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
@@ -33,6 +32,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
+
+import static org.testng.Assert.assertNotEquals;
 
 public final class ConfigAssertions
 {
@@ -222,7 +223,7 @@ public final class ConfigAssertions
             }
             Object actualAttributeValue = invoke(actual, getter);
             Object expectedAttributeValue = invoke(expected, getter);
-            Assertions.assertNotEquals(actualAttributeValue, expectedAttributeValue, attribute.getName());
+            assertNotEquals(actualAttributeValue, expectedAttributeValue, attribute.getName());
         }
     }
 

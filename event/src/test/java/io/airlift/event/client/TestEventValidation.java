@@ -23,7 +23,7 @@ import java.util.List;
 import static io.airlift.event.client.EventTypeMetadata.getEventTypeMetadata;
 import static io.airlift.event.client.EventTypeMetadata.getEventTypeMetadataNested;
 import static io.airlift.event.client.EventTypeMetadata.getValidEventTypeMetadata;
-import static io.airlift.testing.Assertions.assertContains;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 
 public class TestEventValidation
@@ -99,6 +99,6 @@ public class TestEventValidation
         EventTypeMetadata<?> metadata = getEventTypeMetadata(eventClass);
         List<String> errors = metadata.getErrors();
         assertEquals(errors.size(), 1, "expected exactly one error:\n" + Joiner.on('\n').join(errors));
-        assertContains(errors.get(0), errorPart);
+        assertThat(errors.get(0)).contains(errorPart);
     }
 }

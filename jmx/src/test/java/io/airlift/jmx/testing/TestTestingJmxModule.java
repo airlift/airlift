@@ -7,7 +7,7 @@ import org.weakref.jmx.testing.TestingMBeanServer;
 
 import javax.management.MBeanServer;
 
-import static io.airlift.testing.Assertions.assertInstanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestTestingJmxModule
 {
@@ -18,6 +18,6 @@ public class TestTestingJmxModule
         Injector injector = Guice.createInjector(new TestingJmxModule());
         MBeanServer server = injector.getInstance(MBeanServer.class);
 
-        assertInstanceOf(server, TestingMBeanServer.class);
+        assertThat(server).isInstanceOf(TestingMBeanServer.class);
     }
 }
