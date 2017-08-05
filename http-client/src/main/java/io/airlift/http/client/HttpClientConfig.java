@@ -29,6 +29,7 @@ import io.airlift.units.MinDuration;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
+import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -41,7 +42,6 @@ public class HttpClientConfig
     public static final String JAVAX_NET_SSL_TRUST_STORE = "javax.net.ssl.trustStore";
     public static final String JAVAX_NET_SSL_TRUST_STORE_PASSWORD = "javax.net.ssl.trustStorePassword";
 
-    private boolean http2Enabled;
     private Duration connectTimeout = new Duration(1, SECONDS);
     private Duration requestTimeout = new Duration(5, MINUTES);
     private Duration idleTimeout = new Duration(1, MINUTES);
@@ -59,8 +59,11 @@ public class HttpClientConfig
     private boolean authenticationEnabled;
     private String kerberosPrincipal;
     private String kerberosRemoteServiceName;
+
+    private boolean http2Enabled;
     private DataSize http2InitialSessionReceiveWindowSize = new DataSize(16, MEGABYTE);
     private DataSize http2InitialStreamReceiveWindowSize = new DataSize(16, MEGABYTE);
+    private DataSize http2InputBufferSize = new DataSize(8, KILOBYTE);
 
     public boolean isHttp2Enabled()
     {
@@ -324,6 +327,22 @@ public class HttpClientConfig
     public HttpClientConfig setHttp2InitialStreamReceiveWindowSize(DataSize http2InitialStreamReceiveWindowSize)
     {
         this.http2InitialStreamReceiveWindowSize = http2InitialStreamReceiveWindowSize;
+        return this;
+    }
+
+    @NotNull
+    @MinDataSize("1kB")
+    @MaxDataSize("32MB")
+    public DataSize getHttp2InputBufferSize()
+    {
+        return http2InputBufferSize;
+    }
+
+    @Config("http-client.http2.input-buffer-size")
+    @ConfigDescription("Size of the buffer used to read from the network for HTTP/2")
+    public HttpClientConfig setHttp2InputBufferSize(DataSize http2InputBufferSize)
+    {
+        this.http2InputBufferSize = http2InputBufferSize;
         return this;
     }
 }

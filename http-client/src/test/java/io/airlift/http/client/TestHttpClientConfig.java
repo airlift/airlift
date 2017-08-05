@@ -31,6 +31,7 @@ import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_KEY_STORE_PA
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_TRUST_STORE;
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_TRUST_STORE_PASSWORD;
 import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
+import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -61,7 +62,8 @@ public class TestHttpClientConfig
                 .setKerberosRemoteServiceName(null)
                 .setKerberosPrincipal(null)
                 .setHttp2InitialSessionReceiveWindowSize(new DataSize(16, MEGABYTE))
-                .setHttp2InitialStreamReceiveWindowSize(new DataSize(16, MEGABYTE)));
+                .setHttp2InitialStreamReceiveWindowSize(new DataSize(16, MEGABYTE))
+                .setHttp2InputBufferSize(new DataSize(8, KILOBYTE)));
     }
 
     @Test
@@ -88,6 +90,7 @@ public class TestHttpClientConfig
                 .put("http-client.authentication.krb5.principal", "airlift-client")
                 .put("http-client.http2.session-receive-window-size", "7MB")
                 .put("http-client.http2.stream-receive-window-size", "7MB")
+                .put("http-client.http2.input-buffer-size", "1MB")
                 .build();
 
         HttpClientConfig expected = new HttpClientConfig()
@@ -110,7 +113,8 @@ public class TestHttpClientConfig
                 .setKerberosRemoteServiceName("airlift")
                 .setKerberosPrincipal("airlift-client")
                 .setHttp2InitialSessionReceiveWindowSize(new DataSize(7, MEGABYTE))
-                .setHttp2InitialStreamReceiveWindowSize(new DataSize(7, MEGABYTE));
+                .setHttp2InitialStreamReceiveWindowSize(new DataSize(7, MEGABYTE))
+                .setHttp2InputBufferSize(new DataSize(1, MEGABYTE));
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

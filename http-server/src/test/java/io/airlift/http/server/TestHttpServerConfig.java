@@ -67,6 +67,7 @@ public class TestHttpServerConfig
                 .setHttp2MaxConcurrentStreams(16384)
                 .setShowStackTrace(true)
                 .setHttp2InitialSessionReceiveWindowSize(new DataSize(16, MEGABYTE))
+                .setHttp2InputBufferSize(new DataSize(8, KILOBYTE))
                 .setHttp2InitialStreamReceiveWindowSize(new DataSize(16, MEGABYTE))
         );
     }
@@ -107,6 +108,7 @@ public class TestHttpServerConfig
                 .put("http-server.show-stack-trace", "false")
                 .put("http-server.http2.session-receive-window-size", "4MB")
                 .put("http-server.http2.stream-receive-window-size", "4MB")
+                .put("http-server.http2.input-buffer-size", "4MB")
                 .build();
 
         HttpServerConfig expected = new HttpServerConfig()
@@ -141,7 +143,8 @@ public class TestHttpServerConfig
                 .setHttp2MaxConcurrentStreams(1234)
                 .setShowStackTrace(false)
                 .setHttp2InitialSessionReceiveWindowSize(new DataSize(4, MEGABYTE))
-                .setHttp2InitialStreamReceiveWindowSize(new DataSize(4, MEGABYTE));
+                .setHttp2InitialStreamReceiveWindowSize(new DataSize(4, MEGABYTE))
+                .setHttp2InputBufferSize(new DataSize(4, MEGABYTE));
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }
