@@ -19,7 +19,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HostAndPort;
 import io.airlift.configuration.testing.ConfigAssertions;
 import io.airlift.units.DataSize;
-import io.airlift.units.DataSize.Unit;
 import io.airlift.units.Duration;
 import org.testng.annotations.Test;
 
@@ -33,6 +32,9 @@ import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_KEY_STORE_PA
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_TRUST_STORE;
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_TRUST_STORE_PASSWORD;
 import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
+import static io.airlift.units.DataSize.Unit.KILOBYTE;
+import static io.airlift.units.DataSize.Unit.MEGABYTE;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 @SuppressWarnings("deprecation")
 public class TestHttpClientConfig
@@ -42,14 +44,14 @@ public class TestHttpClientConfig
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(HttpClientConfig.class)
                 .setHttp2Enabled(false)
-                .setConnectTimeout(new Duration(1, TimeUnit.SECONDS))
+                .setConnectTimeout(new Duration(1, SECONDS))
                 .setRequestTimeout(new Duration(5, TimeUnit.MINUTES))
                 .setIdleTimeout(new Duration(1, TimeUnit.MINUTES))
                 .setKeepAliveInterval(null)
                 .setMaxConnections(200)
                 .setMaxConnectionsPerServer(20)
                 .setMaxRequestsQueuedPerDestination(1024)
-                .setMaxContentLength(new DataSize(16, Unit.MEGABYTE))
+                .setMaxContentLength(new DataSize(16, MEGABYTE))
                 .setSocksProxy(null)
                 .setKeyStorePath(System.getProperty(JAVAX_NET_SSL_KEY_STORE))
                 .setKeyStorePassword(System.getProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD))
@@ -59,8 +61,9 @@ public class TestHttpClientConfig
                 .setAuthenticationEnabled(false)
                 .setKerberosRemoteServiceName(null)
                 .setKerberosPrincipal(null)
-                .setHttp2InitialSessionReceiveWindowSize(new DataSize(16, DataSize.Unit.MEGABYTE))
-                .setHttp2InitialStreamReceiveWindowSize(new DataSize(16, DataSize.Unit.MEGABYTE)));
+                .setHttp2InitialSessionReceiveWindowSize(new DataSize(16, MEGABYTE))
+                .setHttp2InitialStreamReceiveWindowSize(new DataSize(16, MEGABYTE))
+                .setHttp2InputBufferSize(new DataSize(8, KILOBYTE)));
     }
 
     @Test
@@ -87,18 +90,19 @@ public class TestHttpClientConfig
                 .put("http-client.authentication.krb5.principal", "airlift-client")
                 .put("http-client.http2.session-receive-window-size", "7MB")
                 .put("http-client.http2.stream-receive-window-size", "7MB")
+                .put("http-client.http2.input-buffer-size", "1MB")
                 .build();
 
         HttpClientConfig expected = new HttpClientConfig()
                 .setHttp2Enabled(true)
-                .setConnectTimeout(new Duration(4, TimeUnit.SECONDS))
-                .setRequestTimeout(new Duration(15, TimeUnit.SECONDS))
-                .setIdleTimeout(new Duration(5, TimeUnit.SECONDS))
-                .setKeepAliveInterval(new Duration(6, TimeUnit.SECONDS))
+                .setConnectTimeout(new Duration(4, SECONDS))
+                .setRequestTimeout(new Duration(15, SECONDS))
+                .setIdleTimeout(new Duration(5, SECONDS))
+                .setKeepAliveInterval(new Duration(6, SECONDS))
                 .setMaxConnections(12)
                 .setMaxConnectionsPerServer(3)
                 .setMaxRequestsQueuedPerDestination(10)
-                .setMaxContentLength(new DataSize(1, Unit.MEGABYTE))
+                .setMaxContentLength(new DataSize(1, MEGABYTE))
                 .setSocksProxy(HostAndPort.fromParts("localhost", 1080))
                 .setKeyStorePath("key-store")
                 .setKeyStorePassword("key-store-password")
@@ -108,8 +112,9 @@ public class TestHttpClientConfig
                 .setAuthenticationEnabled(true)
                 .setKerberosRemoteServiceName("airlift")
                 .setKerberosPrincipal("airlift-client")
-                .setHttp2InitialSessionReceiveWindowSize(new DataSize(7, DataSize.Unit.MEGABYTE))
-                .setHttp2InitialStreamReceiveWindowSize(new DataSize(7, DataSize.Unit.MEGABYTE));
+                .setHttp2InitialSessionReceiveWindowSize(new DataSize(7, MEGABYTE))
+                .setHttp2InitialStreamReceiveWindowSize(new DataSize(7, MEGABYTE))
+                .setHttp2InputBufferSize(new DataSize(1, MEGABYTE));
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }
