@@ -69,7 +69,7 @@ public class DefaultingJsonResponseHandler<T>
             return defaultValue;
         }
         String contentType = response.getHeader(CONTENT_TYPE);
-        if (!MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
+        if (contentType != null && !MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
             return defaultValue;
         }
         try {
