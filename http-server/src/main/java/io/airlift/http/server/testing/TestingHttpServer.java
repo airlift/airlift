@@ -53,8 +53,8 @@ public class TestingHttpServer
                 config,
                 servlet,
                 initParameters,
-                ImmutableSet.<Filter>of(),
-                ImmutableSet.<HttpResourceBinding>of());
+                ImmutableSet.of(),
+                ImmutableSet.of());
     }
 
     @Inject
@@ -77,7 +77,7 @@ public class TestingHttpServer
                 ImmutableSet.copyOf(resources),
                 null,
                 null,
-                ImmutableSet.<Filter>of(),
+                ImmutableSet.of(),
                 null,
                 null,
                 new TraceTokenManager(),
