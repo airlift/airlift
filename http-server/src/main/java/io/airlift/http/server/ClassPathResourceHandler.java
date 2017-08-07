@@ -165,8 +165,7 @@ public class ClassPathResourceHandler
 
         if (!"/".equals(pathInfo)) {
             String resourcePath = classPathResourceBase + pathInfo;
-            URL resource = getClass().getClassLoader().getResource(resourcePath);
-            return resource;
+            return getClass().getClassLoader().getResource(resourcePath);
         }
 
         // check welcome files
