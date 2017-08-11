@@ -22,7 +22,12 @@ import io.airlift.units.Duration;
 import org.testng.annotations.Test;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+
+import static io.airlift.units.DataSize.Unit.BYTE;
+import static io.airlift.units.DataSize.Unit.KILOBYTE;
+import static io.airlift.units.DataSize.Unit.MEGABYTE;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TestHttpServerConfig
 {
@@ -42,7 +47,7 @@ public class TestHttpServerConfig
                 .setKeystorePassword(null)
                 .setLogPath("var/log/http-request.log")
                 .setLogEnabled(true)
-                .setLogMaxFileSize(new DataSize(Long.MAX_VALUE, DataSize.Unit.BYTE))
+                .setLogMaxFileSize(new DataSize(Long.MAX_VALUE, BYTE))
                 .setLogHistory(15)
                 .setHttpAcceptorThreads(null)
                 .setHttpSelectorThreads(null)
@@ -50,8 +55,8 @@ public class TestHttpServerConfig
                 .setHttpsSelectorThreads(null)
                 .setMinThreads(2)
                 .setMaxThreads(200)
-                .setThreadMaxIdleTime(new Duration(1, TimeUnit.MINUTES))
-                .setNetworkMaxIdleTime(new Duration(200, TimeUnit.SECONDS))
+                .setThreadMaxIdleTime(new Duration(1, MINUTES))
+                .setNetworkMaxIdleTime(new Duration(200, SECONDS))
                 .setUserAuthFile(null)
                 .setAdminEnabled(true)
                 .setAdminPort(0)
@@ -60,8 +65,9 @@ public class TestHttpServerConfig
                 .setMaxRequestHeaderSize(null)
                 .setHttp2MaxConcurrentStreams(16384)
                 .setShowStackTrace(true)
-                .setHttp2InitialSessionReceiveWindowSize(new DataSize(16, DataSize.Unit.MEGABYTE))
-                .setHttp2InitialStreamReceiveWindowSize(new DataSize(16, DataSize.Unit.MEGABYTE))
+                .setHttp2InitialSessionReceiveWindowSize(new DataSize(16, MEGABYTE))
+                .setHttp2InputBufferSize(new DataSize(8, KILOBYTE))
+                .setHttp2InitialStreamReceiveWindowSize(new DataSize(16, MEGABYTE))
         );
     }
 
@@ -101,6 +107,7 @@ public class TestHttpServerConfig
                 .put("http-server.show-stack-trace", "false")
                 .put("http-server.http2.session-receive-window-size", "4MB")
                 .put("http-server.http2.stream-receive-window-size", "4MB")
+                .put("http-server.http2.input-buffer-size", "4MB")
                 .build();
 
         HttpServerConfig expected = new HttpServerConfig()
@@ -124,9 +131,9 @@ public class TestHttpServerConfig
                 .setHttpsSelectorThreads(13)
                 .setMinThreads(100)
                 .setMaxThreads(500)
-                .setThreadMaxIdleTime(new Duration(10, TimeUnit.MINUTES))
-                .setNetworkMaxIdleTime(new Duration(20, TimeUnit.MINUTES))
-                .setMaxRequestHeaderSize(new DataSize(32, DataSize.Unit.KILOBYTE))
+                .setThreadMaxIdleTime(new Duration(10, MINUTES))
+                .setNetworkMaxIdleTime(new Duration(20, MINUTES))
+                .setMaxRequestHeaderSize(new DataSize(32, KILOBYTE))
                 .setUserAuthFile("/auth")
                 .setAdminEnabled(false)
                 .setAdminPort(3)
@@ -134,8 +141,9 @@ public class TestHttpServerConfig
                 .setAdminMaxThreads(4)
                 .setHttp2MaxConcurrentStreams(1234)
                 .setShowStackTrace(false)
-                .setHttp2InitialSessionReceiveWindowSize(new DataSize(4, DataSize.Unit.MEGABYTE))
-                .setHttp2InitialStreamReceiveWindowSize(new DataSize(4, DataSize.Unit.MEGABYTE));
+                .setHttp2InitialSessionReceiveWindowSize(new DataSize(4, MEGABYTE))
+                .setHttp2InitialStreamReceiveWindowSize(new DataSize(4, MEGABYTE))
+                .setHttp2InputBufferSize(new DataSize(4, MEGABYTE));
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

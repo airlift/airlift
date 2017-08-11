@@ -39,7 +39,6 @@ public class HttpLogLayout
                 .append(event.getTraceToken())
                 .append('\n');
 
-        String line = builder.toString();
-        return line;
+        return builder.toString();
     }
 }

@@ -47,7 +47,6 @@ class DelimitedRequestLog
     private final RollingFileAppender<HttpRequestEvent> fileAppender;
 
     public DelimitedRequestLog(String filename, int maxHistory, long maxFileSizeInBytes, TraceTokenManager traceTokenManager, EventClient eventClient)
-            throws IOException
     {
         this(filename, maxHistory, maxFileSizeInBytes, traceTokenManager, eventClient, new SystemCurrentTimeMillisProvider());
     }
@@ -58,7 +57,6 @@ class DelimitedRequestLog
             TraceTokenManager traceTokenManager,
             EventClient eventClient,
             CurrentTimeMillisProvider currentTimeMillisProvider)
-            throws IOException
     {
         this.traceTokenManager = traceTokenManager;
         this.eventClient = eventClient;

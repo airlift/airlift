@@ -18,8 +18,8 @@ package io.airlift.http.server;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import io.airlift.configuration.Config;
-import io.airlift.configuration.ConfigSecuritySensitive;
 import io.airlift.configuration.ConfigDescription;
+import io.airlift.configuration.ConfigSecuritySensitive;
 import io.airlift.configuration.DefunctConfig;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
@@ -30,9 +30,13 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
+import static io.airlift.units.DataSize.Unit.BYTE;
+import static io.airlift.units.DataSize.Unit.KILOBYTE;
+import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 @DefunctConfig({
         "jetty.http.enabled",
@@ -68,7 +72,7 @@ public class HttpServerConfig
     private String logPath = "var/log/http-request.log";
     private boolean logEnabled = true;
     private int logHistory = 15;
-    private DataSize logMaxFileSize = new DataSize(Long.MAX_VALUE, DataSize.Unit.BYTE);
+    private DataSize logMaxFileSize = new DataSize(Long.MAX_VALUE, BYTE);
 
     private Integer httpAcceptorThreads;
     private Integer httpSelectorThreads;
@@ -77,12 +81,13 @@ public class HttpServerConfig
 
     private int minThreads = 2;
     private int maxThreads = 200;
-    private Duration threadMaxIdleTime = new Duration(1, TimeUnit.MINUTES);
-    private Duration networkMaxIdleTime = new Duration(200, TimeUnit.SECONDS);
+    private Duration threadMaxIdleTime = new Duration(1, MINUTES);
+    private Duration networkMaxIdleTime = new Duration(200, SECONDS);
     private DataSize maxRequestHeaderSize;
     private int http2MaxConcurrentStreams = 16384;
-    private DataSize http2InitialSessionReceiveWindowSize = new DataSize(16, DataSize.Unit.MEGABYTE);
-    private DataSize http2InitialStreamReceiveWindowSize = new DataSize(16, DataSize.Unit.MEGABYTE);
+    private DataSize http2InitialSessionReceiveWindowSize = new DataSize(16, MEGABYTE);
+    private DataSize http2InitialStreamReceiveWindowSize = new DataSize(16, MEGABYTE);
+    private DataSize http2InputBufferSize = new DataSize(8, KILOBYTE);
 
     private String userAuthFile;
 
@@ -499,6 +504,23 @@ public class HttpServerConfig
     public HttpServerConfig setHttp2InitialStreamReceiveWindowSize(DataSize http2InitialStreamReceiveWindowSize)
     {
         this.http2InitialStreamReceiveWindowSize = http2InitialStreamReceiveWindowSize;
+        return this;
+    }
+
+
+    @NotNull
+    @MinDataSize("1kB")
+    @MaxDataSize("32MB")
+    public DataSize getHttp2InputBufferSize()
+    {
+        return http2InputBufferSize;
+    }
+
+    @Config("http-server.http2.input-buffer-size")
+    @ConfigDescription("Size of the buffer used to read from the network for HTTP/2")
+    public HttpServerConfig setHttp2InputBufferSize(DataSize http2InputBufferSize)
+    {
+        this.http2InputBufferSize = http2InputBufferSize;
         return this;
     }
 }

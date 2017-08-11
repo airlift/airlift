@@ -150,6 +150,7 @@ public class HttpServer
             http2c.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
             http2c.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
             http2c.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
+            http2c.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
             httpConnector = new ServerConnector(server, null, null, null, acceptors == null ? -1 : acceptors, selectors == null ? -1 : selectors, http1, http2c);
             httpConnector.setName("http");
             httpConnector.setPort(httpServerInfo.getHttpUri().getPort());
