@@ -3,6 +3,8 @@
 - Remove @Inject from Logger.
 - Add HTTP/2 input buffer size config.
 - Ensure Jetty client request doesn't live past synchronous return.
+- Enable detailed dumps for Jetty thread pools, which will help getting
+  more information when debugging with the JMX dump operation.
 
 * 0.149
 

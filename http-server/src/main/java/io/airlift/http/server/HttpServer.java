@@ -119,6 +119,7 @@ public class HttpServer
         threadPool.setMinThreads(config.getMinThreads());
         threadPool.setIdleTimeout(Ints.checkedCast(config.getThreadMaxIdleTime().toMillis()));
         threadPool.setName("http-worker");
+        threadPool.setDetailedDump(true);
         server = new Server(threadPool);
         registerErrorHandler = config.isShowStackTrace();
 
