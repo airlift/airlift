@@ -37,6 +37,7 @@ public final class JettyIoPool
             threadPool.setDaemon(true);
             threadPool.start();
             threadPool.setStopTimeout(2000);
+            threadPool.setDetailedDump(true);
             executor = threadPool;
 
             scheduler = new ScheduledExecutorScheduler(baseName + "-scheduler", true, currentThread().getContextClassLoader());
