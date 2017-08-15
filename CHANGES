@@ -6,6 +6,7 @@
 - Ensure Jetty client request doesn't live past synchronous return.
 - Enable detailed dumps for Jetty thread pools, which will help getting
   more information when debugging with the JMX dump operation.
+- Add support for PostgreSQL in dbpool.
 
 * 0.149
 
