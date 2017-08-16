@@ -21,7 +21,6 @@ import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.LegacyConfig;
 import io.airlift.units.DataSize;
-import io.airlift.units.DataSize.Unit;
 import io.airlift.units.Duration;
 import io.airlift.units.MaxDataSize;
 import io.airlift.units.MinDataSize;
@@ -30,7 +29,9 @@ import io.airlift.units.MinDuration;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
-import java.util.concurrent.TimeUnit;
+import static io.airlift.units.DataSize.Unit.MEGABYTE;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Beta
 public class HttpClientConfig
@@ -41,14 +42,14 @@ public class HttpClientConfig
     public static final String JAVAX_NET_SSL_TRUST_STORE_PASSWORD = "javax.net.ssl.trustStorePassword";
 
     private boolean http2Enabled;
-    private Duration connectTimeout = new Duration(1, TimeUnit.SECONDS);
-    private Duration requestTimeout = new Duration(5, TimeUnit.MINUTES);
-    private Duration idleTimeout = new Duration(1, TimeUnit.MINUTES);
+    private Duration connectTimeout = new Duration(1, SECONDS);
+    private Duration requestTimeout = new Duration(5, MINUTES);
+    private Duration idleTimeout = new Duration(1, MINUTES);
     private Duration keepAliveInterval;
     private int maxConnections = 200;
     private int maxConnectionsPerServer = 20;
     private int maxRequestsQueuedPerDestination = 1024;
-    private DataSize maxContentLength = new DataSize(16, Unit.MEGABYTE);
+    private DataSize maxContentLength = new DataSize(16, MEGABYTE);
     private HostAndPort socksProxy;
     private String keyStorePath = System.getProperty(JAVAX_NET_SSL_KEY_STORE);
     private String keyStorePassword = System.getProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD);
@@ -58,8 +59,8 @@ public class HttpClientConfig
     private boolean authenticationEnabled;
     private String kerberosPrincipal;
     private String kerberosRemoteServiceName;
-    private DataSize http2InitialSessionReceiveWindowSize = new DataSize(16, Unit.MEGABYTE);
-    private DataSize http2InitialStreamReceiveWindowSize = new DataSize(16, Unit.MEGABYTE);
+    private DataSize http2InitialSessionReceiveWindowSize = new DataSize(16, MEGABYTE);
+    private DataSize http2InitialStreamReceiveWindowSize = new DataSize(16, MEGABYTE);
 
     public boolean isHttp2Enabled()
     {
