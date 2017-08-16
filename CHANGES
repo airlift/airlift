@@ -1,3 +1,7 @@
+* 0.151
+
+- Add support for monitoring the Jetty client shared thread pool.
+
 * 0.150
 
 - Remove @Inject from Logger.
