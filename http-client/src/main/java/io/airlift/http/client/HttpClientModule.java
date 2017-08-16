@@ -15,7 +15,6 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.annotations.Beta;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -52,7 +51,6 @@ import static java.util.Objects.requireNonNull;
 import static org.weakref.jmx.ObjectNames.generatedNameOf;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
-@Beta
 public class HttpClientModule
         implements Module
 {
@@ -67,7 +65,7 @@ public class HttpClientModule
     protected final Class<? extends Annotation> annotation;
     protected Binder binder;
 
-    public HttpClientModule(String name, Class<? extends Annotation> annotation)
+    HttpClientModule(String name, Class<? extends Annotation> annotation)
     {
         this.name = requireNonNull(name, "name is null");
         this.annotation = requireNonNull(annotation, "annotation is null");

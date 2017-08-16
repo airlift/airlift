@@ -8,6 +8,7 @@
   more information when debugging with the JMX dump operation.
 - Add support for PostgreSQL in dbpool.
 - Delete FileUtils from testing module.
+- Make HttpClientModule non-public.
 
 * 0.149
 
