@@ -24,9 +24,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
 import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -96,7 +96,7 @@ public class TimedStatTest
 
         assertEquals(stat.getCount(), 1);
         assertEquals(stat.getMin(), stat.getMax());
-        assertGreaterThanOrEqual(stat.getMax(), 10.0);
+        assertThat(stat.getMax()).isGreaterThanOrEqualTo(10.0);
     }
 
     @Test

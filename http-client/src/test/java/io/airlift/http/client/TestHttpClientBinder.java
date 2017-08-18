@@ -40,9 +40,9 @@ import java.util.IdentityHashMap;
 import java.util.Set;
 
 import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
-import static io.airlift.testing.Assertions.assertInstanceOf;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -437,7 +437,7 @@ public class TestHttpClientBinder
     private static void assertFilterCount(HttpClient httpClient, int filterCount)
     {
         assertNotNull(httpClient);
-        assertInstanceOf(httpClient, JettyHttpClient.class);
+        assertThat(httpClient).isInstanceOf(JettyHttpClient.class);
         assertEquals(((JettyHttpClient) httpClient).getRequestFilters().size(), filterCount);
     }
 

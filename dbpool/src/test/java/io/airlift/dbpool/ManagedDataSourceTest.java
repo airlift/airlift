@@ -17,6 +17,7 @@ package io.airlift.dbpool;
 
 import io.airlift.dbpool.MockConnectionPoolDataSource.MockConnection;
 import io.airlift.units.Duration;
+import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 import javax.sql.ConnectionPoolDataSource;
@@ -35,11 +36,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.airlift.testing.Assertions.assertGreaterThan;
-import static io.airlift.testing.Assertions.assertInstanceOf;
 import static io.airlift.units.Duration.nanosSince;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -99,7 +99,7 @@ public class ManagedDataSourceTest
         catch (SQLException expected) {
         }
         Duration duration = nanosSince(start);
-        assertGreaterThan(duration, new Duration(10, MILLISECONDS));
+        assertThat(duration).isGreaterThan(new Duration(10, MILLISECONDS));
         assertEquals(dataSource.getConnectionsActive(), 1);
 
         // try with a different timeout
@@ -113,7 +113,7 @@ public class ManagedDataSourceTest
         catch (SQLException expected) {
         }
         duration = nanosSince(start);
-        assertGreaterThan(duration, new Duration(50, MILLISECONDS));
+        assertThat(duration).isGreaterThan(new Duration(50, MILLISECONDS));
         assertEquals(dataSource.getConnectionsActive(), 1);
 
         // verify proper handling of illegal values
@@ -287,7 +287,7 @@ public class ManagedDataSourceTest
         assertTrue(wasInterrupted.get(), "createThread.isInterrupted()");
         SQLException sqlException = exception.get();
         assertNotNull(sqlException);
-        assertInstanceOf(sqlException.getCause(), InterruptedException.class);
+        Assertions.assertThat(sqlException.getCause()).isInstanceOf(InterruptedException.class);
 
         connection.close();
         assertEquals(dataSource.getConnectionsActive(), 0);

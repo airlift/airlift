@@ -38,12 +38,12 @@ import static io.airlift.concurrent.MoreFutures.unmodifiableFuture;
 import static io.airlift.concurrent.MoreFutures.unwrapCompletionException;
 import static io.airlift.concurrent.MoreFutures.whenAnyComplete;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
-import static io.airlift.testing.Assertions.assertInstanceOf;
 import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -160,19 +160,19 @@ public class TestMoreFutures
         CompletableFuture<String> unmodifiableFuture = unmodifiableFuture(future);
 
         // completion results in an UnsupportedOperationException
-        assertFailure(() -> unmodifiableFuture.complete("fail"), e -> assertInstanceOf(e, UnsupportedOperationException.class));
+        assertFailure(() -> unmodifiableFuture.complete("fail"), e -> assertThat(e).isInstanceOf(UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
-        assertFailure(() -> unmodifiableFuture.completeExceptionally(new IOException()), e -> assertInstanceOf(e, UnsupportedOperationException.class));
+        assertFailure(() -> unmodifiableFuture.completeExceptionally(new IOException()), e -> assertThat(e).isInstanceOf(UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
-        assertFailure(() -> unmodifiableFuture.obtrudeValue("fail"), e -> assertInstanceOf(e, UnsupportedOperationException.class));
+        assertFailure(() -> unmodifiableFuture.obtrudeValue("fail"), e -> assertThat(e).isInstanceOf(UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
-        assertFailure(() -> unmodifiableFuture.obtrudeException(new IOException()), e -> assertInstanceOf(e, UnsupportedOperationException.class));
+        assertFailure(() -> unmodifiableFuture.obtrudeException(new IOException()), e -> assertThat(e).isInstanceOf(UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
@@ -198,19 +198,19 @@ public class TestMoreFutures
         CompletableFuture<String> unmodifiableFuture = unmodifiableFuture(future, true);
 
         // completion results in an UnsupportedOperationException
-        assertFailure(() -> unmodifiableFuture.complete("fail"), e -> assertInstanceOf(e, UnsupportedOperationException.class));
+        assertFailure(() -> unmodifiableFuture.complete("fail"), e -> assertThat(e).isInstanceOf(UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
-        assertFailure(() -> unmodifiableFuture.completeExceptionally(new IOException()), e -> assertInstanceOf(e, UnsupportedOperationException.class));
+        assertFailure(() -> unmodifiableFuture.completeExceptionally(new IOException()), e -> assertThat(e).isInstanceOf(UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
-        assertFailure(() -> unmodifiableFuture.obtrudeValue("fail"), e -> assertInstanceOf(e, UnsupportedOperationException.class));
+        assertFailure(() -> unmodifiableFuture.obtrudeValue("fail"), e -> assertThat(e).isInstanceOf(UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
-        assertFailure(() -> unmodifiableFuture.obtrudeException(new IOException()), e -> assertInstanceOf(e, UnsupportedOperationException.class));
+        assertFailure(() -> unmodifiableFuture.obtrudeException(new IOException()), e -> assertThat(e).isInstanceOf(UnsupportedOperationException.class));
         assertFalse(future.isDone());
         assertFalse(unmodifiableFuture.isDone());
 
@@ -268,13 +268,13 @@ public class TestMoreFutures
 
         assertTrue(future.completeExceptionally(new SQLException("foo")));
         assertFailure(() -> getFutureValue(future, SQLException.class), e -> {
-            assertInstanceOf(e, SQLException.class);
+            assertThat(e).isInstanceOf(SQLException.class);
             assertEquals(e.getMessage(), "foo");
         });
 
         assertTrue(unmodifiableFuture.isDone());
         assertFailure(() -> getFutureValue(unmodifiableFuture, SQLException.class), e -> {
-            assertInstanceOf(e, SQLException.class);
+            assertThat(e).isInstanceOf(SQLException.class);
             assertEquals(e.getMessage(), "foo");
         });
     }
@@ -299,13 +299,13 @@ public class TestMoreFutures
         CompletableFuture<String> unmodifiableFuture = unmodifiableFuture(future);
 
         assertFailure(() -> getFutureValue(future, SQLException.class), e -> {
-            assertInstanceOf(e, SQLException.class);
+            assertThat(e).isInstanceOf(SQLException.class);
             assertEquals(e.getMessage(), "foo");
         });
 
         assertTrue(unmodifiableFuture.isDone());
         assertFailure(() -> getFutureValue(unmodifiableFuture, SQLException.class), e -> {
-            assertInstanceOf(e, SQLException.class);
+            assertThat(e).isInstanceOf(SQLException.class);
             assertEquals(e.getMessage(), "foo");
         });
     }
@@ -319,7 +319,7 @@ public class TestMoreFutures
         assertTrue(future.isCompletedExceptionally());
 
         assertFailure(future::get, e -> {
-            assertInstanceOf(e, ExecutionException.class);
+            assertThat(e).isInstanceOf(ExecutionException.class);
             assertTrue(e.getCause() instanceof SQLException);
             assertEquals(e.getCause().getMessage(), "foo");
         });
@@ -339,7 +339,7 @@ public class TestMoreFutures
         assertGetUnchecked(future -> getFutureValue(future, IOException.class));
 
         assertFailure(() -> getFutureValue(failedFuture(new SQLException("foo")), SQLException.class), e -> {
-            assertInstanceOf(e, SQLException.class);
+            assertThat(e).isInstanceOf(SQLException.class);
             assertEquals(e.getMessage(), "foo");
         });
     }
@@ -398,7 +398,7 @@ public class TestMoreFutures
         assertEquals(tryGetFutureValue(new CompletableFuture<>(), 10, MILLISECONDS), Optional.empty());
 
         assertFailure(() -> tryGetFutureValue(failedFuture(new SQLException("foo")), 10, MILLISECONDS, SQLException.class), e -> {
-            assertInstanceOf(e, SQLException.class);
+            assertThat(e).isInstanceOf(SQLException.class);
             assertEquals(e.getMessage(), "foo");
         });
     }
@@ -409,8 +409,8 @@ public class TestMoreFutures
     {
         assertGetUncheckedListenable(future -> getFutureValue(whenAnyComplete(ImmutableList.of(SettableFuture.create(), future, SettableFuture.create()))));
 
-        assertFailure(() -> whenAnyComplete(null), e -> assertInstanceOf(e, NullPointerException.class));
-        assertFailure(() -> whenAnyComplete(ImmutableList.of()), e -> assertInstanceOf(e, IllegalArgumentException.class));
+        assertFailure(() -> whenAnyComplete(null), e -> assertThat(e).isInstanceOf(NullPointerException.class));
+        assertFailure(() -> whenAnyComplete(ImmutableList.of()), e -> assertThat(e).isInstanceOf(IllegalArgumentException.class));
 
         assertEquals(
                 tryGetFutureValue(whenAnyComplete(ImmutableList.of(SettableFuture.create(), SettableFuture.create())), 10, MILLISECONDS),
@@ -423,8 +423,8 @@ public class TestMoreFutures
     {
         assertGetUnchecked(future -> getFutureValue(firstCompletedFuture(ImmutableList.of(new CompletableFuture<>(), future, new CompletableFuture<>()))));
 
-        assertFailure(() -> firstCompletedFuture(null), e -> assertInstanceOf(e, NullPointerException.class));
-        assertFailure(() -> firstCompletedFuture(ImmutableList.of()), e -> assertInstanceOf(e, IllegalArgumentException.class));
+        assertFailure(() -> firstCompletedFuture(null), e -> assertThat(e).isInstanceOf(NullPointerException.class));
+        assertFailure(() -> firstCompletedFuture(ImmutableList.of()), e -> assertThat(e).isInstanceOf(IllegalArgumentException.class));
 
         assertEquals(
                 tryGetFutureValue(firstCompletedFuture(ImmutableList.of(new CompletableFuture<>(), new CompletableFuture<>())), 10, MILLISECONDS),
@@ -554,7 +554,7 @@ public class TestMoreFutures
         assertFalse(timeoutFuture.isCancelled());
 
         // root exception is cancelled on a timeout
-        assertFailure(() -> rootFuture.get(10, SECONDS), e -> assertInstanceOf(e, CancellationException.class));
+        assertFailure(() -> rootFuture.get(10, SECONDS), e -> assertThat(e).isInstanceOf(CancellationException.class));
         assertTrue(rootFuture.isDone());
         assertTrue(rootFuture.isCancelled());
     }
@@ -567,14 +567,14 @@ public class TestMoreFutures
         ListenableFuture<String> timeoutFuture = addTimeout(rootFuture, () -> { throw new SQLException("timeout"); }, new Duration(0, MILLISECONDS), executorService);
 
         assertFailure(() -> tryGetFutureValue(timeoutFuture, 10, SECONDS, SQLException.class), e -> {
-            assertInstanceOf(e, SQLException.class);
+            assertThat(e).isInstanceOf(SQLException.class);
             assertEquals(e.getMessage(), "timeout");
         });
         assertTrue(timeoutFuture.isDone());
         assertFalse(timeoutFuture.isCancelled());
 
         // root exception is cancelled on a timeout
-        assertFailure(() -> rootFuture.get(10, SECONDS), e -> assertInstanceOf(e, CancellationException.class));
+        assertFailure(() -> rootFuture.get(10, SECONDS), e -> assertThat(e).isInstanceOf(CancellationException.class));
         assertTrue(rootFuture.isDone());
         assertTrue(rootFuture.isCancelled());
     }
@@ -594,7 +594,7 @@ public class TestMoreFutures
         assertTrue(timeoutFuture.isCancelled());
 
         // root exception is cancelled on a timeout
-        assertFailure(() -> rootFuture.get(10, SECONDS), e -> assertInstanceOf(e, CancellationException.class));
+        assertFailure(() -> rootFuture.get(10, SECONDS), e -> assertThat(e).isInstanceOf(CancellationException.class));
         assertTrue(rootFuture.isDone());
         assertTrue(rootFuture.isCancelled());
     }
@@ -611,7 +611,7 @@ public class TestMoreFutures
         assertFalse(timeoutFuture.isCancelled());
 
         // root exception is cancelled on a timeout
-        assertFailure(() -> rootFuture.get(10, SECONDS), e -> assertInstanceOf(e, CancellationException.class));
+        assertFailure(() -> rootFuture.get(10, SECONDS), e -> assertThat(e).isInstanceOf(CancellationException.class));
         assertTrue(rootFuture.isDone());
         assertTrue(rootFuture.isCancelled());
     }
@@ -624,14 +624,14 @@ public class TestMoreFutures
         CompletableFuture<String> timeoutFuture = addTimeout(rootFuture, () -> { throw new SQLException("timeout"); }, new Duration(0, MILLISECONDS), executorService);
 
         assertFailure(() -> tryGetFutureValue(timeoutFuture, 10, SECONDS, SQLException.class), e -> {
-            assertInstanceOf(e, SQLException.class);
+            assertThat(e).isInstanceOf(SQLException.class);
             assertEquals(e.getMessage(), "timeout");
         });
         assertTrue(timeoutFuture.isDone());
         assertFalse(timeoutFuture.isCancelled());
 
         // root exception is cancelled on a timeout
-        assertFailure(() -> rootFuture.get(10, SECONDS), e -> assertInstanceOf(e, CancellationException.class));
+        assertFailure(() -> rootFuture.get(10, SECONDS), e -> assertThat(e).isInstanceOf(CancellationException.class));
         assertTrue(rootFuture.isDone());
         assertTrue(rootFuture.isCancelled());
     }
@@ -651,7 +651,7 @@ public class TestMoreFutures
         assertTrue(timeoutFuture.isCancelled());
 
         // root exception is cancelled on a timeout
-        assertFailure(() -> rootFuture.get(10, SECONDS), e -> assertInstanceOf(e, CancellationException.class));
+        assertFailure(() -> rootFuture.get(10, SECONDS), e -> assertThat(e).isInstanceOf(CancellationException.class));
         assertTrue(rootFuture.isDone());
         assertTrue(rootFuture.isCancelled());
     }
@@ -702,27 +702,27 @@ public class TestMoreFutures
         assertEquals(getter.apply(immediateFuture("foo")), "foo");
 
         assertFailure(() -> getter.apply(immediateFailedFuture(new IllegalArgumentException("foo"))), e -> {
-            assertInstanceOf(e, IllegalArgumentException.class);
+            assertThat(e).isInstanceOf(IllegalArgumentException.class);
             assertEquals(e.getMessage(), "foo");
         });
 
         assertFailure(() -> getter.apply(immediateFailedFuture(new SQLException("foo"))), e -> {
-            assertInstanceOf(e, RuntimeException.class);
-            assertInstanceOf(e.getCause(), SQLException.class);
+            assertThat(e).isInstanceOf(RuntimeException.class);
+            assertThat(e.getCause()).isInstanceOf(SQLException.class);
             assertEquals(e.getCause().getMessage(), "foo");
         });
 
         Thread.currentThread().interrupt();
         assertFailure(() -> getter.apply(SettableFuture.create()), e -> {
-            assertInstanceOf(e, RuntimeException.class);
-            assertInstanceOf(e.getCause(), InterruptedException.class);
+            assertThat(e).isInstanceOf(RuntimeException.class);
+            assertThat(e.getCause()).isInstanceOf(InterruptedException.class);
             assertTrue(Thread.interrupted());
         });
         assertFalse(Thread.currentThread().isInterrupted());
 
         SettableFuture<Object> canceledFuture = SettableFuture.create();
         canceledFuture.cancel(true);
-        assertFailure(() -> getter.apply(canceledFuture), e -> assertInstanceOf(e, CancellationException.class));
+        assertFailure(() -> getter.apply(canceledFuture), e -> assertThat(e).isInstanceOf(CancellationException.class));
 
         assertEquals(getter.apply(immediateFuture(null)), null);
     }
@@ -742,27 +742,27 @@ public class TestMoreFutures
         assertEquals(getter.get(completedFuture("foo")), "foo");
 
         assertFailure(() -> getter.get(failedFuture(new IllegalArgumentException("foo"))), e -> {
-            assertInstanceOf(e, IllegalArgumentException.class);
+            assertThat(e).isInstanceOf(IllegalArgumentException.class);
             assertEquals(e.getMessage(), "foo");
         });
 
         assertFailure(() -> getter.get(failedFuture(new SQLException("foo"))), e -> {
-            assertInstanceOf(e, RuntimeException.class);
-            assertInstanceOf(e.getCause(), SQLException.class);
+            assertThat(e).isInstanceOf(RuntimeException.class);
+            assertThat(e.getCause()).isInstanceOf(SQLException.class);
             assertEquals(e.getCause().getMessage(), "foo");
         });
 
         Thread.currentThread().interrupt();
         assertFailure(() -> getter.get(new CompletableFuture<>()), e -> {
-            assertInstanceOf(e, RuntimeException.class);
-            assertInstanceOf(e.getCause(), InterruptedException.class);
+            assertThat(e).isInstanceOf(RuntimeException.class);
+            assertThat(e.getCause()).isInstanceOf(InterruptedException.class);
             assertTrue(Thread.interrupted());
         });
         assertFalse(Thread.currentThread().isInterrupted());
 
         CompletableFuture<Object> canceledFuture = new CompletableFuture<>();
         canceledFuture.cancel(true);
-        assertFailure(() -> getter.get(canceledFuture), e -> assertInstanceOf(e, CancellationException.class));
+        assertFailure(() -> getter.get(canceledFuture), e -> assertThat(e).isInstanceOf(CancellationException.class));
 
         assertEquals(getter.get(completedFuture(null)), null);
     }

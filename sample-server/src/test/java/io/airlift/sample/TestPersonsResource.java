@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static io.airlift.testing.Assertions.assertInstanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 
 @Test(singleThreaded = true)
@@ -46,7 +46,7 @@ public class TestPersonsResource
     {
         Response response = resource.listAll();
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
-        assertInstanceOf(response.getEntity(), Collection.class);
+        assertThat(response.getEntity()).isInstanceOf(Collection.class);
         assertEquals((Collection<?>) response.getEntity(), new ArrayList<>());
     }
 
@@ -58,7 +58,7 @@ public class TestPersonsResource
 
         Response response = resource.listAll();
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
-        assertInstanceOf(response.getEntity(), Collection.class);
+        assertThat(response.getEntity()).isInstanceOf(Collection.class);
         assertEquals((Collection<?>) response.getEntity(), newArrayList(
                 new PersonRepresentation("foo@example.com", "Mr Foo", null),
                 new PersonRepresentation("bar@example.com", "Mr Bar", null)

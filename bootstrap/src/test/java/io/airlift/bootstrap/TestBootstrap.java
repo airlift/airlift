@@ -19,12 +19,12 @@ import com.google.inject.Binder;
 import com.google.inject.ConfigurationException;
 import com.google.inject.Module;
 import com.google.inject.ProvisionException;
-import io.airlift.testing.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestBootstrap
 {
@@ -38,7 +38,7 @@ public class TestBootstrap
             Assert.fail("should require explicit bindings");
         }
         catch (ConfigurationException e) {
-            Assertions.assertContains(e.getErrorMessages().iterator().next().getMessage(), "Explicit bindings are required");
+            assertThat(e.getErrorMessages().iterator().next().getMessage()).contains("Explicit bindings are required");
         }
     }
 
@@ -61,7 +61,7 @@ public class TestBootstrap
             Assert.fail("should not allow circular dependencies");
         }
         catch (ProvisionException e) {
-            Assertions.assertContains(e.getErrorMessages().iterator().next().getMessage(), "circular proxies are disabled");
+            assertThat(e.getErrorMessages().iterator().next().getMessage()).contains("circular proxies are disabled");
         }
     }
 

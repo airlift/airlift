@@ -10,7 +10,7 @@ import java.net.URI;
 import java.util.concurrent.ExecutionException;
 
 import static io.airlift.http.client.Request.Builder.prepareGet;
-import static io.airlift.testing.Assertions.assertInstanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -36,7 +36,7 @@ public class TestTestingHttpClient
         }
         catch (ExecutionException e) {
             Throwable cause = e.getCause();
-            assertInstanceOf(cause, CapturedException.class);
+            assertThat(cause).isInstanceOf(CapturedException.class);
             assertEquals(cause.getCause(), expectedException);
         }
     }

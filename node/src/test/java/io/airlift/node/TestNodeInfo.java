@@ -16,7 +16,6 @@
 package io.airlift.node;
 
 import com.google.common.net.InetAddresses;
-import io.airlift.testing.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -26,6 +25,7 @@ import java.net.UnknownHostException;
 import static io.airlift.node.NodeConfig.AddressSource.FQDN;
 import static io.airlift.node.NodeConfig.AddressSource.HOSTNAME;
 import static io.airlift.node.NodeConfig.AddressSource.IP;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestNodeInfo
 {
@@ -54,12 +54,12 @@ public class TestNodeInfo
         Assert.assertEquals(nodeInfo.getConfigSpec(), configSpec);
         Assert.assertNotNull(nodeInfo.getInstanceId());
 
-        Assertions.assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
+        Assert.assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
 
         Assert.assertEquals(nodeInfo.getInternalAddress(), internalIp);
         Assert.assertEquals(nodeInfo.getExternalAddress(), externalAddress);
         Assert.assertEquals(nodeInfo.getBindIp(), bindIp);
-        Assertions.assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
+        assertThat(nodeInfo.getStartTime()).isGreaterThanOrEqualTo(testStartTime);
 
         // make sure toString doesn't throw an exception
         Assert.assertNotNull(nodeInfo.toString());

@@ -21,7 +21,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.spi.Message;
-import io.airlift.testing.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -35,6 +34,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConfigurationFactoryTest
 {
@@ -52,8 +52,8 @@ public class ConfigurationFactoryTest
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(2);
-            Assertions.assertContainsAllOf(e.getMessage(), "not a valid setter", "getStringValue");
-            Assertions.assertContainsAllOf(e.getMessage(), "not a valid setter", "isBooleanValue");
+            assertThat(e.getMessage()).contains("not a valid setter", "getStringValue");
+            assertThat(e.getMessage()).contains("not a valid setter", "isBooleanValue");
         }
     }
 
@@ -121,7 +121,7 @@ public class ConfigurationFactoryTest
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(1);
             monitor.assertMatchingWarningRecorded("string-value", "replaced", "Use 'string-a'");
-            Assertions.assertContainsAllOf(e.getMessage(), "string-value", "conflicts with property", "string-a");
+            assertThat(e.getMessage()).contains("string-value", "conflicts with property", "string-a");
         }
     }
 
@@ -142,7 +142,7 @@ public class ConfigurationFactoryTest
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(1);
             monitor.assertMatchingWarningRecorded("string-value", "replaced", "Use 'string-a'");
-            Assertions.assertContainsAllOf(e.getMessage(), "string-value", "conflicts with property", "string-a");
+            assertThat(e.getMessage()).contains("string-value", "conflicts with property", "string-a");
         }
     }
 

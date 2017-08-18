@@ -29,7 +29,6 @@ import org.testng.annotations.Test;
 import java.util.List;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static io.airlift.testing.Assertions.assertEqualsIgnoreOrder;
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_CLASS_CAST_EXCEPTION;
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL;
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL_TO_NULL;
@@ -48,6 +47,7 @@ import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_RE
 import static io.airlift.testing.EquivalenceTester.comparisonTester;
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 import static java.util.Objects.requireNonNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.FileAssert.fail;
 
@@ -73,15 +73,11 @@ public class TestEquivalenceTester
             fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
-            assertEqualsIgnoreOrder(
-                    e.getFailures(),
-                    newArrayList(
-                            new PairCheckFailure(EQUAL, 0, 0, "foo", 1, 0, "foo"),
-                            new PairCheckFailure(EQUAL, 1, 0, "foo", 0, 0, "foo"),
-                            new PairCheckFailure(COMPARE_EQUAL, 0, 0, "foo", 1, 0, "foo"),
-                            new PairCheckFailure(COMPARE_EQUAL, 1, 0, "foo", 0, 0, "foo")
-                    )
-            );
+            assertThat(e.getFailures()).contains(
+                    new PairCheckFailure(EQUAL, 0, 0, "foo", 1, 0, "foo"),
+                    new PairCheckFailure(EQUAL, 1, 0, "foo", 0, 0, "foo"),
+                    new PairCheckFailure(COMPARE_EQUAL, 0, 0, "foo", 1, 0, "foo"),
+                    new PairCheckFailure(COMPARE_EQUAL, 1, 0, "foo", 0, 0, "foo"));
         }
     }
 
@@ -585,6 +581,6 @@ public class TestEquivalenceTester
 
     private void assertExpectedFailures(EquivalenceAssertionError e, ElementCheckFailure... expected)
     {
-        assertEqualsIgnoreOrder(e.getFailures(), newArrayList(expected));
+        assertThat(e.getFailures()).contains(expected);
     }
 }
