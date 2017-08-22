@@ -11,6 +11,7 @@
 - Add support for PostgreSQL in dbpool.
 - Delete FileUtils from testing module.
 - Make HttpClientModule non-public.
+- Cleanup dependencies for various modules.
 
 * 0.149
 
