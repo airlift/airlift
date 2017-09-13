@@ -75,6 +75,7 @@
         <module>log-manager</module>
         <module>node</module>
         <module>packaging</module>
+        <module>security</module>
         <module>stats</module>
         <module>testing</module>
         <module>trace-token</module>

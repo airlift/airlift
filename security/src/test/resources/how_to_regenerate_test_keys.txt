@@ -1,0 +1,16 @@
+# To regenerate the test key and certificates
+
+# Generate an RSA private key and convert it to PKCS8 wraped in PEM
+openssl genrsa 2048 | openssl pkcs8 -topk8 -inform pem -outform pem -nocrypt -out rsa.key
+# Generate a certificate signing request with the private key
+openssl req -new -key rsa.key -out rsa.csr
+# Sign request with private key
+openssl x509 -req -days 10000 -in rsa.csr -signkey rsa.key -out rsa.crt
+
+
+# Generate an RSA private key and convert it to PKCS8 wraped in PEM
+openssl ecparam -name prime256v1 -genkey |  openssl pkcs8 -topk8 -inform pem -outform pem -nocrypt -out ec.key
+
+# Generate an DSA private key and convert it to PKCS8 wraped in PEM
+openssl dsaparam -genkey 2048 |  openssl pkcs8 -topk8 -inform pem -outform pem -nocrypt -out dsa.key
+
