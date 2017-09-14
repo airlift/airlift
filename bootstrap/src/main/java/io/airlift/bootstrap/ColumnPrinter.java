@@ -20,6 +20,8 @@ import com.google.common.collect.ImmutableList;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -34,7 +36,7 @@ class ColumnPrinter
 {
     private static final int DEFAULT_MARGIN = 2;
 
-    private final List<List<String>> data = new ArrayList<>();
+    private final Collection<List<String>> data = new LinkedHashSet<>();
     private final List<String> columnNames;
     private final List<Integer> columnWidths;
     private final int margin;

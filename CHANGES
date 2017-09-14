@@ -13,6 +13,7 @@
 - Delete FileUtils from testing module.
 - Make HttpClientModule non-public.
 - Cleanup dependencies for various modules.
+- Skip duplicate rows when printing configuration in Bootstrap.
 
 * 0.149
 
