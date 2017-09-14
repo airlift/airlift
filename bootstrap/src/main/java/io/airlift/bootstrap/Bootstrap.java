@@ -252,11 +252,6 @@ public class Bootstrap
         return injector;
     }
 
-    private static final String PROPERTY_NAME_COLUMN = "PROPERTY";
-    private static final String DEFAULT_VALUE_COLUMN = "DEFAULT";
-    private static final String CURRENT_VALUE_COLUMN = "RUNTIME";
-    private static final String DESCRIPTION_COLUMN = "DESCRIPTION";
-
     private void logConfiguration(ConfigurationFactory configurationFactory, Map<String, String> unusedProperties)
     {
         ColumnPrinter columnPrinter = makePrinterForConfiguration(configurationFactory);
@@ -279,19 +274,16 @@ public class Bootstrap
     {
         ConfigurationInspector configurationInspector = new ConfigurationInspector();
 
-        ColumnPrinter columnPrinter = new ColumnPrinter();
-
-        columnPrinter.addColumn(PROPERTY_NAME_COLUMN);
-        columnPrinter.addColumn(DEFAULT_VALUE_COLUMN);
-        columnPrinter.addColumn(CURRENT_VALUE_COLUMN);
-        columnPrinter.addColumn(DESCRIPTION_COLUMN);
+        ColumnPrinter columnPrinter = new ColumnPrinter(
+                "PROPERTY", "DEFAULT", "RUNTIME", "DESCRIPTION");
 
         for (ConfigRecord<?> record : configurationInspector.inspect(configurationFactory)) {
             for (ConfigAttribute attribute : record.getAttributes()) {
-                columnPrinter.addValue(PROPERTY_NAME_COLUMN, attribute.getPropertyName());
-                columnPrinter.addValue(DEFAULT_VALUE_COLUMN, attribute.getDefaultValue());
-                columnPrinter.addValue(CURRENT_VALUE_COLUMN, attribute.getCurrentValue());
-                columnPrinter.addValue(DESCRIPTION_COLUMN, attribute.getDescription());
+                columnPrinter.addValues(
+                        attribute.getPropertyName(),
+                        attribute.getDefaultValue(),
+                        attribute.getCurrentValue(),
+                        attribute.getDescription());
             }
         }
         return columnPrinter;

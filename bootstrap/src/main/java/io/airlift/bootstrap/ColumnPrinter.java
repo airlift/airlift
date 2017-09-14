@@ -15,15 +15,17 @@
  */
 package io.airlift.bootstrap;
 
+import com.google.common.collect.ImmutableList;
+
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import static com.google.common.base.Preconditions.checkElementIndex;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Strings.repeat;
 import static java.lang.Math.max;
+import static java.util.stream.Collectors.toCollection;
 
 /**
  * A utility for outputting columnar text
@@ -33,49 +35,31 @@ class ColumnPrinter
     private static final int DEFAULT_MARGIN = 2;
 
     private final List<List<String>> data = new ArrayList<>();
-    private final List<String> columnNames = new ArrayList<>();
-    private final List<Integer> columnWidths = new ArrayList<>();
+    private final List<String> columnNames;
+    private final List<Integer> columnWidths;
     private final int margin;
 
-    public ColumnPrinter()
+    public ColumnPrinter(String... columnNames)
     {
-        this(DEFAULT_MARGIN);
+        this(DEFAULT_MARGIN, columnNames);
     }
 
-    public ColumnPrinter(int margin)
+    public ColumnPrinter(int margin, String... columnNames)
     {
         this.margin = margin;
+        this.columnNames = ImmutableList.copyOf(columnNames);
+        this.columnWidths = Arrays.stream(columnNames)
+                .map(String::length)
+                .collect(toCollection(ArrayList::new));
     }
 
-    /**
-     * Add a column
-     *
-     * @param columnName name of the column
-     */
-    public void addColumn(String columnName)
+    public void addValues(String... values)
     {
-        data.add(new ArrayList<>());
-        columnNames.add(columnName);
-        columnWidths.add(columnName.length());
-    }
-
-    /**
-     * Add a value to the first column with the given name
-     *
-     * @param columnName name of the column to add to
-     * @param value value to add
-     */
-    public void addValue(String columnName, String value)
-    {
-        addValue(columnNames.indexOf(columnName), value);
-    }
-
-    private void addValue(int columnIndex, String value)
-    {
-        checkElementIndex(columnIndex, data.size(), "columnIndex");
-
-        data.get(columnIndex).add(value);
-        columnWidths.set(columnIndex, max(value.length(), columnWidths.get(columnIndex)));
+        checkArgument(values.length == columnNames.size(), "wrong value count");
+        for (int i = 0; i < values.length; i++) {
+            columnWidths.set(i, max(values[i].length(), columnWidths.get(i)));
+        }
+        data.add(ImmutableList.copyOf(values));
     }
 
     public void print(PrintWriter out)
@@ -88,58 +72,24 @@ class ColumnPrinter
     private List<String> generateOutput()
     {
         List<String> lines = new ArrayList<>();
-        StringBuilder buffer = new StringBuilder();
-
-        List<Iterator<String>> dataIterators = data.stream()
-                .map(Collection::iterator)
-                .collect(Collectors.toList());
-
-        Iterator<Integer> columnWidthIterator = columnWidths.iterator();
-        for (String columnName : columnNames) {
-            int thisWidth = columnWidthIterator.next();
-            printValue(buffer, columnName, thisWidth);
+        lines.add(printRow(columnNames));
+        for (List<String> row : data) {
+            lines.add(printRow(row));
         }
-        pushLine(lines, buffer);
-
-        boolean done = false;
-        while (!done) {
-            boolean hadValue = false;
-            Iterator<Iterator<String>> rowIterator = dataIterators.iterator();
-            for (int width : columnWidths) {
-                Iterator<String> thisDataIterator = rowIterator.next();
-                if (thisDataIterator.hasNext()) {
-                    hadValue = true;
-
-                    String value = thisDataIterator.next();
-                    printValue(buffer, value, width);
-                }
-                else {
-                    printValue(buffer, "", width);
-                }
-            }
-            pushLine(lines, buffer);
-
-            if (!hadValue) {
-                done = true;
-            }
-        }
-
         return lines;
     }
 
-    private static void pushLine(List<String> lines, StringBuilder workStr)
+    private String printRow(List<String> values)
     {
-        lines.add(workStr.toString());
-        workStr.setLength(0);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < values.size(); i++) {
+            sb.append(value(values.get(i), columnWidths.get(i) + margin));
+        }
+        return sb.toString();
     }
 
-    private void printValue(StringBuilder str, String value, int thisWidth)
+    private static String value(String value, int width)
     {
-        str.append(String.format(widthSpec(thisWidth), value));
-    }
-
-    private String widthSpec(int thisWidth)
-    {
-        return "%-" + (thisWidth + margin) + "s";
+        return value + repeat(" ", width - value.length());
     }
 }
