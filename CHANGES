@@ -1,7 +1,7 @@
 * 0.150
 
 - Upgrade to Airbase 68.
-- Upgrade to Jetty 9.4.7.RC0.
+- Upgrade to Jetty 9.4.7.v20170914.
 - Prevent "Address already in use" for HTTP server.
 - Remove @Inject from Logger.
 - Add HTTP/2 input buffer size config.
