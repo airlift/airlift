@@ -14,6 +14,7 @@
 - Make HttpClientModule non-public.
 - Cleanup dependencies for various modules.
 - Skip duplicate rows when printing configuration in Bootstrap.
+- Support generalized suffix in Java version strings.
 
 * 0.149
 
