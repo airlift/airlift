@@ -14,6 +14,7 @@
 package io.airlift.stats.cardinality;
 
 import io.airlift.slice.Slice;
+import org.openjdk.jol.info.ClassLayout;
 import org.testng.annotations.Test;
 
 import java.util.HashMap;
@@ -71,6 +72,15 @@ public class TestHyperLogLog
                                 entry.getValue().stdev()));
             }
         }
+    }
+
+    @Test
+    public void testRetainedSize()
+            throws Exception
+    {
+        assertEquals(
+                HyperLogLog.newInstance(8).estimatedInMemorySize(),
+                ClassLayout.parseClass(HyperLogLog.class).instanceSize() + (new SparseHll(10)).estimatedInMemorySize());
     }
 
     @Test
