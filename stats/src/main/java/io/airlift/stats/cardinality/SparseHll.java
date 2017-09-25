@@ -28,10 +28,12 @@ import java.util.Arrays;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static io.airlift.slice.SizeOf.sizeOf;
 import static io.airlift.stats.cardinality.Utils.computeIndex;
 import static io.airlift.stats.cardinality.Utils.linearCounting;
 import static io.airlift.stats.cardinality.Utils.numberOfBuckets;
 import static io.airlift.stats.cardinality.Utils.numberOfLeadingZeros;
+import static java.lang.Math.toIntExact;
 import static java.util.Comparator.comparingInt;
 
 @NotThreadSafe
@@ -189,7 +191,7 @@ final class SparseHll
     @Override
     public int estimatedInMemorySize()
     {
-        return SPARSE_INSTANCE_SIZE + (SizeOf.SIZE_OF_INT * numberOfEntries);
+        return SPARSE_INSTANCE_SIZE + toIntExact(sizeOf(entries));
     }
 
     @Override

@@ -15,17 +15,21 @@ package io.airlift.stats.cardinality;
 
 import com.google.common.collect.ImmutableList;
 import io.airlift.slice.Murmur3Hash128;
+import org.openjdk.jol.info.ClassLayout;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.List;
 
+import static io.airlift.slice.SizeOf.sizeOf;
 import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
 import static io.airlift.stats.cardinality.TestUtils.sequence;
 import static org.testng.Assert.assertEquals;
 
 public class TestSparseHll
 {
+    private static final int SPARSE_HLL_INSTANCE_SIZE = ClassLayout.parseClass(SparseHll.class).instanceSize();;
+
     @Test(dataProvider = "bits")
     public void testMerge(int prefixBitLength)
             throws Exception
@@ -55,6 +59,24 @@ public class TestSparseHll
         // special cases with overflows
         verifyToDense(prefixBitLength, ImmutableList.of(201L, 280L));
         verifyToDense(prefixBitLength, ImmutableList.of(224L, 271L));
+    }
+
+    @Test
+    public void testRetainedSize()
+    {
+        SparseHll sparseHll = new SparseHll(10);
+        // use an empty array to mock the entries in SparseHll
+        int[] entries = new int[1];
+        long retainedSize = sizeOf(entries) + SPARSE_HLL_INSTANCE_SIZE;
+        for (int value = 0; value < 100; value++) {
+            sparseHll.insertHash(Murmur3Hash128.hash64(value));
+            if (value % 10 == 1) {
+                // we increase the capacity by 10 once full
+                entries = new int[value + 10];
+                retainedSize = sizeOf(entries) + SPARSE_HLL_INSTANCE_SIZE;
+            }
+            assertEquals(sparseHll.estimatedInMemorySize(), retainedSize);
+        }
     }
 
     private static void verifyMerge(int prefixBitLength, List<Long> one, List<Long> two)
