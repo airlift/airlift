@@ -38,6 +38,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
@@ -62,6 +63,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.nio.channels.ServerSocketChannel;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -87,11 +89,13 @@ import static java.util.Objects.requireNonNull;
 
 public class HttpServer
 {
+    // TODO: replace this with a supported method in Jetty 9.4.7+
+    private static final Field ACCEPT_CHANNEL_FIELD = getAcceptChannelField();
+
     private final Server server;
     private final ServerConnector httpConnector;
     private final ServerConnector httpsConnector;
     private final ServerConnector adminConnector;
-    private final boolean registerErrorHandler;
 
     private final Optional<ZonedDateTime> certificateExpiration;
 
@@ -124,7 +128,10 @@ public class HttpServer
         threadPool.setName("http-worker");
         threadPool.setDetailedDump(true);
         server = new Server(threadPool);
-        registerErrorHandler = config.isShowStackTrace();
+
+        if (config.isShowStackTrace()) {
+            server.addBean(new ErrorHandler());
+        }
 
         if (mbeanServer != null) {
             // export jmx mbeans if a server was provided
@@ -418,10 +425,6 @@ public class HttpServer
             throws Exception
     {
         server.start();
-        // clear the error handler registered by start()
-        if (!registerErrorHandler) {
-            server.setErrorHandler(null);
-        }
         checkState(server.isStarted(), "server is not started");
 
         // The combination of an NIO connector and an insufficient number of threads results
@@ -490,7 +493,24 @@ public class HttpServer
             throws IOException
     {
         ServerConnector connector = new ServerConnector(server, executor, null, null, acceptors, selectors, factories);
-        connector.open(channel);
+        try {
+            ACCEPT_CHANNEL_FIELD.set(connector, channel);
+        }
+        catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
         return connector;
+    }
+
+    private static Field getAcceptChannelField()
+    {
+        try {
+            Field field = ServerConnector.class.getDeclaredField("_acceptChannel");
+            field.setAccessible(true);
+            return field;
+        }
+        catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
     }
 }

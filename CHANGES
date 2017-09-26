@@ -1,3 +1,7 @@
+* 0.151
+
+- Revert to Jetty 9.3.13.M0
+
 * 0.150
 
 - Upgrade to Airbase 68.
