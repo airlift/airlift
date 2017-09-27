@@ -187,6 +187,9 @@ public class HttpServer
 
             SslContextFactory sslContextFactory = new SslContextFactory(config.getKeystorePath());
             sslContextFactory.setKeyStorePassword(config.getKeystorePassword());
+            if (config.getKeyManagerPassword() != null) {
+                sslContextFactory.setKeyManagerPassword(config.getKeyManagerPassword());
+            }
             List<String> includedCipherSuites = config.getHttpsIncludedCipherSuites();
             sslContextFactory.setIncludeCipherSuites(includedCipherSuites.toArray(new String[includedCipherSuites.size()]));
             List<String> excludedCipherSuites = config.getHttpsExcludedCipherSuites();
@@ -235,6 +238,9 @@ public class HttpServer
 
                 SslContextFactory sslContextFactory = new SslContextFactory(config.getKeystorePath());
                 sslContextFactory.setKeyStorePassword(config.getKeystorePassword());
+                if (config.getKeyManagerPassword() != null) {
+                    sslContextFactory.setKeyManagerPassword(config.getKeyManagerPassword());
+                }
                 sslContextFactory.setSecureRandomAlgorithm(config.getSecureRandomAlgorithm());
                 SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
                 adminConnector = createServerConnector(

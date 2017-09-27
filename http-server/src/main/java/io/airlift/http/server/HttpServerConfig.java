@@ -65,6 +65,7 @@ public class HttpServerConfig
     private int httpsPort = 8443;
     private String keystorePath;
     private String keystorePassword;
+    private String keyManagerPassword;
     private String secureRandomAlgorithm;
     private List<String> includedCipherSuites = ImmutableList.of();
     private List<String> excludedCipherSuites = ImmutableList.of();
@@ -180,6 +181,19 @@ public class HttpServerConfig
     public HttpServerConfig setKeystorePassword(String keystorePassword)
     {
         this.keystorePassword = keystorePassword;
+        return this;
+    }
+
+    public String getKeyManagerPassword()
+    {
+        return keyManagerPassword;
+    }
+
+    @Config("http-server.https.keymanager.password")
+    @ConfigSecuritySensitive
+    public HttpServerConfig setKeyManagerPassword(String keyManagerPassword)
+    {
+        this.keyManagerPassword = keyManagerPassword;
         return this;
     }
 

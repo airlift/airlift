@@ -27,6 +27,7 @@ import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.log.Logging;
+import io.airlift.node.NodeConfig;
 import io.airlift.node.NodeInfo;
 import io.airlift.tracetoken.TraceTokenManager;
 import org.testng.annotations.AfterMethod;
@@ -88,7 +89,9 @@ public class TestHttpServerProvider
                 .setHttpPort(0)
                 .setHttpsPort(0)
                 .setLogPath(new File(tempDir, "http-request.log").getAbsolutePath());
-        nodeInfo = new NodeInfo("test");
+        nodeInfo = new NodeInfo(new NodeConfig()
+                .setEnvironment("test")
+                .setNodeInternalAddress("localhost"));
         httpServerInfo = new HttpServerInfo(config, nodeInfo);
     }
 
@@ -241,6 +244,32 @@ public class TestHttpServerProvider
     }
 
     @Test
+    public void testHttps()
+            throws Exception
+    {
+        config.setHttpEnabled(false)
+                .setHttpsEnabled(true)
+                .setHttpsPort(0)
+                .setKeystorePath(getResource("test.keystore.with.two.passwords").toString())
+                .setKeystorePassword("airlift")
+                .setKeyManagerPassword("airliftkey");
+
+        createAndStartServer();
+
+        HttpClientConfig http1ClientConfig = new HttpClientConfig()
+                .setHttp2Enabled(false)
+                .setTrustStorePath(getResource("test.truststore").toString())
+                .setTrustStorePassword("airlift");
+
+        try (JettyHttpClient httpClient = new JettyHttpClient(http1ClientConfig)) {
+            StatusResponse response = httpClient.execute(prepareGet().setUri(httpServerInfo.getHttpsUri()).build(), createStatusResponseHandler());
+
+            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+            assertEquals(response.getHeader("X-Protocol"), "HTTP/1.1");
+        }
+    }
+
+    @Test
     public void testFilter()
             throws Exception
     {
@@ -351,6 +380,18 @@ public class TestHttpServerProvider
                 .setKeystorePassword("airlift")
                 .setMaxThreads(1);
         createAndStartServer();
+    }
+
+    @Test(expectedExceptions = RuntimeException.class,  expectedExceptionsMessageRegExp = ".+Cannot recover key.+")
+    public void testInsufficientPasswordToAccessKeystore()
+            throws Exception
+    {
+        config.setHttpEnabled(false)
+                .setHttpsEnabled(true)
+                .setHttpsPort(0)
+                .setKeystorePath(getResource("test.keystore.with.two.passwords").toString())
+                .setKeystorePassword("airlift");
+          createAndStartServer();
     }
 
     @Test
