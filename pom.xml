@@ -28,7 +28,7 @@
         <dep.airlift.version>0.151-SNAPSHOT</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
         <dep.jetty.version>9.4.7.v20170914</dep.jetty.version>
-        <dep.jersey.version>2.22.2</dep.jersey.version>
+        <dep.jersey.version>2.26</dep.jersey.version>
     </properties>
 
     <organization>
@@ -376,9 +376,21 @@
                 <version>${dep.jersey.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>junit</groupId>
-                        <artifactId>junit</artifactId>
+                        <groupId>org.glassfish.hk2.external</groupId>
+                        <artifactId>javax.inject</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>org.glassfish.hk2.external</groupId>
+                        <artifactId>aopalliance-repackaged</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.glassfish.jersey.inject</groupId>
+                <artifactId>jersey-hk2</artifactId>
+                <version>${dep.jersey.version}</version>
+                <exclusions>
                     <exclusion>
                         <groupId>org.glassfish.hk2.external</groupId>
                         <artifactId>javax.inject</artifactId>
@@ -399,10 +411,6 @@
                         <groupId>junit</groupId>
                         <artifactId>junit</artifactId>
                     </exclusion>
-                    <exclusion>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm-debug-all</artifactId>
-                    </exclusion>
                 </exclusions>
             </dependency>
 
@@ -414,10 +422,6 @@
                     <exclusion>
                         <groupId>junit</groupId>
                         <artifactId>junit</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm-debug-all</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
