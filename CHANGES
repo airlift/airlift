@@ -1,3 +1,8 @@
+* 0.151
+
+- Upgrade to Airbase 71.
+- Add instance sizes to HyperLogLog and SparseHll.
+
 * 0.150
 
 - Upgrade to Airbase 68.
