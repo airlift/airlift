@@ -1,7 +1,9 @@
 package io.airlift.http.client.jetty;
 
+import io.airlift.concurrent.Threads;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
@@ -9,10 +11,19 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 import java.io.Closeable;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfUnchecked;
+import static java.lang.Math.max;
 import static java.lang.Thread.currentThread;
+import static java.util.Objects.requireNonNull;
 
 public final class JettyIoPool
         implements Closeable
@@ -40,7 +51,15 @@ public final class JettyIoPool
             threadPool.setDetailedDump(true);
             executor = threadPool;
 
-            scheduler = new ScheduledExecutorScheduler(baseName + "-scheduler", true, currentThread().getContextClassLoader());
+            if (config.getTimeoutConcurrency() == 1 && config.getTimeoutThreads() == 1) {
+                scheduler = new ScheduledExecutorScheduler(baseName + "-scheduler", true, currentThread().getContextClassLoader());
+            }
+            else {
+                scheduler = new ConcurrentScheduler(
+                        config.getTimeoutConcurrency(),
+                        max(1, config.getTimeoutThreads() / config.getTimeoutConcurrency()),
+                        baseName + "-scheduler");
+            }
             scheduler.start();
 
             byteBufferPool = new MappedByteBufferPool();
@@ -100,5 +119,55 @@ public final class JettyIoPool
         return toStringHelper(this)
                 .add("name", name)
                 .toString();
+    }
+
+    // based on ScheduledExecutorScheduler
+    private static class ConcurrentScheduler
+            extends AbstractLifeCycle
+            implements Scheduler
+    {
+        private final int threadsPerScheduler;
+        private final ScheduledExecutorService[] schedulers;
+        private final String threadBaseName;
+
+        public ConcurrentScheduler(int schedulerCount, int threadsPerScheduler, String threadBaseName)
+        {
+            checkArgument(schedulerCount > 0, "schedulerCount must be at least one");
+            this.schedulers = new ScheduledThreadPoolExecutor[schedulerCount];
+            checkArgument(threadsPerScheduler > 0, "threadsPerScheduler must be at least one");
+            this.threadsPerScheduler = threadsPerScheduler;
+            this.threadBaseName = requireNonNull(threadBaseName, "threadBaseName is null");
+        }
+
+        @Override
+        protected void doStart()
+                throws Exception
+        {
+            for (int i = 0; i < schedulers.length; i++) {
+                schedulers[i] = Executors.newScheduledThreadPool(threadsPerScheduler, Threads.daemonThreadsNamed(threadBaseName + "-timeout-%s" + i));
+            }
+        }
+
+        @Override
+        protected void doStop()
+                throws Exception
+        {
+            for (int i = 0; i < schedulers.length; i++) {
+                schedulers[i].shutdownNow();
+                schedulers[i] = null;
+            }
+        }
+
+        @Override
+        public Task schedule(Runnable task, long delay, TimeUnit unit)
+        {
+            ScheduledExecutorService scheduler = schedulers[ThreadLocalRandom.current().nextInt(schedulers.length)];
+            if (scheduler == null) {
+                return () -> false;
+            }
+
+            ScheduledFuture<?> result = scheduler.schedule(task, delay, unit);
+            return () -> result.cancel(false);
+        }
     }
 }
