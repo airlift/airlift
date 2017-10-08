@@ -80,7 +80,7 @@ public class CachingServiceSelector
 
             // if discovery is available, get the initial set of servers before starting
             try {
-                refresh().get(30, TimeUnit.SECONDS);
+                refresh().get(1, TimeUnit.SECONDS);
             }
             catch (Exception ignored) {
             }
