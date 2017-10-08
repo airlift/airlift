@@ -1,6 +1,7 @@
 * 0.156
 
 - Add HTTP client selector thread count config.
+- Decrease discovery refresh wait time at startup.
 
 * 0.155
 
