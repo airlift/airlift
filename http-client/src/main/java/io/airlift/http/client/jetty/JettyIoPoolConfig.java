@@ -10,8 +10,8 @@ public class JettyIoPoolConfig
 {
     private int maxThreads = 200;
     private int minThreads = 8;
-    private int timeoutThreads = 32;
-    private int timeoutConcurrency = 16;
+    private int timeoutThreads = 1;
+    private int timeoutConcurrency = 1;
 
     @Min(1)
     public int getMaxThreads()
