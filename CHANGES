@@ -1,3 +1,8 @@
+* 0.152
+
+- Upgrade to Airbase 72.
+- Add config for HTTP client timeout executor concurrency.
+
 * 0.151
 
 - Upgrade to Airbase 71.
