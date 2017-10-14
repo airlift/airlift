@@ -427,4 +427,29 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.takari.maven.plugins</groupId>
+                <artifactId>takari-lifecycle-plugin</artifactId>
+                <version>1.13.3</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <source>${project.build.targetJdk}</source>
+                    <sourceJar>true</sourceJar>
+                    <testJar>true</testJar>
+                    <proc>proc</proc>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <configuration>
+                    <skipSource>true</skipSource>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
