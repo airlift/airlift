@@ -67,6 +67,7 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.lang.reflect.Field;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -87,6 +88,9 @@ import static java.util.Objects.requireNonNull;
 
 public class HttpServer
 {
+    // TODO: use ServerConnector::open(ServerSocketChannel) to set accept channel after upgrade to Jetty 9.4.7
+    private static final Field ACCEPT_CHANNEL_FIELD = getAcceptChannelField();
+
     private final Server server;
     private final ServerConnector httpConnector;
     private final ServerConnector httpsConnector;
@@ -496,7 +500,24 @@ public class HttpServer
             throws IOException
     {
         ServerConnector connector = new ServerConnector(server, executor, null, null, acceptors, selectors, factories);
-        connector.open(channel);
+        try {
+            ACCEPT_CHANNEL_FIELD.set(connector, channel);
+        }
+        catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
         return connector;
+    }
+
+    private static Field getAcceptChannelField()
+    {
+        try {
+            Field field = ServerConnector.class.getDeclaredField("_acceptChannel");
+            field.setAccessible(true);
+            return field;
+        }
+        catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
     }
 }
