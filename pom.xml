@@ -27,7 +27,7 @@
 
         <dep.airlift.version>0.153-SNAPSHOT</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
-        <dep.jetty.version>9.4.7.v20170914</dep.jetty.version>
+        <dep.jetty.version>9.4.6.v20170531</dep.jetty.version>
         <dep.jersey.version>2.26</dep.jersey.version>
     </properties>
 
