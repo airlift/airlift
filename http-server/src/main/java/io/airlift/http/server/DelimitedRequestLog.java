@@ -19,6 +19,7 @@ import ch.qos.logback.core.ContextBase;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
+import ch.qos.logback.core.util.FileSize;
 import io.airlift.event.client.EventClient;
 import io.airlift.log.Logger;
 import io.airlift.tracetoken.TraceTokenManager;
@@ -76,18 +77,19 @@ class DelimitedRequestLog
         rollingPolicy.setMaxHistory(maxHistory);
         rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(triggeringPolicy);
         rollingPolicy.setParent(fileAppender);
-        rollingPolicy.start();
 
         triggeringPolicy.setContext(context);
         triggeringPolicy.setTimeBasedRollingPolicy(rollingPolicy);
-        triggeringPolicy.setMaxFileSize(String.valueOf(maxFileSizeInBytes));
-        triggeringPolicy.start();
+        triggeringPolicy.setMaxFileSize(new FileSize(maxFileSizeInBytes));
 
         fileAppender.setContext(context);
         fileAppender.setFile(filename);
         fileAppender.setAppend(true);
         fileAppender.setLayout(httpLogLayout);
         fileAppender.setRollingPolicy(rollingPolicy);
+
+        rollingPolicy.start();
+        triggeringPolicy.start();
         fileAppender.start();
     }
 

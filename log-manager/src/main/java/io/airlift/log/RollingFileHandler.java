@@ -5,6 +5,7 @@ import ch.qos.logback.core.encoder.EncoderBase;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
+import ch.qos.logback.core.util.FileSize;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,18 +44,19 @@ final class RollingFileHandler
         rollingPolicy.setMaxHistory(maxHistory);
         rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(triggeringPolicy);
         rollingPolicy.setParent(fileAppender);
-        rollingPolicy.start();
 
         triggeringPolicy.setContext(context);
         triggeringPolicy.setTimeBasedRollingPolicy(rollingPolicy);
-        triggeringPolicy.setMaxFileSize(Long.toString(maxSizeInBytes));
-        triggeringPolicy.start();
+        triggeringPolicy.setMaxFileSize(new FileSize(maxSizeInBytes));
 
         fileAppender.setContext(context);
         fileAppender.setFile(filename);
         fileAppender.setAppend(true);
         fileAppender.setEncoder(new StringEncoder());
         fileAppender.setRollingPolicy(rollingPolicy);
+
+        rollingPolicy.start();
+        triggeringPolicy.start();
         fileAppender.start();
     }
 
@@ -101,23 +103,27 @@ final class RollingFileHandler
         }
     }
 
-    private final class StringEncoder
+    private static final class StringEncoder
             extends EncoderBase<String>
     {
+        private static final byte[] EMPTY_BYTES = new byte[0];
+
         @Override
-        public void doEncode(String event)
-                throws IOException
+        public byte[] headerBytes()
         {
-            outputStream.write(event.getBytes(UTF_8));
-            // necessary if output stream is buffered
-            outputStream.flush();
+            return EMPTY_BYTES;
         }
 
         @Override
-        public void close()
-                throws IOException
+        public byte[] encode(String event)
         {
-            outputStream.flush();
+            return event.getBytes(UTF_8);
+        }
+
+        @Override
+        public byte[] footerBytes()
+        {
+            return EMPTY_BYTES;
         }
     }
 
