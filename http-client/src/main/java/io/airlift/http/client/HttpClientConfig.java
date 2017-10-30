@@ -59,6 +59,7 @@ public class HttpClientConfig
     private boolean authenticationEnabled;
     private String kerberosPrincipal;
     private String kerberosRemoteServiceName;
+    private int selectorThreads = 2;
 
     private boolean http2Enabled;
     private DataSize http2InitialSessionReceiveWindowSize = new DataSize(16, MEGABYTE);
@@ -343,6 +344,19 @@ public class HttpClientConfig
     public HttpClientConfig setHttp2InputBufferSize(DataSize http2InputBufferSize)
     {
         this.http2InputBufferSize = http2InputBufferSize;
+        return this;
+    }
+
+    @Min(1)
+    public int getSelectorThreads()
+    {
+        return selectorThreads;
+    }
+
+    @Config("http-client.selector-thread-count")
+    public HttpClientConfig setSelectorThreads(int selectorThreads)
+    {
+        this.selectorThreads = selectorThreads;
         return this;
     }
 }

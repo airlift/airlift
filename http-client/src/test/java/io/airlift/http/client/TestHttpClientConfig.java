@@ -63,7 +63,8 @@ public class TestHttpClientConfig
                 .setKerberosPrincipal(null)
                 .setHttp2InitialSessionReceiveWindowSize(new DataSize(16, MEGABYTE))
                 .setHttp2InitialStreamReceiveWindowSize(new DataSize(16, MEGABYTE))
-                .setHttp2InputBufferSize(new DataSize(8, KILOBYTE)));
+                .setHttp2InputBufferSize(new DataSize(8, KILOBYTE))
+                .setSelectorThreads(2));
     }
 
     @Test
@@ -91,6 +92,7 @@ public class TestHttpClientConfig
                 .put("http-client.http2.session-receive-window-size", "7MB")
                 .put("http-client.http2.stream-receive-window-size", "7MB")
                 .put("http-client.http2.input-buffer-size", "1MB")
+                .put("http-client.selector-thread-count", "16")
                 .build();
 
         HttpClientConfig expected = new HttpClientConfig()
@@ -114,7 +116,8 @@ public class TestHttpClientConfig
                 .setKerberosPrincipal("airlift-client")
                 .setHttp2InitialSessionReceiveWindowSize(new DataSize(7, MEGABYTE))
                 .setHttp2InitialStreamReceiveWindowSize(new DataSize(7, MEGABYTE))
-                .setHttp2InputBufferSize(new DataSize(1, MEGABYTE));
+                .setHttp2InputBufferSize(new DataSize(1, MEGABYTE))
+                .setSelectorThreads(16);
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }
