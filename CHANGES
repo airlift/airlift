@@ -1,3 +1,7 @@
+* 0.155
+
+- Remove LifeCycleManager shutdown hook when stop() is called.
+
 * 0.154
 
 - Upgrade to Airbase 74.
