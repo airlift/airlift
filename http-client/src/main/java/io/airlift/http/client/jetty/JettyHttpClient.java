@@ -112,7 +112,6 @@ public class JettyHttpClient
     private static final AtomicLong nameCounter = new AtomicLong();
     private static final String PRESTO_STATS_KEY = "presto_stats";
     private static final long SWEEP_PERIOD_MILLIS = 5000;
-    private static final String REALM_IN_CHALLENGE = "X-Airlift-Realm-In-Challenge";
 
     private final Optional<JettyIoPool> anonymousPool;
     private final HttpClient httpClient;
@@ -133,7 +132,6 @@ public class JettyHttpClient
     private final List<HttpRequestFilter> requestFilters;
     private final Exception creationLocation = new Exception();
     private final String name;
-    private final boolean authenticationEnabled;
 
     public JettyHttpClient()
     {
@@ -168,7 +166,6 @@ public class JettyHttpClient
         maxContentLength = config.getMaxContentLength().toBytes();
         requestTimeoutMillis = config.getRequestTimeout().toMillis();
         idleTimeoutMillis = config.getIdleTimeout().toMillis();
-        authenticationEnabled = config.getAuthenticationEnabled();
 
         creationLocation.fillInStackTrace();
 
@@ -197,7 +194,7 @@ public class JettyHttpClient
             transport = new HttpClientTransportOverHTTP(config.getSelectorThreads());
         }
 
-        if (authenticationEnabled) {
+        if (config.getAuthenticationEnabled()) {
             requireNonNull(kerberosConfig.getConfig(), "kerberos config path is null");
             requireNonNull(config.getKerberosRemoteServiceName(), "kerberos remote service name is null");
             httpClient = new SpnegoHttpClient(kerberosConfig, config, transport, sslContextFactory);
@@ -472,14 +469,6 @@ public class JettyHttpClient
         jettyRequest.timeout(requestTimeoutMillis, MILLISECONDS);
         jettyRequest.idleTimeout(idleTimeoutMillis, MILLISECONDS);
 
-        // client authentications
-        if (authenticationEnabled && "https".equalsIgnoreCase(jettyRequest.getURI().getScheme())) {
-            // Unlike other clients, Jetty Kerberos client requires the server to include a realm
-            // in the challenge from the server. This breaks the SPNEGO protocol. We use a custom
-            // header to tell the server to return the required realm.
-            // Workaround for https://bugs.eclipse.org/bugs/show_bug.cgi?id=458258
-            jettyRequest.header(REALM_IN_CHALLENGE, "true");
-        }
         return jettyRequest;
     }
 

@@ -3,6 +3,7 @@
 - Add HTTP client selector thread count config.
 - Always ask for client certificates in HTTP server.
 - Decrease discovery refresh wait time at startup.
+- Remove workaround for Jetty client Kerberos realm bug.
 
 * 0.155
 
