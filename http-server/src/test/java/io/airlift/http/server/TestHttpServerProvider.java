@@ -25,7 +25,6 @@ import io.airlift.http.client.Request;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
-import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.log.Logging;
 import io.airlift.node.NodeConfig;
 import io.airlift.node.NodeInfo;
@@ -35,7 +34,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
-import javax.servlet.Filter;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletResponse;
 
@@ -382,7 +380,7 @@ public class TestHttpServerProvider
         createAndStartServer();
     }
 
-    @Test(expectedExceptions = RuntimeException.class,  expectedExceptionsMessageRegExp = ".+Cannot recover key.+")
+    @Test(expectedExceptions = RuntimeException.class, expectedExceptionsMessageRegExp = ".+Cannot recover key.+")
     public void testInsufficientPasswordToAccessKeystore()
             throws Exception
     {
@@ -391,7 +389,7 @@ public class TestHttpServerProvider
                 .setHttpsPort(0)
                 .setKeystorePath(getResource("test.keystore.with.two.passwords").toString())
                 .setKeystorePassword("airlift");
-          createAndStartServer();
+        createAndStartServer();
     }
 
     @Test
@@ -445,13 +443,14 @@ public class TestHttpServerProvider
     private void createServer(HttpServlet servlet)
     {
         HashLoginServiceProvider loginServiceProvider = new HashLoginServiceProvider(config);
-        HttpServerProvider serverProvider = new HttpServerProvider(httpServerInfo,
+        HttpServerProvider serverProvider = new HttpServerProvider(
+                httpServerInfo,
                 nodeInfo,
                 config,
                 servlet,
-                ImmutableSet.<Filter>of(new DummyFilter()),
-                ImmutableSet.<HttpResourceBinding>of(),
-                ImmutableSet.<Filter>of(),
+                ImmutableSet.of(new DummyFilter()),
+                ImmutableSet.of(),
+                ImmutableSet.of(),
                 new RequestStats(),
                 new NullEventClient());
         serverProvider.setTheAdminServlet(new DummyServlet());

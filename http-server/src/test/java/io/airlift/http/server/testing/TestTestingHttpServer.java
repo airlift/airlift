@@ -19,9 +19,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
-import com.google.inject.Binder;
 import com.google.inject.Injector;
-import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
@@ -65,7 +63,6 @@ import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
-import static io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
 import static io.airlift.testing.Assertions.assertGreaterThan;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -103,7 +100,7 @@ public class TestTestingHttpServer
             throws Exception
     {
         DummyServlet servlet = new DummyServlet();
-        TestingHttpServer server = createTestingHttpServer(servlet, ImmutableMap.<String, String>of());
+        TestingHttpServer server = createTestingHttpServer(servlet, ImmutableMap.of());
 
         try {
             server.start();
@@ -126,7 +123,7 @@ public class TestTestingHttpServer
     {
         DummyServlet servlet = new DummyServlet();
         DummyFilter filter = new DummyFilter();
-        TestingHttpServer server = createTestingHttpServerWithFilter(servlet, ImmutableMap.<String, String>of(), filter);
+        TestingHttpServer server = createTestingHttpServerWithFilter(servlet, ImmutableMap.of(), filter);
 
         try {
             server.start();
@@ -148,19 +145,14 @@ public class TestTestingHttpServer
     public void testGuiceInjectionWithoutFilters()
             throws Exception
     {
-        final DummyServlet servlet = new DummyServlet();
+        DummyServlet servlet = new DummyServlet();
 
         Bootstrap app = new Bootstrap(
                 new TestingNodeModule(),
                 new TestingHttpServerModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
-                        binder.bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(TheServlet.class).toInstance(ImmutableMap.<String, String>of());
-                    }
+                binder -> {
+                    binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
+                    binder.bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(TheServlet.class).toInstance(ImmutableMap.of());
                 });
 
         Injector injector = app
@@ -186,21 +178,16 @@ public class TestTestingHttpServer
     public void testGuiceInjectionWithFilters()
             throws Exception
     {
-        final DummyServlet servlet = new DummyServlet();
-        final DummyFilter filter = new DummyFilter();
+        DummyServlet servlet = new DummyServlet();
+        DummyFilter filter = new DummyFilter();
 
         Bootstrap app = new Bootstrap(
                 new TestingNodeModule(),
                 new TestingHttpServerModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
-                        binder.bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(TheServlet.class).toInstance(ImmutableMap.<String, String>of());
-                        newSetBinder(binder, Filter.class, TheServlet.class).addBinding().toInstance(filter);
-                    }
+                binder -> {
+                    binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
+                    binder.bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(TheServlet.class).toInstance(ImmutableMap.of());
+                    newSetBinder(binder, Filter.class, TheServlet.class).addBinding().toInstance(filter);
                 });
 
         Injector injector = app
@@ -228,23 +215,18 @@ public class TestTestingHttpServer
     public void testGuiceInjectionWithResources()
             throws Exception
     {
-        final DummyServlet servlet = new DummyServlet();
+        DummyServlet servlet = new DummyServlet();
 
         Bootstrap app = new Bootstrap(
                 new TestingNodeModule(),
                 new TestingHttpServerModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
-                        binder.bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(TheServlet.class).toInstance(ImmutableMap.<String, String>of());
-                        httpServerBinder(binder).bindResource("/", "webapp/user").withWelcomeFile("user-welcome.txt");
-                        httpServerBinder(binder).bindResource("/", "webapp/user2");
-                        httpServerBinder(binder).bindResource("path", "webapp/user").withWelcomeFile("user-welcome.txt");
-                        httpServerBinder(binder).bindResource("path", "webapp/user2");
-                    }
+                binder -> {
+                    binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
+                    binder.bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(TheServlet.class).toInstance(ImmutableMap.of());
+                    httpServerBinder(binder).bindResource("/", "webapp/user").withWelcomeFile("user-welcome.txt");
+                    httpServerBinder(binder).bindResource("/", "webapp/user2");
+                    httpServerBinder(binder).bindResource("path", "webapp/user").withWelcomeFile("user-welcome.txt");
+                    httpServerBinder(binder).bindResource("path", "webapp/user2");
                 });
 
         Injector injector = app
@@ -286,7 +268,7 @@ public class TestTestingHttpServer
         assertEquals(data.getBody().trim(), contents);
     }
 
-    private TestingHttpServer createTestingHttpServer(DummyServlet servlet, Map<String, String> params)
+    private static TestingHttpServer createTestingHttpServer(DummyServlet servlet, Map<String, String> params)
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
@@ -295,13 +277,13 @@ public class TestTestingHttpServer
         return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params);
     }
 
-    private TestingHttpServer createTestingHttpServerWithFilter(DummyServlet servlet, Map<String, String> params, DummyFilter filter)
+    private static TestingHttpServer createTestingHttpServerWithFilter(DummyServlet servlet, Map<String, String> params, DummyFilter filter)
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params, ImmutableSet.<Filter>of(filter), ImmutableSet.<HttpResourceBinding>of());
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params, ImmutableSet.of(filter), ImmutableSet.of());
     }
 
     static class DummyServlet

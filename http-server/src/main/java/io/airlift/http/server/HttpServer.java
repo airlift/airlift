@@ -62,13 +62,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.nio.channels.ServerSocketChannel;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
-import java.lang.reflect.Field;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -99,7 +99,7 @@ public class HttpServer
 
     private final Optional<ZonedDateTime> certificateExpiration;
 
-    @SuppressWarnings({"deprecation"})
+    @SuppressWarnings("deprecation")
     public HttpServer(HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
@@ -330,7 +330,7 @@ public class HttpServer
         certificateExpiration = loadAllX509Certificates(config).stream()
                 .map(X509Certificate::getNotAfter)
                 .min(naturalOrder())
-                .map(date -> ZonedDateTime.ofInstant(date.toInstant(), ZoneOffset.systemDefault()));
+                .map(date -> ZonedDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault()));
     }
 
     private static ServletContextHandler createServletContext(Servlet theServlet,

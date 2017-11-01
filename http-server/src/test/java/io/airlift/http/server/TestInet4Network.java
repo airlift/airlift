@@ -182,7 +182,7 @@ public class TestInet4Network
     }
 
     @Test
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings("unchecked")
     public void testEquals()
     {
         equivalenceTester()
@@ -193,7 +193,7 @@ public class TestInet4Network
     }
 
     @Test
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings("unchecked")
     public void testCompareTo()
     {
         comparisonTester()

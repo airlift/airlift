@@ -71,7 +71,7 @@ class DelimitedRequestLog
 
         recoverTempFiles(filename);
 
-        RollingFileAppender<HttpRequestEvent>  fileAppender = new RollingFileAppender<>();
+        RollingFileAppender<HttpRequestEvent> fileAppender = new RollingFileAppender<>();
         SizeAndTimeBasedFNATP<HttpRequestEvent> triggeringPolicy = new SizeAndTimeBasedFNATP<>();
         TimeBasedRollingPolicy<HttpRequestEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
 

@@ -61,7 +61,7 @@ public class HttpServerConfig
     private int httpPort = 8080;
     private int httpAcceptQueueSize = 8000;
 
-    private boolean httpsEnabled = false;
+    private boolean httpsEnabled;
     private int httpsPort = 8443;
     private String keystorePath;
     private String keystorePassword;
@@ -93,7 +93,7 @@ public class HttpServerConfig
     private String userAuthFile;
 
     private boolean adminEnabled = true;
-    private int adminPort = 0;
+    private int adminPort;
     private int adminMinThreads = 2;
     private int adminMaxThreads = 200;
 
@@ -520,7 +520,6 @@ public class HttpServerConfig
         this.http2InitialStreamReceiveWindowSize = http2InitialStreamReceiveWindowSize;
         return this;
     }
-
 
     @NotNull
     @MinDataSize("1kB")

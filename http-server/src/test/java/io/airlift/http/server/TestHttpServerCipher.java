@@ -25,7 +25,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import javax.servlet.Filter;
 import javax.servlet.http.HttpServlet;
 
 import java.io.File;
@@ -203,9 +202,9 @@ public class TestHttpServerCipher
                 nodeInfo,
                 config,
                 servlet,
-                ImmutableSet.<Filter>of(new DummyFilter()),
-                ImmutableSet.<HttpServerBinder.HttpResourceBinding>of(),
-                ImmutableSet.<Filter>of(),
+                ImmutableSet.of(new DummyFilter()),
+                ImmutableSet.of(),
+                ImmutableSet.of(),
                 new RequestStats(),
                 new NullEventClient());
         serverProvider.setTheAdminServlet(new DummyServlet());

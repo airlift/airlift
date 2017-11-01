@@ -68,28 +68,28 @@ public class TestDelimitedRequestLog
     public void testWriteLog()
             throws Exception
     {
-        final Request request = mock(Request.class);
-        final Response response = mock(Response.class);
-        final Principal principal = mock(Principal.class);
+        Request request = mock(Request.class);
+        Response response = mock(Response.class);
+        Principal principal = mock(Principal.class);
 
-        final long timeToFirstByte = 456;
-        final long timeToLastByte = 3453;
-        final long now = System.currentTimeMillis();
-        final long timestamp = now - timeToLastByte;
-        final String user = "martin";
-        final String agent = "HttpClient 4.0";
-        final String referrer = "http://www.google.com";
-        final String ip = "4.4.4.4";
-        final String protocol = "protocol";
-        final String method = "GET";
-        final long requestSize = 5432;
-        final String requestContentType = "request/type";
-        final long responseSize = 32311;
-        final int responseCode = 200;
-        final String responseContentType = "response/type";
-        final HttpURI uri = new HttpURI("http://www.example.com/aaa+bbb/ccc?param=hello%20there&other=true");
+        long timeToFirstByte = 456;
+        long timeToLastByte = 3453;
+        long now = System.currentTimeMillis();
+        long timestamp = now - timeToLastByte;
+        String user = "martin";
+        String agent = "HttpClient 4.0";
+        String referrer = "http://www.google.com";
+        String ip = "4.4.4.4";
+        String protocol = "protocol";
+        String method = "GET";
+        long requestSize = 5432;
+        String requestContentType = "request/type";
+        long responseSize = 32311;
+        int responseCode = 200;
+        String responseContentType = "response/type";
+        HttpURI uri = new HttpURI("http://www.example.com/aaa+bbb/ccc?param=hello%20there&other=true");
 
-        final TraceTokenManager tokenManager = new TraceTokenManager();
+        TraceTokenManager tokenManager = new TraceTokenManager();
         InMemoryEventClient eventClient = new InMemoryEventClient();
         MockCurrentTimeMillisProvider currentTimeMillisProvider = new MockCurrentTimeMillisProvider(timestamp + timeToLastByte);
         DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, Long.MAX_VALUE, tokenManager, eventClient, currentTimeMillisProvider);
@@ -157,9 +157,9 @@ public class TestDelimitedRequestLog
     public void testNoXForwardedProto()
             throws Exception
     {
-        final Request request = mock(Request.class);
-        final Response response = mock(Response.class);
-        final String protocol = "protocol";
+        Request request = mock(Request.class);
+        Response response = mock(Response.class);
+        String protocol = "protocol";
 
         when(request.getScheme()).thenReturn("protocol");
 
@@ -179,8 +179,8 @@ public class TestDelimitedRequestLog
     public void testNoTimeToFirstByte()
             throws Exception
     {
-        final Request request = mock(Request.class);
-        final Response response = mock(Response.class);
+        Request request = mock(Request.class);
+        Response response = mock(Response.class);
 
         InMemoryEventClient eventClient = new InMemoryEventClient();
         DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, Long.MAX_VALUE, null, eventClient);
@@ -198,9 +198,9 @@ public class TestDelimitedRequestLog
     public void testNoXForwardedFor()
             throws Exception
     {
-        final Request request = mock(Request.class);
-        final Response response = mock(Response.class);
-        final String clientIp = "1.1.1.1";
+        Request request = mock(Request.class);
+        Response response = mock(Response.class);
+        String clientIp = "1.1.1.1";
 
         when(request.getRemoteAddr()).thenReturn(clientIp);
 
@@ -220,9 +220,9 @@ public class TestDelimitedRequestLog
     public void testXForwardedForSkipPrivateAddresses()
             throws Exception
     {
-        final Request request = mock(Request.class);
-        final Response response = mock(Response.class);
-        final String clientIp = "1.1.1.1";
+        Request request = mock(Request.class);
+        Response response = mock(Response.class);
+        String clientIp = "1.1.1.1";
 
         when(request.getRemoteAddr()).thenReturn("9.9.9.9");
         when(request.getHeaders("X-FORWARDED-FOR")).thenReturn(Collections.enumeration(ImmutableList.of(clientIp, "192.168.1.2, 172.16.0.1", "169.254.1.2, 127.1.2.3", "10.1.2.3")));

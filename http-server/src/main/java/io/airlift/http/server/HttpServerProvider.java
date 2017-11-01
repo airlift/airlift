@@ -23,7 +23,6 @@ import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.node.NodeInfo;
 import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.server.ServerConnector;
 
 import javax.annotation.Nullable;
 import javax.inject.Provider;
@@ -31,7 +30,6 @@ import javax.management.MBeanServer;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
 
-import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.Set;
 
@@ -129,6 +127,7 @@ public class HttpServerProvider
         this.traceTokenManager = tokenManager;
     }
 
+    @Override
     public HttpServer get()
     {
         try {

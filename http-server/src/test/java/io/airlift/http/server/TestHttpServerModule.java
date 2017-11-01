@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
-import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
@@ -45,7 +44,6 @@ import io.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.NodeModule;
 import io.airlift.tracetoken.TraceTokenModule;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
@@ -248,7 +246,7 @@ public class TestHttpServerModule
         HttpUriBuilder uriBuilder = uriBuilderFrom(baseUri);
         StringResponse data = client.execute(prepareGet().setUri(uriBuilder.appendPath(path).build()).build(), createStringResponseHandler());
         assertEquals(data.getStatusCode(), HttpStatus.OK.code());
-        MediaType contentType = MediaType.parse(data.getHeader(HttpHeaders.CONTENT_TYPE));
+        MediaType contentType = MediaType.parse(data.getHeader(CONTENT_TYPE));
         assertTrue(PLAIN_TEXT_UTF_8.is(contentType), "Expected text/plain but got " + contentType);
         assertEquals(data.getBody().trim(), contents);
     }
@@ -326,30 +324,30 @@ public class TestHttpServerModule
         }
 
         List<Object> events = eventClient.getEvents();
-        Assert.assertEquals(events.size(), 1);
+        assertEquals(events.size(), 1);
         HttpRequestEvent event = (HttpRequestEvent) events.get(0);
 
-        Assert.assertEquals(event.getClientAddress(), echoServlet.remoteAddress);
-        Assert.assertEquals(event.getProtocol(), "http");
-        Assert.assertEquals(event.getMethod(), "POST");
-        Assert.assertEquals(event.getRequestUri(), requestUri.getPath());
-        Assert.assertNull(event.getUser());
-        Assert.assertEquals(event.getAgent(), userAgent);
-        Assert.assertEquals(event.getReferrer(), referrer);
-        Assert.assertEquals(event.getTraceToken(), token);
+        assertEquals(event.getClientAddress(), echoServlet.remoteAddress);
+        assertEquals(event.getProtocol(), "http");
+        assertEquals(event.getMethod(), "POST");
+        assertEquals(event.getRequestUri(), requestUri.getPath());
+        assertNull(event.getUser());
+        assertEquals(event.getAgent(), userAgent);
+        assertEquals(event.getReferrer(), referrer);
+        assertEquals(event.getTraceToken(), token);
 
-        Assert.assertEquals(event.getRequestSize(), requestBody.length());
-        Assert.assertEquals(event.getRequestContentType(), requestContentType);
+        assertEquals(event.getRequestSize(), requestBody.length());
+        assertEquals(event.getRequestContentType(), requestContentType);
 
-        Assert.assertEquals(event.getResponseSize(), responseBody.length());
-        Assert.assertEquals(event.getResponseCode(), responseCode);
-        Assert.assertEquals(event.getResponseContentType(), responseContentType);
+        assertEquals(event.getResponseSize(), responseBody.length());
+        assertEquals(event.getResponseCode(), responseCode);
+        assertEquals(event.getResponseContentType(), responseContentType);
 
-        Assert.assertTrue(event.getTimeStamp().toEpochMilli() >= beforeRequest);
-        Assert.assertTrue(event.getTimeToLastByte() <= afterRequest - beforeRequest);
-        Assert.assertNotNull(event.getTimeToFirstByte());
-        Assert.assertTrue(event.getTimeToDispatch() <= event.getTimeToFirstByte());
-        Assert.assertTrue(event.getTimeToFirstByte() <= event.getTimeToLastByte());
+        assertTrue(event.getTimeStamp().toEpochMilli() >= beforeRequest);
+        assertTrue(event.getTimeToLastByte() <= afterRequest - beforeRequest);
+        assertNotNull(event.getTimeToFirstByte());
+        assertTrue(event.getTimeToDispatch() <= event.getTimeToFirstByte());
+        assertTrue(event.getTimeToFirstByte() <= event.getTimeToLastByte());
     }
 
     private static final class EchoServlet
