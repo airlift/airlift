@@ -278,7 +278,7 @@ public abstract class AbstractHttpClientTest
     }
 
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = RuntimeException.class, expectedExceptionsMessageRegExp = ".*port out of range.*")
     public void testBadPort()
             throws Exception
     {
