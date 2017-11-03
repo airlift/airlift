@@ -4,6 +4,8 @@
 - Always ask for client certificates in HTTP server.
 - Decrease discovery refresh wait time at startup.
 - Remove workaround for Jetty client Kerberos realm bug.
+- Add security module with support for reading and writing PEM files and
+  creating certificate signing requests.
 
 * 0.155
 
