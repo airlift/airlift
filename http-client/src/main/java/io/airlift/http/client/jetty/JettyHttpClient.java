@@ -52,6 +52,7 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.HttpCookieStore;
+import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Sweeper;
 import org.weakref.jmx.Flatten;
@@ -236,6 +237,8 @@ public class JettyHttpClient
         httpClient.setExecutor(pool.getExecutor());
         httpClient.setByteBufferPool(pool.getByteBufferPool());
         httpClient.setScheduler(pool.getScheduler());
+
+        httpClient.setSocketAddressResolver(new JettyAsyncSocketAddressResolver(pool.getExecutor(), pool.getScheduler(), config.getConnectTimeout().toMillis()));
 
         // Jetty client connections can sometimes get stuck while closing which reduces
         // the available connections.  The Jetty Sweeper periodically scans the active
