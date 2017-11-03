@@ -1,5 +1,6 @@
 * 0.158
 
+- Add config for using HTTP client synchronous socket address resolution.
 - Rename HTTP client selector config parameter to "http-client.selector-count".
 
 * 0.157

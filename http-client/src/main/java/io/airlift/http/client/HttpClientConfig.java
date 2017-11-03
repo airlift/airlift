@@ -60,6 +60,7 @@ public class HttpClientConfig
     private String kerberosPrincipal;
     private String kerberosRemoteServiceName;
     private int selectorCount = 2;
+    private boolean useSyncSocketAddressResolution;
 
     private boolean http2Enabled;
     private DataSize http2InitialSessionReceiveWindowSize = new DataSize(16, MEGABYTE);
@@ -357,6 +358,18 @@ public class HttpClientConfig
     public HttpClientConfig setSelectorCount(int selectorCount)
     {
         this.selectorCount = selectorCount;
+        return this;
+    }
+
+    public boolean getUseSyncSocketAddressResolution()
+    {
+        return useSyncSocketAddressResolution;
+    }
+
+    @Config("http-client.use-sync-socket-address-resolution")
+    public HttpClientConfig setUseSyncSocketAddressResolution(boolean useSyncSocketAddressResolution)
+    {
+        this.useSyncSocketAddressResolution = useSyncSocketAddressResolution;
         return this;
     }
 }
