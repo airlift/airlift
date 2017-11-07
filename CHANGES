@@ -1,3 +1,7 @@
+* 0.158
+
+- Rename HTTP client selector config parameter to "http-client.selector-count".
+
 * 0.157
 
 - Fix Kerberos SPNEGO handling in HTTP client.

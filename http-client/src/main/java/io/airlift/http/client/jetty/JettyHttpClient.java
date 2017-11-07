@@ -189,11 +189,11 @@ public class JettyHttpClient
             client.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
             client.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
             client.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
-            client.setSelectors(config.getSelectorThreads());
+            client.setSelectors(config.getSelectorCount());
             transport = new HttpClientTransportOverHTTP2(client);
         }
         else {
-            transport = new HttpClientTransportOverHTTP(config.getSelectorThreads());
+            transport = new HttpClientTransportOverHTTP(config.getSelectorCount());
         }
 
         if (config.getAuthenticationEnabled()) {

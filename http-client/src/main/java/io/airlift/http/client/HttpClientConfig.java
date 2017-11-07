@@ -59,7 +59,7 @@ public class HttpClientConfig
     private boolean authenticationEnabled;
     private String kerberosPrincipal;
     private String kerberosRemoteServiceName;
-    private int selectorThreads = 2;
+    private int selectorCount = 2;
 
     private boolean http2Enabled;
     private DataSize http2InitialSessionReceiveWindowSize = new DataSize(16, MEGABYTE);
@@ -348,15 +348,15 @@ public class HttpClientConfig
     }
 
     @Min(1)
-    public int getSelectorThreads()
+    public int getSelectorCount()
     {
-        return selectorThreads;
+        return selectorCount;
     }
 
-    @Config("http-client.selector-thread-count")
-    public HttpClientConfig setSelectorThreads(int selectorThreads)
+    @Config("http-client.selector-count")
+    public HttpClientConfig setSelectorCount(int selectorCount)
     {
-        this.selectorThreads = selectorThreads;
+        this.selectorCount = selectorCount;
         return this;
     }
 }
