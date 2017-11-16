@@ -3,16 +3,17 @@ package io.airlift.http.client.jetty;
 import com.google.common.collect.ImmutableList;
 import io.airlift.http.client.AbstractHttpClientTest;
 import io.airlift.http.client.HttpClientConfig;
-import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingRequestFilter;
+import io.airlift.http.client.spnego.KerberosConfig;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
 import static com.google.common.io.Resources.getResource;
@@ -34,7 +35,7 @@ public class TestJettyHttpsClient
     public void setUpHttpClient()
     {
         jettyIoPool = new JettyIoPool("test-shared", new JettyIoPoolConfig());
-        httpClient = new JettyHttpClient(createClientConfig(), jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()));
+        httpClient = new JettyHttpClient(createClientConfig(), createKerberosConfig(), Optional.of(jettyIoPool), ImmutableList.of(new TestingRequestFilter()));
     }
 
     @AfterClass(alwaysRun = true)
@@ -56,6 +57,11 @@ public class TestJettyHttpsClient
                 .setTrustStorePassword("changeit");
     }
 
+    protected KerberosConfig createKerberosConfig()
+    {
+        return new KerberosConfig();
+    }
+
     @Override
     public <T, E extends Exception> T executeRequest(Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
@@ -74,7 +80,7 @@ public class TestJettyHttpsClient
 
         try (
                 JettyIoPool jettyIoPool = new JettyIoPool("test-private", new JettyIoPoolConfig());
-                JettyHttpClient client = new JettyHttpClient(config, jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()))
+                JettyHttpClient client = new JettyHttpClient(config, createKerberosConfig(), Optional.of(jettyIoPool), ImmutableList.of(new TestingRequestFilter()))
         ) {
             return client.execute(request, responseHandler);
         }

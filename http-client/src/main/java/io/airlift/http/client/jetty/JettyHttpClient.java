@@ -21,6 +21,7 @@ import io.airlift.http.client.ResponseTooLargeException;
 import io.airlift.http.client.StaticBodyGenerator;
 import io.airlift.http.client.spnego.KerberosConfig;
 import io.airlift.http.client.spnego.SpnegoAuthentication;
+import io.airlift.http.client.spnego.SpnegoAuthenticationProtocolHandler;
 import io.airlift.http.client.spnego.SpnegoAuthenticationStore;
 import io.airlift.log.Logger;
 import io.airlift.stats.Distribution;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.PoolingHttpDestination;
 import org.eclipse.jetty.client.Socks4Proxy;
+import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Destination;
@@ -198,6 +200,8 @@ public class JettyHttpClient
             requireNonNull(kerberosConfig.getConfig(), "kerberos config path is null");
             requireNonNull(config.getKerberosRemoteServiceName(), "kerberos remote service name is null");
             httpClient = new SpnegoHttpClient(kerberosConfig, config, transport, sslContextFactory);
+            httpClient.getProtocolHandlers().remove(WWWAuthenticationProtocolHandler.NAME);
+            httpClient.getProtocolHandlers().put(new SpnegoAuthenticationProtocolHandler(httpClient));
         }
         else {
             httpClient = new HttpClient(transport, sslContextFactory);
