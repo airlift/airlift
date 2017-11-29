@@ -52,6 +52,7 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.HttpCookieStore;
+import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Sweeper;
 import org.weakref.jmx.Flatten;
@@ -217,6 +218,10 @@ public class JettyHttpClient
         httpClient.setIdleTimeout(idleTimeoutMillis);
         httpClient.setConnectTimeout(config.getConnectTimeout().toMillis());
         httpClient.setAddressResolutionTimeout(config.getConnectTimeout().toMillis());
+
+        if (config.getUseSyncSocketAddressResolution()) {
+            httpClient.setSocketAddressResolver(new SocketAddressResolver.Sync());
+        }
 
         HostAndPort socksProxy = config.getSocksProxy();
         if (socksProxy != null) {
