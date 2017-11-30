@@ -1,5 +1,6 @@
 * 0.158
 
+- Add support for setting process name on Linux ppc64le.
 - Add a Jetty SocketAddressResolver that doesn't dispatch address
   resolution to the executor for IP address literals.
 - Rename HTTP client selector config parameter to "http-client.selector-count".
