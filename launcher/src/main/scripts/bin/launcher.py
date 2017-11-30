@@ -225,8 +225,8 @@ def build_java_execution(options, daemon):
     process_name = launcher_properties.get('process-name', '')
     if len(process_name) > 0:
         system = platform.system() + '-' + platform.machine()
-        if system == 'Linux-x86_64':
-            shim = pathjoin(options.install_path, 'bin', 'procname', system, 'libprocname.so')
+        shim = pathjoin(options.install_path, 'bin', 'procname', system, 'libprocname.so')
+        if exists(shim):
             env['LD_PRELOAD'] = (env.get('LD_PRELOAD', '') + ' ' + shim).strip()
             env['PROCNAME'] = process_name
 
