@@ -64,7 +64,8 @@ public class TestHttpClientConfig
                 .setHttp2InitialSessionReceiveWindowSize(new DataSize(16, MEGABYTE))
                 .setHttp2InitialStreamReceiveWindowSize(new DataSize(16, MEGABYTE))
                 .setHttp2InputBufferSize(new DataSize(8, KILOBYTE))
-                .setSelectorCount(2));
+                .setSelectorCount(2)
+                .setRecordRequestComplete(true));
     }
 
     @Test
@@ -93,6 +94,7 @@ public class TestHttpClientConfig
                 .put("http-client.http2.stream-receive-window-size", "7MB")
                 .put("http-client.http2.input-buffer-size", "1MB")
                 .put("http-client.selector-count", "16")
+                .put("http-client.record-request-complete", "false")
                 .build();
 
         HttpClientConfig expected = new HttpClientConfig()
@@ -117,7 +119,8 @@ public class TestHttpClientConfig
                 .setHttp2InitialSessionReceiveWindowSize(new DataSize(7, MEGABYTE))
                 .setHttp2InitialStreamReceiveWindowSize(new DataSize(7, MEGABYTE))
                 .setHttp2InputBufferSize(new DataSize(1, MEGABYTE))
-                .setSelectorCount(16);
+                .setSelectorCount(16)
+                .setRecordRequestComplete(false);
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

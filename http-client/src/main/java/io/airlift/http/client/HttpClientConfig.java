@@ -60,6 +60,7 @@ public class HttpClientConfig
     private String kerberosPrincipal;
     private String kerberosRemoteServiceName;
     private int selectorCount = 2;
+    private boolean recordRequestComplete = true;
 
     private boolean http2Enabled;
     private DataSize http2InitialSessionReceiveWindowSize = new DataSize(16, MEGABYTE);
@@ -357,6 +358,18 @@ public class HttpClientConfig
     public HttpClientConfig setSelectorCount(int selectorCount)
     {
         this.selectorCount = selectorCount;
+        return this;
+    }
+
+    public boolean getRecordRequestComplete()
+    {
+        return recordRequestComplete;
+    }
+
+    @Config("http-client.record-request-complete")
+    public HttpClientConfig setRecordRequestComplete(boolean recordRequestComplete)
+    {
+        this.recordRequestComplete = recordRequestComplete;
         return this;
     }
 }
