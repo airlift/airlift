@@ -219,7 +219,7 @@ public abstract class AbstractHttpClientTest
             }
             catch (CapturedException e) {
                 Throwable t = e.getCause();
-                if (!isConnectTimeout(t)) {
+                if (!isConnectTimeout(t) && !(t instanceof TimeoutException)) {
                     fail(format("unexpected exception: [%s]", getStackTraceAsString(t)));
                 }
                 assertLessThan(nanosSince(start), new Duration(300, MILLISECONDS));
