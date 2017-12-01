@@ -234,7 +234,7 @@ public abstract class AbstractHttpClientTest
         int port = findUnusedPort();
 
         HttpClientConfig config = createClientConfig();
-        config.setConnectTimeout(new Duration(5, MILLISECONDS));
+        config.setConnectTimeout(new Duration(5, SECONDS));
 
         Request request = prepareGet()
                 .setUri(new URI(scheme, null, host, port, "/", null, null))
