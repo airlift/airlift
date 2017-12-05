@@ -5,6 +5,7 @@
   resolution to the executor for IP address literals.
 - Rename HTTP client selector config parameter to "http-client.selector-count".
 - Add an option to disable recording HTTP request complete information.
+- Add an HTTP client option to perform connect operations in blocking mode.
 
 * 0.157
 
