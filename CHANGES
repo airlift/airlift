@@ -1,11 +1,10 @@
 * 0.158
 
 - Add support for setting process name on Linux ppc64le.
-- Add a Jetty SocketAddressResolver that doesn't dispatch address
-  resolution to the executor for IP address literals.
 - Rename HTTP client selector config parameter to "http-client.selector-count".
-- Add an option to disable recording HTTP request complete information.
-- Add an HTTP client option to perform connect operations in blocking mode.
+- Add HTTP client option to perform connect operations in blocking mode.
+- Add HTTP server option to disable recording request complete information.
+- Reduce HTTP client executor load when using IP address literals.
 
 * 0.157
 
