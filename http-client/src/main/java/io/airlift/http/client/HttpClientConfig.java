@@ -61,6 +61,7 @@ public class HttpClientConfig
     private String kerberosRemoteServiceName;
     private int selectorCount = 2;
     private boolean recordRequestComplete = true;
+    private boolean connectBlocking;
 
     private boolean http2Enabled;
     private DataSize http2InitialSessionReceiveWindowSize = new DataSize(16, MEGABYTE);
@@ -372,4 +373,17 @@ public class HttpClientConfig
         this.recordRequestComplete = recordRequestComplete;
         return this;
     }
+
+    public boolean isConnectBlocking()
+    {
+        return connectBlocking;
+    }
+
+    @Config("http-client.connect-operations-blocking")
+    public HttpClientConfig setConnectBlocking(boolean connectBlocking)
+    {
+        this.connectBlocking = connectBlocking;
+        return this;
+    }
+
 }
