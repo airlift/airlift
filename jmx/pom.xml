@@ -73,6 +73,7 @@
                  This hack allows us to only include tools.jar during compilation from the command line. -->
             <id>lib/tools.jar</id>
             <activation>
+                <jdk>[1.8,1.9)</jdk>
                 <property>
                     <name>!idea.maven.embedder.version</name>
                 </property>

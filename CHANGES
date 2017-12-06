@@ -1,6 +1,7 @@
 * 0.159
 
 - Update to Jetty 9.4.8.v20171121.
+- Fix building against JMX module on Java 9.
 
 * 0.158
 
