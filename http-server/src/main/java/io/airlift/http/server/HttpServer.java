@@ -30,7 +30,6 @@ import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.ConnectionFactory;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.RequestLog;
@@ -49,7 +48,6 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ThreadPool;
 import org.weakref.jmx.Managed;
 
 import javax.annotation.PostConstruct;
@@ -62,7 +60,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.nio.channels.ServerSocketChannel;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -76,6 +73,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -88,13 +86,7 @@ import static java.util.Objects.requireNonNull;
 
 public class HttpServer
 {
-    // TODO: use ServerConnector::open(ServerSocketChannel) to set accept channel after upgrade to Jetty 9.4.7
-    private static final Field ACCEPT_CHANNEL_FIELD = getAcceptChannelField();
-
     private final Server server;
-    private final ServerConnector httpConnector;
-    private final ServerConnector httpsConnector;
-    private final ServerConnector adminConnector;
     private final boolean registerErrorHandler;
 
     private final Optional<ZonedDateTime> certificateExpiration;
@@ -137,6 +129,7 @@ public class HttpServer
         }
 
         // set up HTTP connector
+        ServerConnector httpConnector;
         if (config.isHttpEnabled()) {
             HttpConfiguration httpConfiguration = new HttpConfiguration();
             httpConfiguration.setSendServerVersion(false);
@@ -175,11 +168,9 @@ public class HttpServer
 
             server.addConnector(httpConnector);
         }
-        else {
-            httpConnector = null;
-        }
 
         // set up NIO-based HTTPS connector
+        ServerConnector httpsConnector;
         if (config.isHttpsEnabled()) {
             HttpConfiguration httpsConfiguration = new HttpConfiguration();
             httpsConfiguration.setSendServerVersion(false);
@@ -221,11 +212,9 @@ public class HttpServer
 
             server.addConnector(httpsConnector);
         }
-        else {
-            httpsConnector = null;
-        }
 
         // set up NIO-based Admin connector
+        ServerConnector adminConnector;
         if (theAdminServlet != null && config.isAdminEnabled()) {
             HttpConfiguration adminConfiguration = new HttpConfiguration();
             adminConfiguration.setSendServerVersion(false);
@@ -281,9 +270,6 @@ public class HttpServer
             adminConnector.setAcceptQueueSize(config.getHttpAcceptQueueSize());
 
             server.addConnector(adminConnector);
-        }
-        else {
-            adminConnector = null;
         }
 
         /*
@@ -437,35 +423,18 @@ public class HttpServer
             server.setErrorHandler(null);
         }
         checkState(server.isStarted(), "server is not started");
-
-        // The combination of an NIO connector and an insufficient number of threads results
-        // in a server that hangs after accepting connections. Jetty scales the number of
-        // required threads based on the number of available processors in a non-trivial way,
-        // so a config that works on one machine might fail on a larger machine without an
-        // obvious reason why. Thus, we need this runtime check after startup as a safeguard.
-        checkSufficientThreads(httpConnector, "HTTP");
-        checkSufficientThreads(httpsConnector, "HTTPS");
-        checkSufficientThreads(adminConnector, "admin");
-        checkState(!server.getThreadPool().isLowOnThreads(), "insufficient threads configured for server connector");
     }
 
     @PreDestroy
     public void stop()
             throws Exception
     {
-        server.setStopTimeout(0);
-        server.stop();
-    }
-
-    private static void checkSufficientThreads(Connector connector, String name)
-    {
-        if (connector == null) {
-            return;
+        // TODO: set to 0 and remove try/catch on Jetty 9.4.9
+        server.setStopTimeout(1);
+        try {
+            server.stop();
         }
-        Executor executor = connector.getExecutor();
-        if (executor instanceof ThreadPool) {
-            ThreadPool queuedThreadPool = (ThreadPool) executor;
-            checkState(!queuedThreadPool.isLowOnThreads(), "insufficient threads configured for %s connector", name);
+        catch (TimeoutException ignored) {
         }
     }
 
@@ -504,24 +473,7 @@ public class HttpServer
             throws IOException
     {
         ServerConnector connector = new ServerConnector(server, executor, null, null, acceptors, selectors, factories);
-        try {
-            ACCEPT_CHANNEL_FIELD.set(connector, channel);
-        }
-        catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        connector.open(channel);
         return connector;
-    }
-
-    private static Field getAcceptChannelField()
-    {
-        try {
-            Field field = ServerConnector.class.getDeclaredField("_acceptChannel");
-            field.setAccessible(true);
-            return field;
-        }
-        catch (ReflectiveOperationException e) {
-            throw new AssertionError(e);
-        }
     }
 }

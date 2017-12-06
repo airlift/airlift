@@ -1,3 +1,7 @@
+* 0.159
+
+- Update to Jetty 9.4.8.v20171121.
+
 * 0.158
 
 - Add support for setting process name on Linux ppc64le.
