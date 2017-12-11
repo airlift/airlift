@@ -89,6 +89,7 @@ public class HttpServerConfig
     private DataSize http2InitialSessionReceiveWindowSize = new DataSize(16, MEGABYTE);
     private DataSize http2InitialStreamReceiveWindowSize = new DataSize(16, MEGABYTE);
     private DataSize http2InputBufferSize = new DataSize(8, KILOBYTE);
+    private Duration http2StreamIdleTimeout = new Duration(15, SECONDS);
 
     private String userAuthFile;
 
@@ -534,6 +535,18 @@ public class HttpServerConfig
     public HttpServerConfig setHttp2InputBufferSize(DataSize http2InputBufferSize)
     {
         this.http2InputBufferSize = http2InputBufferSize;
+        return this;
+    }
+
+    public Duration getHttp2StreamIdleTimeout()
+    {
+        return http2StreamIdleTimeout;
+    }
+
+    @Config("http-server.http2.stream-idle-timeout")
+    public HttpServerConfig setHttp2StreamIdleTimeout(Duration http2StreamIdleTimeout)
+    {
+        this.http2StreamIdleTimeout = http2StreamIdleTimeout;
         return this;
     }
 }

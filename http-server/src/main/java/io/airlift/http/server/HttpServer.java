@@ -156,6 +156,7 @@ public class HttpServer
             http2c.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
             http2c.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
             http2c.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
+            http2c.setStreamIdleTimeout(config.getHttp2StreamIdleTimeout().toMillis());
             httpConnector = createServerConnector(
                     httpServerInfo.getHttpChannel(),
                     server,
