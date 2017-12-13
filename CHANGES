@@ -2,6 +2,7 @@
 
 - Use a dedicated thread pool for each HTTP client. The HTTP client binder
   no longer has a withPrivateIoThreadPool() method as all pools are private.
+- Use colon instead of space for LD_PRELOAD separator in launcher.
 
 * 0.159
 
