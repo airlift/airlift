@@ -227,7 +227,7 @@ def build_java_execution(options, daemon):
         system = platform.system() + '-' + platform.machine()
         shim = pathjoin(options.install_path, 'bin', 'procname', system, 'libprocname.so')
         if exists(shim):
-            env['LD_PRELOAD'] = (env.get('LD_PRELOAD', '') + ' ' + shim).strip()
+            env['LD_PRELOAD'] = (env.get('LD_PRELOAD', '') + ':' + shim).strip()
             env['PROCNAME'] = process_name
 
     return command, env
