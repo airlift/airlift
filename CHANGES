@@ -2,6 +2,9 @@
 
 - Update to Jetty 9.4.8.v20171121.
 - Fix building against JMX module on Java 9.
+- Fix running on Java 9 due to a missing javax.annotations dependency.
+- Fix HTTP/2 errors with JAX-RS by disabling remote async error notifications.
+- Add HTTP/2 stream idle timeout config to HTTP server.
 
 * 0.158
 
