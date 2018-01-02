@@ -20,9 +20,10 @@ import com.google.inject.ConfigurationException;
 import com.google.inject.spi.Message;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.IllegalFormatException;
 import java.util.List;
 
-import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 
 class Problems
@@ -138,5 +139,19 @@ class Problems
         Problems problems = new Problems();
         problems.addError(e, format, params);
         return problems.getException();
+    }
+
+    private static String format(String format, Object... params)
+    {
+        if (format == null || params.length == 0) {
+            return format;
+        }
+
+        try {
+            return String.format(format, params);
+        }
+        catch (IllegalFormatException e) {
+            return String.format("%s %s <%s>", format, Arrays.toString(params), e);
+        }
     }
 }
