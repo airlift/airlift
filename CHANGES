@@ -1,3 +1,8 @@
+* 0.160
+
+- Use a dedicated thread pool for each HTTP client. The HTTP client binder
+  no longer has a withPrivateIoThreadPool() method as all pools are private.
+
 * 0.159
 
 - Update to Jetty 9.4.8.v20171121.
