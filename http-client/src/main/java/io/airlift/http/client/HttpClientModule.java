@@ -15,7 +15,6 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
@@ -26,24 +25,20 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import io.airlift.configuration.ConfigDefaults;
 import io.airlift.http.client.jetty.JettyHttpClient;
-import io.airlift.http.client.jetty.JettyIoPool;
 import io.airlift.http.client.jetty.JettyIoPoolConfig;
+import io.airlift.http.client.jetty.JettyIoPoolManager;
 import io.airlift.http.client.jetty.QueuedThreadPoolMBean;
 import io.airlift.http.client.jetty.QueuedThreadPoolMBeanProvider;
 import io.airlift.http.client.spnego.KerberosConfig;
 import io.airlift.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
-import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Provider;
 
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
@@ -178,68 +173,6 @@ public class HttpClientModule
         }
     }
 
-    @VisibleForTesting
-    public static class JettyIoPoolManager
-    {
-        private final List<JettyHttpClient> clients = new ArrayList<>();
-        private final String name;
-        private final Class<? extends Annotation> annotation;
-        private final AtomicBoolean destroyed = new AtomicBoolean();
-        private JettyIoPool pool;
-        private Injector injector;
-
-        private JettyIoPoolManager(String name, Class<? extends Annotation> annotation)
-        {
-            this.name = name;
-            this.annotation = annotation;
-        }
-
-        public void addClient(JettyHttpClient client)
-        {
-            clients.add(client);
-        }
-
-        public boolean isDestroyed()
-        {
-            return destroyed.get();
-        }
-
-        @Inject
-        public void setInjector(Injector injector)
-        {
-            this.injector = injector;
-        }
-
-        @PreDestroy
-        public void destroy()
-        {
-            // clients must be destroyed before the pools or
-            // you will create a several second busy wait loop
-            for (JettyHttpClient client : clients) {
-                client.close();
-            }
-            if (pool != null) {
-                pool.close();
-                pool = null;
-            }
-            destroyed.set(true);
-        }
-
-        public JettyIoPool get()
-        {
-            if (pool == null) {
-                JettyIoPoolConfig config = injector.getInstance(keyFromNullable(JettyIoPoolConfig.class, annotation));
-                pool = new JettyIoPool(name, config);
-            }
-            return pool;
-        }
-    }
-
-    private static <T> Key<T> keyFromNullable(Class<T> type, Class<? extends Annotation> annotation)
-    {
-        return (annotation != null) ? Key.get(type, annotation) : Key.get(type);
-    }
-
     private static class JettySharedIoPoolModule
             implements Module
     {
@@ -247,7 +180,7 @@ public class HttpClientModule
         public void configure(Binder binder)
         {
             configBinder(binder).bindConfig(JettyIoPoolConfig.class);
-            binder.bind(HttpClientModule.JettyIoPoolManager.class).to(HttpClientModule.SharedJettyIoPoolManager.class).in(Scopes.SINGLETON);
+            binder.bind(JettyIoPoolManager.class).to(HttpClientModule.SharedJettyIoPoolManager.class).in(Scopes.SINGLETON);
             binder.bind(QueuedThreadPoolMBean.class)
                     .toProvider(QueuedThreadPoolMBeanProvider.class)
                     .in(Scopes.SINGLETON);

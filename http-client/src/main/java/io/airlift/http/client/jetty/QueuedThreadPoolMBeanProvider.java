@@ -1,6 +1,5 @@
 package io.airlift.http.client.jetty;
 
-import io.airlift.http.client.HttpClientModule.JettyIoPoolManager;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 import javax.inject.Inject;
