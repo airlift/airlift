@@ -30,7 +30,6 @@ import io.airlift.http.client.jetty.JettyIoPoolManager;
 import io.airlift.http.client.jetty.QueuedThreadPoolMBean;
 import io.airlift.http.client.jetty.QueuedThreadPoolMBeanProvider;
 import io.airlift.http.client.spnego.KerberosConfig;
-import io.airlift.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 import javax.inject.Inject;
@@ -49,13 +48,6 @@ import static org.weakref.jmx.guice.ExportBinder.newExporter;
 public class HttpClientModule
         implements Module
 {
-    private static final Logger log = Logger.get(HttpClientModule.class);
-
-    // We have a single instance of this module to ensure that Guice will
-    // de-duplicate it and thus only install it once, which is required
-    // since MBeans cannot be exported more than once.
-    private static final Module JETTY_SHARED_IO_POOL_MODULE = new JettySharedIoPoolModule();
-
     protected final String name;
     protected final Class<? extends Annotation> annotation;
     protected Binder binder;
@@ -71,23 +63,6 @@ public class HttpClientModule
         configBinder(binder).bindConfigDefaults(HttpClientConfig.class, annotation, configDefaults);
     }
 
-    void withPrivateIoThreadPool()
-    {
-        configBinder(binder).bindConfig(JettyIoPoolConfig.class, annotation, name);
-
-        // Jetty named thread pool
-        binder.bind(JettyIoPoolManager.class)
-                .annotatedWith(annotation)
-                .toInstance(new JettyIoPoolManager(name, annotation));
-        binder.bind(QueuedThreadPoolMBean.class)
-                .annotatedWith(annotation)
-                .toProvider(QueuedThreadPoolMBeanProvider.class)
-                .in(Scopes.SINGLETON);
-        newExporter(binder).export(QueuedThreadPoolMBean.class)
-                .annotatedWith(annotation)
-                .as(generatedNameOf(QueuedThreadPool.class, name));
-    }
-
     @Override
     public void configure(Binder binder)
     {
@@ -96,9 +71,19 @@ public class HttpClientModule
         // bind the configuration
         configBinder(binder).bindConfig(KerberosConfig.class);
         configBinder(binder).bindConfig(HttpClientConfig.class, annotation, name);
+        configBinder(binder).bindConfig(JettyIoPoolConfig.class, annotation, name);
 
-        // bind the shared jetty pool
-        binder.install(JETTY_SHARED_IO_POOL_MODULE);
+        // bind a named Jetty thread pool
+        JettyIoPoolManager ioPoolManager = new JettyIoPoolManager(name, annotation);
+        binder.bind(JettyIoPoolManager.class)
+                .annotatedWith(annotation)
+                .toInstance(ioPoolManager);
+        binder.bind(QueuedThreadPoolMBean.class)
+                .annotatedWith(annotation)
+                .toProvider(new QueuedThreadPoolMBeanProvider(ioPoolManager));
+        newExporter(binder).export(QueuedThreadPoolMBean.class)
+                .annotatedWith(annotation)
+                .as(generatedNameOf(QueuedThreadPool.class, name));
 
         // bind the client
         binder.bind(HttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(name, annotation)).in(Scopes.SINGLETON);
@@ -148,44 +133,10 @@ public class HttpClientModule
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, annotation)))
                     .build();
 
-            JettyIoPoolManager ioPoolProvider;
-            if (injector.getExistingBinding(Key.get(JettyIoPoolManager.class, annotation)) != null) {
-                log.debug("HttpClient %s uses private IO thread pool", name);
-                ioPoolProvider = injector.getInstance(Key.get(JettyIoPoolManager.class, annotation));
-            }
-            else {
-                log.debug("HttpClient %s uses shared IO thread pool", name);
-                ioPoolProvider = injector.getInstance(JettyIoPoolManager.class);
-            }
-
+            JettyIoPoolManager ioPoolProvider = injector.getInstance(Key.get(JettyIoPoolManager.class, annotation));
             JettyHttpClient client = new JettyHttpClient(config, kerberosConfig, Optional.of(ioPoolProvider.get()), ImmutableList.copyOf(filters));
-            ioPoolProvider.addClient(client);
+            ioPoolProvider.setClient(client);
             return client;
-        }
-    }
-
-    private static class SharedJettyIoPoolManager
-            extends JettyIoPoolManager
-    {
-        private SharedJettyIoPoolManager()
-        {
-            super("shared", null);
-        }
-    }
-
-    private static class JettySharedIoPoolModule
-            implements Module
-    {
-        @Override
-        public void configure(Binder binder)
-        {
-            configBinder(binder).bindConfig(JettyIoPoolConfig.class);
-            binder.bind(JettyIoPoolManager.class).to(HttpClientModule.SharedJettyIoPoolManager.class).in(Scopes.SINGLETON);
-            binder.bind(QueuedThreadPoolMBean.class)
-                    .toProvider(QueuedThreadPoolMBeanProvider.class)
-                    .in(Scopes.SINGLETON);
-            newExporter(binder).export(QueuedThreadPoolMBean.class)
-                    .as(generatedNameOf(QueuedThreadPool.class, "shared"));
         }
     }
 }

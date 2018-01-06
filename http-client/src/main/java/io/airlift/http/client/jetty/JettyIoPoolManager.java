@@ -7,28 +7,28 @@ import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static java.util.Objects.requireNonNull;
 
 public class JettyIoPoolManager
 {
-    private final List<JettyHttpClient> clients = new ArrayList<>();
     private final String name;
     private final Class<? extends Annotation> annotation;
     private final AtomicBoolean destroyed = new AtomicBoolean();
     private JettyIoPool pool;
     private Injector injector;
+    private JettyHttpClient client;
 
     public JettyIoPoolManager(String name, Class<? extends Annotation> annotation)
     {
-        this.name = name;
-        this.annotation = annotation;
+        this.name = requireNonNull(name, "name is null");;
+        this.annotation = requireNonNull(annotation, "annotation is null");;
     }
 
-    public void addClient(JettyHttpClient client)
+    public void setClient(JettyHttpClient client)
     {
-        clients.add(client);
+        this.client = requireNonNull(client, "client is null");
     }
 
     public boolean isDestroyed()
@@ -45,11 +45,9 @@ public class JettyIoPoolManager
     @PreDestroy
     public void destroy()
     {
-        // clients must be destroyed before the pools or
+        // client must be destroyed before the pools or
         // you will create a several second busy wait loop
-        for (JettyHttpClient client : clients) {
-            client.close();
-        }
+        client.close();
         if (pool != null) {
             pool.close();
             pool = null;

@@ -114,11 +114,5 @@ public class HttpClientBinder
         {
             return withFilter(TraceTokenRequestFilter.class);
         }
-
-        public HttpClientBindingBuilder withPrivateIoThreadPool()
-        {
-            module.withPrivateIoThreadPool();
-            return this;
-        }
     }
 }
