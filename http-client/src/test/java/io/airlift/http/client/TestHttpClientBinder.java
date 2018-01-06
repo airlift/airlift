@@ -16,13 +16,10 @@
 package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableList;
-import com.google.inject.Binder;
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.google.inject.Module;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
-import io.airlift.http.client.HttpClientBinder.HttpClientBindingBuilder;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.client.jetty.JettyIoPoolManager;
 import io.airlift.tracetoken.TraceTokenModule;
@@ -58,17 +55,9 @@ public class TestHttpClientBinder
             throws Exception
     {
         Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
-                                .withConfigDefaults(config -> {
-                                    config.setRequestTimeout(new Duration(33, MINUTES));
-                                });
-                    }
-                },
+                binder -> httpClientBinder(binder)
+                        .bindHttpClient("foo", FooClient.class)
+                        .withConfigDefaults(config -> config.setRequestTimeout(new Duration(33, MINUTES))),
                 new TraceTokenModule())
                 .quiet()
                 .strictConfig()
@@ -125,20 +114,15 @@ public class TestHttpClientBinder
             throws Exception
     {
         Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
-                                .withFilter(TestingRequestFilter.class)
-                                .withFilter(AnotherHttpRequestFilter.class)
-                                .withTracing();
+                binder -> {
+                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+                            .withFilter(TestingRequestFilter.class)
+                            .withFilter(AnotherHttpRequestFilter.class)
+                            .withTracing();
 
-                        HttpClientBindingBuilder builder = httpClientBinder(binder).bindHttpClient("bar", BarClient.class);
-                        builder.withFilter(TestingRequestFilter.class);
-                        builder.addFilterBinding().to(AnotherHttpRequestFilter.class);
-                    }
+                    httpClientBinder(binder).bindHttpClient("bar", BarClient.class)
+                            .withFilter(TestingRequestFilter.class)
+                            .addFilterBinding().to(AnotherHttpRequestFilter.class);
                 },
                 new TraceTokenModule())
                 .quiet()
@@ -160,17 +144,10 @@ public class TestHttpClientBinder
             throws Exception
     {
         Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
-                                .withFilter(TestingRequestFilter.class)
-                                .withFilter(AnotherHttpRequestFilter.class)
-                                .withTracing();
-                    }
-                },
+                binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+                        .withFilter(TestingRequestFilter.class)
+                        .withFilter(AnotherHttpRequestFilter.class)
+                        .withTracing(),
                 new TraceTokenModule())
                 .quiet()
                 .strictConfig()
@@ -192,14 +169,7 @@ public class TestHttpClientBinder
             throws Exception
     {
         Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
-                    }
-                })
+                binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class))
                 .quiet()
                 .strictConfig()
                 .initialize();
@@ -217,16 +187,9 @@ public class TestHttpClientBinder
             throws Exception
     {
         Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
-                                .withAlias(FooAlias1.class)
-                                .withAliases(ImmutableList.of(FooAlias2.class, FooAlias3.class));
-                    }
-                })
+                binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+                        .withAlias(FooAlias1.class)
+                        .withAliases(ImmutableList.of(FooAlias2.class, FooAlias3.class)))
                 .quiet()
                 .strictConfig()
                 .initialize();
@@ -250,16 +213,9 @@ public class TestHttpClientBinder
             throws Exception
     {
         Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
-                                .withAlias(FooAlias1.class)
-                                .withAlias(FooAlias2.class);
-                    }
-                })
+                binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+                        .withAlias(FooAlias1.class)
+                        .withAlias(FooAlias2.class))
                 .quiet()
                 .strictConfig()
                 .initialize();
@@ -281,14 +237,9 @@ public class TestHttpClientBinder
             throws Exception
     {
         Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
-                        httpClientBinder(binder).bindHttpClient("bar", BarClient.class);
-                    }
+                binder -> {
+                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
+                    httpClientBinder(binder).bindHttpClient("bar", BarClient.class);
                 })
                 .quiet()
                 .strictConfig()
@@ -314,15 +265,10 @@ public class TestHttpClientBinder
             throws Exception
     {
         Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.requireExplicitBindings();
-                        binder.disableCircularProxies();
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class).withPrivateIoThreadPool();
-                    }
+                binder -> {
+                    binder.requireExplicitBindings();
+                    binder.disableCircularProxies();
+                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class).withPrivateIoThreadPool();
                 })
                 .quiet()
                 .strictConfig()
@@ -341,14 +287,9 @@ public class TestHttpClientBinder
             throws Exception
     {
         Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class).withPrivateIoThreadPool();
-                        httpClientBinder(binder).bindHttpClient("bar", BarClient.class).withPrivateIoThreadPool();
-                    }
+                binder -> {
+                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class).withPrivateIoThreadPool();
+                    httpClientBinder(binder).bindHttpClient("bar", BarClient.class).withPrivateIoThreadPool();
                 })
                 .quiet()
                 .strictConfig()
@@ -368,14 +309,9 @@ public class TestHttpClientBinder
             throws Exception
     {
         Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
-                        httpClientBinder(binder).bindHttpClient("bar", BarClient.class).withPrivateIoThreadPool();
-                    }
+                binder -> {
+                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
+                    httpClientBinder(binder).bindHttpClient("bar", BarClient.class).withPrivateIoThreadPool();
                 })
                 .quiet()
                 .strictConfig()
@@ -395,7 +331,6 @@ public class TestHttpClientBinder
 
     @SafeVarargs
     private final void assertPrivatePools(Injector injector, Class<? extends Annotation>... privateClientAnnotations)
-            throws Exception
     {
         JettyIoPoolManager sharedPool = injector.getInstance(Key.get(JettyIoPoolManager.class));
         // pool should not be destroyed yet
