@@ -1,3 +1,7 @@
+* 0.160
+
+- Use a dedicated thread pool for each HTTP client.
+
 * 0.159
 
 - Update to Jetty 9.4.8.v20171121.
