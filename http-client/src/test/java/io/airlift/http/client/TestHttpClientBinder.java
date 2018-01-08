@@ -16,15 +16,12 @@
 package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableList;
-import com.google.inject.Binder;
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.google.inject.Module;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
-import io.airlift.http.client.HttpClientBinder.HttpClientBindingBuilder;
-import io.airlift.http.client.HttpClientModule.JettyIoPoolManager;
 import io.airlift.http.client.jetty.JettyHttpClient;
+import io.airlift.http.client.jetty.JettyIoPoolManager;
 import io.airlift.tracetoken.TraceTokenModule;
 import io.airlift.units.Duration;
 import org.testng.annotations.Test;
@@ -58,17 +55,9 @@ public class TestHttpClientBinder
             throws Exception
     {
         Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
-                                .withConfigDefaults(config -> {
-                                    config.setRequestTimeout(new Duration(33, MINUTES));
-                                });
-                    }
-                },
+                binder -> httpClientBinder(binder)
+                        .bindHttpClient("foo", FooClient.class)
+                        .withConfigDefaults(config -> config.setRequestTimeout(new Duration(33, MINUTES))),
                 new TraceTokenModule())
                 .quiet()
                 .strictConfig()
@@ -125,20 +114,15 @@ public class TestHttpClientBinder
             throws Exception
     {
         Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
-                                .withFilter(TestingRequestFilter.class)
-                                .withFilter(AnotherHttpRequestFilter.class)
-                                .withTracing();
+                binder -> {
+                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+                            .withFilter(TestingRequestFilter.class)
+                            .withFilter(AnotherHttpRequestFilter.class)
+                            .withTracing();
 
-                        HttpClientBindingBuilder builder = httpClientBinder(binder).bindHttpClient("bar", BarClient.class);
-                        builder.withFilter(TestingRequestFilter.class);
-                        builder.addFilterBinding().to(AnotherHttpRequestFilter.class);
-                    }
+                    httpClientBinder(binder).bindHttpClient("bar", BarClient.class)
+                            .withFilter(TestingRequestFilter.class)
+                            .addFilterBinding().to(AnotherHttpRequestFilter.class);
                 },
                 new TraceTokenModule())
                 .quiet()
@@ -148,9 +132,9 @@ public class TestHttpClientBinder
         assertFilterCount(injector.getInstance(Key.get(HttpClient.class, FooClient.class)), 3);
         assertFilterCount(injector.getInstance(Key.get(HttpClient.class, BarClient.class)), 2);
 
-        // a pool should not be registered for this Foo
-        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
-        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, BarClient.class)));
+        // a pool should be registered for both clients
+        assertNotNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
+        assertNotNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, BarClient.class)));
 
         assertPoolsDestroyProperly(injector);
     }
@@ -160,17 +144,10 @@ public class TestHttpClientBinder
             throws Exception
     {
         Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
-                                .withFilter(TestingRequestFilter.class)
-                                .withFilter(AnotherHttpRequestFilter.class)
-                                .withTracing();
-                    }
-                },
+                binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+                        .withFilter(TestingRequestFilter.class)
+                        .withFilter(AnotherHttpRequestFilter.class)
+                        .withTracing(),
                 new TraceTokenModule())
                 .quiet()
                 .strictConfig()
@@ -180,8 +157,8 @@ public class TestHttpClientBinder
         HttpClient httpClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
         assertFilterCount(httpClient, 3);
 
-        // a pool should not be registered for this Foo
-        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
+        // a pool should be registered for FooClient only
+        assertNotNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
         assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, BarClient.class)));
 
         assertPoolsDestroyProperly(injector);
@@ -192,22 +169,15 @@ public class TestHttpClientBinder
             throws Exception
     {
         Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
-                    }
-                })
+                binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class))
                 .quiet()
                 .strictConfig()
                 .initialize();
 
         assertNotNull(injector.getInstance(Key.get(HttpClient.class, FooClient.class)));
 
-        // a pool should not be registered for this Foo
-        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
+        // a pool should be registered for FooClient
+        assertNotNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
 
         assertPoolsDestroyProperly(injector);
     }
@@ -217,16 +187,9 @@ public class TestHttpClientBinder
             throws Exception
     {
         Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
-                                .withAlias(FooAlias1.class)
-                                .withAliases(ImmutableList.of(FooAlias2.class, FooAlias3.class));
-                    }
-                })
+                binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+                        .withAlias(FooAlias1.class)
+                        .withAliases(ImmutableList.of(FooAlias2.class, FooAlias3.class)))
                 .quiet()
                 .strictConfig()
                 .initialize();
@@ -236,8 +199,8 @@ public class TestHttpClientBinder
         assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias2.class)), client);
         assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias3.class)), client);
 
-        // a private pool should not be registered for these clients
-        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
+        // a pool should be registered for the FooClient only (not for the aliases)
+        assertNotNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
         assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooAlias1.class)));
         assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooAlias2.class)));
         assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooAlias3.class)));
@@ -250,16 +213,9 @@ public class TestHttpClientBinder
             throws Exception
     {
         Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
-                                .withAlias(FooAlias1.class)
-                                .withAlias(FooAlias2.class);
-                    }
-                })
+                binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+                        .withAlias(FooAlias1.class)
+                        .withAlias(FooAlias2.class))
                 .quiet()
                 .strictConfig()
                 .initialize();
@@ -268,8 +224,8 @@ public class TestHttpClientBinder
         assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias1.class)), client);
         assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias2.class)), client);
 
-        // a private pool should not be registered for these clients
-        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
+        // a pool should be registered for FooClient only (not for the aliases)
+        assertNotNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
         assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooAlias1.class)));
         assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooAlias2.class)));
 
@@ -281,14 +237,9 @@ public class TestHttpClientBinder
             throws Exception
     {
         Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
-                        httpClientBinder(binder).bindHttpClient("bar", BarClient.class);
-                    }
+                binder -> {
+                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
+                    httpClientBinder(binder).bindHttpClient("bar", BarClient.class);
                 })
                 .quiet()
                 .strictConfig()
@@ -298,139 +249,45 @@ public class TestHttpClientBinder
         HttpClient barClient = injector.getInstance(Key.get(HttpClient.class, BarClient.class));
         assertNotSame(fooClient, barClient);
 
-        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
-        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, BarClient.class)));
+        // a pool should be registered for all clients
+        assertNotNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
+        assertNotNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, BarClient.class)));
 
-
-        // a private pool should not be registered for these clients
-        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
-        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, BarClient.class)));
-
-        assertPoolsDestroyProperly(injector);
-    }
-
-    @Test
-    public void testPrivateThreadPool()
-            throws Exception
-    {
-        Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.requireExplicitBindings();
-                        binder.disableCircularProxies();
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class).withPrivateIoThreadPool();
-                    }
-                })
-                .quiet()
-                .strictConfig()
-                .initialize();
-
-        HttpClient fooClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
-        assertNotNull(fooClient);
-
-        assertPrivatePools(injector, FooClient.class);
-
-        assertPoolsDestroyProperly(injector, FooClient.class);
-    }
-
-    @Test
-    public void testMultiplePrivateThreadPools()
-            throws Exception
-    {
-        Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class).withPrivateIoThreadPool();
-                        httpClientBinder(binder).bindHttpClient("bar", BarClient.class).withPrivateIoThreadPool();
-                    }
-                })
-                .quiet()
-                .strictConfig()
-                .initialize();
-
-        HttpClient fooClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
-        HttpClient barClient = injector.getInstance(Key.get(HttpClient.class, BarClient.class));
-        assertNotSame(fooClient, barClient);
-
-        assertPrivatePools(injector, FooClient.class, BarClient.class);
-
+        assertJettyIoPools(injector, FooClient.class);
+        assertJettyIoPools(injector, BarClient.class);
         assertPoolsDestroyProperly(injector, FooClient.class, BarClient.class);
     }
 
-    @Test
-    public void testMultiplePrivateAndSharedThreadPools()
-            throws Exception
-    {
-        Injector injector = new Bootstrap(
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
-                        httpClientBinder(binder).bindHttpClient("bar", BarClient.class).withPrivateIoThreadPool();
-                    }
-                })
-                .quiet()
-                .strictConfig()
-                .initialize();
-
-        HttpClient fooClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
-        HttpClient barClient = injector.getInstance(Key.get(HttpClient.class, BarClient.class));
-        assertNotSame(fooClient, barClient);
-
-        // a pool should not be registered for this Foo
-        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, FooClient.class)));
-
-        assertPrivatePools(injector, BarClient.class);
-
-        assertPoolsDestroyProperly(injector, BarClient.class);
-    }
-
     @SafeVarargs
-    private final void assertPrivatePools(Injector injector, Class<? extends Annotation>... privateClientAnnotations)
-            throws Exception
+    private final void assertJettyIoPools(Injector injector, Class<? extends Annotation>... clientAnnotations)
     {
-        JettyIoPoolManager sharedPool = injector.getInstance(Key.get(JettyIoPoolManager.class));
-        // pool should not be destroyed yet
-        assertFalse(sharedPool.isDestroyed());
-
-        Set<JettyIoPoolManager> privatePools = Collections.newSetFromMap(new IdentityHashMap<JettyIoPoolManager, Boolean>());
-        for (Class<? extends Annotation> privateClientAnnotation : privateClientAnnotations) {
-            assertNotNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, privateClientAnnotation)));
-            JettyIoPoolManager privatePool = injector.getInstance(Key.get(JettyIoPoolManager.class, privateClientAnnotation));
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class)), "all pools should be annotated");
+        Set<JettyIoPoolManager> pools = Collections.newSetFromMap(new IdentityHashMap<JettyIoPoolManager, Boolean>());
+        for (Class<? extends Annotation> clientAnnotation : clientAnnotations) {
+            assertNotNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class, clientAnnotation)));
+            JettyIoPoolManager pool = injector.getInstance(Key.get(JettyIoPoolManager.class, clientAnnotation));
 
             // pool should not be the same as any other pool
-            assertNotSame(privatePool, sharedPool);
-            assertFalse(privatePools.contains(privatePool));
-            privatePools.add(privatePool);
+            assertFalse(pools.contains(pool));
+            pools.add(pool);
         }
     }
 
     @SafeVarargs
-    private final void assertPoolsDestroyProperly(Injector injector, Class<? extends Annotation>... privateClientAnnotations)
+    private final void assertPoolsDestroyProperly(Injector injector, Class<? extends Annotation>... clientAnnotations)
             throws Exception
     {
-        JettyIoPoolManager sharedPool = injector.getInstance(Key.get(JettyIoPoolManager.class));
-        assertFalse(sharedPool.isDestroyed());
-
-        Set<JettyIoPoolManager> privatePools = Collections.newSetFromMap(new IdentityHashMap<JettyIoPoolManager, Boolean>());
-        for (Class<? extends Annotation> privateClientAnnotation : privateClientAnnotations) {
-            JettyIoPoolManager privatePool = injector.getInstance(Key.get(JettyIoPoolManager.class, privateClientAnnotation));
-            assertFalse(privatePool.isDestroyed());
+        assertNull(injector.getExistingBinding(Key.get(JettyIoPoolManager.class)), "all pools should be annotated");
+        Set<JettyIoPoolManager> pools = Collections.newSetFromMap(new IdentityHashMap<JettyIoPoolManager, Boolean>());
+        for (Class<? extends Annotation> clientAnnotation : clientAnnotations) {
+            JettyIoPoolManager pool = injector.getInstance(Key.get(JettyIoPoolManager.class, clientAnnotation));
+            assertFalse(pool.isDestroyed());
         }
 
         injector.getInstance(LifeCycleManager.class).stop();
 
-        assertTrue(sharedPool.isDestroyed());
-        for (JettyIoPoolManager privatePool : privatePools) {
-            assertTrue(privatePool.isDestroyed());
+        for (JettyIoPoolManager pool : pools) {
+            assertTrue(pool.isDestroyed());
         }
     }
 
