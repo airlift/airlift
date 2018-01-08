@@ -72,6 +72,28 @@ public class ProblemsTest
     }
 
     @Test
+    public void TestFormatError()
+    {
+        Problems problems = new Problems();
+        problems.addError("message %d", "NaN");
+
+        Message [] errors = problems.getErrors().toArray(new Message[]{});
+        Assert.assertEquals(errors.length, 1);
+        Assertions.assertContainsAllOf(errors[0].toString(), "Error", "message %d", "NaN", "IllegalFormatConversionException");
+
+        Assert.assertEquals(problems.getWarnings().size(), 0, "Found unexpected warnings in problem object");
+
+        try {
+            problems.throwIfHasErrors();
+            Assert.fail("Expected exception from problems object");
+        }
+        catch(ConfigurationException e)
+        {
+            Assertions.assertContainsAllOf(e.getMessage(), "message %d [NaN]");
+        }
+    }
+
+    @Test
     public void TestOneWarning()
     {
         Problems problems = new Problems();
@@ -105,6 +127,27 @@ public class ProblemsTest
         Assert.assertEquals(warnings.length, 2);
         Assertions.assertContainsAllOf(warnings[0].toString(), "Warning", "message 1");
         Assertions.assertContainsAllOf(warnings[1].toString(), "Warning", "message 2");
+
+        try {
+            problems.throwIfHasErrors();
+        }
+        catch(ConfigurationException cause)
+        {
+            Assert.fail("Didn't expect problems object to throw", cause);
+        }
+    }
+
+    @Test
+    public void TestFormatWarning()
+    {
+        Problems problems = new Problems();
+        problems.addWarning("message %d", "NaN");
+
+        Assert.assertEquals(problems.getErrors().size(), 0, "Found unexpected errors in problem object");
+
+        Message [] warnings = problems.getWarnings().toArray(new Message[]{});
+        Assert.assertEquals(warnings.length, 1);
+        Assertions.assertContainsAllOf(warnings[0].toString(), "Warning", "message %d", "NaN", "IllegalFormatConversionException");
 
         try {
             problems.throwIfHasErrors();
