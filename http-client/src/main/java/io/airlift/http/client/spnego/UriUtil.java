@@ -3,8 +3,10 @@ package io.airlift.http.client.spnego;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-class UriUtil
+final class UriUtil
 {
+    private UriUtil() {}
+
     public static URI normalizedUri(URI uri)
     {
         try {

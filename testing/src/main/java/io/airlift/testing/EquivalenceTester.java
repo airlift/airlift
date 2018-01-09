@@ -55,6 +55,8 @@ import static java.util.Objects.requireNonNull;
  */
 public final class EquivalenceTester
 {
+    private EquivalenceTester() {}
+
     @Deprecated
     public static void check(Collection<?>... equivalenceClasses)
     {

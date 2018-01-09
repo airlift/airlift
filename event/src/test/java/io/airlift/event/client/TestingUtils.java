@@ -26,8 +26,10 @@ import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-class TestingUtils
+final class TestingUtils
 {
+    private TestingUtils() {}
+
     public static List<FixedDummyEventClass> getEvents()
     {
         return ImmutableList.of(

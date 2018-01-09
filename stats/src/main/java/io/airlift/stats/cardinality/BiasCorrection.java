@@ -15,8 +15,10 @@ package io.airlift.stats.cardinality;
 
 // These tables are generated empirically by running several thousand experiments and computing the average error for each cardinality
 // TODO: check in the code for generating the tables
-class BiasCorrection
+final class BiasCorrection
 {
+    private BiasCorrection() {}
+
     // bias correction tables starting at p = 4
     public static final double[][] RAW_ESTIMATES = {
             {

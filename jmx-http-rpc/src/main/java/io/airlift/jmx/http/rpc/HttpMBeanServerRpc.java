@@ -22,9 +22,11 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.charset.Charset;
 
-class HttpMBeanServerRpc
+final class HttpMBeanServerRpc
 {
     public static final Charset UTF_8 = Charset.forName("UTF-8");
+
+    private HttpMBeanServerRpc() {}
 
     public static byte[] createSuccessResponse(Object result)
             throws IOException

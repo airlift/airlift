@@ -32,9 +32,11 @@ import io.airlift.node.NodeModule;
 import io.airlift.tracetoken.TraceTokenModule;
 import org.weakref.jmx.guice.MBeanModule;
 
-public class Main
+public final class Main
 {
     private static final Logger log = Logger.get(Main.class);
+
+    private Main() {}
 
     public static void main(String[] args)
             throws Exception

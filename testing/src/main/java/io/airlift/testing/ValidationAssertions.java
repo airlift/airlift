@@ -31,10 +31,12 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 @Beta
-public class ValidationAssertions
+public final class ValidationAssertions
 {
     @GuardedBy("VALIDATOR")
     private static final Validator VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
+
+    private ValidationAssertions() {}
 
     private static <T> Set<ConstraintViolation<T>> validate(T object)
     {

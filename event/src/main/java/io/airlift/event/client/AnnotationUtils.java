@@ -21,8 +21,10 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 
-class AnnotationUtils
+final class AnnotationUtils
 {
+    private AnnotationUtils() {}
+
     /**
      * Find methods that are tagged with the given annotation somewhere in the hierarchy.
      *
