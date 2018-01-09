@@ -17,6 +17,7 @@
  */
 package io.airlift.event.client;
 
+import java.lang.reflect.GenericDeclaration;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -57,7 +58,7 @@ public final class TypeParameterUtils
                 for (int i = 0; i < collectionTypes.length; i++) {
                     if (collectionTypes[i] instanceof TypeVariable) {
                         TypeVariable<?> typeVariable = (TypeVariable<?>) collectionTypes[i];
-                        TypeVariable<?>[] rawTypeParams = ((Class<?>) rawType).getTypeParameters();
+                        TypeVariable<?>[] rawTypeParams = ((GenericDeclaration) rawType).getTypeParameters();
                         for (int j = 0; j < rawTypeParams.length; j++) {
                             if (typeVariable.getName().equals(rawTypeParams[j].getName())) {
                                 collectionTypes[i] = parameterizedType.getActualTypeArguments()[j];
