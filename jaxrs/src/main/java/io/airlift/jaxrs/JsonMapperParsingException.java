@@ -23,7 +23,7 @@ import static java.util.Objects.requireNonNull;
 public class JsonMapperParsingException
         extends ParsingException
 {
-    private Class<?> type;
+    private final Class<?> type;
 
     public JsonMapperParsingException(Class<?> type, Throwable cause)
     {
