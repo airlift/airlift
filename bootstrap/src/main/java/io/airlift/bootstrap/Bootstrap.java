@@ -26,7 +26,6 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Stage;
 import com.google.inject.spi.Message;
-import io.airlift.bootstrap.LoggingWriter.Type;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationInspector;
 import io.airlift.configuration.ConfigurationInspector.ConfigAttribute;
@@ -256,7 +255,7 @@ public class Bootstrap
     {
         ColumnPrinter columnPrinter = makePrinterForConfiguration(configurationFactory);
 
-        try (PrintWriter out = new PrintWriter(new LoggingWriter(log, Type.INFO))) {
+        try (PrintWriter out = new PrintWriter(new LoggingWriter(log))) {
             columnPrinter.print(out);
         }
 

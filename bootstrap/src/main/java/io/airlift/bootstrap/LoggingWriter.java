@@ -26,18 +26,10 @@ class LoggingWriter
         extends StringWriter
 {
     private final Logger logger;
-    private final Type type;
 
-    public enum Type
-    {
-        DEBUG,
-        INFO
-    }
-
-    public LoggingWriter(Logger logger, Type type)
+    public LoggingWriter(Logger logger)
     {
         this.logger = logger;
-        this.type = type;
     }
 
     @Override
@@ -58,23 +50,7 @@ class LoggingWriter
                 if (line == null) {
                     break;
                 }
-
-                switch (type) {
-                    default:
-                    case DEBUG: {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug(line);
-                        }
-                        break;
-                    }
-
-                    case INFO: {
-                        if (logger.isInfoEnabled()) {
-                            logger.info(line);
-                        }
-                        break;
-                    }
-                }
+                logger.info(line);
             }
             catch (IOException e) {
                 throw new Error(e); // should never get here
