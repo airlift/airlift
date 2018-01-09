@@ -118,7 +118,7 @@ public class MockConnectionPoolDataSource
             implements PooledConnection
     {
         private final MockConnectionPoolDataSource dataSource;
-        private boolean closed = false;
+        private boolean closed;
         private List<ConnectionEventListener> connectionEventListeners = new CopyOnWriteArrayList<ConnectionEventListener>();
 
         public MockPooledConnection(MockConnectionPoolDataSource dataSource)

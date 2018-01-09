@@ -74,7 +74,7 @@ public class QuantileDigest
     private long min = Long.MAX_VALUE;
 
     private int root = -1;
-    private int nextNode = 0;
+    private int nextNode;
     private double[] counts;
     private byte[] levels;
     private long[] values;
@@ -365,7 +365,7 @@ public class QuantileDigest
 
         postOrderTraversal(root, new Callback()
         {
-            private double sum = 0;
+            private double sum;
 
             public boolean process(int node)
             {
@@ -546,7 +546,7 @@ public class QuantileDigest
         int[] nodes = new int[getNodeCount()];
         postOrderTraversal(root, new Callback()
         {
-            int index = 0;
+            int index;
 
             @Override
             public boolean process(int node)

@@ -37,7 +37,7 @@ class GuiceDependencyIterator
     private final TypeLiteral<?> creationTypeLiteral;
     private final Class<?> creationClass;
 
-    private Class<?> currentClass = null;
+    private Class<?> currentClass;
 
     /**
      * @param typeLiteral the type literal to iterate over

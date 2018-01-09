@@ -50,15 +50,15 @@ public class CacheControl
 
     private int maxAge = -1;
     private int sMaxAge = -1;
-    private boolean isPrivate = false;
-    private boolean noCache = false;
-    private boolean noStore = false;
+    private boolean isPrivate;
+    private boolean noCache;
+    private boolean noStore;
     private boolean noTransform = true;
-    private boolean mustRevalidate = false;
-    private boolean proxyRevalidate = false;
-    private Map<String, String> cacheExtensions = null;
-    private List<String> noCacheFields = null;
-    private List<String> privateFields = null;
+    private boolean mustRevalidate;
+    private boolean proxyRevalidate;
+    private Map<String, String> cacheExtensions;
+    private List<String> noCacheFields;
+    private List<String> privateFields;
 
     public CacheControl()
     {

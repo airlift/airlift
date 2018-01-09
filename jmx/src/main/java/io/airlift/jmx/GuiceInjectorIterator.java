@@ -33,8 +33,8 @@ class GuiceInjectorIterator
     private final Injector injector;
 
     private boolean needsReset = true;
-    private Class<?> currentClass = null;
-    private GuiceDependencyIterator currentDependencyIterator = null;
+    private Class<?> currentClass;
+    private GuiceDependencyIterator currentDependencyIterator;
 
     /**
      * @param injector the injector to iterate over
