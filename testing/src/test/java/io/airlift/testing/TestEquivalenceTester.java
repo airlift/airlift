@@ -15,7 +15,7 @@
  */
 package io.airlift.testing;
 
-/**
+/*
  * Derived from http://code.google.com/p/kawala
  * <p>
  * Licensed under Apache License, Version 2.0
@@ -98,11 +98,13 @@ public class TestEquivalenceTester
         }
     }
 
+    @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode"})
     static class NotReflexive
     {
+        @SuppressWarnings("override")
         public boolean equals(Object that)
         {
-            return that != null && that instanceof NotReflexive && this != that;
+            return (that instanceof NotReflexive) && (this != that);
         }
     }
 
@@ -121,9 +123,11 @@ public class TestEquivalenceTester
         }
     }
 
+    @SuppressWarnings("ComparableImplementedButEqualsNotOverridden")
     static class ComparableNotReflexive
             implements Comparable<ComparableNotReflexive>
     {
+        @SuppressWarnings("ObjectEquality")
         @Override
         public int compareTo(ComparableNotReflexive that)
         {
@@ -154,16 +158,17 @@ public class TestEquivalenceTester
 
     static class NotSymmetric
     {
-        private int id;
+        private final int id;
 
         NotSymmetric(int id)
         {
             this.id = id;
         }
 
+        @Override
         public boolean equals(Object that)
         {
-            return that != null && that instanceof NotSymmetric && id >= ((NotSymmetric) that).id;
+            return (that instanceof NotSymmetric) && (id >= ((NotSymmetric) that).id);
         }
 
         @Override
@@ -196,7 +201,7 @@ public class TestEquivalenceTester
     static class ComparableNotSymmetric
             implements Comparable<ComparableNotSymmetric>
     {
-        private int id;
+        private final int id;
 
         ComparableNotSymmetric(int id)
         {
@@ -213,9 +218,10 @@ public class TestEquivalenceTester
             return -1;
         }
 
+        @Override
         public boolean equals(Object that)
         {
-            return that != null && that instanceof ComparableNotSymmetric;
+            return that instanceof ComparableNotSymmetric;
         }
 
         @Override
@@ -240,9 +246,11 @@ public class TestEquivalenceTester
         }
     }
 
+    @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode"})
     static class EqualsNull
     {
-        @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass"})
+        @Override
+        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
         public boolean equals(Object that)
         {
             return that == null || this == that;
@@ -264,9 +272,11 @@ public class TestEquivalenceTester
         }
     }
 
+    @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode"})
     static class EqualsNullThrowsException
     {
-        @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass"})
+        @Override
+        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
         public boolean equals(Object that)
         {
             return this.hashCode() == that.hashCode();
@@ -288,9 +298,11 @@ public class TestEquivalenceTester
         }
     }
 
+    @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode"})
     static class EqualsUnrelatedClass
     {
-        @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass"})
+        @Override
+        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
         public boolean equals(Object that)
         {
             return that != null;
@@ -312,9 +324,11 @@ public class TestEquivalenceTester
         }
     }
 
+    @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode"})
     static class EqualsOtherClassThrowsException
     {
-        @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass"})
+        @Override
+        @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass", "RedundantCast"})
         public boolean equals(Object that)
         {
             return that != null && ((EqualsOtherClassThrowsException) that).hashCode() == this.hashCode();
@@ -556,10 +570,12 @@ public class TestEquivalenceTester
             return ComparisonChain.start().compare(value, o.value).result();
         }
 
-        @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass"})
+        @Override
+        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
         public boolean equals(Object that)
         {
-            return that != null && that instanceof ComparableThatDoesNotThrowNPE && value == ((ComparableThatDoesNotThrowNPE) that).value;
+            return (that instanceof ComparableThatDoesNotThrowNPE) &&
+                    (value == ((ComparableThatDoesNotThrowNPE) that).value);
         }
 
         @Override
@@ -569,7 +585,7 @@ public class TestEquivalenceTester
         }
     }
 
-    private void assertExpectedFailures(EquivalenceAssertionError e, ElementCheckFailure... expected)
+    private static void assertExpectedFailures(EquivalenceAssertionError e, ElementCheckFailure... expected)
     {
         assertEqualsIgnoreOrder(e.getFailures(), newArrayList(expected));
     }
