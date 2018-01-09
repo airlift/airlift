@@ -22,7 +22,8 @@ import io.airlift.configuration.DefunctConfig;
  * see <a href="http://dev.mysql.com/doc/refman/5.0/en/connector-j-reference-configuration-properties.html">http://dev.mysql.com/doc/refman/5.0/en/connector-j-reference-configuration-properties.html</a>
  */
 @DefunctConfig({"db.host", "db.port", "db.database", "db.ssl.enabled"})
-public class MySqlDataSourceConfig extends ManagedDataSourceConfig<MySqlDataSourceConfig>
+public class MySqlDataSourceConfig
+        extends ManagedDataSourceConfig<MySqlDataSourceConfig>
 {
     private int defaultFetchSize = 100;
 

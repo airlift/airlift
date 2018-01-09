@@ -141,16 +141,15 @@ public class TestH2EmbeddedDataSourceModule
         Map<String, String> properties = createDefaultConfigurationProperties(prefix, temporaryFile.getAbsolutePath());
 
         Injector injector = createInjector(properties,
-                                           new H2EmbeddedDataSourceModule(prefix, MainBinding.class, AliasBinding.class),
-                                           new Module()
-                                           {
-                                               @Override
-                                               public void configure(Binder binder)
-                                               {
-                                                   binder.bind(TwoObjectsHolder.class);
-                                               }
-                                           }
-        );
+                new H2EmbeddedDataSourceModule(prefix, MainBinding.class, AliasBinding.class),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder)
+                    {
+                        binder.bind(TwoObjectsHolder.class);
+                    }
+                });
 
         ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
         TwoObjectsHolder twoObjectsHolder = injector.getInstance(TwoObjectsHolder.class);
@@ -212,7 +211,8 @@ public class TestH2EmbeddedDataSourceModule
         List<Module> moduleList = ImmutableList.<Module>builder()
                 .add(modules)
                 .add(new ConfigurationModule(configurationFactory))
-                .add(new Module() {
+                .add(new Module()
+                {
                     @Override
                     public void configure(Binder binder)
                     {
@@ -224,7 +224,6 @@ public class TestH2EmbeddedDataSourceModule
 
         return Guice.createInjector(moduleList);
     }
-
 
     // Any test that actually instantiates an H2EmbeddedDataSource requires a temporary file to use for the database
     private File temporaryFile;
@@ -257,4 +256,3 @@ public class TestH2EmbeddedDataSourceModule
         return properties;
     }
 }
-

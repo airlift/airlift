@@ -51,7 +51,7 @@ public class TestTraceTokenRequestFilter
     {
         TraceTokenManager manager = new TraceTokenManager();
         TraceTokenRequestFilter filter = new TraceTokenRequestFilter(manager);
-        Request original =  prepareGet().setUri(URI.create("http://example.com")).build();
+        Request original = prepareGet().setUri(URI.create("http://example.com")).build();
 
         Request request = filter.filterRequest(original);
 

@@ -29,7 +29,6 @@ public class TestHttpUriBuilder
         assertEquals(uri.toASCIIString(), "http://www.example.com");
     }
 
-
     @Test
     public void testWithPath()
     {
@@ -139,7 +138,7 @@ public class TestHttpUriBuilder
                 .replacePath("/a/b/c")
                 .replaceParameter("k", "1")
                 .build();
-        
+
         assertEquals(uri.toASCIIString(), "http://www.example.com:8081/a/b/c?k=1");
     }
 
@@ -349,7 +348,6 @@ public class TestHttpUriBuilder
         assertEquals(uri.toASCIIString(), "http://www.example.com/%60%23%25%5E%7B%7D%7C%5B%5D%3C%3E%3F%C3%A1%C3%A9%C3%AD%C3%B3%C3%BA");
     }
 
-
     @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = ".*scheme.*")
     public void testVerifiesSchemeIsSet()
     {
@@ -372,14 +370,14 @@ public class TestHttpUriBuilder
     public void testEncodesQueryParameters()
     {
         URI uri = uriBuilder()
-            .scheme("http")
-            .host("www.example.com")
-            .replaceParameter("a", "&")
-            .build();
+                .scheme("http")
+                .host("www.example.com")
+                .replaceParameter("a", "&")
+                .build();
 
         assertEquals(uri.toASCIIString(), "http://www.example.com/?a=%26");
     }
-    
+
     @Test
     public void testAcceptsHttpAndHttpScheme()
     {

@@ -22,7 +22,8 @@ import com.google.inject.Scopes;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 
-public class InMemoryEventModule implements Module
+public class InMemoryEventModule
+        implements Module
 {
     @Override
     public void configure(Binder binder)

@@ -29,7 +29,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * This class is not complete yet.
  */
-abstract class PooledDataSource extends ManagedDataSource
+abstract class PooledDataSource
+        extends ManagedDataSource
 {
     private final AtomicBoolean disposed = new AtomicBoolean();
     private final Deque<PooledConnection> pool = new LinkedBlockingDeque<PooledConnection>();
@@ -91,4 +92,3 @@ abstract class PooledDataSource extends ManagedDataSource
         }
     }
 }
-

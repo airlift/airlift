@@ -9,11 +9,9 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-
 // This code was forked from Apache CXF CacheControlHeaderProviderTest
 public class TestCacheControl
 {
-
     @Test
     public void testFromSimpleString()
     {
@@ -42,7 +40,6 @@ public class TestCacheControl
         assertTrue(c.getPrivateFields().size() == 1);
         assertEquals(c.getPrivateFields().get(0), "foo");
         assertEquals(c.getNoCacheFields().get(0), "bar");
-
     }
 
     @Test

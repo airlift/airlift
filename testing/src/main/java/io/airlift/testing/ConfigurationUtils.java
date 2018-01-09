@@ -16,7 +16,8 @@ public final class ConfigurationUtils
     /**
      * Load a properties file from the class path and return as a Map suitable for a configuration factory.
      */
-    public static Map<String, String> loadPropertiesFromClasspath(String path) throws IOException
+    public static Map<String, String> loadPropertiesFromClasspath(String path)
+            throws IOException
     {
         Properties properties = new Properties();
         properties.load(getResource(ConfigurationUtils.class, path).openStream());

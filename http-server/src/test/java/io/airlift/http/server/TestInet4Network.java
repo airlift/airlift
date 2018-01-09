@@ -65,7 +65,7 @@ public class TestInet4Network
                 {"8.0.0.0.0"},
                 {"-8.1.0.0"},
                 {"8.-1.0.0"},
-                };
+        };
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, dataProvider = "invalidCidr")

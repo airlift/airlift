@@ -41,7 +41,8 @@ import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 
 @Beta
-public class JmxHttpRpcModule implements Module
+public class JmxHttpRpcModule
+        implements Module
 {
     private final Class<? extends Annotation> bindingAnnotation;
 
@@ -75,8 +76,8 @@ public class JmxHttpRpcModule implements Module
         return new HttpMBeanServerCredentials(config.getUsername(), config.getPassword());
     }
 
-
-    static class JmxHttpRpcAnnouncementProvider implements Provider<ServiceAnnouncement>
+    static class JmxHttpRpcAnnouncementProvider
+            implements Provider<ServiceAnnouncement>
     {
         private final ServiceAnnouncementBuilder builder;
         private HttpServerInfo httpServerInfo;
@@ -107,7 +108,8 @@ public class JmxHttpRpcModule implements Module
                 if (adminUri.getScheme().equals("http")) {
                     builder.addProperty("http", adminUri.toString());
                     builder.addProperty("http-external", httpServerInfo.getAdminExternalUri().toString());
-                } else if (adminUri.getScheme().equals("https")) {
+                }
+                else if (adminUri.getScheme().equals("https")) {
                     builder.addProperty("https", adminUri.toString());
                     builder.addProperty("https-external", httpServerInfo.getAdminExternalUri().toString());
                 }

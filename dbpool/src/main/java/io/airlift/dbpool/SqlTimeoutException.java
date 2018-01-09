@@ -17,7 +17,8 @@ package io.airlift.dbpool;
 
 import java.sql.SQLException;
 
-public class SqlTimeoutException extends SQLException
+public class SqlTimeoutException
+        extends SQLException
 {
     public SqlTimeoutException()
     {

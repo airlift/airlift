@@ -781,8 +781,7 @@ public class TestMoreFutures
 
     private static Consumer<Throwable> expect(Class<? extends Throwable> expectedClass, String expectedMessagePattern)
     {
-        return expect(expectedClass, expectedMessagePattern, cause -> {
-        });
+        return expect(expectedClass, expectedMessagePattern, cause -> {});
     }
 
     private static Consumer<Throwable> expect(Class<? extends Throwable> expectedClass, String expectedMessagePattern, Consumer<? super Throwable> causeVerifier)

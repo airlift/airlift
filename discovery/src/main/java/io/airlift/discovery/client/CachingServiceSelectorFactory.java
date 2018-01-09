@@ -21,7 +21,8 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import static java.util.Objects.requireNonNull;
 
-public class CachingServiceSelectorFactory implements ServiceSelectorFactory
+public class CachingServiceSelectorFactory
+        implements ServiceSelectorFactory
 {
     private final DiscoveryLookupClient lookupClient;
     private final ScheduledExecutorService executor;

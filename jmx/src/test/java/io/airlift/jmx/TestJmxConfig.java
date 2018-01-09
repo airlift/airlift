@@ -33,5 +33,4 @@ public class TestJmxConfig
 
         assertFullMapping(properties, expected);
     }
-
 }

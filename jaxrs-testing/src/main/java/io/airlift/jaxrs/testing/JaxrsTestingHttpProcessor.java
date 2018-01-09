@@ -35,6 +35,7 @@ import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
+
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.util.List;
@@ -55,7 +56,8 @@ public class JaxrsTestingHttpProcessor
     public JaxrsTestingHttpProcessor(URI baseUri, Object... jaxRsSingletons)
     {
         Set<Object> jaxRsSingletonsSet = ImmutableSet.copyOf(jaxRsSingletons);
-        Application application = new Application() {
+        Application application = new Application()
+        {
             @Override
             public Set<Object> getSingletons()
             {

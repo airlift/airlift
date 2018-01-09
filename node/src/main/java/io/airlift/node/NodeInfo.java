@@ -70,8 +70,7 @@ public class NodeInfo
                 config.getLocation(),
                 config.getBinarySpec(),
                 config.getConfigSpec(),
-                config.getInternalAddressSource()
-        );
+                config.getInternalAddressSource());
     }
 
     public NodeInfo(String environment,
@@ -202,7 +201,7 @@ public class NodeInfo
      * The internal network address the server should use when announcing its location to other machines.
      * This address should available to all machines within the environment, but may not be globally routable.
      * If this is not set, the following algorithm is used to choose the public address:
-     *
+     * <p>
      * <ol>
      * <li>InetAddress.getLocalHost() if good IPv4</li>
      * <li>First good IPv4 address of an up network interface</li>
@@ -231,7 +230,7 @@ public class NodeInfo
 
     /**
      * The IP address the server should use when binding a server socket.
-     *
+     * <p>
      * If this is not set, this will be the IPv4 any local address (e.g., 0.0.0.0).
      */
     @Managed
@@ -290,7 +289,7 @@ public class NodeInfo
         }
         if (localAddress == null) {
             try {
-                localAddress = InetAddress.getByAddress(new byte[]{127, 0, 0, 1});
+                localAddress = InetAddress.getByAddress(new byte[] {127, 0, 0, 1});
             }
             catch (UnknownHostException e) {
                 throw new AssertionError("Could not get local ip address");

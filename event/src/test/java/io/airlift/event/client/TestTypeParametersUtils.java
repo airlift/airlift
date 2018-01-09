@@ -1,5 +1,4 @@
-/**
- *
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -56,7 +55,7 @@ public class TestTypeParametersUtils
             throws Exception
     {
         assertNull(getParameters("mapNotGeneric"));
-        assertEquals(getParameters("mapSimple"), new Type[] { Key.class, Value.class });
+        assertEquals(getParameters("mapSimple"), new Type[] {Key.class, Value.class});
         assertTwoWildcardTypes(getParameters("mapWildcard"));
         assertTwoWildcardTypes(getParameters("mapExtendsWildcard"));
         assertTwoWildcardTypes(getParameters("mapSuperWildcard"));
@@ -67,7 +66,7 @@ public class TestTypeParametersUtils
             throws Exception
     {
         assertTwoTypeVariables(getParameters("myMapNotGeneric"));
-        assertEquals(getParameters("myMapSimple"), new Type[] { Key.class, Value.class });
+        assertEquals(getParameters("myMapSimple"), new Type[] {Key.class, Value.class});
         assertTwoWildcardTypes(getParameters("myMapWildcard"));
         assertTwoWildcardTypes(getParameters("myMapExtendsWildcard"));
         assertTwoWildcardTypes(getParameters("myMapSuperWildcard"));
@@ -77,7 +76,7 @@ public class TestTypeParametersUtils
     public void testFixedMap()
             throws Exception
     {
-        assertEquals(getParameters("fixedMap"), new Type[] { Key.class, Value.class });
+        assertEquals(getParameters("fixedMap"), new Type[] {Key.class, Value.class});
     }
 
     private static void assertTwoWildcardTypes(Type[] types)

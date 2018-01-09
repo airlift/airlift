@@ -145,7 +145,8 @@ public class HttpEventClient
         }
     }
 
-    private static class EventResponseHandler implements ResponseHandler<Void, RuntimeException>
+    private static class EventResponseHandler
+            implements ResponseHandler<Void, RuntimeException>
     {
         private final String type;
         private final String pool;

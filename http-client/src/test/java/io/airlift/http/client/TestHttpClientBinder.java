@@ -57,7 +57,6 @@ public class TestHttpClientBinder
                 .strictConfig()
                 .initialize();
 
-
         JettyHttpClient httpClient = (JettyHttpClient) injector.getInstance(Key.get(HttpClient.class, FooClient.class));
         assertEquals(httpClient.getRequestTimeoutMillis(), MINUTES.toMillis(33));
     }
@@ -136,7 +135,6 @@ public class TestHttpClientBinder
                 .quiet()
                 .strictConfig()
                 .initialize();
-
 
         HttpClient httpClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
         assertFilterCount(httpClient, 3);

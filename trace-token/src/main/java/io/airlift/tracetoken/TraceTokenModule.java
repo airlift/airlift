@@ -20,7 +20,7 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 
 public class TraceTokenModule
-    implements Module
+        implements Module
 {
     @Override
     public void configure(Binder binder)

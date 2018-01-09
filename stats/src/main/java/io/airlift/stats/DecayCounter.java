@@ -113,7 +113,6 @@ public class DecayCounter
         return getCount() * alpha;
     }
 
-
     private double weight(long timestampInSeconds, long landmarkInSeconds)
     {
         return Math.exp(alpha * (timestampInSeconds - landmarkInSeconds));

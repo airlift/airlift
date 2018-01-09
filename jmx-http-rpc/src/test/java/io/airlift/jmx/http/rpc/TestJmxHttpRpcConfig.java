@@ -28,8 +28,7 @@ public class TestJmxHttpRpcConfig
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(JmxHttpRpcConfig.class)
                 .setUsername(null)
-                .setPassword(null)
-        );
+                .setPassword(null));
     }
 
     @Test

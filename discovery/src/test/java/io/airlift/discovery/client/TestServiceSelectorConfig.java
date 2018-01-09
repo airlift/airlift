@@ -42,5 +42,4 @@ public class TestServiceSelectorConfig
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }
-
 }

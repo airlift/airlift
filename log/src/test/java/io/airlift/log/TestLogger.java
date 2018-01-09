@@ -197,14 +197,12 @@ public class TestLogger
         assertTrue(handler.isEmpty());
     }
 
-
     @Test
     public void testInsufficientArgsLogsErrorForDebug()
     {
         String format = "some message: %s, %d";
         String param = "blah";
         logger.debug(format, param);
-
 
         assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "DEBUG", format, param), IllegalArgumentException.class);
         assertLog(Level.FINE, String.format("'%s' [%s]", format, param));
@@ -216,7 +214,6 @@ public class TestLogger
         String format = "some message: %s, %d";
         String param = "blah";
         logger.info(format, param);
-
 
         assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "INFO", format, param), IllegalArgumentException.class);
         assertLog(Level.INFO, String.format("'%s' [%s]", format, param));
@@ -268,7 +265,6 @@ public class TestLogger
         assertLog(Level.SEVERE, String.format("'%s' [%s]", format, param), exception);
     }
 
-
     private void assertLog(Level level, String message, Throwable exception)
     {
         LogRecord record = handler.takeRecord();
@@ -305,7 +301,7 @@ public class TestLogger
     }
 
     private static class MockHandler
-        extends Handler
+            extends Handler
     {
         private final List<LogRecord> records = new ArrayList<>();
 

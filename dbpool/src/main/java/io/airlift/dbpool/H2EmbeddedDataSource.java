@@ -36,7 +36,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class H2EmbeddedDataSource extends ManagedDataSource
+public class H2EmbeddedDataSource
+        extends ManagedDataSource
 {
     private final JdbcDataSource dataSource;
 
@@ -139,7 +140,6 @@ public class H2EmbeddedDataSource extends ManagedDataSource
             closeQuietly(statement);
         }
     }
-
 
     private static void executeCommand(Connection connection, String command)
             throws SQLException

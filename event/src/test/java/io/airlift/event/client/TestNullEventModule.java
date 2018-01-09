@@ -19,7 +19,8 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import org.testng.annotations.BeforeMethod;
 
-public class TestNullEventModule extends AbstractTestNullEventClient
+public class TestNullEventModule
+        extends AbstractTestNullEventClient
 {
     @SuppressWarnings("deprecation")
     @BeforeMethod
@@ -27,8 +28,7 @@ public class TestNullEventModule extends AbstractTestNullEventClient
             throws Exception
     {
         Injector injector = Guice.createInjector(
-                new NullEventModule()
-        );
+                new NullEventModule());
         eventClient = (NullEventClient) injector.getInstance(EventClient.class);
     }
 }

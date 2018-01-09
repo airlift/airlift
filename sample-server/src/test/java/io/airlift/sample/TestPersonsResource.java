@@ -61,9 +61,6 @@ public class TestPersonsResource
         assertInstanceOf(response.getEntity(), Collection.class);
         assertEquals((Collection<?>) response.getEntity(), newArrayList(
                 new PersonRepresentation("foo@example.com", "Mr Foo", null),
-                new PersonRepresentation("bar@example.com", "Mr Bar", null)
-        ));
+                new PersonRepresentation("bar@example.com", "Mr Bar", null)));
     }
-
-
 }

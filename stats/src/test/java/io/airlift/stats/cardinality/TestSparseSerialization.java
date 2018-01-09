@@ -30,7 +30,7 @@ public class TestSparseSerialization
         Slice expected = new DynamicSliceOutput(1)
                 .appendByte(2)  // format tag
                 .appendByte(12) // p
-                        // number of entries
+                // number of entries
                 .appendByte(0)
                 .appendByte(0)
                 .slice();
@@ -47,10 +47,10 @@ public class TestSparseSerialization
         Slice expected = new DynamicSliceOutput(1)
                 .appendByte(2)  // format tag
                 .appendByte(12) // p
-                        // number of entries
+                // number of entries
                 .appendByte(1)
                 .appendByte(0)
-                        // entry 0
+                // entry 0
                 .appendByte(0b0100_0010)
                 .appendByte(0b0011_0100)
                 .appendByte(0b0010_0000)

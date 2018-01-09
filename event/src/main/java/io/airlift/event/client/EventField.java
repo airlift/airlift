@@ -25,6 +25,7 @@ import java.lang.annotation.Target;
 public @interface EventField
 {
     String value() default "";
+
     EventFieldMapping fieldMapping() default EventFieldMapping.DATA;
 
     enum EventFieldMapping

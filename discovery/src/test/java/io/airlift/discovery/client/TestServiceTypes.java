@@ -45,7 +45,6 @@ public class TestServiceTypes
         Assert.assertEquals(ServiceTypes.serviceType("type").value(), "type");
     }
 
-
     @Test
     public void testToString()
     {

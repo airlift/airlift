@@ -25,7 +25,8 @@ import java.util.List;
 
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 
-public class StatusResponseHandler implements ResponseHandler<StatusResponse, RuntimeException>
+public class StatusResponseHandler
+        implements ResponseHandler<StatusResponse, RuntimeException>
 {
     private static final StatusResponseHandler statusResponseHandler = new StatusResponseHandler();
 

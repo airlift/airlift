@@ -63,15 +63,18 @@ class HttpMBeanServerRpc
     //
     // This code was swiped from Guava
     //
-    public static <X extends Throwable> void propagateIfInstanceOf(Throwable throwable, Class<X> declaredType) throws X {
-      if (throwable != null && declaredType.isInstance(throwable)) {
-        throw declaredType.cast(throwable);
-      }
+    public static <X extends Throwable> void propagateIfInstanceOf(Throwable throwable, Class<X> declaredType)
+            throws X
+    {
+        if (throwable != null && declaredType.isInstance(throwable)) {
+            throw declaredType.cast(throwable);
+        }
     }
 
-    public static void propagateIfPossible(Throwable throwable) {
-      propagateIfInstanceOf(throwable, Error.class);
-      propagateIfInstanceOf(throwable, RuntimeException.class);
+    public static void propagateIfPossible(Throwable throwable)
+    {
+        propagateIfInstanceOf(throwable, Error.class);
+        propagateIfInstanceOf(throwable, RuntimeException.class);
     }
 
     /**

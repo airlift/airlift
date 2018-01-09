@@ -25,7 +25,8 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static io.airlift.discovery.client.ServiceSelectorConfig.DEFAULT_POOL;
 import static java.util.Objects.requireNonNull;
 
-public class StaticHttpServiceSelector implements HttpServiceSelector
+public class StaticHttpServiceSelector
+        implements HttpServiceSelector
 {
     private static final String UNKNOWN_TYPE = "unknown";
     private final String type;
@@ -62,7 +63,6 @@ public class StaticHttpServiceSelector implements HttpServiceSelector
     public StaticHttpServiceSelector(String type, Iterable<URI> uris)
     {
         this(type, DEFAULT_POOL, uris);
-
     }
 
     public StaticHttpServiceSelector(String type, String pool, Iterable<URI> uris)

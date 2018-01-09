@@ -55,7 +55,6 @@ public class TimedStatTest
         assertEquals(stat.getMin(), values.get(0));
         assertEquals(stat.getMean(), (values.get(0) + values.get(values.size() - 1)) / 2.0);
 
-
         assertPercentile("tp50", stat.getTP50(), values, 0.50);
         assertPercentile("tp90", stat.getTP90(), values, 0.90);
         assertPercentile("tp99", stat.getTP99(), values, 0.99);

@@ -30,8 +30,7 @@ class Inet4Networks
             fromCidr("169.254.0.0/16"),
             fromCidr("192.168.0.0/16"),
             fromCidr("172.16.0.0/12"),
-            fromCidr("10.0.0.0/8")
-    );
+            fromCidr("10.0.0.0/8"));
 
     public static boolean isPrivateNetworkAddress(String inetAddress)
     {

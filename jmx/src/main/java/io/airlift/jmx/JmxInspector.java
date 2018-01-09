@@ -43,7 +43,8 @@ public class JmxInspector
         ACTION
     }
 
-    public static class InspectorRecord implements Comparable<InspectorRecord>
+    public static class InspectorRecord
+            implements Comparable<InspectorRecord>
     {
         public final String className;
         public final String objectName;

@@ -24,7 +24,10 @@ public class PersonEvent
         return new PersonEvent(Operation.REMOVED, personId, person);
     }
 
-    public enum Operation{ ADDED, UPDATED, REMOVED }
+    public enum Operation
+    {
+        ADDED, UPDATED, REMOVED
+    }
 
     private final Operation operation;
     private final String personId;

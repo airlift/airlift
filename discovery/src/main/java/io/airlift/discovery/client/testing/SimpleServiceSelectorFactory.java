@@ -24,7 +24,8 @@ import javax.inject.Inject;
 
 import static java.util.Objects.requireNonNull;
 
-public class SimpleServiceSelectorFactory implements ServiceSelectorFactory
+public class SimpleServiceSelectorFactory
+        implements ServiceSelectorFactory
 {
     private final DiscoveryLookupClient lookupClient;
 

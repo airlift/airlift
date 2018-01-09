@@ -45,8 +45,7 @@ public class TestAnnouncement
                 serviceAnnouncement("foo")
                         .addProperty("http", "http://localhost:8080")
                         .addProperty("jmx", "jmx://localhost:1234")
-                        .build())
-        );
+                        .build()));
         Map<String, Object> actual = objectCodec.fromJson(announcementCodec.toJson(announcement));
 
         String json = Resources.toString(Resources.getResource("announcement.json"), UTF_8);
@@ -72,8 +71,7 @@ public class TestAnnouncement
                 serviceAnnouncement("foo")
                         .addProperty("http", "http://localhost:8080")
                         .addProperty("jmx", "jmx://localhost:1234")
-                        .build())
-        ));
+                        .build())));
     }
 
     @Test
@@ -84,14 +82,12 @@ public class TestAnnouncement
                         new Announcement("environment", "node-A", "pool", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
                         new Announcement("ENVIRONMENT", "node-A", "pool", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
                         new Announcement("environment", "node-A", "pool", "LOCATION", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
-                        new Announcement("environment", "node-A", "pool", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("FOO").build()))
-                )
+                        new Announcement("environment", "node-A", "pool", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("FOO").build())))
                 .addEquivalentGroup(
                         new Announcement("environment", "node-B", "pool", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
                         new Announcement("environment-X", "node-B", "pool", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
                         new Announcement("environment", "node-B", "pool", "location-X", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
-                        new Announcement("environment", "node-B", "pool", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("bar").build()))
-                )
+                        new Announcement("environment", "node-B", "pool", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("bar").build())))
                 .check();
     }
 }

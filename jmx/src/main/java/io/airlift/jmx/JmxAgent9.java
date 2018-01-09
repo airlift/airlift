@@ -29,7 +29,7 @@ import java.net.MalformedURLException;
 import java.util.Properties;
 
 class JmxAgent9
-    implements JmxAgent
+        implements JmxAgent
 {
     private static final Logger log = Logger.get(JmxAgent.class);
 

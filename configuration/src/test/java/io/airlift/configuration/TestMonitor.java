@@ -22,7 +22,8 @@ import org.testng.Assert;
 import java.util.ArrayList;
 import java.util.List;
 
-class TestMonitor implements Problems.Monitor
+class TestMonitor
+        implements Problems.Monitor
 {
     private List<Message> errors = new ArrayList<Message>();
     private List<Message> warnings = new ArrayList<Message>();
@@ -101,6 +102,4 @@ class TestMonitor implements Problems.Monitor
         }
         return builder.toString();
     }
-
 }
-

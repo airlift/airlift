@@ -193,8 +193,7 @@ public class TestLifeCycleManager
                         binder.bind(FooTestInstance.class).in(Scopes.SINGLETON);
                     }
                 },
-                new LifeCycleModule()
-        );
+                new LifeCycleModule());
 
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         lifeCycleManager.start();

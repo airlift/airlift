@@ -20,7 +20,8 @@ import javax.inject.Provider;
 
 import java.lang.reflect.Type;
 
-class JsonCodecProvider implements Provider<JsonCodec<?>>
+class JsonCodecProvider
+        implements Provider<JsonCodec<?>>
 {
     private final Type type;
     private JsonCodecFactory jsonCodecFactory;

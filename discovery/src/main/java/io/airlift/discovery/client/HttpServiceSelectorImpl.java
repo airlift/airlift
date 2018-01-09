@@ -25,7 +25,8 @@ import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 
-public class HttpServiceSelectorImpl implements HttpServiceSelector
+public class HttpServiceSelectorImpl
+        implements HttpServiceSelector
 {
     private final ServiceSelector serviceSelector;
 

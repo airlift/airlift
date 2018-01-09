@@ -24,7 +24,8 @@ import javax.sql.PooledConnection;
 import java.sql.SQLException;
 import java.util.UUID;
 
-public class MySqlDataSource extends ManagedDataSource
+public class MySqlDataSource
+        extends ManagedDataSource
 {
     private final ServiceSelector serviceSelector;
     private final int defaultFetchSize;

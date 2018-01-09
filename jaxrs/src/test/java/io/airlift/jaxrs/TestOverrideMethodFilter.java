@@ -38,7 +38,7 @@ public class TestOverrideMethodFilter
     @DataProvider(name = "methods")
     private Object[][] getMethods()
     {
-        return new Object[][]{
+        return new Object[][] {
                 {"GET"},
                 {"POST"},
                 {"PUT"},
@@ -120,7 +120,6 @@ public class TestOverrideMethodFilter
 
         filter.filter(request);
         assertEqualsIgnoreCase(request.getMethod(), "DELETE");
-
     }
 
     public static String testQueryParam(String requestMethod, String override)

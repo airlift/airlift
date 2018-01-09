@@ -63,7 +63,7 @@ public class RequestStats
         writtenBytes.add(requestSizeInBytes);
 
         allResponse.update(1);
-        switch(familyForStatusCode(responseCode)) {
+        switch (familyForStatusCode(responseCode)) {
             case INFORMATIONAL:
                 informationalResponse.update(1);
                 break;

@@ -52,7 +52,8 @@ import static io.airlift.jmx.http.rpc.HttpMBeanServerRpc.propagateIfInstanceOf;
 import static io.airlift.jmx.http.rpc.HttpMBeanServerRpc.propagateIfPossible;
 import static java.lang.String.format;
 
-public class HttpJmxConnector implements JMXConnector, JMXAddressable
+public class HttpJmxConnector
+        implements JMXConnector, JMXAddressable
 {
     private final JMXServiceURL jmxServiceUrl;
     private final URI baseUri;
@@ -158,7 +159,8 @@ public class HttpJmxConnector implements JMXConnector, JMXAddressable
     {
     }
 
-    public static class HttpMBeanServerConnection implements MBeanServerConnection
+    public static class HttpMBeanServerConnection
+            implements MBeanServerConnection
     {
         private final URI baseUri;
         private final HttpMBeanServerCredentials credentials;
@@ -276,7 +278,6 @@ public class HttpJmxConnector implements JMXConnector, JMXAddressable
                 propagateIfPossible(e);
                 throw new IOException(e);
             }
-
         }
 
         @Override
@@ -464,7 +465,6 @@ public class HttpJmxConnector implements JMXConnector, JMXAddressable
         //
         // Unsupported
         //
-
 
         @Override
         public ObjectInstance createMBean(String className, ObjectName name)

@@ -21,7 +21,8 @@ import io.airlift.testing.EquivalenceTester.ElementCheckFailure;
 
 import java.util.List;
 
-public class EquivalenceAssertionError extends AssertionError
+public class EquivalenceAssertionError
+        extends AssertionError
 {
     private final List<ElementCheckFailure> failures;
 

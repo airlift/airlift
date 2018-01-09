@@ -96,5 +96,4 @@ public class ServiceDescriptors
     {
         return serviceDescriptors;
     }
-
 }

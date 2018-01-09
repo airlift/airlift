@@ -117,7 +117,6 @@ public class TestServiceInventory
 
             server.start();
 
-
             // test
             ServiceInventoryConfig serviceInventoryConfig = new ServiceInventoryConfig()
                     .setServiceInventoryUri(baseURI);

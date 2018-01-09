@@ -20,5 +20,5 @@ import javax.inject.Inject;
 public class AnInstance
 {
     @Inject
-    public AnInstance(DependentInstance dependentInstance) { }
+    public AnInstance(DependentInstance dependentInstance) {}
 }

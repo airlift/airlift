@@ -19,7 +19,7 @@ import static java.lang.String.format;
 
 // TODO move to discovery client?
 public class ServiceUnavailableException
-    extends RuntimeException
+        extends RuntimeException
 {
     private final String service;
     private final String pool;

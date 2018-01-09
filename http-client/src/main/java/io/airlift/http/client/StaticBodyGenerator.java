@@ -18,7 +18,8 @@ package io.airlift.http.client;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 
-public class StaticBodyGenerator implements BodyGenerator
+public class StaticBodyGenerator
+        implements BodyGenerator
 {
     public static StaticBodyGenerator createStaticBodyGenerator(String body, Charset charset)
     {

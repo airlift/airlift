@@ -31,7 +31,8 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class StringResponseHandler implements ResponseHandler<StringResponse, RuntimeException>
+public class StringResponseHandler
+        implements ResponseHandler<StringResponse, RuntimeException>
 {
     private static final StringResponseHandler STRING_RESPONSE_HANDLER = new StringResponseHandler();
 

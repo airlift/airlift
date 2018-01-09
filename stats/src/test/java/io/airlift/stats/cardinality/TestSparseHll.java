@@ -28,7 +28,7 @@ import static org.testng.Assert.assertEquals;
 
 public class TestSparseHll
 {
-    private static final int SPARSE_HLL_INSTANCE_SIZE = ClassLayout.parseClass(SparseHll.class).instanceSize();;
+    private static final int SPARSE_HLL_INSTANCE_SIZE = ClassLayout.parseClass(SparseHll.class).instanceSize();
 
     @Test(dataProvider = "bits")
     public void testMerge(int prefixBitLength)
@@ -129,18 +129,18 @@ public class TestSparseHll
     private Object[][] prefixLengths()
     {
         return new Object[][] {
-                new Object[] { 4 },
-                new Object[] { 5 },
-                new Object[] { 6 },
-                new Object[] { 7 },
-                new Object[] { 8 },
-                new Object[] { 9 },
-                new Object[] { 10 },
-                new Object[] { 11 },
-                new Object[] { 12 },
-                new Object[] { 13 },
-                new Object[] { 14 },
-                new Object[] { 15 },
+                new Object[] {4},
+                new Object[] {5},
+                new Object[] {6},
+                new Object[] {7},
+                new Object[] {8},
+                new Object[] {9},
+                new Object[] {10},
+                new Object[] {11},
+                new Object[] {12},
+                new Object[] {13},
+                new Object[] {14},
+                new Object[] {15},
         };
     }
 }

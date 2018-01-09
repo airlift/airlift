@@ -25,8 +25,8 @@ import java.lang.reflect.Method;
 import java.util.SortedSet;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static java.util.Objects.requireNonNull;
 import static io.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
+import static java.util.Objects.requireNonNull;
 
 public class ConfigurationInspector
 {

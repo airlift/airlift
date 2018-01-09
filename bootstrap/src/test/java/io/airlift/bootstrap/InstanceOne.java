@@ -23,7 +23,7 @@ import javax.inject.Inject;
 public class InstanceOne
 {
     @Inject
-    public InstanceOne(DependentInstance otro) { }
+    public InstanceOne(DependentInstance otro) {}
 
     @PostConstruct
     public void postMakeOne()

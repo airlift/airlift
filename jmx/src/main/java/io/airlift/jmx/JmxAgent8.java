@@ -37,7 +37,7 @@ import static com.google.common.base.Throwables.throwIfUnchecked;
 import static java.lang.String.format;
 
 class JmxAgent8
-    implements JmxAgent
+        implements JmxAgent
 {
     private static final Logger log = Logger.get(JmxAgent.class);
 

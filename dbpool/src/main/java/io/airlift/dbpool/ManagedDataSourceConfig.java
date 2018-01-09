@@ -31,7 +31,8 @@ import java.util.concurrent.TimeUnit;
  *             .setMaxConnections(20)
  *             .setMaxConnectionWait(new Duration(20, TimeUnit.MILLISECONDS));
  * }
- *</pre>
+ * </pre>
+ *
  * @param <T> The type current class or subclass, which is used for method chaining
  * <p>
  * Implementation Note:<br>

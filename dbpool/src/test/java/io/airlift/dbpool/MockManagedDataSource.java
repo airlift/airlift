@@ -21,7 +21,8 @@ import javax.sql.PooledConnection;
 
 import java.sql.SQLException;
 
-public class MockManagedDataSource extends ManagedDataSource
+public class MockManagedDataSource
+        extends ManagedDataSource
 {
     private final MockConnectionPoolDataSource poolDataSource;
 

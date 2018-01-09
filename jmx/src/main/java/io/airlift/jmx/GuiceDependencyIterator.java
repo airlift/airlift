@@ -29,7 +29,8 @@ import java.util.Set;
 /**
  * Utility for iterating over dependent classes in a Guice injector
  */
-class GuiceDependencyIterator implements Iterator<Class<?>>, Iterable<Class<?>>
+class GuiceDependencyIterator
+        implements Iterator<Class<?>>, Iterable<Class<?>>
 {
     private final Set<Key<?>> visited;
     private final Iterator<Dependency<?>> currentDependencyIterator;

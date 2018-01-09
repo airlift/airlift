@@ -40,7 +40,6 @@ import static io.airlift.discovery.client.ServiceTypes.serviceType;
 
 public class TestDiscoveryBinder
 {
-
     @Test
     public void testBindSelector()
             throws Exception
@@ -54,10 +53,9 @@ public class TestDiscoveryBinder
                     {
                         discoveryBinder(binder).bindServiceAnnouncement(new ServiceAnnouncementProvider().get());
                     }
-                }
-        );
+                });
 
-        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() { }));
+        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
         Assert.assertEquals(announcements, ImmutableSet.of(ANNOUNCEMENT));
     }
 
@@ -74,10 +72,9 @@ public class TestDiscoveryBinder
                     {
                         discoveryBinder(binder).bindServiceAnnouncement(ServiceAnnouncementProvider.class);
                     }
-                }
-        );
+                });
 
-        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() { }));
+        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
         Assert.assertEquals(announcements, ImmutableSet.of(ANNOUNCEMENT));
     }
 
@@ -94,10 +91,9 @@ public class TestDiscoveryBinder
                     {
                         discoveryBinder(binder).bindServiceAnnouncement(new ServiceAnnouncementProvider());
                     }
-                }
-        );
+                });
 
-        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() { }));
+        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
         Assert.assertEquals(announcements, ImmutableSet.of(ANNOUNCEMENT));
     }
 
@@ -114,8 +110,7 @@ public class TestDiscoveryBinder
                     {
                         discoveryBinder(binder).bindSelector("apple");
                     }
-                }
-        );
+                });
 
         assertCanCreateServiceSelector(injector, "apple", ServiceSelectorConfig.DEFAULT_POOL);
     }
@@ -133,8 +128,7 @@ public class TestDiscoveryBinder
                     {
                         discoveryBinder(binder).bindSelector(serviceType("apple"));
                     }
-                }
-        );
+                });
 
         assertCanCreateServiceSelector(injector, "apple", ServiceSelectorConfig.DEFAULT_POOL);
     }
@@ -152,8 +146,7 @@ public class TestDiscoveryBinder
                     {
                         discoveryBinder(binder).bindSelector("apple");
                     }
-                }
-        );
+                });
 
         assertCanCreateServiceSelector(injector, "apple", "apple-pool");
     }
@@ -171,8 +164,7 @@ public class TestDiscoveryBinder
                     {
                         discoveryBinder(binder).bindSelector(serviceType("apple"));
                     }
-                }
-        );
+                });
 
         assertCanCreateServiceSelector(injector, "apple", "apple-pool");
     }
@@ -185,9 +177,10 @@ public class TestDiscoveryBinder
         Assert.assertEquals(actualServiceSelector.getPool(), expectedPool);
     }
 
-    private static class TestModule implements Module
+    private static class TestModule
+            implements Module
     {
-        private Map<String,String> configProperties;
+        private Map<String, String> configProperties;
 
         private TestModule()
         {
@@ -210,7 +203,8 @@ public class TestDiscoveryBinder
 
     private static final ServiceAnnouncement ANNOUNCEMENT = ServiceAnnouncement.serviceAnnouncement("apple").addProperty("a", "apple").build();
 
-    private static class ServiceAnnouncementProvider implements Provider<ServiceAnnouncement>
+    private static class ServiceAnnouncementProvider
+            implements Provider<ServiceAnnouncement>
     {
         @Override
         public ServiceAnnouncement get()

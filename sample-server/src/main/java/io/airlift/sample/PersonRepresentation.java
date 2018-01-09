@@ -71,7 +71,6 @@ public class PersonRepresentation
         return person;
     }
 
-
     @Override
     public boolean equals(Object o)
     {

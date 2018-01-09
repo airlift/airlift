@@ -21,7 +21,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-class ManagedSemaphore extends Semaphore
+class ManagedSemaphore
+        extends Semaphore
 {
     private final AtomicLong activePermits = new AtomicLong();
     private int permits;
@@ -71,7 +72,6 @@ class ManagedSemaphore extends Semaphore
     {
         super.acquire();
         activePermits.incrementAndGet();
-
     }
 
     @Override

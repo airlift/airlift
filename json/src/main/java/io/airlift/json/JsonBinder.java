@@ -44,10 +44,10 @@ public class JsonBinder
     private JsonBinder(Binder binder)
     {
         binder = requireNonNull(binder, "binder is null").skipSources(getClass());
-        keySerializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() { }, new TypeLiteral<JsonSerializer<?>>() {}, JsonKeySerde.class);
-        keyDeserializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() { }, new TypeLiteral<KeyDeserializer>() {}, JsonKeySerde.class);
-        serializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() { }, new TypeLiteral<JsonSerializer<?>>() {});
-        deserializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() { }, new TypeLiteral<JsonDeserializer<?>>() {});
+        keySerializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<JsonSerializer<?>>() {}, JsonKeySerde.class);
+        keyDeserializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<KeyDeserializer>() {}, JsonKeySerde.class);
+        serializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<JsonSerializer<?>>() {});
+        deserializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<JsonDeserializer<?>>() {});
         moduleBinder = Multibinder.newSetBinder(binder, Module.class);
     }
 
@@ -79,7 +79,6 @@ public class JsonBinder
     {
         return moduleBinder.addBinding();
     }
-
 
     public <T> void bindSerializer(JsonSerializer<T> jsonSerializer)
     {

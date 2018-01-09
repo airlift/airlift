@@ -15,7 +15,8 @@
  */
 package io.airlift.discovery.client;
 
-public class DiscoveryException extends RuntimeException
+public class DiscoveryException
+        extends RuntimeException
 {
     public DiscoveryException()
     {

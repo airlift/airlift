@@ -29,12 +29,12 @@ public class TestLoggingConfiguration
     public void testDefaults()
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(LoggingConfiguration.class)
-                        .setConsoleEnabled(true)
-                        .setLogPath(null)
-                        .setMaxSize(new DataSize(100, DataSize.Unit.MEGABYTE))
-                        .setMaxSizeInBytes(new DataSize(100, DataSize.Unit.MEGABYTE).toBytes())
-                        .setMaxHistory(30)
-                        .setLevelsFile(null));
+                .setConsoleEnabled(true)
+                .setLogPath(null)
+                .setMaxSize(new DataSize(100, DataSize.Unit.MEGABYTE))
+                .setMaxSizeInBytes(new DataSize(100, DataSize.Unit.MEGABYTE).toBytes())
+                .setMaxHistory(30)
+                .setLevelsFile(null));
     }
 
     @Test

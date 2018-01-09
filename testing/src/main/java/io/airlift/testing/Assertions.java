@@ -305,7 +305,6 @@ public final class Assertions
         assertNotNull(actual, "actual is null");
         assertNotNull(expected, "expected is null");
 
-
         ImmutableMultiset<?> actualSet = ImmutableMultiset.copyOf(actual);
         ImmutableMultiset<?> expectedSet = ImmutableMultiset.copyOf(expected);
         if (!actualSet.equals(expectedSet)) {
@@ -323,7 +322,6 @@ public final class Assertions
     {
         String message = String.format(format, args);
         Assert.fail(message);
-
     }
 
     private static void fail(Throwable e, String format, Object... args)

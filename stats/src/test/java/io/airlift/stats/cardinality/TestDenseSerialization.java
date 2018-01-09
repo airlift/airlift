@@ -57,7 +57,7 @@ public class TestDenseSerialization
                 .appendByte(12) // p
                 .appendByte(0)  // baseline
                 .appendBytes(buckets) // buckets
-                        // overflows
+                // overflows
                 .appendByte(0)
                 .appendByte(0)
                 .slice();
@@ -77,13 +77,13 @@ public class TestDenseSerialization
                 .appendByte(12) // p
                 .appendByte(0)  // baseline
                 .appendBytes(buckets) // buckets
-                        // overflows
+                // overflows
                 .appendByte(1)
                 .appendByte(0)
-                        // overflow bucket
+                // overflow bucket
                 .appendByte(0x92)
                 .appendByte(0xA)
-                        // overflow value
+                // overflow value
                 .appendByte(2)
                 .slice();
 
@@ -103,15 +103,15 @@ public class TestDenseSerialization
                 .appendByte(12) // p
                 .appendByte(0)  // baseline
                 .appendBytes(buckets) // buckets
-                        // overflows
+                // overflows
                 .appendByte(2)
                 .appendByte(0)
-                        // overflow bucket
+                // overflow bucket
                 .appendByte(146)
                 .appendByte(10)
                 .appendByte(208)
                 .appendByte(15)
-                        // overflow value
+                // overflow value
                 .appendByte(2)
                 .appendByte(4)
                 .slice();
@@ -149,7 +149,7 @@ public class TestDenseSerialization
                 .appendByte(4) // p
                 .appendByte(2) // baseline
                 .appendBytes(buckets) // buckets
-                        // overflows
+                // overflows
                 .appendByte(0)
                 .appendByte(0)
                 .slice();
@@ -174,13 +174,13 @@ public class TestDenseSerialization
                 .appendByte(4) // p
                 .appendByte(2) // baseline
                 .appendBytes(buckets) // buckets
-                        // overflows
+                // overflows
                 .appendByte(1)
                 .appendByte(0)
-                        // overflow bucket
+                // overflow bucket
                 .appendByte(14)
                 .appendByte(0)
-                        // overflow value
+                // overflow value
                 .appendByte(5)
                 .slice();
 
@@ -205,13 +205,13 @@ public class TestDenseSerialization
                 .appendByte(4) // p
                 .appendByte(2) // baseline
                 .appendBytes(buckets) // buckets
-                        // overflows
+                // overflows
                 .appendByte(1)
                 .appendByte(0)
-                        // overflow bucket
+                // overflow bucket
                 .appendByte(14)
                 .appendByte(0)
-                        // overflow value
+                // overflow value
                 .appendByte(5)
                 .slice();
 
@@ -252,10 +252,10 @@ public class TestDenseSerialization
                 .appendByte(indexBitLength) // p
                 .appendByte(10) // baseline
                 .appendBytes(new byte[numberOfBuckets / 2]) // buckets
-                        // overflow bucket
+                // overflow bucket
                 .appendByte(0xFF)
                 .appendByte(0xFF)
-                        // overflow value
+                // overflow value
                 .appendByte(0)
                 .slice();
 
@@ -278,11 +278,11 @@ public class TestDenseSerialization
                 .appendByte(Format.DENSE_V1.getTag()) // format tag
                 .appendByte(indexBitLength) // p
                 .appendByte(2) // baseline
-                .appendBytes(new byte[] { 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) // buckets
-                        // overflow bucket
+                .appendBytes(new byte[] {0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) // buckets
+                // overflow bucket
                 .appendByte(0x01)
                 .appendByte(0x00)
-                        // overflow value
+                // overflow value
                 .appendByte(0)
                 .slice();
 
@@ -310,11 +310,11 @@ public class TestDenseSerialization
                 .appendByte(Format.DENSE_V1.getTag()) // format tag
                 .appendByte(indexBitLength) // p
                 .appendByte(2) // baseline
-                .appendBytes(new byte[] { 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) // buckets
-                        // overflow bucket
+                .appendBytes(new byte[] {0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) // buckets
+                // overflow bucket
                 .appendByte(0x01)
                 .appendByte(0x00)
-                        // overflow value
+                // overflow value
                 .appendByte(3)
                 .slice();
 

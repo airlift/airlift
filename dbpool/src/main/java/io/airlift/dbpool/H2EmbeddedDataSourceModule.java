@@ -97,7 +97,6 @@ public class H2EmbeddedDataSourceModule
         @Inject
         public void setInjector(Injector injector)
         {
-
             this.injector = injector;
         }
 

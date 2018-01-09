@@ -101,7 +101,6 @@ public class MySqlDataSourceModule
         @Inject
         public void setInjector(Injector injector)
         {
-
             this.injector = injector;
         }
 

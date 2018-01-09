@@ -98,7 +98,6 @@ public class TestAnnouncer
         announcer.start();
     }
 
-
     @Test
     public void idempotentDestroy()
             throws Exception

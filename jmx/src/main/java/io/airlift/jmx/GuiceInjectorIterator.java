@@ -25,7 +25,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-class GuiceInjectorIterator implements Iterator<Class<?>>, Iterable<Class<?>>
+class GuiceInjectorIterator
+        implements Iterator<Class<?>>, Iterable<Class<?>>
 {
     private final Set<Key<?>> visited = new HashSet<>();
     private final Iterator<Key<?>> keyIterator;

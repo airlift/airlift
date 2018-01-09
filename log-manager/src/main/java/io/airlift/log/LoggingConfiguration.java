@@ -105,4 +105,3 @@ public class LoggingConfiguration
         return this;
     }
 }
-

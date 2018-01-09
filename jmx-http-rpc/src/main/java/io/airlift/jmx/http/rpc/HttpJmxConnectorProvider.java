@@ -22,7 +22,8 @@ import javax.management.remote.JMXServiceURL;
 import java.net.MalformedURLException;
 import java.util.Map;
 
-public class HttpJmxConnectorProvider implements JMXConnectorProvider
+public class HttpJmxConnectorProvider
+        implements JMXConnectorProvider
 {
     @Override
     public JMXConnector newJMXConnector(JMXServiceURL jmxServiceURL, Map<String, ?> environment)

@@ -98,5 +98,4 @@ public abstract class AbstractTestMultiEventClient
         Assert.assertEquals(memoryEventClient2.getEvents(),
                 ImmutableList.of(event1, event2, event3));
     }
-
 }

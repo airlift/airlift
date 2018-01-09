@@ -52,7 +52,8 @@ public class Request
         this.bodyGenerator = bodyGenerator;
     }
 
-    public static Request.Builder builder() {
+    public static Request.Builder builder()
+    {
         return new Builder();
     }
 
@@ -118,27 +119,33 @@ public class Request
     @Beta
     public static class Builder
     {
-        public static Builder prepareHead() {
+        public static Builder prepareHead()
+        {
             return new Builder().setMethod("HEAD");
         }
 
-        public static Builder prepareGet() {
+        public static Builder prepareGet()
+        {
             return new Builder().setMethod("GET");
         }
 
-        public static Builder preparePost() {
+        public static Builder preparePost()
+        {
             return new Builder().setMethod("POST");
         }
 
-        public static Builder preparePut() {
+        public static Builder preparePut()
+        {
             return new Builder().setMethod("PUT");
         }
 
-        public static Builder prepareDelete() {
+        public static Builder prepareDelete()
+        {
             return new Builder().setMethod("DELETE");
         }
 
-        public static Builder fromRequest(Request request) {
+        public static Builder fromRequest(Request request)
+        {
             Builder requestBuilder = new Builder();
             requestBuilder.setMethod(request.getMethod());
             requestBuilder.setBodyGenerator(request.getBodyGenerator());
@@ -186,7 +193,8 @@ public class Request
             return this;
         }
 
-        public Request build() {
+        public Request build()
+        {
             return new Request(uri, method, headers, bodyGenerator);
         }
     }

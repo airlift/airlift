@@ -25,7 +25,6 @@ import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 
-
 public class TestBootstrap
 {
     @Test
@@ -70,12 +69,12 @@ public class TestBootstrap
     public static class InstanceA
     {
         @Inject
-        public InstanceA(InstanceB b) { }
+        public InstanceA(InstanceB b) {}
     }
 
     public static class InstanceB
     {
         @Inject
-        public InstanceB(InstanceA a) { }
+        public InstanceB(InstanceA a) {}
     }
 }

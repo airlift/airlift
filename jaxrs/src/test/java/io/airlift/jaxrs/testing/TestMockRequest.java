@@ -44,7 +44,7 @@ public class TestMockRequest
     @DataProvider(name = "requestBuilders")
     private Object[][] getRequestBuilders()
     {
-        return new Object[][]{
+        return new Object[][] {
                 {head(), "HEAD", null},
                 {get(), "GET", null},
                 {post(), "POST", null},

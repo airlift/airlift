@@ -70,8 +70,7 @@ public class TestHttpServerConfig
                 .setHttp2InitialSessionReceiveWindowSize(new DataSize(16, MEGABYTE))
                 .setHttp2InputBufferSize(new DataSize(8, KILOBYTE))
                 .setHttp2InitialStreamReceiveWindowSize(new DataSize(16, MEGABYTE))
-                .setHttp2StreamIdleTimeout(new Duration(15, SECONDS))
-        );
+                .setHttp2StreamIdleTimeout(new Duration(15, SECONDS)));
     }
 
     @Test

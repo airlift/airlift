@@ -17,5 +17,5 @@ package io.airlift.configuration;
 
 public enum MyEnum
 {
-    FOO, BAR,BAZ
+    FOO, BAR, BAZ
 }

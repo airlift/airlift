@@ -98,7 +98,6 @@ public class TestQuantileDigest
         assertEquals(digest.getCount(), (double) values.size());
     }
 
-
     @Test
     public void testBasicCompression()
     {
@@ -292,7 +291,6 @@ public class TestQuantileDigest
             assertTrue(Math.abs(bucket.getCount() - value) < 2 * actualMaxError * total);
         }
     }
-
 
     @Test
     public void testQuantileQueryError()
@@ -636,7 +634,6 @@ public class TestQuantileDigest
         assertEquals(b.getCount(), 13.0);
     }
 
-
     @Test
     public void testMergeWithHigherLevel()
             throws Exception
@@ -784,4 +781,3 @@ public class TestQuantileDigest
         digest.validate();
     }
 }
-

@@ -36,21 +36,21 @@ import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 
 /**
- * <p>Implements http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.132.7343, a data structure
- * for approximating quantiles by trading off error with memory requirements.</p>
- *
- * <p>The size of the digest is adjusted dynamically to achieve the error bound and requires
+ * Implements http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.132.7343, a data structure
+ * for approximating quantiles by trading off error with memory requirements.
+ * <p>
+ * The size of the digest is adjusted dynamically to achieve the error bound and requires
  * O(log2(U) / maxError) space, where <em>U</em> is the number of bits needed to represent the
  * domain of the values added to the digest. The error is defined as the discrepancy between the
  * real rank of the value returned in a quantile query and the rank corresponding to the queried
- * quantile.</p>
- *
- * <p>Thus, for a query for quantile <em>q</em> that returns value <em>v</em>, the error is
+ * quantile.
+ * <p>
+ * Thus, for a query for quantile <em>q</em> that returns value <em>v</em>, the error is
  * |rank(v) - q * N| / N, where N is the number of elements added to the digest and rank(v) is the
- * real rank of <em>v</em></p>
- *
- * <p>This class also supports exponential decay. The implementation is based on the ideas laid out
- * in http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.159.3978</p>
+ * real rank of <em>v</em>
+ * <p>
+ * This class also supports exponential decay. The implementation is based on the ideas laid out
+ * in http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.159.3978
  */
 @NotThreadSafe
 public class QuantileDigest
@@ -427,13 +427,13 @@ public class QuantileDigest
     }
 
     /*
-    * Get the exponentially-decayed approximate counts of values in multiple buckets. The elements in
-    * the provided list denote the upper bound each of the buckets and must be sorted in ascending
-    * order.
-    *
-    * The approximate count in each bucket is guaranteed to be within 2 * totalCount * maxError of
-    * the real count.
-    */
+     * Get the exponentially-decayed approximate counts of values in multiple buckets. The elements in
+     * the provided list denote the upper bound each of the buckets and must be sorted in ascending
+     * order.
+     *
+     * The approximate count in each bucket is guaranteed to be within 2 * totalCount * maxError of
+     * the real count.
+     */
     public List<Bucket> getHistogram(List<Long> bucketUpperBounds)
     {
         checkArgument(Ordering.natural().isOrdered(bucketUpperBounds), "buckets must be sorted in increasing order");
@@ -1294,4 +1294,3 @@ public class QuantileDigest
         public static final int HAS_RIGHT = 1 << 1;
     }
 }
-

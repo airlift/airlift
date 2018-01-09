@@ -314,25 +314,25 @@ public class TestConfigAssertions
     }
 
     @Test
-        public void testDeprecatedProperties()
-        {
-            Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
-                    .put("email", "alice@example.com")
-                    .put("home-page", "http://example.com")
-                    .build();
+    public void testDeprecatedProperties()
+    {
+        Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
+                .put("email", "alice@example.com")
+                .put("home-page", "http://example.com")
+                .build();
 
-            Map<String, String> oldProperties = new ImmutableMap.Builder<String, String>()
-                    .put("exchange-id", "alice@example.com")
-                    .put("home-page", "http://example.com")
-                    .build();
+        Map<String, String> oldProperties = new ImmutableMap.Builder<String, String>()
+                .put("exchange-id", "alice@example.com")
+                .put("home-page", "http://example.com")
+                .build();
 
-            Map<String, String> olderProperties = new ImmutableMap.Builder<String, String>()
-                    .put("notes-id", "alice@example.com")
-                    .put("home-page-url", "http://example.com")
-                    .build();
+        Map<String, String> olderProperties = new ImmutableMap.Builder<String, String>()
+                .put("notes-id", "alice@example.com")
+                .put("home-page-url", "http://example.com")
+                .build();
 
-            ConfigAssertions.assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
-        }
+        ConfigAssertions.assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
+    }
 
     @Test
     public void testDeprecatedPropertiesFailUnsupportedProperties()
@@ -485,9 +485,7 @@ public class TestConfigAssertions
                 .setMyEnumOption(null)
                 .setShortOption((short) 0)
                 .setStringOption(null)
-                .setValueClassOption(null)
-
-        );
+                .setValueClassOption(null));
     }
 
     @Test

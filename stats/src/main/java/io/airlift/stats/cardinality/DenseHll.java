@@ -93,8 +93,8 @@ final class DenseHll
             if (bucket >= 0 && value > 0) {
                 checkArgument(bucket <= numberOfBuckets, "Overflow bucket index is out of range");
                 overflows = 1;
-                overflowBuckets = new int[] { bucket };
-                overflowValues = new byte[] { value };
+                overflowBuckets = new int[] {bucket};
+                overflowValues = new byte[] {value};
             }
             else {
                 overflows = 0;

@@ -23,7 +23,7 @@ import javax.inject.Inject;
 public class DependentInstance
 {
     @Inject
-    public DependentInstance() { }
+    public DependentInstance() {}
 
     @PostConstruct
     public void postDependentInstance()

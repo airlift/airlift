@@ -182,7 +182,6 @@ public class ServiceDescriptor
             return this;
         }
 
-
         public ServiceDescriptorBuilder setPool(String pool)
         {
             requireNonNull(pool, "pool is null");
@@ -226,4 +225,3 @@ public class ServiceDescriptor
         }
     }
 }
-

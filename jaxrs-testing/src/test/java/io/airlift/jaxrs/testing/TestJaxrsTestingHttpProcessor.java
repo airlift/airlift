@@ -11,6 +11,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+
 import java.net.URI;
 
 import static io.airlift.http.client.Request.Builder.prepareGet;
@@ -76,9 +77,11 @@ public class TestJaxrsTestingHttpProcessor
         }
     }
 
-    private static class TestingException extends RuntimeException
+    private static class TestingException
+            extends RuntimeException
     {
-        public TestingException(String message) {
+        public TestingException(String message)
+        {
             super(message);
         }
     }

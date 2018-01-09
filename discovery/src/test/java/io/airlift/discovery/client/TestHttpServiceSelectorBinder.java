@@ -54,8 +54,7 @@ public class TestHttpServiceSelectorBinder
                     {
                         discoveryBinder(binder).bindHttpSelector("apple");
                     }
-                }
-        );
+                });
 
         InMemoryDiscoveryClient discoveryClient = injector.getInstance(InMemoryDiscoveryClient.class);
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", "fake://server-http").build()));
@@ -78,8 +77,7 @@ public class TestHttpServiceSelectorBinder
                     {
                         discoveryBinder(binder).bindHttpSelector(serviceType("apple"));
                     }
-                }
-        );
+                });
 
         InMemoryDiscoveryClient discoveryClient = injector.getInstance(InMemoryDiscoveryClient.class);
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", "fake://server-http").build()));
@@ -107,8 +105,7 @@ public class TestHttpServiceSelectorBinder
                     {
                         discoveryBinder(binder).bindHttpSelector("apple");
                     }
-                }
-        );
+                });
 
         InMemoryDiscoveryClient discoveryClient = injector.getInstance(InMemoryDiscoveryClient.class);
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("https", "fake://server-https").build()));
@@ -131,8 +128,7 @@ public class TestHttpServiceSelectorBinder
                     {
                         discoveryBinder(binder).bindHttpSelector("apple");
                     }
-                }
-        );
+                });
 
         InMemoryDiscoveryClient discoveryClient = injector.getInstance(InMemoryDiscoveryClient.class);
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", "fake://server-http").build(),
@@ -156,8 +152,7 @@ public class TestHttpServiceSelectorBinder
                     {
                         discoveryBinder(binder).bindHttpSelector("apple");
                     }
-                }
-        );
+                });
 
         InMemoryDiscoveryClient discoveryClient = injector.getInstance(InMemoryDiscoveryClient.class);
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("foo", "fake://server-https").build()));
@@ -165,7 +160,6 @@ public class TestHttpServiceSelectorBinder
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
         assertEquals(selector.selectHttpService(), ImmutableList.of());
     }
-
 
     @Test
     public void testInvalidUris()
@@ -181,8 +175,7 @@ public class TestHttpServiceSelectorBinder
                     {
                         discoveryBinder(binder).bindHttpSelector("apple");
                     }
-                }
-        );
+                });
 
         InMemoryDiscoveryClient discoveryClient = injector.getInstance(InMemoryDiscoveryClient.class);
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", ":::INVALID:::").build()));

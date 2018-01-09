@@ -38,7 +38,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Objects.requireNonNull;
 
-public class InMemoryDiscoveryClient implements DiscoveryAnnouncementClient, DiscoveryLookupClient
+public class InMemoryDiscoveryClient
+        implements DiscoveryAnnouncementClient, DiscoveryLookupClient
 {
     private final AtomicReference<Set<ServiceDescriptor>> announcements = new AtomicReference<Set<ServiceDescriptor>>(ImmutableSet.<ServiceDescriptor>of());
     private final ConcurrentMap<UUID, ServiceDescriptor> discovered = new MapMaker().makeMap();

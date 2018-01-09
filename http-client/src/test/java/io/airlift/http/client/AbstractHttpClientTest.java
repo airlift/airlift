@@ -277,7 +277,6 @@ public abstract class AbstractHttpClientTest
         executeExceptionRequest(config, request);
     }
 
-
     @Test(expectedExceptions = RuntimeException.class, expectedExceptionsMessageRegExp = ".*port out of range.*")
     public void testBadPort()
             throws Exception
@@ -376,7 +375,7 @@ public abstract class AbstractHttpClientTest
 
     @Test
     public void testQuotedSpace()
-        throws Exception
+            throws Exception
     {
         URI uri = baseURI.resolve("/road/to/nowhere?query=ab%20cd");
         Request request = prepareGet()
@@ -700,7 +699,6 @@ public abstract class AbstractHttpClientTest
             throws Exception
     {
         try (FakeServer fakeServer = new FakeServer(scheme, host, 0, null, true)) {
-
             HttpClientConfig config = createClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
             config.setIdleTimeout(new Duration(5, SECONDS));
@@ -708,7 +706,6 @@ public abstract class AbstractHttpClientTest
             executeRequest(fakeServer, config);
         }
     }
-
 
     @Test(expectedExceptions = {IOException.class, TimeoutException.class})
     public void testConnectReadIncomplete()
@@ -722,7 +719,6 @@ public abstract class AbstractHttpClientTest
             executeRequest(fakeServer, config);
         }
     }
-
 
     @Test(expectedExceptions = {IOException.class, TimeoutException.class})
     public void testConnectReadIncompleteClose()
@@ -816,7 +812,6 @@ public abstract class AbstractHttpClientTest
         private final AtomicReference<Socket> connectionSocket = new AtomicReference<>();
         private final String scheme;
         private final String host;
-
 
         private FakeServer(String scheme, String host, long readBytes, byte[] writeBuffer, boolean closeConnectionImmediately)
                 throws Exception
@@ -977,7 +972,8 @@ public abstract class AbstractHttpClientTest
     }
 
     private static class CustomError
-            extends Error {
+            extends Error
+    {
     }
 
     public static class CapturedException

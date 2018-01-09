@@ -183,7 +183,6 @@ public class ManagedDataSourceTest
         }
         assertEquals(dataSource.getConnectionsActive(), 3);
 
-
         // reduce the max connection count to 2
         dataSource.setMaxConnections(2);
         assertEquals(dataSource.getMaxConnections(), 2);
@@ -214,7 +213,6 @@ public class ManagedDataSourceTest
         connections.add(dataSource.getConnection());
         assertEquals(dataSource.getConnectionsActive(), 2);
 
-
         // verify proper handling of illegal values
         try {
             dataSource.setMaxConnectionWaitMillis(null);
@@ -236,7 +234,6 @@ public class ManagedDataSourceTest
             connection.close();
         }
         assertEquals(dataSource.getConnectionsActive(), 0);
-
     }
 
     @Test
@@ -348,7 +345,6 @@ public class ManagedDataSourceTest
             assertSame(e, mockConnectionPoolDataSource.createException);
         }
         assertEquals(dataSource.getConnectionsActive(), 0);
-
     }
 
     @Test

@@ -37,155 +37,140 @@ import static java.util.Objects.requireNonNull;
 @SuppressWarnings("UnusedDeclaration")
 enum EventDataType
 {
-    STRING(String.class)
-            {
-                public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                        throws IOException
-                {
-                    validateFieldValueType(value, String.class);
-                    jsonGenerator.writeString((String) value);
-                }
-            },
+    STRING(String.class) {
+        public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
+                throws IOException
+        {
+            validateFieldValueType(value, String.class);
+            jsonGenerator.writeString((String) value);
+        }
+    },
 
-    BOOLEAN(Boolean.class)
-            {
-                public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                        throws IOException
-                {
-                    validateFieldValueType(value, Boolean.class);
-                    jsonGenerator.writeBoolean((Boolean) value);
-                }
-            },
+    BOOLEAN(Boolean.class) {
+        public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
+                throws IOException
+        {
+            validateFieldValueType(value, Boolean.class);
+            jsonGenerator.writeBoolean((Boolean) value);
+        }
+    },
 
-    BYTE(Byte.class)
-            {
-                public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                        throws IOException
-                {
-                    validateFieldValueType(value, Byte.class);
-                    jsonGenerator.writeNumber((Byte) value);
-                }
-            },
+    BYTE(Byte.class) {
+        public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
+                throws IOException
+        {
+            validateFieldValueType(value, Byte.class);
+            jsonGenerator.writeNumber((Byte) value);
+        }
+    },
 
-    SHORT(Short.class)
-            {
-                public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                        throws IOException
-                {
-                    validateFieldValueType(value, Short.class);
-                    jsonGenerator.writeNumber((Short) value);
-                }
-            },
+    SHORT(Short.class) {
+        public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
+                throws IOException
+        {
+            validateFieldValueType(value, Short.class);
+            jsonGenerator.writeNumber((Short) value);
+        }
+    },
 
-    INTEGER(Integer.class)
-            {
-                public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                        throws IOException
-                {
-                    validateFieldValueType(value, Integer.class);
-                    jsonGenerator.writeNumber((Integer) value);
-                }
-            },
+    INTEGER(Integer.class) {
+        public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
+                throws IOException
+        {
+            validateFieldValueType(value, Integer.class);
+            jsonGenerator.writeNumber((Integer) value);
+        }
+    },
 
-    LONG(Long.class)
-            {
-                public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                        throws IOException
-                {
-                    validateFieldValueType(value, Long.class);
-                    jsonGenerator.writeNumber((Long) value);
-                }
-            },
+    LONG(Long.class) {
+        public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
+                throws IOException
+        {
+            validateFieldValueType(value, Long.class);
+            jsonGenerator.writeNumber((Long) value);
+        }
+    },
 
-    FLOAT(Float.class)
-            {
-                public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                        throws IOException
-                {
-                    validateFieldValueType(value, Float.class);
-                    jsonGenerator.writeNumber((Float) value);
-                }
-            },
+    FLOAT(Float.class) {
+        public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
+                throws IOException
+        {
+            validateFieldValueType(value, Float.class);
+            jsonGenerator.writeNumber((Float) value);
+        }
+    },
 
-    DOUBLE(Double.class)
-            {
-                public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                        throws IOException
-                {
-                    validateFieldValueType(value, Double.class);
-                    jsonGenerator.writeNumber((Double) value);
-                }
-            },
+    DOUBLE(Double.class) {
+        public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
+                throws IOException
+        {
+            validateFieldValueType(value, Double.class);
+            jsonGenerator.writeNumber((Double) value);
+        }
+    },
 
-    BIG_DECIMAL(BigDecimal.class)
-            {
-                public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                        throws IOException
-                {
-                    validateFieldValueType(value, BigDecimal.class);
-                    jsonGenerator.writeNumber((BigDecimal) value);
-                }
-            },
+    BIG_DECIMAL(BigDecimal.class) {
+        public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
+                throws IOException
+        {
+            validateFieldValueType(value, BigDecimal.class);
+            jsonGenerator.writeNumber((BigDecimal) value);
+        }
+    },
 
-    BIG_INTEGER(BigInteger.class)
-            {
-                public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                        throws IOException
-                {
-                    validateFieldValueType(value, BigInteger.class);
-                    jsonGenerator.writeNumber(new BigDecimal((BigInteger) value));
-                }
-            },
+    BIG_INTEGER(BigInteger.class) {
+        public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
+                throws IOException
+        {
+            validateFieldValueType(value, BigInteger.class);
+            jsonGenerator.writeNumber(new BigDecimal((BigInteger) value));
+        }
+    },
 
-    INSTANT(Instant.class)
-            {
-                public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                        throws IOException
-                {
-                    validateFieldValueType(value, Instant.class);
-                    jsonGenerator.writeString(ISO_INSTANT.format((Instant) value));
-                }
-            },
+    INSTANT(Instant.class) {
+        public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
+                throws IOException
+        {
+            validateFieldValueType(value, Instant.class);
+            jsonGenerator.writeString(ISO_INSTANT.format((Instant) value));
+        }
+    },
 
-    DATETIME(DateTime.class)
-            {
-                public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                        throws IOException
-                {
-                    validateFieldValueType(value, DateTime.class);
-                    jsonGenerator.writeString(ISO_DATETIME_FORMAT.print((DateTime) value));
-                }
-            },
+    DATETIME(DateTime.class) {
+        public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
+                throws IOException
+        {
+            validateFieldValueType(value, DateTime.class);
+            jsonGenerator.writeString(ISO_DATETIME_FORMAT.print((DateTime) value));
+        }
+    },
 
-    ENUM(Enum.class)
-            {
-                public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                        throws IOException
-                {
-                    validateFieldValueType(value, Enum.class);
-                    jsonGenerator.writeString(value.toString());
-                }
-            },
+    ENUM(Enum.class) {
+        public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
+                throws IOException
+        {
+            validateFieldValueType(value, Enum.class);
+            jsonGenerator.writeString(value.toString());
+        }
+    },
 
-    INET_ADDRESS(InetAddress.class)
-            {
-                public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                        throws IOException
-                {
-                    validateFieldValueType(value, InetAddress.class);
-                    jsonGenerator.writeString(((InetAddress) value).getHostAddress());
-                }
-            },
+    INET_ADDRESS(InetAddress.class) {
+        public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
+                throws IOException
+        {
+            validateFieldValueType(value, InetAddress.class);
+            jsonGenerator.writeString(((InetAddress) value).getHostAddress());
+        }
+    },
 
-    UUID(java.util.UUID.class)
-            {
-                public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                        throws IOException
-                {
-                    validateFieldValueType(value, java.util.UUID.class);
-                    jsonGenerator.writeString(value.toString());
-                }
-            };
+    UUID(java.util.UUID.class) {
+        public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
+                throws IOException
+        {
+            validateFieldValueType(value, java.util.UUID.class);
+            jsonGenerator.writeString(value.toString());
+        }
+    };
 
     private static final DateTimeFormatter ISO_DATETIME_FORMAT = ISODateTimeFormat.dateTime().withZone(DateTimeZone.UTC);
 

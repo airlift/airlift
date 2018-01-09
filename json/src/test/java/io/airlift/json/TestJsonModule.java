@@ -369,7 +369,7 @@ public class TestJsonModule
         }
     }
 
-    public final static class SuperDuperNameListDeserializer
+    public static final class SuperDuperNameListDeserializer
             extends StdScalarDeserializer<SuperDuperNameList>
     {
         public SuperDuperNameListDeserializer()

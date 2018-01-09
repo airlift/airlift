@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -276,13 +276,14 @@ public class CacheControl
         return string;
     }
 
-    private static void handleFields(List<String> fields, StringBuilder buffer) {
+    private static void handleFields(List<String> fields, StringBuilder buffer)
+    {
         if (fields.isEmpty()) {
             return;
         }
         buffer.append('=');
         buffer.append('\"');
-        for (Iterator<String> it = fields.iterator(); it.hasNext();) {
+        for (Iterator<String> it = fields.iterator(); it.hasNext(); ) {
             buffer.append(it.next());
             if (it.hasNext()) {
                 buffer.append(',');

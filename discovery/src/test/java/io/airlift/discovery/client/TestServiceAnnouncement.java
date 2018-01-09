@@ -85,18 +85,15 @@ public class TestServiceAnnouncement
     @Test
     public void testEquivalence()
     {
-
         equivalenceTester()
                 .addEquivalentGroup(serviceAnnouncement("foo")
                         .addProperty("http", "http://localhost:8080")
                         .addProperty("jmx", "jmx://localhost:1234")
-                        .build()
-                )
+                        .build())
                 .addEquivalentGroup(serviceAnnouncement("foo")
                         .addProperty("http", "http://localhost:8080")
                         .addProperty("jmx", "jmx://localhost:1234")
-                        .build()
-                )
+                        .build())
                 .check();
     }
 }

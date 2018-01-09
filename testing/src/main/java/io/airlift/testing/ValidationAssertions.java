@@ -51,7 +51,7 @@ public class ValidationAssertions
     public static void assertValidates(Object object, String message)
     {
         assertTrue(validate(object).isEmpty(),
-                   format("%sexpected:<%s> to pass validation", toMessageString(message), object));
+                format("%sexpected:<%s> to pass validation", toMessageString(message), object));
     }
 
     public static <T> void assertFailsValidation(T object, String field, String expectedErrorMessage, Class<? extends Annotation> annotation, String message)
@@ -61,29 +61,27 @@ public class ValidationAssertions
         for (ConstraintViolation<T> violation : violations) {
             if (annotation.isInstance(violation.getConstraintDescriptor().getAnnotation()) &&
                     violation.getPropertyPath().toString().equals(field)) {
-
                 if (!violation.getMessage().equals(expectedErrorMessage)) {
                     fail(format("%sexpected %s.%s for <%s> to fail validation for %s with message '%s', but message was '%s'",
-                                toMessageString(message),
-                                object.getClass().getName(),
-                                field,
-                                message,
-                                annotation.getName(),
-                                expectedErrorMessage,
-                                violation.getMessage()));
-
+                            toMessageString(message),
+                            object.getClass().getName(),
+                            field,
+                            message,
+                            annotation.getName(),
+                            expectedErrorMessage,
+                            violation.getMessage()));
                 }
                 return;
             }
         }
 
         fail(format("%sexpected %s.%s for <%s> to fail validation for %s with message '%s'",
-                    toMessageString(message),
-                    object.getClass().getName(),
-                    field,
-                    object,
-                    annotation.getName(),
-                    expectedErrorMessage));
+                toMessageString(message),
+                object.getClass().getName(),
+                field,
+                object,
+                annotation.getName(),
+                expectedErrorMessage));
     }
 
     public static <T> void assertFailsValidation(T object, String field, String expectedErrorMessage, Class<? extends Annotation> annotation)

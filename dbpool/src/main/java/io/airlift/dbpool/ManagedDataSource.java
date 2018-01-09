@@ -37,7 +37,8 @@ import java.util.logging.Logger;
 import static io.airlift.units.Duration.nanosSince;
 import static java.lang.Math.ceil;
 
-public abstract class ManagedDataSource implements DataSource
+public abstract class ManagedDataSource
+        implements DataSource
 {
     private final ManagedSemaphore semaphore;
     private final AtomicInteger maxConnectionWaitMillis = new AtomicInteger(100);
@@ -210,7 +211,6 @@ public abstract class ManagedDataSource implements DataSource
     {
     }
 
-
     @Override
     public boolean isWrapperFor(Class<?> iface)
             throws SQLException
@@ -263,7 +263,8 @@ public abstract class ManagedDataSource implements DataSource
         }
     }
 
-    protected class NoPoolConnectionEventListener implements ConnectionEventListener
+    protected class NoPoolConnectionEventListener
+            implements ConnectionEventListener
     {
         private final long checkoutTime = System.nanoTime();
         private final AtomicBoolean returned = new AtomicBoolean();
@@ -316,5 +317,4 @@ public abstract class ManagedDataSource implements DataSource
             }
         }
     }
-
 }

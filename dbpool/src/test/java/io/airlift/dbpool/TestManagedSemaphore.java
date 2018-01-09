@@ -59,7 +59,6 @@ public class TestManagedSemaphore
         semaphore.release();
         assertPermits(semaphore, 1, 0);
 
-
         //
         // tryAcquire(long timeout, TimeUnit unit)
         //
@@ -87,7 +86,6 @@ public class TestManagedSemaphore
         // release it
         semaphore.release();
         assertPermits(semaphore, 1, 0);
-
 
         //
         // acquireUninterruptibly()
@@ -143,7 +141,6 @@ public class TestManagedSemaphore
         semaphore.release(2);
         assertPermits(semaphore, 3, 0);
 
-
         //
         // tryAcquire(long timeout, TimeUnit unit)
         //
@@ -171,7 +168,6 @@ public class TestManagedSemaphore
         // release two
         semaphore.release(2);
         assertPermits(semaphore, 3, 0);
-
 
         //
         // acquireUninterruptibly()

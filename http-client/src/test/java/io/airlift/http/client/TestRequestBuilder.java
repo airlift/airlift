@@ -57,10 +57,10 @@ public class TestRequestBuilder
     private static Request createRequest()
     {
         return prepareGet()
-                    .setUri(URI.create("http://example.com"))
-                    .addHeader("newheader", "withvalue")
-                    .addHeader("anotherheader", "anothervalue")
-                    .setBodyGenerator(NULL_BODY_GENERATOR)
-                    .build();
+                .setUri(URI.create("http://example.com"))
+                .addHeader("newheader", "withvalue")
+                .addHeader("anotherheader", "anothervalue")
+                .setBodyGenerator(NULL_BODY_GENERATOR)
+                .build();
     }
 }

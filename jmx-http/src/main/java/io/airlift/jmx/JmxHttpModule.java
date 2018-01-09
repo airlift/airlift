@@ -46,7 +46,8 @@ import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 import static io.airlift.json.JsonBinder.jsonBinder;
 
 @Beta
-public class JmxHttpModule implements Module
+public class JmxHttpModule
+        implements Module
 {
     @Override
     public void configure(Binder binder)
@@ -96,7 +97,6 @@ public class JmxHttpModule implements Module
             o.set("items", createSchemaNode("object", true));
             return o;
         }
-
     }
 
     public static class CompositeDataSerializer

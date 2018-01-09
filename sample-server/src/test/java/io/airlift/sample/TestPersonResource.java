@@ -81,10 +81,8 @@ public class TestPersonResource
 
         assertEquals(store.get("foo"), new Person("foo@example.com", "Mr Foo"));
 
-
         assertEquals(eventClient.getEvents(), ImmutableList.of(
-                personAdded("foo", new Person("foo@example.com", "Mr Foo"))
-        ));
+                personAdded("foo", new Person("foo@example.com", "Mr Foo"))));
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -114,8 +112,7 @@ public class TestPersonResource
 
         assertEquals(eventClient.getEvents(), ImmutableList.of(
                 personAdded("foo", new Person("foo@example.com", "Mr Foo")),
-                personUpdated("foo", new Person("bar@example.com", "Mr Bar"))
-        ));
+                personUpdated("foo", new Person("bar@example.com", "Mr Bar"))));
     }
 
     @Test
@@ -131,8 +128,7 @@ public class TestPersonResource
 
         assertEquals(eventClient.getEvents(), ImmutableList.of(
                 personAdded("foo", new Person("foo@example.com", "Mr Foo")),
-                personRemoved("foo", new Person("foo@example.com", "Mr Foo"))
-        ));
+                personRemoved("foo", new Person("foo@example.com", "Mr Foo"))));
     }
 
     @Test

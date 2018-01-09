@@ -180,8 +180,7 @@ public class TestServer
         assertEquals(store.get("foo"), new Person("foo@example.com", "Mr Foo"));
 
         assertEquals(eventClient.getEvents(), ImmutableList.of(
-                personAdded("foo", new Person("foo@example.com", "Mr Foo"))
-        ));
+                personAdded("foo", new Person("foo@example.com", "Mr Foo"))));
     }
 
     @Test
@@ -203,8 +202,7 @@ public class TestServer
 
         assertEquals(eventClient.getEvents(), ImmutableList.of(
                 personAdded("foo", new Person("foo@example.com", "Mr Foo")),
-                personRemoved("foo", new Person("foo@example.com", "Mr Foo"))
-        ));
+                personRemoved("foo", new Person("foo@example.com", "Mr Foo"))));
     }
 
     @Test

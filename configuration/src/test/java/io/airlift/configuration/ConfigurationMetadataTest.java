@@ -37,23 +37,19 @@ public class ConfigurationMetadataTest
         equivalenceTester()
                 .addEquivalentGroup(
                         ConfigurationMetadata.getConfigurationMetadata(SetterSubConfigClass.class),
-                        ConfigurationMetadata.getConfigurationMetadata(SetterSubConfigClass.class)
-                )
+                        ConfigurationMetadata.getConfigurationMetadata(SetterSubConfigClass.class))
                 .addEquivalentGroup(
                         ConfigurationMetadata.getConfigurationMetadata(SetterConfigClass.class),
-                        ConfigurationMetadata.getConfigurationMetadata(SetterConfigClass.class)
-                )
+                        ConfigurationMetadata.getConfigurationMetadata(SetterConfigClass.class))
                 .check();
 
         equivalenceTester()
                 .addEquivalentGroup(
                         ConfigurationMetadata.getConfigurationMetadata(SetterSubConfigClass.class).getAttributes().get("Value"),
-                        ConfigurationMetadata.getConfigurationMetadata(SetterSubConfigClass.class).getAttributes().get("Value")
-                )
+                        ConfigurationMetadata.getConfigurationMetadata(SetterSubConfigClass.class).getAttributes().get("Value"))
                 .addEquivalentGroup(
                         ConfigurationMetadata.getConfigurationMetadata(SetterConfigClass.class).getAttributes().get("Value"),
-                        ConfigurationMetadata.getConfigurationMetadata(SetterConfigClass.class).getAttributes().get("Value")
-                )
+                        ConfigurationMetadata.getConfigurationMetadata(SetterConfigClass.class).getAttributes().get("Value"))
                 .check();
     }
 
@@ -122,8 +118,7 @@ public class ConfigurationMetadataTest
             ConfigurationMetadata<?> metadata = ConfigurationMetadata.getValidConfigurationMetadata(SetterNoGetterConfigClass.class, monitor);
             fail("Expected ConfigurationException");
         }
-        catch (ConfigurationException e)
-        {
+        catch (ConfigurationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
             monitor.assertMatchingErrorRecorded("No getter");
@@ -353,7 +348,6 @@ public class ConfigurationMetadataTest
         monitor.assertMatchingErrorRecorded("@Config method", "setValue", "is not public");
     }
 
-
     @Test
     public void testIsMethodWithParameterClass()
             throws Exception
@@ -468,7 +462,7 @@ public class ConfigurationMetadataTest
 
     @Test
     public void testCurrentAndLegacyConfigOnGetterClass()
-        throws Exception
+            throws Exception
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(CurrentAndLegacyConfigOnGetterClass.class, monitor);
@@ -479,7 +473,7 @@ public class ConfigurationMetadataTest
 
     @Test
     public void testCurrentAndLegacyConfigOnSetterClass()
-        throws Exception
+            throws Exception
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(CurrentAndLegacyConfigOnSetterClass.class, monitor);
@@ -493,7 +487,7 @@ public class ConfigurationMetadataTest
 
     @Test
     public void testCurrentConfigWithReplacedByClass()
-        throws Exception
+            throws Exception
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(CurrentConfigWithReplacedByClass.class, monitor);
@@ -504,7 +498,7 @@ public class ConfigurationMetadataTest
 
     @Test
     public void testLegacyConfigOnGetterClass()
-        throws Exception
+            throws Exception
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnGetterClass.class, monitor);
@@ -516,7 +510,7 @@ public class ConfigurationMetadataTest
 
     @Test
     public void testLegacyConfigOnSetterClass()
-        throws Exception
+            throws Exception
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnSetterClass.class, monitor);
@@ -527,7 +521,7 @@ public class ConfigurationMetadataTest
 
     @Test
     public void testLegacyConfigOnDeprecatedSetterClass()
-        throws Exception
+            throws Exception
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnDeprecatedSetterClass.class, monitor);
@@ -537,7 +531,7 @@ public class ConfigurationMetadataTest
 
     @Test
     public void testLegacyConfigOnNonDeprecatedSetterClass()
-        throws Exception
+            throws Exception
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnNonDeprecatedSetterClass.class, monitor);
@@ -548,13 +542,12 @@ public class ConfigurationMetadataTest
 
     @Test
     public void testMultipleLegacyConfigClass()
-        throws Exception
+            throws Exception
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(MultipleLegacyConfigClass.class, monitor);
         Map<String, Set<String>> expectedAttributes = new HashMap<>();
         expectedAttributes.put("Value", ImmutableSet.of("legacy1", "legacy2", "value"));
-
 
         verifyMetaData(metadata, MultipleLegacyConfigClass.class, "description", false, expectedAttributes);
         monitor.assertNumberOfErrors(0);
@@ -664,7 +657,6 @@ public class ConfigurationMetadataTest
         monitor.assertNumberOfWarnings(0);
     }
 
-
     @Test
     public void testDeprecatedConfigOnSetterOnlyClass()
             throws Exception
@@ -680,7 +672,6 @@ public class ConfigurationMetadataTest
         monitor.assertNumberOfWarnings(0);
         monitor.assertMatchingErrorRecorded("getDeprecated", "setDeprecated", "must be @Deprecated together");
     }
-
 
     @Test
     public void testDeprecatedConfigOnGetterOnlyClass()
@@ -824,12 +815,13 @@ public class ConfigurationMetadataTest
 
         if (metadata.getConstructor() != null) {
             Assert.assertEquals(metadata.getConstructor(), configClass.getDeclaredConstructor());
-        } else {
+        }
+        else {
             try {
                 configClass.getDeclaredConstructor();
                 Assert.fail(String.format("Expected configClass [%s] not to have a constructor", configClass.getName()));
-            } catch (NoSuchMethodException expected) {
-
+            }
+            catch (NoSuchMethodException expected) {
             }
         }
 
@@ -871,7 +863,8 @@ public class ConfigurationMetadataTest
         }
     }
 
-    public static class SetterSubConfigClass extends SetterConfigClass
+    public static class SetterSubConfigClass
+            extends SetterConfigClass
     {
     }
 
@@ -905,7 +898,8 @@ public class ConfigurationMetadataTest
         public void setValue(String value);
     }
 
-    public static class SetterInterfaceImpl implements SetterInterface
+    public static class SetterInterfaceImpl
+            implements SetterInterface
     {
         private String value;
 
@@ -928,7 +922,7 @@ public class ConfigurationMetadataTest
         }
     }
 
-    public static abstract class AbstractClass
+    public abstract static class AbstractClass
     {
         private String value;
 
@@ -1269,7 +1263,6 @@ public class ConfigurationMetadataTest
         {
             this.value = Integer.toString(value);
         }
-
     }
 
     public static class CurrentAndLegacyConfigOnGetterClass
@@ -1466,21 +1459,21 @@ public class ConfigurationMetadataTest
     }
 
     public static class EmptyStringInArrayLegacyConfigClass
-     {
-         private String value;
+    {
+        private String value;
 
-         public String getValue()
-         {
-             return value;
-         }
+        public String getValue()
+        {
+            return value;
+        }
 
-         @Config("value")
-         @LegacyConfig({"foo", ""})
-         public void setValue(String value)
-         {
-             this.value = value;
-         }
-     }
+        @Config("value")
+        @LegacyConfig({"foo", ""})
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+    }
 
     public static class LegacyConfigDuplicatesConfigClass
     {

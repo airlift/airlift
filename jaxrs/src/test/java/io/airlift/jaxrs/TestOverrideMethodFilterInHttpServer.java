@@ -116,7 +116,6 @@ public class TestOverrideMethodFilterInHttpServer
         assertFalse(resource.getCalled(), "GET");
     }
 
-
     @Test
     public void testPostViaQueryParam()
             throws Exception
@@ -153,7 +152,6 @@ public class TestOverrideMethodFilterInHttpServer
         assertFalse(resource.getCalled(), "GET");
     }
 
-
     @Test
     public void testPostViaHeader()
             throws Exception
@@ -165,7 +163,6 @@ public class TestOverrideMethodFilterInHttpServer
         assertFalse(resource.putCalled(), "PUT");
         assertFalse(resource.getCalled(), "GET");
     }
-
 
     private void assertNonOverridableMethod(Request request)
             throws IOException, ExecutionException, InterruptedException

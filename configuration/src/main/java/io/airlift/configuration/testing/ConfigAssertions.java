@@ -266,7 +266,6 @@ public final class ConfigAssertions
             Set<Method> invalidInvocations = new HashSet<>(invokedMethods);
             invalidInvocations.removeAll(validSetterMethods);
             Assert.fail("Invoked non-attribute setter methods: " + invalidInvocations);
-
         }
         assertDefaults(attributeValues, configClass);
     }
@@ -335,7 +334,6 @@ public final class ConfigAssertions
     {
         $$RecordedConfigData<T> $$getRecordedConfig();
     }
-
 
     private static <T> T newInstance(Class<T> configClass, Map<String, String> properties)
     {

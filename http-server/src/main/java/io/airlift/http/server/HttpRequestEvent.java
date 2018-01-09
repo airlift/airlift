@@ -118,8 +118,7 @@ public class HttpRequestEvent
                 response.getHeader("Content-Type"),
                 timeToDispatch,
                 timeToFirstByte,
-                timeToLastByte
-        );
+                timeToLastByte);
     }
 
     private final Instant timeStamp;

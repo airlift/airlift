@@ -229,7 +229,6 @@ public class TestAssertions
         failEqualsIgnoreOrder(Arrays.asList(1, 2, 3), Arrays.asList(1, 2, 3, 4));
     }
 
-
     private void passEqualsIgnoreOrder(Iterable<?> actual, Iterable<?> expected)
     {
         Assertions.assertEqualsIgnoreOrder(actual, expected);
@@ -493,9 +492,9 @@ public class TestAssertions
         }
     }
 
-    public static class SuperComparable<T extends Comparable<T>> implements Comparable<SuperComparable<T>>
+    public static class SuperComparable<T extends Comparable<T>>
+            implements Comparable<SuperComparable<T>>
     {
-
         public static <T extends Comparable<T>> SuperComparable<T> createSuperComparable(T value)
         {
             return new SuperComparable<T>(value);
@@ -521,7 +520,8 @@ public class TestAssertions
         }
     }
 
-    public static class SubComparable<T extends Comparable<T>> extends SuperComparable<T>
+    public static class SubComparable<T extends Comparable<T>>
+            extends SuperComparable<T>
     {
         public static <T extends Comparable<T>> SubComparable<T> createSubComparable(T value)
         {
@@ -542,7 +542,6 @@ public class TestAssertions
             }
             return -value;
         }
-
 
         @Override
         public String toString()

@@ -75,12 +75,12 @@ final class ExponentiallyDecayingSample
     /**
      * Creates a new {@link ExponentiallyDecayingSample}.
      *
-     * @param reservoirSize the number of samples to keep in the sampling
-     *                      reservoir
+     * @param reservoirSize the number of samples to keep in the sampling reservoir
      * @param alpha the exponential decay factor; the higher this is, the more
-     *              biased the sample will be towards newer values
+     * biased the sample will be towards newer values
      */
-    public ExponentiallyDecayingSample(int reservoirSize, double alpha) {
+    public ExponentiallyDecayingSample(int reservoirSize, double alpha)
+    {
         this.values = new ConcurrentSkipListMap<Double, Long>();
         this.lock = new ReentrantReadWriteLock();
         this.alpha = alpha;
@@ -88,18 +88,21 @@ final class ExponentiallyDecayingSample
         clear();
     }
 
-    public void clear() {
+    public void clear()
+    {
         values.clear();
         count.set(0);
         this.startTime = tick();
         nextScaleTime.set(System.nanoTime() + RESCALE_THRESHOLD);
     }
 
-    public int size() {
+    public int size()
+    {
         return (int) min(reservoirSize, count.get());
     }
 
-    public void update(long value) {
+    public void update(long value)
+    {
         update(value, tick());
     }
 
@@ -109,14 +112,16 @@ final class ExponentiallyDecayingSample
      * @param value the value to be added
      * @param timestamp the epoch timestamp of {@code value} in seconds
      */
-    public void update(long value, long timestamp) {
+    public void update(long value, long timestamp)
+    {
         lockForRegularUsage();
         try {
             final double priority = weight(timestamp - startTime) / random();
             final long newCount = count.incrementAndGet();
             if (newCount <= reservoirSize) {
                 values.put(priority, value);
-            } else {
+            }
+            else {
                 Double first = values.firstKey();
                 if (first < priority) {
                     if (values.putIfAbsent(priority, value) == null) {
@@ -127,7 +132,8 @@ final class ExponentiallyDecayingSample
                     }
                 }
             }
-        } finally {
+        }
+        finally {
             unlockForRegularUsage();
         }
 
@@ -138,18 +144,24 @@ final class ExponentiallyDecayingSample
         }
     }
 
-    public List<Long> values() {
+    public List<Long> values()
+    {
         lockForRegularUsage();
         try {
             return new ArrayList<Long>(values.values());
-        } finally {
+        }
+        finally {
             unlockForRegularUsage();
         }
     }
 
-    private static long tick() { return TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()); }
+    private static long tick()
+    {
+        return TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
+    }
 
-    private double weight(long t) {
+    private double weight(long t)
+    {
         return exp(alpha * t);
     }
 
@@ -171,7 +183,8 @@ final class ExponentiallyDecayingSample
      * landmark L′ (and then use this new L′ at query time). This can be done with
      * a linear pass over whatever data structure is being used."
      */
-    private void rescale(long now, long next) {
+    private void rescale(long now, long next)
+    {
         if (nextScaleTime.compareAndSet(next, now + RESCALE_THRESHOLD)) {
             lockForRescale();
             try {
@@ -182,25 +195,30 @@ final class ExponentiallyDecayingSample
                     final Long value = values.remove(key);
                     values.put(key * exp(-alpha * (startTime - oldStartTime)), value);
                 }
-            } finally {
+            }
+            finally {
                 unlockForRescale();
             }
         }
     }
 
-    private void unlockForRescale() {
+    private void unlockForRescale()
+    {
         lock.writeLock().unlock();
     }
 
-    private void lockForRescale() {
+    private void lockForRescale()
+    {
         lock.writeLock().lock();
     }
 
-    private void lockForRegularUsage() {
+    private void lockForRegularUsage()
+    {
         lock.readLock().lock();
     }
 
-    private void unlockForRegularUsage() {
+    private void unlockForRegularUsage()
+    {
         lock.readLock().unlock();
     }
 
@@ -232,5 +250,4 @@ final class ExponentiallyDecayingSample
 
         return scores;
     }
-
 }

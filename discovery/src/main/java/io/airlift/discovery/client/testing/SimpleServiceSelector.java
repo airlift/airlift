@@ -31,7 +31,8 @@ import java.util.List;
 import static io.airlift.concurrent.MoreFutures.getFutureValue;
 import static java.util.Objects.requireNonNull;
 
-public class SimpleServiceSelector implements ServiceSelector
+public class SimpleServiceSelector
+        implements ServiceSelector
 {
     private static final Logger log = Logger.get(SimpleServiceSelector.class);
 

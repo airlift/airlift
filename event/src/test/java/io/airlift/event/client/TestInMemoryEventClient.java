@@ -17,7 +17,8 @@ package io.airlift.event.client;
 
 import org.testng.annotations.BeforeMethod;
 
-public class TestInMemoryEventClient extends AbstractTestInMemoryEventClient
+public class TestInMemoryEventClient
+        extends AbstractTestInMemoryEventClient
 {
     @BeforeMethod
     public void setup()

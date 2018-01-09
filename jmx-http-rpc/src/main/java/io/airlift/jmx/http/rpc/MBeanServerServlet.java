@@ -36,7 +36,8 @@ import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 import static javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 
-public class MBeanServerServlet extends HttpServlet
+public class MBeanServerServlet
+        extends HttpServlet
 {
     private static final String BASE_PATH = "/v1/jmx/mbeanServer/";
     private final MBeanServer mbeanServer;

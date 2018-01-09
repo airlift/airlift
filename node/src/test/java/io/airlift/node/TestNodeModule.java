@@ -80,8 +80,7 @@ public class TestNodeModule
                 .put("node.location", location)
                 .put("node.binary-spec", binarySpec)
                 .put("node.config-spec", configSpec)
-                .build()
-        );
+                .build());
 
         Injector injector = Guice.createInjector(new NodeModule(), new ConfigurationModule(configFactory));
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);

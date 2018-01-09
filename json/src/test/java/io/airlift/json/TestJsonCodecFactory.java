@@ -104,7 +104,7 @@ public class TestJsonCodecFactory
     public void testTypeLiteralMap()
             throws Exception
     {
-        JsonCodec<Map<String, Person>> jsonCodec = jsonCodecFactory.jsonCodec(new TypeToken<Map<String,Person>>() {});
+        JsonCodec<Map<String, Person>> jsonCodec = jsonCodecFactory.jsonCodec(new TypeToken<Map<String, Person>>() {});
 
         validateMapCodec(jsonCodec);
     }

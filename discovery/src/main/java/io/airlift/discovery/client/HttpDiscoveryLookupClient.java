@@ -47,7 +47,8 @@ import static io.airlift.http.client.Request.Builder.prepareGet;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
-public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
+public class HttpDiscoveryLookupClient
+        implements DiscoveryLookupClient
 {
     private final String environment;
     private final Provider<URI> discoveryServiceURI;
@@ -173,7 +174,8 @@ public class HttpDiscoveryLookupClient implements DiscoveryLookupClient
         return DEFAULT_DELAY;
     }
 
-    private class DiscoveryResponseHandler<T> implements ResponseHandler<T, DiscoveryException>
+    private class DiscoveryResponseHandler<T>
+            implements ResponseHandler<T, DiscoveryException>
     {
         private final String name;
         private final URI uri;

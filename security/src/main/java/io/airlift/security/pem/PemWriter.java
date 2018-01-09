@@ -12,7 +12,7 @@ public class PemWriter
     {
         return encodePem("PRIVATE KEY", privateKey.getEncoded());
     }
-    
+
     public static String writeCertificate(X509Certificate certificate)
             throws CertificateEncodingException
     {

@@ -21,7 +21,8 @@ import java.net.URI;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 
-public class StaticAnnouncementHttpServerInfoImpl implements AnnouncementHttpServerInfo
+public class StaticAnnouncementHttpServerInfoImpl
+        implements AnnouncementHttpServerInfo
 {
     private final URI httpUri;
     private final URI httpExternalUri;
@@ -33,11 +34,11 @@ public class StaticAnnouncementHttpServerInfoImpl implements AnnouncementHttpSer
     {
         Preconditions.checkArgument(
                 (httpUri == null && httpExternalUri == null) ||
-                (httpUri != null && httpExternalUri != null),
+                        (httpUri != null && httpExternalUri != null),
                 "httpUri and httpExternalUri must both be null or both non-null");
         Preconditions.checkArgument(
                 (httpsUri == null && httpsExternalUri == null) ||
-                (httpsUri != null && httpsExternalUri != null),
+                        (httpsUri != null && httpsExternalUri != null),
                 "httpsUri and httpsExternalUri must both be null or both non-null");
 
         this.httpUri = httpUri;

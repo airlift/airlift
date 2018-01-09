@@ -26,7 +26,7 @@ import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 public class EventSubmissionFailedException
-    extends RuntimeException
+        extends RuntimeException
 {
     private final Map<URI, Throwable> causes;
 

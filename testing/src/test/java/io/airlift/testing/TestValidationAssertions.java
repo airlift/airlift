@@ -112,7 +112,6 @@ public class TestValidationAssertions
         assertTrue(ok, "Expected AssertionError");
     }
 
-
     private void verifyExceptionMessage(AssertionError e, String message, Object value, String property, Class<? extends Annotation> annotation)
     {
         Assert.assertNotNull(e);

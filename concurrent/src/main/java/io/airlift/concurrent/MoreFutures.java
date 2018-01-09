@@ -41,7 +41,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public final class MoreFutures
 {
-    private MoreFutures() { }
+    private MoreFutures() {}
 
     /**
      * Cancels the destination Future if the source Future is cancelled.
@@ -355,9 +355,9 @@ public final class MoreFutures
         }
 
         return unmodifiableFuture(allDoneFuture.thenApply(v ->
-                futures.stream().
-                        map(CompletableFuture::join).
-                        collect(Collectors.<V>toList())));
+                futures.stream()
+                        .map(CompletableFuture::join)
+                        .collect(Collectors.<V>toList())));
     }
 
     /**

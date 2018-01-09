@@ -104,7 +104,8 @@ public class DiscoveryBinder
         binder.bind(HttpServiceSelector.class).annotatedWith(serviceType).toProvider(new HttpServiceSelectorProvider(serviceType.value())).in(Scopes.SINGLETON);
     }
 
-    static class HttpAnnouncementProvider implements Provider<ServiceAnnouncement>
+    static class HttpAnnouncementProvider
+            implements Provider<ServiceAnnouncement>
     {
         private final ServiceAnnouncementBuilder builder;
         private AnnouncementHttpServerInfo httpServerInfo;

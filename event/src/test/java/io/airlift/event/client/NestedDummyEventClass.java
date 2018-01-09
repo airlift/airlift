@@ -74,7 +74,7 @@ public class NestedDummyEventClass
     }
 
     @EventField
-    public Multimap<String,String> getNamedStringList()
+    public Multimap<String, String> getNamedStringList()
     {
         ImmutableMultimap.Builder<String, String> builder = ImmutableMultimap.builder();
         for (String s : strings) {

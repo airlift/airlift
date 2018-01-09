@@ -100,8 +100,7 @@ public abstract class AbstractTestDiscoveryModule
                         discoveryBinder(binder).bindHttpSelector("carrot");
                         discoveryBinder(binder).bindHttpSelector("grape");
                     }
-                }
-        );
+                });
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
         assertEquals(getOnlyElement(selector.selectHttpService()), URI.create("http://127.0.0.1:4444"));

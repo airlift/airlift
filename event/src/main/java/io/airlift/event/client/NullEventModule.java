@@ -23,7 +23,8 @@ import com.google.inject.Scopes;
  * @deprecated Use EventModule instead
  */
 @Deprecated
-public class NullEventModule implements Module
+public class NullEventModule
+        implements Module
 {
     @Override
     public void configure(Binder binder)

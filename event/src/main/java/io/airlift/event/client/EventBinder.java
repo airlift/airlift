@@ -86,7 +86,6 @@ public class EventBinder
                 if (!element.getClassName().equals(EventBinder.class.getName())) {
                     return element;
                 }
-
             }
         }
         return null;

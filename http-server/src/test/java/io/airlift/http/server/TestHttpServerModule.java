@@ -212,7 +212,6 @@ public class TestHttpServerModule
         server.start();
 
         try (HttpClient client = new JettyHttpClient()) {
-
             // test servlet bound correctly
             URI httpUri = httpServerInfo.getHttpUri();
             StatusResponse response = client.execute(prepareGet().setUri(httpUri).build(), createStatusResponseHandler());
@@ -301,7 +300,6 @@ public class TestHttpServerModule
         long beforeRequest = System.currentTimeMillis();
         long afterRequest;
         try (JettyHttpClient client = new JettyHttpClient()) {
-
             // test servlet bound correctly
             StringResponse response = client.execute(
                     preparePost().setUri(requestUri)

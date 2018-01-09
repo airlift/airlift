@@ -45,7 +45,8 @@ import static io.airlift.http.client.Request.Builder.preparePut;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
-public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementClient
+public class HttpDiscoveryAnnouncementClient
+        implements DiscoveryAnnouncementClient
 {
     private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
 
@@ -147,7 +148,8 @@ public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementCli
         return DEFAULT_DELAY;
     }
 
-    private class DiscoveryResponseHandler<T> implements ResponseHandler<T, DiscoveryException>
+    private class DiscoveryResponseHandler<T>
+            implements ResponseHandler<T, DiscoveryException>
     {
         private final String name;
         private final URI uri;

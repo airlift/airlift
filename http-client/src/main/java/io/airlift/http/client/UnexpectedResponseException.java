@@ -26,7 +26,8 @@ import java.util.List;
 import static com.google.common.base.MoreObjects.toStringHelper;
 
 @Beta
-public class UnexpectedResponseException extends RuntimeException
+public class UnexpectedResponseException
+        extends RuntimeException
 {
     private final Request request;
     private final int statusCode;

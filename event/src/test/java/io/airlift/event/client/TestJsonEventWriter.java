@@ -70,8 +70,7 @@ public class TestJsonEventWriter
                 "localhost", new DateTime("2011-09-09T01:48:08.888Z"), UUID.fromString("6b598c2a-0a95-4f3f-9298-5a4d70ca13fc"), 9999, "nested",
                 ImmutableList.of("abc", "xyz"),
                 new NestedPart("first", new NestedPart("second", new NestedPart("third", null))),
-                ImmutableList.of(new NestedPart("listFirst", new NestedPart("listSecond", null)), new NestedPart("listThird", null))
-        );
+                ImmutableList.of(new NestedPart("listFirst", new NestedPart("listSecond", null)), new NestedPart("listThird", null)));
 
         assertEventJson(createEventGenerator(ImmutableList.of(nestedEvent)), "nested.json");
     }

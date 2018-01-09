@@ -79,8 +79,7 @@ public class TestPersonStore
 
         assertEquals(eventClient.getEvents(), ImmutableList.of(
                 personAdded("foo", new Person("foo@example.com", "Mr Foo")),
-                personUpdated("foo", new Person("foo@example.com", "Mr Bar"))
-        ));
+                personUpdated("foo", new Person("foo@example.com", "Mr Bar"))));
     }
 
     @Test
@@ -96,8 +95,7 @@ public class TestPersonStore
 
         assertEquals(eventClient.getEvents(), ImmutableList.of(
                 personAdded("foo", new Person("foo@example.com", "Mr Foo")),
-                personRemoved("foo", new Person("foo@example.com", "Mr Foo"))
-        ));
+                personRemoved("foo", new Person("foo@example.com", "Mr Foo"))));
     }
 
     @Test
@@ -117,8 +115,7 @@ public class TestPersonStore
 
         assertEquals(eventClient.getEvents(), ImmutableList.of(
                 personAdded("foo", new Person("foo@example.com", "Mr Foo")),
-                personRemoved("foo", new Person("foo@example.com", "Mr Foo"))
-        ));
+                personRemoved("foo", new Person("foo@example.com", "Mr Foo"))));
     }
 
     @Test
@@ -132,5 +129,4 @@ public class TestPersonStore
         assertEquals(store.getAll().size(), 2);
         assertEquals(store.getAll(), asList(new Person("foo@example.com", "Mr Foo"), new Person("bar@example.com", "Mr Bar")));
     }
-
 }

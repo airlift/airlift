@@ -28,7 +28,8 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class JsonResponseHandler<T> implements ResponseHandler<T, RuntimeException>
+public class JsonResponseHandler<T>
+        implements ResponseHandler<T, RuntimeException>
 {
     private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
 

@@ -28,7 +28,8 @@ import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 
-public class MockRequest implements Request
+public class MockRequest
+        implements Request
 {
     public static ConditionalRequestBuilder head()
     {
@@ -80,10 +81,8 @@ public class MockRequest implements Request
         return new ConditionalRequestBuilder("DELETE", selectVariant);
     }
 
-
     public static class ConditionalRequestBuilder
     {
-
         private final String method;
         private final Variant selectVariant;
 

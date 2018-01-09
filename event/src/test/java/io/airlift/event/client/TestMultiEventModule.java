@@ -28,12 +28,12 @@ public class TestMultiEventModule
                         newSetBinder(binder, EventClient.class).addBinding().to(Key.get(AnotherInMemoryEventClient.class)).in(Scopes.SINGLETON);
                         newSetBinder(binder, EventClient.class).addBinding().to(Key.get(NullEventClient.class)).in(Scopes.SINGLETON);
                     }
-                }
-        );
+                });
         eventClient = injector.getInstance(EventClient.class);
         memoryEventClient1 = injector.getInstance(InMemoryEventClient.class);
         memoryEventClient2 = injector.getInstance(AnotherInMemoryEventClient.class);
     }
 
-    public static class AnotherInMemoryEventClient extends InMemoryEventClient {}
+    public static class AnotherInMemoryEventClient
+            extends InMemoryEventClient {}
 }

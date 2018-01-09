@@ -17,7 +17,8 @@ package io.airlift.event.client;
 
 import java.io.IOException;
 
-public class InvalidEventException extends IOException
+public class InvalidEventException
+        extends IOException
 {
     public InvalidEventException(String message, Object... args)
     {

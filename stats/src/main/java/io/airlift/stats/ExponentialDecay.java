@@ -44,5 +44,4 @@ public final class ExponentialDecay
 
         return -Math.log(targetWeight) / targetAgeInSeconds;
     }
-
 }

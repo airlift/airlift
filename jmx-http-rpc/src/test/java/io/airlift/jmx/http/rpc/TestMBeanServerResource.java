@@ -195,13 +195,13 @@ public class TestMBeanServerResource
     public void testGetAttributes()
             throws Exception
     {
-        assertEquals(mbeanServerConnection.getAttributes(testMBeanName, new String[]{"Value", "ObjectValue"}),
+        assertEquals(mbeanServerConnection.getAttributes(testMBeanName, new String[] {"Value", "ObjectValue"}),
                 new AttributeList(ImmutableList.of(new Attribute("Value", null), new Attribute("ObjectValue", null))));
 
         testMBean.setValue("FOO");
         testMBean.setObjectValue(UUID.randomUUID());
 
-        assertEquals(mbeanServerConnection.getAttributes(testMBeanName, new String[]{"Value", "ObjectValue"}),
+        assertEquals(mbeanServerConnection.getAttributes(testMBeanName, new String[] {"Value", "ObjectValue"}),
                 new AttributeList(ImmutableList.of(new Attribute("Value", "FOO"), new Attribute("ObjectValue", testMBean.getObjectValue()))));
     }
 
@@ -244,7 +244,7 @@ public class TestMBeanServerResource
         assertEquals(testMBean.noArgsMethodInvoked, true);
 
         UUID uuid = UUID.randomUUID();
-        assertEquals(mbeanServerConnection.invoke(testMBeanName, "echo", new Object[]{uuid}, new String[]{Object.class.getName()}), uuid);
+        assertEquals(mbeanServerConnection.invoke(testMBeanName, "echo", new Object[] {uuid}, new String[] {Object.class.getName()}), uuid);
     }
 
     @Test
@@ -252,7 +252,7 @@ public class TestMBeanServerResource
             throws Exception
     {
         try {
-            mbeanServerConnection.invoke(testMBeanName, "throwException", new Object[]{new Exception("exception-message")}, new String[]{Throwable.class.getName()});
+            mbeanServerConnection.invoke(testMBeanName, "throwException", new Object[] {new Exception("exception-message")}, new String[] {Throwable.class.getName()});
             fail("Expected exception");
         }
         catch (MBeanException e) {

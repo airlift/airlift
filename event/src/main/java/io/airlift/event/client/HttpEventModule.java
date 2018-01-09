@@ -26,7 +26,8 @@ import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
-public class HttpEventModule implements Module
+public class HttpEventModule
+        implements Module
 {
     @Override
     public void configure(Binder binder)

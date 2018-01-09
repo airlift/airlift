@@ -23,7 +23,7 @@ import java.io.OutputStream;
  * whenever context.reset() is called
  */
 class NonCloseableOutputStream
-    extends OutputStream
+        extends OutputStream
 {
     private final OutputStream delegate;
 

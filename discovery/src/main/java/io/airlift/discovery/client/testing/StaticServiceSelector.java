@@ -28,7 +28,8 @@ import java.util.List;
 import static io.airlift.discovery.client.ServiceSelectorConfig.DEFAULT_POOL;
 import static java.util.Objects.requireNonNull;
 
-public class StaticServiceSelector implements ServiceSelector
+public class StaticServiceSelector
+        implements ServiceSelector
 {
     private final String type;
     private final String pool;
