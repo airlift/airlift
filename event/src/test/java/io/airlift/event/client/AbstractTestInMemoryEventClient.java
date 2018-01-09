@@ -18,10 +18,11 @@ package io.airlift.event.client;
 import com.google.common.collect.ImmutableList;
 import io.airlift.event.client.EventClient.EventGenerator;
 import io.airlift.event.client.EventClient.EventPoster;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+
+import static org.testng.Assert.assertEquals;
 
 @Test(singleThreaded = true)
 public abstract class AbstractTestInMemoryEventClient
@@ -38,7 +39,7 @@ public abstract class AbstractTestInMemoryEventClient
     {
         eventClient.post(event1);
 
-        Assert.assertEquals(inMemoryEventClient.getEvents(), ImmutableList.of(event1));
+        assertEquals(inMemoryEventClient.getEvents(), ImmutableList.of(event1));
     }
 
     @Test
@@ -48,7 +49,7 @@ public abstract class AbstractTestInMemoryEventClient
         eventClient.post(event2);
         eventClient.post(event3);
 
-        Assert.assertEquals(inMemoryEventClient.getEvents(),
+        assertEquals(inMemoryEventClient.getEvents(),
                 ImmutableList.of(event1, event2, event3));
     }
 
@@ -57,7 +58,7 @@ public abstract class AbstractTestInMemoryEventClient
     {
         eventClient.post(event1, event2, event3);
 
-        Assert.assertEquals(inMemoryEventClient.getEvents(),
+        assertEquals(inMemoryEventClient.getEvents(),
                 ImmutableList.of(event1, event2, event3));
     }
 
@@ -66,7 +67,7 @@ public abstract class AbstractTestInMemoryEventClient
     {
         eventClient.post(ImmutableList.of(event1, event2, event3));
 
-        Assert.assertEquals(inMemoryEventClient.getEvents(),
+        assertEquals(inMemoryEventClient.getEvents(),
                 ImmutableList.of(event1, event2, event3));
     }
 
@@ -85,7 +86,7 @@ public abstract class AbstractTestInMemoryEventClient
             }
         });
 
-        Assert.assertEquals(inMemoryEventClient.getEvents(),
+        assertEquals(inMemoryEventClient.getEvents(),
                 ImmutableList.of(event1, event2, event3));
     }
 }

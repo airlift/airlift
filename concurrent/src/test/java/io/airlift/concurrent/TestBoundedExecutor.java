@@ -1,7 +1,6 @@
 package io.airlift.concurrent;
 
 import com.google.common.util.concurrent.Uninterruptibles;
-import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -15,6 +14,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -85,7 +86,7 @@ public class TestBoundedExecutor
         }
 
         assertTrue(Uninterruptibles.awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES)); // Wait for tasks to complete
-        Assert.assertEquals(counter.get(), totalTasks);
+        assertEquals(counter.get(), totalTasks);
     }
 
     @Test
@@ -191,6 +192,6 @@ public class TestBoundedExecutor
 
         assertTrue(Uninterruptibles.awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES)); // Wait for tasks to complete
 
-        Assert.assertFalse(failed.get());
+        assertFalse(failed.get());
     }
 }

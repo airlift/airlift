@@ -19,8 +19,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.discovery.client.testing.InMemoryDiscoveryClient;
 import io.airlift.node.NodeInfo;
-import io.airlift.testing.Assertions;
-import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -30,6 +28,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
+import static io.airlift.testing.Assertions.assertEqualsIgnoreOrder;
+import static org.testng.Assert.assertEquals;
 
 public class TestCachingServiceSelector
 {
@@ -64,8 +64,8 @@ public class TestCachingServiceSelector
                 new InMemoryDiscoveryClient(nodeInfo),
                 executor);
 
-        Assert.assertEquals(serviceSelector.getType(), "type");
-        Assert.assertEquals(serviceSelector.getPool(), "pool");
+        assertEquals(serviceSelector.getType(), "type");
+        assertEquals(serviceSelector.getPool(), "pool");
     }
 
     @Test
@@ -76,7 +76,7 @@ public class TestCachingServiceSelector
                 new InMemoryDiscoveryClient(nodeInfo),
                 executor);
 
-        Assert.assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
+        assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
     }
 
     @Test
@@ -90,7 +90,7 @@ public class TestCachingServiceSelector
 
         serviceSelector.start();
 
-        Assert.assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
+        assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
     }
 
     @Test
@@ -107,7 +107,7 @@ public class TestCachingServiceSelector
                 discoveryClient,
                 executor);
 
-        Assert.assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
+        assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
     }
 
     @Test
@@ -129,6 +129,6 @@ public class TestCachingServiceSelector
 
         Thread.sleep(100);
 
-        Assertions.assertEqualsIgnoreOrder(serviceSelector.selectAllServices(), ImmutableList.of(APPLE_1_SERVICE, APPLE_2_SERVICE));
+        assertEqualsIgnoreOrder(serviceSelector.selectAllServices(), ImmutableList.of(APPLE_1_SERVICE, APPLE_2_SERVICE));
     }
 }

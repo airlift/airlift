@@ -15,7 +15,6 @@
  */
 package io.airlift.testing;
 
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import javax.validation.constraints.NotNull;
@@ -26,6 +25,7 @@ import static io.airlift.testing.Assertions.assertContains;
 import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
 import static io.airlift.testing.ValidationAssertions.assertValidates;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 public class TestValidationAssertions
@@ -114,9 +114,9 @@ public class TestValidationAssertions
 
     private void verifyExceptionMessage(AssertionError e, String message, Object value, String property, Class<? extends Annotation> annotation)
     {
-        Assert.assertNotNull(e);
+        assertNotNull(e);
         String actualMessage = e.getMessage();
-        Assert.assertNotNull(actualMessage);
+        assertNotNull(actualMessage);
         if (message != null) {
             assertTrue(actualMessage.startsWith(message + " "));
         }

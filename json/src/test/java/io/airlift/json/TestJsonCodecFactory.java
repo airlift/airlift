@@ -19,13 +19,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static org.testng.Assert.assertEquals;
 
 public class TestJsonCodecFactory
 {
@@ -40,7 +40,7 @@ public class TestJsonCodecFactory
         Person expected = new Person().setName("dain").setRocks(true);
         String json = jsonCodec.toJson(expected);
         Person actual = jsonCodec.fromJson(json);
-        Assert.assertEquals(actual, expected);
+        assertEquals(actual, expected);
     }
 
     @Test
@@ -79,7 +79,7 @@ public class TestJsonCodecFactory
 
         String json = jsonCodec.toJson(expected);
         List<Person> actual = jsonCodec.fromJson(json);
-        Assert.assertEquals(actual, expected);
+        assertEquals(actual, expected);
     }
 
     @Test
@@ -119,7 +119,7 @@ public class TestJsonCodecFactory
 
         String json = jsonCodec.toJson(expected);
         Map<String, Person> actual = jsonCodec.fromJson(json);
-        Assert.assertEquals(actual, expected);
+        assertEquals(actual, expected);
     }
 
     public static class Person

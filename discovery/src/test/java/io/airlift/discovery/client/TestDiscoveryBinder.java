@@ -27,7 +27,6 @@ import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationModule;
 import io.airlift.discovery.client.testing.TestingDiscoveryModule;
 import io.airlift.node.testing.TestingNodeModule;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import javax.inject.Provider;
@@ -37,6 +36,8 @@ import java.util.Set;
 
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 
 public class TestDiscoveryBinder
 {
@@ -56,7 +57,7 @@ public class TestDiscoveryBinder
                 });
 
         Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
-        Assert.assertEquals(announcements, ImmutableSet.of(ANNOUNCEMENT));
+        assertEquals(announcements, ImmutableSet.of(ANNOUNCEMENT));
     }
 
     @Test
@@ -75,7 +76,7 @@ public class TestDiscoveryBinder
                 });
 
         Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
-        Assert.assertEquals(announcements, ImmutableSet.of(ANNOUNCEMENT));
+        assertEquals(announcements, ImmutableSet.of(ANNOUNCEMENT));
     }
 
     @Test
@@ -94,7 +95,7 @@ public class TestDiscoveryBinder
                 });
 
         Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
-        Assert.assertEquals(announcements, ImmutableSet.of(ANNOUNCEMENT));
+        assertEquals(announcements, ImmutableSet.of(ANNOUNCEMENT));
     }
 
     @Test
@@ -172,9 +173,9 @@ public class TestDiscoveryBinder
     private void assertCanCreateServiceSelector(Injector injector, String expectedType, String expectedPool)
     {
         ServiceSelector actualServiceSelector = injector.getInstance(Key.get(ServiceSelector.class, serviceType(expectedType)));
-        Assert.assertNotNull(actualServiceSelector);
-        Assert.assertEquals(actualServiceSelector.getType(), expectedType);
-        Assert.assertEquals(actualServiceSelector.getPool(), expectedPool);
+        assertNotNull(actualServiceSelector);
+        assertEquals(actualServiceSelector.getType(), expectedType);
+        assertEquals(actualServiceSelector.getPool(), expectedPool);
     }
 
     private static class TestModule

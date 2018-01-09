@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.net.HttpHeaders;
 import io.airlift.jaxrs.testing.GuavaMultivaluedMap;
 import io.airlift.json.JsonCodec;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.WebApplicationException;
@@ -33,6 +32,9 @@ import java.io.InputStream;
 import java.util.zip.ZipException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 public class TestJsonMapper
 {
@@ -58,13 +60,13 @@ public class TestJsonMapper
         jsonMapper.writeTo(value, String.class, null, null, null, headers, outputStream);
 
         String json = new String(outputStream.toByteArray(), UTF_8);
-        Assert.assertTrue(!json.contains("<"));
-        Assert.assertTrue(!json.contains(">"));
-        Assert.assertTrue(!json.contains("'"));
-        Assert.assertTrue(!json.contains("&"));
-        Assert.assertEquals(jsonCodec.fromJson(json), value);
+        assertTrue(!json.contains("<"));
+        assertTrue(!json.contains(">"));
+        assertTrue(!json.contains("'"));
+        assertTrue(!json.contains("&"));
+        assertEquals(jsonCodec.fromJson(json), value);
 
-        Assert.assertEquals(headers.getFirst(HttpHeaders.X_CONTENT_TYPE_OPTIONS), "nosniff");
+        assertEquals(headers.getFirst(HttpHeaders.X_CONTENT_TYPE_OPTIONS), "nosniff");
     }
 
     @Test
@@ -96,10 +98,10 @@ public class TestJsonMapper
                     throw new EOFException("forced EOF Exception");
                 }
             });
-            Assert.fail("Should have thrown a JsonMapperParsingException");
+            fail("Should have thrown a JsonMapperParsingException");
         }
         catch (JsonMapperParsingException e) {
-            Assert.assertTrue((e.getMessage()).startsWith("Invalid json for Java type"));
+            assertTrue((e.getMessage()).startsWith("Invalid json for Java type"));
         }
     }
 
@@ -132,10 +134,10 @@ public class TestJsonMapper
                     throw new TestingJsonProcessingException("forced JsonProcessingException");
                 }
             });
-            Assert.fail("Should have thrown a JsonMapperParsingException");
+            fail("Should have thrown a JsonMapperParsingException");
         }
         catch (JsonMapperParsingException e) {
-            Assert.assertTrue((e.getMessage()).startsWith("Invalid json for Java type"));
+            assertTrue((e.getMessage()).startsWith("Invalid json for Java type"));
         }
     }
 
@@ -168,10 +170,10 @@ public class TestJsonMapper
                     throw new ZipException("forced ZipException");
                 }
             });
-            Assert.fail("Should have thrown an IOException");
+            fail("Should have thrown an IOException");
         }
         catch (WebApplicationException e) {
-            Assert.fail("Should not have received a WebApplicationException", e);
+            fail("Should not have received a WebApplicationException", e);
         }
     }
 

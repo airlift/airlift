@@ -21,12 +21,18 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationModule;
-import io.airlift.testing.Assertions;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+
+import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
+import static io.airlift.testing.Assertions.assertNotEquals;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 public class TestNodeModule
 {
@@ -39,25 +45,25 @@ public class TestNodeModule
         ConfigurationFactory configFactory = new ConfigurationFactory(ImmutableMap.<String, String>of("node.environment", "environment"));
         Injector injector = Guice.createInjector(new NodeModule(), new ConfigurationModule(configFactory));
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
-        Assert.assertNotNull(nodeInfo);
-        Assert.assertEquals(nodeInfo.getEnvironment(), "environment");
-        Assert.assertEquals(nodeInfo.getPool(), "general");
-        Assert.assertNotNull(nodeInfo.getNodeId());
-        Assert.assertNotNull(nodeInfo.getLocation());
-        Assert.assertNull(nodeInfo.getBinarySpec());
-        Assert.assertNull(nodeInfo.getConfigSpec());
-        Assert.assertNotNull(nodeInfo.getInstanceId());
+        assertNotNull(nodeInfo);
+        assertEquals(nodeInfo.getEnvironment(), "environment");
+        assertEquals(nodeInfo.getPool(), "general");
+        assertNotNull(nodeInfo.getNodeId());
+        assertNotNull(nodeInfo.getLocation());
+        assertNull(nodeInfo.getBinarySpec());
+        assertNull(nodeInfo.getConfigSpec());
+        assertNotNull(nodeInfo.getInstanceId());
 
-        Assertions.assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
+        assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
 
-        Assert.assertNotNull(nodeInfo.getInternalAddress());
-        Assert.assertFalse(InetAddress.getByName(nodeInfo.getInternalAddress()).isAnyLocalAddress());
-        Assert.assertNotNull(nodeInfo.getBindIp());
-        Assert.assertTrue(nodeInfo.getBindIp().isAnyLocalAddress());
-        Assertions.assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
+        assertNotNull(nodeInfo.getInternalAddress());
+        assertFalse(InetAddress.getByName(nodeInfo.getInternalAddress()).isAnyLocalAddress());
+        assertNotNull(nodeInfo.getBindIp());
+        assertTrue(nodeInfo.getBindIp().isAnyLocalAddress());
+        assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
 
         // make sure toString doesn't throw an exception
-        Assert.assertNotNull(nodeInfo.toString());
+        assertNotNull(nodeInfo.toString());
     }
 
     @Test
@@ -84,22 +90,22 @@ public class TestNodeModule
 
         Injector injector = Guice.createInjector(new NodeModule(), new ConfigurationModule(configFactory));
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
-        Assert.assertNotNull(nodeInfo);
-        Assert.assertEquals(nodeInfo.getEnvironment(), environment);
-        Assert.assertEquals(nodeInfo.getPool(), pool);
-        Assert.assertEquals(nodeInfo.getNodeId(), nodeId);
-        Assert.assertEquals(nodeInfo.getLocation(), location);
-        Assert.assertEquals(nodeInfo.getBinarySpec(), binarySpec);
-        Assert.assertEquals(nodeInfo.getConfigSpec(), configSpec);
-        Assert.assertNotNull(nodeInfo.getInstanceId());
+        assertNotNull(nodeInfo);
+        assertEquals(nodeInfo.getEnvironment(), environment);
+        assertEquals(nodeInfo.getPool(), pool);
+        assertEquals(nodeInfo.getNodeId(), nodeId);
+        assertEquals(nodeInfo.getLocation(), location);
+        assertEquals(nodeInfo.getBinarySpec(), binarySpec);
+        assertEquals(nodeInfo.getConfigSpec(), configSpec);
+        assertNotNull(nodeInfo.getInstanceId());
 
-        Assertions.assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
+        assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
 
-        Assert.assertEquals(nodeInfo.getInternalAddress(), publicAddress);
-        Assert.assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
-        Assertions.assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
+        assertEquals(nodeInfo.getInternalAddress(), publicAddress);
+        assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
+        assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
 
         // make sure toString doesn't throw an exception
-        Assert.assertNotNull(nodeInfo.toString());
+        assertNotNull(nodeInfo.toString());
     }
 }

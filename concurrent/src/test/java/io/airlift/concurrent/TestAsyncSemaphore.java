@@ -18,7 +18,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.Uninterruptibles;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import javax.annotation.Nullable;
@@ -37,6 +36,8 @@ import static com.google.common.util.concurrent.MoreExecutors.newDirectExecutorS
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.testing.Assertions.assertLessThanOrEqual;
 import static java.util.concurrent.Executors.newCachedThreadPool;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.fail;
 
 public class TestAsyncSemaphore
 {
@@ -58,7 +59,7 @@ public class TestAsyncSemaphore
         // Wait for completion
         Futures.allAsList(futures).get(1, TimeUnit.MINUTES);
 
-        Assert.assertEquals(count.get(), 1000);
+        assertEquals(count.get(), 1000);
     }
 
     @Test
@@ -84,7 +85,7 @@ public class TestAsyncSemaphore
         // Wait for completion
         Futures.allAsList(futures).get(1, TimeUnit.MINUTES);
 
-        Assert.assertEquals(count.get(), 1000);
+        assertEquals(count.get(), 1000);
     }
 
     @Test
@@ -110,7 +111,7 @@ public class TestAsyncSemaphore
         // Wait for completion
         Futures.allAsList(futures).get(1, TimeUnit.MINUTES);
 
-        Assert.assertEquals(count.get(), 1000);
+        assertEquals(count.get(), 1000);
     }
 
     @Test
@@ -143,7 +144,7 @@ public class TestAsyncSemaphore
         // Wait for completion
         Uninterruptibles.awaitUninterruptibly(completionLatch, 1, TimeUnit.MINUTES);
 
-        Assert.assertEquals(count.get(), 100);
+        assertEquals(count.get(), 100);
     }
 
     @Test
@@ -170,14 +171,14 @@ public class TestAsyncSemaphore
         for (ListenableFuture<?> future : futures) {
             try {
                 future.get();
-                Assert.fail();
+                fail();
             }
             catch (Exception ignored) {
             }
         }
 
-        Assert.assertEquals(successCount.get(), 0);
-        Assert.assertEquals(failureCount.get(), 1000);
+        assertEquals(successCount.get(), 0);
+        assertEquals(failureCount.get(), 1000);
     }
 
     @Test
@@ -195,7 +196,7 @@ public class TestAsyncSemaphore
         List<ListenableFuture<?>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             // Should never execute this future
-            ListenableFuture<?> future = asyncSemaphore.submit(Assert::fail);
+            ListenableFuture<?> future = asyncSemaphore.submit(() -> fail(null));
             addCallback(future, completionCallback(successCount, failureCount, completionLatch));
             futures.add(future);
         }
@@ -206,14 +207,14 @@ public class TestAsyncSemaphore
         for (ListenableFuture<?> future : futures) {
             try {
                 future.get();
-                Assert.fail();
+                fail();
             }
             catch (Exception ignored) {
             }
         }
 
-        Assert.assertEquals(successCount.get(), 0);
-        Assert.assertEquals(failureCount.get(), 1000);
+        assertEquals(successCount.get(), 0);
+        assertEquals(failureCount.get(), 1000);
     }
 
     @Test
@@ -235,7 +236,7 @@ public class TestAsyncSemaphore
             executor.execute(() -> {
                 Uninterruptibles.awaitUninterruptibly(startLatch, 1, TimeUnit.MINUTES);
                 // Should never execute this future
-                ListenableFuture<?> future = asyncSemaphore.submit(Assert::fail);
+                ListenableFuture<?> future = asyncSemaphore.submit(() -> fail(null));
                 futures.add(future);
                 addCallback(future, completionCallback(successCount, failureCount, completionLatch));
             });
@@ -250,14 +251,14 @@ public class TestAsyncSemaphore
         for (ListenableFuture<?> future : futures) {
             try {
                 future.get();
-                Assert.fail();
+                fail();
             }
             catch (Exception ignored) {
             }
         }
 
-        Assert.assertEquals(successCount.get(), 0);
-        Assert.assertEquals(failureCount.get(), 100);
+        assertEquals(successCount.get(), 0);
+        assertEquals(failureCount.get(), 100);
     }
 
     @Test

@@ -23,13 +23,14 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import io.airlift.discovery.client.testing.TestingDiscoveryModule;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.net.URI;
 import java.util.Set;
 
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 
 public class TestHttpAnnouncementBinder
 {
@@ -172,10 +173,10 @@ public class TestHttpAnnouncementBinder
 
     private void assertAnnouncement(Set<ServiceAnnouncement> actualAnnouncements, ServiceAnnouncement expected)
     {
-        Assert.assertNotNull(actualAnnouncements);
-        Assert.assertEquals(actualAnnouncements.size(), 1);
+        assertNotNull(actualAnnouncements);
+        assertEquals(actualAnnouncements.size(), 1);
         ServiceAnnouncement announcement = Iterables.getOnlyElement(actualAnnouncements);
-        Assert.assertEquals(announcement.getType(), expected.getType());
-        Assert.assertEquals(announcement.getProperties(), expected.getProperties());
+        assertEquals(announcement.getType(), expected.getType());
+        assertEquals(announcement.getProperties(), expected.getProperties());
     }
 }

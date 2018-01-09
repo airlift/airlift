@@ -17,8 +17,8 @@ package io.airlift.testing;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMultiset;
-import org.testng.Assert;
 
+import static java.lang.String.format;
 import static org.testng.Assert.assertNotNull;
 
 public final class Assertions
@@ -320,13 +320,11 @@ public final class Assertions
 
     private static void fail(String format, Object... args)
     {
-        String message = String.format(format, args);
-        Assert.fail(message);
+        throw new AssertionError(format(format, args));
     }
 
     private static void fail(Throwable e, String format, Object... args)
     {
-        String message = String.format(format, args);
-        Assert.fail(message, e);
+        throw new AssertionError(format(format, args), e);
     }
 }

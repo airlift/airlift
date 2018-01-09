@@ -16,7 +16,6 @@
 package io.airlift.testing;
 
 import com.google.common.collect.Sets;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.Serializable;
@@ -24,8 +23,22 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static io.airlift.testing.Assertions.assertBetweenExclusive;
+import static io.airlift.testing.Assertions.assertBetweenInclusive;
+import static io.airlift.testing.Assertions.assertContains;
+import static io.airlift.testing.Assertions.assertEqualsIgnoreCase;
+import static io.airlift.testing.Assertions.assertEqualsIgnoreOrder;
+import static io.airlift.testing.Assertions.assertGreaterThan;
+import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
+import static io.airlift.testing.Assertions.assertInstanceOf;
+import static io.airlift.testing.Assertions.assertLessThan;
+import static io.airlift.testing.Assertions.assertLessThanOrEqual;
 import static io.airlift.testing.TestAssertions.SubComparable.createSubComparable;
 import static io.airlift.testing.TestAssertions.SuperComparable.createSuperComparable;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 public class TestAssertions
 {
@@ -43,23 +56,23 @@ public class TestAssertions
 
     private void passContains(String actual, String expected)
     {
-        Assertions.assertContains(actual, expected);
-        Assertions.assertContains(actual, expected, MESSAGE);
+        assertContains(actual, expected);
+        assertContains(actual, expected, MESSAGE);
     }
 
     private void failContains(String actual, String expected)
     {
         try {
-            Assertions.assertContains(actual, expected);
-            Assert.fail("Expected AssertionError"); // TODO: bug... this will throw AssertionError
+            assertContains(actual, expected);
+            fail("Expected AssertionError"); // TODO: bug... this will throw AssertionError
         }
         catch (AssertionError e) {
             verifyExceptionMessage(e, null, actual, expected);
         }
 
         try {
-            Assertions.assertContains(actual, expected, MESSAGE);
-            Assert.fail("Expected AssertionError");
+            assertContains(actual, expected, MESSAGE);
+            fail("Expected AssertionError");
         }
         catch (AssertionError e) {
             // success
@@ -80,25 +93,25 @@ public class TestAssertions
 
     private void passEqualsIgnoreCase(String actual, String expected)
     {
-        Assertions.assertEqualsIgnoreCase(actual, expected);
-        Assertions.assertEqualsIgnoreCase(expected, actual);
-        Assertions.assertEqualsIgnoreCase(actual, expected, MESSAGE);
-        Assertions.assertEqualsIgnoreCase(expected, actual, MESSAGE);
+        assertEqualsIgnoreCase(actual, expected);
+        assertEqualsIgnoreCase(expected, actual);
+        assertEqualsIgnoreCase(actual, expected, MESSAGE);
+        assertEqualsIgnoreCase(expected, actual, MESSAGE);
     }
 
     private void failEqualsIgnoreCase(String actual, String expected)
     {
         try {
-            Assertions.assertEqualsIgnoreCase(actual, expected);
-            Assert.fail("Expected AssertionError");
+            assertEqualsIgnoreCase(actual, expected);
+            fail("Expected AssertionError");
         }
         catch (AssertionError e) {
             verifyExceptionMessage(e, null, actual, expected);
         }
 
         try {
-            Assertions.assertEqualsIgnoreCase(actual, expected, MESSAGE);
-            Assert.fail("Expected AssertionError");
+            assertEqualsIgnoreCase(actual, expected, MESSAGE);
+            fail("Expected AssertionError");
         }
         catch (AssertionError e) {
             // success
@@ -121,23 +134,23 @@ public class TestAssertions
 
     private void passInstanceOf(Object actual, Class<?> expectedType)
     {
-        Assertions.assertInstanceOf(actual, expectedType);
-        Assertions.assertInstanceOf(actual, expectedType, MESSAGE);
+        assertInstanceOf(actual, expectedType);
+        assertInstanceOf(actual, expectedType, MESSAGE);
     }
 
     private void failInstanceOf(Object actual, Class<?> expectedType)
     {
         try {
-            Assertions.assertInstanceOf(actual, expectedType);
-            Assert.fail("Expected AssertionError");
+            assertInstanceOf(actual, expectedType);
+            fail("Expected AssertionError");
         }
         catch (AssertionError e) {
             verifyExceptionMessage(e, null, actual, expectedType.getName());
         }
 
         try {
-            Assertions.assertInstanceOf(actual, expectedType, MESSAGE);
-            Assert.fail("Expected AssertionError");
+            assertInstanceOf(actual, expectedType, MESSAGE);
+            fail("Expected AssertionError");
         }
         catch (AssertionError e) {
             // success
@@ -167,23 +180,23 @@ public class TestAssertions
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void passGreaterThan(Comparable actual, Comparable expected)
     {
-        Assertions.assertGreaterThan(actual, expected);
-        Assertions.assertGreaterThan(actual, expected, MESSAGE);
+        assertGreaterThan(actual, expected);
+        assertGreaterThan(actual, expected, MESSAGE);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void failGreaterThan(Comparable actual, Comparable expected)
     {
         try {
-            Assertions.assertGreaterThan(actual, expected);
-            Assert.fail("Expected AssertionError");
+            assertGreaterThan(actual, expected);
+            fail("Expected AssertionError");
         }
         catch (AssertionError e) {
             verifyExceptionMessage(e, null, actual, expected);
         }
         try {
-            Assertions.assertGreaterThan(actual, expected, MESSAGE);
-            Assert.fail("Expected AssertionError");
+            assertGreaterThan(actual, expected, MESSAGE);
+            fail("Expected AssertionError");
         }
         catch (AssertionError e) {
             verifyExceptionMessage(e, MESSAGE, actual, expected);
@@ -231,22 +244,22 @@ public class TestAssertions
 
     private void passEqualsIgnoreOrder(Iterable<?> actual, Iterable<?> expected)
     {
-        Assertions.assertEqualsIgnoreOrder(actual, expected);
-        Assertions.assertEqualsIgnoreOrder(actual, expected, MESSAGE);
+        assertEqualsIgnoreOrder(actual, expected);
+        assertEqualsIgnoreOrder(actual, expected, MESSAGE);
     }
 
     private void failEqualsIgnoreOrder(Iterable<?> actual, Iterable<?> expected)
     {
         try {
-            Assertions.assertEqualsIgnoreOrder(actual, expected);
-            Assert.fail("Expected AssertionError");
+            assertEqualsIgnoreOrder(actual, expected);
+            fail("Expected AssertionError");
         }
         catch (AssertionError e) {
             verifyExceptionMessageList(e, null, actual, expected);
         }
         try {
-            Assertions.assertEqualsIgnoreOrder(actual, expected, MESSAGE);
-            Assert.fail("Expected AssertionError");
+            assertEqualsIgnoreOrder(actual, expected, MESSAGE);
+            fail("Expected AssertionError");
         }
         catch (AssertionError e) {
             verifyExceptionMessageList(e, MESSAGE, actual, expected);
@@ -256,23 +269,23 @@ public class TestAssertions
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void passGreaterThanOrEqual(Comparable actual, Comparable expected)
     {
-        Assertions.assertGreaterThanOrEqual(actual, expected);
-        Assertions.assertGreaterThanOrEqual(actual, expected, MESSAGE);
+        assertGreaterThanOrEqual(actual, expected);
+        assertGreaterThanOrEqual(actual, expected, MESSAGE);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void failGreaterThanOrEqual(Comparable actual, Comparable expected)
     {
         try {
-            Assertions.assertGreaterThanOrEqual(actual, expected);
-            Assert.fail("Expected AssertionError");
+            assertGreaterThanOrEqual(actual, expected);
+            fail("Expected AssertionError");
         }
         catch (AssertionError e) {
             verifyExceptionMessage(e, null, actual, expected);
         }
         try {
-            Assertions.assertGreaterThanOrEqual(actual, expected, MESSAGE);
-            Assert.fail("Expected AssertionError");
+            assertGreaterThanOrEqual(actual, expected, MESSAGE);
+            fail("Expected AssertionError");
         }
         catch (AssertionError e) {
             verifyExceptionMessage(e, MESSAGE, actual, expected);
@@ -301,23 +314,23 @@ public class TestAssertions
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void passLessThan(Comparable actual, Comparable expected)
     {
-        Assertions.assertLessThan(actual, expected);
-        Assertions.assertLessThan(actual, expected, MESSAGE);
+        assertLessThan(actual, expected);
+        assertLessThan(actual, expected, MESSAGE);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void failLessThan(Comparable actual, Comparable expected)
     {
         try {
-            Assertions.assertLessThan(actual, expected);
-            Assert.fail("Expected AssertionError");
+            assertLessThan(actual, expected);
+            fail("Expected AssertionError");
         }
         catch (AssertionError e) {
             verifyExceptionMessage(e, null, actual, expected);
         }
         try {
-            Assertions.assertLessThan(actual, expected, MESSAGE);
-            Assert.fail("Expected AssertionError");
+            assertLessThan(actual, expected, MESSAGE);
+            fail("Expected AssertionError");
         }
         catch (AssertionError e) {
             verifyExceptionMessage(e, MESSAGE, actual, expected);
@@ -347,23 +360,23 @@ public class TestAssertions
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void passLessThanOrEqual(Comparable actual, Comparable expected)
     {
-        Assertions.assertLessThanOrEqual(actual, expected);
-        Assertions.assertLessThanOrEqual(actual, expected, MESSAGE);
+        assertLessThanOrEqual(actual, expected);
+        assertLessThanOrEqual(actual, expected, MESSAGE);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void failLessThanOrEqual(Comparable actual, Comparable expected)
     {
         try {
-            Assertions.assertLessThanOrEqual(actual, expected);
-            Assert.fail("Expected AssertionError");
+            assertLessThanOrEqual(actual, expected);
+            fail("Expected AssertionError");
         }
         catch (AssertionError e) {
             verifyExceptionMessage(e, null, actual, expected);
         }
         try {
-            Assertions.assertLessThanOrEqual(actual, expected, MESSAGE);
-            Assert.fail("Expected AssertionError");
+            assertLessThanOrEqual(actual, expected, MESSAGE);
+            fail("Expected AssertionError");
         }
         catch (AssertionError e) {
             verifyExceptionMessage(e, MESSAGE, actual, expected);
@@ -391,23 +404,23 @@ public class TestAssertions
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void passBetweenInclusive(Comparable actual, Comparable lowerBound, Comparable upperBound)
     {
-        Assertions.assertBetweenInclusive(actual, lowerBound, upperBound);
-        Assertions.assertBetweenInclusive(actual, lowerBound, upperBound, MESSAGE);
+        assertBetweenInclusive(actual, lowerBound, upperBound);
+        assertBetweenInclusive(actual, lowerBound, upperBound, MESSAGE);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void failBetweenInclusive(Comparable actual, Comparable lowerBound, Comparable upperBound)
     {
         try {
-            Assertions.assertBetweenInclusive(actual, lowerBound, upperBound);
-            Assert.fail("Expected AssertionError");
+            assertBetweenInclusive(actual, lowerBound, upperBound);
+            fail("Expected AssertionError");
         }
         catch (AssertionError e) {
             verifyExceptionMessage(e, null, actual, lowerBound, upperBound);
         }
         try {
-            Assertions.assertBetweenInclusive(actual, lowerBound, upperBound, MESSAGE);
-            Assert.fail("Expected AssertionError");
+            assertBetweenInclusive(actual, lowerBound, upperBound, MESSAGE);
+            fail("Expected AssertionError");
         }
         catch (AssertionError e) {
             verifyExceptionMessage(e, MESSAGE, actual, lowerBound, upperBound);
@@ -433,23 +446,23 @@ public class TestAssertions
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void passBetweenExclusive(Comparable actual, Comparable lowerBound, Comparable upperBound)
     {
-        Assertions.assertBetweenExclusive(actual, lowerBound, upperBound);
-        Assertions.assertBetweenExclusive(actual, lowerBound, upperBound, MESSAGE);
+        assertBetweenExclusive(actual, lowerBound, upperBound);
+        assertBetweenExclusive(actual, lowerBound, upperBound, MESSAGE);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void failBetweenExclusive(Comparable actual, Comparable lowerBound, Comparable upperBound)
     {
         try {
-            Assertions.assertBetweenExclusive(actual, lowerBound, upperBound);
-            Assert.fail("Expected AssertionError");
+            assertBetweenExclusive(actual, lowerBound, upperBound);
+            fail("Expected AssertionError");
         }
         catch (AssertionError e) {
             verifyExceptionMessage(e, null, actual, lowerBound, upperBound);
         }
         try {
-            Assertions.assertBetweenExclusive(actual, lowerBound, upperBound, MESSAGE);
-            Assert.fail("Expected AssertionError");
+            assertBetweenExclusive(actual, lowerBound, upperBound, MESSAGE);
+            fail("Expected AssertionError");
         }
         catch (AssertionError e) {
             verifyExceptionMessage(e, MESSAGE, actual, lowerBound, upperBound);
@@ -458,36 +471,36 @@ public class TestAssertions
 
     private void verifyExceptionMessage(AssertionError e, String message, Object... values)
     {
-        Assert.assertNotNull(e);
+        assertNotNull(e);
         String actualMessage = e.getMessage();
-        Assert.assertNotNull(actualMessage);
+        assertNotNull(actualMessage);
         if (message != null) {
-            Assert.assertTrue(actualMessage.startsWith(message + " "));
+            assertTrue(actualMessage.startsWith(message + " "));
         }
         else {
-            Assert.assertFalse(actualMessage.startsWith(" "));
+            assertFalse(actualMessage.startsWith(" "));
         }
 
         for (Object value : values) {
-            Assert.assertTrue(actualMessage.contains("<" + value + ">"));
+            assertTrue(actualMessage.contains("<" + value + ">"));
         }
     }
 
     private void verifyExceptionMessageList(AssertionError e, String message, Iterable<?>... lists)
     {
-        Assert.assertNotNull(e);
+        assertNotNull(e);
         String actualMessage = e.getMessage();
-        Assert.assertNotNull(actualMessage);
+        assertNotNull(actualMessage);
         if (message != null) {
-            Assert.assertTrue(actualMessage.startsWith(message + " "));
+            assertTrue(actualMessage.startsWith(message + " "));
         }
         else {
-            Assert.assertFalse(actualMessage.startsWith(" "));
+            assertFalse(actualMessage.startsWith(" "));
         }
 
         for (Iterable<?> values : lists) {
             for (Object value : values) {
-                Assert.assertTrue(actualMessage.contains(value.toString()));
+                assertTrue(actualMessage.contains(value.toString()));
             }
         }
     }

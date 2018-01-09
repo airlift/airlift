@@ -18,7 +18,6 @@ package io.airlift.sample;
 import com.google.common.collect.ImmutableList;
 import io.airlift.event.client.InMemoryEventClient;
 import io.airlift.units.Duration;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -50,7 +49,7 @@ public class TestPersonStore
         PersonStore store = new PersonStore(config, new InMemoryEventClient());
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
         Thread.sleep(2);
-        Assert.assertNull(store.get("foo"));
+        assertNull(store.get("foo"));
     }
 
     @Test

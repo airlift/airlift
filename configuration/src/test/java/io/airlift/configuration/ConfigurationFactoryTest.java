@@ -21,8 +21,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.spi.Message;
-import io.airlift.testing.Assertions;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import javax.validation.constraints.Max;
@@ -35,6 +33,10 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.airlift.testing.Assertions.assertContainsAllOf;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.fail;
 
 public class ConfigurationFactoryTest
 {
@@ -48,12 +50,12 @@ public class ConfigurationFactoryTest
         try {
             createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(AnnotatedGetter.class));
 
-            Assert.fail("Expected an exception in object creation due to conflicting configuration");
+            fail("Expected an exception in object creation due to conflicting configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(2);
-            Assertions.assertContainsAllOf(e.getMessage(), "not a valid setter", "getStringValue");
-            Assertions.assertContainsAllOf(e.getMessage(), "not a valid setter", "isBooleanValue");
+            assertContainsAllOf(e.getMessage(), "not a valid setter", "getStringValue");
+            assertContainsAllOf(e.getMessage(), "not a valid setter", "isBooleanValue");
         }
     }
 
@@ -68,9 +70,9 @@ public class ConfigurationFactoryTest
         AnnotatedSetter annotatedSetter = injector.getInstance(AnnotatedSetter.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        Assert.assertNotNull(annotatedSetter);
-        Assert.assertEquals(annotatedSetter.getStringValue(), "some value");
-        Assert.assertEquals(annotatedSetter.isBooleanValue(), true);
+        assertNotNull(annotatedSetter);
+        assertEquals(annotatedSetter.getStringValue(), "some value");
+        assertEquals(annotatedSetter.isBooleanValue(), true);
     }
 
     @Test
@@ -84,9 +86,9 @@ public class ConfigurationFactoryTest
         LegacyConfigPresent legacyConfigPresent = injector.getInstance(LegacyConfigPresent.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        Assert.assertNotNull(legacyConfigPresent);
-        Assert.assertEquals(legacyConfigPresent.getStringA(), "this is a");
-        Assert.assertEquals(legacyConfigPresent.getStringB(), "this is b");
+        assertNotNull(legacyConfigPresent);
+        assertEquals(legacyConfigPresent.getStringA(), "this is a");
+        assertEquals(legacyConfigPresent.getStringB(), "this is b");
     }
 
     @Test
@@ -101,9 +103,9 @@ public class ConfigurationFactoryTest
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
         monitor.assertMatchingWarningRecorded("string-value", "replaced", "Use 'string-a'");
-        Assert.assertNotNull(legacyConfigPresent);
-        Assert.assertEquals(legacyConfigPresent.getStringA(), "this is a");
-        Assert.assertEquals(legacyConfigPresent.getStringB(), "this is b");
+        assertNotNull(legacyConfigPresent);
+        assertEquals(legacyConfigPresent.getStringA(), "this is a");
+        assertEquals(legacyConfigPresent.getStringB(), "this is b");
     }
 
     @Test
@@ -121,7 +123,7 @@ public class ConfigurationFactoryTest
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(1);
             monitor.assertMatchingWarningRecorded("string-value", "replaced", "Use 'string-a'");
-            Assertions.assertContainsAllOf(e.getMessage(), "string-value", "conflicts with property", "string-a");
+            assertContainsAllOf(e.getMessage(), "string-value", "conflicts with property", "string-a");
         }
     }
 
@@ -136,13 +138,13 @@ public class ConfigurationFactoryTest
         try {
             createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(LegacyConfigPresent.class));
 
-            Assert.fail("Expected an exception in object creation due to conflicting configuration");
+            fail("Expected an exception in object creation due to conflicting configuration");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(1);
             monitor.assertMatchingWarningRecorded("string-value", "replaced", "Use 'string-a'");
-            Assertions.assertContainsAllOf(e.getMessage(), "string-value", "conflicts with property", "string-a");
+            assertContainsAllOf(e.getMessage(), "string-value", "conflicts with property", "string-a");
         }
     }
 
@@ -156,9 +158,9 @@ public class ConfigurationFactoryTest
         DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        Assert.assertNotNull(deprecatedConfigPresent);
-        Assert.assertEquals(deprecatedConfigPresent.getStringA(), "defaultA");
-        Assert.assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
+        assertNotNull(deprecatedConfigPresent);
+        assertEquals(deprecatedConfigPresent.getStringA(), "defaultA");
+        assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
     }
 
     @Test
@@ -173,9 +175,9 @@ public class ConfigurationFactoryTest
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
         monitor.assertMatchingWarningRecorded("string-a", "deprecated and should not be used");
-        Assert.assertNotNull(deprecatedConfigPresent);
-        Assert.assertEquals(deprecatedConfigPresent.getStringA(), "this is a");
-        Assert.assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
+        assertNotNull(deprecatedConfigPresent);
+        assertEquals(deprecatedConfigPresent.getStringA(), "this is a");
+        assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
     }
 
     @Test
@@ -188,7 +190,7 @@ public class ConfigurationFactoryTest
         try {
             createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(DefunctConfigPresent.class));
 
-            Assert.fail("Expected an exception in object creation due to use of defunct config");
+            fail("Expected an exception in object creation due to use of defunct config");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
@@ -208,9 +210,9 @@ public class ConfigurationFactoryTest
         BeanValidationClass beanValidationClass = injector.getInstance(BeanValidationClass.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        Assert.assertNotNull(beanValidationClass);
-        Assert.assertEquals(beanValidationClass.getStringValue(), "has a value");
-        Assert.assertEquals(beanValidationClass.getIntValue(), 50);
+        assertNotNull(beanValidationClass);
+        assertEquals(beanValidationClass.getStringValue(), "has a value");
+        assertEquals(beanValidationClass.getIntValue(), 50);
     }
 
     @Test

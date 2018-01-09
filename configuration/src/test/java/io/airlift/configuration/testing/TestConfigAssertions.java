@@ -21,8 +21,6 @@ import io.airlift.configuration.Config;
 import io.airlift.configuration.Config1;
 import io.airlift.configuration.LegacyConfig;
 import io.airlift.configuration.testing.ConfigAssertions.$$RecordedConfigData;
-import io.airlift.testing.Assertions;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.net.MalformedURLException;
@@ -31,6 +29,11 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+
+import static io.airlift.testing.Assertions.assertContains;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotSame;
+import static org.testng.Assert.fail;
 
 public class TestConfigAssertions
 {
@@ -60,11 +63,11 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "Phone");
+            assertContains(e.getMessage(), "Phone");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -83,11 +86,11 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "HomePage");
+            assertContains(e.getMessage(), "HomePage");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -107,11 +110,11 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "UnsupportedAttribute");
+            assertContains(e.getMessage(), "UnsupportedAttribute");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -129,11 +132,11 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "HomePage");
+            assertContains(e.getMessage(), "HomePage");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -152,11 +155,11 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "HomePageUrl");
+            assertContains(e.getMessage(), "HomePageUrl");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -203,11 +206,11 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "unsupported-property");
+            assertContains(e.getMessage(), "unsupported-property");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -232,11 +235,11 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "home-page");
+            assertContains(e.getMessage(), "home-page");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -263,11 +266,11 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "Name");
+            assertContains(e.getMessage(), "Name");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -294,11 +297,11 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "HomePage");
+            assertContains(e.getMessage(), "HomePage");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -357,11 +360,11 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "unsupported-property");
+            assertContains(e.getMessage(), "unsupported-property");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -383,11 +386,11 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "notes-id");
+            assertContains(e.getMessage(), "notes-id");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -413,11 +416,11 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "notes-id");
+            assertContains(e.getMessage(), "notes-id");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -434,23 +437,23 @@ public class TestConfigAssertions
         $$RecordedConfigData<PersonConfig> data = ConfigAssertions.getRecordedConfig(config);
 
         PersonConfig instance = data.getInstance();
-        Assert.assertNotSame(instance, config);
+        assertNotSame(instance, config);
 
-        Assert.assertEquals(data.getInvokedMethods(), ImmutableSet.of(
+        assertEquals(data.getInvokedMethods(), ImmutableSet.of(
                 PersonConfig.class.getMethod("setName", String.class),
                 PersonConfig.class.getMethod("setEmail", String.class),
                 PersonConfig.class.getMethod("setPhone", String.class),
                 PersonConfig.class.getMethod("setHomePage", URI.class)));
 
-        Assert.assertEquals(instance.getName(), "Alice Apple");
-        Assert.assertEquals(instance.getEmail(), "alice@example.com");
-        Assert.assertEquals(instance.getPhone(), "1-976-alice");
-        Assert.assertEquals(instance.getHomePage(), URI.create("http://alice.example.com"));
+        assertEquals(instance.getName(), "Alice Apple");
+        assertEquals(instance.getEmail(), "alice@example.com");
+        assertEquals(instance.getPhone(), "1-976-alice");
+        assertEquals(instance.getHomePage(), URI.create("http://alice.example.com"));
 
-        Assert.assertEquals(config.getName(), "Alice Apple");
-        Assert.assertEquals(config.getEmail(), "alice@example.com");
-        Assert.assertEquals(config.getPhone(), "1-976-alice");
-        Assert.assertEquals(config.getHomePage(), URI.create("http://alice.example.com"));
+        assertEquals(config.getName(), "Alice Apple");
+        assertEquals(config.getEmail(), "alice@example.com");
+        assertEquals(config.getPhone(), "1-976-alice");
+        assertEquals(config.getHomePage(), URI.create("http://alice.example.com"));
     }
 
     @Test
@@ -503,11 +506,11 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "HomePageUrl");
+            assertContains(e.getMessage(), "HomePageUrl");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 
@@ -530,11 +533,11 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            Assertions.assertContains(e.getMessage(), "hashCode()");
+            assertContains(e.getMessage(), "hashCode()");
         }
 
         if (pass) {
-            Assert.fail("Expected AssertionError");
+            fail("Expected AssertionError");
         }
     }
 

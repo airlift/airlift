@@ -18,7 +18,6 @@ package io.airlift.configuration;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.ConfigurationException;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.HashMap;
@@ -27,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
 public class ConfigurationMetadataTest
@@ -811,33 +811,32 @@ public class ConfigurationMetadataTest
     private void verifyMetaData(ConfigurationMetadata<?> metadata, Class<?> configClass, String description, boolean securitySensitive, Map<String, Set<String>> attributeProperties)
             throws Exception
     {
-        Assert.assertEquals(metadata.getConfigClass(), configClass);
+        assertEquals(metadata.getConfigClass(), configClass);
 
         if (metadata.getConstructor() != null) {
-            Assert.assertEquals(metadata.getConstructor(), configClass.getDeclaredConstructor());
+            assertEquals(metadata.getConstructor(), configClass.getDeclaredConstructor());
         }
-        else {
+        else
             try {
                 configClass.getDeclaredConstructor();
-                Assert.fail(String.format("Expected configClass [%s] not to have a constructor", configClass.getName()));
+                fail(String.format("Expected configClass [%s] not to have a constructor", configClass.getName()));
             }
             catch (NoSuchMethodException expected) {
             }
-        }
 
-        Assert.assertEquals(metadata.getAttributes().size(), attributeProperties.keySet().size());
+        assertEquals(metadata.getAttributes().size(), attributeProperties.keySet().size());
 
         for (String name : attributeProperties.keySet()) {
             AttributeMetadata attribute = metadata.getAttributes().get(name);
-            Assert.assertEquals(attribute.getConfigClass(), configClass);
+            assertEquals(attribute.getConfigClass(), configClass);
             Set<String> namesToTest = new HashSet<>();
             namesToTest.add(attribute.getInjectionPoint().getProperty());
             for (ConfigurationMetadata.InjectionPointMetaData legacyInjectionPoint : attribute.getLegacyInjectionPoints()) {
                 namesToTest.add(legacyInjectionPoint.getProperty());
             }
-            Assert.assertEquals(namesToTest, attributeProperties.get(name));
-            Assert.assertEquals(attribute.getDescription(), description);
-            Assert.assertEquals(attribute.isSecuritySensitive(), securitySensitive);
+            assertEquals(namesToTest, attributeProperties.get(name));
+            assertEquals(attribute.getDescription(), description);
+            assertEquals(attribute.isSecuritySensitive(), securitySensitive);
         }
     }
 

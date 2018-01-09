@@ -27,7 +27,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import javax.servlet.ServletException;
@@ -41,6 +40,7 @@ import java.net.ServerSocket;
 import java.net.URI;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.testng.Assert.assertEquals;
 
 public class TestServiceInventory
 {
@@ -53,9 +53,9 @@ public class TestServiceInventory
                     JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
                     httpClient);
 
-            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 0);
+            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 0);
             serviceInventory.updateServiceInventory();
-            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 0);
+            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 0);
         }
     }
 
@@ -72,13 +72,13 @@ public class TestServiceInventory
                     JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
                     httpClient);
 
-            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 2);
-            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery")), 2);
-            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")), 2);
+            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 2);
+            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery")), 2);
+            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")), 2);
             serviceInventory.updateServiceInventory();
-            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 2);
-            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery")), 2);
-            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")), 2);
+            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 2);
+            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery")), 2);
+            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")), 2);
         }
     }
 
@@ -126,13 +126,13 @@ public class TestServiceInventory
                     JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
                     httpClient);
 
-            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 2);
-            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery")), 2);
-            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")), 2);
+            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 2);
+            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery")), 2);
+            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")), 2);
             serviceInventory.updateServiceInventory();
-            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 2);
-            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery")), 2);
-            Assert.assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")), 2);
+            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 2);
+            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery")), 2);
+            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")), 2);
         }
         finally {
             if (server != null) {

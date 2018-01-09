@@ -20,7 +20,6 @@ import io.airlift.node.NodeInfo;
 import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -36,6 +35,7 @@ import java.util.concurrent.ExecutionException;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static com.google.common.io.Resources.getResource;
+import static org.testng.Assert.fail;
 
 @Test(singleThreaded = true)
 public class TestHttpServerCipher
@@ -123,7 +123,7 @@ public class TestHttpServerCipher
             httpClient = createClientIncludeCiphers(CIPHER_3);
             try {
                 httpClient.GET(httpsUri);
-                Assert.fail("SSL handshake should fail because client included only ciphers the server didn't include");
+                fail("SSL handshake should fail because client included only ciphers the server didn't include");
             }
             catch (ExecutionException e) {
                 // expected
@@ -155,7 +155,7 @@ public class TestHttpServerCipher
             httpClient = createClientIncludeCiphers(CIPHER_1, CIPHER_2);
             try {
                 httpClient.GET(httpsUri);
-                Assert.fail("SSL handshake should fail because client included only ciphers the server excluded");
+                fail("SSL handshake should fail because client included only ciphers the server excluded");
             }
             catch (ExecutionException e) {
                 // expected
