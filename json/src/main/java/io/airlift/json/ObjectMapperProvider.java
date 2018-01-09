@@ -53,6 +53,7 @@ public class ObjectMapperProvider
 
     private final Set<Module> modules = new HashSet<>();
 
+    @Inject
     public ObjectMapperProvider() {
         this(new JsonFactory());
     }
