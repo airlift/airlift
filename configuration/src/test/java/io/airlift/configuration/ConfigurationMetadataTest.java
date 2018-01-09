@@ -816,13 +816,14 @@ public class ConfigurationMetadataTest
         if (metadata.getConstructor() != null) {
             assertEquals(metadata.getConstructor(), configClass.getDeclaredConstructor());
         }
-        else
+        else {
             try {
                 configClass.getDeclaredConstructor();
                 fail(String.format("Expected configClass [%s] not to have a constructor", configClass.getName()));
             }
             catch (NoSuchMethodException expected) {
             }
+        }
 
         assertEquals(metadata.getAttributes().size(), attributeProperties.keySet().size());
 
