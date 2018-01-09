@@ -308,6 +308,7 @@ public final class ConfigAssertions
         return (($$RecordingConfigProxy<T>) config).$$getRecordedConfig();
     }
 
+    @SuppressWarnings("checkstyle:TypeName")
     public static class $$RecordedConfigData<T>
     {
         private final T instance;
@@ -330,6 +331,7 @@ public final class ConfigAssertions
         }
     }
 
+    @SuppressWarnings("checkstyle:TypeName")
     public interface $$RecordingConfigProxy<T>
     {
         $$RecordedConfigData<T> $$getRecordedConfig();
