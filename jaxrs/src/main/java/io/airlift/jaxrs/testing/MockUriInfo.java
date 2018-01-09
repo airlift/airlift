@@ -170,10 +170,7 @@ public class MockUriInfo
 
             String key = urlDecode(pair.get(0));
             String value = null;
-            if (pair.size() == 1) {
-
-            }
-            else {
+            if (pair.size() != 1) {
                 value = QUERY_PARAM_VALUE_JOINER.join(pair.subList(1, pair.size()));
                 if (decode) {
                     value = urlDecode(value);
