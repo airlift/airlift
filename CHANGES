@@ -1,6 +1,7 @@
 * 0.161
 
 - Allow binding config defaults for HTTP client threads.
+- Make JsonFactory used for ObjectMapperProvider configurable.
 
 * 0.160
 

@@ -16,6 +16,7 @@
 package io.airlift.json;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonDeserializer;
@@ -40,9 +41,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import static java.util.Objects.requireNonNull;
+
 public class ObjectMapperProvider
         implements Provider<ObjectMapper>
 {
+    private final JsonFactory jsonFactory;
+
     private Map<Class<?>, JsonSerializer<?>> keySerializers;
     private Map<Class<?>, KeyDeserializer> keyDeserializers;
     private Map<Class<?>, JsonSerializer<?>> jsonSerializers;
@@ -50,8 +55,16 @@ public class ObjectMapperProvider
 
     private final Set<Module> modules = new HashSet<>();
 
+    @Inject
     public ObjectMapperProvider()
     {
+        this(new JsonFactory());
+    }
+
+    public ObjectMapperProvider(JsonFactory jsonFactory)
+    {
+        this.jsonFactory = requireNonNull(jsonFactory, "jsonFactory is null");
+
         modules.add(new Jdk8Module());
         modules.add(new JavaTimeModule());
         modules.add(new GuavaModule());
@@ -91,7 +104,7 @@ public class ObjectMapperProvider
     @Override
     public ObjectMapper get()
     {
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = new ObjectMapper(jsonFactory);
 
         // ignore unknown fields (for backwards compatibility)
         objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
