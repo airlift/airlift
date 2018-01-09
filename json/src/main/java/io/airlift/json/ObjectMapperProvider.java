@@ -16,6 +16,7 @@
 package io.airlift.json;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonDeserializer;
@@ -43,6 +44,8 @@ import java.util.Set;
 public class ObjectMapperProvider
         implements Provider<ObjectMapper>
 {
+    private final JsonFactory jsonFactory;
+
     private Map<Class<?>, JsonSerializer<?>> keySerializers;
     private Map<Class<?>, KeyDeserializer> keyDeserializers;
     private Map<Class<?>, JsonSerializer<?>> jsonSerializers;
@@ -50,8 +53,14 @@ public class ObjectMapperProvider
 
     private final Set<Module> modules = new HashSet<>();
 
-    public ObjectMapperProvider()
-    {
+    @Inject
+    public ObjectMapperProvider() {
+        this(new JsonFactory());
+    }
+
+    public ObjectMapperProvider(JsonFactory jsonFactory) {
+        this.jsonFactory = jsonFactory;
+
         modules.add(new Jdk8Module());
         modules.add(new JavaTimeModule());
         modules.add(new GuavaModule());
