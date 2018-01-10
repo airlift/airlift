@@ -1,31 +1,18 @@
 package io.airlift.http.client.jetty;
 
-import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.io.CountingInputStream;
 import com.google.common.net.HostAndPort;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.AbstractFuture;
 import io.airlift.http.client.BodyGenerator;
 import io.airlift.http.client.FileBodyGenerator;
-import io.airlift.http.client.GatheringByteArrayInputStream;
-import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
-import io.airlift.http.client.ResponseTooLargeException;
 import io.airlift.http.client.StaticBodyGenerator;
 import io.airlift.http.client.spnego.KerberosConfig;
-import io.airlift.http.client.spnego.SpnegoAuthentication;
 import io.airlift.http.client.spnego.SpnegoAuthenticationProtocolHandler;
-import io.airlift.http.client.spnego.SpnegoAuthenticationStore;
-import io.airlift.log.Logger;
-import io.airlift.stats.Distribution;
-import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
@@ -35,18 +22,14 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.PoolingHttpDestination;
 import org.eclipse.jetty.client.Socks4Proxy;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
-import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Response.Listener;
-import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.PathContentProvider;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
@@ -63,46 +46,26 @@ import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
-import javax.annotation.concurrent.GuardedBy;
-import javax.annotation.concurrent.ThreadSafe;
-
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InterruptedIOException;
-import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static io.airlift.units.DataSize.Unit.KILOBYTE;
-import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.lang.Math.max;
-import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -672,7 +635,7 @@ public class JettyHttpClient
                 .collect(Collectors.joining("\n"));
     }
 
-    private static List<JettyRequestListener> getRequestListenersForDestination(Destination destination)
+    static List<JettyRequestListener> getRequestListenersForDestination(Destination destination)
     {
         return getRequestForDestination(destination).stream()
                 .map(request -> request.getAttributes().get(PRESTO_STATS_KEY))
@@ -771,7 +734,7 @@ public class JettyHttpClient
                 service.stop();
             }
         }
-        catch (InterruptedException ignored) {
+        catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
         catch (Exception ignored) {
@@ -783,223 +746,7 @@ public class JettyHttpClient
         return "anonymous" + NAME_COUNTER.incrementAndGet();
     }
 
-    private static class JettyResponse
-            implements io.airlift.http.client.Response
-    {
-        private final Response response;
-        private final CountingInputStream inputStream;
-        private final ListMultimap<HeaderName, String> headers;
-
-        public JettyResponse(Response response, InputStream inputStream)
-        {
-            this.response = response;
-            this.inputStream = new CountingInputStream(inputStream);
-            this.headers = toHeadersMap(response.getHeaders());
-        }
-
-        @Override
-        public int getStatusCode()
-        {
-            return response.getStatus();
-        }
-
-        @Override
-        public String getStatusMessage()
-        {
-            return response.getReason();
-        }
-
-        @Override
-        public ListMultimap<HeaderName, String> getHeaders()
-        {
-            return headers;
-        }
-
-        @Override
-        public long getBytesRead()
-        {
-            return inputStream.getCount();
-        }
-
-        @Override
-        public InputStream getInputStream()
-        {
-            return inputStream;
-        }
-
-        @Override
-        public String toString()
-        {
-            return toStringHelper(this)
-                    .add("statusCode", getStatusCode())
-                    .add("statusMessage", getStatusMessage())
-                    .add("headers", getHeaders())
-                    .toString();
-        }
-
-        private static ListMultimap<HeaderName, String> toHeadersMap(HttpFields headers)
-        {
-            ImmutableListMultimap.Builder<HeaderName, String> builder = ImmutableListMultimap.builder();
-            for (String name : headers.getFieldNamesCollection()) {
-                for (String value : headers.getValuesList(name)) {
-                    builder.put(HeaderName.of(name), value);
-                }
-            }
-            return builder.build();
-        }
-    }
-
-    private static class JettyResponseFuture<T, E extends Exception>
-            extends AbstractFuture<T>
-            implements HttpResponseFuture<T>
-    {
-        public enum JettyAsyncHttpState
-        {
-            WAITING_FOR_CONNECTION,
-            SENDING_REQUEST,
-            WAITING_FOR_RESPONSE,
-            PROCESSING_RESPONSE,
-            DONE,
-            FAILED,
-            CANCELED
-        }
-
-        private static final Logger log = Logger.get(JettyResponseFuture.class);
-
-        private final long requestStart = System.nanoTime();
-        private final AtomicReference<JettyAsyncHttpState> state = new AtomicReference<>(JettyAsyncHttpState.WAITING_FOR_CONNECTION);
-        private final Request request;
-        private final org.eclipse.jetty.client.api.Request jettyRequest;
-        private final ResponseHandler<T, E> responseHandler;
-        private final RequestStats stats;
-        private final boolean recordRequestComplete;
-
-        public JettyResponseFuture(Request request, org.eclipse.jetty.client.api.Request jettyRequest, ResponseHandler<T, E> responseHandler, RequestStats stats, boolean recordRequestComplete)
-        {
-            this.request = request;
-            this.jettyRequest = jettyRequest;
-            this.responseHandler = responseHandler;
-            this.stats = stats;
-            this.recordRequestComplete = recordRequestComplete;
-        }
-
-        @Override
-        public String getState()
-        {
-            return state.get().toString();
-        }
-
-        @Override
-        public boolean cancel(boolean mayInterruptIfRunning)
-        {
-            try {
-                stats.recordRequestCanceled();
-                state.set(JettyAsyncHttpState.CANCELED);
-                jettyRequest.abort(new CancellationException());
-                return super.cancel(mayInterruptIfRunning);
-            }
-            catch (Throwable e) {
-                setException(e);
-                return true;
-            }
-        }
-
-        protected void completed(Response response, InputStream content)
-        {
-            if (state.get() == JettyAsyncHttpState.CANCELED) {
-                return;
-            }
-
-            T value;
-            try {
-                value = processResponse(response, content);
-            }
-            catch (Throwable e) {
-                // this will be an instance of E from the response handler or an Error
-                storeException(e);
-                return;
-            }
-            state.set(JettyAsyncHttpState.DONE);
-            set(value);
-        }
-
-        private T processResponse(Response response, InputStream content)
-                throws E
-        {
-            // this time will not include the data fetching portion of the response,
-            // since the response is fully cached in memory at this point
-            long responseStart = System.nanoTime();
-
-            state.set(JettyAsyncHttpState.PROCESSING_RESPONSE);
-            JettyResponse jettyResponse = null;
-            T value;
-            try {
-                jettyResponse = new JettyResponse(response, content);
-                value = responseHandler.handle(request, jettyResponse);
-            }
-            finally {
-                if (recordRequestComplete) {
-                    recordRequestComplete(stats, request, requestStart, jettyResponse, responseStart);
-                }
-            }
-            return value;
-        }
-
-        protected void failed(Throwable throwable)
-        {
-            if (state.get() == JettyAsyncHttpState.CANCELED) {
-                return;
-            }
-
-            stats.recordRequestFailed();
-
-            // give handler a chance to rewrite the exception or return a value instead
-            if (throwable instanceof Exception) {
-                try {
-                    T value = responseHandler.handleException(request, (Exception) throwable);
-                    // handler returned a value, store it in the future
-                    state.set(JettyAsyncHttpState.DONE);
-                    set(value);
-                    return;
-                }
-                catch (Throwable newThrowable) {
-                    throwable = newThrowable;
-                }
-            }
-
-            // at this point "throwable" will either be an instance of E
-            // from the response handler or not an instance of Exception
-            storeException(throwable);
-        }
-
-        private void storeException(Throwable throwable)
-        {
-            if (throwable instanceof CancellationException) {
-                state.set(JettyAsyncHttpState.CANCELED);
-            }
-            else {
-                state.set(JettyAsyncHttpState.FAILED);
-            }
-            if (throwable == null) {
-                throwable = new Throwable("Throwable is null");
-                log.error(throwable, "Something is broken");
-            }
-
-            setException(throwable);
-        }
-
-        @Override
-        public String toString()
-        {
-            return toStringHelper(this)
-                    .add("requestStart", requestStart)
-                    .add("state", state)
-                    .add("request", request)
-                    .toString();
-        }
-    }
-
-    private static void recordRequestComplete(RequestStats requestStats, Request request, long requestStart, JettyResponse response, long responseStart)
+    static void recordRequestComplete(RequestStats requestStats, Request request, long requestStart, JettyResponse response, long responseStart)
     {
         if (response == null) {
             return;
@@ -1014,534 +761,5 @@ public class JettyHttpClient
                 response.getBytesRead(),
                 requestProcessingTime,
                 responseProcessingTime);
-    }
-
-    private static class BodyGeneratorContentProvider
-            implements ContentProvider
-    {
-        private static final ByteBuffer DONE = ByteBuffer.allocate(0);
-        private static final ByteBuffer EXCEPTION = ByteBuffer.allocate(0);
-
-        private final BodyGenerator bodyGenerator;
-        private final Executor executor;
-
-        public BodyGeneratorContentProvider(BodyGenerator bodyGenerator, Executor executor)
-        {
-            this.bodyGenerator = bodyGenerator;
-            this.executor = executor;
-        }
-
-        @Override
-        public long getLength()
-        {
-            return -1;
-        }
-
-        @Override
-        public Iterator<ByteBuffer> iterator()
-        {
-            final BlockingQueue<ByteBuffer> chunks = new ArrayBlockingQueue<>(16);
-            final AtomicReference<Exception> exception = new AtomicReference<>();
-
-            executor.execute(() -> {
-                BodyGeneratorOutputStream out = new BodyGeneratorOutputStream(chunks);
-                try {
-                    bodyGenerator.write(out);
-                    out.close();
-                }
-                catch (Exception e) {
-                    exception.set(e);
-                    chunks.add(EXCEPTION);
-                }
-            });
-
-            return new AbstractIterator<ByteBuffer>()
-            {
-                @Override
-                protected ByteBuffer computeNext()
-                {
-                    ByteBuffer chunk;
-                    try {
-                        chunk = chunks.take();
-                    }
-                    catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException("Interrupted", e);
-                    }
-
-                    if (chunk == EXCEPTION) {
-                        throwIfUnchecked(exception.get());
-                        throw new RuntimeException(exception.get());
-                    }
-                    if (chunk == DONE) {
-                        return endOfData();
-                    }
-                    return chunk;
-                }
-            };
-        }
-
-        private final class BodyGeneratorOutputStream
-                extends OutputStream
-        {
-            private final BlockingQueue<ByteBuffer> chunks;
-
-            private BodyGeneratorOutputStream(BlockingQueue<ByteBuffer> chunks)
-            {
-                this.chunks = chunks;
-            }
-
-            @Override
-            public void write(int b)
-                    throws IOException
-            {
-                try {
-                    // must copy array since it could be reused
-                    chunks.put(ByteBuffer.wrap(new byte[] {(byte) b}));
-                }
-                catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new InterruptedIOException();
-                }
-            }
-
-            @Override
-            public void write(byte[] b, int off, int len)
-                    throws IOException
-            {
-                try {
-                    // must copy array since it could be reused
-                    byte[] copy = Arrays.copyOfRange(b, off, len);
-                    chunks.put(ByteBuffer.wrap(copy));
-                }
-                catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new InterruptedIOException();
-                }
-            }
-
-            @Override
-            public void close()
-                    throws IOException
-            {
-                try {
-                    chunks.put(DONE);
-                }
-                catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new InterruptedIOException();
-                }
-            }
-        }
-    }
-
-    @ThreadSafe
-    private static class BufferingResponseListener
-            extends Listener.Adapter
-    {
-        private static final long BUFFER_MAX_BYTES = new DataSize(1, MEGABYTE).toBytes();
-        private static final long BUFFER_MIN_BYTES = new DataSize(1, KILOBYTE).toBytes();
-        private final JettyResponseFuture<?, ?> future;
-        private final int maxLength;
-
-        @GuardedBy("this")
-        private byte[] currentBuffer = new byte[0];
-        @GuardedBy("this")
-        private int currentBufferPosition;
-        @GuardedBy("this")
-        private List<byte[]> buffers = new ArrayList<>();
-        @GuardedBy("this")
-        private long size;
-
-        public BufferingResponseListener(JettyResponseFuture<?, ?> future, int maxLength)
-        {
-            this.future = requireNonNull(future, "future is null");
-            checkArgument(maxLength > 0, "maxLength must be greater than zero");
-            this.maxLength = maxLength;
-        }
-
-        @Override
-        public synchronized void onHeaders(Response response)
-        {
-            long length = response.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH.asString());
-            if (length > maxLength) {
-                response.abort(new ResponseTooLargeException());
-            }
-        }
-
-        @Override
-        public synchronized void onContent(Response response, ByteBuffer content)
-        {
-            int length = content.remaining();
-            size += length;
-            if (size > maxLength) {
-                response.abort(new ResponseTooLargeException());
-                return;
-            }
-
-            while (length > 0) {
-                if (currentBufferPosition >= currentBuffer.length) {
-                    allocateCurrentBuffer();
-                }
-                int readLength = min(length, currentBuffer.length - currentBufferPosition);
-                content.get(currentBuffer, currentBufferPosition, readLength);
-                length -= readLength;
-                currentBufferPosition += readLength;
-            }
-        }
-
-        @Override
-        public synchronized void onComplete(Result result)
-        {
-            Throwable throwable = result.getFailure();
-            if (throwable != null) {
-                future.failed(throwable);
-            }
-            else {
-                currentBuffer = new byte[0];
-                currentBufferPosition = 0;
-                future.completed(result.getResponse(), new GatheringByteArrayInputStream(buffers, size));
-                buffers = new ArrayList<>();
-                size = 0;
-            }
-        }
-
-        private synchronized void allocateCurrentBuffer()
-        {
-            checkState(currentBufferPosition >= currentBuffer.length, "there is still remaining space in currentBuffer");
-
-            currentBuffer = new byte[(int) min(BUFFER_MAX_BYTES, max(2 * currentBuffer.length, BUFFER_MIN_BYTES))];
-            buffers.add(currentBuffer);
-            currentBufferPosition = 0;
-        }
-    }
-
-    /*
-     * This class is needed because jmxutils only fetches a nested instance object once and holds on to it forever.
-     * todo remove this when https://github.com/martint/jmxutils/issues/26 is implemented
-     */
-    @ThreadSafe
-    public static class CachedDistribution
-    {
-        private final Supplier<Distribution> distributionSupplier;
-
-        @GuardedBy("this")
-        private Distribution distribution;
-        @GuardedBy("this")
-        private long lastUpdate = System.nanoTime();
-
-        public CachedDistribution(Supplier<Distribution> distributionSupplier)
-        {
-            this.distributionSupplier = distributionSupplier;
-        }
-
-        public synchronized Distribution getDistribution()
-        {
-            // refresh stats only once a second
-            if (NANOSECONDS.toMillis(System.nanoTime() - lastUpdate) > 1000) {
-                this.distribution = distributionSupplier.get();
-                this.lastUpdate = System.nanoTime();
-            }
-            return distribution;
-        }
-
-        @Managed
-        public double getMaxError()
-        {
-            return getDistribution().getMaxError();
-        }
-
-        @Managed
-        public double getCount()
-        {
-            return getDistribution().getCount();
-        }
-
-        @Managed
-        public double getTotal()
-        {
-            return getDistribution().getTotal();
-        }
-
-        @Managed
-        public long getP01()
-        {
-            return getDistribution().getP01();
-        }
-
-        @Managed
-        public long getP05()
-        {
-            return getDistribution().getP05();
-        }
-
-        @Managed
-        public long getP10()
-        {
-            return getDistribution().getP10();
-        }
-
-        @Managed
-        public long getP25()
-        {
-            return getDistribution().getP25();
-        }
-
-        @Managed
-        public long getP50()
-        {
-            return getDistribution().getP50();
-        }
-
-        @Managed
-        public long getP75()
-        {
-            return getDistribution().getP75();
-        }
-
-        @Managed
-        public long getP90()
-        {
-            return getDistribution().getP90();
-        }
-
-        @Managed
-        public long getP95()
-        {
-            return getDistribution().getP95();
-        }
-
-        @Managed
-        public long getP99()
-        {
-            return getDistribution().getP99();
-        }
-
-        @Managed
-        public long getMin()
-        {
-            return getDistribution().getMin();
-        }
-
-        @Managed
-        public long getMax()
-        {
-            return getDistribution().getMax();
-        }
-
-        @Managed
-        public Map<Double, Long> getPercentiles()
-        {
-            return getDistribution().getPercentiles();
-        }
-    }
-
-    private static class JettyRequestListener
-    {
-        enum State
-        {
-            CREATED, SENDING_REQUEST, AWAITING_RESPONSE, READING_RESPONSE, FINISHED
-        }
-
-        private final AtomicReference<State> state = new AtomicReference<>(State.CREATED);
-
-        private final URI uri;
-        private final long created = System.nanoTime();
-        private final AtomicLong requestStarted = new AtomicLong();
-        private final AtomicLong requestFinished = new AtomicLong();
-        private final AtomicLong responseStarted = new AtomicLong();
-        private final AtomicLong responseFinished = new AtomicLong();
-
-        public JettyRequestListener(URI uri)
-        {
-            this.uri = uri;
-        }
-
-        public URI getUri()
-        {
-            return uri;
-        }
-
-        public State getState()
-        {
-            return state.get();
-        }
-
-        public long getCreated()
-        {
-            return created;
-        }
-
-        public long getRequestStarted()
-        {
-            return requestStarted.get();
-        }
-
-        public long getRequestFinished()
-        {
-            return requestFinished.get();
-        }
-
-        public long getResponseStarted()
-        {
-            return responseStarted.get();
-        }
-
-        public long getResponseFinished()
-        {
-            return responseFinished.get();
-        }
-
-        public void onRequestBegin()
-        {
-            changeState(State.SENDING_REQUEST);
-
-            long now = System.nanoTime();
-            requestStarted.compareAndSet(0, now);
-        }
-
-        public void onRequestEnd()
-        {
-            changeState(State.AWAITING_RESPONSE);
-
-            long now = System.nanoTime();
-            requestStarted.compareAndSet(0, now);
-            requestFinished.compareAndSet(0, now);
-        }
-
-        private void onResponseBegin()
-        {
-            changeState(State.READING_RESPONSE);
-
-            long now = System.nanoTime();
-            requestStarted.compareAndSet(0, now);
-            requestFinished.compareAndSet(0, now);
-            responseStarted.compareAndSet(0, now);
-        }
-
-        private void onFinish()
-        {
-            changeState(State.FINISHED);
-
-            long now = System.nanoTime();
-            requestStarted.compareAndSet(0, now);
-            requestFinished.compareAndSet(0, now);
-            responseStarted.compareAndSet(0, now);
-            responseFinished.compareAndSet(0, now);
-        }
-
-        private synchronized void changeState(State newState)
-        {
-            if (state.get().ordinal() < newState.ordinal()) {
-                state.set(newState);
-            }
-        }
-    }
-
-    private static class ConnectionPoolDistribution
-            extends CachedDistribution
-    {
-        interface Processor
-        {
-            void process(Distribution distribution, DuplexConnectionPool pool);
-        }
-
-        public ConnectionPoolDistribution(HttpClient httpClient, Processor processor)
-        {
-            super(() -> {
-                Distribution distribution = new Distribution();
-                httpClient.getDestinations().stream()
-                        .filter(PoolingHttpDestination.class::isInstance)
-                        .map(PoolingHttpDestination.class::cast)
-                        .map(PoolingHttpDestination::getConnectionPool)
-                        .filter(Objects::nonNull)
-                        .map(DuplexConnectionPool.class::cast)
-                        .forEach(pool -> processor.process(distribution, pool));
-                return distribution;
-            });
-        }
-    }
-
-    private static class DestinationDistribution
-            extends CachedDistribution
-    {
-        interface Processor
-        {
-            void process(Distribution distribution, PoolingHttpDestination destination);
-        }
-
-        public DestinationDistribution(HttpClient httpClient, Processor processor)
-        {
-            super(() -> {
-                Distribution distribution = new Distribution();
-                httpClient.getDestinations().stream()
-                        .filter(PoolingHttpDestination.class::isInstance)
-                        .map(PoolingHttpDestination.class::cast)
-                        .forEach(destination -> processor.process(distribution, destination));
-                return distribution;
-            });
-        }
-    }
-
-    private static class RequestDistribution
-            extends CachedDistribution
-    {
-        interface Processor
-        {
-            void process(Distribution distribution, JettyRequestListener listener, long now);
-        }
-
-        public RequestDistribution(HttpClient httpClient, Processor processor)
-        {
-            super(() -> {
-                long now = System.nanoTime();
-                Distribution distribution = new Distribution();
-                httpClient.getDestinations().stream()
-                        .filter(PoolingHttpDestination.class::isInstance)
-                        .map(PoolingHttpDestination.class::cast)
-                        .map(JettyHttpClient::getRequestListenersForDestination)
-                        .flatMap(List::stream)
-                        .forEach(listener -> processor.process(distribution, listener, now));
-                return distribution;
-            });
-        }
-    }
-
-    // By wrapping HttpClient, we are able to substitute the underlying AuthenticationStore
-    // with a more efficient one.
-    private static class SpnegoHttpClient
-            extends HttpClient
-    {
-        private final AuthenticationStore authenticationStore;
-        private final SpnegoAuthentication spnego;
-
-        public SpnegoHttpClient(KerberosConfig kerberosConfig, HttpClientConfig config, HttpClientTransport transport, SslContextFactory sslContextFactory)
-        {
-            super(transport, sslContextFactory);
-
-            spnego = new SpnegoAuthentication(
-                    kerberosConfig.getKeytab(),
-                    kerberosConfig.getConfig(),
-                    kerberosConfig.getCredentialCache(),
-                    config.getKerberosPrincipal(),
-                    config.getKerberosRemoteServiceName(),
-                    kerberosConfig.isUseCanonicalHostname());
-
-            authenticationStore = new SpnegoAuthenticationStore(spnego);
-        }
-
-        @Override
-        public AuthenticationStore getAuthenticationStore()
-        {
-            return authenticationStore;
-        }
-
-        @Override
-        protected void doStop()
-                throws Exception
-        {
-            authenticationStore.clearAuthenticationResults();
-            super.doStop();
-        }
     }
 }
