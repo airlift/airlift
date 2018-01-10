@@ -3,11 +3,11 @@ package io.airlift.http.client.jetty;
 import com.google.common.collect.ImmutableList;
 import io.airlift.http.client.AbstractHttpClientTest;
 import io.airlift.http.client.HttpClientConfig;
-import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingRequestFilter;
 import io.airlift.http.client.TestingSocksProxy;
+import io.airlift.http.client.spnego.KerberosConfig;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -20,7 +20,6 @@ public class TestJettyHttpClientSocksProxy
         extends AbstractHttpClientTest
 {
     private JettyHttpClient httpClient;
-    private JettyIoPool jettyIoPool;
     private TestingSocksProxy testingSocksProxy;
 
     @BeforeClass
@@ -28,15 +27,13 @@ public class TestJettyHttpClientSocksProxy
             throws IOException
     {
         testingSocksProxy = new TestingSocksProxy().start();
-        jettyIoPool = new JettyIoPool("test-shared", new JettyIoPoolConfig());
-        httpClient = new JettyHttpClient(createClientConfig(), jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()));
+        httpClient = new JettyHttpClient("test-shared", createClientConfig(), new KerberosConfig(), ImmutableList.of(new TestingRequestFilter()));
     }
 
     @AfterClass(alwaysRun = true)
     public void tearDownHttpClient()
     {
         closeQuietly(httpClient);
-        closeQuietly(jettyIoPool);
         closeQuietly(testingSocksProxy);
     }
 
@@ -60,10 +57,7 @@ public class TestJettyHttpClientSocksProxy
             throws Exception
     {
         config.setSocksProxy(testingSocksProxy.getHostAndPort());
-        try (
-                JettyIoPool jettyIoPool = new JettyIoPool("test-private", new JettyIoPoolConfig());
-                JettyHttpClient client = new JettyHttpClient(config, jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()))
-        ) {
+        try (JettyHttpClient client = new JettyHttpClient("test-private", config, new KerberosConfig(), ImmutableList.of(new TestingRequestFilter()))) {
             return client.execute(request, responseHandler);
         }
     }

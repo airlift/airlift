@@ -3,10 +3,10 @@ package io.airlift.http.client.jetty;
 import com.google.common.collect.ImmutableList;
 import io.airlift.http.client.AbstractHttpClientTest;
 import io.airlift.http.client.HttpClientConfig;
-import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingRequestFilter;
+import io.airlift.http.client.spnego.KerberosConfig;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
@@ -16,21 +16,17 @@ public class TestAsyncJettyHttpClient
         extends AbstractHttpClientTest
 {
     private JettyHttpClient httpClient;
-    private JettyIoPool jettyIoPool;
 
     @BeforeClass
     public void setUpHttpClient()
     {
-        jettyIoPool = new JettyIoPool("test-shared", new JettyIoPoolConfig());
-        httpClient = new JettyHttpClient(createClientConfig(), jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()));
+        httpClient = new JettyHttpClient("test-shared", createClientConfig(), new KerberosConfig(), ImmutableList.of(new TestingRequestFilter()));
     }
 
     @AfterClass(alwaysRun = true)
     public void tearDownHttpClient()
-            throws Exception
     {
         closeQuietly(httpClient);
-        closeQuietly(jettyIoPool);
     }
 
     @Override
@@ -53,10 +49,7 @@ public class TestAsyncJettyHttpClient
     public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        try (
-                JettyIoPool jettyIoPool = new JettyIoPool("test-private", new JettyIoPoolConfig());
-                JettyHttpClient client = new JettyHttpClient(config, jettyIoPool, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()))
-        ) {
+        try (JettyHttpClient client = new JettyHttpClient("test-private", config, new KerberosConfig(), ImmutableList.of(new TestingRequestFilter()))) {
             return executeAsync(client, request, responseHandler);
         }
     }

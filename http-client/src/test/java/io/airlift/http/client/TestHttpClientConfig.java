@@ -66,7 +66,11 @@ public class TestHttpClientConfig
                 .setHttp2InputBufferSize(new DataSize(8, KILOBYTE))
                 .setSelectorCount(2)
                 .setRecordRequestComplete(true)
-                .setConnectBlocking(false));
+                .setConnectBlocking(false)
+                .setMaxThreads(200)
+                .setMinThreads(8)
+                .setTimeoutConcurrency(1)
+                .setTimeoutThreads(1));
     }
 
     @Test
@@ -97,6 +101,10 @@ public class TestHttpClientConfig
                 .put("http-client.selector-count", "16")
                 .put("http-client.record-request-complete", "false")
                 .put("http-client.use-blocking-connect", "true")
+                .put("http-client.max-threads", "33")
+                .put("http-client.min-threads", "11")
+                .put("http-client.timeout-concurrency", "33")
+                .put("http-client.timeout-threads", "44")
                 .build();
 
         HttpClientConfig expected = new HttpClientConfig()
@@ -123,7 +131,11 @@ public class TestHttpClientConfig
                 .setHttp2InputBufferSize(new DataSize(1, MEGABYTE))
                 .setSelectorCount(16)
                 .setRecordRequestComplete(false)
-                .setConnectBlocking(true);
+                .setConnectBlocking(true)
+                .setMaxThreads(33)
+                .setMinThreads(11)
+                .setTimeoutConcurrency(33)
+                .setTimeoutThreads(44);
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

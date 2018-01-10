@@ -25,24 +25,17 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import io.airlift.configuration.ConfigDefaults;
 import io.airlift.http.client.jetty.JettyHttpClient;
-import io.airlift.http.client.jetty.JettyIoPoolConfig;
-import io.airlift.http.client.jetty.JettyIoPoolManager;
-import io.airlift.http.client.jetty.QueuedThreadPoolMBean;
-import io.airlift.http.client.jetty.QueuedThreadPoolMBeanProvider;
 import io.airlift.http.client.spnego.KerberosConfig;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 
 import java.lang.annotation.Annotation;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static java.util.Objects.requireNonNull;
-import static org.weakref.jmx.ObjectNames.generatedNameOf;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class HttpClientModule
@@ -71,19 +64,6 @@ public class HttpClientModule
         // bind the configuration
         configBinder(binder).bindConfig(KerberosConfig.class);
         configBinder(binder).bindConfig(HttpClientConfig.class, annotation, name);
-        configBinder(binder).bindConfig(JettyIoPoolConfig.class, annotation, name);
-
-        // bind a named Jetty thread pool
-        JettyIoPoolManager ioPoolManager = new JettyIoPoolManager(name, annotation);
-        binder.bind(JettyIoPoolManager.class)
-                .annotatedWith(annotation)
-                .toInstance(ioPoolManager);
-        binder.bind(QueuedThreadPoolMBean.class)
-                .annotatedWith(annotation)
-                .toProvider(new QueuedThreadPoolMBeanProvider(ioPoolManager));
-        newExporter(binder).export(QueuedThreadPoolMBean.class)
-                .annotatedWith(annotation)
-                .as(generatedNameOf(QueuedThreadPool.class, name));
 
         // bind the client
         binder.bind(HttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(name, annotation)).in(Scopes.SINGLETON);
@@ -112,8 +92,8 @@ public class HttpClientModule
 
         private HttpClientProvider(String name, Class<? extends Annotation> annotation)
         {
-            this.name = name;
-            this.annotation = annotation;
+            this.name = requireNonNull(name, "name is null");
+            this.annotation = requireNonNull(annotation, "annotation is null");
         }
 
         @Inject
@@ -126,17 +106,14 @@ public class HttpClientModule
         public HttpClient get()
         {
             KerberosConfig kerberosConfig = injector.getInstance(KerberosConfig.class);
-
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
+
             Set<HttpRequestFilter> filters = ImmutableSet.<HttpRequestFilter>builder()
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, GlobalFilter.class)))
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, annotation)))
                     .build();
 
-            JettyIoPoolManager ioPoolProvider = injector.getInstance(Key.get(JettyIoPoolManager.class, annotation));
-            JettyHttpClient client = new JettyHttpClient(config, kerberosConfig, Optional.of(ioPoolProvider.get()), ImmutableList.copyOf(filters));
-            ioPoolProvider.setClient(client);
-            return client;
+            return new JettyHttpClient(name, config, kerberosConfig, ImmutableList.copyOf(filters));
         }
     }
 }

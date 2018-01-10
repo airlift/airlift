@@ -1,3 +1,7 @@
+* 0.161
+
+- Allow binding config defaults for HTTP client threads.
+
 * 0.160
 
 - Use a dedicated thread pool for each HTTP client. The HTTP client binder
