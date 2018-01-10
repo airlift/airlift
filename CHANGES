@@ -1,3 +1,7 @@
+* 0.162
+
+- Fix shutdown of HTTP clients when lifecyle is stopped.
+
 * 0.161
 
 - Allow binding config defaults for HTTP client threads.

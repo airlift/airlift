@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import io.airlift.bootstrap.Bootstrap;
+import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.tracetoken.TraceTokenModule;
 import io.airlift.units.Duration;
@@ -35,9 +36,11 @@ import static io.airlift.testing.Assertions.assertInstanceOf;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertTrue;
 
 public class TestHttpClientBinder
 {
@@ -203,6 +206,31 @@ public class TestHttpClientBinder
         HttpClient fooClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
         HttpClient barClient = injector.getInstance(Key.get(HttpClient.class, BarClient.class));
         assertNotSame(fooClient, barClient);
+    }
+
+    @Test
+    public void testClientShutdown()
+            throws Exception
+    {
+        Injector injector = new Bootstrap(
+                binder -> {
+                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
+                    httpClientBinder(binder).bindHttpClient("bar", BarClient.class);
+                })
+                .quiet()
+                .strictConfig()
+                .initialize();
+
+        HttpClient fooClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
+        HttpClient barClient = injector.getInstance(Key.get(HttpClient.class, BarClient.class));
+
+        assertFalse(fooClient.isClosed());
+        assertFalse(barClient.isClosed());
+
+        injector.getInstance(LifeCycleManager.class).stop();
+
+        assertTrue(fooClient.isClosed());
+        assertTrue(barClient.isClosed());
     }
 
     private static void assertFilterCount(HttpClient httpClient, int filterCount)
