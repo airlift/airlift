@@ -13,7 +13,6 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
 import static com.google.common.io.Resources.getResource;
@@ -24,7 +23,6 @@ public class TestJettyHttpsClient
         extends AbstractHttpClientTest
 {
     private JettyHttpClient httpClient;
-    private JettyIoPool jettyIoPool;
 
     TestJettyHttpsClient()
     {
@@ -34,16 +32,13 @@ public class TestJettyHttpsClient
     @BeforeClass
     public void setUpHttpClient()
     {
-        jettyIoPool = new JettyIoPool("test-shared", new JettyIoPoolConfig());
-        httpClient = new JettyHttpClient(createClientConfig(), createKerberosConfig(), Optional.of(jettyIoPool), ImmutableList.of(new TestingRequestFilter()));
+        httpClient = new JettyHttpClient("test-shared", createClientConfig(), createKerberosConfig(), ImmutableList.of(new TestingRequestFilter()));
     }
 
     @AfterClass(alwaysRun = true)
     public void tearDownHttpClient()
-            throws Exception
     {
         closeQuietly(httpClient);
-        closeQuietly(jettyIoPool);
     }
 
     @Override
@@ -78,10 +73,7 @@ public class TestJettyHttpsClient
                 .setTrustStorePath(getResource("localhost.truststore").getPath())
                 .setTrustStorePassword("changeit");
 
-        try (
-                JettyIoPool jettyIoPool = new JettyIoPool("test-private", new JettyIoPoolConfig());
-                JettyHttpClient client = new JettyHttpClient(config, createKerberosConfig(), Optional.of(jettyIoPool), ImmutableList.of(new TestingRequestFilter()))
-        ) {
+        try (JettyHttpClient client = new JettyHttpClient("test-private", config, createKerberosConfig(), ImmutableList.of(new TestingRequestFilter()))) {
             return client.execute(request, responseHandler);
         }
     }
@@ -99,7 +91,7 @@ public class TestJettyHttpsClient
     }
 
     @Override
-    @Test(expectedExceptions = {IOException.class,  IllegalStateException.class})
+    @Test(expectedExceptions = {IOException.class, IllegalStateException.class})
     public void testConnectReadRequestClose()
             throws Exception
     {
@@ -107,7 +99,7 @@ public class TestJettyHttpsClient
     }
 
     @Override
-    @Test(expectedExceptions = {IOException.class,  IllegalStateException.class})
+    @Test(expectedExceptions = {IOException.class, IllegalStateException.class})
     public void testConnectNoReadClose()
             throws Exception
     {
