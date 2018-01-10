@@ -299,35 +299,35 @@ public class TestHttpClientBinder
     }
 
     @Retention(RUNTIME)
-    @Target({ElementType.PARAMETER})
+    @Target(ElementType.PARAMETER)
     @Qualifier
     public @interface FooClient
     {
     }
 
     @Retention(RUNTIME)
-    @Target({ElementType.PARAMETER})
+    @Target(ElementType.PARAMETER)
     @Qualifier
     public @interface FooAlias1
     {
     }
 
     @Retention(RUNTIME)
-    @Target({ElementType.PARAMETER})
+    @Target(ElementType.PARAMETER)
     @Qualifier
     public @interface FooAlias2
     {
     }
 
     @Retention(RUNTIME)
-    @Target({ElementType.PARAMETER})
+    @Target(ElementType.PARAMETER)
     @Qualifier
     public @interface FooAlias3
     {
     }
 
     @Retention(RUNTIME)
-    @Target({ElementType.PARAMETER})
+    @Target(ElementType.PARAMETER)
     @Qualifier
     public @interface BarClient
     {
