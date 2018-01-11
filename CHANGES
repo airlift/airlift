@@ -1,3 +1,7 @@
+0.164
+
+- Do not require testing library when using ConfigAssertions.
+
 * 0.163
 
 - Add whenAnyCompleteCancelOthers for ListenableFuture.
