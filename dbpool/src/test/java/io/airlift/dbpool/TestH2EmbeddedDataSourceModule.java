@@ -22,11 +22,13 @@ import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.inject.Scopes;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationModule;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.weakref.jmx.testing.TestingMBeanServer;
 
 import javax.inject.Inject;
 import javax.management.MBeanServer;
@@ -41,7 +43,6 @@ import java.util.Map;
 
 import static io.airlift.testing.Assertions.assertInstanceOf;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
-import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertSame;
@@ -216,7 +217,7 @@ public class TestH2EmbeddedDataSourceModule
                     @Override
                     public void configure(Binder binder)
                     {
-                        binder.bind(MBeanServer.class).toInstance(mock(MBeanServer.class));
+                        binder.bind(MBeanServer.class).to(TestingMBeanServer.class).in(Scopes.SINGLETON);
                         binder.bind(ObjectHolder.class);
                     }
                 })
