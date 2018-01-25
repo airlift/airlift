@@ -395,7 +395,14 @@ public class HttpServer
             throw new IOException(format("Cannot create %s and path does not already exist", logPath.getAbsolutePath()));
         }
 
-        RequestLog requestLog = new DelimitedRequestLog(config.getLogPath(), config.getLogHistory(), config.getLogMaxFileSize().toBytes(), tokenManager, eventClient);
+        RequestLog requestLog = new DelimitedRequestLog(
+                config.getLogPath(),
+                config.getLogHistory(),
+                config.getQueueSize(),
+                config.getLogMaxFileSize().toBytes(),
+                tokenManager,
+                eventClient);
+
         logHandler.setRequestLog(requestLog);
 
         return logHandler;

@@ -73,6 +73,7 @@ public class HttpServerConfig
     private String logPath = "var/log/http-request.log";
     private boolean logEnabled = true;
     private int logHistory = 15;
+    private int queueSize = 10_000;
     private DataSize logMaxFileSize = new DataSize(Long.MAX_VALUE, BYTE);
 
     private Integer httpAcceptorThreads;
@@ -375,6 +376,19 @@ public class HttpServerConfig
     public HttpServerConfig setLogHistory(int logHistory)
     {
         this.logHistory = logHistory;
+        return this;
+    }
+
+    @Min(1)
+    public int getQueueSize()
+    {
+        return queueSize;
+    }
+
+    @Config("http-server.log.queue-size")
+    public HttpServerConfig setQueueSize(int queueSize)
+    {
+        this.queueSize = queueSize;
         return this;
     }
 

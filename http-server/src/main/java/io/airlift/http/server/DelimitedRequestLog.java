@@ -50,13 +50,14 @@ class DelimitedRequestLog
     private final CurrentTimeMillisProvider currentTimeMillisProvider;
     private final AsyncAppenderBase<HttpRequestEvent> asyncAppender;
 
-    public DelimitedRequestLog(String filename, int maxHistory, long maxFileSizeInBytes, TraceTokenManager traceTokenManager, EventClient eventClient)
+    public DelimitedRequestLog(String filename, int maxHistory, int queueSize, long maxFileSizeInBytes, TraceTokenManager traceTokenManager, EventClient eventClient)
     {
-        this(filename, maxHistory, maxFileSizeInBytes, traceTokenManager, eventClient, new SystemCurrentTimeMillisProvider());
+        this(filename, maxHistory, queueSize, maxFileSizeInBytes, traceTokenManager, eventClient, new SystemCurrentTimeMillisProvider());
     }
 
     public DelimitedRequestLog(String filename,
             int maxHistory,
+            int queueSize,
             long maxFileSizeInBytes,
             TraceTokenManager traceTokenManager,
             EventClient eventClient,
@@ -94,6 +95,7 @@ class DelimitedRequestLog
 
         asyncAppender = new AsyncAppenderBase<>();
         asyncAppender.setContext(context);
+        asyncAppender.setQueueSize(queueSize);
         asyncAppender.addAppender(fileAppender);
 
         rollingPolicy.start();
