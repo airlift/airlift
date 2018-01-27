@@ -2,12 +2,13 @@ package io.airlift.concurrent;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.AbstractFuture;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import javax.annotation.Nullable;
 
+import java.util.concurrent.ExecutionException;
+
+import static com.google.common.util.concurrent.Futures.getDone;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 
 public final class ExtendedSettableFuture<V>
@@ -41,20 +42,25 @@ public final class ExtendedSettableFuture<V>
      */
     public void setAsync(ListenableFuture<? extends V> delegate)
     {
-        Futures.addCallback(delegate, new FutureCallback<V>()
-        {
-            @Override
-            public void onSuccess(@Nullable V result)
-            {
-                set(result);
+        delegate.addListener(() -> {
+            if (super.isDone()) {
+                // Opportunistically avoid calling getDone. This is critical for the performance
+                // of whenAnyCompleteCancelOthers because calling getDone for cancelled Future
+                // constructs CancellationException and populates stack trace.
+                // See BenchmarkWhenAnyCompleteCancelOthers for benchmark numbers.
+                return;
             }
 
-            @Override
-            public void onFailure(Throwable t)
-            {
-                setException(t);
+            try {
+                set(getDone(delegate));
             }
-        });
+            catch (ExecutionException e) {
+                setException(e.getCause());
+            }
+            catch (RuntimeException | Error e) {
+                setException(e);
+            }
+        }, directExecutor());
 
         super.addListener(() -> {
             if (super.isCancelled()) {

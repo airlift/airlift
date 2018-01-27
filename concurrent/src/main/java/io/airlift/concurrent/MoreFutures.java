@@ -286,6 +286,32 @@ public final class MoreFutures
 
     /**
      * Creates a future that completes when the first future completes either normally
+     * or exceptionally. All other futures are cancelled when one completes.
+     * Cancellation of the returned future propagates to the supplied futures.
+     * <p>
+     * It is critical for the performance of this function that
+     * {@code guava.concurrent.generate_cancellation_cause} is false,
+     * which is the default since Guava v20.
+     */
+    public static <V> ListenableFuture<V> whenAnyCompleteCancelOthers(Iterable<? extends ListenableFuture<? extends V>> futures)
+    {
+        requireNonNull(futures, "futures is null");
+        checkArgument(!isEmpty(futures), "futures is empty");
+
+        // wait for the first task to unblock and then cancel all futures to free up resources
+        ListenableFuture<V> anyComplete = whenAnyComplete(futures);
+        anyComplete.addListener(
+                () -> {
+                    for (ListenableFuture<?> future : futures) {
+                        future.cancel(true);
+                    }
+                },
+                directExecutor());
+        return anyComplete;
+    }
+
+    /**
+     * Creates a future that completes when the first future completes either normally
      * or exceptionally. Cancellation of the future does not propagate to the supplied
      * futures.
      */

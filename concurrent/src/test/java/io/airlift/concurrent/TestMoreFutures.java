@@ -37,6 +37,7 @@ import static io.airlift.concurrent.MoreFutures.tryGetFutureValue;
 import static io.airlift.concurrent.MoreFutures.unmodifiableFuture;
 import static io.airlift.concurrent.MoreFutures.unwrapCompletionException;
 import static io.airlift.concurrent.MoreFutures.whenAnyComplete;
+import static io.airlift.concurrent.MoreFutures.whenAnyCompleteCancelOthers;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.testing.Assertions.assertInstanceOf;
 import static java.lang.String.format;
@@ -408,6 +409,27 @@ public class TestMoreFutures
             throws Exception
     {
         assertGetUncheckedListenable(future -> getFutureValue(whenAnyComplete(ImmutableList.of(SettableFuture.create(), future, SettableFuture.create()))));
+
+        assertFailure(() -> whenAnyComplete(null), e -> assertInstanceOf(e, NullPointerException.class));
+        assertFailure(() -> whenAnyComplete(ImmutableList.of()), e -> assertInstanceOf(e, IllegalArgumentException.class));
+
+        assertEquals(
+                tryGetFutureValue(whenAnyComplete(ImmutableList.of(SettableFuture.create(), SettableFuture.create())), 10, MILLISECONDS),
+                Optional.empty());
+    }
+
+    @Test
+    public void testWhenAnyCompleteCancelOthers()
+            throws Exception
+    {
+        assertGetUncheckedListenable(future -> {
+            SettableFuture<Object> future1 = SettableFuture.create();
+            SettableFuture<Object> future3 = SettableFuture.create();
+            Object result = getFutureValue(whenAnyCompleteCancelOthers(ImmutableList.of(future1, future, future3)));
+            assertTrue(future1.isCancelled());
+            assertTrue(future3.isCancelled());
+            return result;
+        });
 
         assertFailure(() -> whenAnyComplete(null), e -> assertInstanceOf(e, NullPointerException.class));
         assertFailure(() -> whenAnyComplete(ImmutableList.of()), e -> assertInstanceOf(e, IllegalArgumentException.class));
