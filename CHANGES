@@ -1,6 +1,8 @@
 0.164
 
 - Do not require testing library when using ConfigAssertions.
+- Add logging support to HTTP client. Logging is turned off by default
+  and it can be enabled with the "http-client.log.enabled" config parameter.
 
 * 0.163
 
@@ -8,7 +10,7 @@
 
 * 0.162
 
-- Fix shutdown of HTTP clients when lifecyle is stopped.
+- Fix shutdown of HTTP clients when lifecycle is stopped.
 - Change queue size for HTTP asynchronous logging to be configurable.
 
 * 0.161
