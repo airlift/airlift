@@ -11,6 +11,8 @@ import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.StaticBodyGenerator;
+import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
+import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
 import io.airlift.http.client.spnego.KerberosConfig;
 import io.airlift.http.client.spnego.SpnegoAuthenticationProtocolHandler;
 import io.airlift.units.Duration;
@@ -51,9 +53,11 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
@@ -67,6 +71,7 @@ import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -103,6 +108,8 @@ public class JettyHttpClient
     private final List<HttpRequestFilter> requestFilters;
     private final Exception creationLocation = new Exception();
     private final String name;
+
+    private final HttpClientLogger requestLogger;
 
     public JettyHttpClient()
     {
@@ -205,6 +212,15 @@ public class JettyHttpClient
         // connection pool looking for connections in the closed state, and if a connection
         // is observed in the closed state multiple times, it logs, and destroys the connection.
         httpClient.addBean(new Sweeper(httpClient.getScheduler(), SWEEP_PERIOD_MILLIS), true);
+
+        // configure logging
+        if (config.isLogEnabled()) {
+            String logFilePath = Paths.get(config.getLogPath(), format("%s-http-client.log", name)).toAbsolutePath().toString();
+            requestLogger = new DefaulHttpClientLogger(logFilePath, config.getLogHistory(), config.getLogQueueSize(), config.getLogMaxFileSize().toBytes());
+        }
+        else {
+            requestLogger = new NoopLogger();
+        }
 
         try {
             httpClient.start();
@@ -356,6 +372,8 @@ public class JettyHttpClient
             }
         };
 
+        RequestInfo requestInfo = RequestInfo.from(jettyRequest, System.currentTimeMillis());
+
         // fire the request
         jettyRequest.send(listener);
 
@@ -366,17 +384,20 @@ public class JettyHttpClient
         }
         catch (InterruptedException e) {
             stats.recordRequestFailed();
+            requestLogger.log(requestInfo, ResponseInfo.failed(Optional.empty(), Optional.of(e)));
             jettyRequest.abort(e);
             Thread.currentThread().interrupt();
             return responseHandler.handleException(request, e);
         }
         catch (TimeoutException e) {
             stats.recordRequestFailed();
+            requestLogger.log(requestInfo, ResponseInfo.failed(Optional.empty(), Optional.of(e)));
             jettyRequest.abort(e);
             return responseHandler.handleException(request, e);
         }
         catch (ExecutionException e) {
             stats.recordRequestFailed();
+            requestLogger.log(requestInfo, ResponseInfo.failed(Optional.empty(), Optional.of(e)));
             Throwable cause = e.getCause();
             if (cause instanceof Exception) {
                 return responseHandler.handleException(request, (Exception) cause);
@@ -403,6 +424,7 @@ public class JettyHttpClient
                 recordRequestComplete(stats, request, requestStart, jettyResponse, responseStart);
             }
         }
+        requestLogger.log(requestInfo, ResponseInfo.from(Optional.of(response), jettyResponse.getBytesRead()));
         return value;
     }
 
@@ -416,9 +438,13 @@ public class JettyHttpClient
 
         HttpRequest jettyRequest = buildJettyRequest(request);
 
+        RequestInfo requestInfo = RequestInfo.from(jettyRequest, System.currentTimeMillis());
+
         JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest, responseHandler, stats, recordRequestComplete);
 
-        BufferingResponseListener listener = new BufferingResponseListener(future, Ints.saturatedCast(maxContentLength));
+        BufferingResponseListener listener = new BufferingResponseListener(future,
+                Ints.saturatedCast(maxContentLength),
+                responseInfo -> requestLogger.log(requestInfo, responseInfo));
 
         try {
             jettyRequest.send(listener);
@@ -429,6 +455,7 @@ public class JettyHttpClient
             }
             // normally this is a rejected execution exception because the client has been closed
             future.failed(e);
+            requestLogger.log(requestInfo, ResponseInfo.failed(Optional.empty(), Optional.of(e)));
         }
         return future;
     }
@@ -608,7 +635,7 @@ public class JettyHttpClient
     @Managed
     public String dumpAllDestinations()
     {
-        return String.format("%s\t%s\t%s\t%s\t%s\n", "URI", "queued", "request", "wait", "response") +
+        return format("%s\t%s\t%s\t%s\t%s\n", "URI", "queued", "request", "wait", "response") +
                 httpClient.getDestinations().stream()
                         .map(JettyHttpClient::dumpDestination)
                         .collect(Collectors.joining("\n"));
@@ -684,7 +711,7 @@ public class JettyHttpClient
         if (finished == 0) {
             finished = now;
         }
-        return String.format("%s\t%.1f\t%.1f\t%.1f\t%.1f",
+        return format("%s\t%.1f\t%.1f\t%.1f\t%.1f",
                 listener.getUri(),
                 nanosToMillis(requestStarted - created),
                 nanosToMillis(requestFinished - requestStarted),
@@ -705,6 +732,7 @@ public class JettyHttpClient
         closeQuietly(httpClient);
         closeQuietly((LifeCycle) httpClient.getExecutor());
         closeQuietly(httpClient.getScheduler());
+        requestLogger.close();
     }
 
     @Override

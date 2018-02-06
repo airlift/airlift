@@ -31,6 +31,7 @@ import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_KEY_STORE_PA
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_TRUST_STORE;
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_TRUST_STORE_PASSWORD;
 import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
+import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -70,7 +71,12 @@ public class TestHttpClientConfig
                 .setMaxThreads(200)
                 .setMinThreads(8)
                 .setTimeoutConcurrency(1)
-                .setTimeoutThreads(1));
+                .setTimeoutThreads(1)
+                .setLogEnabled(false)
+                .setLogHistory(15)
+                .setLogMaxFileSize(new DataSize(1, GIGABYTE))
+                .setLogPath("var/log/")
+                .setLogQueueSize(10_000));
     }
 
     @Test
@@ -105,6 +111,11 @@ public class TestHttpClientConfig
                 .put("http-client.min-threads", "11")
                 .put("http-client.timeout-concurrency", "33")
                 .put("http-client.timeout-threads", "44")
+                .put("http-client.log.enabled", "true")
+                .put("http-client.log.max-history", "22")
+                .put("http-client.log.max-size", "2GB")
+                .put("http-client.log.path", "/tmp/log/")
+                .put("http-client.log.queue-size", "12345")
                 .build();
 
         HttpClientConfig expected = new HttpClientConfig()
@@ -135,7 +146,12 @@ public class TestHttpClientConfig
                 .setMaxThreads(33)
                 .setMinThreads(11)
                 .setTimeoutConcurrency(33)
-                .setTimeoutThreads(44);
+                .setTimeoutThreads(44)
+                .setLogEnabled(true)
+                .setLogHistory(22)
+                .setLogMaxFileSize(new DataSize(2, GIGABYTE))
+                .setLogPath("/tmp/log/")
+                .setLogQueueSize(12345);
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }
