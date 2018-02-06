@@ -29,6 +29,7 @@ import io.airlift.units.MinDuration;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
+import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -72,6 +73,12 @@ public class HttpClientConfig
     private DataSize http2InitialSessionReceiveWindowSize = new DataSize(16, MEGABYTE);
     private DataSize http2InitialStreamReceiveWindowSize = new DataSize(16, MEGABYTE);
     private DataSize http2InputBufferSize = new DataSize(8, KILOBYTE);
+
+    private String logPath = "var/log/";
+    private boolean logEnabled;
+    private int logHistory = 15;
+    private int logQueueSize = 10_000;
+    private DataSize logMaxFileSize = new DataSize(1, GIGABYTE);
 
     public boolean isHttp2Enabled()
     {
@@ -442,6 +449,68 @@ public class HttpClientConfig
     public HttpClientConfig setTimeoutConcurrency(int timeoutConcurrency)
     {
         this.timeoutConcurrency = timeoutConcurrency;
+        return this;
+    }
+
+    public String getLogPath()
+    {
+        return logPath;
+    }
+
+    @Config("http-client.log.path")
+    @ConfigDescription("The name of the log file will be prefixed with the name of the HTTP client (<client_name>-http-client.log)")
+    public HttpClientConfig setLogPath(String logPath)
+    {
+        this.logPath = logPath;
+        return this;
+    }
+
+    public boolean isLogEnabled()
+    {
+        return logEnabled;
+    }
+
+    @Config("http-client.log.enabled")
+    public HttpClientConfig setLogEnabled(boolean logEnabled)
+    {
+        this.logEnabled = logEnabled;
+        return this;
+    }
+
+    public DataSize getLogMaxFileSize()
+    {
+        return logMaxFileSize;
+    }
+
+    @Config("http-client.log.max-size")
+    public HttpClientConfig setLogMaxFileSize(DataSize logMaxFileSize)
+    {
+        this.logMaxFileSize = logMaxFileSize;
+        return this;
+    }
+
+    public int getLogHistory()
+    {
+        return logHistory;
+    }
+
+    @Config("http-client.log.max-history")
+    public HttpClientConfig setLogHistory(int logHistory)
+    {
+        this.logHistory = logHistory;
+        return this;
+    }
+
+    @Min(1)
+    public int getLogQueueSize()
+    {
+        return logQueueSize;
+    }
+
+    @Config("http-client.log.queue-size")
+    public HttpClientConfig setLogQueueSize(int logQueueSize)
+    {
+        this.logQueueSize = logQueueSize;
         return this;
     }
 }

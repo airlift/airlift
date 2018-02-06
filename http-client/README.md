@@ -39,3 +39,19 @@ Using aliases is similar to using filters:
         .withAlias(QuxClient.class);
 
 Note that the filters and aliases are unique to the binding, allowing you to have a different set for each one.
+
+The HTTP client also supports logging, which can be enabled with the `http-client.log.enabled` config property.
+Here is a sample log line:
+
+```
+2018-02-21T18:26:50.438-08:00	HTTP/1.1	DELETE	http://127.0.0.1:8080/v1/task/20180222_022649_00001_dn54g.0.0/results/0	204	0	16	null
+```
+A request log line has eight columns delimited with the tab character:
+- Request timestamp in the ISO 8601 format.
+- The protocol version.
+- The method (GET, POST, DELETE, etc.).
+- The URI.
+- Response status code if available, otherwise the failure reason (e.g., TIMEOUT).
+- Response size in bytes.
+- Airlift trace token if present in the request headers ("X-Airlift-TraceToken").
+- Time to last byte, which is the amount of time from when the request is created to when the entire response is received.
