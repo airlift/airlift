@@ -15,19 +15,18 @@
  */
 package io.airlift.jaxrs;
 
-import com.google.common.collect.ImmutableList;
-import org.glassfish.jersey.internal.PropertiesDelegate;
-import org.glassfish.jersey.server.ContainerRequest;
+import org.jboss.resteasy.core.interception.jaxrs.PreMatchContainerRequestContext;
+import org.jboss.resteasy.mock.MockHttpRequest;
+import org.jboss.resteasy.spi.HttpRequest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.SecurityContext;
 
 import java.net.URI;
-import java.security.Principal;
-import java.util.Collection;
 
 import static io.airlift.testing.Assertions.assertEqualsIgnoreCase;
 import static org.testng.Assert.assertEquals;
@@ -94,13 +93,12 @@ public class TestOverrideMethodFilter
     {
         OverrideMethodFilter filter = new OverrideMethodFilter();
 
-        ContainerRequest request = new ContainerRequest(
-                URI.create("http://www.example.com/"),
-                URI.create("http://www.example.com/"),
+        MockHttpRequest httpRequest = MockHttpRequest.create(
                 method,
-                new MockSecurityContext(),
-                new MockPropertiesDelegate());
+                URI.create("http://www.example.com/"),
+                URI.create("http://www.example.com/"));
 
+        ContainerRequestContext request = createContainerRequest(httpRequest);
         filter.filter(request);
         assertEqualsIgnoreCase(request.getMethod(), method);
     }
@@ -110,14 +108,14 @@ public class TestOverrideMethodFilter
     {
         OverrideMethodFilter filter = new OverrideMethodFilter();
 
-        ContainerRequest request = new ContainerRequest(
-                URI.create("http://www.example.com/"),
-                URI.create("http://www.example.com/?_method=PUT"),
+        MockHttpRequest httpRequest = MockHttpRequest.create(
                 "POST",
-                new MockSecurityContext(),
-                new MockPropertiesDelegate());
-        request.header(OverrideMethodFilter.HEADER, "DELETE");
+                URI.create("http://www.example.com/?_method=PUT"),
+                URI.create("http://www.example.com/"));
 
+        httpRequest.header(OverrideMethodFilter.HEADER, "DELETE");
+
+        ContainerRequestContext request = createContainerRequest(httpRequest);
         filter.filter(request);
         assertEqualsIgnoreCase(request.getMethod(), "DELETE");
     }
@@ -126,13 +124,12 @@ public class TestOverrideMethodFilter
     {
         OverrideMethodFilter filter = new OverrideMethodFilter();
 
-        ContainerRequest request = new ContainerRequest(
-                URI.create("http://www.example.com/"),
-                URI.create(String.format("http://www.example.com/?_method=%s", override)),
+        MockHttpRequest httpRequest = MockHttpRequest.create(
                 requestMethod,
-                new MockSecurityContext(),
-                new MockPropertiesDelegate());
+                URI.create("http://www.example.com/?_method=" + override),
+                URI.create("http://www.example.com/"));
 
+        ContainerRequestContext request = createContainerRequest(httpRequest);
         filter.filter(request);
         return request.getMethod();
     }
@@ -168,76 +165,27 @@ public class TestOverrideMethodFilter
     private static void assertQueryParamOverridesMethod(String requestMethod, String override)
     {
         String resultMethod = testQueryParam(requestMethod, override);
-        assertEqualsIgnoreCase(resultMethod, override);
+        assertEqualsIgnoreCase(resultMethod, override, "requestMethod=" + requestMethod);
     }
 
     private static String testHeader(String requestMethod, String override)
     {
         OverrideMethodFilter filter = new OverrideMethodFilter();
 
-        ContainerRequest request = new ContainerRequest(
-                URI.create("http://www.example.com/"),
-                URI.create("http://www.example.com/"),
+        MockHttpRequest httpRequest = MockHttpRequest.create(
                 requestMethod,
-                new MockSecurityContext(),
-                new MockPropertiesDelegate());
-        request.header("X-HTTP-Method-Override", override);
+                URI.create("http://www.example.com/"),
+                URI.create("http://www.example.com/"));
 
+        httpRequest.header("X-HTTP-Method-Override", override);
+
+        ContainerRequestContext request = createContainerRequest(httpRequest);
         filter.filter(request);
         return request.getMethod();
     }
 
-    private static class MockPropertiesDelegate
-            implements PropertiesDelegate
+    private static ContainerRequestContext createContainerRequest(HttpRequest httpRequest)
     {
-        @Override
-        public Object getProperty(String name)
-        {
-            return null;
-        }
-
-        @Override
-        public Collection<String> getPropertyNames()
-        {
-            return ImmutableList.of();
-        }
-
-        @Override
-        public void setProperty(String name, Object object)
-        {
-        }
-
-        @Override
-        public void removeProperty(String name)
-        {
-        }
-    }
-
-    private static class MockSecurityContext
-            implements SecurityContext
-    {
-        @Override
-        public Principal getUserPrincipal()
-        {
-            return null;
-        }
-
-        @Override
-        public boolean isUserInRole(String role)
-        {
-            return false;
-        }
-
-        @Override
-        public boolean isSecure()
-        {
-            return false;
-        }
-
-        @Override
-        public String getAuthenticationScheme()
-        {
-            return null;
-        }
+        return new PreMatchContainerRequestContext(httpRequest, new ContainerRequestFilter[] {}, null);
     }
 }

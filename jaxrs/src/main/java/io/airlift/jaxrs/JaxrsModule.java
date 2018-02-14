@@ -15,21 +15,27 @@
  */
 package io.airlift.jaxrs;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
-import com.google.inject.Key;
+import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
+import com.google.inject.ProvisionException;
 import io.airlift.http.server.TheServlet;
-import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.servlet.ServletContainer;
+import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
+import org.jboss.resteasy.plugins.server.servlet.ServletBootstrap;
+import org.jboss.resteasy.plugins.server.servlet.ServletContainerDispatcher;
+import org.jboss.resteasy.spi.Dispatcher;
 
-import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.servlet.Servlet;
-import javax.ws.rs.core.Application;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.ws.rs.Path;
+import javax.ws.rs.ext.Provider;
 
+import java.lang.annotation.Annotation;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -53,8 +59,6 @@ public class JaxrsModule
     {
         binder.disableCircularProxies();
 
-        binder.bind(Application.class).to(JaxRsApplication.class).in(Scopes.SINGLETON);
-        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(Key.get(ServletContainer.class));
         jaxrsBinder(binder).bind(JsonMapper.class);
         jaxrsBinder(binder).bind(SmileMapper.class);
         jaxrsBinder(binder).bind(ParsingExceptionMapper.class);
@@ -64,15 +68,42 @@ public class JaxrsModule
     }
 
     @Provides
-    public static ServletContainer createServletContainer(ResourceConfig resourceConfig)
+    @Singleton
+    @TheServlet
+    public Servlet createJaxRsApplication(@JaxrsResource Set<Object> objects, Injector injector)
     {
-        return new ServletContainer(resourceConfig);
-    }
+        Set<Object> resources = new HashSet<>();
+        Set<Object> providers = new HashSet<>();
+        for (Object object : objects) {
+            Class<?> type = object.getClass();
+            if (isJaxRsType(type, Path.class)) {
+                resources.add(object);
+            }
+            else if (isJaxRsType(type, Provider.class)) {
+                providers.add(object);
+            }
+            else {
+                throw new ProvisionException("Invalid JAX-RS type: " + type);
+            }
+        }
 
-    @Provides
-    public static ResourceConfig createResourceConfig(Application application)
-    {
-        return ResourceConfig.forApplication(application);
+        return new HttpServlet30Dispatcher()
+        {
+            @Override
+            public void init(ServletConfig servletConfig)
+                    throws ServletException
+            {
+                super.init(servletConfig);
+                ServletBootstrap bootstrap = new ServletBootstrap(servletConfig);
+                servletContainerDispatcher = new ServletContainerDispatcher();
+                servletContainerDispatcher.init(servletConfig.getServletContext(), bootstrap, this, this);
+
+                Dispatcher dispatcher = servletContainerDispatcher.getDispatcher();
+                resources.forEach(dispatcher.getRegistry()::addSingletonResource);
+                providers.forEach(dispatcher.getProviderFactory()::register);
+                dispatcher.getDefaultContextObjects().put(ServletConfig.class, servletConfig);
+            }
+        };
     }
 
     @Provides
@@ -83,21 +114,24 @@ public class JaxrsModule
         return initParams;
     }
 
-    public static class JaxRsApplication
-            extends Application
+    private static boolean isJaxRsType(Class<?> type, Class<? extends Annotation> annotation)
     {
-        private final Set<Object> jaxRsSingletons;
-
-        @Inject
-        public JaxRsApplication(@JaxrsResource Set<Object> jaxRsSingletons)
-        {
-            this.jaxRsSingletons = ImmutableSet.copyOf(jaxRsSingletons);
+        if (type == null) {
+            return false;
         }
 
-        @Override
-        public Set<Object> getSingletons()
-        {
-            return jaxRsSingletons;
+        if (type.isAnnotationPresent(annotation)) {
+            return true;
         }
+        if (isJaxRsType(type.getSuperclass(), annotation)) {
+            return true;
+        }
+        for (Class<?> typeInterface : type.getInterfaces()) {
+            if (isJaxRsType(typeInterface, annotation)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
