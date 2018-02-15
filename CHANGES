@@ -1,3 +1,8 @@
+0.165
+
+- Add JmxGcMonitor to track GC events.  GC events are logged, and
+  aggregate time stats are published via JMX.
+
 0.164
 
 - Do not require testing library when using ConfigAssertions.
