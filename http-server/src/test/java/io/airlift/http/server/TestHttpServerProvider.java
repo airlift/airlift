@@ -402,7 +402,7 @@ public class TestHttpServerProvider
             server.stop();
 
             try {
-                future.get(1, TimeUnit.SECONDS);
+                future.get(5, TimeUnit.SECONDS);
                 fail("expected exception");
             }
             catch (ExecutionException e) {
