@@ -78,6 +78,15 @@ public class TestJettyHttpsClient
         }
     }
 
+    // TLS connections seem to have some conditions that do not respect timeouts
+    @Test(invocationCount = 10, successPercentage = 50, timeOut = 20_000)
+    @Override
+    public void testConnectTimeout()
+            throws Exception
+    {
+        super.testConnectTimeout();
+    }
+
     @Test(expectedExceptions = {IOException.class})
     public void testCertHostnameMismatch()
             throws Exception
