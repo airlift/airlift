@@ -13,6 +13,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import static io.airlift.testing.Closeables.closeQuietly;
 
@@ -27,7 +28,7 @@ public class TestJettyHttpClientSocksProxy
             throws IOException
     {
         testingSocksProxy = new TestingSocksProxy().start();
-        httpClient = new JettyHttpClient("test-shared", createClientConfig(), new KerberosConfig(), ImmutableList.of(new TestingRequestFilter()));
+        httpClient = new JettyHttpClient("test-shared", createClientConfig(), new KerberosConfig(), ImmutableList.of(new TestingRequestFilter()), Optional.empty());
     }
 
     @AfterClass(alwaysRun = true)
@@ -57,7 +58,7 @@ public class TestJettyHttpClientSocksProxy
             throws Exception
     {
         config.setSocksProxy(testingSocksProxy.getHostAndPort());
-        try (JettyHttpClient client = new JettyHttpClient("test-private", config, new KerberosConfig(), ImmutableList.of(new TestingRequestFilter()))) {
+        try (JettyHttpClient client = new JettyHttpClient("test-private", config, new KerberosConfig(), ImmutableList.of(new TestingRequestFilter()), Optional.empty())) {
             return client.execute(request, responseHandler);
         }
     }

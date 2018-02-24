@@ -15,6 +15,7 @@ import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
 import io.airlift.http.client.spnego.KerberosConfig;
 import io.airlift.http.client.spnego.SpnegoAuthenticationProtocolHandler;
+import io.airlift.tracetoken.TraceTokenManager;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
@@ -110,6 +111,7 @@ public class JettyHttpClient
     private final String name;
 
     private final HttpClientLogger requestLogger;
+    private final Optional<TraceTokenManager> traceTokenManager;
 
     public JettyHttpClient()
     {
@@ -123,16 +125,18 @@ public class JettyHttpClient
 
     public JettyHttpClient(String name, HttpClientConfig config)
     {
-        this(name, config, new KerberosConfig(), ImmutableList.of());
+        this(name, config, new KerberosConfig(), ImmutableList.of(), Optional.empty());
     }
 
     public JettyHttpClient(
             String name,
             HttpClientConfig config,
             KerberosConfig kerberosConfig,
-            Iterable<? extends HttpRequestFilter> requestFilters)
+            Iterable<? extends HttpRequestFilter> requestFilters,
+            Optional<TraceTokenManager> traceTokenManager)
     {
         this.name = requireNonNull(name, "name is null");
+        this.traceTokenManager = requireNonNull(traceTokenManager, "traceTokenManager is null");
 
         requireNonNull(config, "config is null");
         requireNonNull(requestFilters, "requestFilters is null");
@@ -352,6 +356,7 @@ public class JettyHttpClient
     public <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
             throws E
     {
+        traceTokenManager.ifPresent(TraceTokenManager::createAndRegisterNewRequestToken);
         long requestStart = System.nanoTime();
 
         // apply filters
@@ -433,6 +438,8 @@ public class JettyHttpClient
     {
         requireNonNull(request, "request is null");
         requireNonNull(responseHandler, "responseHandler is null");
+
+        traceTokenManager.ifPresent(TraceTokenManager::createAndRegisterNewRequestToken);
 
         request = applyRequestFilters(request);
 
