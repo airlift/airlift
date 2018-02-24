@@ -388,7 +388,7 @@ public class TestHttpServerProvider
         }
     }
 
-    @Test(timeOut = 60000)
+    @Test(timeOut = 60000, invocationCount = 100)
     public void testStop()
             throws Exception
     {
