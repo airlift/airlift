@@ -270,12 +270,11 @@ def start(process, options):
         process.write_pid(pid)
         print('Started as %s' % pid)
         return
-    try:
+
+    if hasattr(os, "set_inheritable"):
         # See https://docs.python.org/3/library/os.html#inheritance-of-file-descriptors
         # Since Python 3.4
         os.set_inheritable(process.pid_file.fileno(), True)
-    except AttributeError as e:
-        pass
 
     os.setsid()
 
