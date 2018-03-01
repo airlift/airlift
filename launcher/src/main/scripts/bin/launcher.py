@@ -131,7 +131,7 @@ def redirect_stdin_to_devnull():
 def open_append(f):
     """Open a raw file descriptor in append mode"""
     # noinspection PyTypeChecker
-    return os.open(f, O_WRONLY | O_APPEND | O_CREAT, 0644)
+    return os.open(f, O_WRONLY | O_APPEND | O_CREAT, 0o644)
 
 
 def redirect_output(fd):
@@ -251,12 +251,6 @@ def run(process, options):
     os.execvpe(args[0], args, env)
 
 
-def need_set_inheritable():
-    # See https://docs.python.org/3/library/os.html#inheritance-of-file-descriptors
-    py_version = sys.version_info.major + .1 * sys.version_info.minor
-    return py_version >= 3.4
-
-
 def start(process, options):
     if process.alive():
         print('Already running as %s' % process.read_pid())
@@ -276,9 +270,12 @@ def start(process, options):
         process.write_pid(pid)
         print('Started as %s' % pid)
         return
-
-    if need_set_inheritable():
+    try:
+        # See https://docs.python.org/3/library/os.html#inheritance-of-file-descriptors
+        # Since Python 3.4
         os.set_inheritable(process.pid_file.fileno(), True)
+    except AttributeError as e:
+        pass
 
     os.setsid()
 
