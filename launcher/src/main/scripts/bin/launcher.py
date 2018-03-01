@@ -35,7 +35,7 @@ def makedirs(p):
     """Create directory and all intermediate ones"""
     try:
         os.makedirs(p)
-    except OSError, e:
+    except OSError as e:
         if e.errno != errno.EEXIST:
             raise
 
@@ -52,7 +52,7 @@ def load_properties(f):
 def load_lines(f):
     """Load lines from a file, ignoring blank or comment lines"""
     lines = []
-    for line in file(f, 'r').readlines():
+    for line in open(f, 'r').readlines():
         line = line.strip()
         if len(line) > 0 and not line.startswith('#'):
             lines.append(line)
@@ -64,7 +64,7 @@ def try_lock(f):
     try:
         flock(f, LOCK_EX | LOCK_NB)
         return True
-    except IOError:
+    except (IOError, OSError):  # IOError in Python 2, OSError in Python 3.
         return False
 
 
@@ -77,7 +77,7 @@ class Process:
     def __init__(self, path):
         makedirs(dirname(path))
         self.path = path
-        self.pid_file = open_read_write(path, 0600)
+        self.pid_file = open_read_write(path, 0o600)
         self.refresh()
 
     def refresh(self):
@@ -102,7 +102,7 @@ class Process:
         try:
             os.kill(pid, 0)
             return True
-        except OSError, e:
+        except OSError as e:
             raise Exception('Signaling pid %s failed: %s' % (pid, e))
 
     def read_pid(self):
@@ -147,7 +147,7 @@ def symlink_exists(p):
         if not S_ISLNK(st.st_mode):
             raise Exception('Path exists and is not a symlink: %s' % p)
         return True
-    except OSError, e:
+    except OSError as e:
         if e.errno != errno.ENOENT:
             raise
     return False
@@ -208,7 +208,7 @@ def build_java_execution(options, daemon):
 
     properties['config'] = options.config_path
 
-    system_properties = ['-D%s=%s' % i for i in properties.iteritems()]
+    system_properties = ['-D%s=%s' % i for i in properties.items()]
     classpath = pathjoin(options.install_path, 'lib', '*')
 
     command = ['java', '-cp', classpath]
@@ -216,8 +216,8 @@ def build_java_execution(options, daemon):
     command += [main_class]
 
     if options.verbose:
-        print command
-        print
+        print(command)
+        print("")
 
     env = os.environ.copy()
 
@@ -235,7 +235,7 @@ def build_java_execution(options, daemon):
 
 def run(process, options):
     if process.alive():
-        print 'Already running as %s' % process.read_pid()
+        print('Already running as %s' % process.read_pid())
         return
 
     create_app_symlinks(options)
@@ -251,9 +251,15 @@ def run(process, options):
     os.execvpe(args[0], args, env)
 
 
+def need_set_inheritable():
+    # See https://docs.python.org/3/library/os.html#inheritance-of-file-descriptors
+    py_version = sys.version_info.major + .1 * sys.version_info.minor
+    return py_version >= 3.4
+
+
 def start(process, options):
     if process.alive():
-        print 'Already running as %s' % process.read_pid()
+        print('Already running as %s' % process.read_pid())
         return
 
     create_app_symlinks(options)
@@ -268,8 +274,11 @@ def start(process, options):
     pid = os.fork()
     if pid > 0:
         process.write_pid(pid)
-        print 'Started as %s' % pid
+        print('Started as %s' % pid)
         return
+
+    if need_set_inheritable():
+        os.set_inheritable(process.pid_file.fileno(), True)
 
     os.setsid()
 
@@ -282,7 +291,7 @@ def start(process, options):
 
 def terminate(process, signal, message):
     if not process.alive():
-        print 'Not running'
+        print('Not running')
         return
 
     pid = process.read_pid()
@@ -290,7 +299,7 @@ def terminate(process, signal, message):
     while True:
         try:
             os.kill(pid, signal)
-        except OSError, e:
+        except OSError as e:
             if e.errno != errno.ESRCH:
                 raise Exception('Signaling pid %s failed: %s' % (pid, e))
 
@@ -300,7 +309,7 @@ def terminate(process, signal, message):
 
         sleep(0.1)
 
-    print '%s %s' % (message, pid)
+    print('%s %s' % (message, pid))
 
 
 def stop(process):
@@ -313,9 +322,9 @@ def kill(process):
 
 def status(process):
     if not process.alive():
-        print 'Not running'
+        print('Not running')
         sys.exit(LSB_NOT_RUNNING)
-    print 'Running as %s' % process.read_pid()
+    print('Running as %s' % process.read_pid())
 
 
 def handle_command(command, options):
@@ -374,8 +383,8 @@ def parse_properties(parser, args):
 def print_options(options):
     if options.verbose:
         for i in sorted(vars(options)):
-            print "%-15s = %s" % (i, getattr(options, i))
-        print
+            print("%-15s = %s" % (i, getattr(options, i)))
+        print("")
 
 
 class Options:
@@ -399,8 +408,8 @@ def main():
 
     try:
         install_path = find_install_path(sys.argv[0])
-    except Exception, e:
-        print 'ERROR: %s' % e
+    except Exception as e:
+        print('ERROR: %s' % e)
         sys.exit(LSB_STATUS_UNKNOWN)
 
     o = Options()
@@ -429,7 +438,7 @@ def main():
     o.server_log = realpath(options.server_log_file or pathjoin(o.data_dir, 'var/log/server.log'))
 
     o.properties = parse_properties(parser, options.properties or {})
-    for k, v in node_properties.iteritems():
+    for k, v in node_properties.items():
         if k not in o.properties:
             o.properties[k] = v
 
@@ -440,11 +449,11 @@ def main():
         handle_command(command, o)
     except SystemExit:
         raise
-    except Exception, e:
+    except Exception as e:
         if o.verbose:
             traceback.print_exc()
         else:
-            print 'ERROR: %s' % e
+            print('ERROR: %s' % e)
         sys.exit(LSB_STATUS_UNKNOWN)
 
 
