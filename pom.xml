@@ -428,4 +428,18 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>com.ning.maven.plugins</groupId>
+                    <artifactId>maven-dependency-versions-check-plugin</artifactId>
+                    <configuration>
+                        <useParallelDependencyResolution>false</useParallelDependencyResolution>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 </project>
