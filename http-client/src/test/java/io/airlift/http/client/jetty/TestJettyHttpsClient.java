@@ -13,6 +13,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
 import static com.google.common.io.Resources.getResource;
@@ -32,7 +33,7 @@ public class TestJettyHttpsClient
     @BeforeClass
     public void setUpHttpClient()
     {
-        httpClient = new JettyHttpClient("test-shared", createClientConfig(), createKerberosConfig(), ImmutableList.of(new TestingRequestFilter()));
+        httpClient = new JettyHttpClient("test-shared", createClientConfig(), createKerberosConfig(), ImmutableList.of(new TestingRequestFilter()), Optional.empty());
     }
 
     @AfterClass(alwaysRun = true)
@@ -73,7 +74,7 @@ public class TestJettyHttpsClient
                 .setTrustStorePath(getResource("localhost.truststore").getPath())
                 .setTrustStorePassword("changeit");
 
-        try (JettyHttpClient client = new JettyHttpClient("test-private", config, createKerberosConfig(), ImmutableList.of(new TestingRequestFilter()))) {
+        try (JettyHttpClient client = new JettyHttpClient("test-private", config, createKerberosConfig(), ImmutableList.of(new TestingRequestFilter()), Optional.empty())) {
             return client.execute(request, responseHandler);
         }
     }

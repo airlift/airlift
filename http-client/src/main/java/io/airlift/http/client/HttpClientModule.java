@@ -26,15 +26,18 @@ import com.google.inject.TypeLiteral;
 import io.airlift.configuration.ConfigDefaults;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.client.spnego.KerberosConfig;
+import io.airlift.tracetoken.TraceTokenManager;
 
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Provider;
 
 import java.lang.annotation.Annotation;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Verify.verify;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static java.util.Objects.requireNonNull;
@@ -113,12 +116,19 @@ public class HttpClientModule
             KerberosConfig kerberosConfig = injector.getInstance(KerberosConfig.class);
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
 
+            boolean clientTracingEnabled = injector.getExistingBinding(Key.get(TraceTokenRequestFilter.class)) != null;
+            Optional<TraceTokenManager> traceTokenManager = Optional.empty();
+            if (clientTracingEnabled) {
+                verify(injector.getExistingBinding(Key.get(TraceTokenManager.class)) != null, "TraceTokenManager is not bound");
+                traceTokenManager = Optional.of(injector.getInstance(TraceTokenManager.class));
+            }
+
             Set<HttpRequestFilter> filters = ImmutableSet.<HttpRequestFilter>builder()
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, GlobalFilter.class)))
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, annotation)))
                     .build();
 
-            client = new JettyHttpClient(name, config, kerberosConfig, ImmutableList.copyOf(filters));
+            client = new JettyHttpClient(name, config, kerberosConfig, ImmutableList.copyOf(filters), traceTokenManager);
 
             injector = null;
             return client;
