@@ -61,7 +61,7 @@ public class TestBootstrap
             fail("should not allow circular dependencies");
         }
         catch (ProvisionException e) {
-            assertContains(e.getErrorMessages().iterator().next().getMessage(), "circular proxies are disabled");
+            assertContains(e.getErrorMessages().iterator().next().getMessage(), "circular dependencies are disabled");
         }
     }
 

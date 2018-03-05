@@ -1,3 +1,7 @@
+0.166
+
+- Update to Guava 24.1 and Guice 4.2.
+
 0.165
 
 - Add log buffer size config to HTTP client.
