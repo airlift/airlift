@@ -29,6 +29,7 @@ import java.time.Instant;
 import java.util.Enumeration;
 
 import static io.airlift.event.client.EventField.EventFieldMapping.TIMESTAMP;
+import static io.airlift.http.server.TraceTokenFilter.TRACETOKEN_HEADER;
 import static java.lang.Math.max;
 
 @EventType("HttpRequest")
@@ -42,8 +43,9 @@ public class HttpRequestEvent
             user = principal.getName();
         }
 
-        String token = null;
-        if (traceTokenManager != null) {
+        // This is required, because async responses are processed in a different thread.
+        String token = request.getHeader(TRACETOKEN_HEADER);
+        if (token == null && traceTokenManager != null) {
             token = traceTokenManager.getCurrentRequestToken();
         }
 
