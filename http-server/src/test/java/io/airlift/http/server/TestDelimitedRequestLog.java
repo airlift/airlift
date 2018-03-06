@@ -35,6 +35,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 
+import static io.airlift.http.server.TraceTokenFilter.TRACETOKEN_HEADER;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static org.mockito.Mockito.mock;
@@ -63,6 +64,44 @@ public class TestDelimitedRequestLog
         if (!file.delete()) {
             throw new IOException("Error deleting " + file.getAbsolutePath());
         }
+    }
+
+    @Test
+    public void testTraceTokenHeader()
+            throws Exception
+    {
+        Request request = mock(Request.class);
+        Response response = mock(Response.class);
+        TraceTokenManager tokenManager = new TraceTokenManager();
+        InMemoryEventClient eventClient = new InMemoryEventClient();
+        DelimitedRequestLog logger = new DelimitedRequestLog(
+                file.getAbsolutePath(),
+                1,
+                256,
+                Long.MAX_VALUE,
+                tokenManager,
+                eventClient,
+                new SystemCurrentTimeMillisProvider());
+        String token = "test-trace-token";
+        when(request.getHeader(TRACETOKEN_HEADER)).thenReturn(token);
+        // log a request without a token set by tokenManager
+        logger.log(request, response);
+        // create and set a new token with tokenManager
+        tokenManager.createAndRegisterNewRequestToken();
+        logger.log(request, response);
+        // clear the token HTTP header
+        when(request.getHeader(TRACETOKEN_HEADER)).thenReturn(null);
+        logger.log(request, response);
+        logger.stop();
+
+        List<Object> events = eventClient.getEvents();
+        assertEquals(events.size(), 3);
+        // first two events should have the token set from the header
+        for (int i = 0; i < 2; i++) {
+            assertEquals(((HttpRequestEvent) events.get(i)).getTraceToken(), token);
+        }
+        // last event should have the token set by the tokenManager
+        assertEquals(((HttpRequestEvent) events.get(2)).getTraceToken(), tokenManager.getCurrentRequestToken());
     }
 
     @Test

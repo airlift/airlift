@@ -32,6 +32,7 @@ import java.io.IOException;
 class TraceTokenFilter
         implements Filter
 {
+    public static final String TRACETOKEN_HEADER = "X-Airlift-TraceToken";
     private final TraceTokenManager traceTokenManager;
 
     @Inject
@@ -53,7 +54,7 @@ class TraceTokenFilter
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 
-        String token = request.getHeader("X-Airlift-TraceToken");
+        String token = request.getHeader(TRACETOKEN_HEADER);
         if (token != null) {
             traceTokenManager.registerRequestToken(token);
         }
