@@ -3,6 +3,22 @@ language: java
 jdk:
   - oraclejdk8
 
+env:
+  - TEST=test0
+  - TEST=test1
+  - TEST=test2
+  - TEST=test3
+  - TEST=test4
+  - TEST=test5
+  - TEST=test6
+  - TEST=test7
+  - TEST=test8
+  - TEST=test9
+
 cache:
   directories:
     - $HOME/.m2/repository
+
+install: mvn install -DskipTests=true -B -V -DuseParallelDependencyResolution=false
+
+script: mvn test -B
