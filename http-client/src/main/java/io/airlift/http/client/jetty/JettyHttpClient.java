@@ -36,6 +36,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -94,6 +95,7 @@ public class JettyHttpClient
     private final long idleTimeoutMillis;
     private final boolean recordRequestComplete;
     private final QueuedThreadPoolMBean queuedThreadPoolMBean;
+    private final ConnectionStats connectionStats;
     private final RequestStats stats = new RequestStats();
     private final CachedDistribution queuedRequestsPerDestination;
     private final CachedDistribution activeConnectionsPerDestination;
@@ -212,6 +214,11 @@ public class JettyHttpClient
         // connection pool looking for connections in the closed state, and if a connection
         // is observed in the closed state multiple times, it logs, and destroys the connection.
         httpClient.addBean(new Sweeper(httpClient.getScheduler(), SWEEP_PERIOD_MILLIS), true);
+
+        // track connection statistics
+        ConnectionStatistics connectionStats = new ConnectionStatistics();
+        httpClient.addBean(connectionStats);
+        this.connectionStats = new ConnectionStats(connectionStats);
 
         // configure logging
         if (config.isLogEnabled()) {
@@ -562,6 +569,13 @@ public class JettyHttpClient
     public QueuedThreadPoolMBean getThreadPool()
     {
         return queuedThreadPoolMBean;
+    }
+
+    @Managed
+    @Nested
+    public ConnectionStats getConnectionStats()
+    {
+        return connectionStats;
     }
 
     @Managed
