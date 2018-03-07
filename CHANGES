@@ -7,7 +7,7 @@
 - Add JmxGcMonitor to track GC events. GC events are logged,
   and aggregate time stats are published via JMX.
 - Make launcher compatible with Python 3.
-- Add support for monitoring HTTP client connection stats.
+- Add support for monitoring HTTP client/server connection stats.
 
 * 0.163
 

@@ -23,6 +23,7 @@ import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.node.NodeInfo;
 import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -49,6 +50,7 @@ import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.weakref.jmx.Managed;
+import org.weakref.jmx.Nested;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -88,6 +90,8 @@ public class HttpServer
 {
     private final Server server;
     private final boolean registerErrorHandler;
+    private ConnectionStats httpConnectionStats;
+    private ConnectionStats httpsConnectionStats;
 
     private final Optional<ZonedDateTime> certificateExpiration;
 
@@ -171,6 +175,11 @@ public class HttpServer
             httpConnector.setHost(nodeInfo.getBindIp().getHostAddress());
             httpConnector.setAcceptQueueSize(config.getHttpAcceptQueueSize());
 
+            // track connection statistics
+            ConnectionStatistics connectionStats = new ConnectionStatistics();
+            httpConnector.addBean(connectionStats);
+            this.httpConnectionStats = new ConnectionStats(connectionStats);
+
             server.addConnector(httpConnector);
         }
 
@@ -209,6 +218,11 @@ public class HttpServer
             httpsConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());
             httpsConnector.setHost(nodeInfo.getBindIp().getHostAddress());
             httpsConnector.setAcceptQueueSize(config.getHttpAcceptQueueSize());
+
+            // track connection statistics
+            ConnectionStatistics connectionStats = new ConnectionStatistics();
+            httpsConnector.addBean(connectionStats);
+            this.httpsConnectionStats = new ConnectionStats(connectionStats);
 
             server.addConnector(httpsConnector);
         }
@@ -413,6 +427,20 @@ public class HttpServer
     {
         return certificateExpiration.map(date -> ZonedDateTime.now().until(date, DAYS))
                 .orElse(null);
+    }
+
+    @Managed
+    @Nested
+    public ConnectionStats getHttpConnectionStats()
+    {
+        return httpConnectionStats;
+    }
+
+    @Managed
+    @Nested
+    public ConnectionStats getHttpsConnectionStats()
+    {
+        return httpsConnectionStats;
     }
 
     @PostConstruct
