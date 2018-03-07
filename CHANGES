@@ -1,13 +1,12 @@
-0.165
-
-- Add JmxGcMonitor to track GC events.  GC events are logged, and
-  aggregate time stats are published via JMX.
-
 0.164
 
+- Fix HTTP server log of trace tokens when using async responses.
 - Do not require testing library when using ConfigAssertions.
 - Add logging support to HTTP client. Logging is turned off by default
   and it can be enabled with the "http-client.log.enabled" config parameter.
+- Add JmxGcMonitor to track GC events. GC events are logged,
+  and aggregate time stats are published via JMX.
+- Make launcher compatible with Python 3.
 
 * 0.163
 
