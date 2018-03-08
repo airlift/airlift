@@ -15,26 +15,16 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
-import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.Scope;
 import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
 import io.airlift.configuration.ConfigDefaults;
-import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.client.spnego.KerberosConfig;
 
-import javax.annotation.PreDestroy;
-import javax.inject.Inject;
-import javax.inject.Provider;
-
 import java.lang.annotation.Annotation;
-import java.util.Set;
 
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static java.util.Objects.requireNonNull;
@@ -45,12 +35,24 @@ public class HttpClientModule
 {
     protected final String name;
     protected final Class<? extends Annotation> annotation;
+    private final Scope scope;
+    private final AbstractHttpClientProvider httpClientProvider;
     protected Binder binder;
 
     HttpClientModule(String name, Class<? extends Annotation> annotation)
     {
         this.name = requireNonNull(name, "name is null");
         this.annotation = requireNonNull(annotation, "annotation is null");
+        this.scope = Scopes.SINGLETON;
+        this.httpClientProvider = new DefaultHttpClientProvider(name, annotation);
+    }
+
+    HttpClientModule(AbstractHttpClientProvider httpClientProvider, Scope scope)
+    {
+        this.httpClientProvider = requireNonNull(httpClientProvider, "httpClientProvider is null");
+        this.name = httpClientProvider.getName();
+        this.annotation = httpClientProvider.getAnnotation();
+        this.scope = requireNonNull(scope, "scope is null");
     }
 
     void withConfigDefaults(ConfigDefaults<HttpClientConfig> configDefaults)
@@ -68,7 +70,10 @@ public class HttpClientModule
         configBinder(binder).bindConfig(HttpClientConfig.class, annotation, name);
 
         // bind the client
-        binder.bind(HttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(name, annotation)).in(Scopes.SINGLETON);
+        binder.bind(HttpClient.class)
+                .annotatedWith(annotation)
+                .toProvider(httpClientProvider)
+                .in(scope);
 
         // kick off the binding for the default filters
         newSetBinder(binder, HttpRequestFilter.class, GlobalFilter.class);
@@ -76,58 +81,14 @@ public class HttpClientModule
         // kick off the binding for the filter set
         newSetBinder(binder, HttpRequestFilter.class, annotation);
 
-        // export stats
-        newExporter(binder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
+        // export stats for SINGLETON scoped instances
+        if (Scopes.SINGLETON.equals(scope)) {
+            newExporter(binder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
+        }
     }
 
     public void addAlias(Class<? extends Annotation> alias)
     {
         binder.bind(HttpClient.class).annotatedWith(alias).to(Key.get(HttpClient.class, annotation));
-    }
-
-    private static class HttpClientProvider
-            implements Provider<HttpClient>
-    {
-        private final String name;
-        private final Class<? extends Annotation> annotation;
-        private Injector injector;
-        private HttpClient client;
-
-        private HttpClientProvider(String name, Class<? extends Annotation> annotation)
-        {
-            this.name = requireNonNull(name, "name is null");
-            this.annotation = requireNonNull(annotation, "annotation is null");
-        }
-
-        @Inject
-        public void setInjector(Injector injector)
-        {
-            this.injector = injector;
-        }
-
-        @Override
-        public HttpClient get()
-        {
-            checkState(client == null, "client already created");
-
-            KerberosConfig kerberosConfig = injector.getInstance(KerberosConfig.class);
-            HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
-
-            Set<HttpRequestFilter> filters = ImmutableSet.<HttpRequestFilter>builder()
-                    .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, GlobalFilter.class)))
-                    .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, annotation)))
-                    .build();
-
-            client = new JettyHttpClient(name, config, kerberosConfig, ImmutableList.copyOf(filters));
-
-            injector = null;
-            return client;
-        }
-
-        @PreDestroy
-        public void destroy()
-        {
-            client.close();
-        }
     }
 }
