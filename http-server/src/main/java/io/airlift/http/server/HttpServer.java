@@ -15,6 +15,7 @@
  */
 package io.airlift.http.server;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
@@ -477,5 +478,12 @@ public class HttpServer
         ServerConnector connector = new ServerConnector(server, executor, null, null, acceptors, selectors, factories);
         connector.open(channel);
         return connector;
+    }
+
+    @VisibleForTesting
+    void join()
+            throws InterruptedException
+    {
+        server.join();
     }
 }
