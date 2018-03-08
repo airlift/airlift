@@ -488,6 +488,31 @@ public final class MoreFutures
         return future;
     }
 
+    public static <T> void addSuccessCallback(ListenableFuture<T> future, Consumer<T> successCallback)
+    {
+        requireNonNull(future, "future is null");
+        requireNonNull(successCallback, "successCallback is null");
+
+        Futures.addCallback(future, new FutureCallback<T>()
+        {
+            @Override
+            public void onSuccess(@Nullable T result)
+            {
+                successCallback.accept(result);
+            }
+
+            @Override
+            public void onFailure(Throwable t) {}
+        });
+    }
+
+    public static <T> void addSuccessCallback(ListenableFuture<T> future, Runnable successCallback)
+    {
+        requireNonNull(successCallback, "successCallback is null");
+
+        addSuccessCallback(future, t -> successCallback.run());
+    }
+
     public static <T> void addExceptionCallback(ListenableFuture<T> future, Consumer<Throwable> exceptionCallback)
     {
         requireNonNull(future, "future is null");
