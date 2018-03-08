@@ -6,6 +6,7 @@
   and it can be enabled with the "http-client.log.enabled" config parameter.
 - Add JmxGcMonitor to track GC events. GC events are logged,
   and aggregate time stats are published via JMX.
+- Add MoreFutures.addSuccessCallback() methods.
 - Make launcher compatible with Python 3.
 - Add support for monitoring HTTP client/server connection stats.
 
