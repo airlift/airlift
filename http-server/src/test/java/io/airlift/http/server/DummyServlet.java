@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Objects.requireNonNull;
+import static javax.servlet.http.HttpServletResponse.SC_OK;
 
 class DummyServlet
         extends HttpServlet
@@ -40,19 +41,19 @@ class DummyServlet
         this.requestLatch = requireNonNull(requestLatch, "requestLatch is null");
     }
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
     {
         try {
             if (requestLatch != null) {
                 requestLatch.countDown();
             }
-            resp.setStatus(HttpServletResponse.SC_OK);
-            resp.setHeader("X-Protocol", req.getProtocol());
-            if (req.getUserPrincipal() != null) {
-                resp.getOutputStream().write(req.getUserPrincipal().getName().getBytes());
+            response.setStatus(SC_OK);
+            response.setHeader("X-Protocol", request.getProtocol());
+            if (request.getUserPrincipal() != null) {
+                response.getOutputStream().write(request.getUserPrincipal().getName().getBytes());
             }
-            if (req.getParameter("sleep") != null) {
-                Thread.sleep(Long.parseLong(req.getParameter("sleep")));
+            if (request.getParameter("sleep") != null) {
+                Thread.sleep(Long.parseLong(request.getParameter("sleep")));
             }
         }
         catch (Exception t) {
