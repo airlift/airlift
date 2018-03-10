@@ -15,7 +15,6 @@
  */
 package io.airlift.http.server;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -23,25 +22,27 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
+import static javax.servlet.http.HttpServletResponse.SC_OK;
+
 class DummyServlet
         extends HttpServlet
 {
     private final CountDownLatch latch = new CountDownLatch(1);
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-            throws ServletException, IOException
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws IOException
     {
-        resp.setStatus(HttpServletResponse.SC_OK);
-        if (req.getUserPrincipal() != null) {
-            resp.getOutputStream().write(req.getUserPrincipal().getName().getBytes());
+        response.setStatus(SC_OK);
+        if (request.getUserPrincipal() != null) {
+            response.getOutputStream().write(request.getUserPrincipal().getName().getBytes());
         }
-        resp.setHeader("X-Protocol", req.getProtocol());
+        response.setHeader("X-Protocol", request.getProtocol());
 
         try {
-            if (req.getParameter("sleep") != null) {
+            if (request.getParameter("sleep") != null) {
                 latch.countDown();
-                Thread.sleep(Long.parseLong(req.getParameter("sleep")));
+                Thread.sleep(Long.parseLong(request.getParameter("sleep")));
             }
         }
         catch (InterruptedException e) {
