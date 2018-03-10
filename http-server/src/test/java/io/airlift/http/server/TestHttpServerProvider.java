@@ -388,19 +388,28 @@ public class TestHttpServerProvider
         }
     }
 
-    @Test(timeOut = 60000)
+    @Test(timeOut = 30000)
     public void testStop()
             throws Exception
     {
-        createAndStartServer();
+        DummyServlet servlet = new DummyServlet();
+        createAndStartServer(servlet);
 
         try (HttpClient client = new JettyHttpClient()) {
             URI uri = URI.create(httpServerInfo.getHttpUri().toASCIIString() + "/?sleep=50000");
             Request request = prepareGet().setUri(uri).build();
             HttpResponseFuture<?> future = client.executeAsync(request, createStatusResponseHandler());
 
+            // wait until the servlet starts processing the request
+            servlet.getLatch().await(1, TimeUnit.SECONDS);
+
+            // stop server while the request is still active
             server.stop();
 
+            // wait until the server is stopped
+            server.join();
+
+            // request should fail rather than sleeping the full duration
             try {
                 future.get(5, TimeUnit.SECONDS);
                 fail("expected exception");

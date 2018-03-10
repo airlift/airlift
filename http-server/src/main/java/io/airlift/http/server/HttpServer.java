@@ -15,6 +15,7 @@
  */
 package io.airlift.http.server;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
@@ -466,6 +467,13 @@ public class HttpServer
         }
         catch (TimeoutException ignored) {
         }
+    }
+
+    @VisibleForTesting
+    void join()
+            throws InterruptedException
+    {
+        server.join();
     }
 
     private static Set<X509Certificate> loadAllX509Certificates(HttpServerConfig config)

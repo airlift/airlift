@@ -21,10 +21,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 
 class DummyServlet
         extends HttpServlet
 {
+    private final CountDownLatch latch = new CountDownLatch(1);
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException
@@ -37,11 +40,17 @@ class DummyServlet
 
         try {
             if (req.getParameter("sleep") != null) {
+                latch.countDown();
                 Thread.sleep(Long.parseLong(req.getParameter("sleep")));
             }
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    public CountDownLatch getLatch()
+    {
+        return latch;
     }
 }
