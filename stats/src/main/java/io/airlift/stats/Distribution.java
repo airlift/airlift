@@ -143,6 +143,12 @@ public class Distribution
     }
 
     @Managed
+    public synchronized double getAvg()
+    {
+        return getTotal() / getCount();
+    }
+
+    @Managed
     public Map<Double, Long> getPercentiles()
     {
         List<Double> percentiles = new ArrayList<>(100);
@@ -185,7 +191,8 @@ public class Distribution
                 quantiles.get(7),
                 quantiles.get(8),
                 getMin(),
-                getMax());
+                getMax(),
+                getAvg());
     }
 
     public static class DistributionSnapshot
@@ -204,6 +211,7 @@ public class Distribution
         private final long p99;
         private final long min;
         private final long max;
+        private final double avg;
 
         @JsonCreator
         public DistributionSnapshot(
@@ -220,7 +228,8 @@ public class Distribution
                 @JsonProperty("p95") long p95,
                 @JsonProperty("p99") long p99,
                 @JsonProperty("min") long min,
-                @JsonProperty("max") long max)
+                @JsonProperty("max") long max,
+                @JsonProperty("avg") double avg)
         {
             this.maxError = maxError;
             this.count = count;
@@ -236,6 +245,7 @@ public class Distribution
             this.p99 = p99;
             this.min = min;
             this.max = max;
+            this.avg = avg;
         }
 
         @JsonProperty
@@ -322,6 +332,12 @@ public class Distribution
             return max;
         }
 
+        @JsonProperty
+        public double getAvg()
+        {
+            return avg;
+        }
+
         @Override
         public String toString()
         {
@@ -340,6 +356,7 @@ public class Distribution
                     .add("p99", p99)
                     .add("min", min)
                     .add("max", max)
+                    .add("avg", avg)
                     .toString();
         }
     }
