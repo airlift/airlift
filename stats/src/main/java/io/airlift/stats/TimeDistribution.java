@@ -22,6 +22,8 @@ public class TimeDistribution
 
     @GuardedBy("this")
     private final QuantileDigest digest;
+    @GuardedBy("this")
+    private final DecayCounter total;
     private final TimeUnit unit;
 
     public TimeDistribution()
@@ -34,6 +36,7 @@ public class TimeDistribution
         requireNonNull(unit, "unit is null");
 
         digest = new QuantileDigest(MAX_ERROR);
+        total = new DecayCounter(0);
         this.unit = unit;
     }
 
@@ -47,12 +50,14 @@ public class TimeDistribution
         requireNonNull(unit, "unit is null");
 
         digest = new QuantileDigest(MAX_ERROR, alpha);
+        total = new DecayCounter(alpha);
         this.unit = unit;
     }
 
     public synchronized void add(long value)
     {
         digest.add(value);
+        total.add(value);
     }
 
     @Managed
@@ -110,6 +115,12 @@ public class TimeDistribution
     }
 
     @Managed
+    public synchronized double getAvg()
+    {
+        return convertToUnit(total.getCount()) / getCount();
+    }
+
+    @Managed
     public TimeUnit getUnit()
     {
         return unit;
@@ -144,6 +155,11 @@ public class TimeDistribution
         return nanos * 1.0 / unit.toNanos(1);
     }
 
+    private double convertToUnit(double nanos)
+    {
+        return nanos * 1.0 / unit.toNanos(1);
+    }
+
     public TimeDistributionSnapshot snapshot()
     {
         return new TimeDistributionSnapshot(
@@ -156,6 +172,7 @@ public class TimeDistribution
                 getP99(),
                 getMin(),
                 getMax(),
+                getAvg(),
                 getUnit());
     }
 
@@ -170,6 +187,7 @@ public class TimeDistribution
         private final double p99;
         private final double min;
         private final double max;
+        private final double avg;
         private final TimeUnit unit;
 
         @JsonCreator
@@ -183,6 +201,7 @@ public class TimeDistribution
                 @JsonProperty("p99") double p99,
                 @JsonProperty("min") double min,
                 @JsonProperty("max") double max,
+                @JsonProperty("avg") double avg,
                 @JsonProperty("unit") TimeUnit unit)
         {
             this.maxError = maxError;
@@ -194,6 +213,7 @@ public class TimeDistribution
             this.p99 = p99;
             this.min = min;
             this.max = max;
+            this.avg = avg;
             this.unit = unit;
         }
 
@@ -252,6 +272,12 @@ public class TimeDistribution
         }
 
         @JsonProperty
+        public double getAvg()
+        {
+            return avg;
+        }
+
+        @JsonProperty
         public TimeUnit unit()
         {
             return unit;
@@ -270,6 +296,7 @@ public class TimeDistribution
                     .add("p99", p99)
                     .add("min", min)
                     .add("max", max)
+                    .add("avg", avg)
                     .add("unit", unit)
                     .toString();
         }
