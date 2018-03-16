@@ -33,11 +33,14 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.DoubleSummaryStatistics;
 import java.util.List;
 
 import static io.airlift.http.server.TraceTokenFilter.TRACETOKEN_HEADER;
+import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+import static org.eclipse.jetty.http.HttpVersion.HTTP_2;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -84,15 +87,16 @@ public class TestDelimitedRequestLog
                 new SystemCurrentTimeMillisProvider(),
                 false);
         String token = "test-trace-token";
+        when(request.getHttpVersion()).thenReturn(HTTP_2);
         when(request.getHeader(TRACETOKEN_HEADER)).thenReturn(token);
         // log a request without a token set by tokenManager
-        logger.log(request, response);
+        logger.log(request, response, 0, 0, 0, new DoubleSummaryStats(new DoubleSummaryStatistics()));
         // create and set a new token with tokenManager
         tokenManager.createAndRegisterNewRequestToken();
-        logger.log(request, response);
+        logger.log(request, response, 0, 0, 0, new DoubleSummaryStats(new DoubleSummaryStatistics()));
         // clear the token HTTP header
         when(request.getHeader(TRACETOKEN_HEADER)).thenReturn(null);
-        logger.log(request, response);
+        logger.log(request, response, 0, 0, 0, new DoubleSummaryStats(new DoubleSummaryStatistics()));
         logger.stop();
 
         List<Object> events = eventClient.getEvents();
@@ -129,6 +133,13 @@ public class TestDelimitedRequestLog
         int responseCode = 200;
         String responseContentType = "response/type";
         HttpURI uri = new HttpURI("http://www.example.com/aaa+bbb/ccc?param=hello%20there&other=true");
+        long beginToDispatchMillis = 333;
+        long firstToLastContentTimeInMillis = 444;
+        long beginToEndMillis = 555;
+        DoubleSummaryStatistics stats = new DoubleSummaryStatistics();
+        stats.accept(1);
+        stats.accept(3);
+        DoubleSummaryStats responseContentInterarrivalStats = new DoubleSummaryStats(stats);
 
         TraceTokenManager tokenManager = new TraceTokenManager();
         InMemoryEventClient eventClient = new InMemoryEventClient();
@@ -148,13 +159,14 @@ public class TestDelimitedRequestLog
         when(request.getUserPrincipal()).thenReturn(principal);
         when(request.getMethod()).thenReturn(method);
         when(request.getContentRead()).thenReturn(requestSize);
+        when(request.getHttpVersion()).thenReturn(HTTP_2);
         when(request.getHeader("Content-Type")).thenReturn(requestContentType);
         when(response.getStatus()).thenReturn(responseCode);
         when(response.getContentCount()).thenReturn(responseSize);
         when(response.getHeader("Content-Type")).thenReturn(responseContentType);
 
         tokenManager.createAndRegisterNewRequestToken();
-        logger.log(request, response);
+        logger.log(request, response, beginToDispatchMillis, beginToEndMillis, firstToLastContentTimeInMillis, responseContentInterarrivalStats);
         logger.stop();
 
         List<Object> events = eventClient.getEvents();
@@ -177,9 +189,12 @@ public class TestDelimitedRequestLog
         assertEquals(event.getTimeToFirstByte(), (Long) timeToFirstByte);
         assertEquals(event.getTimeToLastByte(), timeToLastByte);
         assertEquals(event.getTraceToken(), tokenManager.getCurrentRequestToken());
+        assertEquals(event.getBeginToDispatchMillis(), beginToDispatchMillis);
+        assertEquals(event.getFirstToLastContentTimeInMillis(), firstToLastContentTimeInMillis);
+        assertEquals(event.getResponseContentInterarrivalStats(), responseContentInterarrivalStats);
 
         String actual = Files.toString(file, UTF_8);
-        String expected = String.format("%s\t%s\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%d\t%s\n",
+        String expected = String.format("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
                 ISO_FORMATTER.format(Instant.ofEpochMilli(timestamp)),
                 ip,
                 method,
@@ -190,7 +205,12 @@ public class TestDelimitedRequestLog
                 requestSize,
                 responseSize,
                 event.getTimeToLastByte(),
-                tokenManager.getCurrentRequestToken());
+                tokenManager.getCurrentRequestToken(),
+                HTTP_2.toString(),
+                beginToDispatchMillis,
+                beginToEndMillis,
+                firstToLastContentTimeInMillis,
+                format("%.2f, %.2f, %.2f, %d", stats.getMin(), stats.getAverage(), stats.getMax(), stats.getCount()));
         assertEquals(actual, expected);
     }
 
@@ -203,10 +223,11 @@ public class TestDelimitedRequestLog
         String protocol = "protocol";
 
         when(request.getScheme()).thenReturn("protocol");
+        when(request.getHttpVersion()).thenReturn(HTTP_2);
 
         InMemoryEventClient eventClient = new InMemoryEventClient();
         DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 256, Long.MAX_VALUE, null, eventClient, false);
-        logger.log(request, response);
+        logger.log(request, response, 0, 0, 0, new DoubleSummaryStats(new DoubleSummaryStatistics()));
         logger.stop();
 
         List<Object> events = eventClient.getEvents();
@@ -223,9 +244,11 @@ public class TestDelimitedRequestLog
         Request request = mock(Request.class);
         Response response = mock(Response.class);
 
+        when(request.getHttpVersion()).thenReturn(HTTP_2);
+
         InMemoryEventClient eventClient = new InMemoryEventClient();
         DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 256, Long.MAX_VALUE, null, eventClient, false);
-        logger.log(request, response);
+        logger.log(request, response, 0, 0, 0, new DoubleSummaryStats(new DoubleSummaryStatistics()));
         logger.stop();
 
         List<Object> events = eventClient.getEvents();
@@ -244,10 +267,11 @@ public class TestDelimitedRequestLog
         String clientIp = "1.1.1.1";
 
         when(request.getRemoteAddr()).thenReturn(clientIp);
+        when(request.getHttpVersion()).thenReturn(HTTP_2);
 
         InMemoryEventClient eventClient = new InMemoryEventClient();
         DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 256, Long.MAX_VALUE, null, eventClient, false);
-        logger.log(request, response);
+        logger.log(request, response, 0, 0, 0, new DoubleSummaryStats(new DoubleSummaryStatistics()));
         logger.stop();
 
         List<Object> events = eventClient.getEvents();
@@ -267,10 +291,11 @@ public class TestDelimitedRequestLog
 
         when(request.getRemoteAddr()).thenReturn("9.9.9.9");
         when(request.getHeaders("X-FORWARDED-FOR")).thenReturn(Collections.enumeration(ImmutableList.of(clientIp, "192.168.1.2, 172.16.0.1", "169.254.1.2, 127.1.2.3", "10.1.2.3")));
+        when(request.getHttpVersion()).thenReturn(HTTP_2);
 
         InMemoryEventClient eventClient = new InMemoryEventClient();
         DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 256, Long.MAX_VALUE, null, eventClient, false);
-        logger.log(request, response);
+        logger.log(request, response, 0, 0, 0, new DoubleSummaryStats(new DoubleSummaryStatistics()));
         logger.stop();
 
         List<Object> events = eventClient.getEvents();

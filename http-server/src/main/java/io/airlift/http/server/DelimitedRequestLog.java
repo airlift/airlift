@@ -26,9 +26,7 @@ import io.airlift.log.Logger;
 import io.airlift.tracetoken.TraceTokenManager;
 import io.airlift.units.DataSize;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.component.LifeCycle;
 
 import java.io.File;
 
@@ -36,7 +34,6 @@ import static io.airlift.http.server.HttpRequestEvent.createHttpRequestEvent;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 
 class DelimitedRequestLog
-        implements RequestLog, LifeCycle
 {
     private static final Logger log = Logger.get(DelimitedRequestLog.class);
     private static final String TEMP_FILE_EXTENSION = ".tmp";
@@ -117,74 +114,32 @@ class DelimitedRequestLog
         asyncAppender.start();
     }
 
-    @Override
-    public void log(Request request, Response response)
+    public void log(
+            Request request,
+            Response response,
+            long beginToDispatchMillis,
+            long beginToEndMillis,
+            long firstToLastContentTimeInMillis,
+            DoubleSummaryStats responseContentInterarrivalStats)
     {
-        long currentTime = currentTimeMillisProvider.getCurrentTimeMillis();
-        HttpRequestEvent event = createHttpRequestEvent(request, response, traceTokenManager, currentTime);
+        HttpRequestEvent event = createHttpRequestEvent(
+                request,
+                response,
+                traceTokenManager,
+                currentTimeMillisProvider.getCurrentTimeMillis(),
+                beginToDispatchMillis,
+                beginToEndMillis,
+                firstToLastContentTimeInMillis,
+                responseContentInterarrivalStats);
 
         asyncAppender.doAppend(event);
 
         eventClient.post(event);
     }
 
-    @Override
-    public void start()
-            throws Exception
-    {
-    }
-
-    @Override
     public void stop()
-            throws Exception
     {
         asyncAppender.stop();
-    }
-
-    @Override
-    public boolean isRunning()
-    {
-        return true;
-    }
-
-    @Override
-    public boolean isStarted()
-    {
-        return true;
-    }
-
-    @Override
-    public boolean isStarting()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isStopping()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isStopped()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isFailed()
-    {
-        return false;
-    }
-
-    @Override
-    public void addLifeCycleListener(Listener listener)
-    {
-    }
-
-    @Override
-    public void removeLifeCycleListener(Listener listener)
-    {
     }
 
     public int getQueueSize()
