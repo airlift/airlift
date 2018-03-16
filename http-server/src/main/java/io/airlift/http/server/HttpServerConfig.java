@@ -477,7 +477,7 @@ public class HttpServerConfig
         return this;
     }
 
-    @Min(100) // per RFC 7540 section 6.5.2
+    @Min(0)
     public int getHttp2MaxConcurrentStreams()
     {
         return http2MaxConcurrentStreams;
