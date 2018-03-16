@@ -35,7 +35,6 @@ import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -94,7 +93,7 @@ public class HttpServer
 {
     private final Server server;
     private final boolean registerErrorHandler;
-    private final RequestLogHandler logHandler;
+    private final DelimitedRequestLog requestLog;
     private ConnectionStats httpConnectionStats;
     private ConnectionStats httpsConnectionStats;
 
@@ -147,6 +146,16 @@ public class HttpServer
         // disable async error notifications to work around https://github.com/jersey/jersey/issues/3691
         baseHttpConfiguration.setNotifyRemoteAsyncErrors(false);
 
+        // register a channel listener if logging is enabled
+        HttpServerChannelListener channelListener = null;
+        if (config.isLogEnabled()) {
+            this.requestLog = createDelimitedRequestLog(config, tokenManager, eventClient);
+            channelListener = new HttpServerChannelListener(this.requestLog);
+        }
+        else {
+            this.requestLog = null;
+        }
+
         // set up HTTP connector
         ServerConnector httpConnector;
         if (config.isHttpEnabled()) {
@@ -184,6 +193,10 @@ public class HttpServer
             ConnectionStatistics connectionStats = new ConnectionStatistics();
             httpConnector.addBean(connectionStats);
             this.httpConnectionStats = new ConnectionStats(connectionStats);
+
+            if (channelListener != null) {
+                httpConnector.addBean(channelListener);
+            }
 
             server.addConnector(httpConnector);
         }
@@ -249,6 +262,10 @@ public class HttpServer
             ConnectionStatistics connectionStats = new ConnectionStatistics();
             httpsConnector.addBean(connectionStats);
             this.httpsConnectionStats = new ConnectionStats(connectionStats);
+
+            if (channelListener != null) {
+                httpsConnector.addBean(channelListener);
+            }
 
             server.addConnector(httpsConnector);
         }
@@ -333,13 +350,6 @@ public class HttpServer
         }
 
         handlers.addHandler(createServletContext(theServlet, parameters, filters, tokenManager, loginService, "http", "https"));
-        if (config.isLogEnabled()) {
-            logHandler = createLogHandler(config, tokenManager, eventClient);
-            handlers.addHandler(logHandler);
-        }
-        else {
-            logHandler = null;
-        }
 
         RequestLogHandler statsRecorder = new RequestLogHandler();
         statsRecorder.setRequestLog(new StatsRecordingHandler(stats));
@@ -422,13 +432,9 @@ public class HttpServer
         return securityHandler;
     }
 
-    private static RequestLogHandler createLogHandler(HttpServerConfig config, TraceTokenManager tokenManager, EventClient eventClient)
+    private static DelimitedRequestLog createDelimitedRequestLog(HttpServerConfig config, TraceTokenManager tokenManager, EventClient eventClient)
             throws IOException
     {
-        // TODO: use custom (more easily-parseable) format
-        // TODO: make retention & rotation configurable
-        RequestLogHandler logHandler = new RequestLogHandler();
-
         File logFile = new File(config.getLogPath());
         if (logFile.exists() && !logFile.isFile()) {
             throw new IOException(format("Log path %s exists but is not a file", logFile.getAbsolutePath()));
@@ -439,7 +445,7 @@ public class HttpServer
             throw new IOException(format("Cannot create %s and path does not already exist", logPath.getAbsolutePath()));
         }
 
-        RequestLog requestLog = new DelimitedRequestLog(
+        return new DelimitedRequestLog(
                 config.getLogPath(),
                 config.getLogHistory(),
                 config.getLogQueueSize(),
@@ -447,10 +453,6 @@ public class HttpServer
                 tokenManager,
                 eventClient,
                 config.isLogCompressionEnabled());
-
-        logHandler.setRequestLog(requestLog);
-
-        return logHandler;
     }
 
     private static Optional<KeyStore> tryLoadPemKeyStore(HttpServerConfig config)
@@ -520,10 +522,10 @@ public class HttpServer
     @Managed
     public int getLoggerQueueSize()
     {
-        if (logHandler == null) {
+        if (requestLog == null) {
             return 0;
         }
-        return ((DelimitedRequestLog) logHandler.getRequestLog()).getQueueSize();
+        return requestLog.getQueueSize();
     }
 
     @PostConstruct

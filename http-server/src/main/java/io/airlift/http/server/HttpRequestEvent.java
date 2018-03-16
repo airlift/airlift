@@ -35,7 +35,15 @@ import static java.lang.Math.max;
 @EventType("HttpRequest")
 public class HttpRequestEvent
 {
-    public static HttpRequestEvent createHttpRequestEvent(Request request, Response response, TraceTokenManager traceTokenManager, long currentTimeInMillis)
+    public static HttpRequestEvent createHttpRequestEvent(
+            Request request,
+            Response response,
+            TraceTokenManager traceTokenManager,
+            long currentTimeInMillis,
+            long beginToDispatchMillis,
+            long beginToEndMillis,
+            long firstToLastContentTimeInMillis,
+            DoubleSummaryStats responseContentInterarrivalStats)
     {
         String user = null;
         Principal principal = request.getUserPrincipal();
@@ -120,7 +128,12 @@ public class HttpRequestEvent
                 response.getHeader("Content-Type"),
                 timeToDispatch,
                 timeToFirstByte,
-                timeToLastByte);
+                timeToLastByte,
+                beginToDispatchMillis,
+                beginToEndMillis,
+                firstToLastContentTimeInMillis,
+                responseContentInterarrivalStats,
+                request.getHttpVersion().toString());
     }
 
     private final Instant timeStamp;
@@ -140,6 +153,11 @@ public class HttpRequestEvent
     private final long timeToDispatch;
     private final Long timeToFirstByte;
     private final long timeToLastByte;
+    private final long beginToDispatchMillis;
+    private final long beginToEndMillis;
+    private final long firstToLastContentTimeInMillis;
+    private final DoubleSummaryStats responseContentInterarrivalStats;
+    private final String protocolVersion;
 
     public HttpRequestEvent(
             Instant timeStamp,
@@ -158,7 +176,12 @@ public class HttpRequestEvent
             String responseContentType,
             long timeToDispatch,
             Long timeToFirstByte,
-            long timeToLastByte)
+            long timeToLastByte,
+            long beginToDispatchMillis,
+            long beginToEndMillis,
+            long firstToLastContentTimeInMillis,
+            DoubleSummaryStats responseContentInterarrivalStats,
+            String protocolVersion)
     {
         this.timeStamp = timeStamp;
         this.traceToken = traceToken;
@@ -177,6 +200,11 @@ public class HttpRequestEvent
         this.timeToDispatch = timeToDispatch;
         this.timeToFirstByte = timeToFirstByte;
         this.timeToLastByte = timeToLastByte;
+        this.beginToDispatchMillis = beginToDispatchMillis;
+        this.beginToEndMillis = beginToEndMillis;
+        this.firstToLastContentTimeInMillis = firstToLastContentTimeInMillis;
+        this.responseContentInterarrivalStats = responseContentInterarrivalStats;
+        this.protocolVersion = protocolVersion;
     }
 
     @EventField(fieldMapping = TIMESTAMP)
@@ -279,5 +307,35 @@ public class HttpRequestEvent
     public long getTimeToLastByte()
     {
         return timeToLastByte;
+    }
+
+    @EventField
+    public long getBeginToDispatchMillis()
+    {
+        return beginToDispatchMillis;
+    }
+
+    @EventField
+    public long getBeginToEndMillis()
+    {
+        return beginToEndMillis;
+    }
+
+    @EventField
+    public long getFirstToLastContentTimeInMillis()
+    {
+        return firstToLastContentTimeInMillis;
+    }
+
+    @EventField
+    public DoubleSummaryStats getResponseContentInterarrivalStats()
+    {
+        return responseContentInterarrivalStats;
+    }
+
+    @EventField
+    public String getProtocolVersion()
+    {
+        return protocolVersion;
     }
 }
