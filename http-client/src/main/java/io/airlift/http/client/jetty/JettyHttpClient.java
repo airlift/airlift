@@ -201,7 +201,10 @@ public class JettyHttpClient
         }
 
         httpClient.setByteBufferPool(new MappedByteBufferPool());
-        httpClient.setExecutor(createExecutor(name, config.getMinThreads(), config.getMaxThreads()));
+        QueuedThreadPool queuedThreadPool = createExecutor(name, config.getMinThreads(), config.getMaxThreads());
+        httpClient.setExecutor(queuedThreadPool);
+        // add queuedThreadPool as a managed bean to get its state in the client dumps
+        httpClient.addBean(queuedThreadPool, true);
         httpClient.setScheduler(createScheduler(name, config.getTimeoutConcurrency(), config.getTimeoutThreads()));
 
         httpClient.setSocketAddressResolver(new JettyAsyncSocketAddressResolver(
