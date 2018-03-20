@@ -15,33 +15,57 @@
  */
 package io.airlift.http.server;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static java.util.Objects.requireNonNull;
+import static javax.servlet.http.HttpServletResponse.SC_OK;
 
 class DummyServlet
         extends HttpServlet
 {
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-            throws ServletException, IOException
-    {
-        resp.setStatus(HttpServletResponse.SC_OK);
-        if (req.getUserPrincipal() != null) {
-            resp.getOutputStream().write(req.getUserPrincipal().getName().getBytes());
-        }
-        resp.setHeader("X-Protocol", req.getProtocol());
+    private final AtomicReference<Exception> exception = new AtomicReference<>();
+    private final CountDownLatch requestLatch;
 
+    public DummyServlet()
+    {
+        this.requestLatch = null;
+    }
+
+    public DummyServlet(CountDownLatch requestLatch)
+    {
+        this.requestLatch = requireNonNull(requestLatch, "requestLatch is null");
+    }
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+    {
         try {
-            if (req.getParameter("sleep") != null) {
-                Thread.sleep(Long.parseLong(req.getParameter("sleep")));
+            if (requestLatch != null) {
+                requestLatch.countDown();
+            }
+            response.setStatus(SC_OK);
+            response.setHeader("X-Protocol", request.getProtocol());
+            if (request.getUserPrincipal() != null) {
+                response.getOutputStream().write(request.getUserPrincipal().getName().getBytes());
+            }
+            if (request.getParameter("sleep") != null) {
+                Thread.sleep(Long.parseLong(request.getParameter("sleep")));
             }
         }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        catch (Exception t) {
+            if (t instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            exception.set(t);
         }
+    }
+
+    public Throwable getException()
+    {
+        return exception.get();
     }
 }

@@ -45,8 +45,8 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
@@ -59,12 +59,12 @@ import static io.airlift.testing.Assertions.assertContains;
 import static io.airlift.testing.Assertions.assertInstanceOf;
 import static io.airlift.testing.Assertions.assertNotEquals;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
 
 @Test(singleThreaded = true)
 public class TestHttpServerProvider
@@ -392,18 +392,26 @@ public class TestHttpServerProvider
     public void testStop()
             throws Exception
     {
-        createAndStartServer();
-
+        CountDownLatch requestActive = new CountDownLatch(1);
+        DummyServlet servlet = new DummyServlet(requestActive);
+        createAndStartServer(servlet);
         try (HttpClient client = new JettyHttpClient()) {
             URI uri = URI.create(httpServerInfo.getHttpUri().toASCIIString() + "/?sleep=50000");
             Request request = prepareGet().setUri(uri).build();
             HttpResponseFuture<?> future = client.executeAsync(request, createStatusResponseHandler());
 
+            // wait until the servlet starts processing the request
+            requestActive.await();
+
+            // call stop when the request is still active
             server.stop();
 
+            // wait until the server is stopped
+            server.join();
+
             try {
-                future.get(5, TimeUnit.SECONDS);
-                fail("expected exception");
+                future.get(5, SECONDS);
+                throw new AssertionError("expected request to fail", servlet.getException());
             }
             catch (ExecutionException e) {
                 assertInstanceOf(e.getCause(), UncheckedIOException.class);
