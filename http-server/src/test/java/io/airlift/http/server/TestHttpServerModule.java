@@ -42,7 +42,7 @@ import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
-import io.airlift.node.NodeModule;
+import io.airlift.node.testing.TestingNodeModule;
 import io.airlift.tracetoken.TraceTokenModule;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -120,7 +120,7 @@ public class TestHttpServerModule
 
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
         Injector injector = Guice.createInjector(new HttpServerModule(),
-                new NodeModule(),
+                new TestingNodeModule(),
                 new ConfigurationModule(configFactory),
                 new EventModule(),
                 new Module()
@@ -148,7 +148,7 @@ public class TestHttpServerModule
 
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
         Injector injector = Guice.createInjector(new HttpServerModule(),
-                new NodeModule(),
+                new TestingNodeModule(),
                 new ConfigurationModule(configFactory),
                 new EventModule(),
                 new Module()
@@ -189,7 +189,7 @@ public class TestHttpServerModule
 
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
         Injector injector = Guice.createInjector(new HttpServerModule(),
-                new NodeModule(),
+                new TestingNodeModule(),
                 new ConfigurationModule(configFactory),
                 new EventModule(),
                 new Module()
@@ -262,7 +262,7 @@ public class TestHttpServerModule
 
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
         Injector injector = Guice.createInjector(new HttpServerModule(),
-                new NodeModule(),
+                new TestingNodeModule(),
                 new ConfigurationModule(configFactory),
                 new InMemoryEventModule(),
                 new TraceTokenModule(),
