@@ -27,17 +27,17 @@ import java.io.File;
 import static io.airlift.http.client.jetty.HttpRequestEvent.createHttpRequestEvent;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 
-class DefaulHttpClientLogger
+class DefaultHttpClientLogger
         implements HttpClientLogger
 {
-    private static final Logger LOG = Logger.get(DefaulHttpClientLogger.class);
+    private static final Logger LOG = Logger.get(DefaultHttpClientLogger.class);
     private static final String TEMP_FILE_EXTENSION = ".tmp";
     private static final String LOG_FILE_EXTENSION = ".log";
     private static final FileSize BUFFER_SIZE_IN_BYTES = new FileSize(new DataSize(1, MEGABYTE).toBytes());
 
     private final AsyncAppenderBase<HttpRequestEvent> asyncAppender;
 
-    DefaulHttpClientLogger(String filename, int maxHistory, int queueSize, long maxFileSizeInBytes)
+    DefaultHttpClientLogger(String filename, int maxHistory, int queueSize, long maxFileSizeInBytes)
     {
         ContextBase context = new ContextBase();
         HttpClientLogLayout httpLogLayout = new HttpClientLogLayout();
