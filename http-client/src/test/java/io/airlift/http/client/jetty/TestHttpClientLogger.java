@@ -94,7 +94,7 @@ public class TestHttpClientLogger
         Request request = new TestRequest(HTTP_2, method, uri, headers);
         Response response = new TestResponse(status);
 
-        DefaulHttpClientLogger logger = new DefaulHttpClientLogger(file.getAbsolutePath(), 1, 256, Long.MAX_VALUE, false);
+        DefaultHttpClientLogger logger = new DefaultHttpClientLogger(file.getAbsolutePath(), 1, 256, Long.MAX_VALUE, false);
         RequestInfo requestInfo = RequestInfo.from(request, requestTimestamp);
         ResponseInfo responseInfo = ResponseInfo.from(Optional.of(response), responseSize);
         logger.log(requestInfo, responseInfo);
@@ -124,7 +124,7 @@ public class TestHttpClientLogger
         headers.add(TRACETOKEN_HEADER, "test-token");
         Request request = new TestRequest(HTTP_1_1, method, uri, headers);
 
-        DefaulHttpClientLogger logger = new DefaulHttpClientLogger(file.getAbsolutePath(), 1, 256, Long.MAX_VALUE, false);
+        DefaultHttpClientLogger logger = new DefaultHttpClientLogger(file.getAbsolutePath(), 1, 256, Long.MAX_VALUE, false);
         RequestInfo requestInfo = RequestInfo.from(request, requestTimestamp);
         ResponseInfo responseInfo = ResponseInfo.failed(Optional.empty(), Optional.of(new TimeoutException("timeout")));
         logger.log(requestInfo, responseInfo);
