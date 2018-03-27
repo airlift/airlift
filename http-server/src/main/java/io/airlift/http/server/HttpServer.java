@@ -413,7 +413,7 @@ public class HttpServer
         RequestLog requestLog = new DelimitedRequestLog(
                 config.getLogPath(),
                 config.getLogHistory(),
-                config.getQueueSize(),
+                config.getLogQueueSize(),
                 config.getLogMaxFileSize().toBytes(),
                 tokenManager,
                 eventClient);
