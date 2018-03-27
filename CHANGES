@@ -1,3 +1,7 @@
+0.165
+
+- Add log buffer size config to HTTP client.
+
 0.164
 
 - Fix HTTP server log of trace tokens when using async responses.

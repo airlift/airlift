@@ -25,7 +25,6 @@ import io.airlift.units.DataSize;
 import java.io.File;
 
 import static io.airlift.http.client.jetty.HttpRequestEvent.createHttpRequestEvent;
-import static io.airlift.units.DataSize.Unit.MEGABYTE;
 
 class DefaultHttpClientLogger
         implements HttpClientLogger
@@ -33,11 +32,10 @@ class DefaultHttpClientLogger
     private static final Logger LOG = Logger.get(DefaultHttpClientLogger.class);
     private static final String TEMP_FILE_EXTENSION = ".tmp";
     private static final String LOG_FILE_EXTENSION = ".log";
-    private static final FileSize BUFFER_SIZE_IN_BYTES = new FileSize(new DataSize(1, MEGABYTE).toBytes());
 
     private final AsyncAppenderBase<HttpRequestEvent> asyncAppender;
 
-    DefaultHttpClientLogger(String filename, int maxHistory, int queueSize, long maxFileSizeInBytes)
+    DefaultHttpClientLogger(String filename, int maxHistory, int queueSize, DataSize bufferSize, long maxFileSizeInBytes)
     {
         ContextBase context = new ContextBase();
         HttpClientLogLayout httpLogLayout = new HttpClientLogLayout();
@@ -61,7 +59,7 @@ class DefaultHttpClientLogger
         fileAppender.setContext(context);
         fileAppender.setFile(filename);
         fileAppender.setAppend(true);
-        fileAppender.setBufferSize(BUFFER_SIZE_IN_BYTES);
+        fileAppender.setBufferSize(new FileSize(bufferSize.toBytes()));
         fileAppender.setLayout(httpLogLayout);
         fileAppender.setRollingPolicy(rollingPolicy);
         fileAppender.setImmediateFlush(false);

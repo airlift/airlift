@@ -226,7 +226,12 @@ public class JettyHttpClient
         // configure logging
         if (config.isLogEnabled()) {
             String logFilePath = Paths.get(config.getLogPath(), format("%s-http-client.log", name)).toAbsolutePath().toString();
-            requestLogger = new DefaultHttpClientLogger(logFilePath, config.getLogHistory(), config.getLogQueueSize(), config.getLogMaxFileSize().toBytes());
+            requestLogger = new DefaultHttpClientLogger(
+                    logFilePath,
+                    config.getLogHistory(),
+                    config.getLogQueueSize(),
+                    config.getLogBufferSize(),
+                    config.getLogMaxFileSize().toBytes());
         }
         else {
             requestLogger = new NoopLogger();
