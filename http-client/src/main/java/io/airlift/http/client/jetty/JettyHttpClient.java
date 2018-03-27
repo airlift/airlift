@@ -663,6 +663,12 @@ public class JettyHttpClient
                         .collect(Collectors.joining("\n"));
     }
 
+    @Managed
+    public int getLoggerQueueSize()
+    {
+        return requestLogger.getQueueSize();
+    }
+
     // todo this should be @Managed but operations with parameters are broken in jmx utils https://github.com/martint/jmxutils/issues/27
     @SuppressWarnings("UnusedDeclaration")
     public String dumpDestination(URI uri)

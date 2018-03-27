@@ -1,6 +1,7 @@
 0.165
 
 - Add log buffer size config to HTTP client.
+- Add support for monitoring the HTTP client and server logger queue size.
 
 0.164
 
