@@ -45,7 +45,7 @@ public class TestHttpClientConfig
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(HttpClientConfig.class)
                 .setHttp2Enabled(false)
-                .setConnectTimeout(new Duration(1, SECONDS))
+                .setConnectTimeout(new Duration(5, SECONDS))
                 .setRequestTimeout(new Duration(5, MINUTES))
                 .setIdleTimeout(new Duration(1, MINUTES))
                 .setKeepAliveInterval(null)
