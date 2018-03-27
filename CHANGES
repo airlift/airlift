@@ -1,3 +1,7 @@
+0.165
+
+- Allow disabling the compression of HTTP client and server log files.
+
 0.164
 
 - Fix HTTP server log of trace tokens when using async responses.

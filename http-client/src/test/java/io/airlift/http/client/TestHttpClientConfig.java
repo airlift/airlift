@@ -76,7 +76,8 @@ public class TestHttpClientConfig
                 .setLogHistory(15)
                 .setLogMaxFileSize(new DataSize(1, GIGABYTE))
                 .setLogPath("var/log/")
-                .setLogQueueSize(10_000));
+                .setLogQueueSize(10_000)
+                .setLogCompressionEnabled(true));
     }
 
     @Test
@@ -116,6 +117,7 @@ public class TestHttpClientConfig
                 .put("http-client.log.max-size", "2GB")
                 .put("http-client.log.path", "/tmp/log/")
                 .put("http-client.log.queue-size", "12345")
+                .put("http-client.log.compression.enabled", "false")
                 .build();
 
         HttpClientConfig expected = new HttpClientConfig()
@@ -151,7 +153,8 @@ public class TestHttpClientConfig
                 .setLogHistory(22)
                 .setLogMaxFileSize(new DataSize(2, GIGABYTE))
                 .setLogPath("/tmp/log/")
-                .setLogQueueSize(12345);
+                .setLogQueueSize(12345)
+                .setLogCompressionEnabled(false);
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

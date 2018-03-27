@@ -50,18 +50,27 @@ class DelimitedRequestLog
     private final CurrentTimeMillisProvider currentTimeMillisProvider;
     private final AsyncAppenderBase<HttpRequestEvent> asyncAppender;
 
-    public DelimitedRequestLog(String filename, int maxHistory, int queueSize, long maxFileSizeInBytes, TraceTokenManager traceTokenManager, EventClient eventClient)
-    {
-        this(filename, maxHistory, queueSize, maxFileSizeInBytes, traceTokenManager, eventClient, new SystemCurrentTimeMillisProvider());
-    }
-
-    public DelimitedRequestLog(String filename,
+    public DelimitedRequestLog(
+            String filename,
             int maxHistory,
             int queueSize,
             long maxFileSizeInBytes,
             TraceTokenManager traceTokenManager,
             EventClient eventClient,
-            CurrentTimeMillisProvider currentTimeMillisProvider)
+            boolean compressionEnabled)
+    {
+        this(filename, maxHistory, queueSize, maxFileSizeInBytes, traceTokenManager, eventClient, new SystemCurrentTimeMillisProvider(), compressionEnabled);
+    }
+
+    public DelimitedRequestLog(
+            String filename,
+            int maxHistory,
+            int queueSize,
+            long maxFileSizeInBytes,
+            TraceTokenManager traceTokenManager,
+            EventClient eventClient,
+            CurrentTimeMillisProvider currentTimeMillisProvider,
+            boolean compressionEnabled)
     {
         this.traceTokenManager = traceTokenManager;
         this.eventClient = eventClient;
@@ -77,10 +86,13 @@ class DelimitedRequestLog
         TimeBasedRollingPolicy<HttpRequestEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
 
         rollingPolicy.setContext(context);
-        rollingPolicy.setFileNamePattern(filename + "-%d{yyyy-MM-dd}.%i.log.gz");
         rollingPolicy.setMaxHistory(maxHistory);
         rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(triggeringPolicy);
         rollingPolicy.setParent(fileAppender);
+        rollingPolicy.setFileNamePattern(filename + "-%d{yyyy-MM-dd}.%i.log");
+        if (compressionEnabled) {
+            rollingPolicy.setFileNamePattern(rollingPolicy.getFileNamePattern() + ".gz");
+        }
 
         triggeringPolicy.setContext(context);
         triggeringPolicy.setTimeBasedRollingPolicy(rollingPolicy);

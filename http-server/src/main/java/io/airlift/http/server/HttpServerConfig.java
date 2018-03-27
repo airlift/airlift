@@ -75,6 +75,7 @@ public class HttpServerConfig
     private int logHistory = 15;
     private int logQueueSize = 10_000;
     private DataSize logMaxFileSize = new DataSize(Long.MAX_VALUE, BYTE);
+    private boolean logCompressionEnabled = true;
 
     private Integer httpAcceptorThreads;
     private Integer httpSelectorThreads;
@@ -389,6 +390,18 @@ public class HttpServerConfig
     public HttpServerConfig setLogQueueSize(int logQueueSize)
     {
         this.logQueueSize = logQueueSize;
+        return this;
+    }
+
+    public boolean isLogCompressionEnabled()
+    {
+        return logCompressionEnabled;
+    }
+
+    @Config("http-server.log.compression.enabled")
+    public HttpServerConfig setLogCompressionEnabled(boolean logCompressionEnabled)
+    {
+        this.logCompressionEnabled = logCompressionEnabled;
         return this;
     }
 

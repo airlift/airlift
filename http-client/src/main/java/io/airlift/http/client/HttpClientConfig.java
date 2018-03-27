@@ -79,6 +79,7 @@ public class HttpClientConfig
     private int logHistory = 15;
     private int logQueueSize = 10_000;
     private DataSize logMaxFileSize = new DataSize(1, GIGABYTE);
+    private boolean logCompressionEnabled = true;
 
     public boolean isHttp2Enabled()
     {
@@ -511,6 +512,18 @@ public class HttpClientConfig
     public HttpClientConfig setLogQueueSize(int logQueueSize)
     {
         this.logQueueSize = logQueueSize;
+        return this;
+    }
+
+    public boolean isLogCompressionEnabled()
+    {
+        return logCompressionEnabled;
+    }
+
+    @Config("http-client.log.compression.enabled")
+    public HttpClientConfig setLogCompressionEnabled(boolean logCompressionEnabled)
+    {
+        this.logCompressionEnabled = logCompressionEnabled;
         return this;
     }
 }

@@ -37,7 +37,7 @@ class DefaulHttpClientLogger
 
     private final AsyncAppenderBase<HttpRequestEvent> asyncAppender;
 
-    DefaulHttpClientLogger(String filename, int maxHistory, int queueSize, long maxFileSizeInBytes)
+    DefaulHttpClientLogger(String filename, int maxHistory, int queueSize, long maxFileSizeInBytes, boolean compressionEnabled)
     {
         ContextBase context = new ContextBase();
         HttpClientLogLayout httpLogLayout = new HttpClientLogLayout();
@@ -49,10 +49,13 @@ class DefaulHttpClientLogger
         TimeBasedRollingPolicy<HttpRequestEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
 
         rollingPolicy.setContext(context);
-        rollingPolicy.setFileNamePattern(filename + "-%d{yyyy-MM-dd}.%i.log.gz");
         rollingPolicy.setMaxHistory(maxHistory);
         rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(triggeringPolicy);
         rollingPolicy.setParent(fileAppender);
+        rollingPolicy.setFileNamePattern(filename + "-%d{yyyy-MM-dd}.%i.log");
+        if (compressionEnabled) {
+            rollingPolicy.setFileNamePattern(rollingPolicy.getFileNamePattern() + ".gz");
+        }
 
         triggeringPolicy.setContext(context);
         triggeringPolicy.setTimeBasedRollingPolicy(rollingPolicy);
