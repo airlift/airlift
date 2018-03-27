@@ -187,6 +187,11 @@ class DelimitedRequestLog
     {
     }
 
+    public int getQueueSize()
+    {
+        return asyncAppender.getNumberOfElementsInQueue();
+    }
+
     private static void recoverTempFiles(String logPath)
     {
         // logback has a tendency to leave around temp files if it is interrupted

@@ -91,6 +91,7 @@ public class HttpServer
 {
     private final Server server;
     private final boolean registerErrorHandler;
+    private final RequestLogHandler logHandler;
     private ConnectionStats httpConnectionStats;
     private ConnectionStats httpsConnectionStats;
 
@@ -309,7 +310,11 @@ public class HttpServer
 
         handlers.addHandler(createServletContext(theServlet, parameters, filters, tokenManager, loginService, "http", "https"));
         if (config.isLogEnabled()) {
-            handlers.addHandler(createLogHandler(config, tokenManager, eventClient));
+            logHandler = createLogHandler(config, tokenManager, eventClient);
+            handlers.addHandler(logHandler);
+        }
+        else {
+            logHandler = null;
         }
 
         RequestLogHandler statsRecorder = new RequestLogHandler();
@@ -443,6 +448,15 @@ public class HttpServer
     public ConnectionStats getHttpsConnectionStats()
     {
         return httpsConnectionStats;
+    }
+
+    @Managed
+    public int getLoggerQueueSize()
+    {
+        if (logHandler == null) {
+            return 0;
+        }
+        return ((DelimitedRequestLog) logHandler.getRequestLog()).getQueueSize();
     }
 
     @PostConstruct
