@@ -416,7 +416,8 @@ public class HttpServer
                 config.getLogQueueSize(),
                 config.getLogMaxFileSize().toBytes(),
                 tokenManager,
-                eventClient);
+                eventClient,
+                config.isLogCompressionEnabled());
 
         logHandler.setRequestLog(requestLog);
 
