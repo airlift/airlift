@@ -1,5 +1,6 @@
 0.165
 
+- Add log buffer size config to HTTP client.
 - Allow disabling the compression of log files for HTTP client and server.
 
 0.164

@@ -230,6 +230,7 @@ public class JettyHttpClient
                     logFilePath,
                     config.getLogHistory(),
                     config.getLogQueueSize(),
+                    config.getLogBufferSize(),
                     config.getLogMaxFileSize().toBytes(),
                     config.isLogCompressionEnabled());
         }
