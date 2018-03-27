@@ -92,6 +92,7 @@ class DelimitedRequestLog
         fileAppender.setBufferSize(BUFFER_SIZE_IN_BYTES);
         fileAppender.setLayout(httpLogLayout);
         fileAppender.setRollingPolicy(rollingPolicy);
+        fileAppender.setImmediateFlush(false);
 
         asyncAppender = new AsyncAppenderBase<>();
         asyncAppender.setContext(context);
