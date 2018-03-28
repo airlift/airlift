@@ -73,8 +73,9 @@ public class HttpServerConfig
     private String logPath = "var/log/http-request.log";
     private boolean logEnabled = true;
     private int logHistory = 15;
-    private int queueSize = 10_000;
+    private int logQueueSize = 10_000;
     private DataSize logMaxFileSize = new DataSize(Long.MAX_VALUE, BYTE);
+    private boolean logCompressionEnabled = true;
 
     private Integer httpAcceptorThreads;
     private Integer httpSelectorThreads;
@@ -380,15 +381,27 @@ public class HttpServerConfig
     }
 
     @Min(1)
-    public int getQueueSize()
+    public int getLogQueueSize()
     {
-        return queueSize;
+        return logQueueSize;
     }
 
     @Config("http-server.log.queue-size")
-    public HttpServerConfig setQueueSize(int queueSize)
+    public HttpServerConfig setLogQueueSize(int logQueueSize)
     {
-        this.queueSize = queueSize;
+        this.logQueueSize = logQueueSize;
+        return this;
+    }
+
+    public boolean isLogCompressionEnabled()
+    {
+        return logCompressionEnabled;
+    }
+
+    @Config("http-server.log.compression.enabled")
+    public HttpServerConfig setLogCompressionEnabled(boolean logCompressionEnabled)
+    {
+        this.logCompressionEnabled = logCompressionEnabled;
         return this;
     }
 
