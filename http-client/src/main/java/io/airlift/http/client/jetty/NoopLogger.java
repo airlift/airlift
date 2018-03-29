@@ -25,4 +25,10 @@ public class NoopLogger
     public void close()
     {
     }
+
+    @Override
+    public int getQueueSize()
+    {
+        return 0;
+    }
 }

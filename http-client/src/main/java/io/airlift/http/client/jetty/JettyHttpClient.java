@@ -226,7 +226,12 @@ public class JettyHttpClient
         // configure logging
         if (config.isLogEnabled()) {
             String logFilePath = Paths.get(config.getLogPath(), format("%s-http-client.log", name)).toAbsolutePath().toString();
-            requestLogger = new DefaulHttpClientLogger(logFilePath, config.getLogHistory(), config.getLogQueueSize(), config.getLogMaxFileSize().toBytes());
+            requestLogger = new DefaultHttpClientLogger(
+                    logFilePath,
+                    config.getLogHistory(),
+                    config.getLogQueueSize(),
+                    config.getLogBufferSize(),
+                    config.getLogMaxFileSize().toBytes());
         }
         else {
             requestLogger = new NoopLogger();
@@ -656,6 +661,12 @@ public class JettyHttpClient
                 httpClient.getDestinations().stream()
                         .map(JettyHttpClient::dumpDestination)
                         .collect(Collectors.joining("\n"));
+    }
+
+    @Managed
+    public int getLoggerQueueSize()
+    {
+        return requestLogger.getQueueSize();
     }
 
     // todo this should be @Managed but operations with parameters are broken in jmx utils https://github.com/martint/jmxutils/issues/27

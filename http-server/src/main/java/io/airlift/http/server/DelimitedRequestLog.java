@@ -92,6 +92,7 @@ class DelimitedRequestLog
         fileAppender.setBufferSize(BUFFER_SIZE_IN_BYTES);
         fileAppender.setLayout(httpLogLayout);
         fileAppender.setRollingPolicy(rollingPolicy);
+        fileAppender.setImmediateFlush(false);
 
         asyncAppender = new AsyncAppenderBase<>();
         asyncAppender.setContext(context);
@@ -172,6 +173,11 @@ class DelimitedRequestLog
     @Override
     public void removeLifeCycleListener(Listener listener)
     {
+    }
+
+    public int getQueueSize()
+    {
+        return asyncAppender.getNumberOfElementsInQueue();
     }
 
     private static void recoverTempFiles(String logPath)

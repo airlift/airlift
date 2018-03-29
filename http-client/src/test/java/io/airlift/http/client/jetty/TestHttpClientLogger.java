@@ -16,6 +16,7 @@ package io.airlift.http.client.jetty;
 import com.google.common.io.Files;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
+import io.airlift.units.DataSize;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -48,6 +49,7 @@ import java.util.concurrent.TimeoutException;
 import static io.airlift.http.client.TraceTokenRequestFilter.TRACETOKEN_HEADER;
 import static io.airlift.http.client.jetty.HttpRequestEvent.NO_RESPONSE;
 import static io.airlift.http.client.jetty.HttpRequestEvent.getFailureReason;
+import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.util.Objects.requireNonNull;
@@ -94,7 +96,7 @@ public class TestHttpClientLogger
         Request request = new TestRequest(HTTP_2, method, uri, headers);
         Response response = new TestResponse(status);
 
-        DefaulHttpClientLogger logger = new DefaulHttpClientLogger(file.getAbsolutePath(), 1, 256, Long.MAX_VALUE);
+        DefaultHttpClientLogger logger = new DefaultHttpClientLogger(file.getAbsolutePath(), 1, 256, new DataSize(1, MEGABYTE), Long.MAX_VALUE);
         RequestInfo requestInfo = RequestInfo.from(request, requestTimestamp);
         ResponseInfo responseInfo = ResponseInfo.from(Optional.of(response), responseSize);
         logger.log(requestInfo, responseInfo);
@@ -124,7 +126,7 @@ public class TestHttpClientLogger
         headers.add(TRACETOKEN_HEADER, "test-token");
         Request request = new TestRequest(HTTP_1_1, method, uri, headers);
 
-        DefaulHttpClientLogger logger = new DefaulHttpClientLogger(file.getAbsolutePath(), 1, 256, Long.MAX_VALUE);
+        DefaultHttpClientLogger logger = new DefaultHttpClientLogger(file.getAbsolutePath(), 1, 256, new DataSize(1, MEGABYTE), Long.MAX_VALUE);
         RequestInfo requestInfo = RequestInfo.from(request, requestTimestamp);
         ResponseInfo responseInfo = ResponseInfo.failed(Optional.empty(), Optional.of(new TimeoutException("timeout")));
         logger.log(requestInfo, responseInfo);
