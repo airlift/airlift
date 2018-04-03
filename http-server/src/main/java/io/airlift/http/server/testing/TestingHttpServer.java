@@ -95,4 +95,9 @@ public class TestingHttpServer
     {
         return httpServerInfo.getHttpUri().getPort();
     }
+
+    public HttpServerInfo getHttpServerInfo()
+    {
+        return httpServerInfo;
+    }
 }

@@ -29,6 +29,7 @@ import io.airlift.http.server.TheServlet;
 import javax.servlet.Filter;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 
 public class TestingHttpServerModule
@@ -51,9 +52,14 @@ public class TestingHttpServerModule
     {
         binder.disableCircularProxies();
 
-        HttpServerConfig config = new HttpServerConfig().setHttpPort(httpPort);
+        configBinder(binder).bindConfig(HttpServerConfig.class);
+        configBinder(binder).bindConfigDefaults(HttpServerConfig.class, config -> {
+            config.setHttpPort(httpPort);
+            if (httpPort == 0) {
+                config.setHttpsPort(0);
+            }
+        });
 
-        binder.bind(HttpServerConfig.class).toInstance(config);
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
         binder.bind(TestingHttpServer.class).in(Scopes.SINGLETON);
         binder.bind(HttpServer.class).to(Key.get(TestingHttpServer.class));

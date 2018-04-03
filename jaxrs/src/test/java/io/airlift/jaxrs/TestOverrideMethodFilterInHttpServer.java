@@ -15,9 +15,9 @@
  */
 package io.airlift.jaxrs;
 
-import com.google.inject.Binder;
-import com.google.inject.Guice;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Module;
+import io.airlift.bootstrap.Bootstrap;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
@@ -40,8 +40,10 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Response.Status;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import static com.google.common.base.Throwables.throwIfUnchecked;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 import static java.lang.String.format;
@@ -284,18 +286,25 @@ public class TestOverrideMethodFilterInHttpServer
 
     private static TestingHttpServer createServer(final TestResource resource)
     {
-        return Guice.createInjector(
-                new TestingNodeModule(),
-                new JaxrsModule(true),
-                new JsonModule(),
-                new TestingHttpServerModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        jaxrsBinder(binder).bindInstance(resource);
-                    }
-                }).getInstance(TestingHttpServer.class);
+        try {
+            List<Module> modules = ImmutableList.<Module>builder()
+                    .add(new TestingNodeModule())
+                    .add(new JaxrsModule(true))
+                    .add(new JsonModule())
+                    .add(new TestingHttpServerModule())
+                    .add(binder -> jaxrsBinder(binder).bindInstance(resource))
+                    .build();
+
+            return new Bootstrap(modules)
+                    .strictConfig()
+                    .doNotInitializeLogging()
+                    .quiet()
+                    .initialize()
+                    .getInstance(TestingHttpServer.class);
+        }
+        catch (Exception e) {
+            throwIfUnchecked(e);
+            throw new RuntimeException(e);
+        }
     }
 }
