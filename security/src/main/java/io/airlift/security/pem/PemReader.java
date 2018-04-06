@@ -13,11 +13,8 @@
  */
 package io.airlift.security.pem;
 
-import com.google.common.io.Files;
-
 import javax.crypto.Cipher;
 import javax.crypto.EncryptedPrivateKeyInfo;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
@@ -27,12 +24,9 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -46,6 +40,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.google.common.io.Files.asCharSource;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Base64.getMimeDecoder;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
@@ -93,14 +88,14 @@ public final class PemReader
 
         KeyStore keyStore = KeyStore.getInstance("JKS");
         keyStore.load(null, null);
-        keyStore.setKeyEntry("key", key, keyPassword.orElse("").toCharArray(), certificateChain.stream().toArray(Certificate[]::new));
+        keyStore.setKeyEntry("key", key, keyPassword.orElse("").toCharArray(), certificateChain.toArray(new Certificate[0]));
         return keyStore;
     }
 
     public static List<X509Certificate> readCertificateChain(File certificateChainFile)
             throws IOException, GeneralSecurityException
     {
-        String contents = Files.toString(certificateChainFile, US_ASCII);
+        String contents = asCharSource(certificateChainFile, US_ASCII).read();
         return readCertificateChain(contents);
     }
 
@@ -124,12 +119,12 @@ public final class PemReader
     public static PrivateKey loadPrivateKey(File privateKeyFile, Optional<String> keyPassword)
             throws IOException, GeneralSecurityException
     {
-        String privateKey = Files.toString(privateKeyFile, US_ASCII);
+        String privateKey = asCharSource(privateKeyFile, US_ASCII).read();
         return loadPrivateKey(privateKey, keyPassword);
     }
 
     public static PrivateKey loadPrivateKey(String privateKey, Optional<String> keyPassword)
-            throws KeyStoreException, IOException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException
+            throws IOException, GeneralSecurityException
     {
         Matcher matcher = KEY_PATTERN.matcher(privateKey);
         if (!matcher.find()) {
@@ -165,7 +160,7 @@ public final class PemReader
             KeyFactory keyFactory = KeyFactory.getInstance("EC");
             return keyFactory.generatePrivate(encodedKeySpec);
         }
-        catch (InvalidKeySpecException ignoreAlso) {
+        catch (InvalidKeySpecException ignore) {
         }
 
         KeyFactory keyFactory = KeyFactory.getInstance("DSA");
