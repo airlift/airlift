@@ -1,6 +1,7 @@
 package io.airlift.security.pem;
 
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 
@@ -9,6 +10,11 @@ import static java.util.Base64.getMimeEncoder;
 public final class PemWriter
 {
     private PemWriter() {}
+
+    public static String writePublicKey(PublicKey publicKey)
+    {
+        return encodePem("PUBLIC KEY", publicKey.getEncoded());
+    }
 
     public static String writePrivateKey(PrivateKey privateKey)
     {

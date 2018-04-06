@@ -13,7 +13,6 @@
  */
 package io.airlift.security.pem;
 
-import com.google.common.collect.Iterables;
 import org.testng.annotations.Test;
 
 import javax.naming.InvalidNameException;
@@ -25,18 +24,22 @@ import java.net.URL;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Optional;
 
+import static com.google.common.collect.Iterables.getOnlyElement;
 import static io.airlift.security.pem.PemReader.loadKeyStore;
 import static io.airlift.security.pem.PemReader.loadPrivateKey;
+import static io.airlift.security.pem.PemReader.loadPublicKey;
 import static io.airlift.security.pem.PemReader.loadTrustStore;
 import static io.airlift.security.pem.PemReader.readCertificateChain;
 import static io.airlift.security.pem.PemWriter.writeCertificate;
 import static io.airlift.security.pem.PemWriter.writePrivateKey;
+import static io.airlift.security.pem.PemWriter.writePublicKey;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -76,6 +79,27 @@ public class TestPemReader
         assertCertificateChain(loadTrustStore(getResourceFile("dsa.crt")));
     }
 
+    @Test
+    public void testLoadPublicKey()
+            throws Exception
+    {
+        testLoadPublicKey("rsa.crt", "rsa.pub");
+        testLoadPublicKey("ec.crt", "ec.pub");
+        testLoadPublicKey("dsa.crt", "dsa.pub");
+    }
+
+    private static void testLoadPublicKey(String certFile, String keyFile)
+            throws Exception
+    {
+        PublicKey publicKey = loadPublicKey(getResourceFile(keyFile));
+        assertNotNull(publicKey);
+        X509Certificate certificate = getOnlyElement(readCertificateChain(getResourceFile(certFile)));
+        assertEquals(publicKey, certificate.getPublicKey());
+
+        String encodedPrivateKey = writePublicKey(publicKey);
+        assertEquals(publicKey, loadPublicKey(encodedPrivateKey));
+    }
+
     private static void assertCertificateChain(KeyStore keyStore)
             throws Exception
     {
@@ -89,7 +113,7 @@ public class TestPemReader
 
         assertX509Certificate(x509Certificate);
 
-        X509Certificate certificateCopy = Iterables.getOnlyElement(readCertificateChain(writeCertificate(x509Certificate)));
+        X509Certificate certificateCopy = getOnlyElement(readCertificateChain(writeCertificate(x509Certificate)));
         assertX509Certificate(certificateCopy);
     }
 

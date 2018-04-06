@@ -6,6 +6,8 @@ openssl genrsa 2048 | openssl pkcs8 -topk8 -inform pem -outform pem -nocrypt -ou
 openssl req -new -key rsa.key -out rsa.csr
 # Sign request with private key
 openssl x509 -req -days 10000 -in rsa.csr -signkey rsa.key -out rsa.crt
+# Extract public key from certificate
+openssl x509 -pubkey -noout -in rsa.crt > rsa.pub
 
 
 # Generate an RSA private key and convert it to PKCS8 wraped in PEM
