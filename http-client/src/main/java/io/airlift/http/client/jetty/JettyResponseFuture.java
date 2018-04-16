@@ -5,7 +5,6 @@ import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
-import io.airlift.log.Logger;
 import org.eclipse.jetty.client.api.Response;
 
 import java.io.InputStream;
@@ -13,23 +12,20 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.util.Objects.requireNonNull;
 
 class JettyResponseFuture<T, E extends Exception>
         extends AbstractFuture<T>
         implements HttpClient.HttpResponseFuture<T>
 {
-    public enum JettyAsyncHttpState
+    private enum JettyAsyncHttpState
     {
         WAITING_FOR_CONNECTION,
-        SENDING_REQUEST,
-        WAITING_FOR_RESPONSE,
         PROCESSING_RESPONSE,
         DONE,
         FAILED,
         CANCELED
     }
-
-    private static final Logger log = Logger.get(JettyResponseFuture.class);
 
     private final long requestStart = System.nanoTime();
     private final AtomicReference<JettyAsyncHttpState> state = new AtomicReference<>(JettyAsyncHttpState.WAITING_FOR_CONNECTION);
@@ -39,12 +35,12 @@ class JettyResponseFuture<T, E extends Exception>
     private final RequestStats stats;
     private final boolean recordRequestComplete;
 
-    public JettyResponseFuture(Request request, org.eclipse.jetty.client.api.Request jettyRequest, ResponseHandler<T, E> responseHandler, RequestStats stats, boolean recordRequestComplete)
+    JettyResponseFuture(Request request, org.eclipse.jetty.client.api.Request jettyRequest, ResponseHandler<T, E> responseHandler, RequestStats stats, boolean recordRequestComplete)
     {
-        this.request = request;
-        this.jettyRequest = jettyRequest;
-        this.responseHandler = responseHandler;
-        this.stats = stats;
+        this.request = requireNonNull(request, "request is null");
+        this.jettyRequest = requireNonNull(jettyRequest, "jettyRequest is null");
+        this.responseHandler = requireNonNull(responseHandler, "responseHandler is null");
+        this.stats = requireNonNull(stats, "stats is null");
         this.recordRequestComplete = recordRequestComplete;
     }
 
@@ -69,7 +65,7 @@ class JettyResponseFuture<T, E extends Exception>
         }
     }
 
-    protected void completed(Response response, InputStream content)
+    void completed(Response response, InputStream content)
     {
         if (state.get() == JettyAsyncHttpState.CANCELED) {
             return;
@@ -110,7 +106,7 @@ class JettyResponseFuture<T, E extends Exception>
         return value;
     }
 
-    protected void failed(Throwable throwable)
+    void failed(Throwable throwable)
     {
         if (state.get() == JettyAsyncHttpState.CANCELED) {
             return;
@@ -145,9 +141,9 @@ class JettyResponseFuture<T, E extends Exception>
         else {
             state.set(JettyAsyncHttpState.FAILED);
         }
+
         if (throwable == null) {
             throwable = new Throwable("Throwable is null");
-            log.error(throwable, "Something is broken");
         }
 
         setException(throwable);
