@@ -86,6 +86,7 @@ import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Collections.list;
 import static java.util.Comparator.naturalOrder;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class HttpServer
 {
@@ -203,6 +204,8 @@ public class HttpServer
             sslContextFactory.setExcludeCipherSuites(excludedCipherSuites.toArray(new String[excludedCipherSuites.size()]));
             sslContextFactory.setSecureRandomAlgorithm(config.getSecureRandomAlgorithm());
             sslContextFactory.setWantClientAuth(true);
+            sslContextFactory.setSslSessionTimeout((int) config.getSslSessionTimeout().getValue(SECONDS));
+            sslContextFactory.setSslSessionCacheSize(config.getSslSessionCacheSize());
             SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
 
             Integer acceptors = config.getHttpsAcceptorThreads();
