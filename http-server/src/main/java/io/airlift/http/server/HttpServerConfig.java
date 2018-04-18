@@ -25,6 +25,7 @@ import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import io.airlift.units.MaxDataSize;
 import io.airlift.units.MinDataSize;
+import io.airlift.units.MinDuration;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
@@ -35,6 +36,7 @@ import static io.airlift.units.DataSize.Unit.BYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -69,6 +71,9 @@ public class HttpServerConfig
     private String secureRandomAlgorithm;
     private List<String> includedCipherSuites = ImmutableList.of();
     private List<String> excludedCipherSuites = ImmutableList.of();
+
+    private Duration sslSessionTimeout = new Duration(4, HOURS);
+    private int sslSessionCacheSize = 10_000;
 
     private String logPath = "var/log/http-request.log";
     private boolean logEnabled = true;
@@ -159,6 +164,32 @@ public class HttpServerConfig
     public HttpServerConfig setHttpsPort(int httpsPort)
     {
         this.httpsPort = httpsPort;
+        return this;
+    }
+
+    @MinDuration("1s")
+    public Duration getSslSessionTimeout()
+    {
+        return sslSessionTimeout;
+    }
+
+    @Config("http-server.https.ssl-session-timeout")
+    public HttpServerConfig setSslSessionTimeout(Duration sslSessionTimeout)
+    {
+        this.sslSessionTimeout = sslSessionTimeout;
+        return this;
+    }
+
+    @Min(1)
+    public int getSslSessionCacheSize()
+    {
+        return sslSessionCacheSize;
+    }
+
+    @Config("http-server.https.ssl-session-cache-size")
+    public HttpServerConfig setSslSessionCacheSize(int sslSessionCacheSize)
+    {
+        this.sslSessionCacheSize = sslSessionCacheSize;
         return this;
     }
 

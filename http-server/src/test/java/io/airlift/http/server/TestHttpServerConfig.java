@@ -27,6 +27,7 @@ import static io.airlift.units.DataSize.Unit.BYTE;
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
+import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -44,6 +45,8 @@ public class TestHttpServerConfig
                 .setSecureRandomAlgorithm(null)
                 .setHttpsIncludedCipherSuites("")
                 .setHttpsExcludedCipherSuites("")
+                .setSslSessionTimeout(new Duration(4, HOURS))
+                .setSslSessionCacheSize(10_000)
                 .setKeystorePath(null)
                 .setKeystorePassword(null)
                 .setKeyManagerPassword(null)
@@ -90,6 +93,8 @@ public class TestHttpServerConfig
                 .put("http-server.https.secure-random-algorithm", "NativePRNG")
                 .put("http-server.https.included-cipher", "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
                 .put("http-server.https.excluded-cipher", "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
+                .put("http-server.https.ssl-session-timeout", "7h")
+                .put("http-server.https.ssl-session-cache-size", "456")
                 .put("http-server.log.path", "/log")
                 .put("http-server.log.enabled", "false")
                 .put("http-server.log.max-size", "1GB")
@@ -126,6 +131,8 @@ public class TestHttpServerConfig
                 .setHttpsPort(2)
                 .setHttpsIncludedCipherSuites("TLS_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
                 .setHttpsExcludedCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
+                .setSslSessionTimeout(new Duration(7, HOURS))
+                .setSslSessionCacheSize(456)
                 .setKeystorePath("/keystore")
                 .setKeystorePassword("keystore password")
                 .setKeyManagerPassword("keymanager password")
