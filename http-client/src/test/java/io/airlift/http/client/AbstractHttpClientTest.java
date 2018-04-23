@@ -43,6 +43,7 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.UnresolvedAddressException;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -219,7 +220,7 @@ public abstract class AbstractHttpClientTest
             }
             catch (CapturedException e) {
                 Throwable t = e.getCause();
-                if (!isConnectTimeout(t)) {
+                if (!(isConnectTimeout(t) || t instanceof ClosedChannelException)) {
                     fail(format("unexpected exception: [%s]", getStackTraceAsString(t)));
                 }
                 assertLessThan(nanosSince(start), new Duration(300, MILLISECONDS));
