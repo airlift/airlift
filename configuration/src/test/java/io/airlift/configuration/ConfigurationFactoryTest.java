@@ -49,7 +49,6 @@ public class ConfigurationFactoryTest
         TestMonitor monitor = new TestMonitor();
         try {
             createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(AnnotatedGetter.class));
-
             fail("Expected an exception in object creation due to conflicting configuration");
         }
         catch (CreationException e) {
@@ -102,7 +101,24 @@ public class ConfigurationFactoryTest
         LegacyConfigPresent legacyConfigPresent = injector.getInstance(LegacyConfigPresent.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
-        monitor.assertMatchingWarningRecorded("string-value", "replaced", "Use 'string-a'");
+        monitor.assertMatchingWarningRecorded("Configuration property 'string-value' has been replaced. Use 'string-a' instead.");
+        assertNotNull(legacyConfigPresent);
+        assertEquals(legacyConfigPresent.getStringA(), "this is a");
+        assertEquals(legacyConfigPresent.getStringB(), "this is b");
+    }
+
+    @Test
+    public void testConfigurationWithPrefixThroughLegacyConfig()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("example.string-value", "this is a");
+        properties.put("example.string-b", "this is b");
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(LegacyConfigPresent.class, "example"));
+        LegacyConfigPresent legacyConfigPresent = injector.getInstance(LegacyConfigPresent.class);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(1);
+        monitor.assertMatchingWarningRecorded("Configuration property 'example.string-value' has been replaced. Use 'example.string-a' instead.");
         assertNotNull(legacyConfigPresent);
         assertEquals(legacyConfigPresent.getStringA(), "this is a");
         assertEquals(legacyConfigPresent.getStringB(), "this is b");
@@ -137,7 +153,6 @@ public class ConfigurationFactoryTest
         TestMonitor monitor = new TestMonitor();
         try {
             createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(LegacyConfigPresent.class));
-
             fail("Expected an exception in object creation due to conflicting configuration");
         }
         catch (CreationException e) {
@@ -174,7 +189,24 @@ public class ConfigurationFactoryTest
         DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
-        monitor.assertMatchingWarningRecorded("string-a", "deprecated and should not be used");
+        monitor.assertMatchingWarningRecorded("Configuration property 'string-a' is deprecated and should not be used");
+        assertNotNull(deprecatedConfigPresent);
+        assertEquals(deprecatedConfigPresent.getStringA(), "this is a");
+        assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
+    }
+
+    @Test
+    public void testConfigurationWithPrefixThroughDeprecatedConfig()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("example.string-a", "this is a");
+        properties.put("example.string-b", "this is b");
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(DeprecatedConfigPresent.class, "example"));
+        DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(1);
+        monitor.assertMatchingWarningRecorded("Configuration property 'example.string-a' is deprecated and should not be used");
         assertNotNull(deprecatedConfigPresent);
         assertEquals(deprecatedConfigPresent.getStringA(), "this is a");
         assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
@@ -189,13 +221,30 @@ public class ConfigurationFactoryTest
         TestMonitor monitor = new TestMonitor();
         try {
             createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(DefunctConfigPresent.class));
-
             fail("Expected an exception in object creation due to use of defunct config");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
-            monitor.assertMatchingErrorRecorded("Defunct property", "'defunct-value", "cannot be configured");
+            monitor.assertMatchingErrorRecorded("Defunct property 'defunct-value'", "cannot be configured");
+        }
+    }
+
+    @Test
+    public void testDefunctPropertyWithPrefixInConfigThrows()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("example.string-value", "this is a");
+        properties.put("example.defunct-value", "this shouldn't work");
+        TestMonitor monitor = new TestMonitor();
+        try {
+            createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(DefunctConfigPresent.class, "example"));
+            fail("Expected an exception in object creation due to use of defunct config");
+        }
+        catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(0);
+            monitor.assertMatchingErrorRecorded("Defunct property 'example.defunct-value'", "cannot be configured");
         }
     }
 
@@ -224,12 +273,32 @@ public class ConfigurationFactoryTest
         TestMonitor monitor = new TestMonitor();
         try {
             createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(BeanValidationClass.class));
+            fail("Expected an exception in object creation due to failed bean validation");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(2);
             monitor.assertNumberOfWarnings(0);
-            monitor.assertMatchingErrorRecorded("Invalid configuration property", "int-value", "must be less than or equal to 100", "BeanValidationClass");
-            monitor.assertMatchingErrorRecorded("Invalid configuration property", "string-value", "may not be null", "BeanValidationClass");
+            monitor.assertMatchingErrorRecorded("Invalid configuration property int-value: must be less than or equal to 100", "BeanValidationClass");
+            monitor.assertMatchingErrorRecorded("Invalid configuration property string-value: may not be null", "BeanValidationClass");
+        }
+    }
+
+    @Test
+    public void testFailedBeanValidationPrefix()
+    {
+        Map<String, String> properties = new HashMap<>();
+        // string-value left at invalid default
+        properties.put("example.int-value", "5000");  // out of range
+        TestMonitor monitor = new TestMonitor();
+        try {
+            createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(BeanValidationClass.class, "example"));
+            fail("Expected an exception in object creation due to failed bean validation");
+        }
+        catch (CreationException e) {
+            monitor.assertNumberOfErrors(2);
+            monitor.assertNumberOfWarnings(0);
+            monitor.assertMatchingErrorRecorded("Invalid configuration property example.int-value: must be less than or equal to 100", "BeanValidationClass");
+            monitor.assertMatchingErrorRecorded("Invalid configuration property example.string-value: may not be null", "BeanValidationClass");
         }
     }
 
@@ -241,11 +310,29 @@ public class ConfigurationFactoryTest
         TestMonitor monitor = new TestMonitor();
         try {
             createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(BeanValidationClass.class));
+            fail("Expected an exception in object creation due to failed coercion");
         }
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
             monitor.assertMatchingErrorRecorded("Could not coerce value 'abc %s xyz' to int (property 'int-value')", "BeanValidationClass");
+        }
+    }
+
+    @Test
+    public void testFailedCoercionPrefix()
+    {
+        Map<String, String> properties = new HashMap<>();
+        properties.put("example.int-value", "abc %s xyz");  // not an int
+        TestMonitor monitor = new TestMonitor();
+        try {
+            createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(BeanValidationClass.class, "example"));
+            fail("Expected an exception in object creation due to failed coercion");
+        }
+        catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(0);
+            monitor.assertMatchingErrorRecorded("Could not coerce value 'abc %s xyz' to int (property 'example.int-value')", "BeanValidationClass");
         }
     }
 

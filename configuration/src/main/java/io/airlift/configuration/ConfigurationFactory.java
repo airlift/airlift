@@ -377,8 +377,9 @@ public class ConfigurationFactory
         // Check that none of the defunct properties are still in use
         if (configClass.isAnnotationPresent(DefunctConfig.class)) {
             for (String value : configClass.getAnnotation(DefunctConfig.class).value()) {
-                if (!value.isEmpty() && properties.get(prefix + value) != null) {
-                    problems.addError("Defunct property '%s' (class [%s]) cannot be configured.", value, configClass.toString());
+                String name = prefix + value;
+                if (!value.isEmpty() && properties.get(name) != null) {
+                    problems.addError("Defunct property '%s' (class [%s]) cannot be configured.", name, configClass.toString());
                 }
             }
         }
@@ -391,7 +392,7 @@ public class ConfigurationFactory
             if (attribute != null && attribute.getInjectionPoint() != null) {
                 String propertyName = attribute.getInjectionPoint().getProperty();
                 if (!prefix.isEmpty()) {
-                    propertyName = prefix + "." + propertyName;
+                    propertyName = prefix + propertyName;
                 }
                 problems.addError("Invalid configuration property %s: %s (for class %s.%s)",
                         propertyName, violation.getMessage(), configClass.getName(), violation.getPropertyPath());
@@ -451,7 +452,7 @@ public class ConfigurationFactory
         }
 
         if (injectionPoint.getSetter().isAnnotationPresent(Deprecated.class)) {
-            problems.addWarning("Configuration property '%s' is deprecated and should not be used", injectionPoint.getProperty());
+            problems.addWarning("Configuration property '%s' is deprecated and should not be used", prefix + injectionPoint.getProperty());
         }
 
         Object value = getInjectedValue(attribute, injectionPoint, prefix);
@@ -540,7 +541,7 @@ public class ConfigurationFactory
             throw new InvalidConfigurationException(format("Could not coerce value '%s' to %s (property '%s') in order to call [%s]",
                     printableValue,
                     propertyType.getName(),
-                    injectionPoint.getProperty(),
+                    name,
                     injectionPoint.getSetter().toGenericString()));
         }
         usedProperties.add(name);
