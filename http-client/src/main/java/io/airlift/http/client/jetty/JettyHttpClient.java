@@ -116,6 +116,7 @@ public class JettyHttpClient
     private final String name;
 
     private final HttpClientLogger requestLogger;
+    private final JettyClientDiagnostics clientDiagnostics;
 
     public JettyHttpClient()
     {
@@ -270,6 +271,8 @@ public class JettyHttpClient
             throwIfUnchecked(e);
             throw new RuntimeException(e);
         }
+
+        this.clientDiagnostics = new JettyClientDiagnostics();
 
         this.requestFilters = ImmutableList.copyOf(requestFilters);
 
@@ -554,6 +557,12 @@ public class JettyHttpClient
         jettyRequest.onRequestSuccess(request -> listener.onRequestEnd());
         jettyRequest.onResponseBegin(response -> listener.onResponseBegin());
         jettyRequest.onComplete(result -> listener.onFinish());
+        jettyRequest.onComplete(result -> {
+            if (result.isFailed() && result.getFailure() instanceof TimeoutException) {
+                clientDiagnostics.logDiagnosticsInfo(httpClient);
+            }
+        });
+
         jettyRequest.attribute(PRESTO_STATS_KEY, listener);
 
         // jetty client always adds the user agent header
