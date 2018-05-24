@@ -34,7 +34,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -314,11 +313,72 @@ public class TestHttpServerProvider
     public void testClientCertificateJava()
             throws Exception
     {
-        HttpServlet servlet = new HttpServlet()
+        config.setHttpEnabled(false)
+                .setAdminEnabled(false)
+                .setHttpsEnabled(true)
+                .setHttpsPort(0)
+                .setKeystorePath(getResource("clientcert-java/server.keystore").toString())
+                .setKeystorePassword("airlift");
+
+        createAndStartServer(createCertTestServlet());
+
+        HttpClientConfig clientConfig = new HttpClientConfig()
+                .setKeyStorePath(getResource("clientcert-java/client.keystore").toString())
+                .setKeyStorePassword("airlift")
+                .setTrustStorePath(getResource("clientcert-java/client.truststore").toString())
+                .setTrustStorePassword("airlift");
+
+        try (JettyHttpClient httpClient = new JettyHttpClient(clientConfig)) {
+            StringResponse response = httpClient.execute(
+                    prepareGet().setUri(httpServerInfo.getHttpsUri()).build(),
+                    createStringResponseHandler());
+
+            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+            assertEquals(response.getBody(), "CN=testing,OU=Client,O=Airlift,L=Palo Alto,ST=CA,C=US");
+        }
+    }
+
+    @Test
+    public void testClientCertificatePem()
+            throws Exception
+    {
+        config.setHttpEnabled(false)
+                .setAdminEnabled(false)
+                .setHttpsEnabled(true)
+                .setHttpsPort(0)
+                .setKeystorePath(getResource("clientcert-pem/server.pem").getPath())
+                .setKeystorePassword("airlift")
+                .setTrustStorePath(getResource("clientcert-pem/ca.crt").getPath());
+
+        createAndStartServer(createCertTestServlet());
+
+        HttpClientConfig clientConfig = new HttpClientConfig()
+                .setKeyStorePath(getResource("clientcert-pem/client.pem").getPath())
+                .setKeyStorePassword("airlift")
+                .setTrustStorePath(getResource("clientcert-pem/ca.crt").getPath());
+
+        assertClientCertificateRequest(clientConfig);
+    }
+
+    private void assertClientCertificateRequest(HttpClientConfig clientConfig)
+    {
+        try (JettyHttpClient httpClient = new JettyHttpClient(clientConfig)) {
+            StringResponse response = httpClient.execute(
+                    prepareGet().setUri(httpServerInfo.getHttpsUri()).build(),
+                    createStringResponseHandler());
+
+            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+            assertEquals(response.getBody(), "CN=testing,OU=Client,O=Airlift,L=Palo Alto,ST=CA,C=US");
+        }
+    }
+
+    private static HttpServlet createCertTestServlet()
+    {
+        return new HttpServlet()
         {
             @Override
             protected void doGet(HttpServletRequest request, HttpServletResponse response)
-                    throws ServletException, IOException
+                    throws IOException
             {
                 X509Certificate[] certs = (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
                 if ((certs == null) || (certs.length == 0)) {
@@ -332,31 +392,6 @@ public class TestHttpServerProvider
                 response.setStatus(HttpServletResponse.SC_OK);
             }
         };
-
-        config.setHttpEnabled(false)
-                .setAdminEnabled(false)
-                .setHttpsEnabled(true)
-                .setHttpsPort(0)
-                .setKeystorePath(getResource("clientcert-java/server.keystore").toString())
-                .setKeystorePassword("airlift");
-
-        createAndStartServer(servlet);
-
-        HttpClientConfig clientConfig = new HttpClientConfig()
-                .setKeyStorePath(getResource("clientcert-java/client.keystore").toString())
-                .setKeyStorePassword("airlift")
-                .setTrustStorePath(getResource("clientcert-java/client.truststore").toString())
-                .setTrustStorePassword("airlift");
-
-        System.out.println(httpServerInfo.getHttpsUri());
-        try (JettyHttpClient httpClient = new JettyHttpClient(clientConfig)) {
-            StringResponse response = httpClient.execute(
-                    prepareGet().setUri(httpServerInfo.getHttpsUri()).build(),
-                    createStringResponseHandler());
-
-            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
-            assertEquals(response.getBody(), "CN=testing,OU=Client,O=Airlift,L=Palo Alto,ST=CA,C=US");
-        }
     }
 
     @Test

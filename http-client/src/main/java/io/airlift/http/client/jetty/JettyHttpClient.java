@@ -15,6 +15,7 @@ import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
 import io.airlift.http.client.spnego.KerberosConfig;
 import io.airlift.http.client.spnego.SpnegoAuthenticationProtocolHandler;
+import io.airlift.security.pem.PemReader;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
@@ -49,12 +50,14 @@ import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -149,12 +152,29 @@ public class JettyHttpClient
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
         if (config.getKeyStorePath() != null) {
-            sslContextFactory.setKeyStorePath(config.getKeyStorePath());
-            sslContextFactory.setKeyStorePassword(config.getKeyStorePassword());
+            try {
+                sslContextFactory.setKeyStore(PemReader.loadKeyStore(
+                        new File(config.getKeyStorePath()),
+                        new File(config.getKeyStorePath()),
+                        Optional.ofNullable(config.getKeyStorePassword())));
+                sslContextFactory.setKeyStorePassword("");
+            }
+            catch (IOException | GeneralSecurityException ignored) {
+                sslContextFactory.setKeyStorePath(config.getKeyStorePath());
+                sslContextFactory.setKeyStorePassword(config.getKeyStorePassword());
+            }
         }
         if (config.getTrustStorePath() != null) {
-            sslContextFactory.setTrustStorePath(config.getTrustStorePath());
-            sslContextFactory.setTrustStorePassword(config.getTrustStorePassword());
+            try {
+                if (!PemReader.readCertificateChain(new File(config.getTrustStorePath())).isEmpty()) {
+                    sslContextFactory.setTrustStore(PemReader.loadTrustStore(new File(config.getTrustStorePath())));
+                    sslContextFactory.setTrustStorePassword("");
+                }
+            }
+            catch (IOException | GeneralSecurityException ignored) {
+                sslContextFactory.setTrustStorePath(config.getTrustStorePath());
+                sslContextFactory.setTrustStorePassword(config.getTrustStorePassword());
+            }
         }
         sslContextFactory.setSecureRandomAlgorithm(config.getSecureRandomAlgorithm());
 

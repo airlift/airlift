@@ -22,6 +22,7 @@ import com.google.common.primitives.Ints;
 import io.airlift.event.client.EventClient;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.node.NodeInfo;
+import io.airlift.security.pem.PemReader;
 import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.io.ConnectionStatistics;
@@ -64,6 +65,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.ServerSocketChannel;
+import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.cert.Certificate;
@@ -193,11 +195,33 @@ public class HttpServer
             httpsConfiguration.addCustomizer(new SecureRequestCustomizer());
 
             SslContextFactory sslContextFactory = new SslContextFactory();
-            sslContextFactory.setKeyStorePath(config.getKeystorePath());
-            sslContextFactory.setKeyStorePassword(config.getKeystorePassword());
-            if (config.getKeyManagerPassword() != null) {
-                sslContextFactory.setKeyManagerPassword(config.getKeyManagerPassword());
+            try {
+                sslContextFactory.setKeyStore(PemReader.loadKeyStore(
+                        new File(config.getKeystorePath()),
+                        new File(config.getKeystorePath()),
+                        Optional.ofNullable(config.getKeystorePassword())));
+                sslContextFactory.setKeyStorePassword("");
             }
+            catch (IOException | GeneralSecurityException ignored) {
+                sslContextFactory.setKeyStorePath(config.getKeystorePath());
+                sslContextFactory.setKeyStorePassword(config.getKeystorePassword());
+                if (config.getKeyManagerPassword() != null) {
+                    sslContextFactory.setKeyManagerPassword(config.getKeyManagerPassword());
+                }
+            }
+            if (config.getTrustStorePath() != null) {
+                try {
+                    if (!PemReader.readCertificateChain(new File(config.getTrustStorePath())).isEmpty()) {
+                        sslContextFactory.setTrustStore(PemReader.loadTrustStore(new File(config.getTrustStorePath())));
+                        sslContextFactory.setTrustStorePassword("");
+                    }
+                }
+                catch (IOException | GeneralSecurityException ignored) {
+                    sslContextFactory.setTrustStorePath(config.getTrustStorePath());
+                    sslContextFactory.setTrustStorePassword(config.getTrustStorePassword());
+                }
+            }
+
             List<String> includedCipherSuites = config.getHttpsIncludedCipherSuites();
             sslContextFactory.setIncludeCipherSuites(includedCipherSuites.toArray(new String[includedCipherSuites.size()]));
             List<String> excludedCipherSuites = config.getHttpsExcludedCipherSuites();

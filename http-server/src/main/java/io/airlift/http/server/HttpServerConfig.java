@@ -68,6 +68,8 @@ public class HttpServerConfig
     private String keystorePath;
     private String keystorePassword;
     private String keyManagerPassword;
+    private String trustStorePath;
+    private String trustStorePassword;
     private String secureRandomAlgorithm;
     private List<String> includedCipherSuites = ImmutableList.of();
     private List<String> excludedCipherSuites = ImmutableList.of();
@@ -228,6 +230,31 @@ public class HttpServerConfig
     public HttpServerConfig setKeyManagerPassword(String keyManagerPassword)
     {
         this.keyManagerPassword = keyManagerPassword;
+        return this;
+    }
+
+    public String getTrustStorePath()
+    {
+        return trustStorePath;
+    }
+
+    @Config("http-server.https.truststore.path")
+    public HttpServerConfig setTrustStorePath(String trustStorePath)
+    {
+        this.trustStorePath = trustStorePath;
+        return this;
+    }
+
+    public String getTrustStorePassword()
+    {
+        return trustStorePassword;
+    }
+
+    @Config("http-server.https.truststore.key")
+    @ConfigSecuritySensitive
+    public HttpServerConfig setTrustStorePassword(String trustStorePassword)
+    {
+        this.trustStorePassword = trustStorePassword;
         return this;
     }
 
