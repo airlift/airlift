@@ -96,7 +96,7 @@ public final class PemReader
 
         KeyStore keyStore = KeyStore.getInstance("JKS");
         keyStore.load(null, null);
-        keyStore.setKeyEntry("key", key, keyPassword.orElse("").toCharArray(), certificateChain.toArray(new Certificate[0]));
+        keyStore.setKeyEntry("key", key, new char[0], certificateChain.toArray(new Certificate[0]));
         return keyStore;
     }
 
