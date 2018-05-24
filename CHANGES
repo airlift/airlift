@@ -1,6 +1,9 @@
 0.169
 
 - Fix configuration error messages for prefixed configs.
+- Add support for PEM encoded (PKCS #8) keystore and truststore to the
+  HTTP client and server.
+- Add avg to TimeDistribution stat.
 
 0.168
 
