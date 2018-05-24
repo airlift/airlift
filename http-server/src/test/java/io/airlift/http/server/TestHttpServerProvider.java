@@ -311,7 +311,7 @@ public class TestHttpServerProvider
     }
 
     @Test
-    public void testClientCertificate()
+    public void testClientCertificateJava()
             throws Exception
     {
         HttpServlet servlet = new HttpServlet()
@@ -337,15 +337,15 @@ public class TestHttpServerProvider
                 .setAdminEnabled(false)
                 .setHttpsEnabled(true)
                 .setHttpsPort(0)
-                .setKeystorePath(getResource("clientcert/server.keystore").toString())
+                .setKeystorePath(getResource("clientcert-java/server.keystore").toString())
                 .setKeystorePassword("airlift");
 
         createAndStartServer(servlet);
 
         HttpClientConfig clientConfig = new HttpClientConfig()
-                .setKeyStorePath(getResource("clientcert/client.keystore").toString())
+                .setKeyStorePath(getResource("clientcert-java/client.keystore").toString())
                 .setKeyStorePassword("airlift")
-                .setTrustStorePath(getResource("clientcert/client.truststore").toString())
+                .setTrustStorePath(getResource("clientcert-java/client.truststore").toString())
                 .setTrustStorePassword("airlift");
 
         System.out.println(httpServerInfo.getHttpsUri());
