@@ -29,6 +29,7 @@ import java.util.Optional;
 import static io.airlift.http.client.TraceTokenRequestFilter.TRACETOKEN_HEADER;
 import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 class HttpRequestEvent
 {
@@ -44,6 +45,11 @@ class HttpRequestEvent
     // that didn't get any response (e.g., due to timeouts or other failures).
     private final long responseSize;
     private final int responseCode;
+    private final long requestTotalTime;
+    private final long requestQueueTime;
+    private final long requestBeginToRequestEnd;
+    private final long requestEndToResponseBegin;
+    private final long responseBeginToResponseEnd;
     private final long timeToLastByte;
     private final Optional<String> failureReason;
 
@@ -55,6 +61,11 @@ class HttpRequestEvent
             @Nullable String traceToken,
             long responseSize,
             int responseCode,
+            long requestTotalTime,
+            long requestQueueTime,
+            long requestBeginToRequestEnd,
+            long requestEndToResponseBegin,
+            long responseBeginToResponseEnd,
             long timeToLastByte,
             Optional<String> failureReason)
     {
@@ -65,6 +76,11 @@ class HttpRequestEvent
         this.traceToken = traceToken;
         this.responseSize = responseSize;
         this.responseCode = responseCode;
+        this.requestTotalTime = requestTotalTime;
+        this.requestQueueTime = requestQueueTime;
+        this.requestBeginToRequestEnd = requestBeginToRequestEnd;
+        this.requestEndToResponseBegin = requestEndToResponseBegin;
+        this.responseBeginToResponseEnd = responseBeginToResponseEnd;
         this.timeToLastByte = timeToLastByte;
         this.failureReason = requireNonNull(failureReason, "failureReason is null");
     }
@@ -104,6 +120,31 @@ class HttpRequestEvent
         return failureReason.orElseGet(() -> Integer.toString(responseCode));
     }
 
+    public long getRequestTotalTime()
+    {
+        return requestTotalTime;
+    }
+
+    public long getRequestQueueTime()
+    {
+        return requestQueueTime;
+    }
+
+    public long getRequestBeginToRequestEnd()
+    {
+        return requestBeginToRequestEnd;
+    }
+
+    public long getRequestEndToResponseBegin()
+    {
+        return requestEndToResponseBegin;
+    }
+
+    public long getResponseBeginToResponseEnd()
+    {
+        return responseBeginToResponseEnd;
+    }
+
     public long getTimeToLastByte()
     {
         return timeToLastByte;
@@ -133,6 +174,16 @@ class HttpRequestEvent
             responseCode = response.get().getStatus();
         }
 
+        long requestTotalTimeNanos = responseInfo.getResponseCompleteTimestamp() - requestInfo.getRequestCreatedTimestamp();
+        long requestBeginToRequestEndNanos = requestInfo.getRequestEndTimestamp() - requestInfo.getRequestBeginTimestamp();
+        long responseBeginTimeStamp = responseInfo.getResponseBeginTimestamp();
+        long requestEndToResponseBeginNanos = 0;
+        long responseBeginToResponseEndNanos = 0;
+        // responseBeginTimeStamp is 0 if a response isn't received
+        if (responseBeginTimeStamp != 0) {
+            requestEndToResponseBeginNanos = responseBeginTimeStamp - requestInfo.getRequestEndTimestamp();
+            responseBeginToResponseEndNanos = responseInfo.getResponseCompleteTimestamp() - responseBeginTimeStamp;
+        }
         long timeToLastByte = max(responseInfo.getResponseTimestampMillis() - requestInfo.getRequestTimestampMillis(), 0L);
 
         return new HttpRequestEvent(
@@ -143,6 +194,11 @@ class HttpRequestEvent
                 getHeader(request, TRACETOKEN_HEADER),
                 responseSize,
                 responseCode,
+                NANOSECONDS.toMillis(requestTotalTimeNanos),
+                NANOSECONDS.toMillis(requestInfo.getRequestBeginTimestamp() - requestInfo.getRequestCreatedTimestamp()),
+                NANOSECONDS.toMillis(requestBeginToRequestEndNanos),
+                NANOSECONDS.toMillis(requestEndToResponseBeginNanos),
+                NANOSECONDS.toMillis(responseBeginToResponseEndNanos),
                 timeToLastByte,
                 getFailureReason(responseInfo));
     }

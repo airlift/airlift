@@ -53,6 +53,8 @@ import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.eclipse.jetty.http.HttpVersion.HTTP_1_1;
 import static org.eclipse.jetty.http.HttpVersion.HTTP_2;
 import static org.testng.Assert.assertEquals;
@@ -103,12 +105,20 @@ public class TestHttpClientLogger
                 new DataSize(1, MEGABYTE),
                 Long.MAX_VALUE,
                 false);
-        RequestInfo requestInfo = RequestInfo.from(request, requestTimestamp);
-        ResponseInfo responseInfo = ResponseInfo.from(Optional.of(response), responseSize);
+
+        long queueTime = MILLISECONDS.toNanos(1);
+        long requestCreate = System.nanoTime();
+        long requestBegin = requestCreate + queueTime;
+        long requestEnd = requestCreate + MILLISECONDS.toNanos(3);
+        long responseBegin = requestCreate + MILLISECONDS.toNanos(5);
+        long responseComplete = requestCreate + MILLISECONDS.toNanos(7);
+        long requestTotalTime = queueTime + (responseComplete - requestBegin);
+        RequestInfo requestInfo = RequestInfo.from(request, requestTimestamp, requestCreate, requestBegin, requestEnd);
+        ResponseInfo responseInfo = ResponseInfo.from(Optional.of(response), responseSize, responseBegin, responseComplete);
         logger.log(requestInfo, responseInfo);
         logger.close();
 
-        String actual = Files.toString(file, UTF_8);
+        String actual = Files.asCharSource(file, UTF_8).read();
         String[] columns = actual.trim().split("\\t");
         assertEquals(columns[0], ISO_FORMATTER.format(Instant.ofEpochMilli(requestTimestamp)));
         assertEquals(columns[1], HTTP_2.toString());
@@ -116,8 +126,13 @@ public class TestHttpClientLogger
         assertEquals(columns[3], uri.toString());
         assertEquals(columns[4], Integer.toString(status));
         assertEquals(columns[5], Long.toString(responseSize));
-        assertEquals(columns[6], Long.toString(responseInfo.getResponseTimestampMillis() - requestTimestamp));
-        assertEquals(columns[7], "test-token");
+        assertEquals(columns[6], Long.toString(NANOSECONDS.toMillis(requestTotalTime)));
+        assertEquals(columns[7], Long.toString(NANOSECONDS.toMillis(queueTime)));
+        assertEquals(columns[8], Long.toString(NANOSECONDS.toMillis(requestEnd - requestBegin)));
+        assertEquals(columns[9], Long.toString(NANOSECONDS.toMillis(responseBegin - requestEnd)));
+        assertEquals(columns[10], Long.toString(NANOSECONDS.toMillis(responseComplete - responseBegin)));
+        assertEquals(columns[11], Long.toString(responseInfo.getResponseTimestampMillis() - requestTimestamp));
+        assertEquals(columns[12], "test-token");
     }
 
     @Test
@@ -144,7 +159,7 @@ public class TestHttpClientLogger
         logger.log(requestInfo, responseInfo);
         logger.close();
 
-        String actual = Files.toString(file, UTF_8);
+        String actual = Files.asCharSource(file, UTF_8).read();
         String[] columns = actual.trim().split("\\t");
         assertEquals(columns[0], ISO_FORMATTER.format(Instant.ofEpochMilli(requestTimestamp)));
         assertEquals(columns[1], HTTP_1_1.toString());
@@ -152,8 +167,13 @@ public class TestHttpClientLogger
         assertEquals(columns[3], uri.toString());
         assertEquals(columns[4], getFailureReason(responseInfo).get());
         assertEquals(columns[5], Integer.toString(NO_RESPONSE));
-        assertEquals(columns[6], Long.toString(responseInfo.getResponseTimestampMillis() - requestTimestamp));
-        assertEquals(columns[7], "test-token");
+        assertEquals(columns[6], Long.toString(0));
+        assertEquals(columns[7], Long.toString(0));
+        assertEquals(columns[8], Long.toString(0));
+        assertEquals(columns[9], Long.toString(0));
+        assertEquals(columns[10], Long.toString(0));
+        assertEquals(columns[11], Long.toString(responseInfo.getResponseTimestampMillis() - requestTimestamp));
+        assertEquals(columns[12], "test-token");
     }
 
     private class TestRequest
@@ -165,7 +185,7 @@ public class TestHttpClientLogger
         @Nullable
         private final HttpFields headers;
 
-        public TestRequest(HttpVersion protocolVersion, String method, URI uri, HttpFields headers)
+        TestRequest(HttpVersion protocolVersion, String method, URI uri, HttpFields headers)
         {
             this.protocolVersion = requireNonNull(protocolVersion, "protocolVersion is null");
             this.method = requireNonNull(method, "method is null");
@@ -521,7 +541,7 @@ public class TestHttpClientLogger
     {
         private final int status;
 
-        public TestResponse(int status)
+        TestResponse(int status)
         {
             this.status = status;
         }

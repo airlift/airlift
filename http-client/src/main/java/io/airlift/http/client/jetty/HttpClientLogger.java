@@ -31,19 +31,29 @@ public interface HttpClientLogger
     {
         private final Request request;
         private final long requestTimestampMillis;
+        private final long requestCreatedTimestamp;
+        private final long requestBeginTimestamp;
+        private final long requestEndTimestamp;
 
-        private RequestInfo(Request request, long requestTimestampMillis)
+        private RequestInfo(Request request, long requestTimestampMillis, long requestCreatedTimestamp, long requestBeginTimestamp, long requestEndTimestamp)
         {
-            checkArgument(requestTimestampMillis >= 0, "requestTimestampMillis is negative");
             this.request = requireNonNull(request, "request is null");
             this.requestTimestampMillis = requestTimestampMillis;
+            this.requestCreatedTimestamp = requestCreatedTimestamp;
+            this.requestBeginTimestamp = requestBeginTimestamp;
+            this.requestEndTimestamp = requestEndTimestamp;
         }
 
         public static RequestInfo from(Request request, long requestTimestampMillis)
         {
             requireNonNull(request, "request is null");
-            checkArgument(requestTimestampMillis >= 0, "requestTimestampMillis is negative");
-            return new RequestInfo(request, requestTimestampMillis);
+            return new RequestInfo(request, requestTimestampMillis, 0L, 0L, 0L);
+        }
+
+        public static RequestInfo from(Request request, long requestTimestampMillis, long requestCreatedTimestamp, long requestBeginTimestamp, long requestEndTimestamp)
+        {
+            requireNonNull(request, "request is null");
+            return new RequestInfo(request, requestTimestampMillis, requestCreatedTimestamp, requestBeginTimestamp, requestEndTimestamp);
         }
 
         public Request getRequest()
@@ -55,6 +65,21 @@ public interface HttpClientLogger
         {
             return requestTimestampMillis;
         }
+
+        public long getRequestBeginTimestamp()
+        {
+            return requestBeginTimestamp;
+        }
+
+        public long getRequestEndTimestamp()
+        {
+            return requestEndTimestamp;
+        }
+
+        public long getRequestCreatedTimestamp()
+        {
+            return requestCreatedTimestamp;
+        }
     }
 
     class ResponseInfo
@@ -63,28 +88,44 @@ public interface HttpClientLogger
         private final Optional<Throwable> failureCause;
         private final long responseSize;
         private final long responseTimestampMillis = System.currentTimeMillis();
+        private final long responseBeginTimestamp;
+        private final long responseCompleteTimestamp;
 
-        private ResponseInfo(Optional<Response> response, long responseSize, Optional<Throwable> failure)
+        private ResponseInfo(
+                Optional<Response> response,
+                long responseSize,
+                long responseBeginTimestamp,
+                long responseCompleteTimestamp,
+                Optional<Throwable> failure)
         {
             requireNonNull(response, "response is null");
             requireNonNull(failure, "failure is null");
             this.response = response;
             this.responseSize = responseSize;
+            this.responseBeginTimestamp = responseBeginTimestamp;
+            this.responseCompleteTimestamp = responseCompleteTimestamp;
             this.failureCause = failure;
         }
 
-        public static ResponseInfo from(Optional<Response> response, long responseSize)
+        public static ResponseInfo from(Optional<Response> response, long responseSize, long responseBeginTimestamp, long responseCompleteTimestamp)
         {
             requireNonNull(response, "response is null");
             checkArgument(responseSize >= 0, "responseSize is negative");
-            return new ResponseInfo(response, responseSize, Optional.empty());
+            return new ResponseInfo(response, responseSize, responseBeginTimestamp, responseCompleteTimestamp, Optional.empty());
         }
 
         public static ResponseInfo failed(Optional<Response> response, Optional<Throwable> failureCause)
         {
             requireNonNull(response, "response is null");
             requireNonNull(failureCause, "failureCause is null");
-            return new ResponseInfo(response, -1L, failureCause);
+            return new ResponseInfo(response, 0L, 0L, 0L, failureCause);
+        }
+
+        public static ResponseInfo failed(Optional<Response> response, Optional<Throwable> failureCause, long responseBeginTimestamp, long responseCompleteTimestamp)
+        {
+            requireNonNull(response, "response is null");
+            requireNonNull(failureCause, "failureCause is null");
+            return new ResponseInfo(response, 0L, responseBeginTimestamp, responseCompleteTimestamp, failureCause);
         }
 
         public Optional<Response> getResponse()
@@ -105,6 +146,16 @@ public interface HttpClientLogger
         public long getResponseTimestampMillis()
         {
             return responseTimestampMillis;
+        }
+
+        public long getResponseBeginTimestamp()
+        {
+            return responseBeginTimestamp;
+        }
+
+        public long getResponseCompleteTimestamp()
+        {
+            return responseCompleteTimestamp;
         }
     }
 }

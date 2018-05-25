@@ -2,7 +2,6 @@ package io.airlift.http.client.jetty;
 
 import io.airlift.http.client.GatheringByteArrayInputStream;
 import io.airlift.http.client.ResponseTooLargeException;
-import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
 import io.airlift.units.DataSize;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -14,8 +13,6 @@ import javax.annotation.concurrent.ThreadSafe;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.function.Consumer;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -33,7 +30,6 @@ class BufferingResponseListener
     private static final long BUFFER_MIN_BYTES = new DataSize(1, KILOBYTE).toBytes();
     private final JettyResponseFuture<?, ?> future;
     private final int maxLength;
-    private final Consumer<ResponseInfo> responseInfoConsumer;
 
     @GuardedBy("this")
     private byte[] currentBuffer = new byte[0];
@@ -44,12 +40,11 @@ class BufferingResponseListener
     @GuardedBy("this")
     private long size;
 
-    public BufferingResponseListener(JettyResponseFuture<?, ?> future, int maxLength, Consumer<ResponseInfo> responseInfoConsumer)
+    public BufferingResponseListener(JettyResponseFuture<?, ?> future, int maxLength)
     {
         this.future = requireNonNull(future, "future is null");
         checkArgument(maxLength > 0, "maxLength must be greater than zero");
         this.maxLength = maxLength;
-        this.responseInfoConsumer = requireNonNull(responseInfoConsumer, "responseInfoConsumer is null");
     }
 
     @Override
@@ -87,11 +82,9 @@ class BufferingResponseListener
     {
         Throwable throwable = result.getFailure();
         if (throwable != null) {
-            responseInfoConsumer.accept(ResponseInfo.failed(Optional.of(result.getResponse()), Optional.of(throwable)));
             future.failed(throwable);
         }
         else {
-            responseInfoConsumer.accept(ResponseInfo.from(Optional.of(result.getResponse()), size));
             currentBuffer = new byte[0];
             currentBufferPosition = 0;
             future.completed(result.getResponse(), new GatheringByteArrayInputStream(buffers, size));

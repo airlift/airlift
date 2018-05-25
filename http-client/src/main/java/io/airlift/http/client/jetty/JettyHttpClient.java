@@ -98,6 +98,7 @@ public class JettyHttpClient
     private final long requestTimeoutMillis;
     private final long idleTimeoutMillis;
     private final boolean recordRequestComplete;
+    private final boolean logEnabled;
     private final QueuedThreadPoolMBean queuedThreadPoolMBean;
     private final ConnectionStats connectionStats;
     private final RequestStats stats = new RequestStats();
@@ -243,7 +244,8 @@ public class JettyHttpClient
         this.connectionStats = new ConnectionStats(connectionStats);
 
         // configure logging
-        if (config.isLogEnabled()) {
+        this.logEnabled = config.isLogEnabled();
+        if (logEnabled) {
             String logFilePath = Paths.get(config.getLogPath(), format("%s-http-client.log", name)).toAbsolutePath().toString();
             requestLogger = new DefaultHttpClientLogger(
                     logFilePath,
@@ -438,7 +440,8 @@ public class JettyHttpClient
         request = applyRequestFilters(request);
 
         // create jetty request and response listener
-        HttpRequest jettyRequest = buildJettyRequest(request);
+        JettyRequestListener requestListener = new JettyRequestListener(request.getUri());
+        HttpRequest jettyRequest = buildJettyRequest(request, requestListener);
         InputStreamResponseListener listener = new InputStreamResponseListener()
         {
             @Override
@@ -452,7 +455,11 @@ public class JettyHttpClient
             }
         };
 
-        RequestInfo requestInfo = RequestInfo.from(jettyRequest, System.currentTimeMillis());
+        long requestTimestamp = System.currentTimeMillis();
+        RequestInfo requestInfo = RequestInfo.from(jettyRequest, requestTimestamp);
+        if (logEnabled) {
+            addLoggingListener(jettyRequest, requestTimestamp);
+        }
 
         // fire the request
         jettyRequest.send(listener);
@@ -504,7 +511,11 @@ public class JettyHttpClient
                 recordRequestComplete(stats, request, requestStart, jettyResponse, responseStart);
             }
         }
-        requestLogger.log(requestInfo, ResponseInfo.from(Optional.of(response), jettyResponse.getBytesRead()));
+        ResponseInfo responseInfo = ResponseInfo.from(Optional.of(response),
+                jettyResponse.getBytesRead(),
+                requestListener.getResponseStarted(),
+                requestListener.getResponseFinished());
+        requestLogger.log(requestInfo, responseInfo);
         return value;
     }
 
@@ -516,15 +527,17 @@ public class JettyHttpClient
 
         request = applyRequestFilters(request);
 
-        HttpRequest jettyRequest = buildJettyRequest(request);
-
-        RequestInfo requestInfo = RequestInfo.from(jettyRequest, System.currentTimeMillis());
+        HttpRequest jettyRequest = buildJettyRequest(request, new JettyRequestListener(request.getUri()));
 
         JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest, responseHandler, stats, recordRequestComplete);
 
-        BufferingResponseListener listener = new BufferingResponseListener(future,
-                Ints.saturatedCast(maxContentLength),
-                responseInfo -> requestLogger.log(requestInfo, responseInfo));
+        BufferingResponseListener listener = new BufferingResponseListener(future, Ints.saturatedCast(maxContentLength));
+
+        long requestTimestamp = System.currentTimeMillis();
+
+        if (logEnabled) {
+            addLoggingListener(jettyRequest, requestTimestamp);
+        }
 
         try {
             jettyRequest.send(listener);
@@ -535,9 +548,17 @@ public class JettyHttpClient
             }
             // normally this is a rejected execution exception because the client has been closed
             future.failed(e);
-            requestLogger.log(requestInfo, ResponseInfo.failed(Optional.empty(), Optional.of(e)));
+            requestLogger.log(RequestInfo.from(jettyRequest, requestTimestamp), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
         }
         return future;
+    }
+
+    private void addLoggingListener(HttpRequest jettyRequest, long requestTimestamp)
+    {
+        HttpClientLoggingListener loggingListener = new HttpClientLoggingListener(jettyRequest, requestTimestamp, requestLogger);
+        jettyRequest.listener(loggingListener);
+        jettyRequest.onResponseBegin(loggingListener);
+        jettyRequest.onComplete(loggingListener);
     }
 
     private Request applyRequestFilters(Request request)
@@ -548,11 +569,9 @@ public class JettyHttpClient
         return request;
     }
 
-    private HttpRequest buildJettyRequest(Request finalRequest)
+    private HttpRequest buildJettyRequest(Request finalRequest, JettyRequestListener listener)
     {
         HttpRequest jettyRequest = (HttpRequest) httpClient.newRequest(finalRequest.getUri());
-
-        JettyRequestListener listener = new JettyRequestListener(finalRequest.getUri());
         jettyRequest.onRequestBegin(request -> listener.onRequestBegin());
         jettyRequest.onRequestSuccess(request -> listener.onRequestEnd());
         jettyRequest.onResponseBegin(response -> listener.onResponseBegin());
