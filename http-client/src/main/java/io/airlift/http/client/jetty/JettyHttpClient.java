@@ -58,6 +58,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -152,26 +153,23 @@ public class JettyHttpClient
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
         if (config.getKeyStorePath() != null) {
-            try {
-                sslContextFactory.setKeyStore(PemReader.loadKeyStore(
-                        new File(config.getKeyStorePath()),
-                        new File(config.getKeyStorePath()),
-                        Optional.ofNullable(config.getKeyStorePassword())));
+            Optional<KeyStore> pemKeyStore = tryLoadPemKeyStore(config);
+            if (pemKeyStore.isPresent()) {
+                sslContextFactory.setKeyStore(pemKeyStore.get());
                 sslContextFactory.setKeyStorePassword("");
             }
-            catch (IOException | GeneralSecurityException ignored) {
+            else {
                 sslContextFactory.setKeyStorePath(config.getKeyStorePath());
                 sslContextFactory.setKeyStorePassword(config.getKeyStorePassword());
             }
         }
         if (config.getTrustStorePath() != null) {
-            try {
-                if (!PemReader.readCertificateChain(new File(config.getTrustStorePath())).isEmpty()) {
-                    sslContextFactory.setTrustStore(PemReader.loadTrustStore(new File(config.getTrustStorePath())));
-                    sslContextFactory.setTrustStorePassword("");
-                }
+            Optional<KeyStore> pemTrustStore = tryLoadPemTrustStore(config);
+            if (pemTrustStore.isPresent()) {
+                sslContextFactory.setTrustStore(pemTrustStore.get());
+                sslContextFactory.setTrustStorePassword("");
             }
-            catch (IOException | GeneralSecurityException ignored) {
+            else {
                 sslContextFactory.setTrustStorePath(config.getTrustStorePath());
                 sslContextFactory.setTrustStorePassword(config.getTrustStorePassword());
             }
@@ -341,6 +339,49 @@ public class JettyHttpClient
             }
             distribution.add(NANOSECONDS.toMillis(finished - responseStarted));
         });
+    }
+
+    private static Optional<KeyStore> tryLoadPemKeyStore(HttpClientConfig config)
+    {
+        File keyStoreFile = new File(config.getKeyStorePath());
+        try {
+            if (!PemReader.isPem(keyStoreFile)) {
+                return Optional.empty();
+            }
+        }
+        catch (IOException e) {
+            throw new IllegalArgumentException("Error reading key store file: " + keyStoreFile, e);
+        }
+
+        try {
+            return Optional.of(PemReader.loadKeyStore(keyStoreFile, keyStoreFile, Optional.ofNullable(config.getKeyStorePassword())));
+        }
+        catch (IOException | GeneralSecurityException e) {
+            throw new IllegalArgumentException("Error loading PEM key store: " + keyStoreFile, e);
+        }
+    }
+
+    private static Optional<KeyStore> tryLoadPemTrustStore(HttpClientConfig config)
+    {
+        File trustStoreFile = new File(config.getTrustStorePath());
+        try {
+            if (!PemReader.isPem(trustStoreFile)) {
+                return Optional.empty();
+            }
+        }
+        catch (IOException e) {
+            throw new IllegalArgumentException("Error reading trust store file: " + trustStoreFile, e);
+        }
+
+        try {
+            if (PemReader.readCertificateChain(trustStoreFile).isEmpty()) {
+                throw new IllegalArgumentException("PEM trust store file does not contain any certificates: " + trustStoreFile);
+            }
+            return Optional.of(PemReader.loadTrustStore(trustStoreFile));
+        }
+        catch (IOException | GeneralSecurityException e) {
+            throw new IllegalArgumentException("Error loading PEM trust store: " + trustStoreFile, e);
+        }
     }
 
     private static QueuedThreadPool createExecutor(String name, int minThreads, int maxThreads)

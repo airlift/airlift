@@ -195,14 +195,12 @@ public class HttpServer
             httpsConfiguration.addCustomizer(new SecureRequestCustomizer());
 
             SslContextFactory sslContextFactory = new SslContextFactory();
-            try {
-                sslContextFactory.setKeyStore(PemReader.loadKeyStore(
-                        new File(config.getKeystorePath()),
-                        new File(config.getKeystorePath()),
-                        Optional.ofNullable(config.getKeystorePassword())));
+            Optional<KeyStore> pemKeyStore = tryLoadPemKeyStore(config);
+            if (pemKeyStore.isPresent()) {
+                sslContextFactory.setKeyStore(pemKeyStore.get());
                 sslContextFactory.setKeyStorePassword("");
             }
-            catch (IOException | GeneralSecurityException ignored) {
+            else {
                 sslContextFactory.setKeyStorePath(config.getKeystorePath());
                 sslContextFactory.setKeyStorePassword(config.getKeystorePassword());
                 if (config.getKeyManagerPassword() != null) {
@@ -210,13 +208,12 @@ public class HttpServer
                 }
             }
             if (config.getTrustStorePath() != null) {
-                try {
-                    if (!PemReader.readCertificateChain(new File(config.getTrustStorePath())).isEmpty()) {
-                        sslContextFactory.setTrustStore(PemReader.loadTrustStore(new File(config.getTrustStorePath())));
-                        sslContextFactory.setTrustStorePassword("");
-                    }
+                Optional<KeyStore> pemTrustStore = tryLoadPemTrustStore(config);
+                if (pemTrustStore.isPresent()) {
+                    sslContextFactory.setTrustStore(pemTrustStore.get());
+                    sslContextFactory.setTrustStorePassword("");
                 }
-                catch (IOException | GeneralSecurityException ignored) {
+                else {
                     sslContextFactory.setTrustStorePath(config.getTrustStorePath());
                     sslContextFactory.setTrustStorePassword(config.getTrustStorePassword());
                 }
@@ -454,6 +451,49 @@ public class HttpServer
         logHandler.setRequestLog(requestLog);
 
         return logHandler;
+    }
+
+    private static Optional<KeyStore> tryLoadPemKeyStore(HttpServerConfig config)
+    {
+        File keyStoreFile = new File(config.getKeystorePath());
+        try {
+            if (!PemReader.isPem(keyStoreFile)) {
+                return Optional.empty();
+            }
+        }
+        catch (IOException e) {
+            throw new IllegalArgumentException("Error reading key store file: " + keyStoreFile, e);
+        }
+
+        try {
+            return Optional.of(PemReader.loadKeyStore(keyStoreFile, keyStoreFile, Optional.ofNullable(config.getKeystorePassword())));
+        }
+        catch (IOException | GeneralSecurityException e) {
+            throw new IllegalArgumentException("Error loading PEM key store: " + keyStoreFile, e);
+        }
+    }
+
+    private static Optional<KeyStore> tryLoadPemTrustStore(HttpServerConfig config)
+    {
+        File trustStoreFile = new File(config.getTrustStorePath());
+        try {
+            if (!PemReader.isPem(trustStoreFile)) {
+                return Optional.empty();
+            }
+        }
+        catch (IOException e) {
+            throw new IllegalArgumentException("Error reading trust store file: " + trustStoreFile, e);
+        }
+
+        try {
+            if (PemReader.readCertificateChain(trustStoreFile).isEmpty()) {
+                throw new IllegalArgumentException("PEM trust store file does not contain any certificates: " + trustStoreFile);
+            }
+            return Optional.of(PemReader.loadTrustStore(trustStoreFile));
+        }
+        catch (IOException | GeneralSecurityException e) {
+            throw new IllegalArgumentException("Error loading PEM trust store: " + trustStoreFile, e);
+        }
     }
 
     @Managed

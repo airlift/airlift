@@ -70,6 +70,19 @@ public final class PemReader
 
     private PemReader() {}
 
+    public static boolean isPem(File file)
+            throws IOException
+    {
+        return isPem(asCharSource(file, US_ASCII).read());
+    }
+
+    public static boolean isPem(String data)
+    {
+        return CERT_PATTERN.matcher(data).find() ||
+                PUBLIC_KEY_PATTERN.matcher(data).find() ||
+                PRIVATE_KEY_PATTERN.matcher(data).find();
+    }
+
     public static KeyStore loadTrustStore(File certificateChainFile)
             throws IOException, GeneralSecurityException
     {

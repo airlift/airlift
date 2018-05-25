@@ -1,3 +1,7 @@
+0.170
+
+- Improve error handling for HTTP client and HTTP server PEM files.
+
 0.169
 
 - Fix configuration error messages for prefixed configs.

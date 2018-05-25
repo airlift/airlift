@@ -250,7 +250,7 @@ public class TestHttpServerProvider
         config.setHttpEnabled(false)
                 .setHttpsEnabled(true)
                 .setHttpsPort(0)
-                .setKeystorePath(getResource("test.keystore.with.two.passwords").toString())
+                .setKeystorePath(getResource("test.keystore.with.two.passwords").getPath())
                 .setKeystorePassword("airlift")
                 .setKeyManagerPassword("airliftkey");
 
@@ -258,7 +258,7 @@ public class TestHttpServerProvider
 
         HttpClientConfig http1ClientConfig = new HttpClientConfig()
                 .setHttp2Enabled(false)
-                .setTrustStorePath(getResource("test.truststore").toString())
+                .setTrustStorePath(getResource("test.truststore").getPath())
                 .setTrustStorePassword("airlift");
 
         try (JettyHttpClient httpClient = new JettyHttpClient(http1ClientConfig)) {
@@ -317,15 +317,15 @@ public class TestHttpServerProvider
                 .setAdminEnabled(false)
                 .setHttpsEnabled(true)
                 .setHttpsPort(0)
-                .setKeystorePath(getResource("clientcert-java/server.keystore").toString())
+                .setKeystorePath(getResource("clientcert-java/server.keystore").getPath())
                 .setKeystorePassword("airlift");
 
         createAndStartServer(createCertTestServlet());
 
         HttpClientConfig clientConfig = new HttpClientConfig()
-                .setKeyStorePath(getResource("clientcert-java/client.keystore").toString())
+                .setKeyStorePath(getResource("clientcert-java/client.keystore").getPath())
                 .setKeyStorePassword("airlift")
-                .setTrustStorePath(getResource("clientcert-java/client.truststore").toString())
+                .setTrustStorePath(getResource("clientcert-java/client.truststore").getPath())
                 .setTrustStorePassword("airlift");
 
         try (JettyHttpClient httpClient = new JettyHttpClient(clientConfig)) {
@@ -470,7 +470,7 @@ public class TestHttpServerProvider
         config.setHttpEnabled(false)
                 .setHttpsEnabled(true)
                 .setHttpsPort(0)
-                .setKeystorePath(getResource("test.keystore").toString())
+                .setKeystorePath(getResource("test.keystore").getPath())
                 .setKeystorePassword("airlift")
                 .setMaxThreads(1);
         createAndStartServer();
@@ -483,7 +483,7 @@ public class TestHttpServerProvider
         config.setHttpEnabled(false)
                 .setHttpsEnabled(true)
                 .setHttpsPort(0)
-                .setKeystorePath(getResource("test.keystore.with.two.passwords").toString())
+                .setKeystorePath(getResource("test.keystore.with.two.passwords").getPath())
                 .setKeystorePassword("airlift");
         createAndStartServer();
     }
