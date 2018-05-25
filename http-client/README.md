@@ -46,12 +46,17 @@ Here is a sample log line:
 ```
 2018-02-21T18:26:50.438-08:00	HTTP/1.1	DELETE	http://127.0.0.1:8080/v1/task/20180222_022649_00001_dn54g.0.0/results/0	204	0	16	null
 ```
-A request log line has eight columns delimited with the tab character:
+A request log line has thirteen columns delimited with the tab character:
 - Request timestamp in the ISO 8601 format.
 - The protocol version.
 - The method (GET, POST, DELETE, etc.).
 - The URI.
 - Response status code if available, otherwise the failure reason (e.g., TIMEOUT).
 - Response size in bytes.
+- Total request time [ms].
+- Request queue time [ms].
+- Time from request processing begins to request is sent or failed to be sent [ms].
+- Time from request is sent to response begins [ms].
+- Time from response begins to response is complete [ms].
+- Time to last byte [ms], which is the amount of time from when the request is created to when the entire response is received.
 - Airlift trace token if present in the request headers ("X-Airlift-TraceToken").
-- Time to last byte, which is the amount of time from when the request is created to when the entire response is received.
