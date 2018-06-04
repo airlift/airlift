@@ -1,6 +1,8 @@
 0.170
 
 - Improve error handling for HTTP client and HTTP server PEM files.
+- Add additional columns to the HTTP client and server logs. The new columns
+  provide detailed timing information for individual requests/responses.
 
 0.169
 
