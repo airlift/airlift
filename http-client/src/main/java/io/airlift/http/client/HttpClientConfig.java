@@ -60,7 +60,7 @@ public class HttpClientConfig
     private boolean authenticationEnabled;
     private String kerberosPrincipal;
     private String kerberosRemoteServiceName;
-    private int selectorCount = 2;
+    private int selectorCount = 16;
     private boolean recordRequestComplete = true;
     private boolean connectBlocking;
 
