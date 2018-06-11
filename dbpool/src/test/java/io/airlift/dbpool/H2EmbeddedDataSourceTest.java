@@ -31,6 +31,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
+import static com.google.common.io.Files.asCharSink;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Test(singleThreaded = true)
@@ -115,7 +116,7 @@ public class H2EmbeddedDataSourceTest
         File initScript = File.createTempFile("initscript", ".ddl");
         try {
             String invalidDdl = "This isn't valid SQL";
-            Files.write(invalidDdl, initScript, UTF_8);
+            asCharSink(initScript, UTF_8).write(invalidDdl);
 
             H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
                     .setFilename(file.getAbsolutePath())

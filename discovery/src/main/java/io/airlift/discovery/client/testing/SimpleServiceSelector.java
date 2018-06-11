@@ -16,7 +16,7 @@
 package io.airlift.discovery.client.testing;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.discovery.client.DiscoveryException;
 import io.airlift.discovery.client.DiscoveryLookupClient;
@@ -28,6 +28,7 @@ import io.airlift.log.Logger;
 
 import java.util.List;
 
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static io.airlift.concurrent.MoreFutures.getFutureValue;
 import static java.util.Objects.requireNonNull;
 
@@ -80,6 +81,7 @@ public class SimpleServiceSelector
     @Override
     public ListenableFuture<List<ServiceDescriptor>> refresh()
     {
-        return Futures.transform(lookupClient.getServices(type, pool), ServiceDescriptors::getServiceDescriptors);
+        return FluentFuture.from(lookupClient.getServices(type, pool))
+                .transform(ServiceDescriptors::getServiceDescriptors, directExecutor());
     }
 }

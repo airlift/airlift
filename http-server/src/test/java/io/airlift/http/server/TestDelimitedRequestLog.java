@@ -16,7 +16,6 @@
 package io.airlift.http.server;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.Files;
 import io.airlift.event.client.InMemoryEventClient;
 import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.http.HttpURI;
@@ -36,6 +35,7 @@ import java.util.Collections;
 import java.util.DoubleSummaryStatistics;
 import java.util.List;
 
+import static com.google.common.io.Files.asCharSource;
 import static io.airlift.http.server.TraceTokenFilter.TRACETOKEN_HEADER;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -193,7 +193,7 @@ public class TestDelimitedRequestLog
         assertEquals(event.getFirstToLastContentTimeInMillis(), firstToLastContentTimeInMillis);
         assertEquals(event.getResponseContentInterarrivalStats(), responseContentInterarrivalStats);
 
-        String actual = Files.toString(file, UTF_8);
+        String actual = asCharSource(file, UTF_8).read();
         String expected = String.format("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
                 ISO_FORMATTER.format(Instant.ofEpochMilli(timestamp)),
                 ip,

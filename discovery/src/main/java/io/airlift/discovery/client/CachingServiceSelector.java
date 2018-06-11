@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static io.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -145,7 +146,7 @@ public class CachingServiceSelector
             }
         }, executor);
 
-        return Futures.transform(future, ServiceDescriptors::getServiceDescriptors);
+        return Futures.transform(future, ServiceDescriptors::getServiceDescriptors, directExecutor());
     }
 
     private void scheduleRefresh(Duration delay)

@@ -17,7 +17,6 @@ package io.airlift.discovery.client;
 
 import com.google.common.io.ByteStreams;
 import com.google.common.net.HttpHeaders;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.http.client.CacheControl;
 import io.airlift.http.client.HttpClient;
@@ -40,6 +39,7 @@ import java.net.URI;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static io.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
 import static io.airlift.http.client.HttpStatus.NOT_MODIFIED;
 import static io.airlift.http.client.HttpStatus.OK;
@@ -109,7 +109,7 @@ public class HttpDiscoveryLookupClient
 
         URI uri = discoveryServiceURI.get();
         if (uri == null) {
-            return Futures.immediateFailedCheckedFuture(new DiscoveryException("No discovery servers are available"));
+            return immediateFailedFuture(new DiscoveryException("No discovery servers are available"));
         }
 
         uri = URI.create(uri + "/v1/service/" + type + "/");

@@ -1,8 +1,7 @@
 package io.airlift.discovery.client;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.node.NodeInfo;
 
@@ -10,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static java.util.Objects.requireNonNull;
 
 public class MergingServiceSelector
@@ -47,8 +47,8 @@ public class MergingServiceSelector
     @Override
     public ListenableFuture<List<ServiceDescriptor>> refresh()
     {
-        return Futures.transform(selector.refresh(), (Function<List<ServiceDescriptor>, List<ServiceDescriptor>>)
-                descriptors -> merge(announcer.getServiceAnnouncements(), descriptors));
+        return FluentFuture.from(selector.refresh())
+                .transform(descriptors -> merge(announcer.getServiceAnnouncements(), descriptors), directExecutor());
     }
 
     private List<ServiceDescriptor> merge(Set<ServiceAnnouncement> serviceAnnouncements, List<ServiceDescriptor> serviceDescriptors)

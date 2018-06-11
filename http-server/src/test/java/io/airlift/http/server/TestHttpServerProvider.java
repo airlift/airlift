@@ -47,6 +47,7 @@ import java.util.Base64;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.io.Files.asCharSink;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static com.google.common.io.Resources.getResource;
@@ -289,7 +290,7 @@ public class TestHttpServerProvider
             throws Exception
     {
         File file = File.createTempFile("auth", ".properties", tempDir);
-        Files.write("user: password", file, UTF_8);
+        asCharSink(file, UTF_8).write("user: password");
 
         config.setUserAuthFile(file.getAbsolutePath());
 

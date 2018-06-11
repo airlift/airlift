@@ -18,7 +18,6 @@ package io.airlift.discovery.client;
 import com.google.common.io.CharStreams;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.http.client.CacheControl;
 import io.airlift.http.client.HttpClient;
@@ -39,6 +38,8 @@ import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
+import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.preparePut;
@@ -79,7 +80,7 @@ public class HttpDiscoveryAnnouncementClient
 
         URI uri = discoveryServiceURI.get();
         if (uri == null) {
-            return Futures.immediateFailedCheckedFuture(new DiscoveryException("No discovery servers are available"));
+            return immediateFailedFuture(new DiscoveryException("No discovery servers are available"));
         }
 
         Announcement announcement = new Announcement(nodeInfo.getEnvironment(), nodeInfo.getNodeId(), nodeInfo.getPool(), nodeInfo.getLocation(), services);
@@ -126,7 +127,7 @@ public class HttpDiscoveryAnnouncementClient
     {
         URI uri = discoveryServiceURI.get();
         if (uri == null) {
-            return Futures.immediateCheckedFuture(null);
+            return immediateFuture(null);
         }
 
         Request request = prepareDelete()

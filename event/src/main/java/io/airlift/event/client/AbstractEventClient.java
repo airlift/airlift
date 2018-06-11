@@ -1,11 +1,12 @@
 package io.airlift.event.client;
 
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.IOException;
 import java.util.Arrays;
 
+import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
+import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static java.util.Objects.requireNonNull;
 
 public abstract class AbstractEventClient
@@ -56,9 +57,9 @@ public abstract class AbstractEventClient
             });
         }
         catch (IOException e) {
-            return Futures.immediateFailedCheckedFuture(e);
+            return immediateFailedFuture(e);
         }
-        return Futures.immediateCheckedFuture(null);
+        return immediateFuture(null);
     }
 
     protected abstract <T> void postEvent(T event)

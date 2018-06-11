@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -81,7 +82,7 @@ public class AsyncSemaphore<T>
     {
         final QueuedTask<T> queuedTask = queuedTasks.poll();
         ListenableFuture<?> future = submitTask(queuedTask.getTask());
-        Futures.addCallback(future, new FutureCallback<Object>()
+        FutureCallback<Object> callback = new FutureCallback<Object>()
         {
             @Override
             public void onSuccess(Object result)
@@ -96,7 +97,8 @@ public class AsyncSemaphore<T>
                 queuedTask.markFailure(t);
                 releasePermit();
             }
-        });
+        };
+        Futures.addCallback(future, callback, directExecutor());
     }
 
     private ListenableFuture<?> submitTask(T task)

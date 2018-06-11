@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.util.concurrent.Futures.addCallback;
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static com.google.common.util.concurrent.MoreExecutors.listeningDecorator;
 import static com.google.common.util.concurrent.MoreExecutors.newDirectExecutorService;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
@@ -161,7 +162,7 @@ public class TestAsyncSemaphore
         List<ListenableFuture<?>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             ListenableFuture<?> future = asyncSemaphore.submit(() -> assertFailedConcurrency(concurrency));
-            addCallback(future, completionCallback(successCount, failureCount, completionLatch));
+            addCallback(future, completionCallback(successCount, failureCount, completionLatch), directExecutor());
             futures.add(future);
         }
 
@@ -197,7 +198,7 @@ public class TestAsyncSemaphore
         for (int i = 0; i < 1000; i++) {
             // Should never execute this future
             ListenableFuture<?> future = asyncSemaphore.submit(() -> fail(null));
-            addCallback(future, completionCallback(successCount, failureCount, completionLatch));
+            addCallback(future, completionCallback(successCount, failureCount, completionLatch), directExecutor());
             futures.add(future);
         }
 
@@ -238,7 +239,7 @@ public class TestAsyncSemaphore
                 // Should never execute this future
                 ListenableFuture<?> future = asyncSemaphore.submit(() -> fail(null));
                 futures.add(future);
-                addCallback(future, completionCallback(successCount, failureCount, completionLatch));
+                addCallback(future, completionCallback(successCount, failureCount, completionLatch), directExecutor());
             });
         }
         // Start the submitters;

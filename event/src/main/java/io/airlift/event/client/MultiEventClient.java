@@ -1,6 +1,5 @@
 package io.airlift.event.client;
 
-import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
@@ -9,6 +8,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import javax.inject.Inject;
 
 import java.util.Set;
+
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 
 public class MultiEventClient
         implements EventClient
@@ -43,7 +44,7 @@ public class MultiEventClient
             futures.add(client.post(events));
         }
 
-        return Futures.transform(Futures.allAsList(futures.build()), Functions.<Void>constant(null));
+        return Futures.transform(Futures.allAsList(futures.build()), x -> null, directExecutor());
     }
 
     @Override
@@ -55,6 +56,6 @@ public class MultiEventClient
             futures.add(client.post(eventGenerator));
         }
 
-        return Futures.transform(Futures.allAsList(futures.build()), Functions.<Void>constant(null));
+        return Futures.transform(Futures.allAsList(futures.build()), x -> null, directExecutor());
     }
 }

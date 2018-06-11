@@ -1,5 +1,7 @@
 package io.airlift.concurrent;
 
+import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -31,10 +33,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.propagateIfPossible;
 import static com.google.common.base.Throwables.throwIfInstanceOf;
 import static com.google.common.collect.Iterables.isEmpty;
-import static com.google.common.util.concurrent.Futures.catchingAsync;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
-import static com.google.common.util.concurrent.Futures.withTimeout;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -62,7 +62,7 @@ public final class MoreFutures
      */
     public static <T> void mirror(ListenableFuture<? extends T> source, SettableFuture<? super T> destination, boolean mayInterruptIfRunning)
     {
-        Futures.addCallback(source, new FutureCallback<T>()
+        FutureCallback<T> callback = new FutureCallback<T>()
         {
             @Override
             public void onSuccess(@Nullable T result)
@@ -75,7 +75,8 @@ public final class MoreFutures
             {
                 destination.setException(t);
             }
-        });
+        };
+        Futures.addCallback(source, callback, directExecutor());
         propagateCancellation(destination, source, mayInterruptIfRunning);
     }
 
@@ -393,14 +394,17 @@ public final class MoreFutures
      */
     public static <T> ListenableFuture<T> addTimeout(ListenableFuture<T> future, Callable<T> onTimeout, Duration timeout, ScheduledExecutorService executorService)
     {
-        return catchingAsync(withTimeout(future, timeout.toMillis(), MILLISECONDS, executorService), TimeoutException.class, timeoutException -> {
+        AsyncFunction<TimeoutException, T> timeoutHandler = timeoutException -> {
             try {
                 return immediateFuture(onTimeout.call());
             }
             catch (Throwable throwable) {
                 return immediateFailedFuture(throwable);
             }
-        });
+        };
+        return FluentFuture.from(future)
+                .withTimeout(timeout.toMillis(), MILLISECONDS, executorService)
+                .catchingAsync(TimeoutException.class, timeoutHandler, directExecutor());
     }
 
     /**
@@ -450,7 +454,7 @@ public final class MoreFutures
             return null;
         });
 
-        Futures.addCallback(listenableFuture, new FutureCallback<V>()
+        FutureCallback<V> callback = new FutureCallback<V>()
         {
             @Override
             public void onSuccess(V result)
@@ -463,7 +467,8 @@ public final class MoreFutures
             {
                 future.completeExceptionally(t);
             }
-        });
+        };
+        Futures.addCallback(listenableFuture, callback, directExecutor());
         return future;
     }
 
@@ -493,7 +498,7 @@ public final class MoreFutures
         requireNonNull(future, "future is null");
         requireNonNull(successCallback, "successCallback is null");
 
-        Futures.addCallback(future, new FutureCallback<T>()
+        FutureCallback<T> callback = new FutureCallback<T>()
         {
             @Override
             public void onSuccess(@Nullable T result)
@@ -503,7 +508,8 @@ public final class MoreFutures
 
             @Override
             public void onFailure(Throwable t) {}
-        });
+        };
+        Futures.addCallback(future, callback, directExecutor());
     }
 
     public static <T> void addSuccessCallback(ListenableFuture<T> future, Runnable successCallback)
@@ -518,7 +524,7 @@ public final class MoreFutures
         requireNonNull(future, "future is null");
         requireNonNull(exceptionCallback, "exceptionCallback is null");
 
-        Futures.addCallback(future, new FutureCallback<T>()
+        FutureCallback<T> callback = new FutureCallback<T>()
         {
             @Override
             public void onSuccess(@Nullable T result) {}
@@ -528,7 +534,8 @@ public final class MoreFutures
             {
                 exceptionCallback.accept(t);
             }
-        });
+        };
+        Futures.addCallback(future, callback, directExecutor());
     }
 
     public static <T> void addExceptionCallback(ListenableFuture<T> future, Runnable exceptionCallback)

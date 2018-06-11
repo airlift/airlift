@@ -18,7 +18,6 @@ package io.airlift.event.client;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.google.common.net.MediaType;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.discovery.client.HttpServiceSelector;
 import io.airlift.discovery.client.ServiceType;
@@ -43,6 +42,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static java.util.Objects.requireNonNull;
 
@@ -112,7 +112,7 @@ public class HttpEventClient
         List<URI> uris = serviceSelector.selectHttpService();
 
         if (uris.isEmpty()) {
-            return Futures.<Void, RuntimeException>immediateFailedCheckedFuture(new ServiceUnavailableException(serviceSelector.getType(), serviceSelector.getPool()));
+            return immediateFailedFuture(new ServiceUnavailableException(serviceSelector.getType(), serviceSelector.getPool()));
         }
 
         // todo this doesn't really work due to returning the future which can fail without being retried
