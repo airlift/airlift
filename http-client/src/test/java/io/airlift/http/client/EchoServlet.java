@@ -87,6 +87,10 @@ public final class EchoServlet
             response.addHeader("remotePort", String.valueOf(request.getRemotePort()));
         }
 
+        if (request.getParameter("redirect") != null) {
+            response.sendRedirect(request.getParameter("redirect"));
+        }
+
         if (responseBody != null) {
             response.getOutputStream().write(responseBody.getBytes(UTF_8));
         }

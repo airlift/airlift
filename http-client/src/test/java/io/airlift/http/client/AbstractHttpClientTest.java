@@ -58,8 +58,10 @@ import static com.google.common.base.Throwables.getStackTraceAsString;
 import static com.google.common.base.Throwables.propagateIfPossible;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.net.HttpHeaders.ACCEPT_ENCODING;
+import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static io.airlift.concurrent.Threads.threadsNamed;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
@@ -77,6 +79,7 @@ import static java.lang.Thread.currentThread;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -627,6 +630,51 @@ public abstract class AbstractHttpClientTest
         else {
             assertEquals(statusMessage, "message");
         }
+    }
+
+    @Test
+    public void testRequestHeaders()
+            throws Exception
+    {
+        String basic = "Basic dGVzdDphYmM=";
+        String bearer = "Bearer testxyz";
+
+        Request request = prepareGet()
+                .setUri(baseURI)
+                .addHeader("X-Test", "xtest1")
+                .addHeader("X-Test", "xtest2")
+                .setHeader(USER_AGENT, "testagent")
+                .addHeader(AUTHORIZATION, basic)
+                .addHeader(AUTHORIZATION, bearer)
+                .build();
+
+        StatusResponse response = executeRequest(request, createStatusResponseHandler());
+        assertEquals(response.getStatusCode(), 200);
+        assertThat(servlet.getRequestHeaders("X-Test")).containsExactly("xtest1", "xtest2");
+        assertThat(servlet.getRequestHeaders(USER_AGENT)).containsExactly("testagent");
+        assertThat(servlet.getRequestHeaders(AUTHORIZATION)).containsExactly(basic, bearer);
+    }
+
+    @Test
+    public void testRedirectRequestHeaders()
+            throws Exception
+    {
+        String basic = "Basic dGVzdDphYmM=";
+        String bearer = "Bearer testxyz";
+
+        Request request = prepareGet()
+                .setUri(URI.create(baseURI.toASCIIString() + "/?redirect=/redirect"))
+                .addHeader("X-Test", "xtest1")
+                .addHeader("X-Test", "xtest2")
+                .addHeader(AUTHORIZATION, basic)
+                .addHeader(AUTHORIZATION, bearer)
+                .build();
+
+        StatusResponse response = executeRequest(request, createStatusResponseHandler());
+        assertEquals(response.getStatusCode(), 200);
+        assertEquals(servlet.getRequestUri(), URI.create(baseURI.toASCIIString() + "/redirect"));
+        assertThat(servlet.getRequestHeaders("X-Test")).containsExactly("xtest1", "xtest2");
+        assertThat(servlet.getRequestHeaders(AUTHORIZATION)).isEmpty();
     }
 
     @Test(expectedExceptions = UnexpectedResponseException.class)
