@@ -17,10 +17,14 @@ package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
-import io.airlift.testing.EquivalenceTester;
 import org.testng.annotations.Test;
 
 import java.net.URI;
+
+import static io.airlift.http.client.Request.Builder.prepareGet;
+import static io.airlift.http.client.Request.Builder.preparePut;
+import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
+import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 
 public class TestRequest
 {
@@ -29,84 +33,88 @@ public class TestRequest
     {
         BodyGenerator bodyGenerator = createBodyGenerator();
 
-        EquivalenceTester.<Request>equivalenceTester()
+        equivalenceTester()
                 .addEquivalentGroup(
-                        new Request(createUri1(), "GET", createHeaders1(), null),
-                        new Request(createUri1(), "GET", createHeaders1(), null))
+                        prepareGet().setUri(createUriA()).addHeaders(createHeadersA()).build(),
+                        prepareGet().setUri(createUriA()).addHeaders(createHeadersA()).build())
                 .addEquivalentGroup(
-                        new Request(createUri1(), "GET", createHeaders1(), bodyGenerator),
-                        new Request(createUri1(), "GET", createHeaders1(), bodyGenerator))
+                        prepareGet().setUri(createUriA()).addHeaders(createHeadersA()).setBodyGenerator(bodyGenerator).build(),
+                        prepareGet().setUri(createUriA()).addHeaders(createHeadersA()).setBodyGenerator(bodyGenerator).build())
                 .addEquivalentGroup(
-                        new Request(createUri1(), "GET", createHeaders2(), bodyGenerator))
+                        prepareGet().setUri(createUriA()).addHeaders(createHeadersB()).setBodyGenerator(bodyGenerator).build())
                 .addEquivalentGroup(
-                        new Request(createUri2(), "GET", createHeaders1(), bodyGenerator))
+                        prepareGet().setUri(createUriB()).addHeaders(createHeadersA()).setBodyGenerator(bodyGenerator).build())
                 .addEquivalentGroup(
-                        new Request(createUri1(), "PUT", createHeaders1(), null),
-                        new Request(createUri1(), "PUT", createHeaders1(), null))
+                        preparePut().setUri(createUriA()).addHeaders(createHeadersA()).build(),
+                        preparePut().setUri(createUriA()).addHeaders(createHeadersA()).build())
                 .addEquivalentGroup(
-                        new Request(createUri2(), "PUT", createHeaders1(), null))
+                        preparePut().setUri(createUriB()).addHeaders(createHeadersA()).build())
                 .addEquivalentGroup(
-                        new Request(createUri1(), "PUT", createHeaders2(), null))
+                        preparePut().setUri(createUriA()).addHeaders(createHeadersB()).build())
                 .addEquivalentGroup(
-                        new Request(createUri1(), "PUT", createHeaders1(), bodyGenerator),
-                        new Request(createUri1(), "PUT", createHeaders1(), bodyGenerator))
+                        preparePut().setUri(createUriA()).addHeaders(createHeadersA()).setBodyGenerator(bodyGenerator).build(),
+                        preparePut().setUri(createUriA()).addHeaders(createHeadersA()).setBodyGenerator(bodyGenerator).build())
                 .addEquivalentGroup(
-                        new Request(createUri1(), "GET", createHeaders1(), createBodyGenerator()))
+                        prepareGet().setUri(createUriA()).addHeaders(createHeadersA()).setBodyGenerator(createBodyGenerator()).build())
                 .addEquivalentGroup(
-                        new Request(createUri1(), "PUT", createHeaders1(), createBodyGenerator()))
+                        preparePut().setUri(createUriA()).addHeaders(createHeadersA()).setBodyGenerator(createBodyGenerator()).build())
                 .check();
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Cannot make requests to HTTP port 0")
     public void testCannotMakeRequestToIllegalPort()
-            throws Exception
     {
-        new Request(URI.create("http://example.com:0/"), "GET", createHeaders1(), createBodyGenerator());
+        prepareGet().setUri(URI.create("http://example.com:0/")).build();
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "uri does not have a host: http:///foo")
     public void testInvalidUriMissingHost()
-            throws Exception
     {
-        new Request(URI.create("http:///foo"), "GET", createHeaders1(), createBodyGenerator());
+        prepareGet().setUri(URI.create("http:///foo")).build();
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "uri does not have a scheme: //foo")
     public void testInvalidUriMissingScheme()
-            throws Exception
     {
-        new Request(URI.create("//foo"), "GET", createHeaders1(), createBodyGenerator());
+        prepareGet().setUri(URI.create("//foo")).build();
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "uri scheme must be http or https: gopher://example.com")
     public void testInvalidUriScheme()
-            throws Exception
     {
-        new Request(URI.create("gopher://example.com"), "GET", createHeaders1(), createBodyGenerator());
+        prepareGet().setUri(URI.create("gopher://example.com")).build();
     }
 
-    private URI createUri1()
+    private static URI createUriA()
     {
         return URI.create("http://example.com");
     }
 
-    private URI createUri2()
+    private static URI createUriB()
     {
         return URI.create("http://example.net");
     }
 
-    private ListMultimap<String, String> createHeaders1()
+    private static ListMultimap<String, String> createHeadersA()
     {
-        return ImmutableListMultimap.of("foo", "bar", "abc", "xyz");
+        return ImmutableListMultimap.<String, String>builder()
+                .put("foo", "bar")
+                .put("abc", "xyz")
+                .build();
     }
 
-    private ListMultimap<String, String> createHeaders2()
+    private static ListMultimap<String, String> createHeadersB()
     {
-        return ImmutableListMultimap.of("foo", "bar", "abc", "xyz", "qqq", "www", "foo", "zzz");
+        return ImmutableListMultimap.<String, String>builder()
+                .put("foo", "bar")
+                .put("abc", "xyz")
+                .put("qqq", "www")
+                .put("foo", "zzz")
+                .build();
     }
 
     public static BodyGenerator createBodyGenerator()
     {
-        return StaticBodyGenerator.createStaticBodyGenerator(new byte[0]);
+        return createStaticBodyGenerator(new byte[0]);
     }
 }
