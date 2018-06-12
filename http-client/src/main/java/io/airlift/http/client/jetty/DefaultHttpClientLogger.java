@@ -18,13 +18,18 @@ import ch.qos.logback.core.ContextBase;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
+import ch.qos.logback.core.status.ErrorStatus;
 import ch.qos.logback.core.util.FileSize;
 import io.airlift.log.Logger;
 import io.airlift.units.DataSize;
+import io.airlift.units.Duration;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static io.airlift.http.client.jetty.HttpRequestEvent.createHttpRequestEvent;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 class DefaultHttpClientLogger
         implements HttpClientLogger
@@ -35,14 +40,21 @@ class DefaultHttpClientLogger
 
     private final AsyncAppenderBase<HttpRequestEvent> asyncAppender;
 
-    DefaultHttpClientLogger(String filename, int maxHistory, int queueSize, DataSize bufferSize, long maxFileSizeInBytes, boolean compressionEnabled)
+    DefaultHttpClientLogger(
+            String filename,
+            int maxHistory,
+            int queueSize,
+            DataSize bufferSize,
+            Duration flushInterval,
+            long maxFileSizeInBytes,
+            boolean compressionEnabled)
     {
         ContextBase context = new ContextBase();
         HttpClientLogLayout httpLogLayout = new HttpClientLogLayout();
 
         recoverTempFiles(filename);
 
-        RollingFileAppender<HttpRequestEvent> fileAppender = new RollingFileAppender<>();
+        FlushingFileAppender<HttpRequestEvent> fileAppender = new FlushingFileAppender<>(flushInterval);
         SizeAndTimeBasedFNATP<HttpRequestEvent> triggeringPolicy = new SizeAndTimeBasedFNATP<>();
         TimeBasedRollingPolicy<HttpRequestEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
 
@@ -115,6 +127,48 @@ class DefaultHttpClientLogger
                 else {
                     LOG.warn("Could not rename temp file [%s] to [%s]", tempFile, newFile);
                 }
+            }
+        }
+    }
+
+    private static class FlushingFileAppender<T>
+            extends RollingFileAppender<T>
+    {
+        private final AtomicLong lastFlushed = new AtomicLong(System.nanoTime());
+        private final long flushIntervalNanos;
+
+        private FlushingFileAppender(Duration flushInterval)
+        {
+            this.flushIntervalNanos = flushInterval.roundTo(NANOSECONDS);
+        }
+
+        @Override
+        protected void subAppend(T event)
+        {
+            super.subAppend(event);
+
+            long now = System.nanoTime();
+            long last = lastFlushed.get();
+            if (((now - last) > flushIntervalNanos) && lastFlushed.compareAndSet(last, now)) {
+                flush();
+            }
+        }
+
+        @SuppressWarnings("Duplicates")
+        private void flush()
+        {
+            try {
+                lock.lock();
+                try {
+                    getOutputStream().flush();
+                }
+                finally {
+                    lock.unlock();
+                }
+            }
+            catch (IOException e) {
+                started = false;
+                addStatus(new ErrorStatus("IO failure in appender", this, e));
             }
         }
     }

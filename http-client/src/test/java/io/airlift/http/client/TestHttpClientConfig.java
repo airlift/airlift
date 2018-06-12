@@ -78,6 +78,7 @@ public class TestHttpClientConfig
                 .setLogPath("var/log/")
                 .setLogQueueSize(10_000)
                 .setLogBufferSize(new DataSize(1, MEGABYTE))
+                .setLogFlushInterval(new Duration(10, SECONDS))
                 .setLogCompressionEnabled(true));
     }
 
@@ -119,6 +120,7 @@ public class TestHttpClientConfig
                 .put("http-client.log.path", "/tmp/log/")
                 .put("http-client.log.queue-size", "12345")
                 .put("http-client.log.buffer-size", "3MB")
+                .put("http-client.log.flush-interval", "99s")
                 .put("http-client.log.compression.enabled", "false")
                 .build();
 
@@ -157,6 +159,7 @@ public class TestHttpClientConfig
                 .setLogPath("/tmp/log/")
                 .setLogQueueSize(12345)
                 .setLogBufferSize(new DataSize(3, MEGABYTE))
+                .setLogFlushInterval(new Duration(99, SECONDS))
                 .setLogCompressionEnabled(false);
 
         ConfigAssertions.assertFullMapping(properties, expected);
