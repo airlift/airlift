@@ -14,7 +14,9 @@ import io.airlift.http.client.StaticBodyGenerator;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
 import io.airlift.http.client.spnego.KerberosConfig;
+import io.airlift.http.client.spnego.SpnegoAuthentication;
 import io.airlift.http.client.spnego.SpnegoAuthenticationProtocolHandler;
+import io.airlift.http.client.spnego.SpnegoAuthenticationStore;
 import io.airlift.security.pem.PemReader;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.client.DuplexConnectionPool;
@@ -25,6 +27,7 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.PoolingHttpDestination;
 import org.eclipse.jetty.client.Socks4Proxy;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
+import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
@@ -191,15 +194,20 @@ public class JettyHttpClient
             transport = new HttpClientTransportOverHTTP(config.getSelectorCount());
         }
 
+        httpClient = new HttpClient(transport, sslContextFactory);
+
+        // Kerberos authentication
         if (config.getAuthenticationEnabled()) {
-            requireNonNull(kerberosConfig.getConfig(), "kerberos config path is null");
-            requireNonNull(config.getKerberosRemoteServiceName(), "kerberos remote service name is null");
-            httpClient = new SpnegoHttpClient(kerberosConfig, config, transport, sslContextFactory);
+            AuthenticationStore store = new SpnegoAuthenticationStore(new SpnegoAuthentication(
+                    kerberosConfig.getKeytab(),
+                    kerberosConfig.getConfig(),
+                    kerberosConfig.getCredentialCache(),
+                    config.getKerberosPrincipal(),
+                    config.getKerberosRemoteServiceName(),
+                    kerberosConfig.isUseCanonicalHostname()));
+            httpClient.setAuthenticationStore(store);
             httpClient.getProtocolHandlers().remove(WWWAuthenticationProtocolHandler.NAME);
             httpClient.getProtocolHandlers().put(new SpnegoAuthenticationProtocolHandler(httpClient));
-        }
-        else {
-            httpClient = new HttpClient(transport, sslContextFactory);
         }
 
         httpClient.setMaxConnectionsPerDestination(config.getMaxConnectionsPerServer());

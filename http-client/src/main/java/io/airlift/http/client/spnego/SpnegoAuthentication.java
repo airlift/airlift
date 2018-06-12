@@ -76,8 +76,8 @@ public class SpnegoAuthentication
 
     public SpnegoAuthentication(File keytab, File kerberosConfig, File credentialCache, String principal, String remoteServiceName, boolean useCanonicalHostname)
     {
-        requireNonNull(kerberosConfig, "kerberosConfig is null");
-        requireNonNull(remoteServiceName, "remoteServiceName is null");
+        requireNonNull(kerberosConfig, "Kerberos config path is null");
+        requireNonNull(remoteServiceName, "Kerberos remote service name is null");
 
         this.keytab = keytab;
         this.credentialCache = credentialCache;

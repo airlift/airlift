@@ -46,7 +46,7 @@ public class SpnegoAuthenticationStore
     @Override
     public void clearAuthentications()
     {
-        throw new UnsupportedOperationException("clearAuthentications is not supported");
+        // do nothing; this is called from client shutdown
     }
 
     @Override
