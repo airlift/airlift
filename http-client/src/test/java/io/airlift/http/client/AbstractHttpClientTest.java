@@ -666,6 +666,7 @@ public abstract class AbstractHttpClientTest
                 .setUri(URI.create(baseURI.toASCIIString() + "/?redirect=/redirect"))
                 .addHeader("X-Test", "xtest1")
                 .addHeader("X-Test", "xtest2")
+                .setHeader(USER_AGENT, "testagent")
                 .addHeader(AUTHORIZATION, basic)
                 .addHeader(AUTHORIZATION, bearer)
                 .build();
@@ -674,6 +675,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(response.getStatusCode(), 200);
         assertEquals(servlet.getRequestUri(), URI.create(baseURI.toASCIIString() + "/redirect"));
         assertThat(servlet.getRequestHeaders("X-Test")).containsExactly("xtest1", "xtest2");
+        assertThat(servlet.getRequestHeaders(USER_AGENT)).containsExactly("testagent");
         assertThat(servlet.getRequestHeaders(AUTHORIZATION)).isEmpty();
     }
 

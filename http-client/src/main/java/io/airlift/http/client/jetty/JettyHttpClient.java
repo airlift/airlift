@@ -36,7 +36,6 @@ import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.PathContentProvider;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -215,6 +214,9 @@ public class JettyHttpClient
 
         // disable cookies
         httpClient.setCookieStore(new HttpCookieStore.Empty());
+
+        // remove default user agent
+        httpClient.setUserAgentField(null);
 
         // timeouts
         httpClient.setIdleTimeout(idleTimeoutMillis);
@@ -592,10 +594,6 @@ public class JettyHttpClient
         });
 
         jettyRequest.attribute(PRESTO_STATS_KEY, listener);
-
-        // jetty client always adds the user agent header
-        // todo should there be a default?
-        jettyRequest.getHeaders().remove(HttpHeader.USER_AGENT);
 
         jettyRequest.method(finalRequest.getMethod());
 

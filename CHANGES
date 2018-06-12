@@ -1,6 +1,7 @@
 0.171
 
 - Periodically flush HTTP server and HTTP client logs.
+- Fix HTTP client to preserve User-Agent when following redirects.
 
 0.170
 
