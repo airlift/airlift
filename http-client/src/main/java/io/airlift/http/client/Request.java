@@ -19,10 +19,10 @@ import com.google.common.annotations.Beta;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Multimap;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Objects;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -146,15 +146,11 @@ public class Request
 
         public static Builder fromRequest(Request request)
         {
-            Builder requestBuilder = new Builder();
-            requestBuilder.setMethod(request.getMethod());
-            requestBuilder.setBodyGenerator(request.getBodyGenerator());
-            requestBuilder.setUri(request.getUri());
-
-            for (Entry<String, String> entry : request.getHeaders().entries()) {
-                requestBuilder.addHeader(entry.getKey(), entry.getValue());
-            }
-            return requestBuilder;
+            return new Builder()
+                    .setUri(request.getUri())
+                    .setMethod(request.getMethod())
+                    .addHeaders(request.getHeaders())
+                    .setBodyGenerator(request.getBodyGenerator());
         }
 
         private URI uri;
@@ -184,6 +180,12 @@ public class Request
         public Builder addHeader(String name, String value)
         {
             this.headers.put(name, value);
+            return this;
+        }
+
+        public Builder addHeaders(Multimap<String, String> headers)
+        {
+            this.headers.putAll(headers);
             return this;
         }
 
