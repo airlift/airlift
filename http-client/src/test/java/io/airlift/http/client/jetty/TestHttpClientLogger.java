@@ -17,6 +17,7 @@ import com.google.common.io.Files;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
 import io.airlift.units.DataSize;
+import io.airlift.units.Duration;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -51,10 +52,13 @@ import static io.airlift.http.client.jetty.HttpRequestEvent.NO_RESPONSE;
 import static io.airlift.http.client.jetty.HttpRequestEvent.getFailureReason;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.Files.readAllLines;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.jetty.http.HttpVersion.HTTP_1_1;
 import static org.eclipse.jetty.http.HttpVersion.HTTP_2;
 import static org.testng.Assert.assertEquals;
@@ -103,6 +107,7 @@ public class TestHttpClientLogger
                 1,
                 256,
                 new DataSize(1, MEGABYTE),
+                new Duration(10, SECONDS),
                 Long.MAX_VALUE,
                 false);
 
@@ -152,6 +157,7 @@ public class TestHttpClientLogger
                 1,
                 256,
                 new DataSize(1, MEGABYTE),
+                new Duration(10, SECONDS),
                 Long.MAX_VALUE,
                 false);
         RequestInfo requestInfo = RequestInfo.from(request, requestTimestamp);
@@ -174,6 +180,45 @@ public class TestHttpClientLogger
         assertEquals(columns[10], Long.toString(0));
         assertEquals(columns[11], Long.toString(responseInfo.getResponseTimestampMillis() - requestTimestamp));
         assertEquals(columns[12], "test-token");
+    }
+
+    @Test
+    public void testClientLogPeriodicFlush()
+            throws Exception
+    {
+        long now = System.currentTimeMillis();
+
+        Request request = new TestRequest(HTTP_1_1, "GET", new URI("http://www.google.com"), new HttpFields());
+
+        DefaultHttpClientLogger logger = new DefaultHttpClientLogger(
+                file.getAbsolutePath(),
+                1,
+                256,
+                new DataSize(1, MEGABYTE),
+                new Duration(1, MILLISECONDS),
+                Long.MAX_VALUE,
+                false);
+
+        RequestInfo requestInfo = RequestInfo.from(request, now);
+        ResponseInfo responseInfo = ResponseInfo.from(Optional.empty(), 0, now, now);
+        logger.log(requestInfo, responseInfo);
+
+        // logging uses a background thread, so try a few times to make the test reliable
+        for (int i = 0; i < 10; i++) {
+            // wait for flush interval and for previous log entry to be processed
+            Thread.sleep(20);
+
+            // log a message which should force a flush
+            logger.log(requestInfo, responseInfo);
+
+            List<String> lines = readAllLines(file.toPath(), UTF_8);
+            if (!lines.isEmpty()) {
+                break;
+            }
+        }
+
+        List<String> lines = readAllLines(file.toPath(), UTF_8);
+        assertThat(lines).size().isGreaterThanOrEqualTo(1);
     }
 
     private class TestRequest

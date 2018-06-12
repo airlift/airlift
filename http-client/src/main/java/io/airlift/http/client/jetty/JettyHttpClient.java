@@ -252,6 +252,7 @@ public class JettyHttpClient
                     config.getLogHistory(),
                     config.getLogQueueSize(),
                     config.getLogBufferSize(),
+                    config.getLogFlushInterval(),
                     config.getLogMaxFileSize().toBytes(),
                     config.isLogCompressionEnabled());
         }

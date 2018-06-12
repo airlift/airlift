@@ -80,6 +80,7 @@ public class HttpClientConfig
     private int logQueueSize = 10_000;
     private DataSize logMaxFileSize = new DataSize(1, GIGABYTE);
     private DataSize logBufferSize = new DataSize(1, MEGABYTE);
+    private Duration logFlushInterval = new Duration(10, SECONDS);
     private boolean logCompressionEnabled = true;
 
     public boolean isHttp2Enabled()
@@ -528,6 +529,19 @@ public class HttpClientConfig
     public HttpClientConfig setLogBufferSize(DataSize logBufferSize)
     {
         this.logBufferSize = logBufferSize;
+        return this;
+    }
+
+    @NotNull
+    public Duration getLogFlushInterval()
+    {
+        return logFlushInterval;
+    }
+
+    @Config("http-client.log.flush-interval")
+    public HttpClientConfig setLogFlushInterval(Duration logFlushInterval)
+    {
+        this.logFlushInterval = logFlushInterval;
         return this;
     }
 
