@@ -37,6 +37,7 @@ public final class Request
     private final ListMultimap<String, String> headers;
     private final BodyGenerator bodyGenerator;
     private final boolean followRedirects;
+    private final boolean preserveAuthorizationOnRedirect;
 
     /**
      * @deprecated Use {@link #builder()} to construct this.
@@ -44,7 +45,7 @@ public final class Request
     @Deprecated
     public Request(URI uri, String method, ListMultimap<String, String> headers, BodyGenerator bodyGenerator)
     {
-        this(uri, method, headers, bodyGenerator, true);
+        this(uri, method, headers, bodyGenerator, true, false);
     }
 
     private Request(
@@ -52,7 +53,8 @@ public final class Request
             String method,
             ListMultimap<String, String> headers,
             BodyGenerator bodyGenerator,
-            boolean followRedirects)
+            boolean followRedirects,
+            boolean preserveAuthorizationOnRedirect)
     {
         requireNonNull(uri, "uri is null");
         checkArgument(uri.getHost() != null, "uri does not have a host: %s", uri);
@@ -66,6 +68,7 @@ public final class Request
         this.headers = ImmutableListMultimap.copyOf(headers);
         this.bodyGenerator = bodyGenerator;
         this.followRedirects = followRedirects;
+        this.preserveAuthorizationOnRedirect = preserveAuthorizationOnRedirect;
     }
 
     public static Request.Builder builder()
@@ -107,6 +110,11 @@ public final class Request
         return followRedirects;
     }
 
+    public boolean isPreserveAuthorizationOnRedirect()
+    {
+        return preserveAuthorizationOnRedirect;
+    }
+
     @Override
     public String toString()
     {
@@ -116,6 +124,7 @@ public final class Request
                 .add("headers", headers)
                 .add("bodyGenerator", bodyGenerator)
                 .add("followRedirects", followRedirects)
+                .add("preserveAuthorizationOnRedirect", preserveAuthorizationOnRedirect)
                 .toString();
     }
 
@@ -130,7 +139,8 @@ public final class Request
                 Objects.equals(method, r.method) &&
                 Objects.equals(headers, r.headers) &&
                 Objects.equals(bodyGenerator, r.bodyGenerator) &&
-                Objects.equals(followRedirects, r.followRedirects);
+                Objects.equals(followRedirects, r.followRedirects) &&
+                Objects.equals(preserveAuthorizationOnRedirect, r.preserveAuthorizationOnRedirect);
     }
 
     @Override
@@ -141,7 +151,8 @@ public final class Request
                 method,
                 headers,
                 bodyGenerator,
-                followRedirects);
+                followRedirects,
+                preserveAuthorizationOnRedirect);
     }
 
     @Beta
@@ -179,7 +190,8 @@ public final class Request
                     .setMethod(request.getMethod())
                     .addHeaders(request.getHeaders())
                     .setBodyGenerator(request.getBodyGenerator())
-                    .setFollowRedirects(request.isFollowRedirects());
+                    .setFollowRedirects(request.isFollowRedirects())
+                    .setPreserveAuthorizationOnRedirect(request.isPreserveAuthorizationOnRedirect());
         }
 
         private URI uri;
@@ -187,6 +199,7 @@ public final class Request
         private final ListMultimap<String, String> headers = ArrayListMultimap.create();
         private BodyGenerator bodyGenerator;
         private boolean followRedirects = true;
+        private boolean preserveAuthorizationOnRedirect;
 
         public Builder setUri(URI uri)
         {
@@ -231,6 +244,12 @@ public final class Request
             return this;
         }
 
+        public Builder setPreserveAuthorizationOnRedirect(boolean preserveAuthorizationOnRedirect)
+        {
+            this.preserveAuthorizationOnRedirect = preserveAuthorizationOnRedirect;
+            return this;
+        }
+
         public Request build()
         {
             return new Request(
@@ -238,7 +257,8 @@ public final class Request
                     method,
                     headers,
                     bodyGenerator,
-                    followRedirects);
+                    followRedirects,
+                    preserveAuthorizationOnRedirect);
         }
     }
 

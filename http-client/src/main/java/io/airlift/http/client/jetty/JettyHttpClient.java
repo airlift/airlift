@@ -76,6 +76,7 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static io.airlift.http.client.jetty.AuthorizationPreservingHttpClient.setPreserveAuthorization;
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
@@ -193,7 +194,7 @@ public class JettyHttpClient
             transport = new HttpClientTransportOverHTTP(config.getSelectorCount());
         }
 
-        httpClient = new HttpClient(transport, sslContextFactory);
+        httpClient = new AuthorizationPreservingHttpClient(transport, sslContextFactory);
 
         // Kerberos authentication
         if (config.getAuthenticationEnabled()) {
@@ -617,6 +618,8 @@ public class JettyHttpClient
         }
 
         jettyRequest.followRedirects(finalRequest.isFollowRedirects());
+
+        setPreserveAuthorization(jettyRequest, finalRequest.isPreserveAuthorizationOnRedirect());
 
         // timeouts
         jettyRequest.timeout(requestTimeoutMillis, MILLISECONDS);
