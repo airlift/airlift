@@ -13,6 +13,8 @@
  */
 package io.airlift.security.pem;
 
+import com.google.common.collect.ImmutableSet;
+
 import javax.crypto.Cipher;
 import javax.crypto.EncryptedPrivateKeyInfo;
 import javax.crypto.SecretKey;
@@ -39,6 +41,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -170,22 +173,16 @@ public final class PemReader
 
         // this code requires a key in PKCS8 format which is not the default openssl format
         // to convert to the PKCS8 format you use : openssl pkcs8 -topk8 ...
-        try {
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            return keyFactory.generatePrivate(encodedKeySpec);
+        Set<String> algorithms = ImmutableSet.of("RSA", "EC", "DSA");
+        for (String algorithm : algorithms) {
+            try {
+                KeyFactory keyFactory = KeyFactory.getInstance(algorithm);
+                return keyFactory.generatePrivate(encodedKeySpec);
+            }
+            catch (InvalidKeySpecException ignore) {
+            }
         }
-        catch (InvalidKeySpecException ignore) {
-        }
-
-        try {
-            KeyFactory keyFactory = KeyFactory.getInstance("EC");
-            return keyFactory.generatePrivate(encodedKeySpec);
-        }
-        catch (InvalidKeySpecException ignore) {
-        }
-
-        KeyFactory keyFactory = KeyFactory.getInstance("DSA");
-        return keyFactory.generatePrivate(encodedKeySpec);
+        throw new InvalidKeySpecException("Key type must be one of " + algorithms);
     }
 
     public static PublicKey loadPublicKey(File publicKeyFile)
@@ -206,22 +203,17 @@ public final class PemReader
         byte[] encodedKey = base64Decode(data);
 
         X509EncodedKeySpec encodedKeySpec = new X509EncodedKeySpec(encodedKey);
-        try {
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            return keyFactory.generatePublic(encodedKeySpec);
-        }
-        catch (InvalidKeySpecException ignore) {
-        }
 
-        try {
-            KeyFactory keyFactory = KeyFactory.getInstance("EC");
-            return keyFactory.generatePublic(encodedKeySpec);
+        Set<String> algorithms = ImmutableSet.of("RSA", "EC", "DSA");
+        for (String algorithm : algorithms) {
+            try {
+                KeyFactory keyFactory = KeyFactory.getInstance(algorithm);
+                return keyFactory.generatePublic(encodedKeySpec);
+            }
+            catch (InvalidKeySpecException ignore) {
+            }
         }
-        catch (InvalidKeySpecException ignore) {
-        }
-
-        KeyFactory keyFactory = KeyFactory.getInstance("DSA");
-        return keyFactory.generatePublic(encodedKeySpec);
+        throw new InvalidKeySpecException("Key type must be one of " + algorithms);
     }
 
     private static byte[] base64Decode(String base64)

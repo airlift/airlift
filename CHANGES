@@ -4,6 +4,7 @@
 - Fix HTTP client to preserve User-Agent when following redirects.
 - Make following redirects configurable for HTTP client.
 - Allow HTTP client to preserve Authorization when following redirects.
+- Improve error message for unsupported key types in PEM reader.
 
 0.170
 
