@@ -90,7 +90,7 @@ public class JettyHttpClient
         JettyLogging.setup();
     }
 
-    private static final String PRESTO_STATS_KEY = "presto_stats";
+    private static final String STATS_KEY = "airlift_stats";
     private static final long SWEEP_PERIOD_MILLIS = 5000;
 
     private static final AtomicLong NAME_COUNTER = new AtomicLong();
@@ -593,7 +593,7 @@ public class JettyHttpClient
             }
         });
 
-        jettyRequest.attribute(PRESTO_STATS_KEY, listener);
+        jettyRequest.attribute(STATS_KEY, listener);
 
         jettyRequest.method(finalRequest.getMethod());
 
@@ -792,7 +792,7 @@ public class JettyHttpClient
     static List<JettyRequestListener> getRequestListenersForDestination(Destination destination)
     {
         return getRequestForDestination(destination).stream()
-                .map(request -> request.getAttributes().get(PRESTO_STATS_KEY))
+                .map(request -> request.getAttributes().get(STATS_KEY))
                 .map(JettyRequestListener.class::cast)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
