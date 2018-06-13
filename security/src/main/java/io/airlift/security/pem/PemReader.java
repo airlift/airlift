@@ -31,10 +31,16 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.Signature;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.DSAKey;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
@@ -70,6 +76,9 @@ public final class PemReader
                     "([a-z0-9+/=\\r\\n]+)" +                      // Base64 text
                     "-+END\\s+.*PUBLIC\\s+KEY[^-]*-+",            // Footer
             CASE_INSENSITIVE);
+
+    private static final byte[] TEST_SIGNATURE_DATA = "TEST_SIGNATURE_DATA".getBytes(US_ASCII);
+    private static final Set<String> SUPPORTED_KEY_TYPES = ImmutableSet.of("RSA", "EC", "DSA");
 
     private PemReader() {}
 
@@ -112,7 +121,25 @@ public final class PemReader
 
         KeyStore keyStore = KeyStore.getInstance("JKS");
         keyStore.load(null, null);
-        keyStore.setKeyEntry("key", key, new char[0], certificateChain.toArray(new Certificate[0]));
+
+        // ensure there is a certificate that matches the private key
+        Certificate[] certificates = certificateChain.toArray(new Certificate[0]);
+        boolean foundMatchingCertificate = false;
+        for (int i = 0; i < certificates.length; i++) {
+            Certificate certificate = certificates[i];
+            if (matches(key, certificate)) {
+                foundMatchingCertificate = true;
+                // certificate for private key must be in index zero
+                certificates[i] = certificates[0];
+                certificates[0] = certificate;
+                break;
+            }
+        }
+        if (!foundMatchingCertificate) {
+            throw new KeyStoreException("Private key does not match the public key of any certificate");
+        }
+
+        keyStore.setKeyEntry("key", key, new char[0], certificates);
         return keyStore;
     }
 
@@ -204,8 +231,7 @@ public final class PemReader
 
         X509EncodedKeySpec encodedKeySpec = new X509EncodedKeySpec(encodedKey);
 
-        Set<String> algorithms = ImmutableSet.of("RSA", "EC", "DSA");
-        for (String algorithm : algorithms) {
+        for (String algorithm : SUPPORTED_KEY_TYPES) {
             try {
                 KeyFactory keyFactory = KeyFactory.getInstance(algorithm);
                 return keyFactory.generatePublic(encodedKeySpec);
@@ -213,7 +239,42 @@ public final class PemReader
             catch (InvalidKeySpecException ignore) {
             }
         }
-        throw new InvalidKeySpecException("Key type must be one of " + algorithms);
+        throw new InvalidKeySpecException("Key type must be one of " + SUPPORTED_KEY_TYPES);
+    }
+
+    private static boolean matches(PrivateKey privateKey, Certificate certificate)
+    {
+        try {
+            PublicKey publicKey = certificate.getPublicKey();
+
+            Signature signer = createSignature(privateKey, publicKey);
+
+            signer.initSign(privateKey);
+            signer.update(TEST_SIGNATURE_DATA);
+            byte[] signature = signer.sign();
+
+            signer.initVerify(publicKey);
+            signer.update(TEST_SIGNATURE_DATA);
+            return signer.verify(signature);
+        }
+        catch (GeneralSecurityException ignored) {
+            return false;
+        }
+    }
+
+    private static Signature createSignature(PrivateKey privateKey, PublicKey publicKey)
+            throws GeneralSecurityException
+    {
+        if (privateKey instanceof RSAPrivateKey && publicKey instanceof RSAPublicKey) {
+            return Signature.getInstance("SHA1withRSA");
+        }
+        if (privateKey instanceof ECPrivateKey && publicKey instanceof ECPublicKey) {
+            return Signature.getInstance("SHA1withECDSA");
+        }
+        if (privateKey instanceof DSAKey && publicKey instanceof DSAKey) {
+            return Signature.getInstance("SHA1withDSA");
+        }
+        throw new InvalidKeySpecException("Key type must be one of " + SUPPORTED_KEY_TYPES);
     }
 
     private static byte[] base64Decode(String base64)
