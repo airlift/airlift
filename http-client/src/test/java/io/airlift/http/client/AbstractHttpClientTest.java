@@ -61,6 +61,7 @@ import static com.google.common.net.HttpHeaders.ACCEPT_ENCODING;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static com.google.common.net.HttpHeaders.LOCATION;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static io.airlift.concurrent.Threads.threadsNamed;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
@@ -677,6 +678,30 @@ public abstract class AbstractHttpClientTest
         assertThat(servlet.getRequestHeaders("X-Test")).containsExactly("xtest1", "xtest2");
         assertThat(servlet.getRequestHeaders(USER_AGENT)).containsExactly("testagent");
         assertThat(servlet.getRequestHeaders(AUTHORIZATION)).isEmpty();
+    }
+
+    @Test
+    public void testFollowRedirects()
+            throws Exception
+    {
+        Request request = prepareGet()
+                .setUri(URI.create(baseURI.toASCIIString() + "/test?redirect=/redirect"))
+                .build();
+
+        StatusResponse response = executeRequest(request, createStatusResponseHandler());
+        assertEquals(response.getStatusCode(), 200);
+        assertNull(response.getHeader(LOCATION));
+        assertEquals(servlet.getRequestUri(), URI.create(baseURI.toASCIIString() + "/redirect"));
+
+
+        request = Request.Builder.fromRequest(request)
+                .setFollowRedirects(false)
+                .build();
+
+        response = executeRequest(request, createStatusResponseHandler());
+        assertEquals(response.getStatusCode(), 302);
+        assertEquals(response.getHeader(LOCATION), baseURI.toASCIIString() + "/redirect");
+        assertEquals(servlet.getRequestUri(), request.getUri());
     }
 
     @Test(expectedExceptions = UnexpectedResponseException.class)

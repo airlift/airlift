@@ -616,6 +616,8 @@ public class JettyHttpClient
             }
         }
 
+        jettyRequest.followRedirects(finalRequest.isFollowRedirects());
+
         // timeouts
         jettyRequest.timeout(requestTimeoutMillis, MILLISECONDS);
         jettyRequest.idleTimeout(idleTimeoutMillis, MILLISECONDS);

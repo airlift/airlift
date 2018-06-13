@@ -30,14 +30,29 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
 @Beta
-public class Request
+public final class Request
 {
     private final URI uri;
     private final String method;
     private final ListMultimap<String, String> headers;
     private final BodyGenerator bodyGenerator;
+    private final boolean followRedirects;
 
+    /**
+     * @deprecated Use {@link #builder()} to construct this.
+     */
+    @Deprecated
     public Request(URI uri, String method, ListMultimap<String, String> headers, BodyGenerator bodyGenerator)
+    {
+        this(uri, method, headers, bodyGenerator, true);
+    }
+
+    private Request(
+            URI uri,
+            String method,
+            ListMultimap<String, String> headers,
+            BodyGenerator bodyGenerator,
+            boolean followRedirects)
     {
         requireNonNull(uri, "uri is null");
         checkArgument(uri.getHost() != null, "uri does not have a host: %s", uri);
@@ -50,6 +65,7 @@ public class Request
         this.method = method;
         this.headers = ImmutableListMultimap.copyOf(headers);
         this.bodyGenerator = bodyGenerator;
+        this.followRedirects = followRedirects;
     }
 
     public static Request.Builder builder()
@@ -86,6 +102,11 @@ public class Request
         return bodyGenerator;
     }
 
+    public boolean isFollowRedirects()
+    {
+        return followRedirects;
+    }
+
     @Override
     public String toString()
     {
@@ -94,6 +115,7 @@ public class Request
                 .add("method", method)
                 .add("headers", headers)
                 .add("bodyGenerator", bodyGenerator)
+                .add("followRedirects", followRedirects)
                 .toString();
     }
 
@@ -107,17 +129,23 @@ public class Request
         return Objects.equals(uri, r.uri) &&
                 Objects.equals(method, r.method) &&
                 Objects.equals(headers, r.headers) &&
-                Objects.equals(bodyGenerator, r.bodyGenerator);
+                Objects.equals(bodyGenerator, r.bodyGenerator) &&
+                Objects.equals(followRedirects, r.followRedirects);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(uri, method, headers, bodyGenerator);
+        return Objects.hash(
+                uri,
+                method,
+                headers,
+                bodyGenerator,
+                followRedirects);
     }
 
     @Beta
-    public static class Builder
+    public static final class Builder
     {
         public static Builder prepareHead()
         {
@@ -150,13 +178,15 @@ public class Request
                     .setUri(request.getUri())
                     .setMethod(request.getMethod())
                     .addHeaders(request.getHeaders())
-                    .setBodyGenerator(request.getBodyGenerator());
+                    .setBodyGenerator(request.getBodyGenerator())
+                    .setFollowRedirects(request.isFollowRedirects());
         }
 
         private URI uri;
         private String method;
         private final ListMultimap<String, String> headers = ArrayListMultimap.create();
         private BodyGenerator bodyGenerator;
+        private boolean followRedirects = true;
 
         public Builder setUri(URI uri)
         {
@@ -195,9 +225,20 @@ public class Request
             return this;
         }
 
+        public Builder setFollowRedirects(boolean followRedirects)
+        {
+            this.followRedirects = followRedirects;
+            return this;
+        }
+
         public Request build()
         {
-            return new Request(uri, method, headers, bodyGenerator);
+            return new Request(
+                    uri,
+                    method,
+                    headers,
+                    bodyGenerator,
+                    followRedirects);
         }
     }
 

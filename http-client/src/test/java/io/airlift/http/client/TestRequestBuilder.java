@@ -24,6 +24,7 @@ import static io.airlift.http.client.Request.Builder.fromRequest;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 
 public class TestRequestBuilder
 {
@@ -38,6 +39,7 @@ public class TestRequestBuilder
         assertEquals(request.getUri(), URI.create("http://example.com"));
         assertEquals(request.getHeaders(), ImmutableListMultimap.of(
                 "newheader", "withvalue", "anotherheader", "anothervalue"));
+        assertFalse(request.isFollowRedirects());
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Cannot make requests to HTTP port 0")
@@ -61,6 +63,7 @@ public class TestRequestBuilder
                 .addHeader("newheader", "withvalue")
                 .addHeader("anotherheader", "anothervalue")
                 .setBodyGenerator(NULL_BODY_GENERATOR)
+                .setFollowRedirects(false)
                 .build();
     }
 }
