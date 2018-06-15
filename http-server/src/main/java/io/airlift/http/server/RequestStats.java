@@ -41,7 +41,7 @@ public class RequestStats
         writtenBytes = new DistributionStat();
     }
 
-    public void record(String method, int responseCode, long requestSizeInBytes, long responseSizeInBytes, Duration schedulingDelay, Duration requestProcessingTime)
+    public void record(long requestSizeInBytes, long responseSizeInBytes, Duration requestProcessingTime)
     {
         request.update(1);
         requestTime.add(requestProcessingTime);
