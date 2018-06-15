@@ -38,11 +38,6 @@ public class StatsRecordingHandler
     public void log(Request request, Response response)
     {
         Duration requestTime = new Duration(max(0, System.currentTimeMillis() - request.getTimeStamp()), TimeUnit.MILLISECONDS);
-
-        long dispatchTime = request.getTimeStamp();
-
-        Duration schedulingDelay = new Duration(max(0, dispatchTime - request.getTimeStamp()), TimeUnit.MILLISECONDS);
-
-        stats.record(request.getMethod(), response.getStatus(), request.getContentRead(), response.getContentCount(), schedulingDelay, requestTime);
+        stats.record(request.getContentRead(), response.getContentCount(), requestTime);
     }
 }
