@@ -23,9 +23,9 @@ import java.util.Objects;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.io.BaseEncoding.base16;
-import static io.airlift.security.csr.DerEncoder.encodeBitString;
-import static io.airlift.security.csr.DerEncoder.encodeSequence;
 import static io.airlift.security.csr.SignatureAlgorithmIdentifier.findSignatureAlgorithmIdentifier;
+import static io.airlift.security.der.DerEncoder.encodeBitString;
+import static io.airlift.security.der.DerEncoder.encodeSequence;
 import static java.util.Base64.getMimeEncoder;
 import static java.util.Objects.requireNonNull;
 

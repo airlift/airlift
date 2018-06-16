@@ -19,9 +19,11 @@ import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.security.Key;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
@@ -29,16 +31,23 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.regex.Matcher;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
+import static com.google.common.io.Files.asCharSource;
+import static io.airlift.security.pem.PemReader.PRIVATE_KEY_PATTERN;
+import static io.airlift.security.pem.PemReader.dsaPkcs1ToPkcs8;
+import static io.airlift.security.pem.PemReader.ecPkcs1ToPkcs8;
 import static io.airlift.security.pem.PemReader.loadKeyStore;
 import static io.airlift.security.pem.PemReader.loadPrivateKey;
 import static io.airlift.security.pem.PemReader.loadPublicKey;
 import static io.airlift.security.pem.PemReader.loadTrustStore;
 import static io.airlift.security.pem.PemReader.readCertificateChain;
+import static io.airlift.security.pem.PemReader.rsaPkcs1ToPkcs8;
 import static io.airlift.security.pem.PemWriter.writeCertificate;
 import static io.airlift.security.pem.PemWriter.writePrivateKey;
 import static io.airlift.security.pem.PemWriter.writePublicKey;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -66,6 +75,14 @@ public class TestPemReader
         testLoadKeyStore("rsa.client.pkcs8.pem.encrypted", "rsa.client.pkcs8.pem.encrypted", KEY_PASSWORD, CLIENT_NAME);
         testLoadKeyStore("dsa.client.pkcs8.pem.encrypted", "dsa.client.pkcs8.pem.encrypted", KEY_PASSWORD, CLIENT_NAME);
         testLoadKeyStore("ec.client.pkcs8.pem.encrypted", "ec.client.pkcs8.pem.encrypted", KEY_PASSWORD, CLIENT_NAME);
+
+        testLoadKeyStore("rsa.client.crt", "rsa.client.pkcs1.key", NO_PASSWORD, CLIENT_NAME);
+        testLoadKeyStore("ec.client.crt", "ec.client.pkcs1.key", NO_PASSWORD, CLIENT_NAME);
+        testLoadKeyStore("dsa.client.crt", "dsa.client.pkcs1.key", NO_PASSWORD, CLIENT_NAME);
+
+        testLoadKeyStore("rsa.client.pkcs8.pem.encrypted", "rsa.client.pkcs1.pem", NO_PASSWORD, CLIENT_NAME);
+        testLoadKeyStore("dsa.client.pkcs8.pem.encrypted", "dsa.client.pkcs1.pem", NO_PASSWORD, CLIENT_NAME);
+        testLoadKeyStore("ec.client.pkcs8.pem.encrypted", "ec.client.pkcs1.pem", NO_PASSWORD, CLIENT_NAME);
     }
 
     private static void testLoadKeyStore(String certFile, String keyFile, Optional<String> keyPassword, String expectedName)
@@ -113,6 +130,33 @@ public class TestPemReader
         assertEquals(publicKey, loadPublicKey(encodedPrivateKey));
     }
 
+    @Test
+    public void testRsaPkcs1ToPkcs8()
+            throws Exception
+    {
+        byte[] pkcs8 = loadPrivateKeyData("rsa.client.pkcs8.key");
+        byte[] pkcs1 = loadPrivateKeyData("rsa.client.pkcs1.key");
+        assertEquals(rsaPkcs1ToPkcs8(pkcs1), pkcs8);
+    }
+
+    @Test
+    public void testDsaPkcs1ToPkcs8()
+            throws Exception
+    {
+        byte[] pkcs8 = loadPrivateKeyData("dsa.client.pkcs8.key");
+        byte[] pkcs1 = loadPrivateKeyData("dsa.client.pkcs1.key");
+        assertEquals(dsaPkcs1ToPkcs8(pkcs1), pkcs8);
+    }
+
+    @Test
+    public void testEcPkcs1ToPkcs8()
+            throws Exception
+    {
+        byte[] pkcs8 = loadPrivateKeyData("ec.client.pkcs8.key");
+        byte[] pkcs1 = loadPrivateKeyData("ec.client.pkcs1.key");
+        assertEquals(ecPkcs1ToPkcs8(pkcs1), pkcs8);
+    }
+
     private static void assertCertificateChain(KeyStore keyStore, String expectedName)
             throws Exception
     {
@@ -135,6 +179,18 @@ public class TestPemReader
     {
         LdapName ldapName = new LdapName(x509Certificate.getSubjectX500Principal().getName());
         assertEquals(ldapName.toString(), expectedName);
+    }
+
+    private static byte[] loadPrivateKeyData(String keyFile)
+            throws IOException, KeyStoreException
+    {
+        String privateKey = asCharSource(getResourceFile(keyFile), US_ASCII).read();
+        Matcher matcher = PRIVATE_KEY_PATTERN.matcher(privateKey);
+        if (!matcher.find()) {
+            throw new KeyStoreException("did not find a private key");
+        }
+        byte[] data = PemReader.base64Decode(matcher.group(2));
+        return data;
     }
 
     private static File getResourceFile(String name)

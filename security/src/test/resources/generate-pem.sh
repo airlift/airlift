@@ -42,7 +42,12 @@ openssl x509 -req -days 9999 -set_serial 01 -CA rsa.ca.crt -CAkey rsa.ca.key -in
 openssl x509 -req -days 9999 -set_serial 01 -CA dsa.ca.crt -CAkey dsa.ca.key -in dsa.client.csr -out dsa.client.crt
 openssl x509 -req -days 9999 -set_serial 01 -CA ec.ca.crt -CAkey ec.ca.key -in ec.client.csr -out ec.client.crt
 
-# create pem files
+# create pkcs1 pem files
+cat rsa.ca.crt rsa.client.crt rsa.client.pkcs1.key > rsa.client.pkcs1.pem
+cat dsa.ca.crt dsa.client.crt dsa.client.pkcs1.key > dsa.client.pkcs1.pem
+cat ec.ca.crt ec.client.crt ec.client.pkcs1.key > ec.client.pkcs1.pem
+
+# create pkcs8 pem files
 cat rsa.ca.crt rsa.client.crt rsa.client.pkcs8.key.encrypted > rsa.client.pkcs8.pem.encrypted
 cat dsa.ca.crt dsa.client.crt dsa.client.pkcs8.key.encrypted > dsa.client.pkcs8.pem.encrypted
 cat ec.ca.crt ec.client.crt ec.client.pkcs8.key.encrypted > ec.client.pkcs8.pem.encrypted

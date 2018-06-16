@@ -6,6 +6,7 @@
 - Allow HTTP client to preserve Authorization when following redirects.
 - Improve error message for unsupported key types in PemReader.
 - Ensure there is a certificate that matches the private key in PemReader.
+- Add support for PKCS #1 private keys to PemReader.
 
 0.170
 

@@ -22,7 +22,7 @@ import java.security.Signature;
 import java.util.Objects;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static io.airlift.security.csr.DerEncoder.encodeSequence;
+import static io.airlift.security.der.DerEncoder.encodeSequence;
 import static java.util.Objects.requireNonNull;
 
 public class CertificationRequestInfo
