@@ -66,9 +66,9 @@ public final class PemReader
             CASE_INSENSITIVE);
 
     private static final Pattern PRIVATE_KEY_PATTERN = Pattern.compile(
-            "-+BEGIN\\s+.*PRIVATE\\s+KEY[^-]*-+(?:\\s|\\r|\\n)+" + // Header
-                    "([a-z0-9+/=\\r\\n]+)" +                       // Base64 text
-                    "-+END\\s+.*PRIVATE\\s+KEY[^-]*-+",            // Footer
+            "-+BEGIN\\s+(?:(.*)\\s+)?PRIVATE\\s+KEY[^-]*-+(?:\\s|\\r|\\n)+" + // Header
+                    "([a-z0-9+/=\\r\\n]+)" +                                  // Base64 text
+                    "-+END\\s+.*PRIVATE\\s+KEY[^-]*-+",                       // Footer
             CASE_INSENSITIVE);
 
     private static final Pattern PUBLIC_KEY_PATTERN = Pattern.compile(
@@ -181,10 +181,17 @@ public final class PemReader
         if (!matcher.find()) {
             throw new KeyStoreException("did not find a private key");
         }
-        byte[] encodedKey = base64Decode(matcher.group(1));
+        String keyType = matcher.group(1);
+        byte[] encodedKey = base64Decode(matcher.group(2));
 
         PKCS8EncodedKeySpec encodedKeySpec;
-        if (keyPassword.isPresent()) {
+        if (keyType == null) {
+            encodedKeySpec = new PKCS8EncodedKeySpec(encodedKey);
+        }
+        else if ("ENCRYPTED".equals(keyType)) {
+            if (!keyPassword.isPresent()) {
+                throw new KeyStoreException("Private key is encrypted, but no password was provided");
+            }
             EncryptedPrivateKeyInfo encryptedPrivateKeyInfo = new EncryptedPrivateKeyInfo(encodedKey);
             SecretKeyFactory keyFactory = SecretKeyFactory.getInstance(encryptedPrivateKeyInfo.getAlgName());
             SecretKey secretKey = keyFactory.generateSecret(new PBEKeySpec(keyPassword.get().toCharArray()));
@@ -195,7 +202,7 @@ public final class PemReader
             encodedKeySpec = encryptedPrivateKeyInfo.getKeySpec(cipher);
         }
         else {
-            encodedKeySpec = new PKCS8EncodedKeySpec(encodedKey);
+            throw new KeyStoreException("Unsupported private key type: " + keyType);
         }
 
         // this code requires a key in PKCS8 format which is not the default openssl format
