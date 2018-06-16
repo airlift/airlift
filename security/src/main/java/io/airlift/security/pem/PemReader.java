@@ -77,7 +77,8 @@ public final class PemReader
                     "-+END\\s+.*PUBLIC\\s+KEY[^-]*-+",            // Footer
             CASE_INSENSITIVE);
 
-    private static final byte[] TEST_SIGNATURE_DATA = "TEST_SIGNATURE_DATA".getBytes(US_ASCII);
+    // test data must be exactly 20 bytes for DSA
+    private static final byte[] TEST_SIGNATURE_DATA = "01234567890123456789".getBytes(US_ASCII);
     private static final Set<String> SUPPORTED_KEY_TYPES = ImmutableSet.of("RSA", "EC", "DSA");
 
     private PemReader() {}
@@ -273,13 +274,13 @@ public final class PemReader
             throws GeneralSecurityException
     {
         if (privateKey instanceof RSAPrivateKey && publicKey instanceof RSAPublicKey) {
-            return Signature.getInstance("SHA1withRSA");
+            return Signature.getInstance("NONEwithRSA");
         }
         if (privateKey instanceof ECPrivateKey && publicKey instanceof ECPublicKey) {
-            return Signature.getInstance("SHA1withECDSA");
+            return Signature.getInstance("NONEwithECDSA");
         }
         if (privateKey instanceof DSAKey && publicKey instanceof DSAKey) {
-            return Signature.getInstance("SHA1withDSA");
+            return Signature.getInstance("NONEwithDSA");
         }
         throw new InvalidKeySpecException("Key type must be one of " + SUPPORTED_KEY_TYPES);
     }
