@@ -17,7 +17,6 @@ import org.testng.annotations.Test;
 
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
-import javax.naming.ldap.Rdn;
 
 import java.io.File;
 import java.net.URL;
@@ -46,20 +45,34 @@ import static org.testng.Assert.assertTrue;
 
 public class TestPemReader
 {
+    private static final String CA_NAME = "OU=RootCA,O=Airlift,L=Palo Alto,ST=CA,C=US";
+    private static final String CLIENT_NAME = "CN=Test User,OU=Server,O=Airlift,L=Palo Alto,ST=CA,C=US";
+
+    private static final Optional<String> NO_PASSWORD = Optional.empty();
+    private static final Optional<String> KEY_PASSWORD = Optional.of("airlift");
+
     @Test
     public void testLoadKeyStore()
             throws Exception
     {
-        testLoadKeyStore("rsa.crt", "rsa.key");
-        testLoadKeyStore("ec.crt", "ec.key");
-        testLoadKeyStore("dsa.crt", "dsa.key");
+        testLoadKeyStore("rsa.client.crt", "rsa.client.pkcs8.key", NO_PASSWORD, CLIENT_NAME);
+        testLoadKeyStore("ec.client.crt", "ec.client.pkcs8.key", NO_PASSWORD, CLIENT_NAME);
+        testLoadKeyStore("dsa.client.crt", "dsa.client.pkcs8.key", NO_PASSWORD, CLIENT_NAME);
+
+        testLoadKeyStore("rsa.client.crt", "rsa.client.pkcs8.key.encrypted", KEY_PASSWORD, CLIENT_NAME);
+        testLoadKeyStore("ec.client.crt", "ec.client.pkcs8.key.encrypted", KEY_PASSWORD, CLIENT_NAME);
+        testLoadKeyStore("dsa.client.crt", "dsa.client.pkcs8.key.encrypted", KEY_PASSWORD, CLIENT_NAME);
+
+        testLoadKeyStore("rsa.client.pkcs8.pem.encrypted", "rsa.client.pkcs8.pem.encrypted", KEY_PASSWORD, CLIENT_NAME);
+        testLoadKeyStore("dsa.client.pkcs8.pem.encrypted", "dsa.client.pkcs8.pem.encrypted", KEY_PASSWORD, CLIENT_NAME);
+        testLoadKeyStore("ec.client.pkcs8.pem.encrypted", "ec.client.pkcs8.pem.encrypted", KEY_PASSWORD, CLIENT_NAME);
     }
 
-    private static void testLoadKeyStore(String certFile, String keyFile)
+    private static void testLoadKeyStore(String certFile, String keyFile, Optional<String> keyPassword, String expectedName)
             throws Exception
     {
-        KeyStore keyStore = loadKeyStore(getResourceFile(certFile), getResourceFile(keyFile), Optional.empty());
-        assertCertificateChain(keyStore);
+        KeyStore keyStore = loadKeyStore(getResourceFile(certFile), getResourceFile(keyFile), keyPassword);
+        assertCertificateChain(keyStore, expectedName);
         assertNotNull(keyStore.getCertificate("key"));
 
         Key key = keyStore.getKey("key", new char[0]);
@@ -74,18 +87,18 @@ public class TestPemReader
     public void testLoadTrustStore()
             throws Exception
     {
-        assertCertificateChain(loadTrustStore(getResourceFile("rsa.crt")));
-        assertCertificateChain(loadTrustStore(getResourceFile("ec.crt")));
-        assertCertificateChain(loadTrustStore(getResourceFile("dsa.crt")));
+        assertCertificateChain(loadTrustStore(getResourceFile("rsa.ca.crt")), CA_NAME);
+        assertCertificateChain(loadTrustStore(getResourceFile("ec.ca.crt")), CA_NAME);
+        assertCertificateChain(loadTrustStore(getResourceFile("dsa.ca.crt")), CA_NAME);
     }
 
     @Test
     public void testLoadPublicKey()
             throws Exception
     {
-        testLoadPublicKey("rsa.crt", "rsa.pub");
-        testLoadPublicKey("ec.crt", "ec.pub");
-        testLoadPublicKey("dsa.crt", "dsa.pub");
+        testLoadPublicKey("rsa.client.crt", "rsa.client.pkcs8.pub");
+        testLoadPublicKey("ec.client.crt", "ec.client.pkcs8.pub");
+        testLoadPublicKey("dsa.client.crt", "dsa.client.pkcs8.pub");
     }
 
     private static void testLoadPublicKey(String certFile, String keyFile)
@@ -100,7 +113,7 @@ public class TestPemReader
         assertEquals(publicKey, loadPublicKey(encodedPrivateKey));
     }
 
-    private static void assertCertificateChain(KeyStore keyStore)
+    private static void assertCertificateChain(KeyStore keyStore, String expectedName)
             throws Exception
     {
         ArrayList<String> aliases = Collections.list(keyStore.aliases());
@@ -111,23 +124,17 @@ public class TestPemReader
         assertTrue(certificate instanceof X509Certificate);
         X509Certificate x509Certificate = (X509Certificate) certificate;
 
-        assertX509Certificate(x509Certificate);
+        assertX509Certificate(x509Certificate, expectedName);
 
         X509Certificate certificateCopy = getOnlyElement(readCertificateChain(writeCertificate(x509Certificate)));
-        assertX509Certificate(certificateCopy);
+        assertX509Certificate(certificateCopy, expectedName);
     }
 
-    private static void assertX509Certificate(X509Certificate x509Certificate)
+    private static void assertX509Certificate(X509Certificate x509Certificate, String expectedName)
             throws InvalidNameException
     {
         LdapName ldapName = new LdapName(x509Certificate.getSubjectX500Principal().getName());
-        String cn = ldapName.getRdns().stream()
-                .filter(rdn -> rdn.getType().equals("CN"))
-                .map(Rdn::getValue)
-                .findFirst()
-                .map(String.class::cast)
-                .orElseThrow(() -> new AssertionError("Certificate subject name does not contain a CN"));
-        assertEquals(cn, "Test User");
+        assertEquals(ldapName.toString(), expectedName);
     }
 
     private static File getResourceFile(String name)
