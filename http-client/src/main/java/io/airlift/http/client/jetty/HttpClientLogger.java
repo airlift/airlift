@@ -118,7 +118,7 @@ public interface HttpClientLogger
         {
             requireNonNull(response, "response is null");
             requireNonNull(failureCause, "failureCause is null");
-            return new ResponseInfo(response, 0L, 0L, 0L, failureCause);
+            return new ResponseInfo(response, 0L, 0L, System.nanoTime(), failureCause);
         }
 
         public static ResponseInfo failed(Optional<Response> response, Optional<Throwable> failureCause, long responseBeginTimestamp, long responseCompleteTimestamp)

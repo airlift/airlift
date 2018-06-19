@@ -62,6 +62,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.jetty.http.HttpVersion.HTTP_1_1;
 import static org.eclipse.jetty.http.HttpVersion.HTTP_2;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
 
 @Test(singleThreaded = true)
 public class TestHttpClientLogger
@@ -173,7 +174,7 @@ public class TestHttpClientLogger
         assertEquals(columns[3], uri.toString());
         assertEquals(columns[4], getFailureReason(responseInfo).get());
         assertEquals(columns[5], Integer.toString(NO_RESPONSE));
-        assertEquals(columns[6], Long.toString(0));
+        assertNotEquals(columns[6], Long.toString(0));
         assertEquals(columns[7], Long.toString(0));
         assertEquals(columns[8], Long.toString(0));
         assertEquals(columns[9], Long.toString(0));
