@@ -31,7 +31,7 @@ import java.util.Objects;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static io.airlift.security.der.DerEncoder.encodeLength;
+import static io.airlift.security.der.DerUtils.encodeLength;
 import static java.util.Objects.requireNonNull;
 
 public final class SignatureAlgorithmIdentifier

@@ -28,16 +28,17 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Objects.requireNonNull;
 
 /**
- * ASN.1 DER encoder methods necessary to write a certificate request.
+ * ASN.1 DER encoder methods necessary to process PEM files and to write a certificate signing request.
+ * NOTE: this API is only present for the two mentioned use cases, and is subject to change without warning.
  */
-public final class DerEncoder
+public final class DerUtils
 {
     private static final int SEQUENCE_TAG = 0x30;
     private static final int BIT_STRING_TAG = 0x03;
     private static final int OCTET_STRING_TAG = 0x04;
     private static final int OBJECT_IDENTIFIER_TAG = 0x06;
 
-    private DerEncoder() {}
+    private DerUtils() {}
 
     /**
      * Encodes a sequence of encoded values.
@@ -60,7 +61,7 @@ public final class DerEncoder
     }
 
     /**
-     * Encodes a sequence of encoded values.
+     * Decodes a sequence of encoded values.
      */
     public static List<byte[]> decodeSequence(byte[] sequence)
     {
@@ -95,7 +96,7 @@ public final class DerEncoder
     }
 
     /**
-     * Encodes a optional element of a sequence.
+     * Decodes a optional element of a sequence.
      */
     public static byte[] decodeSequenceOptionalElement(byte[] element)
     {
