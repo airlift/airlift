@@ -20,6 +20,7 @@ import com.google.common.io.ByteStreams;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -220,7 +221,7 @@ public final class DerUtils
         }
         catch (IOException e) {
             // this won't happen with byte array output streams
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
 
