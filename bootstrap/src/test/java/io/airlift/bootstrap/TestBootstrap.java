@@ -17,10 +17,12 @@ package io.airlift.bootstrap;
 
 import com.google.inject.Binder;
 import com.google.inject.ConfigurationException;
+import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.ProvisionException;
 import org.testng.annotations.Test;
 
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
 import static io.airlift.testing.Assertions.assertContains;
@@ -65,6 +67,29 @@ public class TestBootstrap
         }
     }
 
+    @Test
+    public void testInitializerBeforeStart()
+            throws Exception
+    {
+        Bootstrap bootstrap = new Bootstrap(new Module()
+        {
+            @Override
+            public void configure(Binder binder)
+            {
+                binder.bind(InstanceC.class);
+                binder.bind(InstanceD.class);
+            }
+        });
+
+        Injector injector = bootstrap.addInitializerBeforeStart(
+                inj -> inj.getInstance(InstanceC.class).init()
+        ).initialize();
+        InstanceC instanceC = injector.getInstance(InstanceC.class);
+        InstanceD instanceD = injector.getInstance(InstanceD.class);
+
+        Assertions.assertLessThan(instanceC.creationTime, instanceD.creationTime);
+    }
+
     public static class Instance {}
 
     public static class InstanceA
@@ -77,5 +102,32 @@ public class TestBootstrap
     {
         @Inject
         public InstanceB(InstanceA a) {}
+    }
+
+    public static class InstanceC
+    {
+        public long creationTime;
+
+        @Inject
+        public InstanceC() { }
+
+        public void init()
+        {
+            creationTime = System.nanoTime();
+        }
+    }
+
+    public static class InstanceD
+    {
+        public long creationTime;
+
+        @Inject
+        public InstanceD() { }
+
+        @PostConstruct
+        public void init()
+        {
+            creationTime = System.nanoTime();
+        }
     }
 }
