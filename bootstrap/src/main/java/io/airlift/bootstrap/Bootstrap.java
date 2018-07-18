@@ -46,8 +46,6 @@ import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import static com.google.common.collect.Maps.fromProperties;
-
 /**
  * Entry point for an application built using the platform codebase.
  * <p>
@@ -164,10 +162,10 @@ public class Bootstrap
 
         Map<String, String> requiredProperties;
         ConfigurationFactory configurationFactory;
+        ConfigurationLoader loader = new ConfigurationLoader();
         if (requiredConfigurationProperties == null) {
             // initialize configuration
             log.info("Loading configuration");
-            ConfigurationLoader loader = new ConfigurationLoader();
 
             requiredProperties = Collections.emptyMap();
             String configFile = System.getProperty("config");
@@ -183,7 +181,7 @@ public class Bootstrap
             properties.putAll(optionalConfigurationProperties);
         }
         properties.putAll(requiredProperties);
-        properties.putAll(fromProperties(System.getProperties()));
+        properties.putAll(loader.getSystemProperties());
         properties = ImmutableSortedMap.copyOf(properties);
 
         configurationFactory = new ConfigurationFactory(properties, log::warn);
