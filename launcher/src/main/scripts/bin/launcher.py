@@ -5,6 +5,7 @@ import os
 import platform
 import sys
 import traceback
+import threading
 
 from fcntl import flock, LOCK_EX, LOCK_NB
 from optparse import OptionParser
@@ -15,7 +16,7 @@ from signal import SIGTERM, SIGKILL
 from stat import S_ISLNK
 from time import sleep
 
-COMMANDS = ['run', 'start', 'stop', 'restart', 'kill', 'status']
+COMMANDS = ['run', 'start', 'start-fg', 'stop', 'restart', 'kill', 'status']
 
 LSB_NOT_RUNNING = 3
 LSB_STATUS_UNKNOWN = 4
@@ -284,6 +285,33 @@ def start(process, options):
 
     os.execvpe(args[0], args, env)
 
+def start_foreground(process, options):
+    if process.alive():
+        print('Already running as %s' % process.read_pid())
+        return
+
+    create_app_symlinks(options)
+    args, env = build_java_execution(options, True)
+
+    makedirs(dirname(options.launcher_log))
+    log = open_append(options.launcher_log)
+
+    makedirs(options.data_dir)
+    os.chdir(options.data_dir)
+
+    thread = threading.Thread(target=run_daemon, args=(args, log, env))
+    thread.daemon = True  # Daemonize thread
+    thread.start()  # Start the execution
+    thread.join()
+
+def run_daemon(args, log, env):
+
+    redirect_stdin_to_devnull()
+    redirect_output(log)
+    os.close(log)
+
+    os.execvpe(args[0], args, env)
+
 
 def terminate(process, signal, message):
     if not process.alive():
@@ -329,6 +357,8 @@ def handle_command(command, options):
         run(process, options)
     elif command == 'start':
         start(process, options)
+    elif command == 'start-fg':
+        start_foreground(process, options)
     elif command == 'stop':
         stop(process)
     elif command == 'restart':
