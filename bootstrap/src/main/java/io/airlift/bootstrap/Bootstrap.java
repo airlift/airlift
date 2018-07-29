@@ -30,7 +30,6 @@ import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationInspector;
 import io.airlift.configuration.ConfigurationInspector.ConfigAttribute;
 import io.airlift.configuration.ConfigurationInspector.ConfigRecord;
-import io.airlift.configuration.ConfigurationLoader;
 import io.airlift.configuration.ConfigurationModule;
 import io.airlift.configuration.ValidationErrorModule;
 import io.airlift.configuration.WarningsMonitor;
@@ -45,6 +44,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
+
+import static io.airlift.configuration.ConfigurationLoader.getSystemProperties;
+import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 
 /**
  * Entry point for an application built using the platform codebase.
@@ -162,7 +164,6 @@ public class Bootstrap
 
         Map<String, String> requiredProperties;
         ConfigurationFactory configurationFactory;
-        ConfigurationLoader loader = new ConfigurationLoader();
         if (requiredConfigurationProperties == null) {
             // initialize configuration
             log.info("Loading configuration");
@@ -170,7 +171,7 @@ public class Bootstrap
             requiredProperties = Collections.emptyMap();
             String configFile = System.getProperty("config");
             if (configFile != null) {
-                requiredProperties = loader.loadPropertiesFrom(configFile);
+                requiredProperties = loadPropertiesFrom(configFile);
             }
         }
         else {
@@ -181,7 +182,7 @@ public class Bootstrap
             properties.putAll(optionalConfigurationProperties);
         }
         properties.putAll(requiredProperties);
-        properties.putAll(loader.getSystemProperties());
+        properties.putAll(getSystemProperties());
         properties = ImmutableSortedMap.copyOf(properties);
 
         configurationFactory = new ConfigurationFactory(properties, log::warn);
