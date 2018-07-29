@@ -27,9 +27,11 @@ import java.util.TreeMap;
 
 import static com.google.common.collect.Maps.fromProperties;
 
-public class ConfigurationLoader
+public final class ConfigurationLoader
 {
-    public Map<String, String> loadProperties()
+    private ConfigurationLoader() {}
+
+    public static Map<String, String> loadProperties()
             throws IOException
     {
         Map<String, String> result = new TreeMap<>();
@@ -50,7 +52,7 @@ public class ConfigurationLoader
      * @return properties
      * @throws IOException errors
      */
-    public Map<String, String> loadPropertiesFrom(String path)
+    public static Map<String, String> loadPropertiesFrom(String path)
             throws IOException
     {
         Properties properties = new Properties();
@@ -61,7 +63,7 @@ public class ConfigurationLoader
         return fromProperties(properties);
     }
 
-    public Map<String, String> getSystemProperties()
+    public static Map<String, String> getSystemProperties()
     {
         return fromProperties(System.getProperties());
     }

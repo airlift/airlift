@@ -28,6 +28,7 @@ import java.util.Map;
 
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
+import static io.airlift.configuration.ConfigurationLoader.loadProperties;
 import static org.testng.Assert.assertEquals;
 
 public class TestConfigurationLoader
@@ -55,8 +56,7 @@ public class TestConfigurationLoader
     {
         System.setProperty("test", "foo");
 
-        ConfigurationLoader loader = new ConfigurationLoader();
-        Map<String, String> properties = loader.loadProperties();
+        Map<String, String> properties = loadProperties();
 
         assertEquals(properties.get("test"), "foo");
 
@@ -78,8 +78,7 @@ public class TestConfigurationLoader
 
         System.setProperty("config", file.getAbsolutePath());
 
-        ConfigurationLoader loader = new ConfigurationLoader();
-        Map<String, String> properties = loader.loadProperties();
+        Map<String, String> properties = loadProperties();
 
         assertEquals(properties.get("test"), "foo");
         assertEquals(properties.get("config"), file.getAbsolutePath());
@@ -104,8 +103,7 @@ public class TestConfigurationLoader
         System.setProperty("config", file.getAbsolutePath());
         System.setProperty("key1", "overridden");
 
-        ConfigurationLoader loader = new ConfigurationLoader();
-        Map<String, String> properties = loader.loadProperties();
+        Map<String, String> properties = loadProperties();
 
         assertEquals(properties.get("config"), file.getAbsolutePath());
         assertEquals(properties.get("key1"), "overridden");
