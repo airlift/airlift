@@ -133,6 +133,6 @@ public class JaxrsTestingHttpProcessor
         if (trace) {
             log.warn("%-8s %s -> OK", request.getMethod(), request.getUri());
         }
-        return new TestingResponse(HttpStatus.OK, responseHeaders.build(), result.readEntity(byte[].class));
+        return new TestingResponse(HttpStatus.fromStatusCode(result.getStatus()), responseHeaders.build(), result.readEntity(byte[].class));
     }
 }

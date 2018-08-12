@@ -28,7 +28,6 @@ public class TestJaxrsTestingHttpProcessor
 
     @Test
     public void test()
-            throws Exception
     {
         Request request = prepareGet()
                 .setUri(URI.create("http://fake.invalid/get-it/get/xyz"))
@@ -42,7 +41,6 @@ public class TestJaxrsTestingHttpProcessor
 
     @Test
     public void testException()
-            throws Exception
     {
         Request request = prepareGet()
                 .setUri(URI.create("http://fake.invalid/get-it/fail/testException"))
@@ -55,6 +53,17 @@ public class TestJaxrsTestingHttpProcessor
         catch (TestingException e) {
             assertEquals(e.getMessage(), "testException");
         }
+    }
+
+    @Test
+    public void testUndefinedResource()
+    {
+        Request request = prepareGet()
+                .setUri(URI.create("http://fake.invalid/unknown"))
+                .build();
+
+        StringResponse response = HTTP_CLIENT.execute(request, createStringResponseHandler());
+        assertEquals(response.getStatusCode(), 404);
     }
 
     @Path("get-it")
