@@ -523,11 +523,6 @@ public class JettyHttpClient
                 recordRequestComplete(stats, request, requestStart, jettyResponse, responseStart);
             }
         }
-        ResponseInfo responseInfo = ResponseInfo.from(Optional.of(response),
-                jettyResponse.getBytesRead(),
-                requestListener.getResponseStarted(),
-                requestListener.getResponseFinished());
-        requestLogger.log(requestInfo, responseInfo);
         return value;
     }
 
