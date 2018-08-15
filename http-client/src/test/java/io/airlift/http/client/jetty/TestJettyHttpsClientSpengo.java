@@ -34,7 +34,7 @@ public class TestJettyHttpsClientSpengo
     }
 
     // TLS connections seem to have some conditions that do not respect timeouts
-    @Test(invocationCount = 10, successPercentage = 50, timeOut = 20_000)
+    @Test(enabled = false, invocationCount = 10, successPercentage = 50, timeOut = 20_000)
     @Override
     public void testConnectTimeout()
             throws Exception
@@ -42,7 +42,7 @@ public class TestJettyHttpsClientSpengo
         super.testConnectTimeout();
     }
 
-    @Test(expectedExceptions = UncheckedIOException.class, expectedExceptionsMessageRegExp = ".* Failed to establish LoginContext for request .*")
+    @Test(enabled = false, expectedExceptions = UncheckedIOException.class, expectedExceptionsMessageRegExp = ".* Failed to establish LoginContext for request .*")
     public void testNegotiateAuthScheme()
             throws Exception
     {
