@@ -79,7 +79,7 @@ public class TestJettyHttpsClient
     }
 
     // TLS connections seem to have some conditions that do not respect timeouts
-    @Test(invocationCount = 10, successPercentage = 50, timeOut = 20_000)
+    @Test(enabled = false, invocationCount = 10, successPercentage = 50, timeOut = 20_000)
     @Override
     public void testConnectTimeout()
             throws Exception
@@ -87,7 +87,7 @@ public class TestJettyHttpsClient
         super.testConnectTimeout();
     }
 
-    @Test(expectedExceptions = {IOException.class})
+    @Test(enabled = false, expectedExceptions = {IOException.class})
     public void testCertHostnameMismatch()
             throws Exception
     {
@@ -100,7 +100,7 @@ public class TestJettyHttpsClient
     }
 
     @Override
-    @Test(expectedExceptions = {IOException.class, IllegalStateException.class})
+    @Test(enabled = false, expectedExceptions = {IOException.class, IllegalStateException.class})
     public void testConnectReadRequestClose()
             throws Exception
     {
@@ -108,7 +108,7 @@ public class TestJettyHttpsClient
     }
 
     @Override
-    @Test(expectedExceptions = {IOException.class, IllegalStateException.class})
+    @Test(enabled = false, expectedExceptions = {IOException.class, IllegalStateException.class})
     public void testConnectNoReadClose()
             throws Exception
     {
@@ -116,7 +116,7 @@ public class TestJettyHttpsClient
     }
 
     @Override
-    @Test(expectedExceptions = {IOException.class, TimeoutException.class, IllegalStateException.class})
+    @Test(enabled = false, expectedExceptions = {IOException.class, TimeoutException.class, IllegalStateException.class})
     public void testConnectReadIncompleteClose()
             throws Exception
     {
