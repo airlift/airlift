@@ -40,6 +40,7 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ConnectionStatistics;
+import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -231,7 +232,7 @@ public class JettyHttpClient
             httpClient.getProxyConfiguration().getProxies().add(new Socks4Proxy(socksProxy.getHost(), socksProxy.getPortOrDefault(1080)));
         }
 
-        httpClient.setByteBufferPool(new MappedByteBufferPool());
+        httpClient.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool()));
         QueuedThreadPool queuedThreadPool = createExecutor(name, config.getMinThreads(), config.getMaxThreads());
         httpClient.setExecutor(queuedThreadPool);
         // add queuedThreadPool as a managed bean to get its state in the client dumps

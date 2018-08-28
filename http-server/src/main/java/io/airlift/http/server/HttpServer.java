@@ -25,7 +25,9 @@ import io.airlift.node.NodeInfo;
 import io.airlift.security.pem.PemReader;
 import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ConnectionStatistics;
+import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -594,7 +596,7 @@ public class HttpServer
             ConnectionFactory... factories)
             throws IOException
     {
-        ServerConnector connector = new ServerConnector(server, executor, null, null, acceptors, selectors, factories);
+        ServerConnector connector = new ServerConnector(server, executor, null, new LeakTrackingByteBufferPool(new ArrayByteBufferPool()), acceptors, selectors, factories);
         connector.open(channel);
         return connector;
     }

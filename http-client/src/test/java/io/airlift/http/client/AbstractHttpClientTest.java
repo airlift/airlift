@@ -204,7 +204,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test(timeOut = 5000)
+    @Test(enabled = false, timeOut = 5000)
     public void testConnectTimeout()
             throws Exception
     {
@@ -232,7 +232,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test(expectedExceptions = ConnectException.class)
+    @Test(enabled = false, expectedExceptions = ConnectException.class)
     public void testConnectionRefused()
             throws Exception
     {
@@ -248,7 +248,7 @@ public abstract class AbstractHttpClientTest
         executeExceptionRequest(config, request);
     }
 
-    @Test
+    @Test(enabled = false)
     public void testConnectionRefusedWithDefaultingResponseExceptionHandler()
             throws Exception
     {
@@ -265,7 +265,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(executeRequest(config, request, new DefaultOnExceptionResponseHandler(expected)), expected);
     }
 
-    @Test(expectedExceptions = {UnknownHostException.class, UnresolvedAddressException.class}, timeOut = 10000)
+    @Test(enabled = false, expectedExceptions = {UnknownHostException.class, UnresolvedAddressException.class}, timeOut = 10000)
     public void testUnresolvableHost()
             throws Exception
     {
@@ -282,7 +282,7 @@ public abstract class AbstractHttpClientTest
         executeExceptionRequest(config, request);
     }
 
-    @Test(expectedExceptions = RuntimeException.class, expectedExceptionsMessageRegExp = ".*port out of range.*")
+    @Test(enabled = false, expectedExceptions = RuntimeException.class, expectedExceptionsMessageRegExp = ".*port out of range.*")
     public void testBadPort()
             throws Exception
     {
@@ -296,7 +296,7 @@ public abstract class AbstractHttpClientTest
         executeExceptionRequest(config, request);
     }
 
-    @Test
+    @Test(enabled = false)
     public void testDeleteMethod()
             throws Exception
     {
@@ -317,7 +317,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(servlet.getRequestHeaders("x-custom-filter"), ImmutableList.of("custom value"));
     }
 
-    @Test
+    @Test(enabled = false)
     public void testErrorResponseBody()
             throws Exception
     {
@@ -333,7 +333,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(response.getBody(), "body text");
     }
 
-    @Test
+    @Test(enabled = false)
     public void testGetMethod()
             throws Exception
     {
@@ -360,7 +360,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(servlet.getRequestHeaders("x-custom-filter"), ImmutableList.of("custom value"));
     }
 
-    @Test
+    @Test(enabled = false)
     public void testResponseHeadersCaseInsensitive()
             throws Exception
     {
@@ -378,7 +378,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(response.getHeaders("DATE").size(), 1);
     }
 
-    @Test
+    @Test(enabled = false)
     public void testQuotedSpace()
             throws Exception
     {
@@ -393,7 +393,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(servlet.getRequestUri(), uri);
     }
 
-    @Test
+    @Test(invocationCount = 20)
     public void testKeepAlive()
             throws Exception
     {
@@ -421,7 +421,7 @@ public abstract class AbstractHttpClientTest
         assertBetweenInclusive(port1, 1024, 65535);
     }
 
-    @Test
+    @Test(enabled = false)
     public void testPostMethod()
             throws Exception
     {
@@ -442,7 +442,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(servlet.getRequestHeaders("x-custom-filter"), ImmutableList.of("custom value"));
     }
 
-    @Test
+    @Test(enabled = false)
     public void testPutMethod()
             throws Exception
     {
@@ -463,7 +463,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(servlet.getRequestHeaders("x-custom-filter"), ImmutableList.of("custom value"));
     }
 
-    @Test
+    @Test(enabled = false)
     public void testPutMethodWithStaticBodyGenerator()
             throws Exception
     {
@@ -487,7 +487,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(servlet.getRequestBytes(), body);
     }
 
-    @Test
+    @Test(enabled = false)
     public void testPutMethodWithDynamicBodyGenerator()
             throws Exception
     {
@@ -513,7 +513,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(servlet.getRequestBytes(), new byte[] {1, 2, 5});
     }
 
-    @Test
+    @Test(enabled = false)
     public void testPutMethodWithFileBodyGenerator()
             throws Exception
     {
@@ -539,7 +539,7 @@ public abstract class AbstractHttpClientTest
         assertTrue(testFile.delete());
     }
 
-    @Test(expectedExceptions = {IOException.class, TimeoutException.class})
+    @Test(enabled = false, expectedExceptions = {IOException.class, TimeoutException.class})
     public void testReadTimeout()
             throws Exception
     {
@@ -554,7 +554,7 @@ public abstract class AbstractHttpClientTest
         executeRequest(config, request, new ExceptionResponseHandler());
     }
 
-    @Test
+    @Test(enabled = false)
     public void testResponseBody()
             throws Exception
     {
@@ -569,7 +569,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(response.getBody(), "body text");
     }
 
-    @Test
+    @Test(enabled = false)
     public void testResponseBodyEmpty()
             throws Exception
     {
@@ -581,7 +581,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(body, "");
     }
 
-    @Test
+    @Test(enabled = false)
     public void testResponseHeader()
             throws Exception
     {
@@ -599,7 +599,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(response.getHeaders("dupe"), ImmutableList.of("first", "second"));
     }
 
-    @Test
+    @Test(enabled = false)
     public void testResponseStatusCode()
             throws Exception
     {
@@ -612,7 +612,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(statusCode, 543);
     }
 
-    @Test
+    @Test(enabled = false)
     public void testResponseStatusMessage()
             throws Exception
     {
@@ -633,7 +633,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test
+    @Test(enabled = false)
     public void testRequestHeaders()
             throws Exception
     {
@@ -656,7 +656,7 @@ public abstract class AbstractHttpClientTest
         assertThat(servlet.getRequestHeaders(AUTHORIZATION)).containsExactly(basic, bearer);
     }
 
-    @Test
+    @Test(enabled = false)
     public void testRedirectRequestHeaders()
             throws Exception
     {
@@ -691,7 +691,7 @@ public abstract class AbstractHttpClientTest
         assertThat(servlet.getRequestHeaders(AUTHORIZATION)).containsExactly(basic, bearer);
     }
 
-    @Test
+    @Test(enabled = false)
     public void testFollowRedirects()
             throws Exception
     {
@@ -714,7 +714,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(servlet.getRequestUri(), request.getUri());
     }
 
-    @Test(expectedExceptions = UnexpectedResponseException.class)
+    @Test(enabled = false, expectedExceptions = UnexpectedResponseException.class)
     public void testThrowsUnexpectedResponseException()
             throws Exception
     {
@@ -726,7 +726,7 @@ public abstract class AbstractHttpClientTest
         executeRequest(request, new UnexpectedResponseStatusCodeHandler(200));
     }
 
-    @Test
+    @Test(enabled = false)
     public void testCompressionIsDisabled()
             throws Exception
     {
@@ -767,7 +767,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test(expectedExceptions = {IOException.class, TimeoutException.class})
+    @Test(enabled = false, expectedExceptions = {IOException.class, TimeoutException.class})
     public void testConnectNoRead()
             throws Exception
     {
@@ -780,7 +780,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test(expectedExceptions = IOException.class)
+    @Test(enabled = false, expectedExceptions = IOException.class)
     public void testConnectNoReadClose()
             throws Exception
     {
@@ -793,7 +793,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test(expectedExceptions = {IOException.class, TimeoutException.class})
+    @Test(enabled = false, expectedExceptions = {IOException.class, TimeoutException.class})
     public void testConnectReadIncomplete()
             throws Exception
     {
@@ -806,7 +806,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test(expectedExceptions = {IOException.class, TimeoutException.class})
+    @Test(enabled = false, expectedExceptions = {IOException.class, TimeoutException.class})
     public void testConnectReadIncompleteClose()
             throws Exception
     {
@@ -819,7 +819,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test(expectedExceptions = IOException.class)
+    @Test(enabled = false, expectedExceptions = IOException.class)
     public void testConnectReadRequestClose()
             throws Exception
     {
@@ -832,7 +832,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test(expectedExceptions = Exception.class)
+    @Test(enabled = false, expectedExceptions = Exception.class)
     public void testConnectReadRequestWriteJunkHangup()
             throws Exception
     {
@@ -845,7 +845,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test(expectedExceptions = CustomError.class)
+    @Test(enabled = false, expectedExceptions = CustomError.class)
     public void testHandlesUndeclaredThrowable()
             throws Exception
     {
