@@ -182,6 +182,9 @@ public class TestHttpServerCipher
     {
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setIncludeCipherSuites(includedCipherSuites);
+        // Since Jetty 9.4.12 the list of excluded cipher suites includes "^TLS_RSA_.*$" by default.
+        // We reset that list here to enable use of those cipher suites.
+        sslContextFactory.setExcludeCipherSuites();
         sslContextFactory.setKeyStorePath(KEY_STORE_PATH);
         sslContextFactory.setKeyStorePassword(KEY_STORE_PASSWORD);
         HttpClient httpClient = new HttpClient(sslContextFactory);
