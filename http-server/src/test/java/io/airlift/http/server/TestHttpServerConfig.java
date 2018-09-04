@@ -19,8 +19,11 @@ import com.google.common.collect.ImmutableMap;
 import io.airlift.configuration.testing.ConfigAssertions;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import static io.airlift.units.DataSize.Unit.BYTE;
@@ -44,7 +47,7 @@ public class TestHttpServerConfig
                 .setHttpsPort(8443)
                 .setSecureRandomAlgorithm(null)
                 .setHttpsIncludedCipherSuites("")
-                .setHttpsExcludedCipherSuites("")
+                .setHttpsExcludedCipherSuites(String.join(",", getJettyDefaultExcludedCiphers()))
                 .setSslSessionTimeout(new Duration(4, HOURS))
                 .setSslSessionCacheSize(10_000)
                 .setKeystorePath(null)
@@ -171,5 +174,11 @@ public class TestHttpServerConfig
                 .setHttp2StreamIdleTimeout(new Duration(23, SECONDS));
 
         ConfigAssertions.assertFullMapping(properties, expected);
+    }
+
+    private List<String> getJettyDefaultExcludedCiphers()
+    {
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        return Arrays.asList(sslContextFactory.getExcludeCipherSuites());
     }
 }
