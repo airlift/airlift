@@ -77,6 +77,7 @@ public class TestHttpServerCipher
             throws Exception
     {
         HttpServerConfig config = createHttpServerConfig()
+                .setHttpsExcludedCipherSuites("")
                 .setHttpsIncludedCipherSuites(" ,   ");
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
@@ -104,6 +105,7 @@ public class TestHttpServerCipher
             throws Exception
     {
         HttpServerConfig config = createHttpServerConfig()
+                .setHttpsExcludedCipherSuites("")
                 .setHttpsIncludedCipherSuites(CIPHER_1 + "," + CIPHER_2);
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
