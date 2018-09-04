@@ -201,6 +201,9 @@ public class HttpServer
             server.addConnector(httpConnector);
         }
 
+        List<String> includedCipherSuites = config.getHttpsIncludedCipherSuites();
+        List<String> excludedCipherSuites = config.getHttpsExcludedCipherSuites();
+
         // set up NIO-based HTTPS connector
         ServerConnector httpsConnector;
         if (config.isHttpsEnabled()) {
@@ -232,9 +235,7 @@ public class HttpServer
                 }
             }
 
-            List<String> includedCipherSuites = config.getHttpsIncludedCipherSuites();
             sslContextFactory.setIncludeCipherSuites(includedCipherSuites.toArray(new String[includedCipherSuites.size()]));
-            List<String> excludedCipherSuites = config.getHttpsExcludedCipherSuites();
             sslContextFactory.setExcludeCipherSuites(excludedCipherSuites.toArray(new String[excludedCipherSuites.size()]));
             sslContextFactory.setSecureRandomAlgorithm(config.getSecureRandomAlgorithm());
             sslContextFactory.setWantClientAuth(true);
@@ -291,6 +292,8 @@ public class HttpServer
                 }
                 sslContextFactory.setSecureRandomAlgorithm(config.getSecureRandomAlgorithm());
                 sslContextFactory.setWantClientAuth(true);
+                sslContextFactory.setIncludeCipherSuites(includedCipherSuites.toArray(new String[includedCipherSuites.size()]));
+                sslContextFactory.setExcludeCipherSuites(excludedCipherSuites.toArray(new String[excludedCipherSuites.size()]));
                 SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
                 adminConnector = createServerConnector(
                         httpServerInfo.getAdminChannel(),

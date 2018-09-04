@@ -72,7 +72,12 @@ public class HttpServerConfig
     private String trustStorePassword;
     private String secureRandomAlgorithm;
     private List<String> includedCipherSuites = ImmutableList.of();
-    private List<String> excludedCipherSuites = ImmutableList.of();
+
+    /**
+     * This property is initialized with Jetty's default excluded ciphers list.
+     * @see org.eclipse.jetty.util.ssl.SslContextFactory#SslContextFactory(boolean, String)
+     */
+    private List<String> excludedCipherSuites = ImmutableList.of("^.*_(MD5|SHA|SHA1)$", "^TLS_RSA_.*$", "^SSL_.*$", "^.*_NULL_.*$", "^.*_anon_.*$");
 
     private Duration sslSessionTimeout = new Duration(4, HOURS);
     private int sslSessionCacheSize = 10_000;
@@ -292,6 +297,7 @@ public class HttpServerConfig
     }
 
     @Config("http-server.https.excluded-cipher")
+    @ConfigDescription("Setting this config property overwrites Jetty's default excluded cipher suites")
     public HttpServerConfig setHttpsExcludedCipherSuites(String excludedCipherSuites)
     {
         this.excludedCipherSuites = Splitter
