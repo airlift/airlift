@@ -1,4 +1,5 @@
 0.173
+- Fix double logging bug in HTTP client.
 - Update to Jetty 9.4.12.v20180830.
 - Update the default value of the "http-server.https.excluded-cipher" config
   property to match Jetty's default excluded cipher suites. Specifically, all
