@@ -16,7 +16,7 @@ import static java.util.Objects.requireNonNull;
  *     w(t, α) = e^(-α * t), where α is the decay factor and t is the age in seconds
  *
  * The implementation is based on the ideas from
- * http://www.research.att.com/people/Cormode_Graham/library/publications/CormodeShkapenyukSrivastavaXu09.pdf
+ * http://dimacs.rutgers.edu/~graham/pubs/papers/fwddecay.pdf
  * to not have to rely on a timer that decays the value periodically
  */
 public class DecayCounter
