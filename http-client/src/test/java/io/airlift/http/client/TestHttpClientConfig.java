@@ -20,10 +20,13 @@ import com.google.common.net.HostAndPort;
 import io.airlift.configuration.testing.ConfigAssertions;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.testng.annotations.Test;
 
 import javax.validation.constraints.NotNull;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_KEY_STORE;
@@ -59,6 +62,8 @@ public class TestHttpClientConfig
                 .setTrustStorePath(System.getProperty(JAVAX_NET_SSL_TRUST_STORE))
                 .setTrustStorePassword(System.getProperty(JAVAX_NET_SSL_TRUST_STORE_PASSWORD))
                 .setSecureRandomAlgorithm(null)
+                .setHttpsIncludedCipherSuites("")
+                .setHttpsExcludedCipherSuites(String.join(",", getJettyDefaultExcludedCiphers()))
                 .setAuthenticationEnabled(false)
                 .setKerberosRemoteServiceName(null)
                 .setKerberosPrincipal(null)
@@ -97,6 +102,8 @@ public class TestHttpClientConfig
                 .put("http-client.max-content-length", "1MB")
                 .put("http-client.socks-proxy", "localhost:1080")
                 .put("http-client.secure-random-algorithm", "NativePRNG")
+                .put("http-client.https.included-cipher", "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
+                .put("http-client.https.excluded-cipher", "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
                 .put("http-client.key-store-path", "key-store")
                 .put("http-client.key-store-password", "key-store-password")
                 .put("http-client.trust-store-path", "trust-store")
@@ -140,6 +147,8 @@ public class TestHttpClientConfig
                 .setTrustStorePath("trust-store")
                 .setTrustStorePassword("trust-store-password")
                 .setSecureRandomAlgorithm("NativePRNG")
+                .setHttpsIncludedCipherSuites("TLS_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
+                .setHttpsExcludedCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
                 .setAuthenticationEnabled(true)
                 .setKerberosRemoteServiceName("airlift")
                 .setKerberosPrincipal("airlift-client")
@@ -185,5 +194,11 @@ public class TestHttpClientConfig
         assertFailsValidation(new HttpClientConfig().setConnectTimeout(null), "connectTimeout", "may not be null", NotNull.class);
         assertFailsValidation(new HttpClientConfig().setRequestTimeout(null), "requestTimeout", "may not be null", NotNull.class);
         assertFailsValidation(new HttpClientConfig().setIdleTimeout(null), "idleTimeout", "may not be null", NotNull.class);
+    }
+
+    private List<String> getJettyDefaultExcludedCiphers()
+    {
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        return Arrays.asList(sslContextFactory.getExcludeCipherSuites());
     }
 }
