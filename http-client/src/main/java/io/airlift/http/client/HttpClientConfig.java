@@ -16,6 +16,8 @@
 package io.airlift.http.client;
 
 import com.google.common.annotations.Beta;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
@@ -29,9 +31,12 @@ import io.airlift.units.MinDuration;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
+import java.util.List;
+
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -57,6 +62,14 @@ public class HttpClientConfig
     private String trustStorePath = System.getProperty(JAVAX_NET_SSL_TRUST_STORE);
     private String trustStorePassword = System.getProperty(JAVAX_NET_SSL_TRUST_STORE_PASSWORD);
     private String secureRandomAlgorithm;
+    private List<String> includedCipherSuites = ImmutableList.of();
+
+    /**
+     * This property is initialized with Jetty's default excluded ciphers list.
+     * @see org.eclipse.jetty.util.ssl.SslContextFactory#SslContextFactory(boolean, String)
+     */
+    private List<String> excludedCipherSuites = ImmutableList.of("^.*_(MD5|SHA|SHA1)$", "^TLS_RSA_.*$", "^SSL_.*$", "^.*_NULL_.*$", "^.*_anon_.*$");
+
     private boolean authenticationEnabled;
     private String kerberosPrincipal;
     private String kerberosRemoteServiceName;
@@ -274,6 +287,39 @@ public class HttpClientConfig
     public HttpClientConfig setSecureRandomAlgorithm(String secureRandomAlgorithm)
     {
         this.secureRandomAlgorithm = secureRandomAlgorithm;
+        return this;
+    }
+
+    public List<String> getHttpsIncludedCipherSuites()
+    {
+        return includedCipherSuites;
+    }
+
+    @Config("http-client.https.included-cipher")
+    public HttpClientConfig setHttpsIncludedCipherSuites(String includedCipherSuites)
+    {
+        this.includedCipherSuites = Splitter
+                .on(',')
+                .trimResults()
+                .omitEmptyStrings()
+                .splitToList(requireNonNull(includedCipherSuites, "includedCipherSuites is null"));
+        return this;
+    }
+
+    public List<String> getHttpsExcludedCipherSuites()
+    {
+        return excludedCipherSuites;
+    }
+
+    @Config("http-client.https.excluded-cipher")
+    @ConfigDescription("Setting this config property overwrites Jetty's default excluded cipher suites")
+    public HttpClientConfig setHttpsExcludedCipherSuites(String excludedCipherSuites)
+    {
+        this.excludedCipherSuites = Splitter
+                .on(',')
+                .trimResults()
+                .omitEmptyStrings()
+                .splitToList(requireNonNull(excludedCipherSuites, "excludedCipherSuites is null"));
         return this;
     }
 

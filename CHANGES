@@ -1,3 +1,7 @@
+0.174
+- Add configuration properties to include and exclude HTTPS cipher suites for
+  the HTTP client
+
 0.173
 - Fix double logging bug in HTTP client.
 - Update to Jetty 9.4.12.v20180830.
