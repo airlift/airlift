@@ -102,7 +102,7 @@ public final class EquivalenceTester
             }
         }
 
-        @SuppressWarnings({"ObjectEqualsNull"})
+        @SuppressWarnings("ObjectEqualsNull")
         private List<ElementCheckFailure> checkEquivalence()
         {
             ImmutableList.Builder<ElementCheckFailure> errors = new ImmutableList.Builder<ElementCheckFailure>();
