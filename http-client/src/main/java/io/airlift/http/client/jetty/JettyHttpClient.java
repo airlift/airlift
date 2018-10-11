@@ -180,6 +180,10 @@ public class JettyHttpClient
             }
         }
         sslContextFactory.setSecureRandomAlgorithm(config.getSecureRandomAlgorithm());
+        List<String> includedCipherSuites = config.getHttpsIncludedCipherSuites();
+        List<String> excludedCipherSuites = config.getHttpsExcludedCipherSuites();
+        sslContextFactory.setIncludeCipherSuites(includedCipherSuites.toArray(new String[0]));
+        sslContextFactory.setExcludeCipherSuites(excludedCipherSuites.toArray(new String[0]));
 
         HttpClientTransport transport;
         if (config.isHttp2Enabled()) {
