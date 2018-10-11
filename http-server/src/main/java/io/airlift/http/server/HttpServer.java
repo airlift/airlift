@@ -235,8 +235,8 @@ public class HttpServer
                 }
             }
 
-            sslContextFactory.setIncludeCipherSuites(includedCipherSuites.toArray(new String[includedCipherSuites.size()]));
-            sslContextFactory.setExcludeCipherSuites(excludedCipherSuites.toArray(new String[excludedCipherSuites.size()]));
+            sslContextFactory.setIncludeCipherSuites(includedCipherSuites.toArray(new String[0]));
+            sslContextFactory.setExcludeCipherSuites(excludedCipherSuites.toArray(new String[0]));
             sslContextFactory.setSecureRandomAlgorithm(config.getSecureRandomAlgorithm());
             sslContextFactory.setWantClientAuth(true);
             sslContextFactory.setSslSessionTimeout((int) config.getSslSessionTimeout().getValue(SECONDS));
