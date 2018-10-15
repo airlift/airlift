@@ -15,7 +15,6 @@ package io.airlift.stats.cardinality;
 
 import com.google.common.collect.ImmutableList;
 import io.airlift.slice.Murmur3Hash128;
-import org.openjdk.jol.info.ClassLayout;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -24,11 +23,13 @@ import java.util.List;
 import static io.airlift.slice.SizeOf.sizeOf;
 import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
 import static io.airlift.stats.cardinality.TestUtils.sequence;
+import static java.lang.Math.toIntExact;
+import static org.openjdk.jol.info.ClassLayout.parseClass;
 import static org.testng.Assert.assertEquals;
 
 public class TestSparseHll
 {
-    private static final int SPARSE_HLL_INSTANCE_SIZE = ClassLayout.parseClass(SparseHll.class).instanceSize();
+    private static final int SPARSE_HLL_INSTANCE_SIZE = toIntExact(parseClass(SparseHll.class).instanceSize());
 
     @Test(dataProvider = "bits")
     public void testMerge(int prefixBitLength)

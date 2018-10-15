@@ -16,7 +16,6 @@ import io.airlift.slice.SizeOf;
 import io.airlift.slice.Slice;
 import io.airlift.slice.SliceInput;
 import io.airlift.slice.SliceOutput;
-import org.openjdk.jol.info.ClassLayout;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -33,7 +32,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
+import static org.openjdk.jol.info.ClassLayout.parseClass;
 
 /**
  * Implements http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.132.7343, a data structure
@@ -56,7 +57,7 @@ import static java.lang.String.format;
 public class QuantileDigest
 {
     private static final int MAX_BITS = 64;
-    private static final int QUANTILE_DIGEST_SIZE = ClassLayout.parseClass(QuantileDigest.class).instanceSize();
+    private static final int QUANTILE_DIGEST_SIZE = toIntExact(parseClass(QuantileDigest.class).instanceSize());
 
     // needs to be such that Math.exp(alpha * seconds) does not grow too big
     static final long RESCALE_THRESHOLD_SECONDS = 50;
