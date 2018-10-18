@@ -164,6 +164,8 @@ public class QuantileDigest
     {
         SliceInput input = new BasicSliceInput(serialized);
 
+        byte format = input.readByte();
+        checkArgument(format == 0, "Invalid format");
         maxError = input.readDouble();
         alpha = input.readDouble();
 
@@ -173,6 +175,7 @@ public class QuantileDigest
         else {
             ticker = Ticker.systemTicker();
         }
+        landmarkInSeconds = input.readLong();
 
         min = input.readLong();
         max = input.readLong();
@@ -186,21 +189,8 @@ public class QuantileDigest
         checkArgument(nodeCount <= 2 * k, "Too many nodes in deserialized tree. Possible corruption");
 
         counts = new double[nodeCount];
-        for (int i = 0; i < nodeCount; i++) {
-            double count = input.readDouble();
-            weightedCount += count;
-            counts[i] = count;
-        }
-
         levels = new byte[nodeCount];
-        for (int i = 0; i < nodeCount; i++) {
-            levels[i] = input.readByte();
-        }
-
         values = new long[nodeCount];
-        for (int i = 0; i < nodeCount; i++) {
-            values[i] = input.readLong();
-        }
 
         int[] stack = new int[(Integer.highestOneBit(nodeCount - 1) << 1) + 1]; // log2 ceiling
         int top = -1;
@@ -210,16 +200,26 @@ public class QuantileDigest
         lefts = new int[nodeCount];
         rights = new int[nodeCount];
         for (int node = 0; node < nodeCount; node++) {
-            byte flags = input.readByte();
+            byte nodeStructure = input.readByte();
+            boolean hasRight = (nodeStructure & Flags.HAS_RIGHT) != 0;
+            boolean hasLeft = (nodeStructure & Flags.HAS_LEFT) != 0;
+            byte level = (byte) (nodeStructure >>> 2);
 
-            if ((flags & Flags.HAS_RIGHT) != 0) {
+            // Branch node levels are serialized as 0-indexed to save a bit, therefore if this is not a leaf node then
+            // add back one to the level.
+            if (hasLeft || hasRight) {
+                level++;
+            }
+            levels[node] = level;
+
+            if (hasRight) {
                 rights[node] = stack[top--];
             }
             else {
                 rights[node] = -1;
             }
 
-            if ((flags & Flags.HAS_LEFT) != 0) {
+            if (hasLeft) {
                 lefts[node] = stack[top--];
             }
             else {
@@ -227,6 +227,11 @@ public class QuantileDigest
             }
 
             stack[++top] = node;
+
+            double count = input.readDouble();
+            weightedCount += count;
+            counts[node] = count;
+            values[node] = input.readLong();
         }
         checkArgument(nodeCount == 0 || top == 0, "Tree is corrupted. Expected a single root node");
         root = nodeCount - 1; // last node in post-order
@@ -531,12 +536,13 @@ public class QuantileDigest
     public int estimatedSerializedSizeInBytes()
     {
         int nodeSize = SizeOf.SIZE_OF_LONG + // counts
-                SizeOf.SIZE_OF_BYTE + // levels
-                SizeOf.SIZE_OF_LONG + // values
-                SizeOf.SIZE_OF_BYTE;  // left/right flags
+                SizeOf.SIZE_OF_BYTE + // levels and left/right flags
+                SizeOf.SIZE_OF_LONG; // values
 
-        return SizeOf.SIZE_OF_DOUBLE + // maxError
+        return SizeOf.SIZE_OF_BYTE + // format
+                SizeOf.SIZE_OF_DOUBLE + // maxError
                 SizeOf.SIZE_OF_DOUBLE + // alpha
+                SizeOf.SIZE_OF_LONG + // landmarkInSeconds
                 SizeOf.SIZE_OF_LONG + // min
                 SizeOf.SIZE_OF_LONG + // max
                 SizeOf.SIZE_OF_INT + // node count
@@ -549,8 +555,10 @@ public class QuantileDigest
 
         SliceOutput output = new DynamicSliceOutput(estimatedSerializedSizeInBytes());
 
+        output.writeByte(Flags.FORMAT);
         output.writeDouble(maxError);
         output.writeDouble(alpha);
+        output.writeLong(landmarkInSeconds);
         output.writeLong(min);
         output.writeLong(max);
         output.writeInt(getNodeCount());
@@ -569,25 +577,19 @@ public class QuantileDigest
         });
 
         for (int node : nodes) {
-            output.writeDouble(counts[node]);
-        }
-        for (int node : nodes) {
-            // TODO: levels can only go to 64, so we should be able to pack them better
-            output.writeByte(levels[node]);
-        }
-        for (int node : nodes) {
-            output.writeLong(values[node]);
-        }
-        for (int node : nodes) {
-            // TODO: pack 4 nodes per byte (2 bits each)
-            byte flags = 0;
+            // The max value for a level is 64.  Non-leaf nodes are decremented by 1
+            // to save a bit (so max serialized value is 63 (111111, 6 bits needed)).
+            // This is shifted 2 bits to give space for left/right child flags.
+            byte nodeStructure = (byte) (Math.max(levels[node] - 1, 0) << 2);
             if (lefts[node] != -1) {
-                flags |= Flags.HAS_LEFT;
+                nodeStructure |= Flags.HAS_LEFT;
             }
             if (rights[node] != -1) {
-                flags |= Flags.HAS_RIGHT;
+                nodeStructure |= Flags.HAS_RIGHT;
             }
-            output.writeByte(flags);
+            output.writeByte(nodeStructure);
+            output.writeDouble(counts[node]);
+            output.writeLong(values[node]);
         }
 
         return output.slice();
@@ -1304,6 +1306,7 @@ public class QuantileDigest
     {
         public static final int HAS_LEFT = 1 << 0;
         public static final int HAS_RIGHT = 1 << 1;
+        public static final byte FORMAT = 0; // Currently there is just one format
     }
 
     public interface MiddleFunction
