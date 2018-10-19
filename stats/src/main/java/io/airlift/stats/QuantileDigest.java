@@ -441,34 +441,30 @@ public class QuantileDigest
         ImmutableList.Builder<Bucket> builder = ImmutableList.builder();
         PeekingIterator<Long> iterator = Iterators.peekingIterator(bucketUpperBounds.iterator());
 
-        AtomicDouble sum = new AtomicDouble();
-        AtomicDouble lastSum = new AtomicDouble();
-
-        // for computing weighed average of values in bucket
-        AtomicDouble bucketWeightedSum = new AtomicDouble();
+        HistogramBuilderStateHolder holder = new HistogramBuilderStateHolder();
 
         double normalizationFactor = weight(TimeUnit.NANOSECONDS.toSeconds(ticker.read()));
 
         postOrderTraversal(root, node -> {
             while (iterator.hasNext() && iterator.peek() <= upperBound(node)) {
-                double bucketCount = sum.get() - lastSum.get();
+                double bucketCount = holder.sum - holder.lastSum;
 
-                Bucket bucket = new Bucket(bucketCount / normalizationFactor, bucketWeightedSum.get() / bucketCount);
+                Bucket bucket = new Bucket(bucketCount / normalizationFactor, holder.bucketWeightedSum / bucketCount);
 
                 builder.add(bucket);
-                lastSum.set(sum.get());
-                bucketWeightedSum.set(0);
+                holder.lastSum = holder.sum;
+                holder.bucketWeightedSum = 0;
                 iterator.next();
             }
 
-            bucketWeightedSum.addAndGet(middle(node) * counts[node]);
-            sum.addAndGet(counts[node]);
+            holder.bucketWeightedSum += middle(node) * counts[node];
+            holder.sum += counts[node];
             return iterator.hasNext();
         });
 
         while (iterator.hasNext()) {
-            double bucketCount = sum.get() - lastSum.get();
-            Bucket bucket = new Bucket(bucketCount / normalizationFactor, bucketWeightedSum.get() / bucketCount);
+            double bucketCount = holder.sum - holder.lastSum;
+            Bucket bucket = new Bucket(bucketCount / normalizationFactor, holder.bucketWeightedSum / bucketCount);
 
             builder.add(bucket);
 
@@ -476,6 +472,14 @@ public class QuantileDigest
         }
 
         return builder.build();
+    }
+
+    private static final class HistogramBuilderStateHolder
+    {
+        double sum;
+        double lastSum;
+        // for computing weighed average of values in bucket
+        double bucketWeightedSum;
     }
 
     public long getMin()
