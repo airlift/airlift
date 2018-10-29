@@ -1,6 +1,7 @@
 0.175
 
 - Require at least one stream for HTTP/2 in HTTP server.
+- Fix /v1/jmx HTML page loading in modern browsers.
 
 0.174
 

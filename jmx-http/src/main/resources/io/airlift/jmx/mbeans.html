@@ -67,9 +67,7 @@
         var url = '/v1/jmx/mbean';
         $.ajax({
             url: url,
-            crossDomain: true,
-            dataType: "jsonp",
-            jsonp: "jsonp",
+            dataType: "json",
             success: function(json)
             {
                 //
