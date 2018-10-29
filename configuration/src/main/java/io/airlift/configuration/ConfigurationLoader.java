@@ -17,10 +17,9 @@ package io.airlift.configuration;
 
 import com.google.common.collect.ImmutableSortedMap;
 
-import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.Reader;
+import java.io.InputStream;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
@@ -56,8 +55,8 @@ public final class ConfigurationLoader
             throws IOException
     {
         Properties properties = new Properties();
-        try (Reader reader = new FileReader(new File(path))) {
-            properties.load(reader);
+        try (InputStream inputStream = new FileInputStream(path)) {
+            properties.load(inputStream);
         }
 
         return fromProperties(properties);
