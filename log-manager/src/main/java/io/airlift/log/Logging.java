@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.net.URL;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
@@ -128,6 +129,21 @@ public class Logging
         setLevel(ROOT_LOGGER_NAME, newLevel);
     }
 
+    private void setBuiltInLevels()
+            throws IOException
+    {
+        URL builtInConfiguration = Thread.currentThread().getContextClassLoader().getResource("airlift-log.properties");
+        if (builtInConfiguration == null) {
+            return;
+        }
+        Properties properties = new Properties();
+        try (InputStream inputStream = builtInConfiguration.openStream()) {
+            properties.load(inputStream);
+        }
+
+        processLevels(properties);
+    }
+
     public void setLevels(File file)
             throws IOException
     {
@@ -200,6 +216,8 @@ public class Logging
         if (!config.isConsoleEnabled()) {
             disableConsole();
         }
+
+        setBuiltInLevels();
 
         if (config.getLevelsFile() != null) {
             setLevels(new File(config.getLevelsFile()));
