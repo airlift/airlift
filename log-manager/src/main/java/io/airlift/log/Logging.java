@@ -20,11 +20,11 @@ import com.google.common.collect.ImmutableSortedMap;
 import javax.annotation.concurrent.GuardedBy;
 
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.io.Reader;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
@@ -132,8 +132,8 @@ public class Logging
             throws IOException
     {
         Properties properties = new Properties();
-        try (Reader reader = new FileReader(file)) {
-            properties.load(reader);
+        try (InputStream inputStream = new FileInputStream(file)) {
+            properties.load(inputStream);
         }
 
         processLevels(properties);

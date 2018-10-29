@@ -2,6 +2,8 @@
 
 - Require at least one stream for HTTP/2 in HTTP server.
 - Fix /v1/jmx HTML page loading in modern browsers.
+- Fix loading of properties files when platform's default encoding is not
+  ASCII-compatible.
 
 0.174
 
