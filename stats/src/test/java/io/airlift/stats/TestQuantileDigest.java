@@ -12,7 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.testng.Assert.assertEquals;
@@ -268,6 +271,61 @@ public class TestQuantileDigest
         assertEquals(digest.getHistogram(asList(10L)), asList(new QuantileDigest.Bucket(10, 4.5)));
         assertEquals(digest.getHistogram(asList(Long.MAX_VALUE)),
                 asList(new QuantileDigest.Bucket(10, 4.5)));
+    }
+
+    @Test
+    public void testHistogramOfDoublesQuery()
+    {
+        QuantileDigest digest = new QuantileDigest(1);
+
+        LongStream.range(-10, 10)
+                .map(TestQuantileDigest::doubleToSortableLong)
+                .boxed()
+                .forEach(digest::add);
+
+        assertEquals(digest.getConfidenceFactor(), 0.0);
+
+        List<Long> bucketUpperBounds = LongStream.range(-10, 10)
+                .map(TestQuantileDigest::doubleToSortableLong)
+                .boxed()
+                .collect(toImmutableList());
+
+        QuantileDigest.MiddleFunction middleFunction = (lowerBound, upperBound) -> {
+            // qdigest will put the range at the top of the tree as the entire set of long values.  Sortable long values
+            // which equal Long.MIN_VALUE or Long.MAX_VALUE are NaN values in IEEE 754 standard, therefore they can't
+            // be accurately represented as floating point numbers.  Because NaN values cannot be used in the middle
+            // calculation, treat them as Double.MIN_VALUE when the min is encountered, and Double.MAX_VALUE when the max
+            // is encountered.
+            double left = lowerBound > Long.MIN_VALUE ? sortableLongToDouble(lowerBound) : -1 * Double.MAX_VALUE;
+            double right = upperBound < Long.MAX_VALUE ? sortableLongToDouble(upperBound) : Double.MAX_VALUE;
+            return left + (right - left) / 2;
+        };
+
+        List<QuantileDigest.Bucket> expected = LongStream.range(-9, 10)
+                .boxed()
+                .map(i -> new QuantileDigest.Bucket(1, i - 1))
+                .collect(Collectors.toList());
+        expected.add(0, new QuantileDigest.Bucket(0, Double.NaN));
+        assertEquals(digest.getHistogram(bucketUpperBounds, middleFunction),
+                expected);
+
+        assertEquals(digest.getHistogram(asList(doubleToSortableLong(7), doubleToSortableLong(10)), middleFunction),
+                asList(new QuantileDigest.Bucket(17, -2.0),
+                        new QuantileDigest.Bucket(3, 8)));
+
+        // edge cases
+        assertEquals(digest.getHistogram(asList(doubleToSortableLong(-1 * Double.MAX_VALUE)), middleFunction),
+                asList(new QuantileDigest.Bucket(0, Double.NaN)));
+        assertEquals(digest.getHistogram(asList(doubleToSortableLong(-1 * Double.MAX_VALUE), doubleToSortableLong(-1 * Double.MAX_VALUE + 1)), middleFunction),
+                asList(new QuantileDigest.Bucket(0, Double.NaN), new QuantileDigest.Bucket(0, Double.NaN)));
+        assertEquals(digest.getHistogram(asList(doubleToSortableLong(0)), middleFunction),
+                asList(new QuantileDigest.Bucket(10.0, -5.5)));
+        assertEquals(digest.getHistogram(asList(doubleToSortableLong(9)), middleFunction),
+                asList(new QuantileDigest.Bucket(19, -1.0)));
+        assertEquals(digest.getHistogram(asList(doubleToSortableLong(10)), middleFunction),
+                asList(new QuantileDigest.Bucket(20, -0.5)));
+        assertEquals(digest.getHistogram(asList(doubleToSortableLong(Double.MAX_VALUE)), middleFunction),
+                asList(new QuantileDigest.Bucket(20, -0.5)));
     }
 
     @Test
@@ -779,5 +837,17 @@ public class TestQuantileDigest
             digest.add(i);
         }
         digest.validate();
+    }
+
+    private static long doubleToSortableLong(double value)
+    {
+        long bits = Double.doubleToLongBits(value);
+        return bits ^ ((bits >> 63) & Long.MAX_VALUE);
+    }
+
+    private static double sortableLongToDouble(long value)
+    {
+        value = value ^ ((value >> 63) & Long.MAX_VALUE);
+        return Double.longBitsToDouble(value);
     }
 }

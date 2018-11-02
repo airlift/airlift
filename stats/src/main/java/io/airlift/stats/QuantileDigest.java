@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static io.airlift.stats.QuantileDigest.MiddleFunction.DEFAULT;
 import static java.lang.String.format;
 
 /**
@@ -436,6 +437,13 @@ public class QuantileDigest
      */
     public List<Bucket> getHistogram(List<Long> bucketUpperBounds)
     {
+        return getHistogram(bucketUpperBounds, DEFAULT);
+    }
+
+    // A separate lambda is provided to allow one to override how the middle between two quantiles buckets
+    // is calculated.
+    public List<Bucket> getHistogram(List<Long> bucketUpperBounds, MiddleFunction middleFunction)
+    {
         checkArgument(Ordering.natural().isOrdered(bucketUpperBounds), "buckets must be sorted in increasing order");
 
         ImmutableList.Builder<Bucket> builder = ImmutableList.builder();
@@ -457,7 +465,7 @@ public class QuantileDigest
                 iterator.next();
             }
 
-            holder.bucketWeightedSum += middle(node) * counts[node];
+            holder.bucketWeightedSum += middleFunction.middle(lowerBound(node), upperBound(node)) * counts[node];
             holder.sum += counts[node];
             return iterator.hasNext();
         });
@@ -1296,5 +1304,12 @@ public class QuantileDigest
     {
         public static final int HAS_LEFT = 1 << 0;
         public static final int HAS_RIGHT = 1 << 1;
+    }
+
+    public interface MiddleFunction
+    {
+        MiddleFunction DEFAULT = (lowerBound, upperBound) -> lowerBound + (upperBound - lowerBound) / 2.0;
+
+        double middle(long lowerBound, long upperBound);
     }
 }
