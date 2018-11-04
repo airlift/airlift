@@ -554,6 +554,9 @@ public class HttpServer
         }
         catch (TimeoutException ignored) {
         }
+        if (requestLog != null) {
+            requestLog.stop();
+        }
     }
 
     @VisibleForTesting
