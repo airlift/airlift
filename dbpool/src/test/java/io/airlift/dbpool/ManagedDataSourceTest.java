@@ -155,7 +155,7 @@ public class ManagedDataSourceTest
         assertEquals(dataSource.getMaxConnections(), 1);
 
         // checkout a connection
-        Queue<Connection> connections = new LinkedList<Connection>();
+        Queue<Connection> connections = new LinkedList<>();
         connections.add(dataSource.getConnection());
         assertEquals(dataSource.getConnectionsActive(), 1);
 
@@ -252,7 +252,7 @@ public class ManagedDataSourceTest
         final CountDownLatch startLatch = new CountDownLatch(1);
         final CountDownLatch endLatch = new CountDownLatch(1);
         final AtomicBoolean wasInterrupted = new AtomicBoolean();
-        final AtomicReference<SQLException> exception = new AtomicReference<SQLException>();
+        final AtomicReference<SQLException> exception = new AtomicReference<>();
         Thread createThread = new Thread()
         {
             @Override
@@ -295,7 +295,7 @@ public class ManagedDataSourceTest
             throws Exception
     {
         ManagedDataSource dataSource = new MockManagedDataSource(10, new Duration(10, MILLISECONDS));
-        List<MockConnection> connections = new ArrayList<MockConnection>();
+        List<MockConnection> connections = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             MockConnection connection = (MockConnection) dataSource.getConnection();
             assertNotNull(connection);

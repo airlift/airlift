@@ -40,7 +40,7 @@ public class TimedStatTest
     public void testBasic()
     {
         TimedStat stat = new TimedStat();
-        List<Double> values = new ArrayList<Double>(VALUES);
+        List<Double> values = new ArrayList<>(VALUES);
         for (int i = 0; i < VALUES; i++) {
             values.add((double) i);
         }

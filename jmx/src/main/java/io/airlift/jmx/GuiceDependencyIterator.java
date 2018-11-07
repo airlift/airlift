@@ -44,7 +44,7 @@ class GuiceDependencyIterator
      */
     public GuiceDependencyIterator(TypeLiteral<?> typeLiteral)
     {
-        this(null, typeLiteral, new HashSet<Key<?>>());
+        this(null, typeLiteral, new HashSet<>());
     }
 
     /**
@@ -52,7 +52,7 @@ class GuiceDependencyIterator
      */
     public GuiceDependencyIterator(Class<?> clazz)
     {
-        this(clazz, null, new HashSet<Key<?>>());
+        this(clazz, null, new HashSet<>());
     }
 
     /**

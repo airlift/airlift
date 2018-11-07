@@ -40,7 +40,7 @@ public class TestConfigAssertions
     @Test
     public void testDefaults()
     {
-        Map<String, Object> expectedAttributeValues = new HashMap<String, Object>();
+        Map<String, Object> expectedAttributeValues = new HashMap<>();
         expectedAttributeValues.put("Name", "Dain");
         expectedAttributeValues.put("Email", "dain@proofpoint.com");
         expectedAttributeValues.put("Phone", null);
@@ -53,7 +53,7 @@ public class TestConfigAssertions
     {
         boolean pass = true;
         try {
-            Map<String, Object> expectedAttributeValues = new HashMap<String, Object>();
+            Map<String, Object> expectedAttributeValues = new HashMap<>();
             expectedAttributeValues.put("Name", "Dain");
             expectedAttributeValues.put("Email", "dain@proofpoint.com");
             expectedAttributeValues.put("Phone", "42");
@@ -76,7 +76,7 @@ public class TestConfigAssertions
     {
         boolean pass = true;
         try {
-            Map<String, Object> expectedAttributeValues = new HashMap<String, Object>();
+            Map<String, Object> expectedAttributeValues = new HashMap<>();
             expectedAttributeValues.put("Name", "Dain");
             expectedAttributeValues.put("Email", "dain@proofpoint.com");
             expectedAttributeValues.put("Phone", null);
@@ -99,7 +99,7 @@ public class TestConfigAssertions
     {
         boolean pass = true;
         try {
-            Map<String, Object> expectedAttributeValues = new HashMap<String, Object>();
+            Map<String, Object> expectedAttributeValues = new HashMap<>();
             expectedAttributeValues.put("Name", "Dain");
             expectedAttributeValues.put("Email", "dain@proofpoint.com");
             expectedAttributeValues.put("Phone", null);
@@ -123,7 +123,7 @@ public class TestConfigAssertions
     {
         boolean pass = true;
         try {
-            Map<String, Object> expectedAttributeValues = new HashMap<String, Object>();
+            Map<String, Object> expectedAttributeValues = new HashMap<>();
             expectedAttributeValues.put("Name", "Dain");
             expectedAttributeValues.put("Email", "dain@proofpoint.com");
             expectedAttributeValues.put("Phone", null);
@@ -145,7 +145,7 @@ public class TestConfigAssertions
     {
         boolean pass = true;
         try {
-            Map<String, Object> expectedAttributeValues = new HashMap<String, Object>();
+            Map<String, Object> expectedAttributeValues = new HashMap<>();
             expectedAttributeValues.put("Name", "Dain");
             expectedAttributeValues.put("Email", "dain@proofpoint.com");
             expectedAttributeValues.put("Phone", null);

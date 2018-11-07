@@ -231,7 +231,7 @@ public class TestH2EmbeddedDataSourceModule
 
     private static Map<String, String> createDefaultConfigurationProperties(String prefix, String filename)
     {
-        Map<String, String> properties = new HashMap<String, String>();
+        Map<String, String> properties = new HashMap<>();
 
         if (!prefix.endsWith(".")) {
             prefix = prefix + ".";

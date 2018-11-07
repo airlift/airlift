@@ -67,12 +67,12 @@ public final class EventTypeMetadata<T>
 
     public static <T> EventTypeMetadata<T> getEventTypeMetadata(Class<T> eventClass)
     {
-        return new EventTypeMetadata<T>(eventClass, new ArrayList<>(), new HashMap<>(), false);
+        return new EventTypeMetadata<>(eventClass, new ArrayList<>(), new HashMap<>(), false);
     }
 
     public static <T> EventTypeMetadata<T> getEventTypeMetadataNested(Class<T> eventClass)
     {
-        return new EventTypeMetadata<T>(eventClass, new ArrayList<>(), new HashMap<>(), true);
+        return new EventTypeMetadata<>(eventClass, new ArrayList<>(), new HashMap<>(), true);
     }
 
     private final Class<T> eventClass;

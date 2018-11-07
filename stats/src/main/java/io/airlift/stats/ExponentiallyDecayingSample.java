@@ -81,7 +81,7 @@ final class ExponentiallyDecayingSample
      */
     public ExponentiallyDecayingSample(int reservoirSize, double alpha)
     {
-        this.values = new ConcurrentSkipListMap<Double, Long>();
+        this.values = new ConcurrentSkipListMap<>();
         this.lock = new ReentrantReadWriteLock();
         this.alpha = alpha;
         this.reservoirSize = reservoirSize;
@@ -148,7 +148,7 @@ final class ExponentiallyDecayingSample
     {
         lockForRegularUsage();
         try {
-            return new ArrayList<Long>(values.values());
+            return new ArrayList<>(values.values());
         }
         finally {
             unlockForRegularUsage();
@@ -190,7 +190,7 @@ final class ExponentiallyDecayingSample
             try {
                 final long oldStartTime = startTime;
                 this.startTime = tick();
-                final ArrayList<Double> keys = new ArrayList<Double>(values.keySet());
+                final ArrayList<Double> keys = new ArrayList<>(values.keySet());
                 for (Double key : keys) {
                     final Long value = values.remove(key);
                     values.put(key * exp(-alpha * (startTime - oldStartTime)), value);
