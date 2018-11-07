@@ -28,13 +28,9 @@ final class NetUtils
     {
         int port;
 
-        ServerSocket socket = new ServerSocket();
-        try {
+        try (ServerSocket socket = new ServerSocket()) {
             socket.bind(new InetSocketAddress(0));
             port = socket.getLocalPort();
-        }
-        finally {
-            socket.close();
         }
 
         return port;
