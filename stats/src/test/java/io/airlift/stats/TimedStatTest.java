@@ -83,14 +83,9 @@ public class TimedStatTest
             throws Exception
     {
         TimedStat stat = new TimedStat();
-        stat.time(new Callable<Void>()
-        {
-            @Override
-            public Void call()
-            {
-                LockSupport.parkNanos(SECONDS.toNanos(10));
-                return null;
-            }
+        stat.time((Callable<Void>) () -> {
+            LockSupport.parkNanos(SECONDS.toNanos(10));
+            return null;
         });
 
         assertEquals(stat.getCount(), 1);

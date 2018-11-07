@@ -17,11 +17,9 @@ package io.airlift.bootstrap;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import com.google.inject.Binder;
 import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Module;
 import com.google.inject.PrivateModule;
 import com.google.inject.Scopes;
 import com.google.inject.Stage;
@@ -165,14 +163,7 @@ public class TestLifeCycleManager
         try {
             Guice.createInjector(
                     Stage.PRODUCTION,
-                    new Module()
-                    {
-                        @Override
-                        public void configure(Binder binder)
-                        {
-                            binder.bind(IllegalInstance.class).in(Scopes.SINGLETON);
-                        }
-                    },
+                    binder -> binder.bind(IllegalInstance.class).in(Scopes.SINGLETON),
                     new LifeCycleModule());
             fail();
         }
@@ -187,14 +178,7 @@ public class TestLifeCycleManager
     {
         Injector injector = Guice.createInjector(
                 Stage.PRODUCTION,
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.bind(FooTestInstance.class).in(Scopes.SINGLETON);
-                    }
-                },
+                binder -> binder.bind(FooTestInstance.class).in(Scopes.SINGLETON),
                 new LifeCycleModule());
 
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);

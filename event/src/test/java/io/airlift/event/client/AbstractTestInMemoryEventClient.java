@@ -16,11 +16,7 @@
 package io.airlift.event.client;
 
 import com.google.common.collect.ImmutableList;
-import io.airlift.event.client.EventClient.EventGenerator;
-import io.airlift.event.client.EventClient.EventPoster;
 import org.testng.annotations.Test;
-
-import java.io.IOException;
 
 import static org.testng.Assert.assertEquals;
 
@@ -74,16 +70,10 @@ public abstract class AbstractTestInMemoryEventClient
     @Test
     public void testPostEventPoster()
     {
-        eventClient.post(new EventGenerator<Object>()
-        {
-            @Override
-            public void generate(EventPoster<Object> objectEventPoster)
-                    throws IOException
-            {
-                objectEventPoster.post(event1);
-                objectEventPoster.post(event2);
-                objectEventPoster.post(event3);
-            }
+        eventClient.post(objectEventPoster -> {
+            objectEventPoster.post(event1);
+            objectEventPoster.post(event2);
+            objectEventPoster.post(event3);
         });
 
         assertEquals(inMemoryEventClient.getEvents(),

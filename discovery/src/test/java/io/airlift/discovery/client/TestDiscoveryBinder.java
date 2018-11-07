@@ -47,14 +47,7 @@ public class TestDiscoveryBinder
     {
         Injector injector = Guice.createInjector(
                 new TestModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        discoveryBinder(binder).bindServiceAnnouncement(new ServiceAnnouncementProvider().get());
-                    }
-                });
+                binder -> discoveryBinder(binder).bindServiceAnnouncement(new ServiceAnnouncementProvider().get()));
 
         Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
         assertEquals(announcements, ImmutableSet.of(ANNOUNCEMENT));
@@ -66,14 +59,7 @@ public class TestDiscoveryBinder
     {
         Injector injector = Guice.createInjector(
                 new TestModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        discoveryBinder(binder).bindServiceAnnouncement(ServiceAnnouncementProvider.class);
-                    }
-                });
+                binder -> discoveryBinder(binder).bindServiceAnnouncement(ServiceAnnouncementProvider.class));
 
         Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
         assertEquals(announcements, ImmutableSet.of(ANNOUNCEMENT));
@@ -85,14 +71,7 @@ public class TestDiscoveryBinder
     {
         Injector injector = Guice.createInjector(
                 new TestModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        discoveryBinder(binder).bindServiceAnnouncement(new ServiceAnnouncementProvider());
-                    }
-                });
+                binder -> discoveryBinder(binder).bindServiceAnnouncement(new ServiceAnnouncementProvider()));
 
         Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
         assertEquals(announcements, ImmutableSet.of(ANNOUNCEMENT));
@@ -104,14 +83,7 @@ public class TestDiscoveryBinder
     {
         Injector injector = Guice.createInjector(
                 new TestModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        discoveryBinder(binder).bindSelector("apple");
-                    }
-                });
+                binder -> discoveryBinder(binder).bindSelector("apple"));
 
         assertCanCreateServiceSelector(injector, "apple", ServiceSelectorConfig.DEFAULT_POOL);
     }
@@ -122,14 +94,7 @@ public class TestDiscoveryBinder
     {
         Injector injector = Guice.createInjector(
                 new TestModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        discoveryBinder(binder).bindSelector(serviceType("apple"));
-                    }
-                });
+                binder -> discoveryBinder(binder).bindSelector(serviceType("apple")));
 
         assertCanCreateServiceSelector(injector, "apple", ServiceSelectorConfig.DEFAULT_POOL);
     }
@@ -140,14 +105,7 @@ public class TestDiscoveryBinder
     {
         Injector injector = Guice.createInjector(
                 new TestModule(ImmutableMap.of("discovery.apple.pool", "apple-pool")),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        discoveryBinder(binder).bindSelector("apple");
-                    }
-                });
+                binder -> discoveryBinder(binder).bindSelector("apple"));
 
         assertCanCreateServiceSelector(injector, "apple", "apple-pool");
     }
@@ -158,14 +116,7 @@ public class TestDiscoveryBinder
     {
         Injector injector = Guice.createInjector(
                 new TestModule(ImmutableMap.of("discovery.apple.pool", "apple-pool")),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        discoveryBinder(binder).bindSelector(serviceType("apple"));
-                    }
-                });
+                binder -> discoveryBinder(binder).bindSelector(serviceType("apple")));
 
         assertCanCreateServiceSelector(injector, "apple", "apple-pool");
     }

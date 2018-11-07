@@ -100,17 +100,12 @@ public class ServiceInventory
         if (serviceInventoryUri == null || scheduledFuture != null) {
             return;
         }
-        scheduledFuture = executorService.scheduleAtFixedRate(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                try {
-                    updateServiceInventory();
-                }
-                catch (Throwable e) {
-                    log.error(e, "Unexpected exception from service inventory update");
-                }
+        scheduledFuture = executorService.scheduleAtFixedRate(() -> {
+            try {
+                updateServiceInventory();
+            }
+            catch (Throwable e) {
+                log.error(e, "Unexpected exception from service inventory update");
             }
         }, updateInterval.toMillis(), updateInterval.toMillis(), TimeUnit.MILLISECONDS);
     }

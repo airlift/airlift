@@ -16,7 +16,6 @@
 package io.airlift.discovery.client;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -86,20 +85,15 @@ public abstract class AbstractTestDiscoveryModule
                 new JsonModule(),
                 new TestingNodeModule(),
                 new DiscoveryModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.bind(AnnouncementHttpServerInfo.class).toInstance(httpServerInfo);
-                        discoveryBinder(binder).bindHttpAnnouncement("apple");
-                        discoveryBinder(binder).bindHttpAnnouncement("banana");
-                        discoveryBinder(binder).bindHttpAnnouncement("carrot");
-                        discoveryBinder(binder).bindHttpSelector("apple");
-                        discoveryBinder(binder).bindHttpSelector("banana");
-                        discoveryBinder(binder).bindHttpSelector("carrot");
-                        discoveryBinder(binder).bindHttpSelector("grape");
-                    }
+                binder -> {
+                    binder.bind(AnnouncementHttpServerInfo.class).toInstance(httpServerInfo);
+                    discoveryBinder(binder).bindHttpAnnouncement("apple");
+                    discoveryBinder(binder).bindHttpAnnouncement("banana");
+                    discoveryBinder(binder).bindHttpAnnouncement("carrot");
+                    discoveryBinder(binder).bindHttpSelector("apple");
+                    discoveryBinder(binder).bindHttpSelector("banana");
+                    discoveryBinder(binder).bindHttpSelector("carrot");
+                    discoveryBinder(binder).bindHttpSelector("grape");
                 });
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));

@@ -16,7 +16,6 @@
 package io.airlift.dbpool;
 
 import com.google.common.collect.ImmutableList;
-import com.google.inject.Binder;
 import com.google.inject.BindingAnnotation;
 import com.google.inject.CreationException;
 import com.google.inject.Guice;
@@ -143,14 +142,7 @@ public class TestH2EmbeddedDataSourceModule
 
         Injector injector = createInjector(properties,
                 new H2EmbeddedDataSourceModule(prefix, MainBinding.class, AliasBinding.class),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.bind(TwoObjectsHolder.class);
-                    }
-                });
+                binder -> binder.bind(TwoObjectsHolder.class));
 
         ObjectHolder objectHolder = injector.getInstance(ObjectHolder.class);
         TwoObjectsHolder twoObjectsHolder = injector.getInstance(TwoObjectsHolder.class);
@@ -212,14 +204,9 @@ public class TestH2EmbeddedDataSourceModule
         List<Module> moduleList = ImmutableList.<Module>builder()
                 .add(modules)
                 .add(new ConfigurationModule(configurationFactory))
-                .add(new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.bind(MBeanServer.class).to(TestingMBeanServer.class).in(Scopes.SINGLETON);
-                        binder.bind(ObjectHolder.class);
-                    }
+                .add(binder -> {
+                    binder.bind(MBeanServer.class).to(TestingMBeanServer.class).in(Scopes.SINGLETON);
+                    binder.bind(ObjectHolder.class);
                 })
                 .build();
 

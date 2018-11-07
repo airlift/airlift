@@ -22,11 +22,9 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.common.net.MediaType;
-import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.airlift.configuration.ConfigurationFactory;
@@ -123,14 +121,7 @@ public class TestHttpServerModule
                 new TestingNodeModule(),
                 new ConfigurationModule(configFactory),
                 new EventModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
-                    }
-                });
+                binder -> binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class));
 
         HttpServer server = injector.getInstance(HttpServer.class);
         assertNotNull(server);
@@ -151,14 +142,7 @@ public class TestHttpServerModule
                 new TestingNodeModule(),
                 new ConfigurationModule(configFactory),
                 new EventModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
-                    }
-                });
+                binder -> binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class));
 
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
         HttpServer server = injector.getInstance(HttpServer.class);
@@ -192,18 +176,13 @@ public class TestHttpServerModule
                 new TestingNodeModule(),
                 new ConfigurationModule(configFactory),
                 new EventModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
-                        Multibinder.newSetBinder(binder, Filter.class, TheServlet.class).addBinding().to(DummyFilter.class).in(Scopes.SINGLETON);
-                        httpServerBinder(binder).bindResource("/", "webapp/user").withWelcomeFile("user-welcome.txt");
-                        httpServerBinder(binder).bindResource("/", "webapp/user2");
-                        httpServerBinder(binder).bindResource("path", "webapp/user").withWelcomeFile("user-welcome.txt");
-                        httpServerBinder(binder).bindResource("path", "webapp/user2");
-                    }
+                binder -> {
+                    binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
+                    Multibinder.newSetBinder(binder, Filter.class, TheServlet.class).addBinding().to(DummyFilter.class).in(Scopes.SINGLETON);
+                    httpServerBinder(binder).bindResource("/", "webapp/user").withWelcomeFile("user-welcome.txt");
+                    httpServerBinder(binder).bindResource("/", "webapp/user2");
+                    httpServerBinder(binder).bindResource("path", "webapp/user").withWelcomeFile("user-welcome.txt");
+                    httpServerBinder(binder).bindResource("path", "webapp/user2");
                 });
 
         HttpServerInfo httpServerInfo = injector.getInstance(HttpServerInfo.class);
@@ -266,14 +245,7 @@ public class TestHttpServerModule
                 new ConfigurationModule(configFactory),
                 new InMemoryEventModule(),
                 new TraceTokenModule(),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(EchoServlet.class).in(Scopes.SINGLETON);
-                    }
-                });
+                binder -> binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(EchoServlet.class).in(Scopes.SINGLETON));
 
         HttpServerInfo httpServerInfo = injector.getInstance(HttpServerInfo.class);
         InMemoryEventClient eventClient = injector.getInstance(InMemoryEventClient.class);

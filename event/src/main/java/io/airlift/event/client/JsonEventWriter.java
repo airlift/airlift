@@ -60,19 +60,13 @@ public class JsonEventWriter
 
         jsonGenerator.writeStartArray();
 
-        events.generate(new EventClient.EventPoster<T>()
-        {
-            @Override
-            public void post(T event)
-                    throws IOException
-            {
-                JsonSerializer<T> serializer = getSerializer(event);
-                if (serializer == null) {
-                    throw new InvalidEventException("Event class [%s] has not been registered as an event", event.getClass().getName());
-                }
-
-                serializer.serialize(event, jsonGenerator, null);
+        events.generate(event -> {
+            JsonSerializer<T> serializer = getSerializer(event);
+            if (serializer == null) {
+                throw new InvalidEventException("Event class [%s] has not been registered as an event", event.getClass().getName());
             }
+
+            serializer.serialize(event, jsonGenerator, null);
         });
 
         jsonGenerator.writeEndArray();

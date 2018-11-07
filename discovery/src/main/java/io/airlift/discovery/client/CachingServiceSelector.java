@@ -155,14 +155,7 @@ public class CachingServiceSelector
         if (executor.isShutdown()) {
             return;
         }
-        executor.schedule(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                refresh();
-            }
-        }, delay.toMillis(), TimeUnit.MILLISECONDS);
+        executor.schedule(this::refresh, delay.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     private static <V> ListenableFuture<V> chainedCallback(
