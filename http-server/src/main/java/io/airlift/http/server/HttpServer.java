@@ -292,8 +292,8 @@ public class HttpServer
                 }
                 sslContextFactory.setSecureRandomAlgorithm(config.getSecureRandomAlgorithm());
                 sslContextFactory.setWantClientAuth(true);
-                sslContextFactory.setIncludeCipherSuites(includedCipherSuites.toArray(new String[includedCipherSuites.size()]));
-                sslContextFactory.setExcludeCipherSuites(excludedCipherSuites.toArray(new String[excludedCipherSuites.size()]));
+                sslContextFactory.setIncludeCipherSuites(includedCipherSuites.toArray(new String[0]));
+                sslContextFactory.setExcludeCipherSuites(excludedCipherSuites.toArray(new String[0]));
                 SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
                 adminConnector = createServerConnector(
                         httpServerInfo.getAdminChannel(),

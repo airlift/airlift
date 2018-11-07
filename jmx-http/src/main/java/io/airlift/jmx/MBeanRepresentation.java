@@ -66,7 +66,7 @@ public class MBeanRepresentation
             attributeInfos.put(attributeInfo.getName(), attributeInfo);
         }
 
-        String[] attributeNames = attributeInfos.keySet().toArray(new String[attributeInfos.size()]);
+        String[] attributeNames = attributeInfos.keySet().toArray(new String[0]);
         ImmutableList.Builder<AttributeRepresentation> attributes = ImmutableList.builder();
         for (Attribute attribute : mbeanServer.getAttributes(objectName, attributeNames).asList()) {
             String attributeName = attribute.getName();
