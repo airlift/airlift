@@ -56,6 +56,8 @@ public class HttpClientConfig
     private int maxConnectionsPerServer = 20;
     private int maxRequestsQueuedPerDestination = 1024;
     private DataSize maxContentLength = new DataSize(16, MEGABYTE);
+    private DataSize requestBufferSize = new DataSize(4, KILOBYTE);
+    private DataSize responseBufferSize = new DataSize(16, KILOBYTE);
     private HostAndPort socksProxy;
     private String keyStorePath = System.getProperty(JAVAX_NET_SSL_KEY_STORE);
     private String keyStorePassword = System.getProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD);
@@ -66,6 +68,7 @@ public class HttpClientConfig
 
     /**
      * This property is initialized with Jetty's default excluded ciphers list.
+     *
      * @see org.eclipse.jetty.util.ssl.SslContextFactory#SslContextFactory(boolean, String)
      */
     private List<String> excludedCipherSuites = ImmutableList.of("^.*_(MD5|SHA|SHA1)$", "^TLS_RSA_.*$", "^SSL_.*$", "^.*_NULL_.*$", "^.*_anon_.*$");
@@ -215,6 +218,34 @@ public class HttpClientConfig
     public HttpClientConfig setMaxContentLength(DataSize maxContentLength)
     {
         this.maxContentLength = maxContentLength;
+        return this;
+    }
+
+    @NotNull
+    @MaxDataSize("32MB")
+    public DataSize getRequestBufferSize()
+    {
+        return requestBufferSize;
+    }
+
+    @Config("http-client.request-buffer-size")
+    public HttpClientConfig setRequestBufferSize(DataSize requestBufferSize)
+    {
+        this.requestBufferSize = requestBufferSize;
+        return this;
+    }
+
+    @NotNull
+    @MaxDataSize("32MB")
+    public DataSize getResponseBufferSize()
+    {
+        return responseBufferSize;
+    }
+
+    @Config("http-client.response-buffer-size")
+    public HttpClientConfig setResponseBufferSize(DataSize responseBufferSize)
+    {
+        this.responseBufferSize = responseBufferSize;
         return this;
     }
 

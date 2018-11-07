@@ -4,6 +4,7 @@
 - Fix /v1/jmx HTML page loading in modern browsers.
 - Fix loading of properties files when platform's default encoding is not
   ASCII-compatible.
+- Add configuration properties for request and response HTTP client buffer sizes.
 
 0.174
 

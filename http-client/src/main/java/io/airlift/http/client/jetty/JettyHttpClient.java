@@ -200,6 +200,10 @@ public class JettyHttpClient
 
         httpClient = new AuthorizationPreservingHttpClient(transport, sslContextFactory);
 
+        // request and response buffer size
+        httpClient.setRequestBufferSize(toIntExact(config.getRequestBufferSize().toBytes()));
+        httpClient.setResponseBufferSize(toIntExact(config.getResponseBufferSize().toBytes()));
+
         // Kerberos authentication
         if (config.getAuthenticationEnabled()) {
             AuthenticationStore store = new SpnegoAuthenticationStore(new SpnegoAuthentication(
