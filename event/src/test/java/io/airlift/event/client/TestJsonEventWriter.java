@@ -22,7 +22,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
 
@@ -111,15 +110,9 @@ public class TestJsonEventWriter
 
     private static <T> EventClient.EventGenerator<T> createEventGenerator(final Iterable<T> events)
     {
-        return new EventClient.EventGenerator<T>()
-        {
-            @Override
-            public void generate(EventClient.EventPoster<T> eventPoster)
-                    throws IOException
-            {
-                for (T event : events) {
-                    eventPoster.post(event);
-                }
+        return eventPoster -> {
+            for (T event : events) {
+                eventPoster.post(event);
             }
         };
     }

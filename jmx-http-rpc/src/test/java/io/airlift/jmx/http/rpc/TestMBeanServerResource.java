@@ -17,9 +17,7 @@ package io.airlift.jmx.http.rpc;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.Binder;
 import com.google.inject.Injector;
-import com.google.inject.Module;
 import com.google.inject.Scopes;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
@@ -71,14 +69,9 @@ public class TestMBeanServerResource
                 new TestingHttpServerModule(),
                 new JsonModule(),
                 new JmxHttpRpcModule(TheServlet.class),
-                new Module()
-                {
-                    @Override
-                    public void configure(Binder binder)
-                    {
-                        binder.bind(MBeanServer.class).toInstance(platformMBeanServer);
-                        binder.bind(TestMBean.class).in(Scopes.SINGLETON);
-                    }
+                binder -> {
+                    binder.bind(MBeanServer.class).toInstance(platformMBeanServer);
+                    binder.bind(TestMBean.class).in(Scopes.SINGLETON);
                 });
 
         Injector injector = app

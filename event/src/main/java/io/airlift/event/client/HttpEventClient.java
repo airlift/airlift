@@ -91,15 +91,9 @@ public class HttpEventClient
             throws IllegalArgumentException
     {
         requireNonNull(events, "eventsSupplier is null");
-        return post(new EventGenerator<T>()
-        {
-            @Override
-            public void generate(EventPoster<T> eventPoster)
-                    throws IOException
-            {
-                for (T event : events) {
-                    eventPoster.post(event);
-                }
+        return post((EventGenerator<T>) eventPoster -> {
+            for (T event : events) {
+                eventPoster.post(event);
             }
         });
     }

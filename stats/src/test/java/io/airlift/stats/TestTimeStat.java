@@ -23,7 +23,6 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.math.DoubleMath.fuzzyEquals;
@@ -90,14 +89,9 @@ public class TestTimeStat
             throws Exception
     {
         TimeStat stat = new TimeStat(ticker);
-        stat.time(new Callable<Void>()
-        {
-            @Override
-            public Void call()
-            {
-                ticker.increment(10, TimeUnit.MILLISECONDS);
-                return null;
-            }
+        stat.time(() -> {
+            ticker.increment(10, TimeUnit.MILLISECONDS);
+            return null;
         });
 
         TimeDistribution allTime = stat.getAllTime();

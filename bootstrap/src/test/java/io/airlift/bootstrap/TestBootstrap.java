@@ -15,9 +15,7 @@
  */
 package io.airlift.bootstrap;
 
-import com.google.inject.Binder;
 import com.google.inject.ConfigurationException;
-import com.google.inject.Module;
 import com.google.inject.ProvisionException;
 import org.testng.annotations.Test;
 
@@ -46,14 +44,9 @@ public class TestBootstrap
     public void testDoesNotAllowCircularDependencies()
             throws Exception
     {
-        Bootstrap bootstrap = new Bootstrap(new Module()
-        {
-            @Override
-            public void configure(Binder binder)
-            {
-                binder.bind(InstanceA.class);
-                binder.bind(InstanceB.class);
-            }
+        Bootstrap bootstrap = new Bootstrap(binder -> {
+            binder.bind(InstanceA.class);
+            binder.bind(InstanceB.class);
         });
 
         try {

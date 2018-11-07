@@ -26,16 +26,10 @@ public abstract class AbstractEventClient
             throws IllegalArgumentException
     {
         requireNonNull(events, "events is null");
-        return post(new EventGenerator<T>()
-        {
-            @Override
-            public void generate(EventPoster<T> eventPoster)
-                    throws IOException
-            {
-                for (T event : events) {
-                    requireNonNull(event, "event is null");
-                    eventPoster.post(event);
-                }
+        return post((EventGenerator<T>) eventPoster -> {
+            for (T event : events) {
+                requireNonNull(event, "event is null");
+                eventPoster.post(event);
             }
         });
     }
@@ -45,15 +39,9 @@ public abstract class AbstractEventClient
             throws IllegalArgumentException
     {
         try {
-            eventGenerator.generate(new EventPoster<T>()
-            {
-                @Override
-                public void post(T event)
-                        throws IOException
-                {
-                    requireNonNull(event, "event is null");
-                    postEvent(event);
-                }
+            eventGenerator.generate(event -> {
+                requireNonNull(event, "event is null");
+                postEvent(event);
             });
         }
         catch (IOException e) {
