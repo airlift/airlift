@@ -33,7 +33,7 @@ class HttpClientLoggingListener
     private final long requestTimestampMillis;
     private final HttpRequest request;
     private long contentSize;
-    private long requestCreatedTimestamp = System.nanoTime();
+    private final long requestCreatedTimestamp = System.nanoTime();
     private long requestBeginTimestamp;
     private long requestEndTimestamp;
     private long responseBeginTimestamp;
