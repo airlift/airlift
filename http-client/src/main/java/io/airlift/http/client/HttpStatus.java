@@ -109,7 +109,7 @@ public enum HttpStatus
         return reason;
     }
 
-    private static Map<Integer, HttpStatus> httpStatusCodes = buildStatusCodeMap();
+    private static final Map<Integer, HttpStatus> httpStatusCodes = buildStatusCodeMap();
 
     private static Map<Integer, HttpStatus> buildStatusCodeMap()
     {
