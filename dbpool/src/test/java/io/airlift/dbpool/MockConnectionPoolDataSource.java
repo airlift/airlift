@@ -119,7 +119,7 @@ public class MockConnectionPoolDataSource
     {
         private final MockConnectionPoolDataSource dataSource;
         private boolean closed;
-        private List<ConnectionEventListener> connectionEventListeners = new CopyOnWriteArrayList<ConnectionEventListener>();
+        private List<ConnectionEventListener> connectionEventListeners = new CopyOnWriteArrayList<>();
 
         public MockPooledConnection(MockConnectionPoolDataSource dataSource)
         {

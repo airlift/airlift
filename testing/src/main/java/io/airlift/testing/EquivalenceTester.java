@@ -69,7 +69,7 @@ public final class EquivalenceTester
 
     public static <T> EquivalenceCheck<T> equivalenceTester()
     {
-        return new EquivalenceCheck<T>();
+        return new EquivalenceCheck<>();
     }
 
     public static class EquivalenceCheck<T>
@@ -105,7 +105,7 @@ public final class EquivalenceTester
         @SuppressWarnings("ObjectEqualsNull")
         private List<ElementCheckFailure> checkEquivalence()
         {
-            ImmutableList.Builder<ElementCheckFailure> errors = new ImmutableList.Builder<ElementCheckFailure>();
+            ImmutableList.Builder<ElementCheckFailure> errors = new ImmutableList.Builder<>();
 
             //
             // equal(null)
@@ -330,14 +330,14 @@ public final class EquivalenceTester
         @SafeVarargs
         public final <T extends Comparable<T>> ComparisonCheck<T> addLesserGroup(T value, T... moreValues)
         {
-            ComparisonCheck<T> comparisonCheck = new ComparisonCheck<T>();
+            ComparisonCheck<T> comparisonCheck = new ComparisonCheck<>();
             comparisonCheck.addGreaterGroup(Lists.asList(value, moreValues));
             return comparisonCheck;
         }
 
         public <T extends Comparable<T>> ComparisonCheck<T> addLesserGroup(Iterable<T> objects)
         {
-            ComparisonCheck<T> comparisonCheck = new ComparisonCheck<T>();
+            ComparisonCheck<T> comparisonCheck = new ComparisonCheck<>();
             comparisonCheck.addGreaterGroup(objects);
             return comparisonCheck;
         }
@@ -345,7 +345,7 @@ public final class EquivalenceTester
 
     public static class ComparisonCheck<T extends Comparable<T>>
     {
-        private final EquivalenceCheck<T> equivalence = new EquivalenceCheck<T>();
+        private final EquivalenceCheck<T> equivalence = new EquivalenceCheck<>();
 
         private ComparisonCheck()
         {
@@ -366,7 +366,7 @@ public final class EquivalenceTester
 
         public void check()
         {
-            ImmutableList.Builder<ElementCheckFailure> builder = new ImmutableList.Builder<ElementCheckFailure>();
+            ImmutableList.Builder<ElementCheckFailure> builder = new ImmutableList.Builder<>();
 
             builder.addAll(equivalence.checkEquivalence());
 

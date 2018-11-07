@@ -33,7 +33,7 @@ abstract class PooledDataSource
         extends ManagedDataSource
 {
     private final AtomicBoolean disposed = new AtomicBoolean();
-    private final Deque<PooledConnection> pool = new LinkedBlockingDeque<PooledConnection>();
+    private final Deque<PooledConnection> pool = new LinkedBlockingDeque<>();
 
     PooledDataSource(ConnectionPoolDataSource dataSource, int maxConnections, Duration maxConnectionWait)
     {

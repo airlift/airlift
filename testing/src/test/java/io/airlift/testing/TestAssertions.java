@@ -510,7 +510,7 @@ public class TestAssertions
     {
         public static <T extends Comparable<T>> SuperComparable<T> createSuperComparable(T value)
         {
-            return new SuperComparable<T>(value);
+            return new SuperComparable<>(value);
         }
 
         protected final T value;
@@ -538,7 +538,7 @@ public class TestAssertions
     {
         public static <T extends Comparable<T>> SubComparable<T> createSubComparable(T value)
         {
-            return new SubComparable<T>(value);
+            return new SubComparable<>(value);
         }
 
         private SubComparable(T value)

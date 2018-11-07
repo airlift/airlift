@@ -27,8 +27,8 @@ import static org.testng.Assert.fail;
 class TestMonitor
         implements Problems.Monitor
 {
-    private List<Message> errors = new ArrayList<Message>();
-    private List<Message> warnings = new ArrayList<Message>();
+    private List<Message> errors = new ArrayList<>();
+    private List<Message> warnings = new ArrayList<>();
 
     @Override
     public void onError(Message error)

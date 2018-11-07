@@ -26,7 +26,7 @@ public class TraceTokenManager
     private final String prefix = randomUUID().toString().toLowerCase(ENGLISH).replace("-", "");
     private final AtomicLong sequence = new AtomicLong();
 
-    private final ThreadLocal<String> token = new ThreadLocal<String>();
+    private final ThreadLocal<String> token = new ThreadLocal<>();
 
     public void registerRequestToken(String token)
     {
