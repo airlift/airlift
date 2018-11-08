@@ -26,6 +26,7 @@ import org.testng.annotations.Test;
 import java.net.URI;
 import java.util.Set;
 
+import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -45,7 +46,7 @@ public class TestHttpAnnouncementBinder
                 new TestingDiscoveryModule(),
                 binder -> {
                     binder.bind(AnnouncementHttpServerInfo.class).toInstance(httpServerInfo);
-                    DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("apple");
+                    discoveryBinder(binder).bindHttpAnnouncement("apple");
                 });
 
         ServiceAnnouncement announcement = serviceAnnouncement("apple")
@@ -73,7 +74,7 @@ public class TestHttpAnnouncementBinder
                 new TestingDiscoveryModule(),
                 binder -> {
                     binder.bind(AnnouncementHttpServerInfo.class).toInstance(httpServerInfo);
-                    DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("apple");
+                    discoveryBinder(binder).bindHttpAnnouncement("apple");
                 });
 
         ServiceAnnouncement announcement = serviceAnnouncement("apple")
@@ -101,7 +102,7 @@ public class TestHttpAnnouncementBinder
                 new TestingDiscoveryModule(),
                 binder -> {
                     binder.bind(AnnouncementHttpServerInfo.class).toInstance(httpServerInfo);
-                    DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("apple");
+                    discoveryBinder(binder).bindHttpAnnouncement("apple");
                 });
 
         ServiceAnnouncement announcement = serviceAnnouncement("apple")
@@ -131,7 +132,7 @@ public class TestHttpAnnouncementBinder
                 new TestingDiscoveryModule(),
                 binder -> {
                     binder.bind(AnnouncementHttpServerInfo.class).toInstance(httpServerInfo);
-                    DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("apple").addProperty("a", "apple");
+                    discoveryBinder(binder).bindHttpAnnouncement("apple").addProperty("a", "apple");
                 });
 
         ServiceAnnouncement announcement = serviceAnnouncement("apple")

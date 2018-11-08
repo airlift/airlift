@@ -17,7 +17,8 @@ package io.airlift.skeleton;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
-import io.airlift.discovery.client.DiscoveryBinder;
+
+import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 
 public class MainModule
         implements Module
@@ -27,6 +28,6 @@ public class MainModule
         binder.requireExplicitBindings();
         binder.disableCircularProxies();
 
-        DiscoveryBinder.discoveryBinder(binder).bindHttpAnnouncement("skeleton");
+        discoveryBinder(binder).bindHttpAnnouncement("skeleton");
     }
 }
