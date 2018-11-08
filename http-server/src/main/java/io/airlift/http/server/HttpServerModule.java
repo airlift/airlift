@@ -18,12 +18,12 @@ package io.airlift.http.server;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 
 import javax.servlet.Filter;
 
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.event.client.EventBinder.eventBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
@@ -65,9 +65,9 @@ public class HttpServerModule
         newExporter(binder).export(HttpServer.class).withGeneratedName();
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
         binder.bind(RequestStats.class).in(Scopes.SINGLETON);
-        Multibinder.newSetBinder(binder, Filter.class, TheServlet.class);
-        Multibinder.newSetBinder(binder, Filter.class, TheAdminServlet.class);
-        Multibinder.newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
+        newSetBinder(binder, Filter.class, TheServlet.class);
+        newSetBinder(binder, Filter.class, TheAdminServlet.class);
+        newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
 
         newExporter(binder).export(RequestStats.class).withGeneratedName();
 

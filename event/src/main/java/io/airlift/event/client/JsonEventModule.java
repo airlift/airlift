@@ -20,7 +20,8 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
+
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 
 @Beta
 public class JsonEventModule
@@ -32,6 +33,6 @@ public class JsonEventModule
         binder.bind(JsonEventSerializer.class).in(Scopes.SINGLETON);
 
         // Kick off the binding of Set<EventTypeMetadata> in case no events are bound
-        Multibinder.newSetBinder(binder, new TypeLiteral<EventTypeMetadata<?>>() {});
+        newSetBinder(binder, new TypeLiteral<EventTypeMetadata<?>>() {});
     }
 }
