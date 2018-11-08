@@ -24,6 +24,7 @@ import io.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilde
 import javax.inject.Inject;
 import javax.inject.Provider;
 
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
@@ -45,8 +46,8 @@ public class DiscoveryBinder
     {
         requireNonNull(binder, "binder is null");
         this.binder = binder.skipSources(getClass());
-        this.serviceSelectorBinder = Multibinder.newSetBinder(binder, ServiceSelector.class);
-        this.serviceAnnouncementBinder = Multibinder.newSetBinder(binder, ServiceAnnouncement.class);
+        this.serviceSelectorBinder = newSetBinder(binder, ServiceSelector.class);
+        this.serviceAnnouncementBinder = newSetBinder(binder, ServiceAnnouncement.class);
     }
 
     public void bindSelector(String type)

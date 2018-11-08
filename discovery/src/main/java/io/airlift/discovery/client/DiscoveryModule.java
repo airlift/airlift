@@ -19,7 +19,6 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
 import io.airlift.node.NodeInfo;
 
 import javax.annotation.PreDestroy;
@@ -31,6 +30,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
@@ -65,7 +65,7 @@ public class DiscoveryModule
 
         // Must create a multibinder for service announcements or construction will fail if no
         // service announcements are bound, which is legal for processes that don't have public services
-        Multibinder.newSetBinder(binder, ServiceAnnouncement.class);
+        newSetBinder(binder, ServiceAnnouncement.class);
 
         // bind selector factory
         binder.bind(CachingServiceSelectorFactory.class).in(Scopes.SINGLETON);
@@ -77,7 +77,7 @@ public class DiscoveryModule
                 .in(Scopes.SINGLETON);
 
         // bind selector manager with initial empty multibinder
-        Multibinder.newSetBinder(binder, ServiceSelector.class);
+        newSetBinder(binder, ServiceSelector.class);
         binder.bind(ServiceSelectorManager.class).in(Scopes.SINGLETON);
 
         newExporter(binder).export(ServiceInventory.class).withGeneratedName();

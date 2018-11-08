@@ -26,7 +26,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationModule;
 import io.airlift.event.client.EventModule;
@@ -67,6 +66,7 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.HttpHeaders.REFERER;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
@@ -178,7 +178,7 @@ public class TestHttpServerModule
                 new EventModule(),
                 binder -> {
                     binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
-                    Multibinder.newSetBinder(binder, Filter.class, TheServlet.class).addBinding().to(DummyFilter.class).in(Scopes.SINGLETON);
+                    newSetBinder(binder, Filter.class, TheServlet.class).addBinding().to(DummyFilter.class).in(Scopes.SINGLETON);
                     httpServerBinder(binder).bindResource("/", "webapp/user").withWelcomeFile("user-welcome.txt");
                     httpServerBinder(binder).bindResource("/", "webapp/user2");
                     httpServerBinder(binder).bindResource("path", "webapp/user").withWelcomeFile("user-welcome.txt");
