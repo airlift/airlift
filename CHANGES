@@ -5,6 +5,7 @@
 - Fix loading of properties files when platform's default encoding is not
   ASCII-compatible.
 - Add configuration properties for request and response HTTP client buffer sizes.
+- Install Jackson ParameterNamesModule module by default.
 
 0.174
 
