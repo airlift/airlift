@@ -15,6 +15,7 @@
  */
 package io.airlift.json;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
@@ -141,6 +142,16 @@ public class TestJsonModule
 
         // Jackson should deserialize the object correctly with the extra unknown data
         assertEquals(objectMapper.readValue(objectMapper.writeValueAsString(data), Car.class), CAR);
+    }
+
+    @Test
+    public void testPropertyNamesFromParameterNames()
+            throws Exception
+    {
+        NoJsonPropertiesInJsonCreator value = new NoJsonPropertiesInJsonCreator("first value", "second value");
+        NoJsonPropertiesInJsonCreator mapped = objectMapper.readValue(objectMapper.writeValueAsString(value), NoJsonPropertiesInJsonCreator.class);
+        assertEquals(mapped.getFirst(), "first value");
+        assertEquals(mapped.getSecond(), "second value");
     }
 
     private Map<String, Object> createCarMap()
@@ -315,6 +326,31 @@ public class TestJsonModule
                     .add("notes", notes)
                     .add("nameList", nameList)
                     .toString();
+        }
+    }
+
+    public static class NoJsonPropertiesInJsonCreator
+    {
+        private final String first;
+        private final String second;
+
+        @JsonCreator
+        public NoJsonPropertiesInJsonCreator(/* no @JsonProperty here*/ String first, String second)
+        {
+            this.first = first;
+            this.second = second;
+        }
+
+        @JsonProperty
+        public String getFirst()
+        {
+            return first;
+        }
+
+        @JsonProperty
+        public String getSecond()
+        {
+            return second;
         }
     }
 

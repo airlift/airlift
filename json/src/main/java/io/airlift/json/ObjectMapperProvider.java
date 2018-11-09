@@ -31,6 +31,7 @@ import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 
@@ -69,6 +70,7 @@ public class ObjectMapperProvider
         modules.add(new JavaTimeModule());
         modules.add(new GuavaModule());
         modules.add(new JodaModule());
+        modules.add(new ParameterNamesModule());
     }
 
     @Inject(optional = true)
