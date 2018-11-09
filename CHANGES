@@ -6,6 +6,10 @@
   ASCII-compatible.
 - Add configuration properties for request and response HTTP client buffer sizes.
 - Install Jackson ParameterNamesModule module by default.
+- Stop request log on HTTP server shutdown.
+- Improve Quantile Digest serialization format to use less space and to
+  include a version number. The format is now stable and documented.
+- Optimize performance of Quantile Digest histogram construction.
 
 0.174
 

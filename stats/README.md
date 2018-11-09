@@ -1,1 +1,2 @@
-[HyperLogLog](docs/hll.md)
+* [HyperLogLog](docs/hll.md)
+* [Quantile Digest](docs/qdigest.md)
