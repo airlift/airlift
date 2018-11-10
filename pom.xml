@@ -13,7 +13,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airbase</artifactId>
-        <version>87</version>
+        <version>88</version>
     </parent>
 
     <inceptionYear>2010</inceptionYear>
@@ -434,18 +434,4 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>com.ning.maven.plugins</groupId>
-                    <artifactId>maven-dependency-versions-check-plugin</artifactId>
-                    <configuration>
-                        <useParallelDependencyResolution>false</useParallelDependencyResolution>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
 </project>
