@@ -19,13 +19,16 @@ import com.google.common.base.Strings;
 import com.google.common.reflect.TypeToken;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.json.JsonCodec.listJsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -69,6 +72,18 @@ public class TestJsonCodec
     }
 
     @Test
+    public void testListNullValues()
+    {
+        JsonCodec<List<String>> jsonCodec = listJsonCodec(String.class);
+
+        List<String> list = new ArrayList<>();
+        list.add(null);
+        list.add("abc");
+
+        assertEquals(jsonCodec.fromJson(jsonCodec.toJson(list)), list);
+    }
+
+    @Test
     public void testMapJsonCodec()
             throws Exception
     {
@@ -93,6 +108,18 @@ public class TestJsonCodec
         JsonCodec<Map<String, Person>> jsonCodec = jsonCodec(new TypeToken<Map<String, Person>>() {});
 
         Person.validatePersonMapJsonCodec(jsonCodec);
+    }
+
+    @Test
+    public void testMapNullValues()
+    {
+        JsonCodec<Map<String, String>> jsonCodec = mapJsonCodec(String.class, String.class);
+
+        Map<String, String> map = new HashMap<>();
+        map.put("x", null);
+        map.put("y", "abc");
+
+        assertEquals(jsonCodec.fromJson(jsonCodec.toJson(map)), map);
     }
 
     @Test

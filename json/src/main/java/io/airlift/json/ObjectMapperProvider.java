@@ -117,8 +117,9 @@ public class ObjectMapperProvider
         // use ISO dates
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-        // skip fields that are null instead of writing an explicit json null value
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_ABSENT);
+        // Skip fields that are null or absent (Optional) when serializing objects.
+        // This only applies to mapped object fields, not containers like Map or List.
+        objectMapper.setDefaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_ABSENT, JsonInclude.Include.ALWAYS));
 
         // disable auto detection of json properties... all properties must be explicit
         objectMapper.disable(MapperFeature.AUTO_DETECT_CREATORS);
