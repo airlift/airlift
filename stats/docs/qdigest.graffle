@@ -1075,7 +1075,7 @@
 				</dict>
 				<dict>
 					<key>Bounds</key>
-					<string>{{370.98504895698301, 217.69284410419505}, {115, 28}}</string>
+					<string>{{367.98504895698301, 217.69284410419505}, {121, 28}}</string>
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>FitText</key>
@@ -1114,7 +1114,7 @@
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\qc\partightenfactor0
 
 \f0\fs24 \cf0 nodes\
-(9 bytes * # of nodes)}</string>
+(17 bytes * # of nodes)}</string>
 						<key>VerticalPad</key>
 						<real>0.0</real>
 					</dict>
