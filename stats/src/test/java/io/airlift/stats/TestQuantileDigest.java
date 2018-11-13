@@ -799,6 +799,21 @@ public class TestQuantileDigest
         assertTrue(digest.equivalent(deserialize(digest.serialize())));
     }
 
+    @Test
+    public void testSerializationWithExtremeEndsOfLong()
+            throws Exception
+    {
+        QuantileDigest digest = new QuantileDigest(1);
+        digest.add(Long.MIN_VALUE);
+        digest.add(Long.MAX_VALUE);
+
+        assertTrue(digest.equivalent(deserialize(digest.serialize())));
+
+        digest.compress();
+
+        assertTrue(digest.equivalent(deserialize(digest.serialize())));
+    }
+
     @Test(invocationCount = 1000)
     public void testSerializationRandom()
             throws Exception
