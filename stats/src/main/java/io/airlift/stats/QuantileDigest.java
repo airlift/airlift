@@ -203,7 +203,7 @@ public class QuantileDigest
             byte nodeStructure = input.readByte();
             boolean hasRight = (nodeStructure & Flags.HAS_RIGHT) != 0;
             boolean hasLeft = (nodeStructure & Flags.HAS_LEFT) != 0;
-            byte level = (byte) (nodeStructure >>> 2);
+            byte level = (byte) ((nodeStructure >>> 2) & 0b111111);
 
             // Branch node levels are serialized as 0-indexed to save a bit, therefore if this is not a leaf node then
             // add back one to the level.
