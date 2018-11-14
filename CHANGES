@@ -1,6 +1,7 @@
 0.176
 
 - Upgrade to Jackson 2.9.7
+- Fix extraction of level when deserializing QuantileDigest.
 
 0.175
 
