@@ -66,6 +66,7 @@
         <module>http-server</module>
         <module>jaxrs</module>
         <module>jaxrs-testing</module>
+        <module>joda-to-java-time-bridge</module>
         <module>jmx-http-rpc</module>
         <module>jmx-http</module>
         <module>jmx</module>
