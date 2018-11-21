@@ -964,7 +964,7 @@ public abstract class AbstractHttpClientTest
     }
 
     public static class ExceptionResponseHandler
-            implements ResponseHandler<Void, Exception>
+            extends ResponseHandler<Void, Exception>
     {
         @Override
         public Void handleException(Request request, Exception exception)
@@ -982,7 +982,7 @@ public abstract class AbstractHttpClientTest
     }
 
     private static class PassThroughResponseHandler
-            implements ResponseHandler<Response, RuntimeException>
+            extends ResponseHandler<Response, RuntimeException>
     {
         @Override
         public Response handleException(Request request, Exception exception)
@@ -998,7 +998,7 @@ public abstract class AbstractHttpClientTest
     }
 
     private static class UnexpectedResponseStatusCodeHandler
-            implements ResponseHandler<Integer, RuntimeException>
+            extends ResponseHandler<Integer, RuntimeException>
     {
         private final int expectedStatusCode;
 
@@ -1025,7 +1025,7 @@ public abstract class AbstractHttpClientTest
     }
 
     public static class CaptureExceptionResponseHandler
-            implements ResponseHandler<String, CapturedException>
+            extends ResponseHandler<String, CapturedException>
     {
         @Override
         public String handleException(Request request, Exception exception)
@@ -1042,7 +1042,7 @@ public abstract class AbstractHttpClientTest
     }
 
     public static class ThrowErrorResponseHandler
-            implements ResponseHandler<String, Exception>
+            extends ResponseHandler<String, Exception>
     {
         @Override
         public String handleException(Request request, Exception exception)
@@ -1072,7 +1072,7 @@ public abstract class AbstractHttpClientTest
     }
 
     private class DefaultOnExceptionResponseHandler
-            implements ResponseHandler<Object, RuntimeException>
+            extends ResponseHandler<Object, RuntimeException>
     {
         private final Object defaultObject;
 

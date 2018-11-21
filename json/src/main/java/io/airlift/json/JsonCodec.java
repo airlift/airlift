@@ -35,6 +35,7 @@ import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 public class JsonCodec<T>
+        implements Codec<T>
 {
     private static final Supplier<ObjectMapper> OBJECT_MAPPER_SUPPLIER = Suppliers.memoize(
             () -> new ObjectMapperProvider().get().enable(INDENT_OUTPUT))::get;
@@ -112,9 +113,7 @@ public class JsonCodec<T>
         this.javaType = mapper.getTypeFactory().constructType(type);
     }
 
-    /**
-     * Gets the type this codec supports.
-     */
+    @Override
     public Type getType()
     {
         return type;
@@ -186,6 +185,7 @@ public class JsonCodec<T>
      * @return parsed response; never null
      * @throws IllegalArgumentException if the json bytes can not be converted to the type T
      */
+    @Deprecated
     public T fromJson(byte[] json)
             throws IllegalArgumentException
     {
@@ -203,7 +203,9 @@ public class JsonCodec<T>
      * @param instance the instance to convert to json
      * @return json bytes (UTF-8)
      * @throws IllegalArgumentException if the specified instance can not be converted to json
+     * @deprecated Please use {@link #toBytes(T) toBytes}.
      */
+    @Deprecated
     public byte[] toJsonBytes(T instance)
             throws IllegalArgumentException
     {
@@ -213,6 +215,25 @@ public class JsonCodec<T>
         catch (IOException e) {
             throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
         }
+    }
+
+    /**
+     * Converts the specified instance to json.
+     *
+     * @param instance the instance to convert to json
+     * @return json bytes (UTF-8)
+     * @throws IllegalArgumentException if the specified instance can not be converted to json
+     */
+    @Override
+    public byte[] toBytes(T instance)
+    {
+        return toJsonBytes(instance);
+    }
+
+    @Override
+    public T fromBytes(byte[] bytes)
+    {
+        return fromJson(bytes);
     }
 
     @SuppressWarnings("unchecked")

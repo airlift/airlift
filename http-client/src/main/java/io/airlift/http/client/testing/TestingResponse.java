@@ -88,6 +88,11 @@ public class TestingResponse
         return new TestingResponse(status, contentType(type), content.getBytes(UTF_8));
     }
 
+    public static Response mockResponse(HttpStatus status, MediaType type, byte[] content)
+    {
+        return new TestingResponse(status, contentType(type), content);
+    }
+
     private static ListMultimap<HeaderName, String> toHeaderMap(ListMultimap<String, String> headers)
     {
         ImmutableListMultimap.Builder<HeaderName, String> builder = ImmutableListMultimap.builder();

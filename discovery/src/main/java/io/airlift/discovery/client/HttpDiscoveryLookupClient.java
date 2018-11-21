@@ -175,7 +175,7 @@ public class HttpDiscoveryLookupClient
     }
 
     private class DiscoveryResponseHandler<T>
-            implements ResponseHandler<T, DiscoveryException>
+            extends ResponseHandler<T, DiscoveryException>
     {
         private final String name;
         private final URI uri;

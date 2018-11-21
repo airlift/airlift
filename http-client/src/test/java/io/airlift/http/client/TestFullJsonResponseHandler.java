@@ -58,7 +58,7 @@ public class TestFullJsonResponseHandler
         JsonResponse<User> response = handler.handle(null, mockResponse(OK, JSON_UTF_8, json));
 
         assertFalse(response.hasValue());
-        assertEquals(response.getException().getMessage(), format("Unable to create %s from JSON response:\n[%s]", User.class, json));
+        assertEquals(response.getException().getMessage(), format("Unable to create %s from response:\n[%s]", User.class, json));
         assertTrue(response.getException().getCause() instanceof IllegalArgumentException);
         assertEquals(response.getException().getCause().getMessage(), "Invalid JSON bytes for [simple type, class io.airlift.http.client.TestFullJsonResponseHandler$User]");
 
@@ -80,7 +80,7 @@ public class TestFullJsonResponseHandler
             fail("expected exception");
         }
         catch (IllegalStateException e) {
-            assertEquals(e.getMessage(), "Response does not contain a JSON value");
+            assertEquals(e.getMessage(), "Response does not contain a valid value");
             assertEquals(e.getCause(), response.getException());
 
             assertEquals(response.getJsonBytes(), json.getBytes(UTF_8));
