@@ -19,7 +19,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
@@ -29,7 +28,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URL;
 import java.util.List;
 
@@ -121,16 +119,7 @@ public class ClassPathResourceHandler
                 return;
             }
 
-            // Send the content out. Lifted straight out of ResourceHandler.java
-            OutputStream out;
-            try {
-                out = response.getOutputStream();
-            }
-            catch (IllegalStateException e) {
-                out = new WriterOutputStream(response.getWriter());
-            }
-
-            ByteStreams.copy(resourceStream, out);
+            ByteStreams.copy(resourceStream, response.getOutputStream());
         }
         finally {
             closeQuietly(resourceStream);
