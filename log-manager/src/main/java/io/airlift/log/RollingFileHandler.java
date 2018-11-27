@@ -30,7 +30,7 @@ final class RollingFileHandler
 
     private final AsyncAppenderBase<String> asyncAppender;
 
-    public RollingFileHandler(String filename, int maxHistory, long maxSizeInBytes)
+    public RollingFileHandler(String filename, String fileNamePattern, int maxHistory, long maxSizeInBytes)
     {
         setFormatter(new StaticFormatter());
 
@@ -43,7 +43,7 @@ final class RollingFileHandler
         SizeAndTimeBasedFNATP<String> triggeringPolicy = new SizeAndTimeBasedFNATP<>();
 
         rollingPolicy.setContext(context);
-        rollingPolicy.setFileNamePattern(filename + "-%d{yyyy-MM-dd}.%i.log.gz");
+        rollingPolicy.setFileNamePattern(filename + fileNamePattern);
         rollingPolicy.setMaxHistory(maxHistory);
         rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(triggeringPolicy);
         rollingPolicy.setParent(fileAppender);

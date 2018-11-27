@@ -110,11 +110,11 @@ public class Logging
     }
 
     @SuppressWarnings("MethodMayBeStatic")
-    public void logToFile(String logPath, int maxHistory, long maxSizeInBytes)
+    public void logToFile(String logPath, String fileNamePattern, int maxHistory, long maxSizeInBytes)
     {
         log.info("Logging to %s", logPath);
 
-        RollingFileHandler rollingFileHandler = new RollingFileHandler(logPath, maxHistory, maxSizeInBytes);
+        RollingFileHandler rollingFileHandler = new RollingFileHandler(logPath, fileNamePattern, maxHistory, maxSizeInBytes);
         ROOT.addHandler(rollingFileHandler);
     }
 
@@ -194,7 +194,7 @@ public class Logging
             throws IOException
     {
         if (config.getLogPath() != null) {
-            logToFile(config.getLogPath(), config.getMaxHistory(), config.getMaxSize().toBytes());
+            logToFile(config.getLogPath(), config.getFileNamePattern(), config.getMaxHistory(), config.getMaxSize().toBytes());
         }
 
         if (!config.isConsoleEnabled()) {

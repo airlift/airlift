@@ -26,6 +26,7 @@ public class LoggingConfiguration
 {
     private boolean consoleEnabled = true;
     private String logPath;
+    private String fileNamePattern = "-%d{yyyy-MM-dd}.%i.log.gz";
     private DataSize maxSize = new DataSize(100, MEGABYTE);
     private int maxHistory = 30;
     private String levelsFile;
@@ -52,6 +53,18 @@ public class LoggingConfiguration
     public LoggingConfiguration setLogPath(String logPath)
     {
         this.logPath = logPath;
+        return this;
+    }
+
+    public String getFileNamePattern()
+    {
+        return fileNamePattern;
+    }
+
+    @Config("log.file-name-pattern")
+    public LoggingConfiguration setFileNamePattern(String fileNamePattern)
+    {
+        this.fileNamePattern = fileNamePattern;
         return this;
     }
 
