@@ -1,3 +1,7 @@
+0.179
+
+- Update to BVal 2.0.0
+
 0.178
 
 - Limit the size of HTTP server request log by default.
