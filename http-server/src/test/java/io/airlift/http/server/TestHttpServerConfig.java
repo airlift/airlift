@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static io.airlift.units.DataSize.Unit.BYTE;
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
@@ -57,7 +56,7 @@ public class TestHttpServerConfig
                 .setTrustStorePassword(null)
                 .setLogPath("var/log/http-request.log")
                 .setLogEnabled(true)
-                .setLogMaxFileSize(new DataSize(Long.MAX_VALUE, BYTE))
+                .setLogMaxFileSize(new DataSize(100, MEGABYTE))
                 .setLogHistory(15)
                 .setLogQueueSize(10_000)
                 .setLogCompressionEnabled(true)

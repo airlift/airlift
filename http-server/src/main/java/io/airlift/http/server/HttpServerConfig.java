@@ -32,7 +32,6 @@ import javax.validation.constraints.NotNull;
 
 import java.util.List;
 
-import static io.airlift.units.DataSize.Unit.BYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.util.Objects.requireNonNull;
@@ -86,7 +85,7 @@ public class HttpServerConfig
     private boolean logEnabled = true;
     private int logHistory = 15;
     private int logQueueSize = 10_000;
-    private DataSize logMaxFileSize = new DataSize(Long.MAX_VALUE, BYTE);
+    private DataSize logMaxFileSize = new DataSize(100, MEGABYTE);
     private boolean logCompressionEnabled = true;
 
     private Integer httpAcceptorThreads;
