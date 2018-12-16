@@ -72,19 +72,7 @@ import static java.util.Objects.requireNonNull;
 public class ConfigurationFactory
 {
     @GuardedBy("VALIDATOR")
-    private static final Validator VALIDATOR;
-
-    static {
-        // this prevents bval from using the thread context classloader
-        ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
-        try {
-            Thread.currentThread().setContextClassLoader(null);
-            VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
-        }
-        finally {
-            Thread.currentThread().setContextClassLoader(currentClassLoader);
-        }
-    }
+    private static final Validator VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
 
     private final Map<String, String> properties;
     private final WarningsMonitor warningsMonitor;
