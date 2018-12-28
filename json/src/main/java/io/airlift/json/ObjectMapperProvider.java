@@ -69,8 +69,14 @@ public class ObjectMapperProvider
         modules.add(new Jdk8Module());
         modules.add(new JavaTimeModule());
         modules.add(new GuavaModule());
-        modules.add(new JodaModule());
         modules.add(new ParameterNamesModule());
+
+        try {
+            getClass().getClassLoader().loadClass("org.joda.time.DateTime");
+            modules.add(new JodaModule());
+        }
+        catch (ClassNotFoundException ignored) {
+        }
     }
 
     @Inject(optional = true)

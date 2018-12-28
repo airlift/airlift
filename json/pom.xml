@@ -53,6 +53,12 @@
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-joda</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>joda-time</groupId>
+                    <artifactId>joda-time</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -70,16 +76,16 @@
             <artifactId>guava</artifactId>
         </dependency>
 
-        <!-- used by tests but also needed transitively -->
-        <dependency>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time</artifactId>
-        </dependency>
-
         <!-- for testing -->
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
