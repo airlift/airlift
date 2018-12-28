@@ -1,3 +1,7 @@
+0.178
+
+- Make joda-time dependency optional for JSON module.
+
 0.177
 
 - Update to Jetty 9.4.14.v20181114.
