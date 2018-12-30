@@ -1,6 +1,9 @@
 0.178
 
+- Limit the size of HTTP server request log by default.
+- Prevent ClassPathResourceHandler from using default encoding.
 - Make joda-time dependency optional for JSON module.
+- Return correct status code from JaxrsTestingHttpProcessor.
 
 0.177
 
