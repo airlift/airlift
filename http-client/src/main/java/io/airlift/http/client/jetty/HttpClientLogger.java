@@ -24,7 +24,9 @@ import static java.util.Objects.requireNonNull;
 public interface HttpClientLogger
 {
     void log(RequestInfo requestInfo, ResponseInfo responseInfo);
+
     void close();
+
     int getQueueSize();
 
     class RequestInfo
