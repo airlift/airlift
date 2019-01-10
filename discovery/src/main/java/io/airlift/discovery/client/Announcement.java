@@ -15,6 +15,7 @@
  */
 package io.airlift.discovery.client;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -32,7 +33,13 @@ public class Announcement
     private final String pool;
     private final Set<ServiceAnnouncement> services;
 
-    public Announcement(String environment, String nodeId, String pool, String location, Set<ServiceAnnouncement> services)
+    @JsonCreator
+    public Announcement(
+            @JsonProperty("environment") String environment,
+            @JsonProperty("nodeId") String nodeId,
+            @JsonProperty("pool") String pool,
+            @JsonProperty("location") String location,
+            @JsonProperty("services") Set<ServiceAnnouncement> services)
     {
         requireNonNull(environment, "environment is null");
         requireNonNull(nodeId, "nodeId is null");

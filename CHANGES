@@ -1,6 +1,7 @@
 0.179
 
 - Update to BVal 2.0.0
+- Add missing Jackson JSON annotations to Announcement.
 
 0.178
 
