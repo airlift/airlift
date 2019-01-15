@@ -17,6 +17,7 @@ package io.airlift.http.client;
 
 import com.google.common.annotations.Beta;
 import com.google.inject.Binder;
+import com.google.inject.Scope;
 import com.google.inject.Scopes;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.Multibinder;
@@ -49,6 +50,13 @@ public class HttpClientBinder
         HttpClientModule module = new HttpClientModule(name, annotation);
         binder.install(module);
         return new HttpClientBindingBuilder(module, newSetBinder(binder, HttpRequestFilter.class, annotation));
+    }
+
+    public HttpClientBindingBuilder bindHttpClient(AbstractHttpClientProvider httpClientProvider, Scope scope)
+    {
+        HttpClientModule module = new HttpClientModule(httpClientProvider, scope);
+        binder.install(module);
+        return new HttpClientBindingBuilder(module, newSetBinder(binder, HttpRequestFilter.class, httpClientProvider.getAnnotation()));
     }
 
     public LinkedBindingBuilder<HttpRequestFilter> addGlobalFilterBinding()

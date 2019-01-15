@@ -18,22 +18,32 @@ package io.airlift.http.client;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.inject.Scopes;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.tracetoken.TraceTokenModule;
 import io.airlift.units.Duration;
 import org.testng.annotations.Test;
+import org.weakref.jmx.MBeanExporter;
+import org.weakref.jmx.ObjectNames;
+import org.weakref.jmx.testing.TestingMBeanServer;
 
 import javax.inject.Qualifier;
+import javax.management.ObjectName;
 
+import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.IdentityHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
 import static io.airlift.testing.Assertions.assertInstanceOf;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -59,6 +69,35 @@ public class TestHttpClientBinder
 
         JettyHttpClient httpClient = (JettyHttpClient) injector.getInstance(Key.get(HttpClient.class, FooClient.class));
         assertEquals(httpClient.getRequestTimeoutMillis(), MINUTES.toMillis(33));
+    }
+
+    @Test
+    public void testCustomHttpClientProvider()
+            throws Exception
+    {
+        int clientCount = 8;
+        TestingMBeanServer server = new TestingMBeanServer();
+        TestHttpClientProvider httpClientProvider = new TestHttpClientProvider(server, "foo", FooClient.class, clientCount);
+        Injector injector = new Bootstrap(
+                binder -> httpClientBinder(binder)
+                        .bindHttpClient(httpClientProvider, Scopes.NO_SCOPE)
+                        .withConfigDefaults(config -> config.setRequestTimeout(new Duration(1, MINUTES))),
+                new TraceTokenModule())
+                .quiet()
+                .strictConfig()
+                .initialize();
+
+        IdentityHashMap<JettyHttpClient, Integer> clientMap = new IdentityHashMap<>();
+        for (int i = 0; i < 10_000; i++) {
+            JettyHttpClient httpClient = (JettyHttpClient) injector.getInstance(Key.get(HttpClient.class, FooClient.class));
+            clientMap.merge(httpClient, 1, Integer::sum);
+        }
+        assertEquals(clientMap.size(), clientCount);
+
+        for (int i = 1; i < clientCount; i++) {
+            String name = ObjectNames.builder(HttpClient.class, FooClient.class).withProperty("id", String.valueOf(i)).build();
+            assertNotNull(server.getObjectInstance(ObjectName.getInstance(name)));
+        }
     }
 
     @Test
@@ -280,6 +319,48 @@ public class TestHttpClientBinder
         public Request filterRequest(Request request)
         {
             return request;
+        }
+    }
+
+    static class TestHttpClientProvider
+            extends AbstractHttpClientProvider
+    {
+        private final HttpClient[] httpClients;
+        private final MBeanExporter exporter;
+
+        TestHttpClientProvider(TestingMBeanServer server, String name, Class<? extends Annotation> annotation, int clientCount)
+        {
+            super(name, annotation);
+            checkArgument(clientCount > 0, "clientCount must be positive");
+            requireNonNull(server, "server is null");
+            this.httpClients = new JettyHttpClient[clientCount];
+            this.exporter = new MBeanExporter(server);
+        }
+
+        @Override
+        public void initialize()
+        {
+            for (int i = 0; i < httpClients.length; i++) {
+                httpClients[i] = new JettyHttpClient(name, getHttpClientConfig(), getKerberosConfig(), getHttpRequestFilters());
+                String name = ObjectNames.builder(HttpClient.class, annotation).withProperty("id", String.valueOf(i)).build();
+                exporter.export(name, httpClients[i]);
+            }
+        }
+
+        @Override
+        public HttpClient get()
+        {
+            return httpClients[ThreadLocalRandom.current().nextInt(httpClients.length)];
+        }
+
+        @Override
+        public void close()
+        {
+            for (int i = 0; i < httpClients.length; i++) {
+                httpClients[i].close();
+                String name = ObjectNames.builder(HttpClient.class, annotation).withProperty("id", String.valueOf(i)).build();
+                exporter.unexport(name);
+            }
         }
     }
 }
