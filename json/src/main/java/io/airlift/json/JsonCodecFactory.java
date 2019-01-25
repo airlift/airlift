@@ -127,28 +127,6 @@ public class JsonCodecFactory
 
     private ObjectMapper createObjectMapper()
     {
-        ObjectMapper objectMapper = null;
-
-        // Work around for http://code.google.com/p/google-guice/issues/detail?id=627
-        RuntimeException lastException = null;
-        for (int i = 0; objectMapper == null && i < 10; i++) {
-            try {
-                objectMapper = objectMapperProvider.get();
-            }
-            catch (RuntimeException e) {
-                lastException = e;
-            }
-        }
-        if (objectMapper == null) {
-            throw lastException;
-        }
-
-        if (prettyPrint) {
-            objectMapper.enable(INDENT_OUTPUT);
-        }
-        else {
-            objectMapper.disable(INDENT_OUTPUT);
-        }
-        return objectMapper;
+        return objectMapperProvider.get().configure(INDENT_OUTPUT, prettyPrint);
     }
 }
