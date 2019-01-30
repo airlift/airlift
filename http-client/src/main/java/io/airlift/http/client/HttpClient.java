@@ -29,6 +29,8 @@ public interface HttpClient
 
     <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler);
 
+    <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler, ResponseListener responseListener);
+
     RequestStats getStats();
 
     long getMaxContentLength();

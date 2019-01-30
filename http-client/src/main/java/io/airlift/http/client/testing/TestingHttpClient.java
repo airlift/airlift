@@ -9,6 +9,7 @@ import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.Response;
 import io.airlift.http.client.ResponseHandler;
+import io.airlift.http.client.ResponseListener;
 import io.airlift.units.Duration;
 
 import java.util.concurrent.ExecutorService;
@@ -39,6 +40,12 @@ public class TestingHttpClient
     {
         this.processor = requireNonNull(processor, "processor is null");
         this.executor = listeningDecorator(requireNonNull(executor, "executor is null"));
+    }
+
+    @Override
+    public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler, ResponseListener responseListener)
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override

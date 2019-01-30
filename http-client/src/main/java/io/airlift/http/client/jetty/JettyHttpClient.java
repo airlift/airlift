@@ -10,6 +10,7 @@ import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
+import io.airlift.http.client.ResponseListener;
 import io.airlift.http.client.StaticBodyGenerator;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
@@ -537,16 +538,21 @@ public class JettyHttpClient
     @Override
     public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
     {
+        return executeAsync(request, responseHandler, new BufferingResponseListener());
+    }
+
+    @Override
+    public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler, ResponseListener responseListener)
+    {
         requireNonNull(request, "request is null");
         requireNonNull(responseHandler, "responseHandler is null");
-
         request = applyRequestFilters(request);
 
         HttpRequest jettyRequest = buildJettyRequest(request, new JettyRequestListener(request.getUri()));
 
         JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest, responseHandler, stats, recordRequestComplete);
 
-        BufferingResponseListener listener = new BufferingResponseListener(future, Ints.saturatedCast(maxContentLength));
+        DelegatingResponseListener listener = new DelegatingResponseListener(future, Ints.saturatedCast(maxContentLength), responseListener);
 
         long requestTimestamp = System.currentTimeMillis();
 
