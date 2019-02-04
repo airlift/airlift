@@ -20,6 +20,8 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 
+import static io.airlift.configuration.ConfigBinder.configBinder;
+
 public class JsonModule
         implements Module
 {
@@ -31,7 +33,7 @@ public class JsonModule
         // NOTE: this MUST NOT be a singleton because ObjectMappers are mutable.  This means
         // one component could reconfigure the mapper and break all other components
         binder.bind(ObjectMapper.class).toProvider(ObjectMapperProvider.class);
-
+        configBinder(binder).bindConfig(JsonCodecConfig.class);
         binder.bind(JsonCodecFactory.class).in(Scopes.SINGLETON);
     }
 }

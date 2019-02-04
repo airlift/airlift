@@ -15,8 +15,11 @@
  */
 package io.airlift.json.isolated;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import io.airlift.configuration.ConfigurationFactory;
+import io.airlift.configuration.ConfigurationModule;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecBinder;
 import io.airlift.json.JsonModule;
@@ -44,7 +47,11 @@ public class TestJsonCodecBinder
     public void test()
             throws Exception
     {
-        Injector injector = Guice.createInjector(new JsonModule(),
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(ImmutableMap.of());
+
+        Injector injector = Guice.createInjector(
+                new JsonModule(),
+                new ConfigurationModule(configurationFactory),
                 binder -> {
                     JsonCodecBinder codecBinder = jsonCodecBinder(binder);
                     codecBinder.bindJsonCodec(Person.class);
