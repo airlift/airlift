@@ -31,6 +31,7 @@ import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -57,12 +58,17 @@ public class ObjectMapperProvider
     private final Set<Module> modules = new HashSet<>();
 
     @Inject
-    public ObjectMapperProvider()
+    public ObjectMapperProvider(JsonCodecConfig config)
     {
-        this(new JsonFactory());
+        this(new JsonFactory(), config.isIncludeAfterBurnerModule());
     }
 
-    public ObjectMapperProvider(JsonFactory jsonFactory)
+    public ObjectMapperProvider()
+    {
+        this(new JsonFactory(), false);
+    }
+
+    public ObjectMapperProvider(JsonFactory jsonFactory, boolean includeAfterBurnerModule)
     {
         this.jsonFactory = requireNonNull(jsonFactory, "jsonFactory is null");
 
@@ -76,6 +82,10 @@ public class ObjectMapperProvider
             modules.add(new JodaModule());
         }
         catch (ClassNotFoundException ignored) {
+        }
+
+        if (includeAfterBurnerModule) {
+            modules.add(new AfterburnerModule());
         }
     }
 

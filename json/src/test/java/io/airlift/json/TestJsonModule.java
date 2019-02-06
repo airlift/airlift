@@ -29,9 +29,12 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import io.airlift.configuration.ConfigurationFactory;
+import io.airlift.configuration.ConfigurationModule;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 import org.testng.annotations.BeforeClass;
@@ -64,7 +67,10 @@ public class TestJsonModule
     public void setUp()
             throws Exception
     {
-        Injector injector = Guice.createInjector(new JsonModule(),
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(ImmutableMap.of());
+        Injector injector = Guice.createInjector(
+                new JsonModule(),
+                new ConfigurationModule(configurationFactory),
                 binder -> {
                     jsonBinder(binder).addSerializerBinding(SuperDuperNameList.class).toInstance(ToStringSerializer.instance);
                     jsonBinder(binder).addDeserializerBinding(SuperDuperNameList.class).to(SuperDuperNameListDeserializer.class);
@@ -76,7 +82,11 @@ public class TestJsonModule
     public void testJsonCodecFactoryBinding()
             throws Exception
     {
-        Injector injector = Guice.createInjector(new JsonModule());
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(ImmutableMap.of());
+
+        Injector injector = Guice.createInjector(
+                new JsonModule(),
+                new ConfigurationModule(configurationFactory));
         JsonCodecFactory codecFactory = injector.getInstance(JsonCodecFactory.class);
 
         Person.validatePersonJsonCodec(codecFactory.jsonCodec(Person.class));
