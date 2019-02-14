@@ -4,6 +4,7 @@
 - Log HTTP server requests even when body is not read.
 - Add installModuleIf method to ConditionalModule with ability to
   install module when condition is not met.
+- Exclude tar.gz files from server tarballs.
 
 0.179
 

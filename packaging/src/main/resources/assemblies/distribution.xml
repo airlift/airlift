@@ -49,6 +49,7 @@
             </includes>
             <excludes>
                 <exclude>*:zip:*</exclude>
+                <exclude>*:tar.gz:*</exclude>
             </excludes>
         </dependencySet>
 
