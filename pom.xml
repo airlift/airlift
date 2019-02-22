@@ -79,6 +79,7 @@
         <module>stats</module>
         <module>testing</module>
         <module>trace-token</module>
+        <module>retry</module>
 
         <!-- skeleton / sample code -->
         <module>skeleton-server</module>
