@@ -1,6 +1,7 @@
 0.179
 
 - Update to BVal 2.0.0
+- Report server port when bind fails in HttpServer
 
 0.178
 
