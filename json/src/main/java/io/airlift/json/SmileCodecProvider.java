@@ -1,6 +1,4 @@
 /*
- * Copyright 2010 Proofpoint, Inc.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,27 +18,29 @@ import javax.inject.Provider;
 
 import java.lang.reflect.Type;
 
-class JsonCodecProvider
+import static java.util.Objects.requireNonNull;
+
+class SmileCodecProvider
         implements Provider<Codec<?>>
 {
     private final Type type;
-    private JsonCodecFactory jsonCodecFactory;
+    private SmileCodecFactory smileCodecFactory;
 
-    public JsonCodecProvider(Type type)
+    public SmileCodecProvider(Type type)
     {
-        this.type = type;
+        this.type = requireNonNull(type, "type is null");
     }
 
     @Inject
-    public void setJsonCodecFactory(JsonCodecFactory jsonCodecFactory)
+    public void setSmileCodecFactory(SmileCodecFactory smileCodecFactory)
     {
-        this.jsonCodecFactory = jsonCodecFactory;
+        this.smileCodecFactory = smileCodecFactory;
     }
 
     @Override
-    public JsonCodec<?> get()
+    public Codec<?> get()
     {
-        return jsonCodecFactory.jsonCodec(type);
+        return smileCodecFactory.codec(type);
     }
 
     @Override
@@ -53,7 +53,7 @@ class JsonCodecProvider
             return false;
         }
 
-        JsonCodecProvider that = (JsonCodecProvider) o;
+        SmileCodecProvider that = (SmileCodecProvider) o;
 
         if (!type.equals(that.type)) {
             return false;

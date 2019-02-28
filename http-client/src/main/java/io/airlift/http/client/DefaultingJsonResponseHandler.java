@@ -16,7 +16,6 @@
 package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.io.ByteStreams;
 import com.google.common.net.MediaType;
 import com.google.common.primitives.Ints;
 import io.airlift.json.JsonCodec;
@@ -26,7 +25,7 @@ import java.util.Set;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 
 public class DefaultingJsonResponseHandler<T>
-        implements ResponseHandler<T, RuntimeException>
+        extends ResponseHandler<T, RuntimeException>
 {
     private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
 
@@ -73,7 +72,7 @@ public class DefaultingJsonResponseHandler<T>
             return defaultValue;
         }
         try {
-            return jsonCodec.fromJson(ByteStreams.toByteArray(response.getInputStream()));
+            return jsonCodec.fromJson(readResponseBytes(response));
         }
         catch (Exception e) {
             return defaultValue;

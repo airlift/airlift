@@ -2,6 +2,8 @@
 
 - Update to BVal 2.0.0
 - Report server port when bind fails in HttpServer
+- Add support for Jackson Smile encoding, which is a binary encoding
+  for the JSON format.
 
 0.178
 

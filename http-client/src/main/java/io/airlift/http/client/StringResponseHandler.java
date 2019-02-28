@@ -32,7 +32,7 @@ import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class StringResponseHandler
-        implements ResponseHandler<StringResponse, RuntimeException>
+        extends ResponseHandler<StringResponse, RuntimeException>
 {
     private static final StringResponseHandler STRING_RESPONSE_HANDLER = new StringResponseHandler();
 

@@ -16,13 +16,43 @@
 package io.airlift.http.client;
 
 import com.google.common.annotations.Beta;
+import io.airlift.json.Codec;
+
+import java.io.IOException;
+import java.util.Optional;
+
+import static com.google.common.io.ByteStreams.toByteArray;
+import static java.util.Objects.requireNonNull;
 
 @Beta
-public interface ResponseHandler<T, E extends Exception>
+public abstract class ResponseHandler<T, E extends Exception>
 {
-    T handleException(Request request, Exception exception)
+    public abstract T handle(Request request, Response response)
             throws E;
 
-    T handle(Request request, Response response)
+    public abstract T handleException(Request request, Exception exception)
             throws E;
+
+    final Optional<Codec<?>> codec;
+
+    public ResponseHandler()
+    {
+        this.codec = Optional.empty();
+    }
+
+    public ResponseHandler(Codec<?> codec)
+    {
+        requireNonNull(codec, "codec is null");
+        this.codec = Optional.of(codec);
+    }
+
+    static byte[] readResponseBytes(Response response)
+    {
+        try {
+            return toByteArray(response.getInputStream());
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Error reading response from server", e);
+        }
+    }
 }

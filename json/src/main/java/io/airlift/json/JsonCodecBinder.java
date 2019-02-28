@@ -17,20 +17,14 @@ package io.airlift.json;
 
 import com.google.inject.Binder;
 import com.google.inject.Key;
-import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.internal.MoreTypes.ParameterizedTypeImpl;
 
 import java.lang.reflect.Type;
-import java.util.List;
-import java.util.Map;
-
-import static java.util.Objects.requireNonNull;
 
 public class JsonCodecBinder
+        extends CodecBinder
 {
-    private final Binder binder;
-
     public static JsonCodecBinder jsonCodecBinder(Binder binder)
     {
         return new JsonCodecBinder(binder);
@@ -38,60 +32,49 @@ public class JsonCodecBinder
 
     private JsonCodecBinder(Binder binder)
     {
-        this.binder = requireNonNull(binder, "binder is null").skipSources(getClass());
+        super(binder, (type) -> new JsonCodecProvider(type));
     }
 
+    @Deprecated
     public void bindJsonCodec(Class<?> type)
     {
-        requireNonNull(type, "type is null");
-
-        binder.bind(getJsonCodecKey(type)).toProvider(new JsonCodecProvider(type)).in(Scopes.SINGLETON);
+        bindCodec(type);
     }
 
+    @Deprecated
     public void bindJsonCodec(TypeLiteral<?> type)
     {
-        requireNonNull(type, "type is null");
-
-        binder.bind(getJsonCodecKey(type.getType())).toProvider(new JsonCodecProvider(type.getType())).in(Scopes.SINGLETON);
+        bindCodec(type);
     }
 
+    @Deprecated
     public void bindListJsonCodec(Class<?> type)
     {
-        requireNonNull(type, "type is null");
-
-        ParameterizedTypeImpl listType = new ParameterizedTypeImpl(null, List.class, type);
-        binder.bind(getJsonCodecKey(listType)).toProvider(new JsonCodecProvider(listType)).in(Scopes.SINGLETON);
+        bindListCodec(type);
     }
 
+    @Deprecated
     public void bindListJsonCodec(JsonCodec<?> type)
     {
-        requireNonNull(type, "type is null");
-
-        ParameterizedTypeImpl listType = new ParameterizedTypeImpl(null, List.class, type.getType());
-        binder.bind(getJsonCodecKey(listType)).toProvider(new JsonCodecProvider(listType)).in(Scopes.SINGLETON);
+        bindListCodec(type);
     }
 
+    @Deprecated
     public void bindMapJsonCodec(Class<?> keyType, Class<?> valueType)
     {
-        requireNonNull(keyType, "keyType is null");
-        requireNonNull(valueType, "valueType is null");
-
-        ParameterizedTypeImpl mapType = new ParameterizedTypeImpl(null, Map.class, keyType, valueType);
-        binder.bind(getJsonCodecKey(mapType)).toProvider(new JsonCodecProvider(mapType)).in(Scopes.SINGLETON);
+        bindMapCodec(keyType, valueType);
     }
 
+    @Deprecated
     public void bindMapJsonCodec(Class<?> keyType, JsonCodec<?> valueType)
     {
-        requireNonNull(keyType, "keyType is null");
-        requireNonNull(valueType, "valueType is null");
-
-        ParameterizedTypeImpl mapType = new ParameterizedTypeImpl(null, Map.class, keyType, valueType.getType());
-        binder.bind(getJsonCodecKey(mapType)).toProvider(new JsonCodecProvider(mapType)).in(Scopes.SINGLETON);
+        bindMapCodec(keyType, valueType);
     }
 
     @SuppressWarnings("unchecked")
-    private Key<JsonCodec<?>> getJsonCodecKey(Type type)
+    @Override
+    Key<Codec<?>> getCodecKey(Type type)
     {
-        return (Key<JsonCodec<?>>) Key.get(new ParameterizedTypeImpl(null, JsonCodec.class, type));
+        return (Key<Codec<?>>) Key.get(new ParameterizedTypeImpl(null, JsonCodec.class, type));
     }
 }

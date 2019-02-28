@@ -1,6 +1,4 @@
 /*
- * Copyright 2010 Proofpoint, Inc.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,18 +22,17 @@ import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 
-import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
+import static io.airlift.json.SmileCodecBinder.smileCodecBinder;
 import static org.testng.Assert.assertNotNull;
 
-public class TestJsonCodecBinder
+public class TestSmileCodecBinder
 {
     @Test
     public void ignoresRepeatedBinding()
     {
         Injector injector = Guice.createInjector((Module) binder -> {
-            jsonCodecBinder(binder).bindJsonCodec(Integer.class);
-            jsonCodecBinder(binder).bindJsonCodec(Integer.class);
-
+            smileCodecBinder(binder).bindCodec(Integer.class);
+            smileCodecBinder(binder).bindCodec(Integer.class);
             binder.bind(ObjectMapper.class).annotatedWith(ForSmile.class).toProvider(SmileObjectMapperProvider.class);
             binder.bind(Dummy.class).in(Scopes.SINGLETON);
         });
@@ -45,15 +42,15 @@ public class TestJsonCodecBinder
 
     private static class Dummy
     {
-        private final JsonCodec<Integer> codec;
+        private final SmileCodec<Integer> codec;
 
         @Inject
-        public Dummy(JsonCodec<Integer> codec)
+        public Dummy(SmileCodec<Integer> codec)
         {
             this.codec = codec;
         }
 
-        public JsonCodec<Integer> getCodec()
+        public SmileCodec<Integer> getCodec()
         {
             return codec;
         }

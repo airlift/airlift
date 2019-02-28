@@ -16,7 +16,6 @@
 package io.airlift.json;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 
 import javax.inject.Inject;
@@ -27,11 +26,10 @@ import java.util.List;
 import java.util.Map;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
-import static java.util.Objects.requireNonNull;
 
 public class JsonCodecFactory
+        extends CodecFactory
 {
-    private final Provider<ObjectMapper> objectMapperProvider;
     private final boolean prettyPrint;
 
     public JsonCodecFactory()
@@ -47,7 +45,7 @@ public class JsonCodecFactory
 
     public JsonCodecFactory(Provider<ObjectMapper> objectMapperProvider, boolean prettyPrint)
     {
-        this.objectMapperProvider = objectMapperProvider;
+        super(objectMapperProvider, (objectMapper, type) -> new JsonCodec(objectMapper, type));
         this.prettyPrint = prettyPrint;
     }
 
@@ -56,76 +54,50 @@ public class JsonCodecFactory
         return new JsonCodecFactory(objectMapperProvider, true);
     }
 
+    @Deprecated
     public <T> JsonCodec<T> jsonCodec(Class<T> type)
     {
-        requireNonNull(type, "type is null");
-
-        return new JsonCodec<>(createObjectMapper(), type);
+        return (JsonCodec<T>) codec(type);
     }
 
+    @Deprecated
     public <T> JsonCodec<T> jsonCodec(Type type)
     {
-        requireNonNull(type, "type is null");
-
-        return new JsonCodec<>(createObjectMapper(), type);
+        return (JsonCodec<T>) codec(type);
     }
 
+    @Deprecated
     public <T> JsonCodec<T> jsonCodec(TypeToken<T> type)
     {
-        requireNonNull(type, "type is null");
-
-        return new JsonCodec<>(createObjectMapper(), type.getType());
+        return (JsonCodec<T>) codec(type.getType());
     }
 
+    @Deprecated
     public <T> JsonCodec<List<T>> listJsonCodec(Class<T> type)
     {
-        requireNonNull(type, "type is null");
-
-        Type listType = new TypeToken<List<T>>() {}
-                .where(new TypeParameter<T>() {}, type)
-                .getType();
-
-        return new JsonCodec<>(createObjectMapper(), listType);
+        return (JsonCodec<List<T>>) listCodec(type);
     }
 
+    @Deprecated
     public <T> JsonCodec<List<T>> listJsonCodec(JsonCodec<T> type)
     {
-        requireNonNull(type, "type is null");
-
-        Type listType = new TypeToken<List<T>>() {}
-                .where(new TypeParameter<T>() {}, type.getTypeToken())
-                .getType();
-
-        return new JsonCodec<>(createObjectMapper(), listType);
+        return (JsonCodec<List<T>>) listCodec(type);
     }
 
+    @Deprecated
     public <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, Class<V> valueType)
     {
-        requireNonNull(keyType, "keyType is null");
-        requireNonNull(valueType, "valueType is null");
-
-        Type mapType = new TypeToken<Map<K, V>>() {}
-                .where(new TypeParameter<K>() {}, keyType)
-                .where(new TypeParameter<V>() {}, valueType)
-                .getType();
-
-        return new JsonCodec<>(createObjectMapper(), mapType);
+        return (JsonCodec<Map<K, V>>) mapCodec(keyType, valueType);
     }
 
+    @Deprecated
     public <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, JsonCodec<V> valueType)
     {
-        requireNonNull(keyType, "keyType is null");
-        requireNonNull(valueType, "valueType is null");
-
-        Type mapType = new TypeToken<Map<K, V>>() {}
-                .where(new TypeParameter<K>() {}, keyType)
-                .where(new TypeParameter<V>() {}, valueType.getTypeToken())
-                .getType();
-
-        return new JsonCodec<>(createObjectMapper(), mapType);
+        return (JsonCodec<Map<K, V>>) mapCodec(keyType, valueType);
     }
 
-    private ObjectMapper createObjectMapper()
+    @Override
+    ObjectMapper createObjectMapper()
     {
         return objectMapperProvider.get().configure(INDENT_OUTPUT, prettyPrint);
     }
