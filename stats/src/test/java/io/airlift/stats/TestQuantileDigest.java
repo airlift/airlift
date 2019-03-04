@@ -10,6 +10,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -813,6 +814,187 @@ public class TestQuantileDigest
         addAll(digest, values);
 
         assertTrue(digest.equivalent(deserialize(digest.serialize())), format("Serialization roundtrip failed for input: %s", values));
+    }
+
+    @Test
+    public void testIterator()
+    {
+        QuantileDigest digest = new QuantileDigest(0.001);
+        addAll(digest, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
+        QuantileDigest.QuantileDigestIterator iterator = digest.iterator();
+
+        assertTrue(iterator.next());
+        assertEquals(iterator.lowerBoundQuantile(), 0D, 0.0001);
+        assertEquals(iterator.upperBoundQuantile(), 0.066666667D, 0.0001);
+        assertEquals(iterator.count(), 1D, 0.0001);
+        assertEquals(iterator.cumulativeCount(), 1D, 0.0001);
+        assertEquals(iterator.lowerBoundValue(), 0L);
+        assertEquals(iterator.upperBoundValue(), 0L);
+
+        assertTrue(iterator.next());
+        assertEquals(iterator.lowerBoundQuantile(), 0.066666667D, 0.0001);
+        assertEquals(iterator.upperBoundQuantile(), 0.333333333D, 0.0001);
+        assertEquals(iterator.count(), 4D, 0.0001);
+        assertEquals(iterator.cumulativeCount(), 5D, 0.0001);
+        assertEquals(iterator.lowerBoundValue(), 2L);
+        assertEquals(iterator.upperBoundValue(), 2L);
+
+        assertTrue(iterator.next());
+        assertEquals(iterator.lowerBoundQuantile(), 0.333333333D, 0.0001);
+        assertEquals(iterator.upperBoundQuantile(), 0.733333333D, 0.0001);
+        assertEquals(iterator.count(), 6D, 0.0001);
+        assertEquals(iterator.cumulativeCount(), 11D, 0.0001);
+        assertEquals(iterator.lowerBoundValue(), 3L);
+        assertEquals(iterator.upperBoundValue(), 3L);
+
+        assertTrue(iterator.next());
+        assertEquals(iterator.lowerBoundQuantile(), 0.733333333D, 0.0001);
+        assertEquals(iterator.upperBoundQuantile(), 0.8D, 0.0001);
+        assertEquals(iterator.count(), 1D, 0.0001);
+        assertEquals(iterator.cumulativeCount(), 12D, 0.0001);
+        assertEquals(iterator.lowerBoundValue(), 4L);
+        assertEquals(iterator.upperBoundValue(), 4L);
+
+        assertTrue(iterator.next());
+        assertEquals(iterator.lowerBoundQuantile(), 0.8D, 0.0001);
+        assertEquals(iterator.upperBoundQuantile(), 0.866666667D, 0.0001);
+        assertEquals(iterator.count(), 1D, 0.0001);
+        assertEquals(iterator.cumulativeCount(), 13D, 0.0001);
+        assertEquals(iterator.lowerBoundValue(), 5L);
+        assertEquals(iterator.upperBoundValue(), 5L);
+
+        assertTrue(iterator.next());
+        assertEquals(iterator.lowerBoundQuantile(), 0.866666667D, 0.0001);
+        assertEquals(iterator.upperBoundQuantile(), 0.933333333D, 0.0001);
+        assertEquals(iterator.count(), 1D, 0.0001);
+        assertEquals(iterator.cumulativeCount(), 14D, 0.0001);
+        assertEquals(iterator.lowerBoundValue(), 6L);
+        assertEquals(iterator.upperBoundValue(), 6L);
+
+        assertTrue(iterator.next());
+        assertEquals(iterator.lowerBoundQuantile(), 0.933333333D, 0.0001);
+        assertEquals(iterator.upperBoundQuantile(), 1D, 0.0001);
+        assertEquals(iterator.count(), 1D, 0.0001);
+        assertEquals(iterator.cumulativeCount(), 15D, 0.0001);
+        assertEquals(iterator.lowerBoundValue(), 7L);
+        assertEquals(iterator.upperBoundValue(), 7L);
+
+        assertFalse(iterator.next());
+
+        iterator = digest.reverseIterator();
+
+        assertTrue(iterator.next());
+        assertEquals(iterator.lowerBoundQuantile(), 0.933333333D, 0.0001);
+        assertEquals(iterator.upperBoundQuantile(), 1D, 0.0001);
+        assertEquals(iterator.count(), 1D, 0.0001);
+        assertEquals(iterator.cumulativeCount(), 1D, 0.0001);
+        assertEquals(iterator.lowerBoundValue(), 7L);
+        assertEquals(iterator.upperBoundValue(), 7L);
+
+        assertTrue(iterator.next());
+        assertEquals(iterator.lowerBoundQuantile(), 0.866666667D, 0.0001);
+        assertEquals(iterator.upperBoundQuantile(), 0.933333333D, 0.0001);
+        assertEquals(iterator.count(), 1D, 0.0001);
+        assertEquals(iterator.cumulativeCount(), 2D, 0.0001);
+        assertEquals(iterator.lowerBoundValue(), 6L);
+        assertEquals(iterator.upperBoundValue(), 6L);
+
+        assertTrue(iterator.next());
+        assertEquals(iterator.lowerBoundQuantile(), 0.8D, 0.0001);
+        assertEquals(iterator.upperBoundQuantile(), 0.866666667D, 0.0001);
+        assertEquals(iterator.count(), 1D, 0.0001);
+        assertEquals(iterator.cumulativeCount(), 3D, 0.0001);
+        assertEquals(iterator.lowerBoundValue(), 5L);
+        assertEquals(iterator.upperBoundValue(), 5L);
+
+        assertTrue(iterator.next());
+        assertEquals(iterator.lowerBoundQuantile(), 0.733333333D, 0.0001);
+        assertEquals(iterator.upperBoundQuantile(), 0.8D, 0.0001);
+        assertEquals(iterator.count(), 1D, 0.0001);
+        assertEquals(iterator.cumulativeCount(), 4D, 0.0001);
+        assertEquals(iterator.lowerBoundValue(), 4L);
+        assertEquals(iterator.upperBoundValue(), 4L);
+
+        assertTrue(iterator.next());
+        assertEquals(iterator.lowerBoundQuantile(), 0.333333333D, 0.0001);
+        assertEquals(iterator.upperBoundQuantile(), 0.733333333D, 0.0001);
+        assertEquals(iterator.count(), 6D, 0.0001);
+        assertEquals(iterator.cumulativeCount(), 10D, 0.0001);
+        assertEquals(iterator.lowerBoundValue(), 3L);
+        assertEquals(iterator.upperBoundValue(), 3L);
+
+        assertTrue(iterator.next());
+        assertEquals(iterator.lowerBoundQuantile(), 0.066666667D, 0.0001);
+        assertEquals(iterator.upperBoundQuantile(), 0.333333333D, 0.0001);
+        assertEquals(iterator.count(), 4D, 0.0001);
+        assertEquals(iterator.cumulativeCount(), 14D, 0.0001);
+        assertEquals(iterator.lowerBoundValue(), 2L);
+        assertEquals(iterator.upperBoundValue(), 2L);
+
+        assertTrue(iterator.next());
+        assertEquals(iterator.lowerBoundQuantile(), 0D, 0.0001);
+        assertEquals(iterator.upperBoundQuantile(), 0.066666667D, 0.0001);
+        assertEquals(iterator.count(), 1D, 0.0001);
+        assertEquals(iterator.cumulativeCount(), 15D, 0.0001);
+        assertEquals(iterator.lowerBoundValue(), 0L);
+        assertEquals(iterator.upperBoundValue(), 0L);
+
+        assertFalse(iterator.next());
+    }
+
+    @Test
+    public void testIteratorSingleElement()
+    {
+        QuantileDigest digest = new QuantileDigest(0.1);
+        addAll(digest, asList(10));
+        QuantileDigest.QuantileDigestIterator iterator = digest.iterator();
+
+        assertTrue(iterator.next());
+        assertEquals(iterator.upperBoundValue(), 10);
+        assertEquals(iterator.lowerBoundValue(), 10);
+        assertEquals(iterator.count(), 1.0);
+        assertEquals(iterator.cumulativeCount(), 1.0);
+        assertEquals(iterator.lowerBoundQuantile(), 0.0);
+        assertEquals(iterator.upperBoundQuantile(), 1.0);
+        assertFalse(iterator.next());
+    }
+
+    @Test
+    public void testNoElement()
+    {
+        QuantileDigest digest = new QuantileDigest(0.1);
+        QuantileDigest.QuantileDigestIterator iterator = digest.iterator();
+        assertFalse(iterator.next(), "Expected no calls to next() to return true");
+    }
+
+    @Test(expectedExceptions = NoSuchElementException.class)
+    public void testErrorIteratorConsumed()
+    {
+        QuantileDigest digest = new QuantileDigest(0.01);
+        digest.add(1);
+        digest.add(2);
+
+        QuantileDigest.QuantileDigestIterator iterator = digest.iterator();
+
+        // consume the iterator
+        assertTrue(iterator.next());
+        assertTrue(iterator.next());
+        assertFalse(iterator.next());
+
+        // Throws
+        iterator.upperBoundQuantile();
+    }
+
+    @Test(expectedExceptions = NoSuchElementException.class)
+    public void testErrorIteratorNextNotCalled()
+    {
+        QuantileDigest digest = new QuantileDigest(0.01);
+        digest.add(1);
+        digest.add(2);
+
+        QuantileDigest.QuantileDigestIterator iterator = digest.iterator();
+        // Throws
+        iterator.upperBoundQuantile();
     }
 
     private QuantileDigest deserialize(Slice serialized)
