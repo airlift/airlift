@@ -275,8 +275,7 @@ public class SpnegoAuthentication
         private final LoginContext loginContext;
         private final GSSCredential clientCredential;
 
-        public Session(LoginContext loginContext, GSSCredential clientCredential)
-                throws LoginException
+        Session(LoginContext loginContext, GSSCredential clientCredential)
         {
             requireNonNull(loginContext, "loginContext is null");
             requireNonNull(clientCredential, "gssCredential is null");
@@ -285,12 +284,12 @@ public class SpnegoAuthentication
             this.clientCredential = clientCredential;
         }
 
-        public LoginContext getLoginContext()
+        LoginContext getLoginContext()
         {
             return loginContext;
         }
 
-        public GSSCredential getClientCredential()
+        GSSCredential getClientCredential()
         {
             return clientCredential;
         }
