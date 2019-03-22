@@ -67,6 +67,7 @@ public class SpnegoAuthentication
 
     private final File keytab;
     private final File credentialCache;
+    private final String servicePrincipalPattern;
     private final String principal;
     private final String remoteServiceName;
     private final boolean useCanonicalHostname;
@@ -74,13 +75,14 @@ public class SpnegoAuthentication
     @GuardedBy("this")
     private Session clientSession;
 
-    public SpnegoAuthentication(File keytab, File kerberosConfig, File credentialCache, String principal, String remoteServiceName, boolean useCanonicalHostname)
+    public SpnegoAuthentication(File keytab, File kerberosConfig, File credentialCache, String servicePrincipalPattern, String principal, String remoteServiceName, boolean useCanonicalHostname)
     {
         requireNonNull(kerberosConfig, "Kerberos config path is null");
         requireNonNull(remoteServiceName, "Kerberos remote service name is null");
 
         this.keytab = keytab;
         this.credentialCache = credentialCache;
+        this.servicePrincipalPattern = servicePrincipalPattern;
         this.principal = principal;
         this.remoteServiceName = remoteServiceName;
         this.useCanonicalHostname = useCanonicalHostname;
@@ -106,7 +108,7 @@ public class SpnegoAuthentication
             {
                 GSSContext context = null;
                 try {
-                    String servicePrincipal = makeServicePrincipal(remoteServiceName, normalizedUri.getHost(), useCanonicalHostname);
+                    String servicePrincipal = makeServicePrincipal(servicePrincipalPattern, remoteServiceName, normalizedUri.getHost(), useCanonicalHostname);
                     Session session = getSession();
                     context = doAs(session.getLoginContext().getSubject(), () -> {
                         GSSContext result = GSS_MANAGER.createContext(
@@ -211,13 +213,13 @@ public class SpnegoAuthentication
         return clientSession;
     }
 
-    private static String makeServicePrincipal(String serviceName, String hostName, boolean useCanonicalHostname)
+    private static String makeServicePrincipal(String servicePrincipalPattern, String serviceName, String hostName, boolean useCanonicalHostname)
     {
         String serviceHostName = hostName;
         if (useCanonicalHostname) {
             serviceHostName = canonicalizeServiceHostname(hostName);
         }
-        return format("%s@%s", serviceName, serviceHostName.toLowerCase(Locale.US));
+        return servicePrincipalPattern.replaceAll("\\$\\{SERVICE}", serviceName).replaceAll("\\$\\{HOST}", serviceHostName.toLowerCase(Locale.US));
     }
 
     private static String canonicalizeServiceHostname(String hostName)

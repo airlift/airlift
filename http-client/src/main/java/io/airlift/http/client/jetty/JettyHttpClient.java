@@ -210,6 +210,7 @@ public class JettyHttpClient
                     kerberosConfig.getKeytab(),
                     kerberosConfig.getConfig(),
                     kerberosConfig.getCredentialCache(),
+                    config.getKerberosServicePrincipalPattern(),
                     config.getKerberosPrincipal(),
                     config.getKerberosRemoteServiceName(),
                     kerberosConfig.isUseCanonicalHostname()));
