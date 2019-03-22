@@ -74,6 +74,7 @@ public class HttpClientConfig
     private List<String> excludedCipherSuites = ImmutableList.of("^.*_(MD5|SHA|SHA1)$", "^TLS_RSA_.*$", "^SSL_.*$", "^.*_NULL_.*$", "^.*_anon_.*$");
 
     private boolean authenticationEnabled;
+    private String kerberosServicePrincipalPattern = "${SERVICE}@${HOST}";
     private String kerberosPrincipal;
     private String kerberosRemoteServiceName;
     private int selectorCount = 2;
@@ -364,6 +365,19 @@ public class HttpClientConfig
     public HttpClientConfig setAuthenticationEnabled(boolean enabled)
     {
         this.authenticationEnabled = enabled;
+        return this;
+    }
+
+    public String getKerberosServicePrincipalPattern()
+    {
+        return kerberosServicePrincipalPattern;
+    }
+
+    @Config("http-client.authentication.krb5.service-principal-pattern")
+    @ConfigDescription("Set kerberos service principal pattern")
+    public HttpClientConfig setKerberosServicePrincipalPattern(String kerberosServicePrincipalPattern)
+    {
+        this.kerberosServicePrincipalPattern = kerberosServicePrincipalPattern;
         return this;
     }
 
