@@ -65,7 +65,6 @@ public class ClassPathResourceHandler
         requireNonNull(welcomeFiles, "welcomeFiles is null");
 
         baseUri = baseUri.startsWith("/") ? baseUri : '/' + baseUri;
-        baseUri = baseUri.endsWith("/") ? baseUri.substring(baseUri.length() - 1) : baseUri;
         this.baseUri = baseUri;
 
         this.classPathResourceBase = classPathResourceBase;
@@ -138,6 +137,9 @@ public class ClassPathResourceHandler
         // chop off the base uri
         if (!baseUri.equals("/")) {
             pathInfo = pathInfo.substring(baseUri.length());
+            if (baseUri.endsWith("/")) {
+                pathInfo = "/" + pathInfo;
+            }
         }
 
         if (!pathInfo.startsWith("/") && !pathInfo.isEmpty()) {
