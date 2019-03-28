@@ -222,11 +222,13 @@ public class TestHttpServerModule
     private void assertResource(URI baseUri, HttpClient client, String path, String contents)
     {
         HttpUriBuilder uriBuilder = uriBuilderFrom(baseUri);
-        StringResponse data = client.execute(prepareGet().setUri(uriBuilder.appendPath(path).build()).build(), createStringResponseHandler());
-        assertEquals(data.getStatusCode(), HttpStatus.OK.code());
-        MediaType contentType = MediaType.parse(data.getHeader(CONTENT_TYPE));
-        assertTrue(PLAIN_TEXT_UTF_8.is(contentType), "Expected text/plain but got " + contentType);
-        assertEquals(data.getBody().trim(), contents);
+        StringResponse response = client.execute(prepareGet().setUri(uriBuilder.appendPath(path).build()).build(), createStringResponseHandler());
+        assertEquals(response.getStatusCode(), HttpStatus.OK.code());
+        String contentType = response.getHeader(CONTENT_TYPE);
+        assertNotNull(contentType, CONTENT_TYPE + " header is absent");
+        MediaType mediaType = MediaType.parse(contentType);
+        assertTrue(PLAIN_TEXT_UTF_8.is(mediaType), "Expected text/plain but got " + mediaType);
+        assertEquals(response.getBody().trim(), contents);
     }
 
     @Test
