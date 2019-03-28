@@ -2,6 +2,7 @@
 
 - Update to BVal 2.0.0
 - Report server port when bind fails in HttpServer
+- Redirect from /resource to /resource/
 
 0.178
 

@@ -17,6 +17,7 @@ package io.airlift.http.server;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
+import com.google.common.net.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Request;
@@ -50,7 +51,7 @@ public class ClassPathResourceHandler
         MIME_TYPES.addMimeMapping("json", "application/json");
     }
 
-    private final String baseUri;
+    private final String baseUri; // "" or "/foo"
     private final String classPathResourceBase;
     private final List<String> welcomeFiles;
 
@@ -67,6 +68,7 @@ public class ClassPathResourceHandler
         checkArgument(baseUri.equals("/") || !baseUri.endsWith("/"), "baseUri should not end with a slash: %s", baseUri);
 
         baseUri = baseUri.startsWith("/") ? baseUri : '/' + baseUri;
+        baseUri = baseUri.equals("/") ? "" : baseUri;
         this.baseUri = baseUri;
 
         this.classPathResourceBase = classPathResourceBase;
@@ -89,7 +91,19 @@ public class ClassPathResourceHandler
             return;
         }
 
-        URL resource = getResourcePath(request);
+        String resourcePath = getResourcePath(request);
+        if (resourcePath == null) {
+            return;
+        }
+
+        if (resourcePath.isEmpty()) {
+            response.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
+            response.setHeader(HttpHeaders.LOCATION, response.encodeRedirectURL(baseUri + "/"));
+            baseRequest.setHandled(true);
+            return;
+        }
+
+        URL resource = getResource(resourcePath);
         if (resource == null) {
             return;
         }
@@ -127,7 +141,8 @@ public class ClassPathResourceHandler
         }
     }
 
-    private URL getResourcePath(HttpServletRequest request)
+    @Nullable
+    private String getResourcePath(HttpServletRequest request)
     {
         String pathInfo = request.getPathInfo();
 
@@ -137,9 +152,7 @@ public class ClassPathResourceHandler
         }
 
         // chop off the base uri
-        if (!baseUri.equals("/")) {
-            pathInfo = pathInfo.substring(baseUri.length());
-        }
+        pathInfo = pathInfo.substring(baseUri.length());
 
         if (!pathInfo.startsWith("/") && !pathInfo.isEmpty()) {
             // basepath is /foo and request went to /foobar --> pathInfo starts with bar
@@ -147,20 +160,20 @@ public class ClassPathResourceHandler
             return null;
         }
 
-        // add missing leading slash
-        if (!pathInfo.startsWith("/")) {
-            pathInfo = "/";
-        }
+        return pathInfo;
+    }
 
-        if (!"/".equals(pathInfo)) {
-            String resourcePath = classPathResourceBase + pathInfo;
-            return getClass().getClassLoader().getResource(resourcePath);
+    private URL getResource(String resourcePath)
+    {
+        checkArgument(resourcePath.startsWith("/"), "resourcePath does not start with a slash: %s", resourcePath);
+
+        if (!"/".equals(resourcePath)) {
+            return getClass().getClassLoader().getResource(classPathResourceBase + resourcePath);
         }
 
         // check welcome files
         for (String welcomeFile : welcomeFiles) {
-            String resourcePath = classPathResourceBase + welcomeFile;
-            URL resource = getClass().getClassLoader().getResource(resourcePath);
+            URL resource = getClass().getClassLoader().getResource(classPathResourceBase + welcomeFile);
             if (resource != null) {
                 return resource;
             }

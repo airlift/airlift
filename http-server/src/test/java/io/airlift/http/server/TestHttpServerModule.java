@@ -63,6 +63,7 @@ import java.util.Map.Entry;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static com.google.common.net.HttpHeaders.LOCATION;
 import static com.google.common.net.HttpHeaders.REFERER;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
@@ -208,7 +209,7 @@ public class TestHttpServerModule
             assertResource(httpUri, client, "user-welcome.txt", "welcome user!");
             assertResource(httpUri, client, "user.txt", "user");
             assertResource(httpUri, client, "user2.txt", "user2");
-            assertResource(httpUri, client, "path", "welcome user!");
+            assertRedirect(httpUri, client, "path", "/path/");
             assertResource(httpUri, client, "path/", "welcome user!");
             assertResource(httpUri, client, "path/user-welcome.txt", "welcome user!");
             assertResource(httpUri, client, "path/user.txt", "user");
@@ -229,6 +230,21 @@ public class TestHttpServerModule
         MediaType mediaType = MediaType.parse(contentType);
         assertTrue(PLAIN_TEXT_UTF_8.is(mediaType), "Expected text/plain but got " + mediaType);
         assertEquals(response.getBody().trim(), contents);
+    }
+
+    private void assertRedirect(URI baseUri, HttpClient client, String path, String redirect)
+    {
+        HttpUriBuilder uriBuilder = uriBuilderFrom(baseUri);
+        StringResponse response = client.execute(
+                prepareGet()
+                        .setFollowRedirects(false)
+                        .setUri(uriBuilder.appendPath(path).build())
+                        .build(),
+                createStringResponseHandler());
+        assertEquals(response.getStatusCode(), HttpStatus.TEMPORARY_REDIRECT.code());
+        assertEquals(response.getHeader(LOCATION), redirect);
+        assertNull(response.getHeader(CONTENT_TYPE), CONTENT_TYPE + " header should be absent");
+        assertEquals(response.getBody(), "", "Response body");
     }
 
     @Test
