@@ -31,6 +31,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -63,9 +64,9 @@ public class ClassPathResourceHandler
         requireNonNull(baseUri, "baseUri is null");
         requireNonNull(classPathResourceBase, "classPathResourceBase is null");
         requireNonNull(welcomeFiles, "welcomeFiles is null");
+        checkArgument(baseUri.equals("/") || !baseUri.endsWith("/"), "baseUri should not end with a slash: %s", baseUri);
 
         baseUri = baseUri.startsWith("/") ? baseUri : '/' + baseUri;
-        baseUri = baseUri.endsWith("/") ? baseUri.substring(baseUri.length() - 1) : baseUri;
         this.baseUri = baseUri;
 
         this.classPathResourceBase = classPathResourceBase;
