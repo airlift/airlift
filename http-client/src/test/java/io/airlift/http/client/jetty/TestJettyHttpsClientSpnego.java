@@ -14,7 +14,7 @@ import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static org.eclipse.jetty.http.HttpHeader.NEGOTIATE;
 
-public class TestJettyHttpsClientSpengo
+public class TestJettyHttpsClientSpnego
         extends TestJettyHttpsClient
 {
     @Override
