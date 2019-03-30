@@ -119,7 +119,7 @@ public class HttpUriBuilder
     {
         requireNonNull(path, "path is null");
 
-        if (!path.equals("") && !path.startsWith("/")) {
+        if (!path.isEmpty() && !path.startsWith("/")) {
             path = "/" + path;
         }
 
@@ -203,7 +203,7 @@ public class HttpUriBuilder
         }
 
         String path = this.path;
-        if (path.equals("") && !params.isEmpty()) {
+        if (path.isEmpty() && !params.isEmpty()) {
             path = "/";
         }
 
