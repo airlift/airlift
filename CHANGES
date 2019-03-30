@@ -1,8 +1,10 @@
 0.179
 
 - Update to BVal 2.0.0
-- Report server port when bind fails in HttpServer
+- Report server port when bind fails in HttpServer.
 - Redirect from /resource to /resource/
+- Add future callback overloads that take an executor.
+- Allow configuring the HTTP client Kerberos service principal pattern.
 
 0.178
 
