@@ -277,10 +277,10 @@ public class TestLifeCycleManager
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
 
         lifeCycleManager.start();
-        assertEquals(stateLog, ImmutableList.of("postBarProvider"));
+        assertEquals(stateLog, ImmutableList.of("postBarProvider", "postBarInstance"));
 
         lifeCycleManager.stop();
-        assertEquals(stateLog, ImmutableList.of("postBarProvider", "preBarProvider"));
+        assertEquals(stateLog, ImmutableList.of("postBarProvider", "postBarInstance", "preBarInstance", "preBarProvider"));
     }
 
     @Test

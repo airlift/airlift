@@ -1,3 +1,7 @@
+0.180
+
+- Run life cycle methods on instances from providers.
+
 0.179
 
 - Update to BVal 2.0.0
