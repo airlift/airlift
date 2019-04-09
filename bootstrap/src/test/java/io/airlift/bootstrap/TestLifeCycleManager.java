@@ -17,10 +17,13 @@ package io.airlift.bootstrap;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import com.google.inject.Binder;
 import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Module;
 import com.google.inject.PrivateModule;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Stage;
 import org.testng.annotations.BeforeMethod;
@@ -32,6 +35,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;
 
 @Test(singleThreaded = true)
@@ -259,5 +263,52 @@ public class TestLifeCycleManager
                         "preDestroyOne",
                         "preDependentInstance",
                         "preDependentBoundInstance"));
+    }
+
+    @Test
+    public void testProvider()
+            throws Exception
+    {
+        Injector injector = Guice.createInjector(
+                Stage.PRODUCTION,
+                new LifeCycleModule(),
+                binder -> binder.bind(BarInstance.class).toProvider(BarProvider.class).in(Scopes.SINGLETON));
+
+        LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+
+        lifeCycleManager.start();
+        assertEquals(stateLog, ImmutableList.of("postBarProvider"));
+
+        lifeCycleManager.stop();
+        assertEquals(stateLog, ImmutableList.of("postBarProvider", "preBarProvider"));
+    }
+
+    @Test
+    public void testProviderReturningNull()
+            throws Exception
+    {
+        Injector injector = Guice.createInjector(
+                Stage.PRODUCTION,
+                new LifeCycleModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder) {}
+
+                    @Provides
+                    public BarInstance createBar()
+                    {
+                        return null;
+                    }
+                });
+
+        assertNull(injector.getInstance(BarInstance.class));
+
+        LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+
+        lifeCycleManager.start();
+        lifeCycleManager.stop();
+
+        assertNull(injector.getInstance(BarInstance.class));
     }
 }
