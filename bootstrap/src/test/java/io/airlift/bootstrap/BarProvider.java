@@ -1,9 +1,8 @@
 package io.airlift.bootstrap;
 
-import com.google.inject.Provider;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.inject.Provider;
 
 public class BarProvider
         implements Provider<BarInstance>
