@@ -27,14 +27,12 @@ import io.airlift.configuration.ConfigDefaults;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.client.spnego.KerberosConfig;
 
-import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Provider;
 
 import java.lang.annotation.Annotation;
 import java.util.Set;
 
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static java.util.Objects.requireNonNull;
@@ -91,7 +89,6 @@ public class HttpClientModule
         private final String name;
         private final Class<? extends Annotation> annotation;
         private Injector injector;
-        private HttpClient client;
 
         private HttpClientProvider(String name, Class<? extends Annotation> annotation)
         {
@@ -108,8 +105,6 @@ public class HttpClientModule
         @Override
         public HttpClient get()
         {
-            checkState(client == null, "client already created");
-
             KerberosConfig kerberosConfig = injector.getInstance(KerberosConfig.class);
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
 
@@ -118,16 +113,7 @@ public class HttpClientModule
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, annotation)))
                     .build();
 
-            client = new JettyHttpClient(name, config, kerberosConfig, ImmutableList.copyOf(filters));
-
-            injector = null;
-            return client;
-        }
-
-        @PreDestroy
-        public void destroy()
-        {
-            client.close();
+            return new JettyHttpClient(name, config, kerberosConfig, ImmutableList.copyOf(filters));
         }
     }
 }

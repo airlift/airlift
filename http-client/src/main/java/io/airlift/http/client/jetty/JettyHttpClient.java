@@ -52,6 +52,8 @@ import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
+import javax.annotation.PreDestroy;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -858,6 +860,7 @@ public class JettyHttpClient
         return new Duration(nanos, NANOSECONDS).getValue(MILLISECONDS);
     }
 
+    @PreDestroy
     @Override
     public void close()
     {
