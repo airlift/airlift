@@ -32,12 +32,12 @@ import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
 import javax.inject.Inject;
-import javax.inject.Provider;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static io.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
@@ -51,13 +51,14 @@ public class HttpDiscoveryLookupClient
         implements DiscoveryLookupClient
 {
     private final String environment;
-    private final Provider<URI> discoveryServiceURI;
+    private final Supplier<URI> discoveryServiceURI;
     private final NodeInfo nodeInfo;
     private final JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec;
     private final HttpClient httpClient;
 
     @Inject
-    public HttpDiscoveryLookupClient(@ForDiscoveryClient Provider<URI> discoveryServiceURI,
+    public HttpDiscoveryLookupClient(
+            @ForDiscoveryClient Supplier<URI> discoveryServiceURI,
             NodeInfo nodeInfo,
             JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec,
             @ForDiscoveryClient HttpClient httpClient)
