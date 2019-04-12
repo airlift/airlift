@@ -2,6 +2,7 @@ package io.airlift.http.client.spnego;
 
 import com.google.common.collect.ImmutableMap;
 import com.sun.security.auth.module.Krb5LoginModule;
+import io.airlift.http.client.KerberosNameType;
 import io.airlift.log.Logger;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.client.api.Authentication;
@@ -40,7 +41,6 @@ import static javax.security.auth.login.AppConfigurationEntry.LoginModuleControl
 import static org.ietf.jgss.GSSContext.INDEFINITE_LIFETIME;
 import static org.ietf.jgss.GSSCredential.DEFAULT_LIFETIME;
 import static org.ietf.jgss.GSSCredential.INITIATE_ONLY;
-import static org.ietf.jgss.GSSName.NT_HOSTBASED_SERVICE;
 import static org.ietf.jgss.GSSName.NT_USER_NAME;
 
 public class SpnegoAuthentication
@@ -71,20 +71,31 @@ public class SpnegoAuthentication
     private final String principal;
     private final String remoteServiceName;
     private final boolean useCanonicalHostname;
+    private final Oid nameType;
 
     @GuardedBy("this")
     private Session clientSession;
 
-    public SpnegoAuthentication(File keytab, File kerberosConfig, File credentialCache, String servicePrincipalPattern, String principal, String remoteServiceName, boolean useCanonicalHostname)
+    public SpnegoAuthentication(
+            File keytab,
+            File kerberosConfig,
+            File credentialCache,
+            String servicePrincipalPattern,
+            String principal,
+            String remoteServiceName,
+            KerberosNameType nameType,
+            boolean useCanonicalHostname)
     {
         requireNonNull(kerberosConfig, "Kerberos config path is null");
         requireNonNull(remoteServiceName, "Kerberos remote service name is null");
+        requireNonNull(nameType, "GSS name type is null");
 
         this.keytab = keytab;
         this.credentialCache = credentialCache;
         this.servicePrincipalPattern = servicePrincipalPattern;
         this.principal = principal;
         this.remoteServiceName = remoteServiceName;
+        this.nameType = nameType.getOid();
         this.useCanonicalHostname = useCanonicalHostname;
 
         System.setProperty("java.security.krb5.conf", kerberosConfig.getAbsolutePath());
@@ -112,7 +123,7 @@ public class SpnegoAuthentication
                     Session session = getSession();
                     context = doAs(session.getLoginContext().getSubject(), () -> {
                         GSSContext result = GSS_MANAGER.createContext(
-                                GSS_MANAGER.createName(servicePrincipal, NT_HOSTBASED_SERVICE),
+                                GSS_MANAGER.createName(servicePrincipal, nameType),
                                 SPNEGO_OID,
                                 session.getClientCredential(),
                                 INDEFINITE_LIFETIME);

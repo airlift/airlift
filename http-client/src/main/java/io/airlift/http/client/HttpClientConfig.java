@@ -33,6 +33,7 @@ import javax.validation.constraints.NotNull;
 
 import java.util.List;
 
+import static io.airlift.http.client.KerberosNameType.HOSTBASED_SERVICE;
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
@@ -77,6 +78,7 @@ public class HttpClientConfig
     private String kerberosServicePrincipalPattern = "${SERVICE}@${HOST}";
     private String kerberosPrincipal;
     private String kerberosRemoteServiceName;
+    private KerberosNameType kerberosNameType = HOSTBASED_SERVICE;
     private int selectorCount = 2;
     private boolean recordRequestComplete = true;
     private boolean connectBlocking;
@@ -404,6 +406,19 @@ public class HttpClientConfig
     public HttpClientConfig setKerberosRemoteServiceName(String serviceName)
     {
         this.kerberosRemoteServiceName = serviceName;
+        return this;
+    }
+
+    public KerberosNameType getKerberosNameType()
+    {
+        return kerberosNameType;
+    }
+
+    @Config("http-client.authentication.krb5.name-type")
+    @ConfigDescription("Set kerberos GSS name type")
+    public HttpClientConfig setKerberosNameType(KerberosNameType nameType)
+    {
+        this.kerberosNameType = nameType;
         return this;
     }
 
