@@ -1,3 +1,8 @@
+0.180
+
+- Add installModuleIf method to ConditionalModule with ability to
+  install module when condition is not meet.
+
 0.179
 
 - Update to BVal 2.0.0

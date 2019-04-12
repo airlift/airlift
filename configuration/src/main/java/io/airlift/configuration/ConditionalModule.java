@@ -19,12 +19,20 @@ import com.google.inject.Module;
 
 import java.util.function.Predicate;
 
+import static io.airlift.configuration.ConfigurationModule.installModules;
 import static java.util.Objects.requireNonNull;
 
 @Beta
 public class ConditionalModule<T>
         extends AbstractConfigurationAwareModule
 {
+    public static <T> Module installModuleIf(Class<T> config, Predicate<T> predicate, Module module, Module otherwise)
+    {
+        return installModules(
+                installModuleIf(config, predicate, module),
+                installModuleIf(config, predicate.negate(), otherwise));
+    }
+
     public static <T> Module installModuleIf(Class<T> config, Predicate<T> predicate, Module module)
     {
         return new ConditionalModule<>(config, predicate, module);
