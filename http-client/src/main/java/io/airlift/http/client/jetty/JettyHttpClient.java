@@ -215,6 +215,7 @@ public class JettyHttpClient
                     config.getKerberosServicePrincipalPattern(),
                     config.getKerberosPrincipal(),
                     config.getKerberosRemoteServiceName(),
+                    config.getKerberosNameType(),
                     kerberosConfig.isUseCanonicalHostname()));
             httpClient.setAuthenticationStore(store);
             httpClient.getProtocolHandlers().remove(WWWAuthenticationProtocolHandler.NAME);
