@@ -50,7 +50,7 @@
 - Update to Jetty 9.4.12.v20180830.
 - Update the default value of the "http-server.https.excluded-cipher" config
   property to match Jetty's default excluded cipher suites. Specifically, all
-  ciphers without forward secrecy, and all ciphers that use the RSA key exchange 
+  ciphers without forward secrecy, and all ciphers that use the RSA key exchange
   algorithm are excluded by default. Consequently, TLS 1.0 or TLS 1.1 are no
   longer supported by default.
 
