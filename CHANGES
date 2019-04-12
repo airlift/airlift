@@ -1,6 +1,8 @@
 0.180
 
 - Run life cycle methods on instances from providers.
+- Add installModuleIf method to ConditionalModule with ability to
+  install module when condition is not met.
 
 0.179
 

@@ -19,6 +19,7 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 
 import java.lang.annotation.Annotation;
+import java.util.stream.Stream;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
 
@@ -40,6 +41,19 @@ public class ConfigurationModule
         binder.bind(ConfigurationFactory.class).toInstance(configurationFactory);
 
         configurationFactory.getConfigurationProviders().forEach(configurationProvider -> bindConfigurationProvider(binder, configurationProvider));
+    }
+
+    public static ConfigurationAwareModule installModules(Module... modules)
+    {
+        return new AbstractConfigurationAwareModule()
+        {
+            @Override
+            protected void setup(Binder binder)
+            {
+                Stream.of(modules)
+                        .forEach(this::install);
+            }
+        };
     }
 
     private static <T> void bindConfigurationProvider(Binder binder, ConfigurationProvider<T> configurationProvider)
