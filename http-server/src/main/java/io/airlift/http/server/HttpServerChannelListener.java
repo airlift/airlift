@@ -66,6 +66,9 @@ public class HttpServerChannelListener
     @Override
     public void onResponseBegin(Request request)
     {
+        if (request.getAttribute(REQUEST_BEGIN_TO_END_ATTRIBUTE) == null) {
+            onRequestEnd(request);
+        }
         request.setAttribute(RESPONSE_CONTENT_TIMESTAMPS_ATTRIBUTE, new ArrayList<Long>());
     }
 
