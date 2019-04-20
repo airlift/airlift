@@ -28,6 +28,7 @@ import javax.inject.Singleton;
 import java.net.URI;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.function.Supplier;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
@@ -85,29 +86,30 @@ public class DiscoveryModule
 
     @Provides
     @ForDiscoveryClient
-    public URI getDiscoveryUri(ServiceInventory serviceInventory, DiscoveryClientConfig config)
+    public Supplier<URI> getDiscoveryUriSupplier(ServiceInventory serviceInventory, DiscoveryClientConfig config)
     {
-        Iterable<ServiceDescriptor> discovery = serviceInventory.getServiceDescriptors("discovery");
-        for (ServiceDescriptor descriptor : discovery) {
-            if (descriptor.getState() != ServiceState.RUNNING) {
-                continue;
+        URI serviceUri = config.getDiscoveryServiceURI();
+
+        return () -> {
+            for (ServiceDescriptor descriptor : serviceInventory.getServiceDescriptors("discovery")) {
+                if (descriptor.getState() != ServiceState.RUNNING) {
+                    continue;
+                }
+
+                try {
+                    return new URI(descriptor.getProperties().get("https"));
+                }
+                catch (Exception ignored) {
+                }
+                try {
+                    return new URI(descriptor.getProperties().get("http"));
+                }
+                catch (Exception ignored) {
+                }
             }
 
-            try {
-                return new URI(descriptor.getProperties().get("https"));
-            }
-            catch (Exception ignored) {
-            }
-            try {
-                return new URI(descriptor.getProperties().get("http"));
-            }
-            catch (Exception ignored) {
-            }
-        }
-        if (config != null) {
-            return config.getDiscoveryServiceURI();
-        }
-        return null;
+            return serviceUri;
+        };
     }
 
     @Provides

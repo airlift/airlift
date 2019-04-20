@@ -29,7 +29,6 @@ import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
 
 import javax.inject.Inject;
-import javax.inject.Provider;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -37,6 +36,7 @@ import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
@@ -51,13 +51,14 @@ public class HttpDiscoveryAnnouncementClient
 {
     private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
 
-    private final Provider<URI> discoveryServiceURI;
+    private final Supplier<URI> discoveryServiceURI;
     private final NodeInfo nodeInfo;
     private final JsonCodec<Announcement> announcementCodec;
     private final HttpClient httpClient;
 
     @Inject
-    public HttpDiscoveryAnnouncementClient(@ForDiscoveryClient Provider<URI> discoveryServiceURI,
+    public HttpDiscoveryAnnouncementClient(
+            @ForDiscoveryClient Supplier<URI> discoveryServiceURI,
             NodeInfo nodeInfo,
             JsonCodec<Announcement> announcementCodec,
             @ForDiscoveryClient HttpClient httpClient)

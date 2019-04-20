@@ -19,10 +19,7 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
-import com.google.inject.spi.InjectionListener;
-import com.google.inject.spi.TypeEncounter;
-import com.google.inject.spi.TypeListener;
+import com.google.inject.spi.ProvisionListener.ProvisionInvocation;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -31,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.inject.matcher.Matchers.any;
 
 /**
@@ -48,29 +46,29 @@ public class LifeCycleModule
     {
         binder.disableCircularProxies();
 
-        binder.bindListener(any(), new TypeListener()
-        {
-            @Override
-            public <T> void hear(TypeLiteral<T> type, TypeEncounter<T> encounter)
-            {
-                encounter.register((InjectionListener<T>) obj -> {
-                    if (isLifeCycleClass(obj.getClass())) {
-                        LifeCycleManager manager = lifeCycleManager.get();
-                        if (manager != null) {
-                            try {
-                                manager.addInstance(obj);
-                            }
-                            catch (Exception e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                        else {
-                            injectedInstances.add(obj);
-                        }
-                    }
-                });
+        binder.bindListener(any(), this::provision);
+    }
+
+    private <T> void provision(ProvisionInvocation<T> provision)
+    {
+        Object obj = provision.provision();
+        if ((obj == null) || !isLifeCycleClass(obj.getClass())) {
+            return;
+        }
+
+        LifeCycleManager manager = lifeCycleManager.get();
+        if (manager != null) {
+            try {
+                manager.addInstance(obj);
             }
-        });
+            catch (Exception e) {
+                throwIfUnchecked(e);
+                throw new RuntimeException(e);
+            }
+        }
+        else {
+            injectedInstances.add(obj);
+        }
     }
 
     @Provides
