@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
+import io.airlift.configuration.ConfigSecuritySensitive;
 import io.airlift.configuration.LegacyConfig;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
@@ -280,6 +281,7 @@ public class HttpClientConfig
     }
 
     @Config("http-client.key-store-password")
+    @ConfigSecuritySensitive
     public HttpClientConfig setKeyStorePassword(String keyStorePassword)
     {
         this.keyStorePassword = keyStorePassword;
@@ -304,6 +306,7 @@ public class HttpClientConfig
     }
 
     @Config("http-client.trust-store-password")
+    @ConfigSecuritySensitive
     public HttpClientConfig setTrustStorePassword(String trustStorePassword)
     {
         this.trustStorePassword = trustStorePassword;

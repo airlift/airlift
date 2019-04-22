@@ -2,6 +2,7 @@
 
 - Run life cycle methods on instances from providers.
 - Log HTTP server requests even when body is not read.
+- Hide HTTP Client's key/trust store passwords from logs.
 - Add installModuleIf method to ConditionalModule with ability to
   install module when condition is not met.
 - Exclude tar.gz files from server tarballs.
