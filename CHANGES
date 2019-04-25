@@ -5,6 +5,7 @@
 - Hide HTTP Client's key/trust store passwords from logs.
 - Add installModuleIf method to ConditionalModule with ability to
   install module when condition is not met.
+- Allow configuring Kerberos GSS name type for HTTP client.
 - Exclude tar.gz files from server tarballs.
 
 0.179
