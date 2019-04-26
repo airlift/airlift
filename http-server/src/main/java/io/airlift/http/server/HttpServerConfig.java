@@ -98,6 +98,7 @@ public class HttpServerConfig
     private Duration threadMaxIdleTime = new Duration(1, MINUTES);
     private Duration networkMaxIdleTime = new Duration(200, SECONDS);
     private DataSize maxRequestHeaderSize;
+    private DataSize maxResponseHeaderSize;
     private int http2MaxConcurrentStreams = 16384;
     private DataSize http2InitialSessionReceiveWindowSize = new DataSize(16, MEGABYTE);
     private DataSize http2InitialStreamReceiveWindowSize = new DataSize(16, MEGABYTE);
@@ -550,6 +551,18 @@ public class HttpServerConfig
     public HttpServerConfig setMaxRequestHeaderSize(DataSize maxRequestHeaderSize)
     {
         this.maxRequestHeaderSize = maxRequestHeaderSize;
+        return this;
+    }
+
+    public DataSize getMaxResponseHeaderSize()
+    {
+        return maxResponseHeaderSize;
+    }
+
+    @Config("http-server.max-response-header-size")
+    public HttpServerConfig setMaxResponseHeaderSize(DataSize maxResponseHeaderSize)
+    {
+        this.maxResponseHeaderSize = maxResponseHeaderSize;
         return this;
     }
 
