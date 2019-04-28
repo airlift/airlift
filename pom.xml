@@ -28,8 +28,9 @@
         <dep.airlift.version>0.188-SNAPSHOT</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
         <dep.jetty.version>9.4.25.v20191220</dep.jetty.version>
-        <dep.jersey.version>2.26</dep.jersey.version>
+        <dep.jersey.version>2.29.1</dep.jersey.version>
         <dep.assertj-core.version>3.14.0</dep.assertj-core.version>
+        <dep.javax-servlet.version>4.0.1</dep.javax-servlet.version>
     </properties>
 
     <organization>
@@ -345,11 +346,15 @@
                 <exclusions>
                     <exclusion>
                         <groupId>org.glassfish.hk2.external</groupId>
-                        <artifactId>javax.inject</artifactId>
+                        <artifactId>jakarta.inject</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>org.glassfish.hk2.external</groupId>
-                        <artifactId>aopalliance-repackaged</artifactId>
+                        <groupId>jakarta.ws.rs</groupId>
+                        <artifactId>jakarta.ws.rs-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>jakarta.annotation</groupId>
+                        <artifactId>jakarta.annotation-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -361,7 +366,19 @@
                 <exclusions>
                     <exclusion>
                         <groupId>org.glassfish.hk2.external</groupId>
-                        <artifactId>javax.inject</artifactId>
+                        <artifactId>jakarta.inject</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>jakarta.ws.rs</groupId>
+                        <artifactId>jakarta.ws.rs-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>jakarta.annotation</groupId>
+                        <artifactId>jakarta.annotation-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>jakarta.validation</groupId>
+                        <artifactId>jakarta.validation-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -373,7 +390,11 @@
                 <exclusions>
                     <exclusion>
                         <groupId>org.glassfish.hk2.external</groupId>
-                        <artifactId>javax.inject</artifactId>
+                        <artifactId>jakarta.inject</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>jakarta.ws.rs</groupId>
+                        <artifactId>jakarta.ws.rs-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -382,6 +403,12 @@
                 <groupId>org.glassfish.jersey.containers</groupId>
                 <artifactId>jersey-container-servlet</artifactId>
                 <version>${dep.jersey.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>jakarta.ws.rs</groupId>
+                        <artifactId>jakarta.ws.rs-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
@@ -391,11 +418,15 @@
                 <exclusions>
                     <exclusion>
                         <groupId>org.glassfish.hk2.external</groupId>
-                        <artifactId>javax.inject</artifactId>
+                        <artifactId>jakarta.inject</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>org.glassfish.hk2.external</groupId>
                         <artifactId>aopalliance-repackaged</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>jakarta.ws.rs</groupId>
+                        <artifactId>jakarta.ws.rs-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -407,11 +438,15 @@
                 <exclusions>
                     <exclusion>
                         <groupId>org.glassfish.hk2.external</groupId>
-                        <artifactId>javax.inject</artifactId>
+                        <artifactId>jakarta.inject</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>org.glassfish.hk2.external</groupId>
                         <artifactId>aopalliance-repackaged</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>jakarta.annotation</groupId>
+                        <artifactId>jakarta.annotation-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -424,6 +459,10 @@
                     <exclusion>
                         <groupId>junit</groupId>
                         <artifactId>junit</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>jakarta.servlet</groupId>
+                        <artifactId>jakarta.servlet-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>

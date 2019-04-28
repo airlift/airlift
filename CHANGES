@@ -6,6 +6,7 @@
 - Limit total size of server.log.
 - Remove status message support from HTTP client.
 - Update to Jetty 9.4.25.v20191220.
+- Update to Jersey 2.29.1.
 
 0.187
 
