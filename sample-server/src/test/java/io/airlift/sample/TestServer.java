@@ -85,7 +85,7 @@ public class TestServer
                 new InMemoryEventModule(),
                 new TestingHttpServerModule(),
                 new JsonModule(),
-                new JaxrsModule(true),
+                new JaxrsModule(),
                 new MainModule());
 
         Injector injector = app

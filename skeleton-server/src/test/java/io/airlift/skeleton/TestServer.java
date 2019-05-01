@@ -40,7 +40,7 @@ public class TestServer
                 new TestingNodeModule(),
                 new TestingHttpServerModule(),
                 new JsonModule(),
-                new JaxrsModule(true),
+                new JaxrsModule(),
                 new JmxHttpModule(),
                 new JmxModule(),
                 new MainModule());

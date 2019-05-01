@@ -46,7 +46,7 @@ public final class Main
                 new DiscoveryModule(),
                 new HttpServerModule(),
                 new JsonModule(),
-                new JaxrsModule(true),
+                new JaxrsModule(),
                 new MBeanModule(),
                 new JmxModule(),
                 new JmxHttpModule(),

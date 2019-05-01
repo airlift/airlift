@@ -60,7 +60,7 @@ public class TestMBeanResource
                 new TestingNodeModule(),
                 new TestingHttpServerModule(),
                 new JsonModule(),
-                new JaxrsModule(true),
+                new JaxrsModule(),
                 new JmxHttpModule(),
                 binder -> binder.bind(MBeanServer.class).toInstance(mbeanServer));
 
