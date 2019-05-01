@@ -1,6 +1,7 @@
 0.181
 
 - Fix JAX-RS warning for missing JAXB APIs on Java 9.
+- Remove support for non-explicit JAX-RS bindings.
 
 0.180
 

@@ -289,7 +289,7 @@ public class TestOverrideMethodFilterInHttpServer
         try {
             List<Module> modules = ImmutableList.<Module>builder()
                     .add(new TestingNodeModule())
-                    .add(new JaxrsModule(true))
+                    .add(new JaxrsModule())
                     .add(new JsonModule())
                     .add(new TestingHttpServerModule())
                     .add(binder -> jaxrsBinder(binder).bindInstance(resource))
