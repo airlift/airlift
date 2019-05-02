@@ -82,7 +82,7 @@ public class AsyncResponseHandler
         Future<?> futureResponse = futureResponseReference.get();
         if (futureResponse != null) {
             try {
-                // Do not interrupt the future if it is running. Jersey uses
+                // Do not interrupt the future if it is running. JAX-RS uses
                 // the calling thread to write the response to the wire.
                 futureResponse.cancel(false);
             }

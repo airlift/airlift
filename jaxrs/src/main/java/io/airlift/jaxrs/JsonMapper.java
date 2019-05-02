@@ -238,10 +238,9 @@ public class JsonMapper
         catch (EOFException e) {
             // ignore EOFException
             // This happens when the client terminates the connection when data
-            // is being written.  If the exception is allowed to propagate to
-            // Jersey, the exception will be logged, but this error is not
-            // important.  This is safe since the output stream is already
-            // closed.
+            // is being written.  If the exception is allowed to propagate,
+            // the exception will be logged, but this error is not important.
+            // This is safe since the output stream is already closed.
         }
     }
 

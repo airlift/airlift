@@ -15,59 +15,40 @@
 package io.airlift.jaxrs.testing;
 
 import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableSet;
 import io.airlift.http.client.HttpStatus;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.Response;
 import io.airlift.http.client.testing.TestingHttpClient;
 import io.airlift.http.client.testing.TestingResponse;
 import io.airlift.log.Logger;
-import org.glassfish.jersey.client.ClientConfig;
-import org.glassfish.jersey.client.JerseyClientBuilder;
-import org.glassfish.jersey.test.DeploymentContext;
-import org.glassfish.jersey.test.inmemory.InMemoryTestContainerFactory;
-import org.glassfish.jersey.test.spi.TestContainer;
+import org.jboss.resteasy.mock.MockDispatcherFactory;
+import org.jboss.resteasy.mock.MockHttpRequest;
+import org.jboss.resteasy.mock.MockHttpResponse;
+import org.jboss.resteasy.plugins.server.resourcefactory.SingletonResource;
+import org.jboss.resteasy.spi.Dispatcher;
+import org.jboss.resteasy.spi.UnhandledException;
 
-import javax.ws.rs.ProcessingException;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
-
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static com.google.common.collect.Iterables.getOnlyElement;
+import java.util.Map.Entry;
 
 public class JaxrsTestingHttpProcessor
         implements TestingHttpClient.Processor
 {
     private static final Logger log = Logger.get(JaxrsTestingHttpProcessor.class);
 
-    private final Client client;
+    private final Dispatcher dispatcher;
 
     private boolean trace;
 
     public JaxrsTestingHttpProcessor(URI baseUri, Object... jaxRsSingletons)
     {
-        Set<Object> jaxRsSingletonsSet = ImmutableSet.copyOf(jaxRsSingletons);
-        Application application = new Application()
-        {
-            @Override
-            public Set<Object> getSingletons()
-            {
-                return jaxRsSingletonsSet;
-            }
-        };
-        TestContainer testContainer = new InMemoryTestContainerFactory()
-                .create(baseUri, DeploymentContext.newInstance(application));
-        ClientConfig clientConfig = testContainer.getClientConfig();
-        this.client = JerseyClientBuilder.createClient(clientConfig);
+        dispatcher = MockDispatcherFactory.createDispatcher();
+        for (Object singleton : jaxRsSingletons) {
+            dispatcher.getRegistry().addResourceFactory(new SingletonResource(singleton));
+        }
     }
 
     public JaxrsTestingHttpProcessor setTrace(boolean enabled)
@@ -80,31 +61,25 @@ public class JaxrsTestingHttpProcessor
     public Response handle(Request request)
             throws Exception
     {
-        // prepare request to jax-rs resource
-        MultivaluedMap<String, Object> requestHeaders = new MultivaluedHashMap<>();
-        for (Map.Entry<String, String> entry : request.getHeaders().entries()) {
-            requestHeaders.add(entry.getKey(), entry.getValue());
+        // create request
+        MockHttpRequest httpRequest = MockHttpRequest.create(request.getMethod(), request.getUri().toString());
+        for (Entry<String, String> entry : request.getHeaders().entries()) {
+            httpRequest.header(entry.getKey(), entry.getValue());
         }
-        Invocation.Builder invocationBuilder = client.target(request.getUri()).request().headers(requestHeaders);
-        Invocation invocation;
-        if (request.getBodyGenerator() == null) {
-            invocation = invocationBuilder.build(request.getMethod());
-        }
-        else {
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            request.getBodyGenerator().write(byteArrayOutputStream);
-            byteArrayOutputStream.close();
-            byte[] bytes = byteArrayOutputStream.toByteArray();
-            Entity<byte[]> entity = Entity.entity(bytes, (String) getOnlyElement(requestHeaders.get("Content-Type")));
-            invocation = invocationBuilder.build(request.getMethod(), entity);
+        if (request.getBodyGenerator() != null) {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            request.getBodyGenerator().write(out);
+            byte[] bytes = out.toByteArray();
+            httpRequest.setInputStream(new ByteArrayInputStream(bytes));
         }
 
+        MockHttpResponse response = new MockHttpResponse();
+
         // issue request, and handle exceptions
-        javax.ws.rs.core.Response result;
         try {
-            result = invocation.invoke(javax.ws.rs.core.Response.class);
+            dispatcher.invoke(httpRequest, response);
         }
-        catch (ProcessingException exception) {
+        catch (UnhandledException exception) {
             if (trace) {
                 log.warn(exception.getCause(), "%-8s %s -> Exception", request.getMethod(), request.getUri());
             }
@@ -124,15 +99,15 @@ public class JaxrsTestingHttpProcessor
 
         // process response from jax-rs resource
         ImmutableListMultimap.Builder<String, String> responseHeaders = ImmutableListMultimap.builder();
-        for (Map.Entry<String, List<String>> headerEntry : result.getStringHeaders().entrySet()) {
-            for (String value : headerEntry.getValue()) {
-                responseHeaders.put(headerEntry.getKey(), value);
+        for (Entry<String, List<Object>> headerEntry : response.getOutputHeaders().entrySet()) {
+            for (Object value : headerEntry.getValue()) {
+                responseHeaders.put(headerEntry.getKey(), String.valueOf(value));
             }
         }
 
         if (trace) {
             log.warn("%-8s %s -> OK", request.getMethod(), request.getUri());
         }
-        return new TestingResponse(HttpStatus.fromStatusCode(result.getStatus()), responseHeaders.build(), result.readEntity(byte[].class));
+        return new TestingResponse(HttpStatus.fromStatusCode(response.getStatus()), responseHeaders.build(), response.getOutput());
     }
 }
