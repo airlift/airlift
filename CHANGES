@@ -2,7 +2,7 @@
 
 - Fix JAX-RS warning for missing JAXB APIs on Java 9.
 - Remove support for non-explicit JAX-RS bindings.
-- Add config for HTTP client max response header size.
+- Add config for HTTP server max response header size.
 
 0.180
 
