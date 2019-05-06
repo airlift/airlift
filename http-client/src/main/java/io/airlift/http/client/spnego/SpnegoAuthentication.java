@@ -1,10 +1,13 @@
 package io.airlift.http.client.spnego;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.sun.security.auth.module.Krb5LoginModule;
 import io.airlift.http.client.KerberosNameType;
 import io.airlift.log.Logger;
 import io.airlift.units.Duration;
+import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.RetryPolicy;
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -26,10 +29,12 @@ import javax.security.auth.login.LoginException;
 import java.io.File;
 import java.io.UncheckedIOException;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.security.Principal;
 import java.security.PrivilegedAction;
+import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
@@ -64,6 +69,15 @@ public class SpnegoAuthentication
             throw new AssertionError(e);
         }
     }
+
+    private static final RetryPolicy<?> AUTHENTICATION_RETRY_POLICY = new RetryPolicy<>()
+            .withBackoff(1, 5, ChronoUnit.SECONDS)
+            .withMaxRetries(5)
+            .handleIf(SpnegoAuthentication::isNetworkIssue)
+            .onRetry(event -> LOG.debug(
+                    "Authentication failed on attempt %s, will retry. Exception: %s",
+                    event.getAttemptCount(),
+                    event.getLastFailure().getMessage()));
 
     private final File keytab;
     private final File credentialCache;
@@ -117,6 +131,11 @@ public class SpnegoAuthentication
             @Override
             public void apply(Request request)
             {
+                Failsafe.with(AUTHENTICATION_RETRY_POLICY).run(() -> authenticate(request));
+            }
+
+            private void authenticate(Request request)
+            {
                 GSSContext context = null;
                 try {
                     String servicePrincipal = makeServicePrincipal(servicePrincipalPattern, remoteServiceName, normalizedUri.getHost(), useCanonicalHostname);
@@ -161,6 +180,12 @@ public class SpnegoAuthentication
                 }
             }
         };
+    }
+
+    private static boolean isNetworkIssue(Throwable throwable)
+    {
+        return Throwables.getCausalChain(throwable).stream()
+                .anyMatch(SocketException.class::isInstance);
     }
 
     @Override
