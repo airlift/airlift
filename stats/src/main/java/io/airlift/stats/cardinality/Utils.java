@@ -44,7 +44,8 @@ final class Utils
     public static int indexBitLength(int numberOfBuckets)
     {
         Preconditions.checkArgument(isPowerOf2(numberOfBuckets), "numberOfBuckets must be a power of 2, actual: %s", numberOfBuckets);
-        return (int) (Math.log(numberOfBuckets) / Math.log(2));
+        // 2**N has N trailing zeros, and we've asserted numberOfBuckets == 2**N
+        return Integer.numberOfTrailingZeros(numberOfBuckets);
     }
 
     public static int numberOfBuckets(int indexBitLength)
