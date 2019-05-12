@@ -3,6 +3,7 @@
 - Retry SpnegoAuthentication on network related exceptions.
 - Allow adding fractional weights to QuantileDigest.
 - Show JVM config hint when JMX agent start fails on Java 9+.
+- Skip starting JMX agent on Java 9+ if already configured.
 
 0.181
 

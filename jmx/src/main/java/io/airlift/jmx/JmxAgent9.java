@@ -25,7 +25,7 @@ import javax.management.remote.JMXServiceURL;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.net.MalformedURLException;
+import java.util.Objects;
 import java.util.Properties;
 
 import static java.lang.String.format;
@@ -35,6 +35,8 @@ class JmxAgent9
 {
     private static final Logger log = Logger.get(JmxAgent.class);
 
+    private static final String JMX_REGISTRY_PORT = "com.sun.management.jmxremote.port";
+    private static final String JMX_SERVER_PORT = "com.sun.management.jmxremote.rmi.port";
     private static final String ALLOW_SELF_ATTACH = "jdk.attach.allowAttachSelf";
 
     private final JMXServiceURL url;
@@ -44,26 +46,71 @@ class JmxAgent9
             throws IOException
     {
         int registryPort;
-        if (config.getRmiRegistryPort() == null) {
-            registryPort = NetUtils.findUnusedPort();
+        Integer existingRegistryPort = Integer.getInteger(JMX_REGISTRY_PORT);
+        Integer configuredRegistryPort = config.getRmiRegistryPort();
+        if (existingRegistryPort != null) {
+            if (configuredRegistryPort != null && !existingRegistryPort.equals(configuredRegistryPort)) {
+                throw new RuntimeException(format(
+                        "System property '%s=%s' does match configured RMI registry port %s",
+                        JMX_REGISTRY_PORT, existingRegistryPort, configuredRegistryPort));
+            }
+            if (existingRegistryPort.equals(0)) {
+                throw new RuntimeException(format(
+                        "JMX agent already running on an unknown port (system property '%s' is 0)",
+                        JMX_REGISTRY_PORT));
+            }
+            registryPort = existingRegistryPort;
+        }
+        else if (configuredRegistryPort != null) {
+            registryPort = configuredRegistryPort;
         }
         else {
-            registryPort = config.getRmiRegistryPort();
+            registryPort = NetUtils.findUnusedPort();
         }
 
         int serverPort = 0;
-        if (config.getRmiServerPort() != null) {
-            serverPort = config.getRmiServerPort();
+        Integer existingServerPort = Integer.getInteger(JMX_SERVER_PORT);
+        Integer configuredServerPort = config.getRmiServerPort();
+        if (!Objects.equals(existingServerPort, configuredServerPort)) {
+            throw new RuntimeException(format(
+                    "System property '%s=%s' does match configured RMI server port %s",
+                    JMX_SERVER_PORT, existingServerPort, configuredServerPort));
+        }
+        if (configuredServerPort != null && !configuredServerPort.equals(0)) {
+            serverPort = configuredServerPort;
         }
 
+        // this is how the JDK JMX agent constructs its URL
+        JMXServiceURL jmxUrl = new JMXServiceURL("rmi", null, registryPort);
+        HostAndPort address = HostAndPort.fromParts(jmxUrl.getHost(), jmxUrl.getPort());
+
+        if (existingRegistryPort == null) {
+            startJmxAgent(registryPort, serverPort);
+            log.info("JMX agent started and listening on %s", address);
+        }
+        else {
+            log.info("JMX agent already running and listening on %s", address);
+        }
+
+        this.url = new JMXServiceURL(format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi", address.getHost(), address.getPort()));
+    }
+
+    public JMXServiceURL getUrl()
+    {
+        return url;
+    }
+
+    private static void startJmxAgent(int registryPort, int serverPort)
+            throws IOException
+    {
         try {
             VirtualMachine virtualMachine = VirtualMachine.attach(Long.toString(getProcessId()));
             try {
                 virtualMachine.startLocalManagementAgent();
 
                 Properties properties = new Properties();
-                properties.setProperty("com.sun.management.jmxremote.port", Integer.toString(registryPort));
-                properties.setProperty("com.sun.management.jmxremote.rmi.port", Integer.toString(serverPort));
+                properties.setProperty(JMX_REGISTRY_PORT, Integer.toString(registryPort));
+                properties.setProperty(JMX_SERVER_PORT, Integer.toString(serverPort));
                 properties.setProperty("com.sun.management.jmxremote.authenticate", "false");
                 properties.setProperty("com.sun.management.jmxremote.ssl", "false");
                 virtualMachine.startManagementAgent(properties);
@@ -81,26 +128,6 @@ class JmxAgent9
             }
             throw e;
         }
-
-        HostAndPort address;
-        try {
-            // This is how the jdk jmx agent constructs its url
-            JMXServiceURL url = new JMXServiceURL("rmi", null, registryPort);
-            address = HostAndPort.fromParts(url.getHost(), url.getPort());
-        }
-        catch (MalformedURLException e) {
-            // should not happen...
-            throw new AssertionError(e);
-        }
-
-        log.info("JMX agent started and listening on %s", address);
-
-        this.url = new JMXServiceURL(format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi", address.getHost(), address.getPort()));
-    }
-
-    public JMXServiceURL getUrl()
-    {
-        return url;
     }
 
     private static long getProcessId()
