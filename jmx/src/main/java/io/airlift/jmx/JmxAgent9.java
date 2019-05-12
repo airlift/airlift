@@ -28,10 +28,14 @@ import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
 import java.util.Properties;
 
+import static java.lang.String.format;
+
 class JmxAgent9
         implements JmxAgent
 {
     private static final Logger log = Logger.get(JmxAgent.class);
+
+    private static final String ALLOW_SELF_ATTACH = "jdk.attach.allowAttachSelf";
 
     private final JMXServiceURL url;
 
@@ -71,6 +75,12 @@ class JmxAgent9
         catch (AttachNotSupportedException e) {
             throw new RuntimeException(e);
         }
+        catch (IOException e) {
+            if (!Boolean.getBoolean(ALLOW_SELF_ATTACH)) {
+                throw new IOException(format("%s (try adding '-D%s=true' to the JVM config)", e, ALLOW_SELF_ATTACH));
+            }
+            throw e;
+        }
 
         HostAndPort address;
         try {
@@ -85,7 +95,7 @@ class JmxAgent9
 
         log.info("JMX agent started and listening on %s", address);
 
-        this.url = new JMXServiceURL(String.format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi", address.getHost(), address.getPort()));
+        this.url = new JMXServiceURL(format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi", address.getHost(), address.getPort()));
     }
 
     public JMXServiceURL getUrl()
