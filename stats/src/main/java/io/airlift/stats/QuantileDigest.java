@@ -257,12 +257,11 @@ public class QuantileDigest
     /**
      * Adds a value to this digest. The value must be {@code >= 0}
      */
-    public void add(long value, long count)
+    public void add(long value, double weight)
     {
-        checkArgument(count > 0, "count must be > 0");
+        checkArgument(weight > 0, "weight must be > 0");
 
         boolean needsCompression = false;
-        double weight = count;
         if (alpha > 0.0) {
             long nowInSeconds = TimeUnit.NANOSECONDS.toSeconds(ticker.read());
             if (nowInSeconds - landmarkInSeconds >= RESCALE_THRESHOLD_SECONDS) {
@@ -270,7 +269,7 @@ public class QuantileDigest
                 needsCompression = true; // rescale affects weights globally, so force compression
             }
 
-            weight = weight(nowInSeconds) * count;
+            weight *= weight(nowInSeconds);
         }
 
         max = Math.max(max, value);
@@ -286,6 +285,11 @@ public class QuantileDigest
         if (needsCompression || ((long) previousCount) / compressionFactor != ((long) weightedCount) / compressionFactor) {
             compress();
         }
+    }
+
+    public void add(long value, long weight)
+    {
+        add(value, (double) weight);
     }
 
     public void merge(QuantileDigest other)

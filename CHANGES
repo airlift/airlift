@@ -1,6 +1,7 @@
 0.182
 
 - Retry SpnegoAuthentication on network related exceptions.
+- New (long, double) method for QuantileDigest.add (#734)
 
 0.181
 
