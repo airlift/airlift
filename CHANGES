@@ -1,7 +1,7 @@
 0.182
 
 - Retry SpnegoAuthentication on network related exceptions.
-- New (long, double) method for QuantileDigest.add (#734)
+- Allow adding fractional weights to QuantileDigest.
 
 0.181
 
