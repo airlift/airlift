@@ -181,12 +181,8 @@ public class QuantileDigest
         max = input.readLong();
         int nodeCount = input.readInt();
 
-        // non-zero-nodes < 3 * k, and k <= log2(domain-size) / max-error
-        // To be conservative, assume all non-zero-nodes can be leaves and we need a complete tree => total-nodes <= 2 * non-zero-nodes
-        // => total-nodes <= 2 * 3 * log2(domain-size) / max-error
-        int numberOfLevels = MAX_BITS - Long.numberOfLeadingZeros(min ^ max) + 1;
-        double k = 3 * numberOfLevels / maxError;
-        checkArgument(nodeCount <= 2 * k, "Too many nodes in deserialized tree. Possible corruption");
+        int height = MAX_BITS - Long.numberOfLeadingZeros(min ^ max) + 1;
+        checkArgument(height >= 64 || nodeCount <= (1L << height) - 1, "Too many nodes in deserialized tree. Possible corruption");
 
         counts = new double[nodeCount];
         levels = new byte[nodeCount];
