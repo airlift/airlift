@@ -1,3 +1,7 @@
+0.183
+
+- Fix rare failure when deserializing QuantileDigest instances
+
 0.182
 
 - Retry SpnegoAuthentication on network related exceptions.
