@@ -16,6 +16,7 @@
 package io.airlift.bootstrap;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.inject.Binder;
 import com.google.inject.CreationException;
@@ -29,10 +30,12 @@ import com.google.inject.Stage;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -57,7 +60,6 @@ public class TestLifeCycleManager
 
     @Test
     public void testImmediateStarts()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 Stage.PRODUCTION,
@@ -75,7 +77,6 @@ public class TestLifeCycleManager
 
     @Test
     public void testPrivateModule()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 Stage.PRODUCTION,
@@ -100,7 +101,6 @@ public class TestLifeCycleManager
 
     @Test
     public void testSubClassAnnotated()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 Stage.PRODUCTION,
@@ -139,7 +139,6 @@ public class TestLifeCycleManager
 
     @Test
     public void testDeepDependency()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 Stage.PRODUCTION,
@@ -162,7 +161,6 @@ public class TestLifeCycleManager
 
     @Test
     public void testIllegalMethods()
-            throws Exception
     {
         try {
             Guice.createInjector(
@@ -178,7 +176,6 @@ public class TestLifeCycleManager
 
     @Test
     public void testDuplicateMethodNames()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 Stage.PRODUCTION,
@@ -194,7 +191,6 @@ public class TestLifeCycleManager
 
     @Test
     public void testJITInjection()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 Stage.PRODUCTION,
@@ -213,8 +209,96 @@ public class TestLifeCycleManager
     }
 
     @Test
+    public void testPreDestroySuppressedExceptionHandling()
+    {
+        Injector injector = Guice.createInjector(
+                Stage.PRODUCTION,
+                new LifeCycleModule(),
+                binder -> {
+                    binder.bind(DependentInstance.class).in(Scopes.SINGLETON);
+                    binder.bind(DestroyExceptionInstance.class).in(Scopes.SINGLETON);
+                });
+
+        LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+        lifeCycleManager.start();
+        assertEquals(stateLog, ImmutableList.of("postDependentInstance"));
+        try {
+            lifeCycleManager.stopWithoutFailureLogging();
+            fail("Expected exception to be thrown");
+        }
+        catch (LifeCycleStopException e) {
+            assertEquals(e.getSuppressed().length, 2, "Expected two suppressed exceptions");
+            Set<String> suppressedMessages = Arrays.stream(e.getSuppressed())
+                    .map(Throwable::getMessage)
+                    .collect(Collectors.toSet());
+            assertEquals(ImmutableSet.copyOf(suppressedMessages), ImmutableSet.of("preDestroyExceptionOne", "preDestroyExceptionTwo"));
+        }
+
+        assertEquals(ImmutableSet.copyOf(stateLog), ImmutableSet.of(
+                "postDependentInstance",
+                "preDestroyExceptionOne",
+                "preDestroyExceptionTwo",
+                "preDependentInstance"));
+    }
+
+    @Test
+    public void testPreDestroyLoggingExceptionHandling()
+    {
+        Injector injector = Guice.createInjector(
+                Stage.PRODUCTION,
+                new LifeCycleModule(),
+                binder -> {
+                    binder.bind(DependentInstance.class).in(Scopes.SINGLETON);
+                    binder.bind(DestroyExceptionInstance.class).in(Scopes.SINGLETON);
+                });
+
+        LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+        lifeCycleManager.start();
+        assertEquals(stateLog, ImmutableList.of("postDependentInstance"));
+        try {
+            lifeCycleManager.stop();
+            fail("Expected exception to be thrown");
+        }
+        catch (LifeCycleStopException e) {
+            assertEquals(e.getSuppressed().length, 0, "Suppressed exceptions list should be empty");
+        }
+
+        assertEquals(ImmutableSet.copyOf(stateLog), ImmutableSet.of(
+                "postDependentInstance",
+                "preDestroyExceptionOne",
+                "preDestroyExceptionTwo",
+                "preDependentInstance"));
+    }
+
+    @Test
+    public void testPostConstructExceptionCallsPreDestroy()
+    {
+        try {
+            Injector injector = Guice.createInjector(
+                    Stage.PRODUCTION,
+                    new LifeCycleModule(),
+                    binder -> binder.bind(PostConstructExceptionInstance.class).in(Scopes.SINGLETON));
+            fail("Expected injector creation to fail with an exception");
+        }
+        catch (CreationException e) {
+            assertEquals(ImmutableSet.copyOf(stateLog), ImmutableSet.of(
+                    "postConstructFailure",
+                    "preDestroyFailureAfterPostConstructFailureOne",
+                    "preDestroyFailureAfterPostConstructFailureTwo"));
+            assertEquals(e.getCause().getClass(), LifeCycleStartException.class, "Expected LifeCycleStartException to be thrown, found: " + e.getCause().getClass());
+            assertEquals(e.getCause().getSuppressed().length, 2, "Expected two suppressed exceptions");
+            assertEquals(
+                    ImmutableSet.copyOf(
+                            Arrays.stream(e.getCause().getSuppressed())
+                                    .map(Throwable::getCause)
+                                    .map(Throwable::getMessage)
+                                    .collect(Collectors.toSet())),
+                    ImmutableSet.of("preDestroyFailureAfterPostConstructFailureOne", "preDestroyFailureAfterPostConstructFailureTwo"));
+        }
+    }
+
+    @Test
     public void testNoPreDestroy()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 Stage.PRODUCTION,
@@ -235,7 +319,6 @@ public class TestLifeCycleManager
 
     @Test
     public void testModule()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 Stage.PRODUCTION,
@@ -267,7 +350,6 @@ public class TestLifeCycleManager
 
     @Test
     public void testProvider()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 Stage.PRODUCTION,
@@ -285,7 +367,6 @@ public class TestLifeCycleManager
 
     @Test
     public void testProviderReturningNull()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 Stage.PRODUCTION,
