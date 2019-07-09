@@ -131,7 +131,7 @@ public class JsonCodec<T>
             throws IllegalArgumentException
     {
         try {
-            return mapper.readValue(json, javaType);
+            return mapper.readerFor(javaType).readValue(json);
         }
         catch (IOException e) {
             throw new IllegalArgumentException(format("Invalid JSON string for %s", javaType), e);
@@ -149,7 +149,7 @@ public class JsonCodec<T>
             throws IllegalArgumentException
     {
         try {
-            return mapper.writeValueAsString(instance);
+            return mapper.writerFor(javaType).writeValueAsString(instance);
         }
         catch (IOException e) {
             throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
@@ -190,7 +190,7 @@ public class JsonCodec<T>
             throws IllegalArgumentException
     {
         try {
-            return mapper.readValue(json, javaType);
+            return mapper.readerFor(javaType).readValue(json);
         }
         catch (IOException e) {
             throw new IllegalArgumentException(format("Invalid JSON bytes for %s", javaType), e);
@@ -208,7 +208,7 @@ public class JsonCodec<T>
             throws IllegalArgumentException
     {
         try {
-            return mapper.writeValueAsBytes(instance);
+            return mapper.writerFor(javaType).writeValueAsBytes(instance);
         }
         catch (IOException e) {
             throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);

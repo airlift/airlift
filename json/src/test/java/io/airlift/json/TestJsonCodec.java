@@ -42,6 +42,10 @@ public class TestJsonCodec
         JsonCodec<Person> jsonCodec = jsonCodec(Person.class);
 
         Person.validatePersonJsonCodec(jsonCodec);
+
+        JsonCodec<Vehicle> vehicleJsonCodec = jsonCodec(Vehicle.class);
+
+        Vehicle.validateVehicleJsonCodec(vehicleJsonCodec);
     }
 
     @Test
@@ -51,6 +55,10 @@ public class TestJsonCodec
         JsonCodec<List<Person>> jsonCodec = listJsonCodec(Person.class);
 
         Person.validatePersonListJsonCodec(jsonCodec);
+
+        JsonCodec<List<Vehicle>> vehicleJsonCodec = listJsonCodec(Vehicle.class);
+
+        Vehicle.validateVehicleListJsonCodec(vehicleJsonCodec);
     }
 
     @Test
@@ -60,6 +68,10 @@ public class TestJsonCodec
         JsonCodec<List<Person>> jsonCodec = listJsonCodec(jsonCodec(Person.class));
 
         Person.validatePersonListJsonCodec(jsonCodec);
+
+        JsonCodec<List<Vehicle>> vehicleJsonCodec = listJsonCodec(jsonCodec(Vehicle.class));
+
+        Vehicle.validateVehicleListJsonCodec(vehicleJsonCodec);
     }
 
     @Test
@@ -69,6 +81,10 @@ public class TestJsonCodec
         JsonCodec<List<Person>> jsonCodec = jsonCodec(new TypeToken<List<Person>>() {});
 
         Person.validatePersonListJsonCodec(jsonCodec);
+
+        JsonCodec<List<Vehicle>> vehicleJsonCodec = jsonCodec(new TypeToken<List<Vehicle>>() {});
+
+        Vehicle.validateVehicleListJsonCodec(vehicleJsonCodec);
     }
 
     @Test
@@ -90,6 +106,10 @@ public class TestJsonCodec
         JsonCodec<Map<String, Person>> jsonCodec = mapJsonCodec(String.class, Person.class);
 
         Person.validatePersonMapJsonCodec(jsonCodec);
+
+        JsonCodec<Map<String, Vehicle>> vehicleJsonCodec = mapJsonCodec(String.class, Vehicle.class);
+
+        Vehicle.validateVehicleMapJsonCodec(vehicleJsonCodec);
     }
 
     @Test
@@ -99,6 +119,10 @@ public class TestJsonCodec
         JsonCodec<Map<String, Person>> jsonCodec = mapJsonCodec(String.class, jsonCodec(Person.class));
 
         Person.validatePersonMapJsonCodec(jsonCodec);
+
+        JsonCodec<Map<String, Vehicle>> vehicleJsonCodec = mapJsonCodec(String.class, jsonCodec(Vehicle.class));
+
+        Vehicle.validateVehicleMapJsonCodec(vehicleJsonCodec);
     }
 
     @Test
@@ -108,6 +132,10 @@ public class TestJsonCodec
         JsonCodec<Map<String, Person>> jsonCodec = jsonCodec(new TypeToken<Map<String, Person>>() {});
 
         Person.validatePersonMapJsonCodec(jsonCodec);
+
+        JsonCodec<Map<String, Vehicle>> vehicleJsonCodec = jsonCodec(new TypeToken<Map<String, Vehicle>>() {});
+
+        Vehicle.validateVehicleMapJsonCodec(vehicleJsonCodec);
     }
 
     @Test
