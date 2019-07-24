@@ -123,23 +123,22 @@ public class TestBoundedExecutor
         };
         BoundedExecutor boundedExecutor = new BoundedExecutor(executor, 1); // Enforce single thread
 
+        CountDownLatch completeLatch = new CountDownLatch(2);
+
         // Force the underlying executor to fail
         reject.set(true);
         try {
-            boundedExecutor.execute(() -> fail("Should not be run"));
+            boundedExecutor.execute(completeLatch::countDown);
             fail("Execute should fail");
         }
         catch (Exception e) {
         }
 
-        // Recover the underlying executor, but all new tasks should fail
+        // Recover the underlying executor. Existing and new tasks should run.
         reject.set(false);
-        try {
-            boundedExecutor.execute(() -> fail("Should not be run"));
-            fail("Execute should still fail");
-        }
-        catch (Exception e) {
-        }
+        boundedExecutor.execute(completeLatch::countDown);
+
+        assertTrue(Uninterruptibles.awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES)); // Wait for tasks to complete
     }
 
     private void testBound(final int maxThreads, int stageTasks)
