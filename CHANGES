@@ -1,3 +1,7 @@
+0.184
+
+- Access logging levels finer than FINE
+
 0.183
 
 - Fix rare failure when deserializing QuantileDigest instances
