@@ -3,6 +3,7 @@ package io.airlift.log;
 public enum Level
 {
     OFF(java.util.logging.Level.OFF),
+    TRACE(java.util.logging.Level.FINEST),
     DEBUG(java.util.logging.Level.FINE),
     INFO(java.util.logging.Level.INFO),
     WARN(java.util.logging.Level.WARNING),
