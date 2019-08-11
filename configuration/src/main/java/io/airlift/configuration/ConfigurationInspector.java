@@ -22,6 +22,7 @@ import com.google.inject.Key;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 
 import java.lang.reflect.Method;
+import java.util.Optional;
 import java.util.SortedSet;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -51,6 +52,9 @@ public class ConfigurationInspector
             Object value = getter.invoke(instance);
             if (value == null) {
                 return "null";
+            }
+            if (value instanceof Optional) {
+                return ((Optional<?>) value).map(Object::toString).orElse("----");
             }
             return value.toString();
         }
