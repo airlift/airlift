@@ -18,10 +18,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TimeDistribution
 {
-    private static final double MAX_ERROR = 0.01;
-
     @GuardedBy("this")
-    private final QuantileDigest digest;
+    private final DecayTDigest digest;
     @GuardedBy("this")
     private final DecayCounter total;
     private final TimeUnit unit;
@@ -35,7 +33,7 @@ public class TimeDistribution
     {
         requireNonNull(unit, "unit is null");
 
-        digest = new QuantileDigest(MAX_ERROR);
+        digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, 0);
         total = new DecayCounter(0);
         this.unit = unit;
     }
@@ -49,7 +47,7 @@ public class TimeDistribution
     {
         requireNonNull(unit, "unit is null");
 
-        digest = new QuantileDigest(MAX_ERROR, alpha);
+        digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
         total = new DecayCounter(alpha);
         this.unit = unit;
     }
@@ -61,12 +59,6 @@ public class TimeDistribution
     }
 
     @Managed
-    public synchronized double getMaxError()
-    {
-        return digest.getConfidenceFactor();
-    }
-
-    @Managed
     public synchronized double getCount()
     {
         return digest.getCount();
@@ -75,31 +67,31 @@ public class TimeDistribution
     @Managed
     public synchronized double getP50()
     {
-        return convertToUnit(digest.getQuantile(0.5));
+        return convertToUnit(digest.valueAt(0.5));
     }
 
     @Managed
     public synchronized double getP75()
     {
-        return convertToUnit(digest.getQuantile(0.75));
+        return convertToUnit(digest.valueAt(0.75));
     }
 
     @Managed
     public synchronized double getP90()
     {
-        return convertToUnit(digest.getQuantile(0.90));
+        return convertToUnit(digest.valueAt(0.90));
     }
 
     @Managed
     public synchronized double getP95()
     {
-        return convertToUnit(digest.getQuantile(0.95));
+        return convertToUnit(digest.valueAt(0.95));
     }
 
     @Managed
     public synchronized double getP99()
     {
-        return convertToUnit(digest.getQuantile(0.99));
+        return convertToUnit(digest.valueAt(0.99));
     }
 
     @Managed
@@ -134,9 +126,9 @@ public class TimeDistribution
             percentiles.add(i / 100.0);
         }
 
-        List<Long> values;
+        List<Double> values;
         synchronized (this) {
-            values = digest.getQuantiles(percentiles);
+            values = digest.valuesAt(percentiles);
         }
 
         Map<Double, Double> result = new LinkedHashMap<>(values.size());
@@ -163,7 +155,6 @@ public class TimeDistribution
     public TimeDistributionSnapshot snapshot()
     {
         return new TimeDistributionSnapshot(
-                getMaxError(),
                 getCount(),
                 getP50(),
                 getP75(),
@@ -178,7 +169,6 @@ public class TimeDistribution
 
     public static class TimeDistributionSnapshot
     {
-        private final double maxError;
         private final double count;
         private final double p50;
         private final double p75;
@@ -192,7 +182,6 @@ public class TimeDistribution
 
         @JsonCreator
         public TimeDistributionSnapshot(
-                @JsonProperty("maxError") double maxError,
                 @JsonProperty("count") double count,
                 @JsonProperty("p50") double p50,
                 @JsonProperty("p75") double p75,
@@ -204,7 +193,6 @@ public class TimeDistribution
                 @JsonProperty("avg") double avg,
                 @JsonProperty("unit") TimeUnit unit)
         {
-            this.maxError = maxError;
             this.count = count;
             this.p50 = p50;
             this.p75 = p75;
@@ -215,12 +203,6 @@ public class TimeDistribution
             this.max = max;
             this.avg = avg;
             this.unit = unit;
-        }
-
-        @JsonProperty
-        public double getMaxError()
-        {
-            return maxError;
         }
 
         @JsonProperty
@@ -287,7 +269,6 @@ public class TimeDistribution
         public String toString()
         {
             return toStringHelper(this)
-                    .add("maxError", maxError)
                     .add("count", count)
                     .add("p50", p50)
                     .add("p75", p75)
