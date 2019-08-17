@@ -18,32 +18,21 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 @ThreadSafe
 public class Distribution
 {
-    private static final double MAX_ERROR = 0.01;
-
     @GuardedBy("this")
-    private final QuantileDigest digest;
+    private final DecayTDigest digest;
 
     private final DecayCounter total;
 
     public Distribution()
     {
-        digest = new QuantileDigest(MAX_ERROR);
+        digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, 0);
         total = new DecayCounter(0);
     }
 
     public Distribution(double alpha)
     {
-        digest = new QuantileDigest(MAX_ERROR, alpha);
+        digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
         total = new DecayCounter(alpha);
-    }
-
-    public Distribution(Distribution distribution)
-    {
-        synchronized (distribution) {
-            digest = new QuantileDigest(distribution.digest);
-        }
-        total = new DecayCounter(distribution.total.getAlpha());
-        total.merge(distribution.total);
     }
 
     public synchronized void add(long value)
@@ -59,12 +48,6 @@ public class Distribution
     }
 
     @Managed
-    public synchronized double getMaxError()
-    {
-        return digest.getConfidenceFactor();
-    }
-
-    @Managed
     public synchronized double getCount()
     {
         return digest.getCount();
@@ -77,67 +60,67 @@ public class Distribution
     }
 
     @Managed
-    public synchronized long getP01()
+    public synchronized double getP01()
     {
-        return digest.getQuantile(0.01);
+        return digest.valueAt(0.01);
     }
 
     @Managed
-    public synchronized long getP05()
+    public synchronized double getP05()
     {
-        return digest.getQuantile(0.05);
+        return digest.valueAt(0.05);
     }
 
     @Managed
-    public synchronized long getP10()
+    public synchronized double getP10()
     {
-        return digest.getQuantile(0.10);
+        return digest.valueAt(0.10);
     }
 
     @Managed
-    public synchronized long getP25()
+    public synchronized double getP25()
     {
-        return digest.getQuantile(0.25);
+        return digest.valueAt(0.25);
     }
 
     @Managed
-    public synchronized long getP50()
+    public synchronized double getP50()
     {
-        return digest.getQuantile(0.5);
+        return digest.valueAt(0.5);
     }
 
     @Managed
-    public synchronized long getP75()
+    public synchronized double getP75()
     {
-        return digest.getQuantile(0.75);
+        return digest.valueAt(0.75);
     }
 
     @Managed
-    public synchronized long getP90()
+    public synchronized double getP90()
     {
-        return digest.getQuantile(0.90);
+        return digest.valueAt(0.90);
     }
 
     @Managed
-    public synchronized long getP95()
+    public synchronized double getP95()
     {
-        return digest.getQuantile(0.95);
+        return digest.valueAt(0.95);
     }
 
     @Managed
-    public synchronized long getP99()
+    public synchronized double getP99()
     {
-        return digest.getQuantile(0.99);
+        return digest.valueAt(0.99);
     }
 
     @Managed
-    public synchronized long getMin()
+    public synchronized double getMin()
     {
         return digest.getMin();
     }
 
     @Managed
-    public synchronized long getMax()
+    public synchronized double getMax()
     {
         return digest.getMax();
     }
@@ -149,19 +132,19 @@ public class Distribution
     }
 
     @Managed
-    public Map<Double, Long> getPercentiles()
+    public Map<Double, Double> getPercentiles()
     {
         List<Double> percentiles = new ArrayList<>(100);
         for (int i = 0; i < 100; ++i) {
             percentiles.add(i / 100.0);
         }
 
-        List<Long> values;
+        List<Double> values;
         synchronized (this) {
-            values = digest.getQuantiles(percentiles);
+            values = digest.valuesAt(percentiles);
         }
 
-        Map<Double, Long> result = new LinkedHashMap<>(values.size());
+        Map<Double, Double> result = new LinkedHashMap<>(values.size());
         for (int i = 0; i < percentiles.size(); ++i) {
             result.put(percentiles.get(i), values.get(i));
         }
@@ -169,16 +152,15 @@ public class Distribution
         return result;
     }
 
-    public synchronized List<Long> getPercentiles(List<Double> percentiles)
+    public synchronized List<Double> getPercentiles(List<Double> percentiles)
     {
-        return digest.getQuantiles(percentiles);
+        return digest.valuesAt(percentiles);
     }
 
     public synchronized DistributionSnapshot snapshot()
     {
-        List<Long> quantiles = digest.getQuantiles(ImmutableList.of(0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99));
+        List<Double> quantiles = digest.valuesAt(ImmutableList.of(0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99));
         return new DistributionSnapshot(
-                getMaxError(),
                 getCount(),
                 getTotal(),
                 quantiles.get(0),
@@ -197,41 +179,38 @@ public class Distribution
 
     public static class DistributionSnapshot
     {
-        private final double maxError;
         private final double count;
         private final double total;
-        private final long p01;
-        private final long p05;
-        private final long p10;
-        private final long p25;
-        private final long p50;
-        private final long p75;
-        private final long p90;
-        private final long p95;
-        private final long p99;
-        private final long min;
-        private final long max;
+        private final double p01;
+        private final double p05;
+        private final double p10;
+        private final double p25;
+        private final double p50;
+        private final double p75;
+        private final double p90;
+        private final double p95;
+        private final double p99;
+        private final double min;
+        private final double max;
         private final double avg;
 
         @JsonCreator
         public DistributionSnapshot(
-                @JsonProperty("maxError") double maxError,
                 @JsonProperty("count") double count,
                 @JsonProperty("total") double total,
-                @JsonProperty("p01") long p01,
-                @JsonProperty("p05") long p05,
-                @JsonProperty("p10") long p10,
-                @JsonProperty("p25") long p25,
-                @JsonProperty("p50") long p50,
-                @JsonProperty("p75") long p75,
-                @JsonProperty("p90") long p90,
-                @JsonProperty("p95") long p95,
-                @JsonProperty("p99") long p99,
-                @JsonProperty("min") long min,
-                @JsonProperty("max") long max,
+                @JsonProperty("p01") double p01,
+                @JsonProperty("p05") double p05,
+                @JsonProperty("p10") double p10,
+                @JsonProperty("p25") double p25,
+                @JsonProperty("p50") double p50,
+                @JsonProperty("p75") double p75,
+                @JsonProperty("p90") double p90,
+                @JsonProperty("p95") double p95,
+                @JsonProperty("p99") double p99,
+                @JsonProperty("min") double min,
+                @JsonProperty("max") double max,
                 @JsonProperty("avg") double avg)
         {
-            this.maxError = maxError;
             this.count = count;
             this.total = total;
             this.p01 = p01;
@@ -249,12 +228,6 @@ public class Distribution
         }
 
         @JsonProperty
-        public double getMaxError()
-        {
-            return maxError;
-        }
-
-        @JsonProperty
         public double getCount()
         {
             return count;
@@ -267,67 +240,67 @@ public class Distribution
         }
 
         @JsonProperty
-        public long getP01()
+        public double getP01()
         {
             return p01;
         }
 
         @JsonProperty
-        public long getP05()
+        public double getP05()
         {
             return p05;
         }
 
         @JsonProperty
-        public long getP10()
+        public double getP10()
         {
             return p10;
         }
 
         @JsonProperty
-        public long getP25()
+        public double getP25()
         {
             return p25;
         }
 
         @JsonProperty
-        public long getP50()
+        public double getP50()
         {
             return p50;
         }
 
         @JsonProperty
-        public long getP75()
+        public double getP75()
         {
             return p75;
         }
 
         @JsonProperty
-        public long getP90()
+        public double getP90()
         {
             return p90;
         }
 
         @JsonProperty
-        public long getP95()
+        public double getP95()
         {
             return p95;
         }
 
         @JsonProperty
-        public long getP99()
+        public double getP99()
         {
             return p99;
         }
 
         @JsonProperty
-        public long getMin()
+        public double getMin()
         {
             return min;
         }
 
         @JsonProperty
-        public long getMax()
+        public double getMax()
         {
             return max;
         }
@@ -342,7 +315,6 @@ public class Distribution
         public String toString()
         {
             return toStringHelper(this)
-                    .add("maxError", maxError)
                     .add("count", count)
                     .add("total", total)
                     .add("p01", p01)

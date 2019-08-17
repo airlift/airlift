@@ -41,12 +41,6 @@ class CachedDistribution
     }
 
     @Managed
-    public double getMaxError()
-    {
-        return getDistribution().getMaxError();
-    }
-
-    @Managed
     public double getCount()
     {
         return getDistribution().getCount();
@@ -59,73 +53,73 @@ class CachedDistribution
     }
 
     @Managed
-    public long getP01()
+    public double getP01()
     {
         return getDistribution().getP01();
     }
 
     @Managed
-    public long getP05()
+    public double getP05()
     {
         return getDistribution().getP05();
     }
 
     @Managed
-    public long getP10()
+    public double getP10()
     {
         return getDistribution().getP10();
     }
 
     @Managed
-    public long getP25()
+    public double getP25()
     {
         return getDistribution().getP25();
     }
 
     @Managed
-    public long getP50()
+    public double getP50()
     {
         return getDistribution().getP50();
     }
 
     @Managed
-    public long getP75()
+    public double getP75()
     {
         return getDistribution().getP75();
     }
 
     @Managed
-    public long getP90()
+    public double getP90()
     {
         return getDistribution().getP90();
     }
 
     @Managed
-    public long getP95()
+    public double getP95()
     {
         return getDistribution().getP95();
     }
 
     @Managed
-    public long getP99()
+    public double getP99()
     {
         return getDistribution().getP99();
     }
 
     @Managed
-    public long getMin()
+    public double getMin()
     {
         return getDistribution().getMin();
     }
 
     @Managed
-    public long getMax()
+    public double getMax()
     {
         return getDistribution().getMax();
     }
 
     @Managed
-    public Map<Double, Long> getPercentiles()
+    public Map<Double, Double> getPercentiles()
     {
         return getDistribution().getPercentiles();
     }
