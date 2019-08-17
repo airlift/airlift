@@ -47,13 +47,13 @@ public class TDigest
     private final int maxSize;
     private final double compression;
 
-    private double[] means;
-    private double[] weights;
-    private int centroidCount;
-    private double totalWeight;
+    double[] means;
+    double[] weights;
+    int centroidCount;
+    double totalWeight;
 
-    private double min;
-    private double max;
+    double min;
+    double max;
 
     private boolean backwards;
     private boolean needsMerge;
