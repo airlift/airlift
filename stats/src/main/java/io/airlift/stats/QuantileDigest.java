@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static io.airlift.stats.ExponentialDecay.weight;
 import static io.airlift.stats.QuantileDigest.MiddleFunction.DEFAULT;
 import static java.lang.String.format;
 
@@ -265,7 +266,7 @@ public class QuantileDigest
                 needsCompression = true; // rescale affects weights globally, so force compression
             }
 
-            weight *= weight(nowInSeconds);
+            weight *= weight(alpha, nowInSeconds, landmarkInSeconds);
         }
 
         max = Math.max(max, value);
@@ -429,7 +430,7 @@ public class QuantileDigest
      */
     public double getCount()
     {
-        return weightedCount / weight(TimeUnit.NANOSECONDS.toSeconds(ticker.read()));
+        return weightedCount / weight(alpha, TimeUnit.NANOSECONDS.toSeconds(ticker.read()), landmarkInSeconds);
     }
 
     /*
@@ -456,7 +457,7 @@ public class QuantileDigest
 
         HistogramBuilderStateHolder holder = new HistogramBuilderStateHolder();
 
-        double normalizationFactor = weight(TimeUnit.NANOSECONDS.toSeconds(ticker.read()));
+        double normalizationFactor = weight(alpha, TimeUnit.NANOSECONDS.toSeconds(ticker.read()), landmarkInSeconds);
 
         postOrderTraversal(root, node -> {
             while (iterator.hasNext() && iterator.peek() <= upperBound(node)) {
@@ -640,18 +641,13 @@ public class QuantileDigest
         }
     }
 
-    private double weight(long timestamp)
-    {
-        return Math.exp(alpha * (timestamp - landmarkInSeconds));
-    }
-
     private void rescale(long newLandmarkInSeconds)
     {
         // rescale the weights based on a new landmark to avoid numerical overflow issues
-        double factor = Math.exp(-alpha * (newLandmarkInSeconds - landmarkInSeconds));
-        weightedCount *= factor;
+        double factor = weight(alpha, newLandmarkInSeconds, landmarkInSeconds);
+        weightedCount /= factor;
         for (int i = 0; i < nextNode; i++) {
-            counts[i] *= factor;
+            counts[i] /= factor;
         }
         landmarkInSeconds = newLandmarkInSeconds;
     }

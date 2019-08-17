@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
+import static io.airlift.stats.ExponentialDecay.weight;
 import static java.util.Objects.requireNonNull;
 
 /*
@@ -49,7 +50,7 @@ public class DecayCounter
         if (nowInSeconds - landmarkInSeconds >= RESCALE_THRESHOLD_SECONDS) {
             rescaleToNewLandmark(nowInSeconds);
         }
-        count += value * weight(nowInSeconds, landmarkInSeconds);
+        count += value * weight(alpha, nowInSeconds, landmarkInSeconds);
     }
 
     public synchronized void merge(DecayCounter decayCounter)
@@ -66,7 +67,7 @@ public class DecayCounter
             }
             else {
                 // rescale the other counter and add
-                double otherRescaledCount = decayCounter.count / weight(landmarkInSeconds, decayCounter.landmarkInSeconds);
+                double otherRescaledCount = decayCounter.count / weight(alpha, landmarkInSeconds, decayCounter.landmarkInSeconds);
                 count += otherRescaledCount;
             }
         }
@@ -75,7 +76,7 @@ public class DecayCounter
     private void rescaleToNewLandmark(long newLandMarkInSeconds)
     {
         // rescale the count based on a new landmark to avoid numerical overflow issues
-        count = count / weight(newLandMarkInSeconds, landmarkInSeconds);
+        count = count / weight(alpha, newLandMarkInSeconds, landmarkInSeconds);
         landmarkInSeconds = newLandMarkInSeconds;
     }
 
@@ -102,7 +103,7 @@ public class DecayCounter
     public synchronized double getCount()
     {
         long nowInSeconds = getTickInSeconds();
-        return count / weight(nowInSeconds, landmarkInSeconds);
+        return count / weight(alpha, nowInSeconds, landmarkInSeconds);
     }
 
     @Managed
@@ -111,11 +112,6 @@ public class DecayCounter
         // The total time covered by this counter is equivalent to the integral of the weight function from 0 to Infinity,
         // which equals 1/alpha. The count per unit time is, therefore, count / (1/alpha)
         return getCount() * alpha;
-    }
-
-    private double weight(long timestampInSeconds, long landmarkInSeconds)
-    {
-        return Math.exp(alpha * (timestampInSeconds - landmarkInSeconds));
     }
 
     private long getTickInSeconds()

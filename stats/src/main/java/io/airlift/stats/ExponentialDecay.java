@@ -44,4 +44,12 @@ public final class ExponentialDecay
 
         return -Math.log(targetWeight) / targetAgeInSeconds;
     }
+
+    /**
+     * Compute the forward-decay multiplier (inverse of the decay factor)
+     */
+    public static double weight(double alpha, long now, long landmark)
+    {
+        return Math.exp(alpha * (now - landmark));
+    }
 }
