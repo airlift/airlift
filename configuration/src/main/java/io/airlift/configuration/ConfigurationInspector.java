@@ -51,7 +51,7 @@ public class ConfigurationInspector
         try {
             Object value = getter.invoke(instance);
             if (value == null) {
-                return "null";
+                return "----";
             }
             if (value instanceof Optional) {
                 return ((Optional<?>) value).map(Object::toString).orElse("----");
