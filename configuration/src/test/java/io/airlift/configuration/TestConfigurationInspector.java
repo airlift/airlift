@@ -24,7 +24,7 @@ public class TestConfigurationInspector
                 .stream()
                 .map(ConfigAttribute::getDefaultValue)
                 .collect(toImmutableList());
-        assertEquals(defaultString, ImmutableList.of("null"));
+        assertEquals(defaultString, ImmutableList.of("----"));
     }
 
     @Test
