@@ -39,7 +39,6 @@ import java.util.Base64;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag.REQUIRED;
@@ -269,7 +268,6 @@ public class SpnegoAuthentication
             else {
                 fullHostName = address.getCanonicalHostName();
             }
-            checkState(!fullHostName.equalsIgnoreCase("localhost"), "Fully qualified name of localhost should not resolve to 'localhost'. System configuration error?");
             return fullHostName;
         }
         catch (UnknownHostException e) {
