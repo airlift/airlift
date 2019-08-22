@@ -486,6 +486,7 @@ public class TestConfigAssertions
                 .setIntegerOption(0)
                 .setLongOption(0)
                 .setMyEnumOption(null)
+                .setMyEnumSecondOption(null)
                 .setShortOption((short) 0)
                 .setStringOption(null)
                 .setValueClassOption(null));
