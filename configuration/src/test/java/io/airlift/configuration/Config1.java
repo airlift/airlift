@@ -49,6 +49,8 @@ public class Config1
 
     MyEnum myEnumOption;
 
+    MyEnum myEnumSecondOption;
+
     ValueClass valueClassOption;
 
     public String getStringOption()
@@ -240,6 +242,18 @@ public class Config1
     public Config1 setMyEnumOption(MyEnum myEnumOption)
     {
         this.myEnumOption = myEnumOption;
+        return this;
+    }
+
+    public MyEnum getMyEnumSecondOption()
+    {
+        return myEnumSecondOption;
+    }
+
+    @Config("myEnumSecondOption")
+    public Config1 setMyEnumSecondOption(MyEnum myEnumSecondOption)
+    {
+        this.myEnumSecondOption = myEnumSecondOption;
         return this;
     }
 

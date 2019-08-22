@@ -73,7 +73,8 @@ public class TestConfig
             .put("boxedFloatOption", Float.toString(Float.MAX_VALUE))
             .put("doubleOption", Double.toString(Double.MAX_VALUE))
             .put("boxedDoubleOption", Double.toString(Double.MAX_VALUE))
-            .put("myEnumOption", MyEnum.FOO.toString())
+            .put("myEnumOption", "FOO")
+            .put("myEnumSecondOption", "bar") // lowercase
             .put("valueClassOption", "a value class")
             .build();
 
@@ -185,6 +186,7 @@ public class TestConfig
         assertEquals(Double.MAX_VALUE, config.getDoubleOption(), 0);
         assertEquals(Double.MAX_VALUE, config.getBoxedDoubleOption());
         assertEquals(MyEnum.FOO, config.getMyEnumOption());
+        assertEquals(MyEnum.BAR, config.getMyEnumSecondOption());
         assertEquals(config.getValueClassOption().getValue(), "a value class");
     }
 

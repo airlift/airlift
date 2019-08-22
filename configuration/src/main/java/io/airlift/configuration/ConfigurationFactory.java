@@ -585,6 +585,25 @@ public class ConfigurationFactory
             return null;
         }
 
+        if (type.isEnum()) {
+            try {
+                return Enum.valueOf(type.asSubclass(Enum.class), value);
+            }
+            catch (IllegalArgumentException e) {
+            }
+            Object match = null;
+            for (Enum<?> option : type.asSubclass(Enum.class).getEnumConstants()) {
+                if (option.name().equalsIgnoreCase(value)) {
+                    if (match != null) {
+                        // Ambiguity
+                        return null;
+                    }
+                    match = option;
+                }
+            }
+            return match;
+        }
+
         // Look for a static fromString(String) method
         try {
             Method fromString = type.getMethod("fromString", String.class);
