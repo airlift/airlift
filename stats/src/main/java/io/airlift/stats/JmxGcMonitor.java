@@ -140,7 +140,7 @@ public class JmxGcMonitor
                 lastGcEndTime = info.getEndTime();
 
                 log.info(
-                        "Major GC: application %sms, stopped %sms:: %s -> %s",
+                        "Major GC: application %sms, stopped %sms: %s -> %s",
                         applicationRuntime,
                         info.getDurationMs(),
                         info.getBeforeGcTotal(),
@@ -151,7 +151,7 @@ public class JmxGcMonitor
 
                 // assumption that minor GCs run currently, so we do not print stopped or application time
                 log.debug(
-                        "Minor GC: duration %sms:: %s -> %s",
+                        "Minor GC: duration %sms: %s -> %s",
                         info.getDurationMs(),
                         info.getBeforeGcTotal(),
                         info.getAfterGcTotal());
