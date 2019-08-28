@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
@@ -191,7 +192,6 @@ public class Logging
     }
 
     public void configure(LoggingConfiguration config)
-            throws IOException
     {
         if (config.getLogPath() != null) {
             logToFile(config.getLogPath(), config.getMaxHistory(), config.getMaxSize().toBytes());
@@ -202,7 +202,12 @@ public class Logging
         }
 
         if (config.getLevelsFile() != null) {
-            setLevels(new File(config.getLevelsFile()));
+            try {
+                setLevels(new File(config.getLevelsFile()));
+            }
+            catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
     }
 }

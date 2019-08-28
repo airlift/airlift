@@ -37,7 +37,9 @@ import io.airlift.log.Logger;
 import io.airlift.log.Logging;
 import io.airlift.log.LoggingConfiguration;
 
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -150,7 +152,6 @@ public class Bootstrap
     }
 
     public Injector initialize()
-            throws Exception
     {
         Preconditions.checkState(!initialized, "Already initialized");
         initialized = true;
@@ -171,7 +172,12 @@ public class Bootstrap
             requiredProperties = Collections.emptyMap();
             String configFile = System.getProperty("config");
             if (configFile != null) {
-                requiredProperties = loadPropertiesFrom(configFile);
+                try {
+                    requiredProperties = loadPropertiesFrom(configFile);
+                }
+                catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
             }
         }
         else {

@@ -5,6 +5,7 @@
 - Record complete URI in HTTP request log.
 - Handle exceptions from @PreDestroy methods.
 - Remove checked exceptions from LifeCycleManager methods.
+- Remove checked exceptions from Bootstrap.initialize().
 - Fix @JsonSubTypes support for JsonCodec.
 - Allow using localhost for SPNEGO canonical service name in HTTP client.
 - Add support for printing Optional values in configuration.
