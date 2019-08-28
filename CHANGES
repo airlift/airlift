@@ -2,6 +2,13 @@
 
 - Match enums case-insensitively in configuration.
 - Access logging levels finer than FINE.
+- Record complete URI in HTTP request log.
+- Handle exceptions from @PreDestroy methods.
+- Remove checked exceptions from LifeCycleManager methods.
+- Fix @JsonSubTypes support for JsonCodec.
+- Allow using localhost for SPNEGO canonical service name in HTTP client.
+- Add support for printing Optional values in configuration.
+- Use "----" for printing null values in configuration.
 
 0.183
 
