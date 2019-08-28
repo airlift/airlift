@@ -208,8 +208,7 @@ public class Bootstrap
 
         // at this point all config file properties should be used
         // so we can calculate the unused properties
-        TreeMap<String, String> unusedProperties = new TreeMap<>();
-        unusedProperties.putAll(requiredProperties);
+        Map<String, String> unusedProperties = new TreeMap<>(requiredProperties);
         unusedProperties.keySet().removeAll(configurationFactory.getUsedProperties());
 
         // Log effective configuration

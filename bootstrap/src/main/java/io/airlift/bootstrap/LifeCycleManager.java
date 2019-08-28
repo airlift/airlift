@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 
 /**
@@ -120,7 +121,7 @@ public final class LifeCycleManager
     }
 
     /**
-     * Stop the life cycle - all instances will have their {@link javax.annotation.PreDestroy} method(s) called
+     * Stop the life cycle - all instances will have their {@link PreDestroy} method(s) called
      * and any exceptions raised will be collected and thrown in a wrapped {@link LifeCycleStopException} as
      * suppressed exceptions. Those failures will not be logged and are the responsibility of the caller to
      * handle appropriately.
@@ -200,19 +201,16 @@ public final class LifeCycleManager
      *
      * @param instance instance to add
      * @throws LifeCycleStartException errors during {@link PostConstruct} method invocation
+     * @throws IllegalStateException if the life cycle has been stopped
      */
     public void addInstance(Object instance)
             throws LifeCycleStartException
     {
         State currentState = state.get();
-        if ((currentState == State.STOPPING) || (currentState == State.STOPPED)) {
-            throw new IllegalStateException();
-        }
-        else {
-            startInstance(instance);
-            if (methodsMap.get(instance.getClass()).hasFor(PreDestroy.class)) {
-                managedInstances.add(instance);
-            }
+        checkState((currentState != State.STOPPING) && (currentState != State.STOPPED), "life cycle is stopped");
+        startInstance(instance);
+        if (methodsMap.get(instance.getClass()).hasFor(PreDestroy.class)) {
+            managedInstances.add(instance);
         }
     }
 

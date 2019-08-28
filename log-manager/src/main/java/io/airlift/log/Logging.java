@@ -34,6 +34,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
 
+import static com.google.common.collect.Maps.fromProperties;
+
 /**
  * Initializes the logging subsystem.
  * <p>
@@ -81,7 +83,6 @@ public class Logging
         rewireStdStreams();
     }
 
-    @SuppressWarnings("IOResourceOpenedButNotSafelyClosed")
     private void rewireStdStreams()
     {
         logConsole(new NonCloseableOutputStream(System.err));
@@ -90,7 +91,6 @@ public class Logging
         redirectStdStreams();
     }
 
-    @SuppressWarnings("IOResourceOpenedButNotSafelyClosed")
     private static void redirectStdStreams()
     {
         System.setOut(new PrintStream(new LoggingOutputStream(Logger.get("stdout")), true));
@@ -110,7 +110,6 @@ public class Logging
         consoleHandler = null;
     }
 
-    @SuppressWarnings("MethodMayBeStatic")
     public void logToFile(String logPath, int maxHistory, long maxSizeInBytes)
     {
         log.info("Logging to %s", logPath);
@@ -137,10 +136,10 @@ public class Logging
             properties.load(inputStream);
         }
 
-        processLevels(properties);
+        fromProperties(properties).forEach((loggerName, value) ->
+                setLevel(loggerName, Level.valueOf(value.toUpperCase(Locale.US))));
     }
 
-    @SuppressWarnings("MethodMayBeStatic")
     public Level getLevel(String loggerName)
     {
         return getEffectiveLevel(java.util.logging.Logger.getLogger(loggerName));
@@ -161,14 +160,12 @@ public class Logging
         return Level.fromJulLevel(level);
     }
 
-    @SuppressWarnings("MethodMayBeStatic")
     public void setLevel(String loggerName, Level level)
     {
         loggers.computeIfAbsent(loggerName, java.util.logging.Logger::getLogger)
                 .setLevel(level.toJulLevel());
     }
 
-    @SuppressWarnings("MethodMayBeStatic")
     public Map<String, Level> getAllLevels()
     {
         ImmutableSortedMap.Builder<String, Level> levels = ImmutableSortedMap.naturalOrder();
@@ -179,16 +176,6 @@ public class Logging
             }
         }
         return levels.build();
-    }
-
-    private void processLevels(Properties properties)
-    {
-        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-            String loggerName = entry.getKey().toString();
-            Level level = Level.valueOf(entry.getValue().toString().toUpperCase(Locale.US));
-
-            setLevel(loggerName, level);
-        }
     }
 
     public void configure(LoggingConfiguration config)
