@@ -96,6 +96,10 @@ public class HttpRequestEvent
         String requestUri = null;
         if (request.getRequestURI() != null) {
             requestUri = request.getRequestURI();
+            String parameters = request.getQueryString();
+            if (parameters != null) {
+                requestUri += "?" + parameters;
+            }
         }
 
         String method = request.getMethod();
