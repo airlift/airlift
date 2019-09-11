@@ -10,6 +10,7 @@
 - Allow using localhost for SPNEGO canonical service name in HTTP client.
 - Add support for printing Optional values in configuration.
 - Use "----" for printing null values in configuration.
+- Remove ConfigurationUtils testing utility.
 
 0.183
 
