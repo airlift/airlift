@@ -15,12 +15,12 @@
  */
 package io.airlift.configuration;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.inject.ConfigurationException;
 import io.airlift.configuration.Problems.Monitor;
 
+import javax.annotation.Nullable;
 import javax.validation.Constraint;
 
 import java.lang.annotation.Annotation;
@@ -36,6 +36,8 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Strings.emptyToNull;
 import static java.util.Objects.requireNonNull;
 
 public class ConfigurationMetadata<T>
@@ -271,7 +273,7 @@ public class ConfigurationMetadata<T>
 
     private AttributeMetadata buildAttributeMetadata(Class<T> configClass, Method configMethod)
     {
-        Preconditions.checkArgument(configMethod.isAnnotationPresent(Config.class));
+        checkArgument(configMethod.isAnnotationPresent(Config.class));
 
         if (!validateAnnotations(configMethod)) {
             return null;
@@ -375,14 +377,9 @@ public class ConfigurationMetadata<T>
 
         private InjectionPointMetaData(Class<?> configClass, String property, Method setter, boolean current)
         {
-            requireNonNull(configClass);
-            requireNonNull(property);
-            requireNonNull(setter);
-            Preconditions.checkArgument(!property.isEmpty());
-
-            this.configClass = configClass;
-            this.property = property;
-            this.setter = setter;
+            this.configClass = requireNonNull(configClass, "configClass is null");
+            this.property = requireNonNull(emptyToNull(property), "property is null or empty");
+            this.setter = requireNonNull(setter, "setter is null");
             this.current = current;
         }
 
@@ -448,23 +445,23 @@ public class ConfigurationMetadata<T>
         private final InjectionPointMetaData injectionPoint;
         private final Set<InjectionPointMetaData> legacyInjectionPoints;
 
-        public AttributeMetadata(Class<?> configClass, String name, String description, boolean securitySensitive, Method getter,
-                InjectionPointMetaData injectionPoint, Set<InjectionPointMetaData> legacyInjectionPoints)
+        public AttributeMetadata(
+                Class<?> configClass,
+                String name,
+                @Nullable String description,
+                boolean securitySensitive,
+                Method getter,
+                InjectionPointMetaData injectionPoint,
+                Set<InjectionPointMetaData> legacyInjectionPoints)
         {
-            requireNonNull(configClass);
-            requireNonNull(name);
-            requireNonNull(getter);
-            requireNonNull(injectionPoint);
-            requireNonNull(legacyInjectionPoints);
-
-            this.configClass = configClass;
-            this.name = name;
+            this.configClass = requireNonNull(configClass, "configClass is null");
+            this.name = requireNonNull(name, "name is null");
             this.description = description;
             this.securitySensitive = securitySensitive;
-            this.getter = getter;
+            this.getter = requireNonNull(getter, "getter is null");
 
-            this.injectionPoint = injectionPoint;
-            this.legacyInjectionPoints = ImmutableSet.copyOf(legacyInjectionPoints);
+            this.injectionPoint = requireNonNull(injectionPoint, "injectionPoint is null");
+            this.legacyInjectionPoints = ImmutableSet.copyOf(requireNonNull(legacyInjectionPoints, "legacyInjectionPoints is null"));
         }
 
         public Class<?> getConfigClass()
@@ -477,6 +474,7 @@ public class ConfigurationMetadata<T>
             return name;
         }
 
+        @Nullable
         public String getDescription()
         {
             return description;
@@ -554,32 +552,24 @@ public class ConfigurationMetadata<T>
 
         public AttributeMetaDataBuilder(Class<?> configClass, String name, boolean securitySensitive)
         {
-            requireNonNull(configClass);
-            requireNonNull(name);
-            Preconditions.checkArgument(!name.isEmpty());
-
-            this.configClass = configClass;
-            this.name = name;
+            this.configClass = requireNonNull(configClass, "configClass is null");
+            this.name = requireNonNull(emptyToNull(name), "name is null or empty");
             this.securitySensitive = securitySensitive;
         }
 
         public void setDescription(String description)
         {
-            requireNonNull(description);
-
-            this.description = description;
+            this.description = requireNonNull(description, "description is null");
         }
 
         public void setGetter(Method getter)
         {
-            requireNonNull(getter);
-
-            this.getter = getter;
+            this.getter = requireNonNull(getter, "getter is null");
         }
 
         public void addInjectionPoint(InjectionPointMetaData injectionPointMetaData)
         {
-            requireNonNull(injectionPointMetaData);
+            requireNonNull(injectionPointMetaData, "injectionPointMetaData is null");
 
             if (injectionPointMetaData.isLegacy()) {
                 this.legacyInjectionPoints.add(injectionPointMetaData);
