@@ -42,7 +42,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
 
-public class ConfigurationFactoryTest
+public class TestConfigurationFactory
 {
     @Test
     public void testAnnotatedGettersThrows()

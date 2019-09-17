@@ -31,7 +31,7 @@ import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
-public class ConfigurationMetadataTest
+public class TestConfigurationMetadata
 {
     @Test
     public void testEquivalence()
