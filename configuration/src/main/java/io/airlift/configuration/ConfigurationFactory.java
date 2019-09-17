@@ -559,7 +559,14 @@ public class ConfigurationFactory
                 return value;
             }
             if (Boolean.class == type || boolean.class == type) {
-                return Boolean.valueOf(value);
+                // Boolean.valueOf returns `false` when called with `"true "` argument
+                if ("true".equalsIgnoreCase(value)) {
+                    return Boolean.TRUE;
+                }
+                if ("false".equalsIgnoreCase(value)) {
+                    return Boolean.FALSE;
+                }
+                return null;
             }
             if (Byte.class == type || byte.class == type) {
                 return Byte.valueOf(value);

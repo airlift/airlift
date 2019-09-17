@@ -2,6 +2,8 @@
 
 - Fix a bug introduced in 0.184 causing Enum's fromString(String) method to be
   ignored.
+- Convert to boolean strictly in configuration. For example "yes" value
+  will now be rejected, previously it would be parsed as false.
 - Trim whitespace when loading configuration.
 - When a class defines fromString(String) method, valueOf(String) method or
   a String-parameterized constructor, attempt the conversion using only first
