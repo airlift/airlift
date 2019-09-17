@@ -558,25 +558,25 @@ public class ConfigurationFactory
             if (String.class == type) {
                 return value;
             }
-            else if (Boolean.class == type || boolean.class == type) {
+            if (Boolean.class == type || boolean.class == type) {
                 return Boolean.valueOf(value);
             }
-            else if (Byte.class == type || byte.class == type) {
+            if (Byte.class == type || byte.class == type) {
                 return Byte.valueOf(value);
             }
-            else if (Short.class == type || short.class == type) {
+            if (Short.class == type || short.class == type) {
                 return Short.valueOf(value);
             }
-            else if (Integer.class == type || int.class == type) {
+            if (Integer.class == type || int.class == type) {
                 return Integer.valueOf(value);
             }
-            else if (Long.class == type || long.class == type) {
+            if (Long.class == type || long.class == type) {
                 return Long.valueOf(value);
             }
-            else if (Float.class == type || float.class == type) {
+            if (Float.class == type || float.class == type) {
                 return Float.valueOf(value);
             }
-            else if (Double.class == type || double.class == type) {
+            if (Double.class == type || double.class == type) {
                 return Double.valueOf(value);
             }
         }
