@@ -38,8 +38,10 @@ import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.testing.Assertions.assertContainsAllOf;
 import static java.util.Objects.requireNonNull;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class TestConfigurationFactory
@@ -320,6 +322,51 @@ public class TestConfigurationFactory
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
             monitor.assertMatchingErrorRecorded("Could not coerce value 'abc %s xyz' to int (property 'int-value')", "BeanValidationClass");
+        }
+    }
+
+    @Test
+    public void testAcceptBooleanValue()
+    {
+        for (String value : ImmutableList.of("true", "TRUE", "tRuE")) {
+            Map<String, String> properties = new HashMap<>();
+            properties.put("booleanOption", value);
+            TestMonitor monitor = new TestMonitor();
+            Injector injector = createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(Config1.class));
+            Config1 config = requireNonNull(injector.getInstance(Config1.class), "injector.getInstance(Config1.class) is null");
+            monitor.assertNumberOfErrors(0);
+            monitor.assertNumberOfWarnings(0);
+            assertTrue(config.getBooleanOption());
+        }
+
+        for (String value : ImmutableList.of("false", "FALSE", "fAlsE")) {
+            Map<String, String> properties = new HashMap<>();
+            properties.put("booleanOption", value);
+            TestMonitor monitor = new TestMonitor();
+            Injector injector = createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(Config1.class));
+            Config1 config = requireNonNull(injector.getInstance(Config1.class), "injector.getInstance(Config1.class) is null");
+            monitor.assertNumberOfErrors(0);
+            monitor.assertNumberOfWarnings(0);
+            assertFalse(config.getBooleanOption());
+        }
+    }
+
+    @Test
+    public void testRejectUnknownBooleanValue()
+    {
+        for (String value : ImmutableList.of("yes", "no", "1", "0")) {
+            Map<String, String> properties = new HashMap<>();
+            properties.put("booleanOption", value);
+            TestMonitor monitor = new TestMonitor();
+            try {
+                createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(Config1.class));
+                fail("Expected an exception in object creation due to failed coercion");
+            }
+            catch (CreationException e) {
+                monitor.assertNumberOfErrors(1);
+                monitor.assertNumberOfWarnings(0);
+                monitor.assertMatchingErrorRecorded("Could not coerce value '" + value + "' to boolean (property 'booleanOption')", "Config1");
+            }
         }
     }
 
