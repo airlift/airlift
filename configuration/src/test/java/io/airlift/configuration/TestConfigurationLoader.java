@@ -61,7 +61,7 @@ public class TestConfigurationLoader
 
         assertEquals(properties.get("test"), "foo");
 
-        System.getProperties().remove("test");
+        System.clearProperty("test");
     }
 
     @Test
@@ -76,7 +76,7 @@ public class TestConfigurationLoader
         assertEquals(properties.get("test"), "foo");
         assertEquals(properties.get("config"), file.getAbsolutePath());
 
-        System.getProperties().remove("config");
+        System.clearProperty("config");
     }
 
     @Test
@@ -96,7 +96,8 @@ public class TestConfigurationLoader
         assertEquals(properties.get("key1"), "overridden");
         assertEquals(properties.get("key2"), "original");
 
-        System.getProperties().remove("config");
+        System.clearProperty("key1");
+        System.clearProperty("config");
     }
 
     private File createConfigFile(Consumer<PrintStream> contentProvider)
