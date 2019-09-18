@@ -80,6 +80,29 @@ public class TestConfigurationLoader
     }
 
     @Test
+    public void testTrimWhitespaceFromFile()
+            throws IOException
+    {
+        File file = createConfigFile(out -> {
+            out.println(" \t trim-whitespace-key1 \t =  \t key1-value \t ");
+            out.println(" \t trim-whitespace-key2 \t =  \t key2-value \t ");
+        });
+        System.setProperty("config", file.getAbsolutePath());
+        System.setProperty("trim-whitespace-key2", " \t key2-value \t ");
+
+        Map<String, String> properties = loadProperties();
+
+        // config files are often human-managed and we need to be permissive, stripping trailing whitespace if any
+        assertEquals(properties.get("trim-whitespace-key1"), "key1-value");
+
+        // trailing whitespace in JVM property value is not so likely to be unintentional, so preserve it
+        assertEquals(properties.get("trim-whitespace-key2"), " \t key2-value \t ");
+
+        System.clearProperty("trim-whitespace-key2");
+        System.clearProperty("config");
+    }
+
+    @Test
     public void testSystemOverridesFile()
             throws IOException
     {

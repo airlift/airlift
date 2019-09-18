@@ -21,9 +21,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.TreeMap;
 
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.Maps.fromProperties;
 
 public final class ConfigurationLoader
@@ -59,7 +61,8 @@ public final class ConfigurationLoader
             properties.load(inputStream);
         }
 
-        return fromProperties(properties);
+        return fromProperties(properties).entrySet().stream()
+                .collect(toImmutableMap(Entry::getKey, entry -> entry.getValue().trim()));
     }
 
     public static Map<String, String> getSystemProperties()
