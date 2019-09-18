@@ -25,6 +25,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
@@ -67,11 +68,7 @@ public class TestConfigurationLoader
     public void testLoadsFromFile()
             throws IOException
     {
-        final File file = File.createTempFile("config", ".properties", tempDir);
-        PrintStream out = new PrintStream(new FileOutputStream(file));
-        out.print("test: foo");
-        out.flush();
-
+        File file = createConfigFile(out -> out.print("test: foo"));
         System.setProperty("config", file.getAbsolutePath());
 
         Map<String, String> properties = loadProperties();
@@ -86,12 +83,10 @@ public class TestConfigurationLoader
     public void testSystemOverridesFile()
             throws IOException
     {
-        final File file = File.createTempFile("config", ".properties", tempDir);
-        PrintStream out = new PrintStream(new FileOutputStream(file));
-        out.println("key1: original");
-        out.println("key2: original");
-        out.flush();
-
+        File file = createConfigFile(out -> {
+            out.println("key1: original");
+            out.println("key2: original");
+        });
         System.setProperty("config", file.getAbsolutePath());
         System.setProperty("key1", "overridden");
 
@@ -102,5 +97,15 @@ public class TestConfigurationLoader
         assertEquals(properties.get("key2"), "original");
 
         System.getProperties().remove("config");
+    }
+
+    private File createConfigFile(Consumer<PrintStream> contentProvider)
+            throws IOException
+    {
+        File file = File.createTempFile("config", ".properties", tempDir);
+        try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
+            contentProvider.accept(out);
+        }
+        return file;
     }
 }
