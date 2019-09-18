@@ -69,12 +69,8 @@ public class TestConfigurationLoader
     {
         final File file = File.createTempFile("config", ".properties", tempDir);
         PrintStream out = new PrintStream(new FileOutputStream(file));
-        try {
-            out.print("test: foo");
-        }
-        catch (Exception e) {
-            out.close();
-        }
+        out.print("test: foo");
+        out.flush();
 
         System.setProperty("config", file.getAbsolutePath());
 
@@ -92,13 +88,9 @@ public class TestConfigurationLoader
     {
         final File file = File.createTempFile("config", ".properties", tempDir);
         PrintStream out = new PrintStream(new FileOutputStream(file));
-        try {
-            out.println("key1: original");
-            out.println("key2: original");
-        }
-        catch (Exception e) {
-            out.close();
-        }
+        out.println("key1: original");
+        out.println("key2: original");
+        out.flush();
 
         System.setProperty("config", file.getAbsolutePath());
         System.setProperty("key1", "overridden");
