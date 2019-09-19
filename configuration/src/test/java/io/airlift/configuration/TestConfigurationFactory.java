@@ -321,7 +321,7 @@ public class TestConfigurationFactory
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
-            monitor.assertMatchingErrorRecorded("Could not coerce value 'abc %s xyz' to int (property 'int-value')", "BeanValidationClass");
+            monitor.assertMatchingErrorRecorded("Invalid value 'abc %s xyz' for type int (property 'int-value')", "BeanValidationClass");
         }
     }
 
@@ -365,7 +365,7 @@ public class TestConfigurationFactory
             catch (CreationException e) {
                 monitor.assertNumberOfErrors(1);
                 monitor.assertNumberOfWarnings(0);
-                monitor.assertMatchingErrorRecorded("Could not coerce value '" + value + "' to boolean (property 'booleanOption')", "Config1");
+                monitor.assertMatchingErrorRecorded("Invalid value '" + value + "' for type boolean (property 'booleanOption')", "Config1");
             }
         }
     }
@@ -383,7 +383,7 @@ public class TestConfigurationFactory
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
-            monitor.assertMatchingErrorRecorded("Could not coerce value 'abc %s xyz' to int (property 'example.int-value')", "BeanValidationClass");
+            monitor.assertMatchingErrorRecorded("Invalid value 'abc %s xyz' for type int (property 'example.int-value')", "BeanValidationClass");
         }
     }
 
@@ -404,7 +404,7 @@ public class TestConfigurationFactory
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
-            monitor.assertMatchingErrorRecorded("Could not coerce value 'value-good-for-valueOf' to", "(property 'value')", "FromStringClass");
+            monitor.assertMatchingErrorRecorded("Invalid value 'value-good-for-valueOf' for type", "(property 'value')", "FromStringClass");
         }
     }
 
@@ -425,7 +425,7 @@ public class TestConfigurationFactory
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
-            monitor.assertMatchingErrorRecorded("Could not coerce value 'TRUE' to", "(property 'value')", "EnumWithFromStringClass");
+            monitor.assertMatchingErrorRecorded("Invalid value 'TRUE' for type ", "(property 'value')", "EnumWithFromStringClass");
         }
     }
 
@@ -446,7 +446,7 @@ public class TestConfigurationFactory
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
-            monitor.assertMatchingErrorRecorded("Could not coerce value 'anything' to", "(property 'value')", "ValueOfClass");
+            monitor.assertMatchingErrorRecorded("Invalid value 'anything' for type", "(property 'value')", "ValueOfClass");
         }
     }
 
@@ -467,7 +467,7 @@ public class TestConfigurationFactory
         catch (CreationException e) {
             monitor.assertNumberOfErrors(1);
             monitor.assertNumberOfWarnings(0);
-            monitor.assertMatchingErrorRecorded("Could not coerce value 'bad-value' to", "(property 'value')", "StringConstructorClass");
+            monitor.assertMatchingErrorRecorded("Invalid value 'bad-value' for type", "(property 'value')", "StringConstructorClass");
         }
     }
 

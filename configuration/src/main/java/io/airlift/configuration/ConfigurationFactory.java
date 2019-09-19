@@ -538,7 +538,7 @@ public class ConfigurationFactory
 
         Object finalValue = coerce(propertyType, value);
         if (finalValue == null) {
-            throw new InvalidConfigurationException(format("Could not coerce value '%s' to %s (property '%s') in order to call [%s]",
+            throw new InvalidConfigurationException(format("Invalid value '%s' for type %s (property '%s') in order to call [%s]",
                     printableValue,
                     propertyType.getName(),
                     name,
