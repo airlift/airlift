@@ -22,6 +22,7 @@ import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.status.ErrorStatus;
 import ch.qos.logback.core.util.FileSize;
+import com.google.common.math.LongMath;
 import io.airlift.event.client.EventClient;
 import io.airlift.log.Logger;
 import io.airlift.tracetoken.TraceTokenManager;
@@ -88,13 +89,16 @@ class DelimitedRequestLog
         TimeBasedRollingPolicy<HttpRequestEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
 
         rollingPolicy.setContext(context);
-        rollingPolicy.setMaxHistory(maxHistory);
+        rollingPolicy.setMaxHistory(maxHistory); // limits number of logging periods (i.e. days) kept
         rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(triggeringPolicy);
         rollingPolicy.setParent(fileAppender);
         rollingPolicy.setFileNamePattern(filename + "-%d{yyyy-MM-dd}.%i.log");
         if (compressionEnabled) {
             rollingPolicy.setFileNamePattern(rollingPolicy.getFileNamePattern() + ".gz");
         }
+        // Limit total log files occupancy on disk. Ideally we would keep exactly
+        // `maxHistory` files (not logging periods). This is closest currently possible.
+        rollingPolicy.setTotalSizeCap(new FileSize(LongMath.saturatedMultiply(maxFileSizeInBytes, maxHistory)));
 
         triggeringPolicy.setContext(context);
         triggeringPolicy.setTimeBasedRollingPolicy(rollingPolicy);
