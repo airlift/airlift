@@ -16,7 +16,7 @@
 package io.airlift.sample;
 
 import com.google.inject.Injector;
-import io.airlift.bootstrap.Bootstrap;
+import com.facebook.airlift.bootstrap.Bootstrap;
 import io.airlift.discovery.client.Announcer;
 import io.airlift.discovery.client.DiscoveryModule;
 import io.airlift.event.client.HttpEventModule;

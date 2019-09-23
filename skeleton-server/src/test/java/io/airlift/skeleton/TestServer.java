@@ -1,8 +1,8 @@
 package io.airlift.skeleton;
 
 import com.google.inject.Injector;
-import io.airlift.bootstrap.Bootstrap;
-import io.airlift.bootstrap.LifeCycleManager;
+import com.facebook.airlift.bootstrap.Bootstrap;
+import com.facebook.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;

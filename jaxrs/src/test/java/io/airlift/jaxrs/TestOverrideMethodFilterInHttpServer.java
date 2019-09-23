@@ -17,7 +17,7 @@ package io.airlift.jaxrs;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Module;
-import io.airlift.bootstrap.Bootstrap;
+import com.facebook.airlift.bootstrap.Bootstrap;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;

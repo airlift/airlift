@@ -2,8 +2,8 @@ package io.airlift.discovery.client;
 
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import io.airlift.bootstrap.Bootstrap;
-import io.airlift.bootstrap.LifeCycleManager;
+import com.facebook.airlift.bootstrap.Bootstrap;
+import com.facebook.airlift.bootstrap.LifeCycleManager;
 import io.airlift.json.JsonModule;
 import io.airlift.node.testing.TestingNodeModule;
 import org.testng.annotations.Test;
