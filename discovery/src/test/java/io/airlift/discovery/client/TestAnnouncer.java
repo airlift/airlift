@@ -31,7 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import static io.airlift.concurrent.MoreFutures.getFutureValue;
+import static com.facebook.airlift.concurrent.MoreFutures.getFutureValue;
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;

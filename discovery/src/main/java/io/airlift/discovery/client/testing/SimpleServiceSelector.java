@@ -29,7 +29,7 @@ import io.airlift.log.Logger;
 import java.util.List;
 
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
-import static io.airlift.concurrent.MoreFutures.getFutureValue;
+import static com.facebook.airlift.concurrent.MoreFutures.getFutureValue;
 import static java.util.Objects.requireNonNull;
 
 public class SimpleServiceSelector

@@ -1,4 +1,4 @@
-package io.airlift.concurrent;
+package com.facebook.airlift.concurrent;
 
 import java.util.Collection;
 import java.util.List;

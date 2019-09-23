@@ -1,4 +1,4 @@
-package io.airlift.concurrent;
+package com.facebook.airlift.concurrent;
 
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FluentFuture;
