@@ -24,7 +24,7 @@ import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import javax.servlet.Filter;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static io.airlift.configuration.ConfigBinder.configBinder;
+import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.event.client.EventBinder.eventBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 

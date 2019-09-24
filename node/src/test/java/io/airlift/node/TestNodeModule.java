@@ -19,8 +19,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.net.InetAddresses;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import io.airlift.configuration.ConfigurationFactory;
-import io.airlift.configuration.ConfigurationModule;
+import com.facebook.airlift.configuration.ConfigurationFactory;
+import com.facebook.airlift.configuration.ConfigurationModule;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;

@@ -17,7 +17,7 @@ package io.airlift.node;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.InetAddresses;
-import io.airlift.configuration.testing.ConfigAssertions;
+import com.facebook.airlift.configuration.testing.ConfigAssertions;
 import org.testng.annotations.Test;
 
 import javax.validation.constraints.NotNull;

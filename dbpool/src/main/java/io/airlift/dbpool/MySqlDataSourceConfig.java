@@ -15,8 +15,8 @@
  */
 package io.airlift.dbpool;
 
-import io.airlift.configuration.Config;
-import io.airlift.configuration.DefunctConfig;
+import com.facebook.airlift.configuration.Config;
+import com.facebook.airlift.configuration.DefunctConfig;
 
 /**
  * see <a href="http://dev.mysql.com/doc/refman/5.0/en/connector-j-reference-configuration-properties.html">http://dev.mysql.com/doc/refman/5.0/en/connector-j-reference-configuration-properties.html</a>

@@ -29,7 +29,7 @@ import io.airlift.http.server.TheServlet;
 import javax.servlet.Filter;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static io.airlift.configuration.ConfigBinder.configBinder;
+import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 
 public class TestingHttpServerModule

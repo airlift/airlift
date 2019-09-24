@@ -15,8 +15,8 @@
  */
 package io.airlift.jmx;
 
-import io.airlift.configuration.Config;
-import io.airlift.configuration.DefunctConfig;
+import com.facebook.airlift.configuration.Config;
+import com.facebook.airlift.configuration.DefunctConfig;
 
 @DefunctConfig("jmx.rmiserver.hostname")
 public class JmxConfig

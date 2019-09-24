@@ -17,7 +17,7 @@ package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HostAndPort;
-import io.airlift.configuration.testing.ConfigAssertions;
+import com.facebook.airlift.configuration.testing.ConfigAssertions;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.util.ssl.SslContextFactory;

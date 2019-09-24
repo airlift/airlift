@@ -16,9 +16,9 @@
 package io.airlift.node;
 
 import com.google.common.net.InetAddresses;
-import io.airlift.configuration.Config;
-import io.airlift.configuration.DefunctConfig;
-import io.airlift.configuration.LegacyConfig;
+import com.facebook.airlift.configuration.Config;
+import com.facebook.airlift.configuration.DefunctConfig;
+import com.facebook.airlift.configuration.LegacyConfig;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;

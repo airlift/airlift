@@ -15,8 +15,8 @@
  */
 package io.airlift.dbpool;
 
-import io.airlift.configuration.Config;
-import io.airlift.configuration.DefunctConfig;
+import com.facebook.airlift.configuration.Config;
+import com.facebook.airlift.configuration.DefunctConfig;
 import io.airlift.units.Duration;
 
 import java.util.concurrent.TimeUnit;

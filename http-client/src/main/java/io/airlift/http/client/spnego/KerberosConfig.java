@@ -1,7 +1,7 @@
 package io.airlift.http.client.spnego;
 
-import io.airlift.configuration.Config;
-import io.airlift.configuration.ConfigDescription;
+import com.facebook.airlift.configuration.Config;
+import com.facebook.airlift.configuration.ConfigDescription;
 
 import java.io.File;
 

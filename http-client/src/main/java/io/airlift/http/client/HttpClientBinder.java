@@ -20,7 +20,7 @@ import com.google.inject.Binder;
 import com.google.inject.Scopes;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.Multibinder;
-import io.airlift.configuration.ConfigDefaults;
+import com.facebook.airlift.configuration.ConfigDefaults;
 
 import java.lang.annotation.Annotation;
 import java.util.Collection;

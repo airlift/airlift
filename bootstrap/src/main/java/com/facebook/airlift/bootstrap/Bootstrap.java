@@ -26,13 +26,13 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Stage;
 import com.google.inject.spi.Message;
-import io.airlift.configuration.ConfigurationFactory;
-import io.airlift.configuration.ConfigurationInspector;
-import io.airlift.configuration.ConfigurationInspector.ConfigAttribute;
-import io.airlift.configuration.ConfigurationInspector.ConfigRecord;
-import io.airlift.configuration.ConfigurationModule;
-import io.airlift.configuration.ValidationErrorModule;
-import io.airlift.configuration.WarningsMonitor;
+import com.facebook.airlift.configuration.ConfigurationFactory;
+import com.facebook.airlift.configuration.ConfigurationInspector;
+import com.facebook.airlift.configuration.ConfigurationInspector.ConfigAttribute;
+import com.facebook.airlift.configuration.ConfigurationInspector.ConfigRecord;
+import com.facebook.airlift.configuration.ConfigurationModule;
+import com.facebook.airlift.configuration.ValidationErrorModule;
+import com.facebook.airlift.configuration.WarningsMonitor;
 import io.airlift.log.Logger;
 import io.airlift.log.Logging;
 import io.airlift.log.LoggingConfiguration;
@@ -47,8 +47,8 @@ import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import static io.airlift.configuration.ConfigurationLoader.getSystemProperties;
-import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
+import static com.facebook.airlift.configuration.ConfigurationLoader.getSystemProperties;
+import static com.facebook.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 
 /**
  * Entry point for an application built using the platform codebase.

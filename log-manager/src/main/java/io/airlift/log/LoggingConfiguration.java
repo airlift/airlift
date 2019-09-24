@@ -15,8 +15,8 @@
  */
 package io.airlift.log;
 
-import io.airlift.configuration.Config;
-import io.airlift.configuration.LegacyConfig;
+import com.facebook.airlift.configuration.Config;
+import com.facebook.airlift.configuration.LegacyConfig;
 import io.airlift.units.DataSize;
 
 import static io.airlift.units.DataSize.Unit.BYTE;

@@ -15,8 +15,8 @@
  */
 package io.airlift.jmx.http.rpc;
 
-import io.airlift.configuration.Config;
-import io.airlift.configuration.ConfigSecuritySensitive;
+import com.facebook.airlift.configuration.Config;
+import com.facebook.airlift.configuration.ConfigSecuritySensitive;
 
 public class JmxHttpRpcConfig
 {

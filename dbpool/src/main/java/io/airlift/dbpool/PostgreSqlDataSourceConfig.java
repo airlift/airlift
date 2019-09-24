@@ -15,7 +15,7 @@
  */
 package io.airlift.dbpool;
 
-import io.airlift.configuration.Config;
+import com.facebook.airlift.configuration.Config;
 
 /**
  * see <a href="https://jdbc.postgresql.org/documentation/head/connect.html">PostgreSQL JDBC Driver Connecting to Database</a>
