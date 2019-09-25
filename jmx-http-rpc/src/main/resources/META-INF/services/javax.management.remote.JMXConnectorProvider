@@ -1,1 +1,1 @@
-io.airlift.jmx.http.rpc.HttpJmxConnectorProvider
+com.facebook.airlift.jmx.http.rpc.HttpJmxConnectorProvider
