@@ -15,7 +15,7 @@
  */
 package io.airlift.http.server;
 
-import io.airlift.discovery.client.AnnouncementHttpServerInfo;
+import com.facebook.airlift.discovery.client.AnnouncementHttpServerInfo;
 
 import javax.inject.Inject;
 

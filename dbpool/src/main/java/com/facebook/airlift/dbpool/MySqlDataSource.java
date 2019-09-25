@@ -16,8 +16,8 @@
 package com.facebook.airlift.dbpool;
 
 import com.mysql.jdbc.jdbc2.optional.MysqlConnectionPoolDataSource;
-import io.airlift.discovery.client.ServiceDescriptor;
-import io.airlift.discovery.client.ServiceSelector;
+import com.facebook.airlift.discovery.client.ServiceDescriptor;
+import com.facebook.airlift.discovery.client.ServiceSelector;
 
 import javax.sql.PooledConnection;
 

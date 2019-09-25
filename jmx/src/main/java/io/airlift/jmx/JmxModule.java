@@ -18,7 +18,7 @@ package io.airlift.jmx;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import io.airlift.discovery.client.ServiceAnnouncement;
+import com.facebook.airlift.discovery.client.ServiceAnnouncement;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -27,8 +27,8 @@ import javax.management.MBeanServer;
 import java.lang.management.ManagementFactory;
 
 import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
-import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
-import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static com.facebook.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
+import static com.facebook.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class JmxModule

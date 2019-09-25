@@ -19,7 +19,7 @@ import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import io.airlift.discovery.client.AnnouncementHttpServerInfo;
+import com.facebook.airlift.discovery.client.AnnouncementHttpServerInfo;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServerConfig;
 import io.airlift.http.server.HttpServerInfo;

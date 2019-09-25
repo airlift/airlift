@@ -22,8 +22,8 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import io.airlift.discovery.client.ServiceAnnouncement;
-import io.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
+import com.facebook.airlift.discovery.client.ServiceAnnouncement;
+import com.facebook.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.TheAdminServlet;
 import io.airlift.node.NodeInfo;
@@ -37,8 +37,8 @@ import java.net.URI;
 import java.util.Map;
 
 import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
-import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
-import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static com.facebook.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
+import static com.facebook.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 
 @Beta
 public class JmxHttpRpcModule

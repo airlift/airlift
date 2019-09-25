@@ -22,7 +22,7 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
+import static com.facebook.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 

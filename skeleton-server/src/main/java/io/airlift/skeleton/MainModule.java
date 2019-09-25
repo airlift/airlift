@@ -18,7 +18,7 @@ package io.airlift.skeleton;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 
-import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
+import static com.facebook.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 
 public class MainModule
         implements Module

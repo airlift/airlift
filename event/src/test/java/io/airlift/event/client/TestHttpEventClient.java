@@ -16,8 +16,8 @@
 package io.airlift.event.client;
 
 import com.google.common.io.CharStreams;
-import io.airlift.discovery.client.HttpServiceSelector;
-import io.airlift.discovery.client.testing.StaticHttpServiceSelector;
+import com.facebook.airlift.discovery.client.HttpServiceSelector;
+import com.facebook.airlift.discovery.client.testing.StaticHttpServiceSelector;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.jetty.JettyHttpClient;

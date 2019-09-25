@@ -18,7 +18,7 @@ package io.airlift.http.server;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import io.airlift.discovery.client.AnnouncementHttpServerInfo;
+import com.facebook.airlift.discovery.client.AnnouncementHttpServerInfo;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 
 import javax.servlet.Filter;

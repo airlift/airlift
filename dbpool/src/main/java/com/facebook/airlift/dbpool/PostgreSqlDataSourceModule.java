@@ -21,7 +21,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import io.airlift.discovery.client.ServiceSelector;
+import com.facebook.airlift.discovery.client.ServiceSelector;
 import org.weakref.jmx.guice.MBeanModule;
 
 import javax.inject.Inject;
@@ -32,8 +32,8 @@ import java.lang.annotation.Annotation;
 import java.util.List;
 
 import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
-import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
-import static io.airlift.discovery.client.ServiceTypes.serviceType;
+import static com.facebook.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
+import static com.facebook.airlift.discovery.client.ServiceTypes.serviceType;
 import static java.util.Objects.requireNonNull;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
