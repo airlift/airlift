@@ -43,7 +43,7 @@ import java.util.Set;
 
 import static com.facebook.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static com.facebook.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
-import static io.airlift.json.JsonBinder.jsonBinder;
+import static com.facebook.airlift.json.JsonBinder.jsonBinder;
 
 @Beta
 public class JmxHttpModule

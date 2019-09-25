@@ -19,7 +19,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.facebook.airlift.http.client.HttpClient;
 import com.facebook.airlift.http.client.Request.Builder;
-import io.airlift.json.JsonCodec;
+import com.facebook.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;

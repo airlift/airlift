@@ -25,7 +25,7 @@ import com.facebook.airlift.http.client.Request.Builder;
 import com.facebook.airlift.http.client.RequestStats;
 import com.facebook.airlift.http.client.Response;
 import com.facebook.airlift.http.client.ResponseHandler;
-import io.airlift.json.JsonCodec;
+import com.facebook.airlift.json.JsonCodec;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
 import org.weakref.jmx.Flatten;

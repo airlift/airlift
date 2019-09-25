@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.json.isolated;
+package com.facebook.airlift.json.isolated;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import io.airlift.json.JsonCodec;
-import io.airlift.json.JsonCodecBinder;
-import io.airlift.json.JsonModule;
-import io.airlift.json.Person;
+import com.facebook.airlift.json.JsonCodec;
+import com.facebook.airlift.json.JsonCodecBinder;
+import com.facebook.airlift.json.JsonModule;
+import com.facebook.airlift.json.Person;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
@@ -28,7 +28,7 @@ import javax.inject.Inject;
 import java.util.List;
 import java.util.Map;
 
-import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
+import static com.facebook.airlift.json.JsonCodecBinder.jsonCodecBinder;
 import static org.testng.Assert.assertNotNull;
 
 public class TestJsonCodecBinder

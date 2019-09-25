@@ -1,4 +1,4 @@
-package io.airlift.json;
+package com.facebook.airlift.json;
 
 import java.io.IOException;
 import java.io.Writer;

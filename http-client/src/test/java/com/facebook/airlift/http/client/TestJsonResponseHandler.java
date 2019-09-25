@@ -2,7 +2,7 @@ package com.facebook.airlift.http.client;
 
 import com.google.common.collect.ImmutableListMultimap;
 import com.facebook.airlift.http.client.testing.TestingResponse;
-import io.airlift.json.JsonCodec;
+import com.facebook.airlift.json.JsonCodec;
 import org.testng.annotations.Test;
 
 import static com.google.common.net.MediaType.JSON_UTF_8;

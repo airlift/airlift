@@ -20,7 +20,7 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
 import com.google.common.net.MediaType;
 import com.facebook.airlift.http.client.FullJsonResponseHandler.JsonResponse;
-import io.airlift.json.JsonCodec;
+import com.facebook.airlift.json.JsonCodec;
 
 import javax.annotation.Nullable;
 

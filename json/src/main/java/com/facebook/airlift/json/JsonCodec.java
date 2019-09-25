@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.json;
+package com.facebook.airlift.json;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
-import io.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
+import com.facebook.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
 
 import java.io.IOException;
 import java.io.StringWriter;

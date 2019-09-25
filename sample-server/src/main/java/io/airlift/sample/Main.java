@@ -25,7 +25,7 @@ import com.facebook.airlift.jaxrs.JaxrsModule;
 import com.facebook.airlift.jmx.JmxHttpModule;
 import com.facebook.airlift.jmx.JmxModule;
 import com.facebook.airlift.jmx.http.rpc.JmxHttpRpcModule;
-import io.airlift.json.JsonModule;
+import com.facebook.airlift.json.JsonModule;
 import io.airlift.log.LogJmxModule;
 import io.airlift.log.Logger;
 import io.airlift.node.NodeModule;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.json;
+package com.facebook.airlift.json;
 
 import com.google.common.base.Strings;
 import com.google.common.reflect.TypeToken;
@@ -25,9 +25,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static io.airlift.json.JsonCodec.jsonCodec;
-import static io.airlift.json.JsonCodec.listJsonCodec;
-import static io.airlift.json.JsonCodec.mapJsonCodec;
+import static com.facebook.airlift.json.JsonCodec.jsonCodec;
+import static com.facebook.airlift.json.JsonCodec.listJsonCodec;
+import static com.facebook.airlift.json.JsonCodec.mapJsonCodec;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;

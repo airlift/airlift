@@ -22,7 +22,7 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.facebook.airlift.configuration.ConfigurationFactory;
 import com.facebook.airlift.configuration.ConfigurationModule;
-import io.airlift.json.JsonModule;
+import com.facebook.airlift.json.JsonModule;
 import io.airlift.node.testing.TestingNodeModule;
 import org.testng.annotations.Test;
 

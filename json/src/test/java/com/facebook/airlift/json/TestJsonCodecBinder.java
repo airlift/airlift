@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.json;
+package com.facebook.airlift.json;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 
-import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
+import static com.facebook.airlift.json.JsonCodecBinder.jsonCodecBinder;
 import static org.testng.Assert.assertNotNull;
 
 public class TestJsonCodecBinder

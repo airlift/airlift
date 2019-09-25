@@ -19,7 +19,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.io.ByteStreams;
 import com.google.common.net.MediaType;
 import com.google.common.primitives.Ints;
-import io.airlift.json.JsonCodec;
+import com.facebook.airlift.json.JsonCodec;
 
 import java.io.IOException;
 import java.util.Set;

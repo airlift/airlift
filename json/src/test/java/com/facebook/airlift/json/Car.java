@@ -1,4 +1,4 @@
-package io.airlift.json;
+package com.facebook.airlift.json;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -7,13 +7,13 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public class Truck
+public class Car
         implements Vehicle
 {
     private final String name;
 
     @JsonCreator
-    public Truck(String name)
+    public Car(String name)
     {
         this.name = requireNonNull(name, "Name is null");
     }
@@ -33,7 +33,7 @@ public class Truck
         if ((obj == null) || (getClass() != obj.getClass())) {
             return false;
         }
-        Truck o = (Truck) obj;
+        Car o = (Car) obj;
         return Objects.equals(this.name, o.name);
     }
 

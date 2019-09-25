@@ -4,7 +4,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.facebook.airlift.bootstrap.Bootstrap;
 import com.facebook.airlift.bootstrap.LifeCycleManager;
-import io.airlift.json.JsonModule;
+import com.facebook.airlift.json.JsonModule;
 import io.airlift.node.testing.TestingNodeModule;
 import org.testng.annotations.Test;
 

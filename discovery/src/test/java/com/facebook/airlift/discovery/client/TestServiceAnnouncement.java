@@ -17,14 +17,14 @@ package com.facebook.airlift.discovery.client;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
-import io.airlift.json.JsonCodec;
+import com.facebook.airlift.json.JsonCodec;
 import org.testng.annotations.Test;
 
 import java.util.Map;
 
 import static com.facebook.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
-import static io.airlift.json.JsonCodec.jsonCodec;
-import static io.airlift.json.JsonCodec.mapJsonCodec;
+import static com.facebook.airlift.json.JsonCodec.jsonCodec;
+import static com.facebook.airlift.json.JsonCodec.mapJsonCodec;
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.testng.Assert.assertEquals;

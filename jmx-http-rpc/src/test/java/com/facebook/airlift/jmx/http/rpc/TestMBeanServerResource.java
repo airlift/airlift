@@ -24,7 +24,7 @@ import com.facebook.airlift.bootstrap.LifeCycleManager;
 import com.facebook.airlift.http.server.TheServlet;
 import com.facebook.airlift.http.server.testing.TestingHttpServer;
 import com.facebook.airlift.http.server.testing.TestingHttpServerModule;
-import io.airlift.json.JsonModule;
+import com.facebook.airlift.json.JsonModule;
 import io.airlift.node.testing.TestingNodeModule;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;

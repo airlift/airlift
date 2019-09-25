@@ -1,4 +1,4 @@
-package io.airlift.json;
+package com.facebook.airlift.json;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;

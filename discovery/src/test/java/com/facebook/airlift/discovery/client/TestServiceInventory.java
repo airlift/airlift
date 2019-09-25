@@ -18,7 +18,7 @@ package com.facebook.airlift.discovery.client;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
 import com.facebook.airlift.http.client.jetty.JettyHttpClient;
-import io.airlift.json.JsonCodec;
+import com.facebook.airlift.json.JsonCodec;
 import io.airlift.node.NodeInfo;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
