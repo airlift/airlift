@@ -22,7 +22,7 @@ import com.google.inject.Scopes;
 import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
 import static com.facebook.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static com.facebook.airlift.event.client.EventBinder.eventBinder;
-import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
+import static com.facebook.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class MainModule

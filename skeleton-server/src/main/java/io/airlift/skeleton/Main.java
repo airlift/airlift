@@ -21,7 +21,7 @@ import com.facebook.airlift.discovery.client.Announcer;
 import com.facebook.airlift.discovery.client.DiscoveryModule;
 import com.facebook.airlift.event.client.HttpEventModule;
 import com.facebook.airlift.http.server.HttpServerModule;
-import io.airlift.jaxrs.JaxrsModule;
+import com.facebook.airlift.jaxrs.JaxrsModule;
 import io.airlift.jmx.JmxHttpModule;
 import io.airlift.jmx.JmxModule;
 import io.airlift.jmx.http.rpc.JmxHttpRpcModule;

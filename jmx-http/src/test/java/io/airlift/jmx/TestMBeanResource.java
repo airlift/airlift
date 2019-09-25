@@ -11,7 +11,7 @@ import com.facebook.airlift.http.client.Request;
 import com.facebook.airlift.http.client.jetty.JettyHttpClient;
 import com.facebook.airlift.http.server.testing.TestingHttpServer;
 import com.facebook.airlift.http.server.testing.TestingHttpServerModule;
-import io.airlift.jaxrs.JaxrsModule;
+import com.facebook.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonModule;
 import io.airlift.json.ObjectMapperProvider;
 import io.airlift.node.testing.TestingNodeModule;
