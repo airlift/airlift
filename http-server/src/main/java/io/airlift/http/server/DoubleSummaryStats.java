@@ -13,8 +13,8 @@
  */
 package io.airlift.http.server;
 
-import io.airlift.event.client.EventField;
-import io.airlift.event.client.EventType;
+import com.facebook.airlift.event.client.EventField;
+import com.facebook.airlift.event.client.EventType;
 
 import java.util.DoubleSummaryStatistics;
 

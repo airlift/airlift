@@ -16,7 +16,7 @@
 package io.airlift.http.server.testing;
 
 import com.google.common.collect.ImmutableSet;
-import io.airlift.event.client.NullEventClient;
+import com.facebook.airlift.event.client.NullEventClient;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.HttpServerConfig;

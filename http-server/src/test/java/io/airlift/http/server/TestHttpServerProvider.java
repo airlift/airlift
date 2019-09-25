@@ -17,7 +17,7 @@ package io.airlift.http.server;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
-import io.airlift.event.client.NullEventClient;
+import com.facebook.airlift.event.client.NullEventClient;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.HttpClientConfig;

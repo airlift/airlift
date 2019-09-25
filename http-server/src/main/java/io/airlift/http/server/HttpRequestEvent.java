@@ -18,8 +18,8 @@ package io.airlift.http.server;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import io.airlift.event.client.EventField;
-import io.airlift.event.client.EventType;
+import com.facebook.airlift.event.client.EventField;
+import com.facebook.airlift.event.client.EventType;
 import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -28,7 +28,7 @@ import java.security.Principal;
 import java.time.Instant;
 import java.util.Enumeration;
 
-import static io.airlift.event.client.EventField.EventFieldMapping.TIMESTAMP;
+import static com.facebook.airlift.event.client.EventField.EventFieldMapping.TIMESTAMP;
 import static io.airlift.http.server.TraceTokenFilter.TRACETOKEN_HEADER;
 import static java.lang.Math.max;
 

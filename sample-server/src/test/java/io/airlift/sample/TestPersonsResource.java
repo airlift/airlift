@@ -15,7 +15,7 @@
  */
 package io.airlift.sample;
 
-import io.airlift.event.client.NullEventClient;
+import com.facebook.airlift.event.client.NullEventClient;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 

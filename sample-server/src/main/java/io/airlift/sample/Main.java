@@ -19,7 +19,7 @@ import com.google.inject.Injector;
 import com.facebook.airlift.bootstrap.Bootstrap;
 import com.facebook.airlift.discovery.client.Announcer;
 import com.facebook.airlift.discovery.client.DiscoveryModule;
-import io.airlift.event.client.HttpEventModule;
+import com.facebook.airlift.event.client.HttpEventModule;
 import io.airlift.http.server.HttpServerModule;
 import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.jmx.JmxHttpModule;

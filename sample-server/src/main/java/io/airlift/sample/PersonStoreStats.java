@@ -15,7 +15,7 @@
  */
 package io.airlift.sample;
 
-import io.airlift.event.client.EventClient;
+import com.facebook.airlift.event.client.EventClient;
 import org.weakref.jmx.Managed;
 
 import java.util.concurrent.atomic.AtomicLong;

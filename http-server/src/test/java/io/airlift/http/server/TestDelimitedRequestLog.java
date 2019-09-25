@@ -16,7 +16,7 @@
 package io.airlift.http.server;
 
 import com.google.common.collect.ImmutableList;
-import io.airlift.event.client.InMemoryEventClient;
+import com.facebook.airlift.event.client.InMemoryEventClient;
 import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;

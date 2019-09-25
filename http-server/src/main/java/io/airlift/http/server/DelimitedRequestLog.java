@@ -22,7 +22,7 @@ import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.status.ErrorStatus;
 import ch.qos.logback.core.util.FileSize;
-import io.airlift.event.client.EventClient;
+import com.facebook.airlift.event.client.EventClient;
 import io.airlift.log.Logger;
 import io.airlift.tracetoken.TraceTokenManager;
 import io.airlift.units.DataSize;
