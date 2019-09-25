@@ -1,9 +1,9 @@
 package io.airlift.jaxrs.testing;
 
-import io.airlift.http.client.HttpStatus;
-import io.airlift.http.client.Request;
-import io.airlift.http.client.StringResponseHandler.StringResponse;
-import io.airlift.http.client.testing.TestingHttpClient;
+import com.facebook.airlift.http.client.HttpStatus;
+import com.facebook.airlift.http.client.Request;
+import com.facebook.airlift.http.client.StringResponseHandler.StringResponse;
+import com.facebook.airlift.http.client.testing.TestingHttpClient;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.GET;
@@ -14,8 +14,8 @@ import javax.ws.rs.core.MediaType;
 
 import java.net.URI;
 
-import static io.airlift.http.client.Request.Builder.prepareGet;
-import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static com.facebook.airlift.http.client.Request.Builder.prepareGet;
+import static com.facebook.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;

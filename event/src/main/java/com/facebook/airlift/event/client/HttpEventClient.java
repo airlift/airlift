@@ -21,12 +21,12 @@ import com.google.common.net.MediaType;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.facebook.airlift.discovery.client.HttpServiceSelector;
 import com.facebook.airlift.discovery.client.ServiceType;
-import io.airlift.http.client.BodyGenerator;
-import io.airlift.http.client.HttpClient;
-import io.airlift.http.client.Request;
-import io.airlift.http.client.RequestStats;
-import io.airlift.http.client.Response;
-import io.airlift.http.client.ResponseHandler;
+import com.facebook.airlift.http.client.BodyGenerator;
+import com.facebook.airlift.http.client.HttpClient;
+import com.facebook.airlift.http.client.Request;
+import com.facebook.airlift.http.client.RequestStats;
+import com.facebook.airlift.http.client.Response;
+import com.facebook.airlift.http.client.ResponseHandler;
 import io.airlift.log.Logger;
 import io.airlift.node.NodeInfo;
 import org.weakref.jmx.Flatten;
@@ -43,7 +43,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
-import static io.airlift.http.client.Request.Builder.preparePost;
+import static com.facebook.airlift.http.client.Request.Builder.preparePost;
 import static java.util.Objects.requireNonNull;
 
 public class HttpEventClient

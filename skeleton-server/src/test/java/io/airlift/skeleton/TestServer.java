@@ -3,11 +3,11 @@ package io.airlift.skeleton;
 import com.google.inject.Injector;
 import com.facebook.airlift.bootstrap.Bootstrap;
 import com.facebook.airlift.bootstrap.LifeCycleManager;
-import io.airlift.http.client.HttpClient;
-import io.airlift.http.client.StatusResponseHandler.StatusResponse;
-import io.airlift.http.client.jetty.JettyHttpClient;
-import io.airlift.http.server.testing.TestingHttpServer;
-import io.airlift.http.server.testing.TestingHttpServerModule;
+import com.facebook.airlift.http.client.HttpClient;
+import com.facebook.airlift.http.client.StatusResponseHandler.StatusResponse;
+import com.facebook.airlift.http.client.jetty.JettyHttpClient;
+import com.facebook.airlift.http.server.testing.TestingHttpServer;
+import com.facebook.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.jmx.JmxHttpModule;
 import io.airlift.jmx.JmxModule;
@@ -20,8 +20,8 @@ import org.testng.annotations.Test;
 
 import java.net.URI;
 
-import static io.airlift.http.client.Request.Builder.prepareGet;
-import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static com.facebook.airlift.http.client.Request.Builder.prepareGet;
+import static com.facebook.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.testng.Assert.assertEquals;
 

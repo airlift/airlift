@@ -17,8 +17,8 @@ package com.facebook.airlift.discovery.client;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import io.airlift.http.client.HttpClient;
-import io.airlift.http.client.Request.Builder;
+import com.facebook.airlift.http.client.HttpClient;
+import com.facebook.airlift.http.client.Request.Builder;
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
 import io.airlift.node.NodeInfo;
@@ -41,8 +41,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.facebook.airlift.concurrent.Threads.daemonThreadsNamed;
-import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
-import static io.airlift.http.client.Request.Builder.prepareGet;
+import static com.facebook.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
+import static com.facebook.airlift.http.client.Request.Builder.prepareGet;
 import static java.nio.file.Files.readAllBytes;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
