@@ -22,7 +22,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.facebook.airlift.concurrent.ThreadPoolExecutorMBean;
-import io.airlift.log.Logger;
+import com.facebook.airlift.log.Logger;
 import io.airlift.units.Duration;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;

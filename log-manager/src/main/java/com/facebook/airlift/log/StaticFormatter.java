@@ -1,4 +1,4 @@
-package io.airlift.log;
+package com.facebook.airlift.log;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;

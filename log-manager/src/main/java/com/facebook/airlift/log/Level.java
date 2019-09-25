@@ -1,4 +1,4 @@
-package io.airlift.log;
+package com.facebook.airlift.log;
 
 public enum Level
 {

@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.log;
+package com.facebook.airlift.log;
 
 import com.google.common.collect.ImmutableMap;
 import com.facebook.airlift.configuration.testing.ConfigAssertions;

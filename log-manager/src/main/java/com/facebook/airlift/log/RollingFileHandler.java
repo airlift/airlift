@@ -1,4 +1,4 @@
-package io.airlift.log;
+package com.facebook.airlift.log;
 
 import ch.qos.logback.core.AsyncAppenderBase;
 import ch.qos.logback.core.ContextBase;

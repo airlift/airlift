@@ -24,7 +24,7 @@ import com.facebook.airlift.discovery.client.ServiceDescriptor;
 import com.facebook.airlift.discovery.client.ServiceDescriptors;
 import com.facebook.airlift.discovery.client.ServiceSelector;
 import com.facebook.airlift.discovery.client.ServiceSelectorConfig;
-import io.airlift.log.Logger;
+import com.facebook.airlift.log.Logger;
 
 import java.util.List;
 

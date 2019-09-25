@@ -21,7 +21,7 @@ import com.facebook.airlift.http.client.Request;
 import com.facebook.airlift.http.client.Response;
 import com.facebook.airlift.http.client.testing.TestingHttpClient;
 import com.facebook.airlift.http.client.testing.TestingResponse;
-import io.airlift.log.Logger;
+import com.facebook.airlift.log.Logger;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.JerseyClientBuilder;
 import org.glassfish.jersey.test.DeploymentContext;

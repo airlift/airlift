@@ -4,7 +4,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.sun.security.auth.module.Krb5LoginModule;
 import com.facebook.airlift.http.client.KerberosNameType;
-import io.airlift.log.Logger;
+import com.facebook.airlift.log.Logger;
 import io.airlift.units.Duration;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;

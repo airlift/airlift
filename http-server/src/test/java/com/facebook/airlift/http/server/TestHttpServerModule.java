@@ -37,7 +37,7 @@ import com.facebook.airlift.http.client.HttpUriBuilder;
 import com.facebook.airlift.http.client.StatusResponseHandler.StatusResponse;
 import com.facebook.airlift.http.client.StringResponseHandler.StringResponse;
 import com.facebook.airlift.http.client.jetty.JettyHttpClient;
-import io.airlift.log.Logging;
+import com.facebook.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.testing.TestingNodeModule;
 import io.airlift.tracetoken.TraceTokenModule;

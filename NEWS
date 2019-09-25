@@ -769,7 +769,7 @@ version of airlift in the parent pom is recommended:
 
 * Logging
 
-The io.airlift.log.Logger API was updated to work directly against Java's built-in
+The com.facebook.airlift.log.Logger API was updated to work directly against Java's built-in
 logging APIs. This is intended to make it easier to allow code that runs in isolated
 classloaders to use the logging system and should have no visible effects.
 

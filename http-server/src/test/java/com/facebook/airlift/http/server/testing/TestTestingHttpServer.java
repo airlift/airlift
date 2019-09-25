@@ -33,7 +33,7 @@ import com.facebook.airlift.http.client.jetty.JettyHttpClient;
 import com.facebook.airlift.http.server.HttpServerConfig;
 import com.facebook.airlift.http.server.HttpServerInfo;
 import com.facebook.airlift.http.server.TheServlet;
-import io.airlift.log.Logging;
+import com.facebook.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.testing.TestingNodeModule;
 import io.airlift.units.Duration;

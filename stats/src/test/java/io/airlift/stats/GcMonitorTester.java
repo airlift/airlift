@@ -13,7 +13,7 @@
  */
 package io.airlift.stats;
 
-import io.airlift.log.Logging;
+import com.facebook.airlift.log.Logging;
 
 import java.util.ArrayList;
 import java.util.List;

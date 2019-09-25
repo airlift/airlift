@@ -1,6 +1,6 @@
 package com.facebook.airlift.discovery.client;
 
-import io.airlift.log.Logger;
+import com.facebook.airlift.log.Logger;
 import io.airlift.units.Duration;
 
 import javax.annotation.concurrent.GuardedBy;

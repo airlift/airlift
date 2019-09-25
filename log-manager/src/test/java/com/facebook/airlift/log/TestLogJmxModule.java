@@ -1,4 +1,4 @@
-package io.airlift.log;
+package com.facebook.airlift.log;
 
 import com.google.inject.Guice;
 import com.google.inject.Stage;

@@ -5,7 +5,7 @@ import com.facebook.airlift.http.client.HttpClient.HttpResponseFuture;
 import com.facebook.airlift.http.client.StatusResponseHandler.StatusResponse;
 import com.facebook.airlift.http.client.StringResponseHandler.StringResponse;
 import com.facebook.airlift.http.client.jetty.JettyHttpClient;
-import io.airlift.log.Logging;
+import com.facebook.airlift.log.Logging;
 import io.airlift.testing.Closeables;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;

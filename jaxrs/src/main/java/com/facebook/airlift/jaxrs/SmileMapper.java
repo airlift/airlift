@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.google.common.collect.ImmutableSet;
-import io.airlift.log.Logger;
+import com.facebook.airlift.log.Logger;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;

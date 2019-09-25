@@ -33,9 +33,9 @@ import com.facebook.airlift.configuration.ConfigurationInspector.ConfigRecord;
 import com.facebook.airlift.configuration.ConfigurationModule;
 import com.facebook.airlift.configuration.ValidationErrorModule;
 import com.facebook.airlift.configuration.WarningsMonitor;
-import io.airlift.log.Logger;
-import io.airlift.log.Logging;
-import io.airlift.log.LoggingConfiguration;
+import com.facebook.airlift.log.Logger;
+import com.facebook.airlift.log.Logging;
+import com.facebook.airlift.log.LoggingConfiguration;
 
 import java.io.IOException;
 import java.io.PrintWriter;
