@@ -40,7 +40,7 @@ import com.facebook.airlift.http.client.jetty.JettyHttpClient;
 import com.facebook.airlift.log.Logging;
 import com.facebook.airlift.node.NodeInfo;
 import com.facebook.airlift.node.testing.TestingNodeModule;
-import io.airlift.tracetoken.TraceTokenModule;
+import com.facebook.airlift.tracetoken.TraceTokenModule;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;

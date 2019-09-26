@@ -16,7 +16,7 @@
 package com.facebook.airlift.http.client;
 
 import com.google.common.collect.ImmutableList;
-import io.airlift.tracetoken.TraceTokenManager;
+import com.facebook.airlift.tracetoken.TraceTokenManager;
 import org.testng.annotations.Test;
 
 import java.net.URI;

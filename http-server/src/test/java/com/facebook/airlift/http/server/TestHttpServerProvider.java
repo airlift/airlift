@@ -28,7 +28,7 @@ import com.facebook.airlift.http.client.jetty.JettyHttpClient;
 import com.facebook.airlift.log.Logging;
 import com.facebook.airlift.node.NodeConfig;
 import com.facebook.airlift.node.NodeInfo;
-import io.airlift.tracetoken.TraceTokenManager;
+import com.facebook.airlift.tracetoken.TraceTokenManager;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;

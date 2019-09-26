@@ -21,7 +21,7 @@ import com.google.inject.Inject;
 import com.facebook.airlift.event.client.EventClient;
 import com.facebook.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import com.facebook.airlift.node.NodeInfo;
-import io.airlift.tracetoken.TraceTokenManager;
+import com.facebook.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.security.LoginService;
 
 import javax.annotation.Nullable;

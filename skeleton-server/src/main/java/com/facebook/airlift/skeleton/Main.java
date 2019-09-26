@@ -29,7 +29,7 @@ import com.facebook.airlift.json.JsonModule;
 import com.facebook.airlift.log.LogJmxModule;
 import com.facebook.airlift.log.Logger;
 import com.facebook.airlift.node.NodeModule;
-import io.airlift.tracetoken.TraceTokenModule;
+import com.facebook.airlift.tracetoken.TraceTokenModule;
 import org.weakref.jmx.guice.MBeanModule;
 
 public final class Main

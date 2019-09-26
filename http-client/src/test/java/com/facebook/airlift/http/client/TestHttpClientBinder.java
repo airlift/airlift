@@ -21,7 +21,7 @@ import com.google.inject.Key;
 import com.facebook.airlift.bootstrap.Bootstrap;
 import com.facebook.airlift.bootstrap.LifeCycleManager;
 import com.facebook.airlift.http.client.jetty.JettyHttpClient;
-import io.airlift.tracetoken.TraceTokenModule;
+import com.facebook.airlift.tracetoken.TraceTokenModule;
 import io.airlift.units.Duration;
 import org.testng.annotations.Test;
 

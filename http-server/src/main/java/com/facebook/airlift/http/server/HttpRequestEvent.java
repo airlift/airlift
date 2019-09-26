@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.facebook.airlift.event.client.EventField;
 import com.facebook.airlift.event.client.EventType;
-import io.airlift.tracetoken.TraceTokenManager;
+import com.facebook.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 

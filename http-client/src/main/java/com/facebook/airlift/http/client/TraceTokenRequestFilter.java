@@ -15,7 +15,7 @@
  */
 package com.facebook.airlift.http.client;
 
-import io.airlift.tracetoken.TraceTokenManager;
+import com.facebook.airlift.tracetoken.TraceTokenManager;
 
 import javax.inject.Inject;
 

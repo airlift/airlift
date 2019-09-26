@@ -24,7 +24,7 @@ import com.facebook.airlift.http.server.HttpServerInfo;
 import com.facebook.airlift.http.server.RequestStats;
 import com.facebook.airlift.http.server.TheServlet;
 import com.facebook.airlift.node.NodeInfo;
-import io.airlift.tracetoken.TraceTokenManager;
+import com.facebook.airlift.tracetoken.TraceTokenManager;
 
 import javax.inject.Inject;
 import javax.servlet.Filter;
