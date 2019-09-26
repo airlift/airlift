@@ -750,13 +750,13 @@ version of airlift in the parent pom is recommended:
         <dependencies>
             ...
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>com.facebook.airlift</groupId>
                 <artifactId>bootstrap</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>com.facebook.airlift</groupId>
                 <artifactId>configuration</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
