@@ -31,9 +31,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.facebook.airlift.stats.QuantileDigest.MiddleFunction.DEFAULT;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
-import static com.facebook.airlift.stats.QuantileDigest.MiddleFunction.DEFAULT;
 import static java.lang.String.format;
 
 /**

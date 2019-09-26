@@ -28,10 +28,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 
+import static com.facebook.airlift.security.der.DerUtils.encodeLength;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.facebook.airlift.security.der.DerUtils.encodeLength;
 import static java.util.Objects.requireNonNull;
 
 public final class SignatureAlgorithmIdentifier

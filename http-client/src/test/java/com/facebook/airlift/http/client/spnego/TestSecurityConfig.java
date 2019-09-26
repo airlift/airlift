@@ -13,8 +13,8 @@
  */
 package com.facebook.airlift.http.client.spnego;
 
-import com.google.common.collect.ImmutableMap;
 import com.facebook.airlift.configuration.testing.ConfigAssertions;
+import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.Test;
 
 import java.io.File;

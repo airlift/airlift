@@ -18,8 +18,8 @@ import org.testng.annotations.Test;
 import java.net.URI;
 import java.util.function.Predicate;
 
-import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static com.facebook.airlift.http.client.Request.Builder.prepareGet;
+import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 

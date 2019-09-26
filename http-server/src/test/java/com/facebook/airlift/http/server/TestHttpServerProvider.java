@@ -15,8 +15,6 @@
  */
 package com.facebook.airlift.http.server;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.io.Files;
 import com.facebook.airlift.event.client.NullEventClient;
 import com.facebook.airlift.http.client.HttpClient;
 import com.facebook.airlift.http.client.HttpClient.HttpResponseFuture;
@@ -29,6 +27,8 @@ import com.facebook.airlift.log.Logging;
 import com.facebook.airlift.node.NodeConfig;
 import com.facebook.airlift.node.NodeInfo;
 import com.facebook.airlift.tracetoken.TraceTokenManager;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.io.Files;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
@@ -47,10 +47,6 @@ import java.util.Base64;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.io.Files.asCharSink;
-import static com.google.common.io.MoreFiles.deleteRecursively;
-import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
-import static com.google.common.io.Resources.getResource;
 import static com.facebook.airlift.http.client.Request.Builder.prepareGet;
 import static com.facebook.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static com.facebook.airlift.http.client.StringResponseHandler.createStringResponseHandler;
@@ -58,6 +54,10 @@ import static com.facebook.airlift.http.server.TestHttpServerInfo.closeChannels;
 import static com.facebook.airlift.testing.Assertions.assertContains;
 import static com.facebook.airlift.testing.Assertions.assertInstanceOf;
 import static com.facebook.airlift.testing.Assertions.assertNotEquals;
+import static com.google.common.io.Files.asCharSink;
+import static com.google.common.io.MoreFiles.deleteRecursively;
+import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
+import static com.google.common.io.Resources.getResource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;

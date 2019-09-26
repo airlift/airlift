@@ -51,12 +51,12 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.google.common.io.Files.asCharSource;
 import static com.facebook.airlift.security.der.DerUtils.decodeSequence;
 import static com.facebook.airlift.security.der.DerUtils.decodeSequenceOptionalElement;
 import static com.facebook.airlift.security.der.DerUtils.encodeOctetString;
 import static com.facebook.airlift.security.der.DerUtils.encodeOid;
 import static com.facebook.airlift.security.der.DerUtils.encodeSequence;
+import static com.google.common.io.Files.asCharSource;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Base64.getMimeDecoder;

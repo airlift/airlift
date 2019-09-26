@@ -15,23 +15,23 @@
  */
 package com.facebook.airlift.discovery.client;
 
+import com.facebook.airlift.configuration.ConfigurationFactory;
+import com.facebook.airlift.configuration.ConfigurationModule;
+import com.facebook.airlift.json.JsonModule;
+import com.facebook.airlift.node.testing.TestingNodeModule;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
-import com.facebook.airlift.configuration.ConfigurationFactory;
-import com.facebook.airlift.configuration.ConfigurationModule;
-import com.facebook.airlift.json.JsonModule;
-import com.facebook.airlift.node.testing.TestingNodeModule;
 import org.testng.annotations.Test;
 
 import java.net.URI;
 import java.util.Map;
 
-import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.facebook.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static com.facebook.airlift.discovery.client.ServiceTypes.serviceType;
+import static com.google.common.collect.Iterables.getOnlyElement;
 import static java.util.Objects.requireNonNull;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;

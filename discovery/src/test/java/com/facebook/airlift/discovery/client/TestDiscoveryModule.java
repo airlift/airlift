@@ -1,11 +1,11 @@
 package com.facebook.airlift.discovery.client;
 
-import com.google.inject.Injector;
-import com.google.inject.Key;
 import com.facebook.airlift.bootstrap.Bootstrap;
 import com.facebook.airlift.bootstrap.LifeCycleManager;
 import com.facebook.airlift.json.JsonModule;
 import com.facebook.airlift.node.testing.TestingNodeModule;
+import com.google.inject.Injector;
+import com.google.inject.Key;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.ExecutorService;

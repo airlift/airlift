@@ -24,8 +24,8 @@ import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static com.facebook.airlift.testing.Assertions.assertInstanceOf;
+import static com.google.common.collect.Lists.newArrayList;
 import static org.testng.Assert.assertEquals;
 
 @Test(singleThreaded = true)

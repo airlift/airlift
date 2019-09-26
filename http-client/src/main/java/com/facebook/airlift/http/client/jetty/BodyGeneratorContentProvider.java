@@ -1,7 +1,7 @@
 package com.facebook.airlift.http.client.jetty;
 
-import com.google.common.collect.AbstractIterator;
 import com.facebook.airlift.http.client.BodyGenerator;
+import com.google.common.collect.AbstractIterator;
 import org.eclipse.jetty.client.api.ContentProvider;
 
 import java.io.IOException;

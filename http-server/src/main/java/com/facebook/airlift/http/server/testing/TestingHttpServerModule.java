@@ -15,22 +15,22 @@
  */
 package com.facebook.airlift.http.server.testing;
 
-import com.google.inject.Binder;
-import com.google.inject.Key;
-import com.google.inject.Module;
-import com.google.inject.Scopes;
 import com.facebook.airlift.discovery.client.AnnouncementHttpServerInfo;
 import com.facebook.airlift.http.server.HttpServer;
 import com.facebook.airlift.http.server.HttpServerConfig;
 import com.facebook.airlift.http.server.HttpServerInfo;
 import com.facebook.airlift.http.server.LocalAnnouncementHttpServerInfo;
 import com.facebook.airlift.http.server.TheServlet;
+import com.google.inject.Binder;
+import com.google.inject.Key;
+import com.google.inject.Module;
+import com.google.inject.Scopes;
 
 import javax.servlet.Filter;
 
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
 import static com.facebook.airlift.http.server.HttpServerBinder.HttpResourceBinding;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 
 public class TestingHttpServerModule
         implements Module

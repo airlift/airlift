@@ -15,9 +15,9 @@
  */
 package com.facebook.airlift.http.client;
 
+import com.facebook.airlift.http.client.StatusResponseHandler.StatusResponse;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
-import com.facebook.airlift.http.client.StatusResponseHandler.StatusResponse;
 
 import javax.annotation.Nullable;
 

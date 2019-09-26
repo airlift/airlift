@@ -25,8 +25,8 @@ import java.security.KeyPairGenerator;
 import java.security.Signature;
 import java.security.spec.ECGenParameterSpec;
 
-import static com.google.common.io.BaseEncoding.base16;
 import static com.facebook.airlift.security.csr.SignatureAlgorithmIdentifier.findSignatureAlgorithmIdentifier;
+import static com.google.common.io.BaseEncoding.base16;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 

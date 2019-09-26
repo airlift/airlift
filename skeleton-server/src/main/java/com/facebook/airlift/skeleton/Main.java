@@ -15,7 +15,6 @@
  */
 package com.facebook.airlift.skeleton;
 
-import com.google.inject.Injector;
 import com.facebook.airlift.bootstrap.Bootstrap;
 import com.facebook.airlift.discovery.client.Announcer;
 import com.facebook.airlift.discovery.client.DiscoveryModule;
@@ -30,6 +29,7 @@ import com.facebook.airlift.log.LogJmxModule;
 import com.facebook.airlift.log.Logger;
 import com.facebook.airlift.node.NodeModule;
 import com.facebook.airlift.tracetoken.TraceTokenModule;
+import com.google.inject.Injector;
 import org.weakref.jmx.guice.MBeanModule;
 
 public final class Main

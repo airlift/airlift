@@ -1,10 +1,10 @@
 package com.facebook.airlift.http.client.jetty;
 
-import com.google.common.util.concurrent.AbstractFuture;
 import com.facebook.airlift.http.client.HttpClient;
 import com.facebook.airlift.http.client.Request;
 import com.facebook.airlift.http.client.RequestStats;
 import com.facebook.airlift.http.client.ResponseHandler;
+import com.google.common.util.concurrent.AbstractFuture;
 import org.eclipse.jetty.client.api.Response;
 
 import java.io.InputStream;

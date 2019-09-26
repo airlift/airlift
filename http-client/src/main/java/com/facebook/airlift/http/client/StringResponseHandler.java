@@ -15,11 +15,11 @@
  */
 package com.facebook.airlift.http.client;
 
+import com.facebook.airlift.http.client.StringResponseHandler.StringResponse;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
 import com.google.common.net.MediaType;
-import com.facebook.airlift.http.client.StringResponseHandler.StringResponse;
 
 import javax.annotation.Nullable;
 
@@ -27,8 +27,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.facebook.airlift.http.client.ResponseHandlerUtils.propagate;
+import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class StringResponseHandler

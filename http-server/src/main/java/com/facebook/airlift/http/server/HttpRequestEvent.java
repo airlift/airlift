@@ -15,12 +15,12 @@
  */
 package com.facebook.airlift.http.server;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.facebook.airlift.event.client.EventField;
 import com.facebook.airlift.event.client.EventType;
 import com.facebook.airlift.tracetoken.TraceTokenManager;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 

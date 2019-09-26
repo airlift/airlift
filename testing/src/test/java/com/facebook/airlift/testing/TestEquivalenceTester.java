@@ -21,14 +21,13 @@ package com.facebook.airlift.testing;
  * Licensed under Apache License, Version 2.0
  */
 
-import com.google.common.collect.ComparisonChain;
 import com.facebook.airlift.testing.EquivalenceTester.ElementCheckFailure;
 import com.facebook.airlift.testing.EquivalenceTester.PairCheckFailure;
+import com.google.common.collect.ComparisonChain;
 import org.testng.annotations.Test;
 
 import java.util.List;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static com.facebook.airlift.testing.Assertions.assertEqualsIgnoreOrder;
 import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_CLASS_CAST_EXCEPTION;
 import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL;
@@ -47,6 +46,7 @@ import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureT
 import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_REFLEXIVE;
 import static com.facebook.airlift.testing.EquivalenceTester.comparisonTester;
 import static com.facebook.airlift.testing.EquivalenceTester.equivalenceTester;
+import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Objects.requireNonNull;
 import static org.testng.Assert.assertEquals;
 import static org.testng.FileAssert.fail;

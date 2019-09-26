@@ -15,8 +15,8 @@
  */
 package com.facebook.airlift.sample;
 
-import com.google.common.collect.ImmutableList;
 import com.facebook.airlift.event.client.InMemoryEventClient;
+import com.google.common.collect.ImmutableList;
 import io.airlift.units.Duration;
 import org.testng.annotations.Test;
 

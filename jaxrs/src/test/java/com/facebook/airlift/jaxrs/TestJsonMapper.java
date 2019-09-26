@@ -15,11 +15,11 @@
  */
 package com.facebook.airlift.jaxrs;
 
+import com.facebook.airlift.jaxrs.testing.GuavaMultivaluedMap;
+import com.facebook.airlift.json.JsonCodec;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.net.HttpHeaders;
-import com.facebook.airlift.jaxrs.testing.GuavaMultivaluedMap;
-import com.facebook.airlift.json.JsonCodec;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.WebApplicationException;

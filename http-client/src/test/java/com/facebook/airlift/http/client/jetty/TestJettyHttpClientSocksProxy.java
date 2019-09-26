@@ -1,6 +1,5 @@
 package com.facebook.airlift.http.client.jetty;
 
-import com.google.common.collect.ImmutableList;
 import com.facebook.airlift.http.client.AbstractHttpClientTest;
 import com.facebook.airlift.http.client.HttpClientConfig;
 import com.facebook.airlift.http.client.Request;
@@ -8,6 +7,7 @@ import com.facebook.airlift.http.client.ResponseHandler;
 import com.facebook.airlift.http.client.TestingRequestFilter;
 import com.facebook.airlift.http.client.TestingSocksProxy;
 import com.facebook.airlift.http.client.spnego.KerberosConfig;
+import com.google.common.collect.ImmutableList;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;

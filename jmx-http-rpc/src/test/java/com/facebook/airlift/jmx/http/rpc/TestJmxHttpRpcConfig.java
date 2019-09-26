@@ -15,8 +15,8 @@
  */
 package com.facebook.airlift.jmx.http.rpc;
 
-import com.google.common.collect.ImmutableMap;
 import com.facebook.airlift.configuration.testing.ConfigAssertions;
+import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.Test;
 
 import java.util.Map;

@@ -15,14 +15,14 @@
  */
 package com.facebook.airlift.discovery.client;
 
+import com.facebook.airlift.concurrent.ThreadPoolExecutorMBean;
+import com.facebook.airlift.log.Logger;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.facebook.airlift.concurrent.ThreadPoolExecutorMBean;
-import com.facebook.airlift.log.Logger;
 import io.airlift.units.Duration;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;

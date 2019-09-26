@@ -1,10 +1,10 @@
 package com.facebook.airlift.stats;
 
+import com.facebook.airlift.testing.TestingTicker;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.airlift.slice.Slice;
-import com.facebook.airlift.testing.TestingTicker;
 import org.testng.annotations.Test;
 
 import java.io.IOException;

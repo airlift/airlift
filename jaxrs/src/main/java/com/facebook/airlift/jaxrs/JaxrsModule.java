@@ -15,13 +15,13 @@
  */
 package com.facebook.airlift.jaxrs;
 
+import com.facebook.airlift.http.server.TheServlet;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.facebook.airlift.http.server.TheServlet;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 
@@ -33,9 +33,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static com.facebook.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static com.facebook.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 
 public class JaxrsModule
         implements Module

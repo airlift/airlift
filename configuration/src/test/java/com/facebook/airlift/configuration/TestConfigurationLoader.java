@@ -26,9 +26,9 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Map;
 
+import static com.facebook.airlift.configuration.ConfigurationLoader.loadProperties;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
-import static com.facebook.airlift.configuration.ConfigurationLoader.loadProperties;
 import static org.testng.Assert.assertEquals;
 
 public class TestConfigurationLoader

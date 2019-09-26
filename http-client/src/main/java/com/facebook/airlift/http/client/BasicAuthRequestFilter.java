@@ -16,9 +16,9 @@ package com.facebook.airlift.http.client;
 import java.util.Base64;
 import java.util.function.Predicate;
 
+import static com.facebook.airlift.http.client.Request.Builder.fromRequest;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
-import static com.facebook.airlift.http.client.Request.Builder.fromRequest;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.util.Objects.requireNonNull;
 

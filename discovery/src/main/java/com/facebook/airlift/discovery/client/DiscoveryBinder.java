@@ -15,19 +15,19 @@
  */
 package com.facebook.airlift.discovery.client;
 
+import com.facebook.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.facebook.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
 import static com.facebook.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static com.facebook.airlift.discovery.client.ServiceTypes.serviceType;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static java.util.Objects.requireNonNull;
 
 public class DiscoveryBinder

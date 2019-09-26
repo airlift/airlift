@@ -15,8 +15,6 @@
  */
 package com.facebook.airlift.jaxrs;
 
-import com.google.common.collect.ImmutableList;
-import com.google.inject.Module;
 import com.facebook.airlift.bootstrap.Bootstrap;
 import com.facebook.airlift.http.client.HttpClient;
 import com.facebook.airlift.http.client.Request;
@@ -27,6 +25,8 @@ import com.facebook.airlift.http.server.testing.TestingHttpServerModule;
 import com.facebook.airlift.json.JsonModule;
 import com.facebook.airlift.node.testing.TestingNodeModule;
 import com.facebook.airlift.testing.Closeables;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Module;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -43,9 +43,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.facebook.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static com.facebook.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
+import static com.google.common.base.Throwables.throwIfUnchecked;
 import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;

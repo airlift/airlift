@@ -28,13 +28,13 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
 import static com.facebook.airlift.stats.cardinality.Utils.alpha;
 import static com.facebook.airlift.stats.cardinality.Utils.computeIndex;
 import static com.facebook.airlift.stats.cardinality.Utils.computeValue;
 import static com.facebook.airlift.stats.cardinality.Utils.linearCounting;
 import static com.facebook.airlift.stats.cardinality.Utils.numberOfBuckets;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 
 @NotThreadSafe
 final class DenseHll

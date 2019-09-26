@@ -15,9 +15,9 @@
  */
 package com.facebook.airlift.testing;
 
+import com.facebook.airlift.testing.EquivalenceTester.ElementCheckFailure;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.facebook.airlift.testing.EquivalenceTester.ElementCheckFailure;
 
 import java.util.List;
 

@@ -15,10 +15,10 @@
  */
 package com.facebook.airlift.discovery.client;
 
+import com.facebook.airlift.json.JsonCodec;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
-import com.facebook.airlift.json.JsonCodec;
 import org.testng.annotations.Test;
 
 import java.util.List;

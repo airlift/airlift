@@ -15,9 +15,9 @@
  */
 package com.facebook.airlift.sample;
 
-import com.google.common.collect.ImmutableList;
 import com.facebook.airlift.event.client.InMemoryEventClient;
 import com.facebook.airlift.jaxrs.testing.MockUriInfo;
+import com.google.common.collect.ImmutableList;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 

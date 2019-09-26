@@ -15,6 +15,7 @@
  */
 package com.facebook.airlift.jaxrs;
 
+import com.facebook.airlift.log.Logger;
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -28,7 +29,6 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HttpHeaders;
-import com.facebook.airlift.log.Logger;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;

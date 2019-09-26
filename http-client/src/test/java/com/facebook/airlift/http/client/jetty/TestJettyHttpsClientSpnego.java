@@ -8,10 +8,10 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.UncheckedIOException;
 
-import static com.google.common.net.HttpHeaders.WWW_AUTHENTICATE;
 import static com.facebook.airlift.http.client.HttpStatus.UNAUTHORIZED;
 import static com.facebook.airlift.http.client.Request.Builder.prepareGet;
 import static com.facebook.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static com.google.common.net.HttpHeaders.WWW_AUTHENTICATE;
 import static org.eclipse.jetty.http.HttpHeader.NEGOTIATE;
 
 public class TestJettyHttpsClientSpnego

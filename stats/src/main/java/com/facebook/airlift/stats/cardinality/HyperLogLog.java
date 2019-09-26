@@ -18,8 +18,8 @@ import io.airlift.slice.Murmur3Hash128;
 import io.airlift.slice.Slice;
 import org.openjdk.jol.info.ClassLayout;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.facebook.airlift.stats.cardinality.Utils.indexBitLength;
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class HyperLogLog
 {

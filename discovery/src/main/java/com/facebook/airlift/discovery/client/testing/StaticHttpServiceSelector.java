@@ -15,14 +15,14 @@
  */
 package com.facebook.airlift.discovery.client.testing;
 
-import com.google.common.collect.ImmutableList;
 import com.facebook.airlift.discovery.client.HttpServiceSelector;
+import com.google.common.collect.ImmutableList;
 
 import java.net.URI;
 import java.util.List;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.facebook.airlift.discovery.client.ServiceSelectorConfig.DEFAULT_POOL;
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 
 public class StaticHttpServiceSelector

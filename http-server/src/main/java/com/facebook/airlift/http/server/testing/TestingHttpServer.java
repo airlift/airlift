@@ -15,7 +15,6 @@
  */
 package com.facebook.airlift.http.server.testing;
 
-import com.google.common.collect.ImmutableSet;
 import com.facebook.airlift.event.client.NullEventClient;
 import com.facebook.airlift.http.server.HttpServer;
 import com.facebook.airlift.http.server.HttpServerBinder.HttpResourceBinding;
@@ -25,6 +24,7 @@ import com.facebook.airlift.http.server.RequestStats;
 import com.facebook.airlift.http.server.TheServlet;
 import com.facebook.airlift.node.NodeInfo;
 import com.facebook.airlift.tracetoken.TraceTokenManager;
+import com.google.common.collect.ImmutableSet;
 
 import javax.inject.Inject;
 import javax.servlet.Filter;

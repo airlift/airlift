@@ -1,12 +1,12 @@
 package com.facebook.airlift.http.client.jetty;
 
-import com.google.common.collect.ImmutableList;
 import com.facebook.airlift.http.client.AbstractHttpClientTest;
 import com.facebook.airlift.http.client.HttpClientConfig;
 import com.facebook.airlift.http.client.Request;
 import com.facebook.airlift.http.client.ResponseHandler;
 import com.facebook.airlift.http.client.TestingRequestFilter;
 import com.facebook.airlift.http.client.spnego.KerberosConfig;
+import com.google.common.collect.ImmutableList;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -15,9 +15,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
 
-import static com.google.common.io.Resources.getResource;
 import static com.facebook.airlift.http.client.Request.Builder.prepareGet;
 import static com.facebook.airlift.testing.Closeables.closeQuietly;
+import static com.google.common.io.Resources.getResource;
 
 public class TestJettyHttpsClient
         extends AbstractHttpClientTest

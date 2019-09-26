@@ -15,12 +15,12 @@
  */
 package com.facebook.airlift.http.client;
 
+import com.facebook.airlift.http.client.FullJsonResponseHandler.JsonResponse;
+import com.facebook.airlift.json.JsonCodec;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
 import com.google.common.net.MediaType;
-import com.facebook.airlift.http.client.FullJsonResponseHandler.JsonResponse;
-import com.facebook.airlift.json.JsonCodec;
 
 import javax.annotation.Nullable;
 
@@ -28,9 +28,9 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.List;
 
+import static com.facebook.airlift.http.client.ResponseHandlerUtils.propagate;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.facebook.airlift.http.client.ResponseHandlerUtils.propagate;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;

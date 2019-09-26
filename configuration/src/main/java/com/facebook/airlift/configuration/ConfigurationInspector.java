@@ -15,18 +15,18 @@
  */
 package com.facebook.airlift.configuration;
 
+import com.facebook.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Ordering;
 import com.google.inject.Key;
-import com.facebook.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 
 import java.lang.reflect.Method;
 import java.util.Optional;
 import java.util.SortedSet;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.facebook.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 
 public class ConfigurationInspector

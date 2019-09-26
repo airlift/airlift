@@ -1,14 +1,14 @@
 package com.facebook.airlift.http.client.testing;
 
-import com.google.common.util.concurrent.ForwardingListenableFuture;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import com.facebook.airlift.http.client.HttpClient;
 import com.facebook.airlift.http.client.HttpClientConfig;
 import com.facebook.airlift.http.client.Request;
 import com.facebook.airlift.http.client.RequestStats;
 import com.facebook.airlift.http.client.Response;
 import com.facebook.airlift.http.client.ResponseHandler;
+import com.google.common.util.concurrent.ForwardingListenableFuture;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import io.airlift.units.Duration;
 
 import java.util.concurrent.ExecutorService;

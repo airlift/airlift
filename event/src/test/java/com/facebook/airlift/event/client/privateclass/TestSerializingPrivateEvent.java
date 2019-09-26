@@ -15,11 +15,11 @@
  */
 package com.facebook.airlift.event.client.privateclass;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.facebook.airlift.event.client.EventField;
 import com.facebook.airlift.event.client.EventType;
 import com.facebook.airlift.event.client.JsonEventSerializer;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import org.testng.annotations.Test;
 
 import java.io.IOException;

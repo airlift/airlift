@@ -39,8 +39,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 
-import static com.google.inject.name.Names.named;
 import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
+import static com.google.inject.name.Names.named;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;

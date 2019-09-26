@@ -15,6 +15,11 @@
  */
 package com.facebook.airlift.jmx.http.rpc;
 
+import com.facebook.airlift.discovery.client.ServiceAnnouncement;
+import com.facebook.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
+import com.facebook.airlift.http.server.HttpServerInfo;
+import com.facebook.airlift.http.server.TheAdminServlet;
+import com.facebook.airlift.node.NodeInfo;
 import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
@@ -22,11 +27,6 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.facebook.airlift.discovery.client.ServiceAnnouncement;
-import com.facebook.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
-import com.facebook.airlift.http.server.HttpServerInfo;
-import com.facebook.airlift.http.server.TheAdminServlet;
-import com.facebook.airlift.node.NodeInfo;
 
 import javax.inject.Inject;
 import javax.inject.Provider;

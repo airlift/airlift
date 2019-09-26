@@ -15,13 +15,13 @@
  */
 package com.facebook.airlift.discovery.client;
 
+import com.facebook.airlift.log.Logger;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import com.facebook.airlift.log.Logger;
 import io.airlift.units.Duration;
 
 import javax.annotation.PostConstruct;
@@ -33,8 +33,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static com.facebook.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;

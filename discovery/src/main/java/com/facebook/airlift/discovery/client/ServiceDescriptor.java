@@ -15,10 +15,10 @@
  */
 package com.facebook.airlift.discovery.client;
 
+import com.facebook.airlift.node.NodeInfo;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
-import com.facebook.airlift.node.NodeInfo;
 
 import java.util.Map;
 import java.util.UUID;

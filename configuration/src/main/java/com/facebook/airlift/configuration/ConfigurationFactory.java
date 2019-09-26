@@ -15,6 +15,7 @@
  */
 package com.facebook.airlift.configuration;
 
+import com.facebook.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 import com.google.common.annotations.Beta;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.CacheBuilder;
@@ -37,7 +38,6 @@ import com.google.inject.spi.Elements;
 import com.google.inject.spi.InstanceBinding;
 import com.google.inject.spi.Message;
 import com.google.inject.spi.ProviderInstanceBinding;
-import com.facebook.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 import org.apache.bval.jsr.ApacheValidationProvider;
 
 import javax.annotation.Nullable;
@@ -61,11 +61,11 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.facebook.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
+import static com.facebook.airlift.configuration.Problems.exceptionFor;
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
 import static com.google.common.collect.Sets.newConcurrentHashSet;
-import static com.facebook.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
-import static com.facebook.airlift.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 

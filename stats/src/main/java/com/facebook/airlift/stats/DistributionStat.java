@@ -1,8 +1,8 @@
 package com.facebook.airlift.stats;
 
+import com.facebook.airlift.stats.Distribution.DistributionSnapshot;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.facebook.airlift.stats.Distribution.DistributionSnapshot;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 

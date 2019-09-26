@@ -15,13 +15,13 @@
  */
 package com.facebook.airlift.discovery.client.testing;
 
+import com.facebook.airlift.discovery.client.ServiceDescriptor;
+import com.facebook.airlift.discovery.client.ServiceSelector;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.facebook.airlift.discovery.client.ServiceDescriptor;
-import com.facebook.airlift.discovery.client.ServiceSelector;
 
 import java.util.List;
 

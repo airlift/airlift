@@ -15,17 +15,17 @@
  */
 package com.facebook.airlift.http.server;
 
+import com.facebook.airlift.discovery.client.AnnouncementHttpServerInfo;
+import com.facebook.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.facebook.airlift.discovery.client.AnnouncementHttpServerInfo;
-import com.facebook.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 
 import javax.servlet.Filter;
 
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
 import static com.facebook.airlift.event.client.EventBinder.eventBinder;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 /**

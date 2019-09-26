@@ -15,11 +15,11 @@
  */
 package com.facebook.airlift.http.client;
 
+import com.facebook.airlift.json.JsonCodec;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.ByteStreams;
 import com.google.common.net.MediaType;
 import com.google.common.primitives.Ints;
-import com.facebook.airlift.json.JsonCodec;
 
 import java.util.Set;
 

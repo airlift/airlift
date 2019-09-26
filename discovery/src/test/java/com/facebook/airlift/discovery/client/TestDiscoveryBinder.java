@@ -15,6 +15,10 @@
  */
 package com.facebook.airlift.discovery.client;
 
+import com.facebook.airlift.configuration.ConfigurationFactory;
+import com.facebook.airlift.configuration.ConfigurationModule;
+import com.facebook.airlift.discovery.client.testing.TestingDiscoveryModule;
+import com.facebook.airlift.node.testing.TestingNodeModule;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
@@ -23,10 +27,6 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
-import com.facebook.airlift.configuration.ConfigurationFactory;
-import com.facebook.airlift.configuration.ConfigurationModule;
-import com.facebook.airlift.discovery.client.testing.TestingDiscoveryModule;
-import com.facebook.airlift.node.testing.TestingNodeModule;
 import org.testng.annotations.Test;
 
 import javax.inject.Provider;

@@ -15,6 +15,8 @@
  */
 package com.facebook.airlift.dbpool;
 
+import com.facebook.airlift.configuration.ConfigurationFactory;
+import com.facebook.airlift.configuration.ConfigurationModule;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.BindingAnnotation;
 import com.google.inject.CreationException;
@@ -22,8 +24,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.facebook.airlift.configuration.ConfigurationFactory;
-import com.facebook.airlift.configuration.ConfigurationModule;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;

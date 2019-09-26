@@ -15,8 +15,8 @@
  */
 package com.facebook.airlift.jaxrs.testing;
 
-import com.google.common.collect.ImmutableList;
 import com.facebook.airlift.jaxrs.testing.MockRequest.ConditionalRequestBuilder;
+import com.google.common.collect.ImmutableList;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 

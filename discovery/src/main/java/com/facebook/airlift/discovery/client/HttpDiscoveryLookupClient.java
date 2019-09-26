@@ -15,9 +15,6 @@
  */
 package com.facebook.airlift.discovery.client;
 
-import com.google.common.io.ByteStreams;
-import com.google.common.net.HttpHeaders;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.facebook.airlift.http.client.CacheControl;
 import com.facebook.airlift.http.client.HttpClient;
 import com.facebook.airlift.http.client.Request;
@@ -27,6 +24,9 @@ import com.facebook.airlift.http.client.Response;
 import com.facebook.airlift.http.client.ResponseHandler;
 import com.facebook.airlift.json.JsonCodec;
 import com.facebook.airlift.node.NodeInfo;
+import com.google.common.io.ByteStreams;
+import com.google.common.net.HttpHeaders;
+import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.units.Duration;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
@@ -39,11 +39,11 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.facebook.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
 import static com.facebook.airlift.http.client.HttpStatus.NOT_MODIFIED;
 import static com.facebook.airlift.http.client.HttpStatus.OK;
 import static com.facebook.airlift.http.client.Request.Builder.prepareGet;
+import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 

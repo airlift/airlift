@@ -1,17 +1,17 @@
 package com.facebook.airlift.http.client;
 
-import com.google.common.collect.ImmutableListMultimap;
 import com.facebook.airlift.http.client.testing.TestingResponse;
 import com.facebook.airlift.json.JsonCodec;
+import com.google.common.collect.ImmutableListMultimap;
 import org.testng.annotations.Test;
 
-import static com.google.common.net.MediaType.JSON_UTF_8;
-import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static com.facebook.airlift.http.client.HttpStatus.INTERNAL_SERVER_ERROR;
 import static com.facebook.airlift.http.client.HttpStatus.OK;
 import static com.facebook.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static com.facebook.airlift.http.client.TestFullJsonResponseHandler.User;
 import static com.facebook.airlift.http.client.testing.TestingResponse.mockResponse;
+import static com.google.common.net.MediaType.JSON_UTF_8;
+import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.testng.Assert.assertEquals;

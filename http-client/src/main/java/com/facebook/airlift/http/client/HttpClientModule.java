@@ -15,6 +15,9 @@
  */
 package com.facebook.airlift.http.client;
 
+import com.facebook.airlift.configuration.ConfigDefaults;
+import com.facebook.airlift.http.client.jetty.JettyHttpClient;
+import com.facebook.airlift.http.client.spnego.KerberosConfig;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
@@ -23,9 +26,6 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.facebook.airlift.configuration.ConfigDefaults;
-import com.facebook.airlift.http.client.jetty.JettyHttpClient;
-import com.facebook.airlift.http.client.spnego.KerberosConfig;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -33,8 +33,8 @@ import javax.inject.Provider;
 import java.lang.annotation.Annotation;
 import java.util.Set;
 
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static java.util.Objects.requireNonNull;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 

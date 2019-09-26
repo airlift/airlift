@@ -15,12 +15,12 @@
  */
 package com.facebook.airlift.discovery.client;
 
+import com.facebook.airlift.discovery.client.testing.TestingDiscoveryModule;
 import com.google.common.collect.Iterables;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.facebook.airlift.discovery.client.testing.TestingDiscoveryModule;
 import org.testng.annotations.Test;
 
 import java.net.URI;

@@ -15,9 +15,6 @@
  */
 package com.facebook.airlift.discovery.client.testing;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.FluentFuture;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.facebook.airlift.discovery.client.DiscoveryException;
 import com.facebook.airlift.discovery.client.DiscoveryLookupClient;
 import com.facebook.airlift.discovery.client.ServiceDescriptor;
@@ -25,11 +22,14 @@ import com.facebook.airlift.discovery.client.ServiceDescriptors;
 import com.facebook.airlift.discovery.client.ServiceSelector;
 import com.facebook.airlift.discovery.client.ServiceSelectorConfig;
 import com.facebook.airlift.log.Logger;
+import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.FluentFuture;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.List;
 
-import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static com.facebook.airlift.concurrent.MoreFutures.getFutureValue;
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static java.util.Objects.requireNonNull;
 
 public class SimpleServiceSelector

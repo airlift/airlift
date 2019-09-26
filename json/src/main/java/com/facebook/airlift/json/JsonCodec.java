@@ -15,12 +15,12 @@
  */
 package com.facebook.airlift.json;
 
+import com.facebook.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
-import com.facebook.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
 
 import java.io.IOException;
 import java.io.StringWriter;

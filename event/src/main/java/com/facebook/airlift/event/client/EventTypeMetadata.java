@@ -15,6 +15,7 @@
  */
 package com.facebook.airlift.event.client;
 
+import com.facebook.airlift.event.client.EventField.EventFieldMapping;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
@@ -22,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Multimap;
-import com.facebook.airlift.event.client.EventField.EventFieldMapping;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -37,11 +37,11 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import static com.google.common.collect.Iterables.getFirst;
 import static com.facebook.airlift.event.client.AnnotationUtils.findAnnotatedMethods;
 import static com.facebook.airlift.event.client.EventDataType.getEventDataType;
 import static com.facebook.airlift.event.client.EventFieldMetadata.ContainerType;
 import static com.facebook.airlift.event.client.TypeParameterUtils.getTypeParameters;
+import static com.google.common.collect.Iterables.getFirst;
 import static java.util.Objects.requireNonNull;
 
 public final class EventTypeMetadata<T>

@@ -21,9 +21,9 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.facebook.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static com.facebook.airlift.http.client.HttpClientBinder.httpClientBinder;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class HttpEventModule

@@ -15,6 +15,7 @@
  */
 package com.facebook.airlift.jaxrs;
 
+import com.facebook.airlift.log.Logger;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -22,7 +23,6 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.google.common.collect.ImmutableSet;
-import com.facebook.airlift.log.Logger;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;

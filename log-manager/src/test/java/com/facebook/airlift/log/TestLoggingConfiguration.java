@@ -13,8 +13,8 @@
  */
 package com.facebook.airlift.log;
 
-import com.google.common.collect.ImmutableMap;
 import com.facebook.airlift.configuration.testing.ConfigAssertions;
+import com.google.common.collect.ImmutableMap;
 import io.airlift.units.DataSize;
 import org.testng.annotations.Test;
 

@@ -15,13 +15,13 @@
  */
 package com.facebook.airlift.dbpool;
 
+import com.facebook.airlift.discovery.client.ServiceSelector;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.facebook.airlift.discovery.client.ServiceSelector;
 import org.weakref.jmx.guice.MBeanModule;
 
 import javax.inject.Inject;

@@ -1,7 +1,7 @@
 package com.facebook.airlift.concurrent;
 
-import com.google.common.base.Preconditions;
 import com.facebook.airlift.log.Logger;
+import com.google.common.base.Preconditions;
 
 import javax.annotation.concurrent.ThreadSafe;
 

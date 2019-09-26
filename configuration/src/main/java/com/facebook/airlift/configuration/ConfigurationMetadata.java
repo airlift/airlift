@@ -15,11 +15,11 @@
  */
 package com.facebook.airlift.configuration;
 
+import com.facebook.airlift.configuration.Problems.Monitor;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.inject.ConfigurationException;
-import com.facebook.airlift.configuration.Problems.Monitor;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;

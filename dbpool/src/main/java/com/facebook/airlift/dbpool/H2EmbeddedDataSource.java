@@ -15,9 +15,9 @@
  */
 package com.facebook.airlift.dbpool;
 
+import com.facebook.airlift.dbpool.H2EmbeddedDataSourceConfig.Cipher;
 import com.google.common.io.Resources;
 import com.google.common.primitives.Ints;
-import com.facebook.airlift.dbpool.H2EmbeddedDataSourceConfig.Cipher;
 import org.h2.jdbcx.JdbcDataSource;
 import org.h2.util.ScriptReader;
 

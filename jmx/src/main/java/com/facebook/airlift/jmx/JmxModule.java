@@ -15,10 +15,10 @@
  */
 package com.facebook.airlift.jmx;
 
+import com.facebook.airlift.discovery.client.ServiceAnnouncement;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.facebook.airlift.discovery.client.ServiceAnnouncement;
 
 import javax.inject.Inject;
 import javax.inject.Provider;

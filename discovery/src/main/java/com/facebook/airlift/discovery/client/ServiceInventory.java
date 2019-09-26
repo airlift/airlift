@@ -15,13 +15,13 @@
  */
 package com.facebook.airlift.discovery.client;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.facebook.airlift.http.client.HttpClient;
 import com.facebook.airlift.http.client.Request.Builder;
 import com.facebook.airlift.json.JsonCodec;
 import com.facebook.airlift.log.Logger;
 import com.facebook.airlift.node.NodeInfo;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import io.airlift.units.Duration;
 import org.weakref.jmx.Managed;
 

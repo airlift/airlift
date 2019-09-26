@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_CLASS_CAST_EXCEPTION;
 import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL;
 import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL_TO_NULL;
@@ -44,6 +43,7 @@ import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureT
 import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_GREATER_THAN;
 import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_LESS_THAN;
 import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_REFLEXIVE;
+import static com.google.common.collect.Lists.newArrayList;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 

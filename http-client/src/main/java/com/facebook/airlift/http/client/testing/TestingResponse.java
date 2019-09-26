@@ -1,13 +1,13 @@
 package com.facebook.airlift.http.client.testing;
 
+import com.facebook.airlift.http.client.HeaderName;
+import com.facebook.airlift.http.client.HttpStatus;
+import com.facebook.airlift.http.client.Response;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.CountingInputStream;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
-import com.facebook.airlift.http.client.HeaderName;
-import com.facebook.airlift.http.client.HttpStatus;
-import com.facebook.airlift.http.client.Response;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

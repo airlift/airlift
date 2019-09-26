@@ -15,12 +15,12 @@
  */
 package com.facebook.airlift.node.testing;
 
+import com.facebook.airlift.node.NodeConfig;
+import com.facebook.airlift.node.NodeInfo;
 import com.google.common.net.InetAddresses;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.facebook.airlift.node.NodeConfig;
-import com.facebook.airlift.node.NodeInfo;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;

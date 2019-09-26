@@ -21,11 +21,11 @@ import java.security.PrivateKey;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.io.BaseEncoding.base16;
 import static com.facebook.airlift.security.csr.SignatureAlgorithmIdentifier.findSignatureAlgorithmIdentifier;
 import static com.facebook.airlift.security.der.DerUtils.encodeBitString;
 import static com.facebook.airlift.security.der.DerUtils.encodeSequence;
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.io.BaseEncoding.base16;
 import static java.util.Base64.getMimeEncoder;
 import static java.util.Objects.requireNonNull;
 

@@ -15,8 +15,8 @@
  */
 package com.facebook.airlift.event.client;
 
-import com.google.common.collect.ImmutableList;
 import com.facebook.airlift.event.client.NestedDummyEventClass.NestedPart;
+import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -25,9 +25,9 @@ import java.io.ByteArrayOutputStream;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.google.common.io.ByteStreams.nullOutputStream;
 import static com.facebook.airlift.event.client.ChainedCircularEventClass.ChainedPart;
 import static com.facebook.airlift.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
+import static com.google.common.io.ByteStreams.nullOutputStream;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.testng.Assert.assertEquals;
 

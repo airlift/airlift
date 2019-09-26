@@ -15,9 +15,6 @@
  */
 package com.facebook.airlift.sample;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.io.Resources;
-import com.google.inject.Injector;
 import com.facebook.airlift.bootstrap.Bootstrap;
 import com.facebook.airlift.bootstrap.LifeCycleManager;
 import com.facebook.airlift.event.client.InMemoryEventClient;
@@ -32,6 +29,9 @@ import com.facebook.airlift.json.JsonCodec;
 import com.facebook.airlift.json.JsonModule;
 import com.facebook.airlift.node.testing.TestingNodeModule;
 import com.facebook.airlift.testing.Closeables;
+import com.google.common.collect.ImmutableList;
+import com.google.common.io.Resources;
+import com.google.inject.Injector;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;

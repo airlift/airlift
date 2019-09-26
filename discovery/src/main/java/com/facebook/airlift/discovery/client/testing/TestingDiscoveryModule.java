@@ -15,11 +15,6 @@
  */
 package com.facebook.airlift.discovery.client.testing;
 
-import com.google.inject.Binder;
-import com.google.inject.Key;
-import com.google.inject.Module;
-import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.facebook.airlift.discovery.client.Announcer;
 import com.facebook.airlift.discovery.client.DiscoveryAnnouncementClient;
 import com.facebook.airlift.discovery.client.DiscoveryLookupClient;
@@ -29,6 +24,11 @@ import com.facebook.airlift.discovery.client.ServiceSelector;
 import com.facebook.airlift.discovery.client.ServiceSelectorFactory;
 import com.facebook.airlift.discovery.client.ServiceSelectorManager;
 import com.facebook.airlift.node.NodeInfo;
+import com.google.inject.Binder;
+import com.google.inject.Key;
+import com.google.inject.Module;
+import com.google.inject.Provides;
+import com.google.inject.Scopes;
 
 import javax.inject.Singleton;
 

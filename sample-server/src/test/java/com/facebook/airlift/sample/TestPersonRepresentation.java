@@ -15,8 +15,8 @@
  */
 package com.facebook.airlift.sample;
 
-import com.google.common.io.Resources;
 import com.facebook.airlift.json.JsonCodec;
+import com.google.common.io.Resources;
 import org.testng.annotations.Test;
 
 import static com.facebook.airlift.json.JsonCodec.jsonCodec;

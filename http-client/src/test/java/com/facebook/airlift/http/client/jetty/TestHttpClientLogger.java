@@ -13,9 +13,9 @@
  */
 package com.facebook.airlift.http.client.jetty;
 
-import com.google.common.io.Files;
 import com.facebook.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import com.facebook.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
+import com.google.common.io.Files;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.client.api.ContentProvider;

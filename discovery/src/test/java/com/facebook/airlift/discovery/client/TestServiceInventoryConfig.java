@@ -15,8 +15,8 @@
  */
 package com.facebook.airlift.discovery.client;
 
-import com.google.common.collect.ImmutableMap;
 import com.facebook.airlift.configuration.testing.ConfigAssertions;
+import com.google.common.collect.ImmutableMap;
 import io.airlift.units.Duration;
 import org.testng.annotations.Test;
 

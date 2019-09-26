@@ -15,12 +15,12 @@
  */
 package com.facebook.airlift.json.isolated;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.facebook.airlift.json.JsonCodec;
 import com.facebook.airlift.json.JsonCodecBinder;
 import com.facebook.airlift.json.JsonModule;
 import com.facebook.airlift.json.Person;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;

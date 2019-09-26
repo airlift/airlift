@@ -15,10 +15,10 @@
  */
 package com.facebook.airlift.node;
 
+import com.facebook.airlift.node.NodeConfig.AddressSource;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.InetAddresses;
 import com.google.inject.Singleton;
-import com.facebook.airlift.node.NodeConfig.AddressSource;
 import org.weakref.jmx.Managed;
 
 import javax.inject.Inject;

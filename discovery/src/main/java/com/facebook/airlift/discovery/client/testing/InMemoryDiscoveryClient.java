@@ -15,16 +15,16 @@
  */
 package com.facebook.airlift.discovery.client.testing;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.MapMaker;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.facebook.airlift.discovery.client.DiscoveryAnnouncementClient;
 import com.facebook.airlift.discovery.client.DiscoveryLookupClient;
 import com.facebook.airlift.discovery.client.ServiceAnnouncement;
 import com.facebook.airlift.discovery.client.ServiceDescriptor;
 import com.facebook.airlift.discovery.client.ServiceDescriptors;
 import com.facebook.airlift.node.NodeInfo;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.MapMaker;
+import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.units.Duration;
 
 import javax.inject.Inject;

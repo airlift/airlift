@@ -35,8 +35,8 @@ import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static com.facebook.airlift.concurrent.MoreFutures.whenAnyCompleteCancelOthers;
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 
 @State(Scope.Thread)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)

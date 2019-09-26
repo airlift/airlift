@@ -17,8 +17,8 @@ import com.google.common.annotations.Beta;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 
-import static com.google.common.base.Preconditions.checkState;
 import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
+import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
 @Beta

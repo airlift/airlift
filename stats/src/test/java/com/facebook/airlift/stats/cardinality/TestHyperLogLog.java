@@ -22,8 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
 import static com.facebook.airlift.stats.cardinality.TestUtils.sequence;
+import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 

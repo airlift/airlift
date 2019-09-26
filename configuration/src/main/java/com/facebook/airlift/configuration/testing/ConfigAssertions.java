@@ -15,11 +15,11 @@
  */
 package com.facebook.airlift.configuration.testing;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.MapMaker;
 import com.facebook.airlift.configuration.ConfigurationFactory;
 import com.facebook.airlift.configuration.ConfigurationMetadata;
 import com.facebook.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.MapMaker;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;

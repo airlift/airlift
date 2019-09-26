@@ -15,11 +15,11 @@
  */
 package com.facebook.airlift.discovery.client;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.io.Resources;
 import com.facebook.airlift.json.JsonCodec;
 import com.facebook.airlift.node.NodeConfig;
 import com.facebook.airlift.node.NodeInfo;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.io.Resources;
 import org.testng.annotations.Test;
 
 import java.util.Map;

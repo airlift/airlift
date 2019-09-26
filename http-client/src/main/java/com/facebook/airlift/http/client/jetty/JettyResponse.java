@@ -1,9 +1,9 @@
 package com.facebook.airlift.http.client.jetty;
 
+import com.facebook.airlift.http.client.HeaderName;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.CountingInputStream;
-import com.facebook.airlift.http.client.HeaderName;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpFields;
 

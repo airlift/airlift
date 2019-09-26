@@ -15,10 +15,10 @@
  */
 package com.facebook.airlift.stats;
 
+import com.facebook.airlift.stats.DecayCounter.DecayCounterSnapshot;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.Beta;
-import com.facebook.airlift.stats.DecayCounter.DecayCounterSnapshot;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 

@@ -13,9 +13,9 @@
  */
 package com.facebook.airlift.stats;
 
+import com.facebook.airlift.log.Logger;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
-import com.facebook.airlift.log.Logger;
 import io.airlift.units.Duration;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.HistogramIterationValue;

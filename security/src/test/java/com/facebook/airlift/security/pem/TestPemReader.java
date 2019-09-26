@@ -33,8 +33,6 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.regex.Matcher;
 
-import static com.google.common.collect.Iterables.getOnlyElement;
-import static com.google.common.io.Files.asCharSource;
 import static com.facebook.airlift.security.pem.PemReader.PRIVATE_KEY_PATTERN;
 import static com.facebook.airlift.security.pem.PemReader.dsaPkcs1ToPkcs8;
 import static com.facebook.airlift.security.pem.PemReader.ecPkcs1ToPkcs8;
@@ -47,6 +45,8 @@ import static com.facebook.airlift.security.pem.PemReader.rsaPkcs1ToPkcs8;
 import static com.facebook.airlift.security.pem.PemWriter.writeCertificate;
 import static com.facebook.airlift.security.pem.PemWriter.writePrivateKey;
 import static com.facebook.airlift.security.pem.PemWriter.writePublicKey;
+import static com.google.common.collect.Iterables.getOnlyElement;
+import static com.google.common.io.Files.asCharSource;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;

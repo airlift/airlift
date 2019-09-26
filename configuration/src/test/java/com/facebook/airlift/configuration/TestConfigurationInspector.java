@@ -1,18 +1,18 @@
 package com.facebook.airlift.configuration;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.facebook.airlift.configuration.ConfigurationInspector.ConfigAttribute;
 import com.facebook.airlift.configuration.ConfigurationInspector.ConfigRecord;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.Test;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.Iterables.getOnlyElement;
-import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
 import static org.testng.Assert.assertEquals;
 
 public class TestConfigurationInspector

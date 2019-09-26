@@ -15,17 +15,17 @@
  */
 package com.facebook.airlift.http.client;
 
+import com.facebook.airlift.json.JsonCodec;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.ByteStreams;
 import com.google.common.net.MediaType;
 import com.google.common.primitives.Ints;
-import com.facebook.airlift.json.JsonCodec;
 
 import java.io.IOException;
 import java.util.Set;
 
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.facebook.airlift.http.client.ResponseHandlerUtils.propagate;
+import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class JsonResponseHandler<T>

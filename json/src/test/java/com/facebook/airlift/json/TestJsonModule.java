@@ -42,8 +42,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.facebook.airlift.json.JsonBinder.jsonBinder;
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 import static org.joda.time.DateTimeZone.UTC;
 import static org.testng.Assert.assertEquals;

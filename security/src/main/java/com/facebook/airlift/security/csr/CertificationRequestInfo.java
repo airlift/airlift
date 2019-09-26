@@ -21,8 +21,8 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.util.Objects;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.facebook.airlift.security.der.DerUtils.encodeSequence;
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 
 public class CertificationRequestInfo

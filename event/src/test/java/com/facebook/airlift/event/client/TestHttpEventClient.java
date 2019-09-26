@@ -15,13 +15,13 @@
  */
 package com.facebook.airlift.event.client;
 
-import com.google.common.io.CharStreams;
 import com.facebook.airlift.discovery.client.HttpServiceSelector;
 import com.facebook.airlift.discovery.client.testing.StaticHttpServiceSelector;
 import com.facebook.airlift.http.client.HttpClient;
 import com.facebook.airlift.http.client.HttpClientConfig;
 import com.facebook.airlift.http.client.jetty.JettyHttpClient;
 import com.facebook.airlift.node.NodeInfo;
+import com.google.common.io.CharStreams;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -53,9 +53,9 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.facebook.airlift.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 import static com.facebook.airlift.event.client.TestingUtils.getNormalizedJson;
+import static com.google.common.base.Throwables.throwIfUnchecked;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;

@@ -47,9 +47,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.facebook.airlift.jmx.http.rpc.HttpMBeanServerRpc.propagateIfInstanceOf;
 import static com.facebook.airlift.jmx.http.rpc.HttpMBeanServerRpc.propagateIfPossible;
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.lang.String.format;
 
 public class HttpJmxConnector

@@ -15,12 +15,12 @@
  */
 package com.facebook.airlift.configuration.testing;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.facebook.airlift.configuration.Config;
 import com.facebook.airlift.configuration.Config1;
 import com.facebook.airlift.configuration.LegacyConfig;
 import com.facebook.airlift.configuration.testing.ConfigAssertions.$$RecordedConfigData;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.testng.annotations.Test;
 
 import java.net.MalformedURLException;

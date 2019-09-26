@@ -15,6 +15,16 @@
  */
 package com.facebook.airlift.bootstrap;
 
+import com.facebook.airlift.configuration.ConfigurationFactory;
+import com.facebook.airlift.configuration.ConfigurationInspector;
+import com.facebook.airlift.configuration.ConfigurationInspector.ConfigAttribute;
+import com.facebook.airlift.configuration.ConfigurationInspector.ConfigRecord;
+import com.facebook.airlift.configuration.ConfigurationModule;
+import com.facebook.airlift.configuration.ValidationErrorModule;
+import com.facebook.airlift.configuration.WarningsMonitor;
+import com.facebook.airlift.log.Logger;
+import com.facebook.airlift.log.Logging;
+import com.facebook.airlift.log.LoggingConfiguration;
 import com.google.common.annotations.Beta;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -26,16 +36,6 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Stage;
 import com.google.inject.spi.Message;
-import com.facebook.airlift.configuration.ConfigurationFactory;
-import com.facebook.airlift.configuration.ConfigurationInspector;
-import com.facebook.airlift.configuration.ConfigurationInspector.ConfigAttribute;
-import com.facebook.airlift.configuration.ConfigurationInspector.ConfigRecord;
-import com.facebook.airlift.configuration.ConfigurationModule;
-import com.facebook.airlift.configuration.ValidationErrorModule;
-import com.facebook.airlift.configuration.WarningsMonitor;
-import com.facebook.airlift.log.Logger;
-import com.facebook.airlift.log.Logging;
-import com.facebook.airlift.log.LoggingConfiguration;
 
 import java.io.IOException;
 import java.io.PrintWriter;

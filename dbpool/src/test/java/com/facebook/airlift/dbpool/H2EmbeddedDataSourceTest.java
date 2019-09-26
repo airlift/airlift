@@ -15,9 +15,9 @@
  */
 package com.facebook.airlift.dbpool;
 
+import com.facebook.airlift.dbpool.H2EmbeddedDataSourceConfig.Cipher;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
-import com.facebook.airlift.dbpool.H2EmbeddedDataSourceConfig.Cipher;
 import org.h2.jdbc.JdbcSQLException;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;

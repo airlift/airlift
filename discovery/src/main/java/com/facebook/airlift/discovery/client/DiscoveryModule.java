@@ -15,11 +15,11 @@
  */
 package com.facebook.airlift.discovery.client;
 
+import com.facebook.airlift.node.NodeInfo;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.facebook.airlift.node.NodeInfo;
 
 import javax.annotation.PreDestroy;
 import javax.inject.Provider;
@@ -30,12 +30,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.function.Supplier;
 
-import static com.google.common.base.Preconditions.checkState;
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.facebook.airlift.concurrent.Threads.daemonThreadsNamed;
 import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
 import static com.facebook.airlift.http.client.HttpClientBinder.httpClientBinder;
 import static com.facebook.airlift.json.JsonCodecBinder.jsonCodecBinder;
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class DiscoveryModule

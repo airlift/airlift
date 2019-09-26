@@ -15,9 +15,9 @@
  */
 package com.facebook.airlift.jmx;
 
+import com.facebook.airlift.log.Logger;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.net.HostAndPort;
-import com.facebook.airlift.log.Logger;
 import sun.management.Agent;
 import sun.management.jmxremote.ConnectorBootstrap;
 import sun.rmi.server.UnicastRef;

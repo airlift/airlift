@@ -15,12 +15,6 @@
  */
 package com.facebook.airlift.http.server.testing;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.net.HttpHeaders;
-import com.google.common.net.MediaType;
-import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
 import com.facebook.airlift.bootstrap.Bootstrap;
 import com.facebook.airlift.bootstrap.LifeCycleManager;
 import com.facebook.airlift.http.client.HttpClient;
@@ -36,6 +30,12 @@ import com.facebook.airlift.http.server.TheServlet;
 import com.facebook.airlift.log.Logging;
 import com.facebook.airlift.node.NodeInfo;
 import com.facebook.airlift.node.testing.TestingNodeModule;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.net.HttpHeaders;
+import com.google.common.net.MediaType;
+import com.google.inject.Injector;
+import com.google.inject.TypeLiteral;
 import io.airlift.units.Duration;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
@@ -57,14 +57,14 @@ import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.facebook.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static com.facebook.airlift.http.client.Request.Builder.prepareGet;
 import static com.facebook.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static com.facebook.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static com.facebook.airlift.http.server.HttpServerBinder.httpServerBinder;
 import static com.facebook.airlift.testing.Assertions.assertGreaterThan;
+import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;

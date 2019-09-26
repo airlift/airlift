@@ -13,8 +13,8 @@
  */
 package com.facebook.airlift.stats;
 
-import com.google.common.collect.ImmutableMap;
 import com.facebook.airlift.log.Logger;
+import com.google.common.collect.ImmutableMap;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import org.weakref.jmx.Managed;

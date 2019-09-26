@@ -21,9 +21,9 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
+import static com.facebook.airlift.stats.cardinality.TestUtils.sequence;
 import static io.airlift.slice.SizeOf.sizeOf;
 import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
-import static com.facebook.airlift.stats.cardinality.TestUtils.sequence;
 import static org.testng.Assert.assertEquals;
 
 public class TestSparseHll

@@ -1,8 +1,5 @@
 package com.facebook.airlift.http.client.jetty;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.net.HostAndPort;
-import com.google.common.primitives.Ints;
 import com.facebook.airlift.http.client.BodyGenerator;
 import com.facebook.airlift.http.client.FileBodyGenerator;
 import com.facebook.airlift.http.client.HttpClientConfig;
@@ -18,6 +15,9 @@ import com.facebook.airlift.http.client.spnego.SpnegoAuthentication;
 import com.facebook.airlift.http.client.spnego.SpnegoAuthenticationProtocolHandler;
 import com.facebook.airlift.http.client.spnego.SpnegoAuthenticationStore;
 import com.facebook.airlift.security.pem.PemReader;
+import com.google.common.collect.ImmutableList;
+import com.google.common.net.HostAndPort;
+import com.google.common.primitives.Ints;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
@@ -74,11 +74,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import static com.facebook.airlift.http.client.jetty.AuthorizationPreservingHttpClient.setPreserveAuthorization;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.facebook.airlift.http.client.jetty.AuthorizationPreservingHttpClient.setPreserveAuthorization;
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;

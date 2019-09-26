@@ -15,9 +15,9 @@
  */
 package com.facebook.airlift.http.server;
 
-import com.google.common.collect.ImmutableList;
 import com.facebook.airlift.event.client.InMemoryEventClient;
 import com.facebook.airlift.tracetoken.TraceTokenManager;
+import com.google.common.collect.ImmutableList;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -35,8 +35,8 @@ import java.util.Collections;
 import java.util.DoubleSummaryStatistics;
 import java.util.List;
 
-import static com.google.common.io.Files.asCharSource;
 import static com.facebook.airlift.http.server.TraceTokenFilter.TRACETOKEN_HEADER;
+import static com.google.common.io.Files.asCharSource;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;

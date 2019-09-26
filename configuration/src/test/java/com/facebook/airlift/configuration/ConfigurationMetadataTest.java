@@ -15,9 +15,9 @@
  */
 package com.facebook.airlift.configuration;
 
+import com.facebook.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.ConfigurationException;
-import com.facebook.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 import org.testng.annotations.Test;
 
 import java.util.HashMap;

@@ -31,8 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.facebook.airlift.event.client.EventDataType.validateFieldValueType;
+import static com.google.common.base.MoreObjects.firstNonNull;
 
 @Beta
 public class EventFieldMetadata

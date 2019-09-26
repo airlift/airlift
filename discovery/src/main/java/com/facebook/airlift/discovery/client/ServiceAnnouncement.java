@@ -15,15 +15,15 @@
  */
 package com.facebook.airlift.discovery.client;
 
+import com.facebook.airlift.node.NodeInfo;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
-import com.facebook.airlift.node.NodeInfo;
 
 import java.util.Map;
 import java.util.UUID;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.facebook.airlift.discovery.client.ServiceDescriptor.serviceDescriptor;
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 
 public class ServiceAnnouncement

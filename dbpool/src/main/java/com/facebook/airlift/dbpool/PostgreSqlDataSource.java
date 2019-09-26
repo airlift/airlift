@@ -15,9 +15,9 @@
  */
 package com.facebook.airlift.dbpool;
 
-import com.google.common.primitives.Ints;
 import com.facebook.airlift.discovery.client.ServiceDescriptor;
 import com.facebook.airlift.discovery.client.ServiceSelector;
+import com.google.common.primitives.Ints;
 import org.postgresql.ds.PGConnectionPoolDataSource;
 
 import javax.sql.PooledConnection;

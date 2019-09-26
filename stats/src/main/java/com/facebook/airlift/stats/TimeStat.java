@@ -15,10 +15,10 @@
  */
 package com.facebook.airlift.stats;
 
+import com.facebook.airlift.stats.TimeDistribution.TimeDistributionSnapshot;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Ticker;
-import com.facebook.airlift.stats.TimeDistribution.TimeDistributionSnapshot;
 import io.airlift.units.Duration;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;

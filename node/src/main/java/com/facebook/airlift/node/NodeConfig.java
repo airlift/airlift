@@ -15,10 +15,10 @@
  */
 package com.facebook.airlift.node;
 
-import com.google.common.net.InetAddresses;
 import com.facebook.airlift.configuration.Config;
 import com.facebook.airlift.configuration.DefunctConfig;
 import com.facebook.airlift.configuration.LegacyConfig;
+import com.google.common.net.InetAddresses;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;

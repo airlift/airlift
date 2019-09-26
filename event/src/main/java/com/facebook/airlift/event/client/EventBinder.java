@@ -24,8 +24,8 @@ import com.google.inject.multibindings.Multibinder;
 
 import java.util.List;
 
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.facebook.airlift.event.client.EventTypeMetadata.getEventTypeMetadata;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static java.util.Objects.requireNonNull;
 
 @Beta

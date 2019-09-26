@@ -13,9 +13,9 @@
  */
 package com.facebook.airlift.http.client.jetty;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.facebook.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import com.facebook.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
+import com.google.common.annotations.VisibleForTesting;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpFields;

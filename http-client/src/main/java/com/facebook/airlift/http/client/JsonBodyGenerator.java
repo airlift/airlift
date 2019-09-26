@@ -15,8 +15,8 @@
  */
 package com.facebook.airlift.http.client;
 
-import com.google.common.annotations.Beta;
 import com.facebook.airlift.json.JsonCodec;
+import com.google.common.annotations.Beta;
 
 @Beta
 public class JsonBodyGenerator<T>
