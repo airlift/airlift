@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.security.pem;
+package com.facebook.airlift.security.pem;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -52,11 +52,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.google.common.io.Files.asCharSource;
-import static io.airlift.security.der.DerUtils.decodeSequence;
-import static io.airlift.security.der.DerUtils.decodeSequenceOptionalElement;
-import static io.airlift.security.der.DerUtils.encodeOctetString;
-import static io.airlift.security.der.DerUtils.encodeOid;
-import static io.airlift.security.der.DerUtils.encodeSequence;
+import static com.facebook.airlift.security.der.DerUtils.decodeSequence;
+import static com.facebook.airlift.security.der.DerUtils.decodeSequenceOptionalElement;
+import static com.facebook.airlift.security.der.DerUtils.encodeOctetString;
+import static com.facebook.airlift.security.der.DerUtils.encodeOid;
+import static com.facebook.airlift.security.der.DerUtils.encodeSequence;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Base64.getMimeDecoder;

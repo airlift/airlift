@@ -22,7 +22,7 @@ import com.google.common.primitives.Ints;
 import com.facebook.airlift.event.client.EventClient;
 import com.facebook.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import com.facebook.airlift.node.NodeInfo;
-import io.airlift.security.pem.PemReader;
+import com.facebook.airlift.security.pem.PemReader;
 import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.io.ConnectionStatistics;

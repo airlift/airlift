@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.security.csr;
+package com.facebook.airlift.security.csr;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
@@ -31,7 +31,7 @@ import java.util.Objects;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static io.airlift.security.der.DerUtils.encodeLength;
+import static com.facebook.airlift.security.der.DerUtils.encodeLength;
 import static java.util.Objects.requireNonNull;
 
 public final class SignatureAlgorithmIdentifier

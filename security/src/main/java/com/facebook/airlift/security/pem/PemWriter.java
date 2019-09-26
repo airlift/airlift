@@ -1,4 +1,4 @@
-package io.airlift.security.pem;
+package com.facebook.airlift.security.pem;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;

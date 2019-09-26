@@ -17,7 +17,7 @@ import com.facebook.airlift.http.client.spnego.KerberosConfig;
 import com.facebook.airlift.http.client.spnego.SpnegoAuthentication;
 import com.facebook.airlift.http.client.spnego.SpnegoAuthenticationProtocolHandler;
 import com.facebook.airlift.http.client.spnego.SpnegoAuthenticationStore;
-import io.airlift.security.pem.PemReader;
+import com.facebook.airlift.security.pem.PemReader;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpClient;

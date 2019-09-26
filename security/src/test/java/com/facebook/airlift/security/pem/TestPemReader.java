@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.security.pem;
+package com.facebook.airlift.security.pem;
 
 import org.testng.annotations.Test;
 
@@ -35,18 +35,18 @@ import java.util.regex.Matcher;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.google.common.io.Files.asCharSource;
-import static io.airlift.security.pem.PemReader.PRIVATE_KEY_PATTERN;
-import static io.airlift.security.pem.PemReader.dsaPkcs1ToPkcs8;
-import static io.airlift.security.pem.PemReader.ecPkcs1ToPkcs8;
-import static io.airlift.security.pem.PemReader.loadKeyStore;
-import static io.airlift.security.pem.PemReader.loadPrivateKey;
-import static io.airlift.security.pem.PemReader.loadPublicKey;
-import static io.airlift.security.pem.PemReader.loadTrustStore;
-import static io.airlift.security.pem.PemReader.readCertificateChain;
-import static io.airlift.security.pem.PemReader.rsaPkcs1ToPkcs8;
-import static io.airlift.security.pem.PemWriter.writeCertificate;
-import static io.airlift.security.pem.PemWriter.writePrivateKey;
-import static io.airlift.security.pem.PemWriter.writePublicKey;
+import static com.facebook.airlift.security.pem.PemReader.PRIVATE_KEY_PATTERN;
+import static com.facebook.airlift.security.pem.PemReader.dsaPkcs1ToPkcs8;
+import static com.facebook.airlift.security.pem.PemReader.ecPkcs1ToPkcs8;
+import static com.facebook.airlift.security.pem.PemReader.loadKeyStore;
+import static com.facebook.airlift.security.pem.PemReader.loadPrivateKey;
+import static com.facebook.airlift.security.pem.PemReader.loadPublicKey;
+import static com.facebook.airlift.security.pem.PemReader.loadTrustStore;
+import static com.facebook.airlift.security.pem.PemReader.readCertificateChain;
+import static com.facebook.airlift.security.pem.PemReader.rsaPkcs1ToPkcs8;
+import static com.facebook.airlift.security.pem.PemWriter.writeCertificate;
+import static com.facebook.airlift.security.pem.PemWriter.writePrivateKey;
+import static com.facebook.airlift.security.pem.PemWriter.writePublicKey;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;

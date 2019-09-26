@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.security.csr;
+package com.facebook.airlift.security.csr;
 
 import org.bouncycastle.asn1.DERSet;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -26,7 +26,7 @@ import java.security.Signature;
 import java.security.spec.ECGenParameterSpec;
 
 import static com.google.common.io.BaseEncoding.base16;
-import static io.airlift.security.csr.SignatureAlgorithmIdentifier.findSignatureAlgorithmIdentifier;
+import static com.facebook.airlift.security.csr.SignatureAlgorithmIdentifier.findSignatureAlgorithmIdentifier;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 

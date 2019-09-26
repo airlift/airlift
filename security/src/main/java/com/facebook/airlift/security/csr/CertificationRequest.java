@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.security.csr;
+package com.facebook.airlift.security.csr;
 
 import javax.security.auth.x500.X500Principal;
 
@@ -23,9 +23,9 @@ import java.util.Objects;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.io.BaseEncoding.base16;
-import static io.airlift.security.csr.SignatureAlgorithmIdentifier.findSignatureAlgorithmIdentifier;
-import static io.airlift.security.der.DerUtils.encodeBitString;
-import static io.airlift.security.der.DerUtils.encodeSequence;
+import static com.facebook.airlift.security.csr.SignatureAlgorithmIdentifier.findSignatureAlgorithmIdentifier;
+import static com.facebook.airlift.security.der.DerUtils.encodeBitString;
+import static com.facebook.airlift.security.der.DerUtils.encodeSequence;
 import static java.util.Base64.getMimeEncoder;
 import static java.util.Objects.requireNonNull;
 

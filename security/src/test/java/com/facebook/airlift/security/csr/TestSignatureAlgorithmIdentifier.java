@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.security.csr;
+package com.facebook.airlift.security.csr;
 
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder;

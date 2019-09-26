@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.security.csr;
+package com.facebook.airlift.security.csr;
 
 import javax.security.auth.x500.X500Principal;
 
@@ -22,7 +22,7 @@ import java.security.Signature;
 import java.util.Objects;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static io.airlift.security.der.DerUtils.encodeSequence;
+import static com.facebook.airlift.security.der.DerUtils.encodeSequence;
 import static java.util.Objects.requireNonNull;
 
 public class CertificationRequestInfo
