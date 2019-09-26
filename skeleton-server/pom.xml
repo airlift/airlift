@@ -12,7 +12,7 @@
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
-        <main-class>io.airlift.skeleton.Main</main-class>
+        <main-class>com.facebook.airlift.skeleton.Main</main-class>
     </properties>
 
     <dependencies>

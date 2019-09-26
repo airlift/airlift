@@ -1,4 +1,4 @@
-package io.airlift.skeleton;
+package com.facebook.airlift.skeleton;
 
 import com.google.inject.Injector;
 import com.facebook.airlift.bootstrap.Bootstrap;
